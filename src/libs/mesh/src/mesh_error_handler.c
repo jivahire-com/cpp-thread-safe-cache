@@ -113,6 +113,9 @@ static void print_mesh_cper(acpi_err_sec_generic_t* mesh_cper)
     case MESH_ERROR_NODE_ID_CCG:
         MESH_INFO("NODE_ID_CCG\n");
         break;
+    case MESH_ERROR_NODE_ID_D2D:
+        MESH_INFO("NODE_ID_D2D\n");
+        break;
     default:
         MESH_INFO("NODE_ID_UNKNOWN\n");
         break;
@@ -120,10 +123,19 @@ static void print_mesh_cper(acpi_err_sec_generic_t* mesh_cper)
     switch (mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_1])
     {
     case MESH_ERROR_RAS_ERROR:
-        MESH_INFO("RAS_ERROR\n");
+        MESH_INFO("MESH_ERROR_RAS_ERROR\n");
         break;
     case MESH_ERROR_RAS_FAULT:
-        MESH_INFO("RAS_FAULT\n");
+        MESH_INFO("MESH_ERROR_RAS_FAULT\n");
+        break;
+    case D2D_ERROR_RAS_ERROR:
+        MESH_INFO("D2D_ERROR_RAS_ERROR\n");
+        break;
+    case D2D_ERROR_RAS_FAULT:
+        MESH_INFO("D2D_ERROR_RAS_FAULT\n");
+        break;
+    case MESH_ERROR_RAS_ERROR_TYPE_MAX:
+        MESH_INFO("MESH_ERROR_RAS_ERROR_TYPE_MAX\n");
         break;
     default:
         MESH_INFO("RAS_TYPE_UNKNOWN\n");
@@ -343,8 +355,8 @@ int mesh_error_handler_convert_d2d_ras_record_to_cper(ras_error_record_t* record
     }
 
     // Convert the RAS record to CPER
-    mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_0] = MESH_ERROR_NODE_ID_CCG + 1; //  MESH_ERROR_NODE_ID_D2D;
-    mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_1] = MESH_ERROR_RAS_FAULT + 1; // D2D_ERROR_RAS_ERROR
+    mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_0] = MESH_ERROR_NODE_ID_D2D;
+    mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_1] = D2D_ERROR_RAS_ERROR;
     mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_2] = d2d_subsystem;
     mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_3] = 0;
     mesh_cper->err_record_num = 0; // Error Record Number
@@ -430,7 +442,11 @@ void d2d_error_isr(void* context)
                 d2d_clear_atu_map(d2d_subsystem); // Clear the ATU Map since error was found and we will check next D2D Subsystem
                 continue;
             }
-
+            if ((record.ce_count_overflow) && (record.ce_count_valid))
+            {
+                uint16_t ce_counter = config_get_d2d_ecc_ce_counter() | RAS_ARM_COUNTER_SET_REQUEST;
+                ras_arm_agent_set_record_counter_thresholds_by_record(&record, ce_counter, 0);
+            }
             // ADO 1513835 The combined INT is cleared outside this module
 
             d2d_clear_atu_map(d2d_subsystem); // Clear the ATU Map since error was found and we are jumping out of the loop
@@ -487,23 +503,29 @@ void d2d_ras_init(void)
         ASSERT_FAIL(ras_arm_agent_enable_logging(&d2dss2_agent[d2d_subsystem]) == SILIBS_SUCCESS);
 
         // Program the CE Counter Register
-        uint16_t temp16 = config_get_d2d_ecc_ce_counter();
-        if (temp16 != 0)
+        if (config_get_d2d_ecc_ce_counter() != 0x0)
         {
-            uint32_t data32 = D2DSS_CE_COUNTER_MAX - temp16;
-            MESH_CRIT("D2D:: CE Counter To write 0x%08x\n", data32);
-            // Read
-            MESH_CRIT("D2D:: CE Counter Reg Read Addr 0x%08x, Value 0x%08x\n",
-                      (uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI),
-                      MMIO_READ32((uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI)));
-            // Write
-            MMIO_WRITE32((uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI), data32);
-            // Readback
-            MESH_CRIT("D2D:: CE Counter Reg Readback Addr 0x%08x, Value 0x%08x\n",
-                      (uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI),
-                      MMIO_READ32((uintptr_t)(translated_addr_ras2 + D2DSS_ERR0MISC0_HI)));
+            uint16_t cec = config_get_d2d_ecc_ce_counter() | RAS_ARM_COUNTER_SET_REQUEST;
+            int status = 0x0;
+            status = ras_arm_agent_set_record_counter_thresholds_by_index(&d2dss2_agent[d2d_subsystem], 0, cec, 0);
+            if (status != SILIBS_SUCCESS)
+            {
+                MESH_CRIT("Failed to set CE Counter Thresholds for D2DSS2_AGENT%d, index 0, status: %d, ce "
+                          "counter %d\n",
+                          d2d_subsystem,
+                          status,
+                          config_get_d2d_ecc_ce_counter());
+            }
+            status = ras_arm_agent_set_record_counter_thresholds_by_index(&d2dss2_agent[d2d_subsystem], 1, cec, 0);
+            if (status != SILIBS_SUCCESS)
+            {
+                MESH_CRIT("Failed to set CE Counter Thresholds for D2DSS2_AGENT%d, index 1, status: %d, ce "
+                          "counter %d\n",
+                          d2d_subsystem,
+                          status,
+                          config_get_d2d_ecc_ce_counter());
+            }
         }
-
         d2d_clear_atu_map(d2d_subsystem);
     }
     MESH_CRIT("D2D2 RAS End\n");

@@ -155,7 +155,7 @@ void process_rpss_probe(uint32_t irq, vabss_int_probe_t* probe)
                 rpss_irq_callback(irq);
                 break;
             default:
-                printf("INT[%u] VAB-INTU0[%d] pin fired - critical error!\n", (uint8_t)irq, idx);
+                printf("INT[%u] VAB-INTU0[%d] pin fired\n", (uint8_t)irq, idx);
                 FPFW_RUNTIME_ASSERT(false);
                 break;
             }
@@ -170,7 +170,7 @@ void process_rpss_probe(uint32_t irq, vabss_int_probe_t* probe)
     {
         if (probe->intu1[idx].asserted)
         {
-            printf("INT[%u] VAB-INTU1[%d] pin fired - critical error!\n", (uint8_t)irq, idx);
+            printf("INT[%u] VAB-INTU1[%d] pin fired\n", (uint8_t)irq, idx);
             FPFW_RUNTIME_ASSERT(false);
             break;
         }
@@ -188,7 +188,7 @@ void process_sdmss_probe(uint32_t irq, vabss_int_probe_t* probe)
     {
         if (probe->intu0[idx].asserted)
         {
-            printf("INT[%u] VAB-INTU0[%d] pin fired - critical error!\n", (uint8_t)irq, idx);
+            printf("INT[%u] VAB-INTU0[%d] pin fired\n", (uint8_t)irq, idx);
             switch (idx)
             {
             case VAB_SDMSS_INTU0_D2DSS_0_3_RAS_CRI:
@@ -209,7 +209,7 @@ void process_sdmss_probe(uint32_t irq, vabss_int_probe_t* probe)
     {
         if (probe->intu1[idx].asserted)
         {
-            printf("INT[%u] VAB-INTU1[%d] pin fired - critical error!\n", (uint8_t)irq, idx);
+            printf("INT[%u] VAB-INTU1[%d] pin fired\n", (uint8_t)irq, idx);
             FPFW_RUNTIME_ASSERT(false);
             break;
         }
@@ -227,7 +227,7 @@ void process_cdedss_probe(uint32_t irq, vabss_int_probe_t* probe)
     {
         if (probe->intu0[idx].asserted)
         {
-            printf("INT[%u] VAB-INTU0[%d] pin fired - critical error!\n", (uint8_t)irq, idx);
+            printf("INT[%u] VAB-INTU0[%d] pin fired\n", (uint8_t)irq, idx);
             FPFW_RUNTIME_ASSERT(false);
             break;
         }
@@ -237,7 +237,7 @@ void process_cdedss_probe(uint32_t irq, vabss_int_probe_t* probe)
     {
         if (probe->intu1[idx].asserted)
         {
-            printf("INT[%u] VAB-INTU1[%d] pin fired - critical error!\n", (uint8_t)irq, idx);
+            printf("INT[%u] VAB-INTU1[%d] pin fired\n", (uint8_t)irq, idx);
             FPFW_RUNTIME_ASSERT(false);
             break;
         }

@@ -101,4 +101,5 @@ mock_target(${TARGET}
     cmn800_pseudo_fault_error_injection
     hm_submit_cper
     ras_arm_agent_notify_warm
+    ras_arm_agent_set_record_counter_thresholds_by_index
 )

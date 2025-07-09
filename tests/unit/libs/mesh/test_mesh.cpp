@@ -193,6 +193,14 @@ void* __wrap_memcmp(void* __a, const void* __b, size_t __c)
 //
 // Setup and Teardown Functions
 //
+static int setup_soc_platform_dual_die(void** pContext)
+{
+    FPFW_UNUSED(pContext);
+    idsw_set_platform_sdv(PLATFORM_RVP_EVT_SILICON);
+    simulate_single_die = false;
+    return 0;
+}
+
 static int setup_svp_platform(void** pContext)
 {
     FPFW_UNUSED(pContext);
@@ -422,6 +430,19 @@ silibs_status_t __wrap_ras_arm_agent_enable_signaling_by_type(ras_agent_entity_t
 silibs_status_t __wrap_ras_arm_agent_enable_fhi(ras_agent_entity_t* agent)
 {
     check_expected(agent);
+    function_called();
+    return SILIBS_SUCCESS;
+}
+
+silibs_status_t __wrap_ras_arm_agent_set_record_counter_thresholds_by_index(ras_agent_entity_t* agent,
+                                                                            unsigned index,
+                                                                            uint16_t cec,
+                                                                            uint16_t ceco)
+{
+    check_expected(agent);
+    check_expected(index);
+    check_expected(cec);
+    check_expected(ceco);
     function_called();
     return SILIBS_SUCCESS;
 }
@@ -1282,6 +1303,10 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_Die_0, setup_svp_platform, se
 {
     const auto test_die = (KNG_DIE_ID)0;
     g_test_die = test_die;
+
+    // Override the g_test_d2d_ecc_ce_counter to test the D2D RAS init
+    g_test_d2d_ecc_ce_counter = 0x30;
+
     // d2d_ras_init
     for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
     {
@@ -1296,10 +1321,21 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_Die_0, setup_svp_platform, se
         expect_function_call(__wrap_ras_arm_agent_enable_fhi);
         expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
         expect_function_call(__wrap_ras_arm_agent_enable_logging);
-        expect_function_call(__wrap_mmio_write32);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 0);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 1);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
     }
-    // Override the g_test_d2d_ecc_ce_counter to test the D2D RAS init
-    g_test_d2d_ecc_ce_counter = 0x30;
 
     // Call API under test
     d2d_ras_init();
@@ -1310,6 +1346,10 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_warm_reset_Die_0, setup_svp_p
 {
     const auto test_die = (KNG_DIE_ID)0;
     g_test_die = test_die;
+
+    // Override the g_test_d2d_ecc_ce_counter to test the D2D RAS init
+    g_test_d2d_ecc_ce_counter = 0x30;
+
     // d2d_ras_init
     for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
     {
@@ -1326,10 +1366,21 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_warm_reset_Die_0, setup_svp_p
         expect_function_call(__wrap_ras_arm_agent_enable_fhi);
         expect_value(__wrap_ras_arm_agent_enable_logging, agent, &d2dss2_agent[d2d_subsystem]);
         expect_function_call(__wrap_ras_arm_agent_enable_logging);
-        expect_function_call(__wrap_mmio_write32);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 0);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 1);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
     }
-    // Override the g_test_d2d_ecc_ce_counter to test the D2D RAS init
-    g_test_d2d_ecc_ce_counter = 0x30;
 
     // Call API under test
     d2d_ras_init();
@@ -1492,13 +1543,13 @@ void verify_d2d_config_knobs(void)
     assert_int_equal(unit_test_default_d2d_cfg.d2d_ecc_cfg, 0);
     assert_int_equal(unit_test_default_d2d_cfg.d2d_tx_interface_clk_alignment, 0);
     assert_int_equal(unit_test_default_d2d_cfg.d2d_ras_enable, 0);
-    assert_int_equal(unit_test_default_d2d_cfg.d2d_sleep_cfg, 1);
+    assert_int_equal(unit_test_default_d2d_cfg.d2d_sleep_cfg, 0);
     assert_int_equal(unit_test_default_d2d_cfg.d2d_sleep_cfg_entry, 100000);
     assert_int_equal(unit_test_default_d2d_cfg.d2d_rxcal_find_goodlanes_skip, 1);
 }
 
 // Test Mesh, CML, D2D Config Knobs
-TEST_FUNCTION(test_mesh_config_knobs_single_die, setup_svp_platform, setup_undefined_platform)
+TEST_FUNCTION(test_mesh_config_knobs_single_die, setup_soc_platform_dual_die, setup_undefined_platform)
 {
     cmn800_sequence_params_t cmn800_sequence_param = {};
 

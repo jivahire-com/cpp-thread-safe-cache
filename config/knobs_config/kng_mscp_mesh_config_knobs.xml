@@ -152,7 +152,7 @@
     <Knob name="d2d_pll_fb_divider" type="uint8_t" default="0x14" help="feedback clock divide value (1-127)"/>
     <Knob name="d2d_ecc_cfg" type="uint8_t" default="0" help="Configure Bit 9 and 10 of D2D Config to enable or disable RX/TX ECC "/>
     <Knob name="d2d_tx_interface_clk_alignment" type="uint32_t" default="0" help="run calibration to center TX interface"/>
-    <Knob name="d2d_sleep_cfg" type="uint8_t" default="1" help="Sleep configuration 1: enable 0:disable"/>
+    <Knob name="d2d_sleep_cfg" type="uint8_t" default="0" help="Sleep configuration 1: enable 0:disable"/>
     <Knob name="d2d_sleep_cfg_entry" type="uint32_t" default="100000" help="Sleep configuration entry: Idle entry time, Number of clock cycle the channel must be Idle"/>
     <Knob name="d2d_rxcal_find_goodlanes_skip" type="bool" default="1" help="Skip the D2D PHY stage to find the good/bad lanes in the Dual Link"/>
     <Knob name="d2d_ecc_ce_counter" type="uint16_t" default="0x0" max="0x7FFF" help="Set the total CE Counts before triggering a RAS CE Interrupt"/>

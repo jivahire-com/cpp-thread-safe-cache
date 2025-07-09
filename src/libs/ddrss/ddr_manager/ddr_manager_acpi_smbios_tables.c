@@ -160,6 +160,15 @@ void ddr_create_bdat(void)
     ddrss_phy_training_dq_margin_t* dq_margin = ddrss_get_training_margin_base();
     BUG_ASSERT_PARAM(dq_margin != NULL, dq_margin, 0);
 
+    if (die_num == DIE_0)
+    {
+        // clear memory first - all 32KB
+        for (int i = 0; i < (BDAT_RESERVATION_SIZE / 4); i++)
+        {
+            MMIO_WRITE32((bdat_mem_atu_map_struct.mscp_start_address + (4 * i)), 0);
+        }
+    }
+
     if (!idhw_is_single_die_boot_en())
     {
         mscp_exp_spi_sync_point_t d2d_ddr_sync_point;
@@ -176,12 +185,6 @@ void ddr_create_bdat(void)
 
     if (die_num == DIE_0)
     {
-        // clear memory first - all 32KB
-        for (int i = 0; i < (BDAT_RESERVATION_SIZE / 4); i++)
-        {
-            MMIO_WRITE32((bdat_mem_atu_map_struct.mscp_start_address + (4 * i)), 0);
-        }
-
         // create BDAT header
         for (uint32_t i = 0; i < (sizeof(Bios_data_sign)); i++)
         {
@@ -488,7 +491,9 @@ void ddr_create_bdat(void)
                                                          .rankList[rank_idx]
                                                          .marginList[dq_lane_margin_idx][tx_rx_lane_idx]
                                                          .dword[0]);
-                            uint32_t data32 = dq_margin->margin[rank_idx][dq_lane_margin_idx][tx_rx_lane_idx].dword[0];
+                            uint32_t data32 = (dq_margin[dimm_local_idx])
+                                                  .margin[rank_idx][dq_lane_margin_idx][tx_rx_lane_idx]
+                                                  .dword[0];
                             MMIO_WRITE8(addr, (uint8_t)data32 & 0xFF);
                             MMIO_WRITE8(addr + 1, (uint8_t)((data32 >> 8) & 0xFF));
                             MMIO_WRITE8(addr + 2, (uint8_t)((data32 >> 16) & 0xFF));
@@ -501,7 +506,9 @@ void ddr_create_bdat(void)
                                                 .rankList[rank_idx]
                                                 .marginList[dq_lane_margin_idx][tx_rx_lane_idx]
                                                 .dword[1]);
-                            data32 = dq_margin->margin[rank_idx][dq_lane_margin_idx][tx_rx_lane_idx].dword[1];
+                            data32 = (dq_margin[dimm_local_idx])
+                                         .margin[rank_idx][dq_lane_margin_idx][tx_rx_lane_idx]
+                                         .dword[1];
                             MMIO_WRITE8(addr, (uint8_t)data32 & 0xFF);
                             MMIO_WRITE8(addr + 1, (uint8_t)((data32 >> 8) & 0xFF));
                             MMIO_WRITE8(addr + 2, (uint8_t)((data32 >> 16) & 0xFF));

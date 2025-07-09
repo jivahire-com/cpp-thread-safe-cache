@@ -627,7 +627,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-    will_return(__wrap_system_info_get_board_id, 0);
+    will_return(__wrap_system_info_get_soc_position, 0);
     will_return(__wrap_config_get_overlake_rpss_index_primary_soc, 1); // not this RPSS
     expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
 
@@ -657,7 +657,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_OVERWRITTEN); // link training failure
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-    will_return(__wrap_system_info_get_board_id, 0);
+    will_return(__wrap_system_info_get_soc_position, 0);
     will_return(__wrap_config_get_overlake_rpss_index_primary_soc, ctx.rpss_idx); // Overlake RPSS
     will_return(__wrap_config_get_enable_overlake_sbr_workaround, 1);             // enable workaround
 
@@ -680,7 +680,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_OVERWRITTEN); // link training failure
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-    will_return(__wrap_system_info_get_board_id, 1 << 6); // GPIO indicates secondary SoC
+    will_return(__wrap_system_info_get_soc_position, 1); // GPIO indicates secondary SoC
     will_return(__wrap_config_get_overlake_rpss_index_secondary_soc, ctx.rpss_idx); // Overlake RPSS
     will_return(__wrap_config_get_enable_overlake_sbr_workaround, 1);               // enable workaround
 

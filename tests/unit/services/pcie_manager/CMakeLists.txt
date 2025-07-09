@@ -88,6 +88,8 @@ mock_target(${TARGET}
     memset
     pcie_phyfw_wait_load_event
     system_info_get_board_id
+    system_info_get_board_rework_id
+    system_info_get_soc_position
     variable_serv_copy_to_rmss_ram
     variable_service_async_set_variable
     variable_service_initialize_ctx

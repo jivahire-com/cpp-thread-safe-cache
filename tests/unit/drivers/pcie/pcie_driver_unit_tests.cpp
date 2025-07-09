@@ -171,7 +171,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
         will_return(__wrap_atu_map, SILIBS_SUCCESS);
         expect_value(__wrap_pciess_get_entity, rpss_idx, i);
         will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-        will_return(__wrap_system_info_get_board_id, 0x00);
+        will_return(__wrap_system_info_get_soc_position, 0x00);
         expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
         expect_value(__wrap_pciess_config_entity, enable_apu, true);
         will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
@@ -220,7 +220,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
         will_return(__wrap_atu_map, SILIBS_SUCCESS);
         expect_value(__wrap_pciess_get_entity, rpss_idx, i);
         will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-        will_return(__wrap_system_info_get_board_id, 0xFF);
+        will_return(__wrap_system_info_get_soc_position, 0x01);
         bool is_mirroring = __real_config_get_pcie_configuration_mirroring();
         is_mirroring = true;
         will_return(__wrap_config_get_pcie_configuration_mirroring, is_mirroring);
@@ -274,7 +274,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    will_return_always(__wrap_system_info_get_board_id, 0x00);
+    will_return_always(__wrap_system_info_get_soc_position, 0x0);
     expect_value(__wrap_pciess_config_entity, program_phy_regs, false);
     expect_value(__wrap_pciess_config_entity, enable_apu, true);
     will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
@@ -1255,7 +1255,7 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    will_return_always(__wrap_system_info_get_board_id, 0xFF);
+    will_return_always(__wrap_system_info_get_soc_position, 0x1);
     bool is_mirroring = __real_config_get_pcie_configuration_mirroring();
     is_mirroring = true;
     will_return(__wrap_config_get_pcie_configuration_mirroring, is_mirroring);

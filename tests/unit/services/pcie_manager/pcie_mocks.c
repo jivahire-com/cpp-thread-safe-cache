@@ -214,6 +214,16 @@ uint8_t __wrap_system_info_get_board_id()
     return mock_type(uint8_t);
 }
 
+uint8_t __wrap_system_info_get_board_rework_id()
+{
+    return mock_type(uint8_t);
+}
+
+uint8_t __wrap_system_info_get_soc_position()
+{
+    return mock_type(uint8_t);
+}
+
 uint8_t __wrap_config_get_overlake_rpss_index_secondary_soc(void)
 {
     return mock_type(uint8_t);

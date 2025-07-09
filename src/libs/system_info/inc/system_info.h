@@ -17,18 +17,6 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-/**
- * The macros below help parse the board id passed by HSP.
- *
- * The board id on Echo Falls is a 7-bit value which is divided into 3 parts:
- * Bit[0-2] - Rework revision
- * Bit[3-5] - Board design phase - RVP/RFU/EV/DV/PV
- * Bit[6]   - SoC position on dual socket boards 0/1
- */
-#define BOARD_ID_GET_REWORK_REV(board_id)   ((board_id & 0x07))
-#define BOARD_ID_GET_DESIGN_PHASE(board_id) ((board_id & 0x38) >> 3)
-#define BOARD_ID_GET_SOC_POSITION(board_id) ((board_id & 0x40) >> 6)
-
 /*-------------- Typedefs ----------------*/
 /**
  * Representation of the current security state of the HSP.
@@ -132,3 +120,19 @@ uint8_t system_info_get_board_id();
  * @return BMC profile.
  */
 uint8_t system_info_get_bmc_profile();
+
+/**
+ * @brief Retrieves the Soc position. This is shared by HSP as part
+ *        of boot metadata.
+ *
+ * @return The 1-bit Soc Position read from the platform.
+ */
+uint8_t system_info_get_soc_position();
+
+/**
+ * @brief Retrieves the board rework ID. The board rework ID is shared by HSP as part
+ *        of boot metadata.
+ *
+ * @return The 4-bit board rework ID read from the platform.
+ */
+uint8_t system_info_get_board_rework_id();

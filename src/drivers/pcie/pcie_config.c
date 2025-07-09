@@ -68,7 +68,8 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
                                           pcie_prod_cfg_t* pcie_cfg_knob,
                                           pcie_prod_phy_cfg_t* phy_cfg_knob,
                                           pcie_prod_cfg_workarounds_t* pcie_cfg_workarounds);
-static void force_rpss2_resource_allocation_override(pcie_cfg_t* pcie_cfg);
+static void force_rpss2_resource_allocation_override(pcie_cfg_t* pcie_cfg); // In 1-1 Config Display Port is on RPSS2
+static void force_rpss1_resource_allocation_override(pcie_cfg_t* pcie_cfg); // In mirrored Config Display Port is on RPSS1
 
 /*-- Declarations (Statics and globals) --*/
 static pcie_cfg_t pcie_cfg_np[NUM_RPSS] = {
@@ -97,11 +98,13 @@ static pcie_prod_cfg_workarounds_t pcie_cfg_workarounds_np[NUM_RPSS] = {
 static bool mirror_rpss_configurations()
 {
     bool config_mirroring = false;
-    uint8_t soc_position = BOARD_ID_GET_SOC_POSITION(system_info_get_board_id());
+    uint8_t soc_position = system_info_get_soc_position();
+    FPFW_DBGPRINT_INFO("SOC Position : 0x%x \n", soc_position);
 
     /* Only mirror PCIe configuration if we are on SoC 1 and the mirroring knob is set to true */
     if ((soc_position == 0x01) && (config_get_pcie_configuration_mirroring() == true))
     {
+        FPFW_DBGPRINT_INFO("Mirroring Enabled. \n");
         config_mirroring = true;
     }
 
@@ -150,6 +153,51 @@ static void force_rpss2_resource_allocation_override(pcie_cfg_t* pcie_cfg)
     pcie_cfg->pcie_rp_resources[3].mmioh_size = 0x1000000000;
 }
 
+// In mirror Config RP1 has the DCSM/Display adpater
+// so we need to force allocation for RPSS1 in mirror config
+static void force_rpss1_resource_allocation_override(pcie_cfg_t* pcie_cfg)
+{
+    /*
+     * This will force an override for rpss2 resource allocations to ensure that
+     * the Matrox G200ew3 display port gets enough MMIOL space (> 24 MB).
+     */
+    pcie_cfg->pcie_en_resource_alloc_override = true;
+
+    /* Redistribute resources between rp1 and rp2 */
+    pcie_cfg->pcie_rp_resources[0].bus_start = 0;
+    pcie_cfg->pcie_rp_resources[0].bus_count = 0;
+    pcie_cfg->pcie_rp_resources[0].ecam_start = 0;
+    pcie_cfg->pcie_rp_resources[0].mmiol_start = 0;
+    pcie_cfg->pcie_rp_resources[0].mmiol_size = 0;
+    pcie_cfg->pcie_rp_resources[0].mmioh_start = 0;
+    pcie_cfg->pcie_rp_resources[0].mmioh_size = 0;
+
+    pcie_cfg->pcie_rp_resources[1].bus_start = 0x1F;
+    pcie_cfg->pcie_rp_resources[1].bus_count = 16;
+    pcie_cfg->pcie_rp_resources[1].ecam_start = 0x4001F00000;
+    pcie_cfg->pcie_rp_resources[1].mmiol_start = 0x40000000;
+    pcie_cfg->pcie_rp_resources[1].mmiol_size = 0x02000000;
+    pcie_cfg->pcie_rp_resources[1].mmioh_start = 0x012000000000;
+    pcie_cfg->pcie_rp_resources[1].mmioh_size = 0x1000000000;
+
+    pcie_cfg->pcie_rp_resources[2].bus_start = 0x2F;
+    pcie_cfg->pcie_rp_resources[2].bus_count = 15;
+    pcie_cfg->pcie_rp_resources[2].ecam_start = 0x4002F00000;
+    pcie_cfg->pcie_rp_resources[2].mmiol_start = 0x42000000;
+    pcie_cfg->pcie_rp_resources[2].mmiol_size = 0x02000000;
+    pcie_cfg->pcie_rp_resources[2].mmioh_start = 0x013000000000;
+    pcie_cfg->pcie_rp_resources[2].mmioh_size = 0x1000000000;
+
+    pcie_cfg->pcie_rp_resources[3].bus_start = 0;
+    pcie_cfg->pcie_rp_resources[3].bus_count = 0;
+    pcie_cfg->pcie_rp_resources[3].ecam_start = 0;
+    pcie_cfg->pcie_rp_resources[3].ecam_start = 0;
+    pcie_cfg->pcie_rp_resources[3].mmiol_start = 0;
+    pcie_cfg->pcie_rp_resources[3].mmiol_size = 0;
+    pcie_cfg->pcie_rp_resources[3].mmioh_start = 0;
+    pcie_cfg->pcie_rp_resources[3].mmioh_size = 0;
+}
+
 static void apply_one_to_one_configurations(uint8_t rpss_id,
                                             pcie_cfg_t* pcie_cfg,
                                             pcie_prod_cfg_t* pcie_cfg_knob,
@@ -182,6 +230,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         rp_knobs[1] = config_get_pcie_rpss2_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss2_rp2_cfg();
         rp_knobs[3] = config_get_pcie_rpss2_rp3_cfg();
+        // In mirrored configuration  RPSS2 will be housing the Display Card/DCSCM
         if (config_get_enable_dp_mmiol_reallocation() == true)
         {
             rp_knobs[1].silibs_rp_cfg.pcie_rp_en = false;
@@ -258,9 +307,22 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
      * The pattern followed is as follows:
      * ----- Die 0 Configuration -----
      * RPSS0 <- inherits configuration for -> RPSS3
+     *      RP0   <- maps to -> RP0
      * RPSS1 <- inherits configuration for -> RPSS2
-     * RPSS2 <- inherits configuration for -> RPSS1
+     *      RP0   <- maps to -> RP1
+     *      RP1   <- maps to -> RP0
+     *      RP2   <- maps to -> RP3
+     *      RP3   <- maps to -> RP2
+     * RPSS2 <- inherits configuration for -> RPSS1 [ since all RP in 4x45 are identical with same EP]
+     *      RP0   <- maps to -> RP0
+     *      RP1   <- maps to -> RP1
+     *      RP2   <- maps to -> RP2
+     *      RP3   <- maps to -> RP3
      * RPSS3 <- inherits configuration for -> RPSS0
+     *      RP0   <- maps to -> RP2
+     *      RP1   <- maps to -> RP3
+     *      RP2   <- maps to -> RP0
+     *      RP3   <- maps to -> RP1
      * ----- Die 1 Configuration -----
      * RPSS4 <- inherits configuration for -> RPSS7
      * RPSS5 <- inherits configuration for -> RPSS6
@@ -273,40 +335,41 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
     case RPSS0:
         *pcie_cfg_knob = config_get_pcie_rpss3_cfg();
         *phy_cfg_knob = config_get_pcie_rpss3_phy_cfg();
-        rp_knobs[0] = config_get_pcie_rpss3_rp0_cfg();
-        rp_knobs[1] = config_get_pcie_rpss3_rp1_cfg();
-        rp_knobs[2] = config_get_pcie_rpss3_rp2_cfg();
-        rp_knobs[3] = config_get_pcie_rpss3_rp3_cfg();
+        rp_knobs[0] = config_get_pcie_rpss3_rp0_cfg(); // RP0  maps to RPSS3 RP0
+        rp_knobs[1] = config_get_pcie_rpss3_rp1_cfg(); // RP1  maps to RPSS3 RP1
+        rp_knobs[2] = config_get_pcie_rpss3_rp2_cfg(); // RP2  maps to RPSS3 RP2
+        rp_knobs[3] = config_get_pcie_rpss3_rp3_cfg(); // RP3  maps to RPSS3 RP3
         break;
     case RPSS1:
         *pcie_cfg_knob = config_get_pcie_rpss2_cfg();
         *phy_cfg_knob = config_get_pcie_rpss2_phy_cfg();
-        rp_knobs[0] = config_get_pcie_rpss2_rp0_cfg();
-        rp_knobs[1] = config_get_pcie_rpss2_rp1_cfg();
-        rp_knobs[2] = config_get_pcie_rpss2_rp2_cfg();
-        rp_knobs[3] = config_get_pcie_rpss2_rp3_cfg();
+        rp_knobs[0] = config_get_pcie_rpss2_rp1_cfg(); // RP0  maps to RPSS2 RP1
+        rp_knobs[1] = config_get_pcie_rpss2_rp0_cfg(); // RP1  maps to RPSS2 RP0
+        rp_knobs[2] = config_get_pcie_rpss2_rp3_cfg(); // RP2  maps to RPSS2 RP3
+        rp_knobs[3] = config_get_pcie_rpss2_rp2_cfg(); // RP3  maps to RPSS2 RP2
+        // In mirrored configuration  RPSS1 will be housing the Display Card/DCSCM
+        if (config_get_enable_dp_mmiol_reallocation() == true)
+        {
+            rp_knobs[0].silibs_rp_cfg.pcie_rp_en = false;
+            rp_knobs[3].silibs_rp_cfg.pcie_rp_en = false;
+            force_rpss1_resource_allocation_override(pcie_cfg);
+        }
         break;
     case RPSS2:
         *pcie_cfg_knob = config_get_pcie_rpss1_cfg();
         *phy_cfg_knob = config_get_pcie_rpss1_phy_cfg();
-        rp_knobs[0] = config_get_pcie_rpss1_rp0_cfg();
-        rp_knobs[1] = config_get_pcie_rpss1_rp1_cfg();
-        rp_knobs[2] = config_get_pcie_rpss1_rp2_cfg();
-        rp_knobs[3] = config_get_pcie_rpss1_rp3_cfg();
-        if (config_get_enable_dp_mmiol_reallocation() == true)
-        {
-            rp_knobs[1].silibs_rp_cfg.pcie_rp_en = false;
-            rp_knobs[2].silibs_rp_cfg.pcie_rp_en = false;
-            force_rpss2_resource_allocation_override(pcie_cfg);
-        }
+        rp_knobs[0] = config_get_pcie_rpss1_rp0_cfg(); // RP0  maps to RPSS1 RP0
+        rp_knobs[1] = config_get_pcie_rpss1_rp1_cfg(); // RP1  maps to RPSS1 RP1
+        rp_knobs[2] = config_get_pcie_rpss1_rp2_cfg(); // RP2  maps to RPSS1 RP2
+        rp_knobs[3] = config_get_pcie_rpss1_rp3_cfg(); // RP3  maps to RPSS1 RP3
         break;
     case RPSS3:
         *pcie_cfg_knob = config_get_pcie_rpss0_cfg();
         *phy_cfg_knob = config_get_pcie_rpss0_phy_cfg();
-        rp_knobs[0] = config_get_pcie_rpss0_rp0_cfg();
-        rp_knobs[1] = config_get_pcie_rpss0_rp1_cfg();
-        rp_knobs[2] = config_get_pcie_rpss0_rp2_cfg();
-        rp_knobs[3] = config_get_pcie_rpss0_rp3_cfg();
+        rp_knobs[0] = config_get_pcie_rpss0_rp0_cfg(); // RP0  maps to RPSS0 RP2
+        rp_knobs[1] = config_get_pcie_rpss0_rp1_cfg(); // RP1  maps to RPSS0 RP3
+        rp_knobs[2] = config_get_pcie_rpss0_rp2_cfg(); // RP2  maps to RPSS0 RP0
+        rp_knobs[3] = config_get_pcie_rpss0_rp3_cfg(); // RP3  maps to RPSS0 RP1
         break;
     case RPSS4:
         *pcie_cfg_knob = config_get_pcie_rpss7_cfg();
@@ -446,8 +509,7 @@ void populate_rb_configs_from_rpss_entity(pcie_ss_entity_t* rpss, pcie_root_brid
         rb_configs[i].flags.is_cxl = pcie_cfg->pcie_cxl_support && (i == PCIESS_CXL_RP_IDX);
         rb_configs[i].slot_number = pcie_cfg->rp_cfgs[i].pcie_rp_slot_num;
         rb_configs[i].flags.is_slot = pcie_cfg->rp_cfgs[i].pcie_rp_is_slot;
-        rb_configs[i].flags.is_secondary_soc =
-            (BOARD_ID_GET_SOC_POSITION(system_info_get_board_id()) == 0x01) ? 0b1 : 0b0;
+        rb_configs[i].flags.is_secondary_soc = (system_info_get_soc_position() == 0x01) ? 0b1 : 0b0;
 
         rb_configs[i].mmiol.base = rpss->ranges[i].mmiol_start;
         rb_configs[i].mmiol.limit = rpss->ranges[i].mmiol_end;

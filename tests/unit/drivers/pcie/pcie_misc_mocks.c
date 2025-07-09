@@ -49,3 +49,13 @@ bool __wrap_config_get_pcie_configuration_mirroring()
 {
     return mock_type(bool);
 }
+
+uint8_t __wrap_system_info_get_board_rework_id()
+{
+    return mock_type(uint8_t);
+}
+
+uint8_t __wrap_system_info_get_soc_position()
+{
+    return mock_type(uint8_t);
+}

@@ -48,7 +48,7 @@ static bool rp_is_overlake(uint8_t rpss_idx, uint8_t rp_idx)
     }
 
     /* Check for mirrored config for 2S */
-    uint8_t soc_position = BOARD_ID_GET_SOC_POSITION(system_info_get_board_id());
+    uint8_t soc_position = system_info_get_soc_position();
     if (soc_position == 0x01)
     {
         return (config_get_overlake_rpss_index_secondary_soc() == rpss_idx);

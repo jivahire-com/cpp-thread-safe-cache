@@ -65,6 +65,8 @@ TEST_FUNCTION(test_get_board_id, nullptr, nullptr)
     boot_meta_data.MetadataVersion = 1;
     boot_meta_data.ResetReason = 7;
     boot_meta_data.BoardId = 15;
+    boot_meta_data.BoardIdRework = 10;
+    boot_meta_data.SocPos = 0x1;
 
     expect_any(__wrap_mmio_read32, addr);
     will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
@@ -74,9 +76,18 @@ TEST_FUNCTION(test_get_board_id, nullptr, nullptr)
 
     // Verify expectations
     assert_true(board_id == 15);
-    assert_true(BOARD_ID_GET_REWORK_REV(board_id) == 7);
-    assert_true(BOARD_ID_GET_DESIGN_PHASE(board_id) == 1);
-    assert_true(BOARD_ID_GET_SOC_POSITION(board_id) == 0);
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+    uint8_t board_rework_id = system_info_get_board_rework_id();
+    // verify rework ID
+    assert_true(board_rework_id == 10);
+
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, boot_meta_data.AsUint32);
+    uint8_t soc_pos = system_info_get_soc_position();
+    // verify soc position
+    assert_true(soc_pos == 1);
 }
 
 TEST_FUNCTION(system_info_init_hsp_present, nullptr, nullptr)

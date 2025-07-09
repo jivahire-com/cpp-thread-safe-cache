@@ -32,6 +32,8 @@ static bool is_hsp_present = false;
 static bool is_warm_start = false;
 static bool is_runtime = false;
 static uint8_t board_id = 0xFF;
+static uint8_t soc_position = 0xFF;
+static uint8_t board_rework_id = 0xFF;
 static fpfw_icc_base_ctx_t* icc_ctx = NULL;
 static hsp_security_state_t security_state = HSP_SECURITY_STATE_UNKNOWN;
 static uint8_t reset_reason = HSP_FIRMWARE_RESET_REASON_UNDEFINED;
@@ -72,7 +74,7 @@ uint8_t system_info_get_board_id()
      */
     if (board_id == 0xFF)
     {
-        HSP_BOOT_METADATA boot_meta_data;
+        HSP_BOOT_METADATA boot_meta_data = {0};
         boot_meta_data.AsUint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
         board_id = (uint8_t)(boot_meta_data.BoardId);
     }
@@ -80,6 +82,37 @@ uint8_t system_info_get_board_id()
     return board_id;
 }
 
+uint8_t system_info_get_soc_position()
+{
+    /*
+     * If this is called before system_info_init, read the soc_position from
+     * HSP boot metadata here itself.
+     */
+    if (soc_position == 0xFF)
+    {
+        HSP_BOOT_METADATA boot_meta_data = {0};
+        boot_meta_data.AsUint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
+        soc_position = (uint8_t)(boot_meta_data.SocPos);
+    }
+
+    return soc_position;
+}
+
+uint8_t system_info_get_board_rework_id()
+{
+    /*
+     * If this is called before system_info_init, read the soc_position from
+     * HSP boot metadata here itself.
+     */
+    if (board_rework_id == 0xFF)
+    {
+        HSP_BOOT_METADATA boot_meta_data = {0};
+        boot_meta_data.AsUint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
+        board_rework_id = (uint8_t)(boot_meta_data.BoardIdRework);
+    }
+
+    return board_rework_id;
+}
 bool system_info_is_hsp_present()
 {
     return is_hsp_present;
@@ -104,7 +137,7 @@ void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
 {
     icc_ctx = icc_base_ctx;
 
-    HSP_BOOT_METADATA boot_meta_data;
+    HSP_BOOT_METADATA boot_meta_data = {0};
     boot_meta_data.AsUint32 = MMIO_READ32(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS);
 
     if (boot_meta_data.MetadataVersion == 0x1)
@@ -113,7 +146,7 @@ void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
 
         reset_reason = boot_meta_data.ResetReason;
 
-        switch (boot_meta_data.ResetReason)
+        switch (reset_reason)
         {
         case HSP_FIRMWARE_RESET_REASON_CRASH:
         case HSP_FIRMWARE_RESET_REASON_UPDATE:
@@ -137,7 +170,14 @@ void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
         cli_enable = true;
     }
 
+    // BoardId
     board_id = (uint8_t)(boot_meta_data.BoardId);
+
+    // ReWorkID
+    board_rework_id = (uint8_t)(boot_meta_data.BoardIdRework);
+
+    // SocPos
+    soc_position = (boot_meta_data.SocPos);
 }
 
 KNG_PLAT_ID system_info_get_platform(void)

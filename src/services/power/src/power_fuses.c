@@ -360,13 +360,6 @@ int32_t power_fuses_read_memasst(dvfs_core_memasst_entries_t* memasst_entries)
                                      core_memasst_valid_boundary_offsets[entry_idx],
                                      core_memasst_valid_boundary_widths[entry_idx]);
         memasst_entries->entry[entry_idx].valid_boundary = (uint8_t)fuse_data;
-        // Workaround until fuses file are updated
-        // TODO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2409436
-        if (entry_idx == 0)
-        {
-            memasst_entries->entry[entry_idx].ldo_dac_in = 324;
-            memasst_entries->entry[entry_idx].valid_boundary = 1;
-        }
 
         // check status once, since we OR'd together
         if (status != FPFW_STATUS_SUCCESS)
@@ -436,10 +429,10 @@ int32_t power_fuses_get_ldodac_to_voltage(dvfs_vf_slope_t* slope_offset)
     uint64_t fuse_data = 0;
     int32_t status =
         platform_read_fuse((uint32_t*)&fuse_data, LDO_DAC_TO_VOLTAGE_M_BIT_OFFSET, LDO_DAC_TO_VOLTAGE_M_WIDTH);
+
     // a value of 0 for gradient is invalid
     // workaround
     // TODO: Need to remove the default value assignemnt M value calculation needs to be investigated
-
     if (IS_PLATFORM_SVP() && fuse_data == 0)
     {
         fuse_data = 1;

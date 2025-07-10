@@ -19,11 +19,15 @@
     </Struct>
   </Structs>
   
-  <!-- namespace indicates the GUID namespace the values are stored in -->s
+  <!-- namespace indicates the GUID namespace the values are stored in -->
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <Knob name="gpio_knobs" type="gpio_cfg_t" help="GPIO config knobs"/>
+    
+    <!-- Die 0 Config: Retain Default Config -->
     <Knob name="uart_afm_cfg_die0" type="uart_afm_cfg_t" default="{{0, 0, 0, 0}}" help="UART AFM config knobs for Die 0"/>
-    <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_t" default="{{0, 0, 1, 0}}" help="UART AFM config knobs for Die 1"/>
+    <!-- Die 1 Config: Since UART 2 of Die 1 is routed to SCP, UART 1 of of Die 1 needs to be routed elsewhere, or SCP Die 1 Rx would not work. Hence routed by default to SDM -->
+    <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_t" default="{{0, 1, 1, 0}}" help="UART AFM config knobs for Die 1"/>
+    
     <Knob name="uart_die_cfg" type="uart_die_sel_t" help="Die Config for Shared UARTs (UART1 and UART2 respectively)"/>
   </Knobs>
 

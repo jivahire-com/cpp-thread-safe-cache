@@ -318,7 +318,7 @@ TEST_FUNCTION(test_max_dimm_temp, test_setup, test_teardown)
     will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &dimm_info);
     data_proc_tlm_cmpnt_process_input_data();
 
-    uint16_t max_temp = data_util_mov_avg_get(&computed_metrics_oob.max_dimm_temp_mov_avg_dC);
+    uint16_t max_temp = data_util_mov_avg_u16_get(&computed_metrics_oob.max_dimm_temp_mov_avg_dC);
     assert_int_equal(max_temp, 600);
 }
 

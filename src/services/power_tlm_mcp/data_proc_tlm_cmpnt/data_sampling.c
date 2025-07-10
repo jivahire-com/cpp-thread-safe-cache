@@ -299,9 +299,9 @@ void data_proc_tlm_cmpnt_process_input_data(void)
             // process the VR Current and Voltage, entries are array bound, so always valid
             // updates soc_info.latest_rail_voltage_mV for call below
             data_smpl_parse_vr_current_entry(vr_current);
+            comp_metrics_for_soc_rails(&soc_info.latest_rail_voltage_mV, &soc_info.latest_rail_current_mA);
         }
-        comp_metrics_for_soc_rail_voltage(&soc_info.latest_rail_voltage_mV);
-        comp_metrics_for_soc_rail_current(&soc_info.latest_rail_current_mA);
+
     } while (status.more_entries == true);
 
     do

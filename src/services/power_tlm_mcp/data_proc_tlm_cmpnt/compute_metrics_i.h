@@ -108,9 +108,11 @@ typedef struct
 typedef struct
 {
     uint16_t max_soc_temp_samples_dC[MOVING_AVG_NUM_SAMPLES];
-    moving_avg_t max_soc_temp_mov_avg_dC;
+    moving_avg_u16_t max_soc_temp_mov_avg_dC;
+    uint32_t soc_total_pwr_samples_mW[MOVING_AVG_NUM_SAMPLES];
+    moving_avg_u32_t soc_total_pwr_mov_avg_mW;
     uint16_t max_dimm_temp_samples_dC[MOVING_AVG_NUM_SAMPLES];
-    moving_avg_t max_dimm_temp_mov_avg_dC;
+    moving_avg_u16_t max_dimm_temp_mov_avg_dC;
 } computed_metrics_oob_t;
 
 
@@ -233,22 +235,15 @@ void comp_metrics_for_single_tile_vcpu(uint8_t tile_id, uint32_t time_diff_uS, u
 void comp_metrics_for_single_tile_vsys(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS);
 
 /**
- * @brief function updates the minimum, maximum, and average voltage values for
- * a specified SOC VR (Voltage Regulator) rail based on the provided time difference and residency time
+ * @brief  for each rail, updates the minimum, maximum, and average current values
+ * updates the minimum, maximum, and average voltage values
+ * updates the total power of all of the rails
  *
- * @param[in] vr_index The identifier of the VR rail for which the voltage values are being updated.
  * @param[in] latest_voltage_mV  Array of latest vr rail voltages
- */
-void comp_metrics_for_soc_rail_voltage(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS]);
-
-/**
- * @brief  function updates the minimum, maximum, and average current values for
- * a specified SOC VR (Voltage Regulator) rail based on the provided time difference and residency time
- *
- * @param[in] vr_index
  * @param[in] latest_current_mA Array of latest vr rail currents
  */
-void comp_metrics_for_soc_rail_current(uint16_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS]);
+void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS],
+                                uint16_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS]);
 
 /**
  * @brief  function updates the minimum, maximum, and average temperature values for

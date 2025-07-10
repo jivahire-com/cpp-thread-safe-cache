@@ -181,9 +181,11 @@ TEST_FUNCTION(test_comp_metrics_for_single_tile_vsys, test_setup, test_teardown)
     assert_int_equal(tile[tile_id].vsys.average_mV, 1175); // (1250 + 1100) / 2
 }
 
-TEST_FUNCTION(test_comp_metrics_for_soc_rail_voltage, test_setup, test_teardown)
+TEST_FUNCTION(test_comp_metrics_for_soc_rails, test_setup, test_teardown)
 {
-    uint8_t vr_index = 2;
+    die_2_die_exch_init(0);
+
+    uint8_t vr_index = 7;
 
     computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.min = 1000;
     computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.max = 2000;
@@ -191,19 +193,6 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rail_voltage, test_setup, test_teardown)
     computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.num_samples = 3;
 
     soc_info.latest_rail_voltage_mV[vr_index] = 3000;
-    // Call the function to be tested
-    comp_metrics_for_soc_rail_voltage(&soc_info.latest_rail_voltage_mV);
-
-    // Add assertions to verify the expected behavior
-    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.min, 1000);
-    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.max, 3000);
-    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.average, 1875);
-    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.num_samples, 4);
-}
-
-TEST_FUNCTION(test_comp_metrics_for_soc_rail_current, test_setup, test_teardown)
-{
-    uint8_t vr_index = 2;
 
     computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.min = 500;
     computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.max = 1000;
@@ -211,14 +200,80 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rail_current, test_setup, test_teardown)
     computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.num_samples = 3;
 
     soc_info.latest_rail_current_mA[vr_index] = 2000;
+
     // Call the function to be tested
-    comp_metrics_for_soc_rail_current(&soc_info.latest_rail_current_mA);
+    comp_metrics_for_soc_rails(&soc_info.latest_rail_voltage_mV, &soc_info.latest_rail_current_mA);
 
     // Add assertions to verify the expected behavior
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.min, 1000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.max, 3000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.average, 1875);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.num_samples, 4);
+
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.min, 500);
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.max, 2000);
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.average, 1063);
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.num_samples, 4);
+
+    die_2_die_exch_init(1);
+
+    vr_index = 1;
+
+    computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.min = 1000;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.max = 2000;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.average = 1500;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.num_samples = 3;
+
+    soc_info.latest_rail_voltage_mV[vr_index] = 3000;
+
+    computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.min = 500;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.max = 1000;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.average = 750;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.num_samples = 3;
+
+    soc_info.latest_rail_current_mA[vr_index] = 2000;
+
+    // Call the function to be tested
+    comp_metrics_for_soc_rails(&soc_info.latest_rail_voltage_mV, &soc_info.latest_rail_current_mA);
+
+    // Add assertions to verify the expected behavior
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.min, 1000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.max, 3000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.average, 1875);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV.running_avg.num_samples, 4);
+
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.min, 500);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.max, 2000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.average, 1063);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA.running_avg.num_samples, 4);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_soc_rails_power, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+    comp_metrics_init();
+
+    computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum = 0;
+    computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count = 0;
+
+    // Arrange
+    uint16_t voltage[MAX_NUM_OF_VR_RAILS];
+    uint16_t current[MAX_NUM_OF_VR_RAILS];
+    uint32_t expected_total_power = 0;
+
+    for (uint16_t i = 0; i < NUM_DIE1_VR_RAILS; i++)
+    {
+        voltage[i] = 1000 + i * 10; // 1000mV, 1010mV, ...
+        current[i] = 100 + i * 5;   // 100mA, 105mA, ...
+        expected_total_power += (voltage[i] * current[i]) / 1000;
+    }
+
+    // Act
+    comp_metrics_for_soc_rails(&voltage, &current);
+
+    // Assert
+    assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum, expected_total_power);
+    assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count, 1);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_soc_rail_TEMP, test_setup, test_teardown)

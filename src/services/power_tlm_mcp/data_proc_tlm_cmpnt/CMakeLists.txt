@@ -27,7 +27,9 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         fwlib.lib.status
         fwlib.lib.utils
+        ms::cmsis::interface
         ms::lib::error_codes
+        ms::lib::arm_intrinsic
         ms::lib::power_fuse
         ms::lib::gtimer
         ms::lib::pwr_tlm_core_ex

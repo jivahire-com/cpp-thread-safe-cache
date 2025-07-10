@@ -59,6 +59,14 @@ void out_of_band_tlm_cmpnt_init(uint8_t die_id)
     FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
 
     //-------------------------------------------------------------------------------------------
+    config.sensor_id = PLDM_SENSOR_ID_POWER_TLM_SOC_PWR_NUM_SENS;
+    config.notifications.context = pwr_tlm_oob_get_soc_pwr;
+    status = fpfw_pldm_service_register_numeric_sensor(
+        &pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_PWR_NUM_SENS)],
+        &config);
+    FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
+
+    //-------------------------------------------------------------------------------------------
     config.sensor_id = PLDM_SENSOR_ID_POWER_TLM_DIMM_TEMP_MAX_NUM_SENS;
     config.notifications.context = pwr_tlm_oob_get_max_dimm_temp;
     status = fpfw_pldm_service_register_numeric_sensor(
@@ -132,6 +140,18 @@ void pwr_tlm_oob_get_max_soc_temp(uint16_t sensor_id, fpfw_pldm_composite_value_
     else
     {
         FPFW_ET_LOG(UnexpectedSensorId, PLDM_SENSOR_ID_POWER_TLM_SOC_TEMP_MAX_NUM_SENS, sensor_id);
+    }
+}
+
+void pwr_tlm_oob_get_soc_pwr(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value)
+{
+    if (sensor_id == PLDM_SENSOR_ID_POWER_TLM_SOC_PWR_NUM_SENS)
+    {
+        sensor_value->numeric.u32 = data_proc_tlm_cmpnt_get_oob_soc_pwr_mW();
+    }
+    else
+    {
+        FPFW_ET_LOG(UnexpectedSensorId, PLDM_SENSOR_ID_POWER_TLM_SOC_PWR_NUM_SENS, sensor_id);
     }
 }
 

@@ -40,6 +40,23 @@ uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC(void)
     return mean;
 }
 
+uint32_t data_proc_tlm_cmpnt_get_oob_soc_pwr_mW(void)
+{
+    // die1 has two power rails,  could be zero if running on single die
+    sliding_window_data_t die1_sliding_window_data = {0};
+    die_2_die_exch_oob_read_window_soc_pwr(1, &die1_sliding_window_data);
+
+    uint32_t die1_pwr_mw = 0;
+    if (die1_sliding_window_data.num_samples > 0)
+    {
+        die1_pwr_mw = die1_sliding_window_data.sum / die1_sliding_window_data.num_samples;
+    }
+
+    uint32_t total_pwr_mW = data_util_mov_avg_u32_get(&computed_metrics_oob.soc_total_pwr_mov_avg_mW) + die1_pwr_mw;
+
+    return total_pwr_mW;
+}
+
 uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC(void)
 {
     sliding_window_data_t die1_sliding_window_data = {0};

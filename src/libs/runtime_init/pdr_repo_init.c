@@ -110,6 +110,68 @@ static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =          
     .sensor_name = UTF16_STRINGIFY(NAME)                                                                \
 };                                                                                                      \
 
+#define DEFINE_POWER_TLM_POWER_SENSOR(NAME)                                                             \
+static fpfw_pldm_pdr_numeric_sensor_UINT32_UINT32_t s_##NAME##_pdr    =                                 \
+{                                                                                                       \
+    .hdr.record_handle = 0,                                                                             \
+    .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,                                          \
+    .hdr.type = PLDM_NUMERIC_SENSOR_PDR,                                                                \
+    .hdr.length = sizeof(fpfw_pldm_pdr_numeric_sensor_UINT32_UINT32_t) - sizeof(fpfw_pmc_pdr_header_t), \
+    .hdr.record_change_num = 0,                                                                         \
+    .terminus_handle = 0,                                                                               \
+    .sensor_id = PLDM_SENSOR_ID_POWER_TLM_##NAME##_NUM_SENS,                                            \
+    .entity_type = PLDM_ENTITY_SYS_FIRMWARE,                                                            \
+    .entity_instance      = 0,                                                                          \
+    .container_id         = 0,                                                                          \
+    .sensor_init          = PLDM_NO_INIT,                                                               \
+    .auxiliar_init_pdr    = false,                                                                      \
+    .base_unit            = PLDM_BASE_UNIT_WATTS,                                                       \
+    .unit_modifier        = -3,                                                                         \
+    .rate_unit            = 0,                                                                          \
+    .base_oem_unit_handle = 0,                                                                          \
+    .aux_unit             = 0,                                                                          \
+    .aux_unit_modifier    = 0,                                                                          \
+    .aux_rate_unit        = 0,                                                                          \
+    .rel                  = 0,                                                                          \
+    .aux_oem_unit_handle  = 0,                                                                          \
+    .is_linear            = true,                                                                       \
+    .sensor_data_size     = PLDM_SENSOR_DATA_SIZE_UINT32,                                               \
+    .resolution = 1,                                                                                    \
+    .offset = 0,                                                                                        \
+    .accuracy = 0,                                                                                      \
+    .plus_tolerance = 0,                                                                                \
+    .minus_tolerance = 0,                                                                               \
+    .hysteresis                           = 0,                                                          \
+    .supported_thresholds                 = 0,                                                          \
+    .thresholds_and_hysteresis_volatility = 0x1F,                                                       \
+    .state_transition_interval            = 1,                                                          \
+    .update_interval                      = 0.25,                                                       \
+    .max_readable                         = 4294967295U,                                                \
+    .min_readable                         = 0,                                                          \
+    .range_field_format                   = PLDM_SENSOR_DATA_SIZE_UINT32,                               \
+    .range_field_support                  = 0,                                                          \
+    .nominal_value                        = 0,                                                          \
+    .normal_min                           = 0,                                                          \
+    .normal_max                           = 0,                                                          \
+    .warning_high                         = 0,                                                          \
+    .warning_low                          = 0,                                                          \
+    .critical_low                         = 0,                                                          \
+    .critical_high                        = 0,                                                          \
+    .fatal_low                            = 0,                                                          \
+    .fatal_high                           = 0,                                                          \
+};                                                                                                      \
+static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =                                  \
+{                                                                                                       \
+    .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,                                          \
+    .hdr.type = PLDM_SENSOR_AUXILIARY_NAMES_PDR,                                                        \
+    .hdr.length = sizeof(fpfw_pldm_pdr_sensor_auxiliary_name_t) - sizeof(fpfw_pmc_pdr_header_t),        \
+    .hdr.record_change_num = 0,                                                                         \
+    .sensor_id = PLDM_SENSOR_ID_POWER_TLM_##NAME##_NUM_SENS,                                            \
+    .sensor_count = 1,                                                                                  \
+    .name_string_count = 0x01,                                                                          \
+    .name_language_tag = "en",                                                                          \
+    .sensor_name = UTF16_STRINGIFY(NAME)                                                                \
+};                                                                                                      \
 
 /*------------- Typedefs -----------------*/
 
@@ -123,6 +185,7 @@ static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =          
 FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
 {
     DEFINE_POWER_TLM_TEMPERATURE_SENSOR(SOC_TEMP_MAX);
+    DEFINE_POWER_TLM_POWER_SENSOR(SOC_PWR);
     DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_TEMP_MAX);
 
     static fpfw_pldm_pdr_sensor_auxiliary_name_t s_dummy0_name = {
@@ -508,6 +571,8 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
     static void* pdr_list[] = {
         &s_SOC_TEMP_MAX_pdr,
         &s_SOC_TEMP_MAX_pdr_aux_name,
+        &s_SOC_PWR_pdr,
+        &s_SOC_PWR_pdr_aux_name,
         &s_DIMM_TEMP_MAX_pdr,
         &s_DIMM_TEMP_MAX_pdr_aux_name,
         &s_dummy0_name,

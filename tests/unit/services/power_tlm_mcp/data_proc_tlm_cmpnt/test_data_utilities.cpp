@@ -208,12 +208,12 @@ TEST_FUNCTION(test_data_util_calc_mma_u16, test_setup, test_teardown)
     data_util_calc_mma_u16(nullptr, 150);
 }
 
-TEST_FUNCTION(test_data_util_mov_avg_init, test_setup, test_teardown)
+TEST_FUNCTION(test_data_util_mov_avg_u16_init, test_setup, test_teardown)
 {
-    moving_avg_t ma;
+    moving_avg_u16_t ma;
     uint16_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
 
-    data_util_mov_avg_init(&ma, samples, 5);
+    data_util_mov_avg_u16_init(&ma, samples, 5);
     assert_int_equal(ma.sample_capacity, 5);
     assert_int_equal(ma.sample_index, 0);
     assert_int_equal(ma.sample_count, 0);
@@ -221,107 +221,229 @@ TEST_FUNCTION(test_data_util_mov_avg_init, test_setup, test_teardown)
     assert_ptr_equal(ma.samples, samples);
 
     // Test with invalid parameters
-    data_util_mov_avg_init(nullptr, samples, 5);
-    data_util_mov_avg_init(&ma, nullptr, 5);
-    data_util_mov_avg_init(&ma, samples, 0);
+    data_util_mov_avg_u16_init(nullptr, samples, 5);
+    data_util_mov_avg_u16_init(&ma, nullptr, 5);
+    data_util_mov_avg_u16_init(&ma, samples, 0);
 }
 
-TEST_FUNCTION(test_data_util_mov_avg_add_sample, test_setup, test_teardown)
+TEST_FUNCTION(test_data_util_mov_avg_u16_add_sample, test_setup, test_teardown)
 {
-    moving_avg_t ma;
+    moving_avg_u16_t ma;
     uint16_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
-    data_util_mov_avg_init(&ma, samples, 5);
+    data_util_mov_avg_u16_init(&ma, samples, 5);
 
     // Add a sample and check the state
-    data_util_mov_avg_add_sample(&ma, 100);
+    data_util_mov_avg_u16_add_sample(&ma, 100);
     assert_int_equal(ma.sample_count, 1);
     assert_int_equal(ma.total_sum, 100);
     assert_int_equal(ma.samples[0], 100);
-    assert_int_equal(data_util_mov_avg_get(&ma), 100);
+    assert_int_equal(data_util_mov_avg_u16_get(&ma), 100);
 
     // Add another sample
-    data_util_mov_avg_add_sample(&ma, 200);
+    data_util_mov_avg_u16_add_sample(&ma, 200);
     assert_int_equal(ma.sample_count, 2);
     assert_int_equal(ma.total_sum, 300);
     assert_int_equal(ma.samples[1], 200);
-    assert_int_equal(data_util_mov_avg_get(&ma), 150); // Average of 100 and 200
+    assert_int_equal(data_util_mov_avg_u16_get(&ma), 150); // Average of 100 and 200
 
     // Add more samples to fill the buffer
-    data_util_mov_avg_add_sample(&ma, 300);
-    data_util_mov_avg_add_sample(&ma, 400);
-    data_util_mov_avg_add_sample(&ma, 500);
+    data_util_mov_avg_u16_add_sample(&ma, 300);
+    data_util_mov_avg_u16_add_sample(&ma, 400);
+    data_util_mov_avg_u16_add_sample(&ma, 500);
     assert_int_equal(ma.sample_count, 5); // Should not exceed capacity
     assert_int_equal(ma.total_sum, 1500);
     assert_int_equal(ma.samples[2], 300);
-    assert_int_equal(data_util_mov_avg_get(&ma), 300); // Average of 100, 200, 300, 400, 500
+    assert_int_equal(data_util_mov_avg_u16_get(&ma), 300); // Average of 100, 200, 300, 400, 500
 
     // Check circular behavior
-    data_util_mov_avg_add_sample(&ma, 600);
-    assert_int_equal(ma.sample_index, 1);              // Should overwrite the first sample
-    assert_int_equal(ma.total_sum, 2000);              // New total sum after overwrite
-    assert_int_equal(data_util_mov_avg_get(&ma), 400); // Average of 200, 300, 400, 500, 600
+    data_util_mov_avg_u16_add_sample(&ma, 600);
+    assert_int_equal(ma.sample_index, 1);                  // Should overwrite the first sample
+    assert_int_equal(ma.total_sum, 2000);                  // New total sum after overwrite
+    assert_int_equal(data_util_mov_avg_u16_get(&ma), 400); // Average of 200, 300, 400, 500, 600
 }
 
-TEST_FUNCTION(test_data_util_mov_avg_add_sample_corner, test_setup, test_teardown)
+TEST_FUNCTION(test_data_util_mov_avg_u16_add_sample_corner, test_setup, test_teardown)
 {
-    moving_avg_t ma;
+    moving_avg_u16_t ma;
     uint16_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
-    data_util_mov_avg_init(&ma, samples, 5);
+    data_util_mov_avg_u16_init(&ma, samples, 5);
 
     // Add sample with NULL pointer
-    data_util_mov_avg_add_sample(nullptr, 100);
+    data_util_mov_avg_u16_add_sample(nullptr, 100);
 
     // Add sample with zero value
-    data_util_mov_avg_add_sample(&ma, 0);
+    data_util_mov_avg_u16_add_sample(&ma, 0);
     assert_int_equal(ma.sample_count, 1);
     assert_int_equal(ma.total_sum, 0);
     assert_int_equal(ma.samples[0], 0);
 
     ma.total_sum = UINT32_MAX - 10;
-    data_util_mov_avg_add_sample(&ma, 20);
+    data_util_mov_avg_u16_add_sample(&ma, 20);
     assert_int_equal(ma.total_sum, UINT32_MAX);
 }
 
-TEST_FUNCTION(test_data_util_mov_avg_get_fail, test_setup, test_teardown)
+TEST_FUNCTION(test_data_util_mov_avg_u16_get_fail, test_setup, test_teardown)
 {
-    moving_avg_t ma;
+    moving_avg_u16_t ma;
     uint16_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
-    data_util_mov_avg_init(&ma, samples, 5);
+    data_util_mov_avg_u16_init(&ma, samples, 5);
 
     // Test with NULL pointer
-    assert_int_equal(data_util_mov_avg_get(nullptr), 0);
+    assert_int_equal(data_util_mov_avg_u16_get(nullptr), 0);
 
     // Test with no samples added
-    assert_int_equal(data_util_mov_avg_get(&ma), 0);
+    assert_int_equal(data_util_mov_avg_u16_get(&ma), 0);
 }
 
-// add unit tests for data_util_mov_avg_clear
-TEST_FUNCTION(test_data_util_mov_avg_clear, test_setup, test_teardown)
+// add unit tests for data_util_mov_avg_u16_clear
+TEST_FUNCTION(test_data_util_mov_avg_u16_clear, test_setup, test_teardown)
 {
-    moving_avg_t ma;
+    moving_avg_u16_t ma;
     uint16_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
-    data_util_mov_avg_init(&ma, samples, 5);
+    data_util_mov_avg_u16_init(&ma, samples, 5);
 
     // Add some samples
-    data_util_mov_avg_add_sample(&ma, 100);
-    data_util_mov_avg_add_sample(&ma, 200);
+    data_util_mov_avg_u16_add_sample(&ma, 100);
+    data_util_mov_avg_u16_add_sample(&ma, 200);
     assert_int_equal(ma.sample_count, 2);
     assert_int_equal(ma.total_sum, 300);
 
     // Clear the moving average
-    data_util_mov_avg_clear(&ma);
+    data_util_mov_avg_u16_clear(&ma);
     assert_int_equal(ma.sample_count, 0);
     assert_int_equal(ma.total_sum, 0);
     assert_int_equal(ma.sample_index, 0);
 }
 
-// add unit tests for data_util_mov_avg_clear corner cases
-TEST_FUNCTION(test_data_util_mov_avg_clear_corner, test_setup, test_teardown)
+// add unit tests for data_util_mov_avg_u16_clear corner cases
+TEST_FUNCTION(test_data_util_mov_avg_u16_clear_corner, test_setup, test_teardown)
 {
-    moving_avg_t ma;
+    moving_avg_u16_t ma;
     uint16_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
-    data_util_mov_avg_init(&ma, samples, 5);
+    data_util_mov_avg_u16_init(&ma, samples, 5);
 
     // Clear with NULL pointer
-    data_util_mov_avg_clear(nullptr);
+    data_util_mov_avg_u16_clear(nullptr);
+}
+
+TEST_FUNCTION(test_data_util_mov_avg_u32_init, test_setup, test_teardown)
+{
+    moving_avg_u32_t ma;
+    uint32_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+
+    data_util_mov_avg_u32_init(&ma, samples, 5);
+    assert_int_equal(ma.sample_capacity, 5);
+    assert_int_equal(ma.sample_index, 0);
+    assert_int_equal(ma.sample_count, 0);
+    assert_int_equal(ma.total_sum, 0);
+    assert_ptr_equal(ma.samples, samples);
+
+    // Test with invalid parameters
+    data_util_mov_avg_u32_init(nullptr, samples, 5);
+    data_util_mov_avg_u32_init(&ma, nullptr, 5);
+    data_util_mov_avg_u32_init(&ma, samples, 0);
+}
+
+TEST_FUNCTION(test_data_util_mov_avg_u32_add_sample, test_setup, test_teardown)
+{
+    moving_avg_u32_t ma;
+    uint32_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+    data_util_mov_avg_u32_init(&ma, samples, 5);
+
+    // Add a sample and check the state
+    data_util_mov_avg_u32_add_sample(&ma, 100);
+    assert_int_equal(ma.sample_count, 1);
+    assert_int_equal(ma.total_sum, 100);
+    assert_int_equal(ma.samples[0], 100);
+    assert_int_equal(data_util_mov_avg_u32_get(&ma), 100);
+
+    // Add another sample
+    data_util_mov_avg_u32_add_sample(&ma, 200);
+    assert_int_equal(ma.sample_count, 2);
+    assert_int_equal(ma.total_sum, 300);
+    assert_int_equal(ma.samples[1], 200);
+    assert_int_equal(data_util_mov_avg_u32_get(&ma), 150); // Average of 100 and 200
+
+    // Add more samples to fill the buffer
+    data_util_mov_avg_u32_add_sample(&ma, 300);
+    data_util_mov_avg_u32_add_sample(&ma, 400);
+    data_util_mov_avg_u32_add_sample(&ma, 500);
+    assert_int_equal(ma.sample_count, 5); // Should not exceed capacity
+    assert_int_equal(ma.total_sum, 1500);
+    assert_int_equal(ma.samples[2], 300);
+    assert_int_equal(data_util_mov_avg_u32_get(&ma), 300); // Average of 100, 200, 300, 400, 500
+
+    // Check circular behavior
+    data_util_mov_avg_u32_add_sample(&ma, 600);
+    assert_int_equal(ma.sample_index, 1);                  // Should overwrite the first sample
+    assert_int_equal(ma.total_sum, 2000);                  // New total sum after overwrite
+    assert_int_equal(data_util_mov_avg_u32_get(&ma), 400); // Average of 200, 300, 400, 500, 600
+}
+
+TEST_FUNCTION(test_data_util_mov_avg_u32_add_sample_corner, test_setup, test_teardown)
+{
+    moving_avg_u32_t ma;
+    uint32_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+    data_util_mov_avg_u32_init(&ma, samples, 5);
+
+    // Add sample with NULL pointer
+    data_util_mov_avg_u32_add_sample(nullptr, 100);
+
+    // Add sample with zero value
+    data_util_mov_avg_u32_add_sample(&ma, 0);
+    assert_int_equal(ma.sample_count, 1);
+    assert_int_equal(ma.total_sum, 0);
+    assert_int_equal(ma.samples[0], 0);
+
+    ma.total_sum = UINT32_MAX - 10;
+    data_util_mov_avg_u32_add_sample(&ma, 20);
+    assert_int_equal(ma.total_sum, UINT32_MAX);
+
+    ma.total_sum = UINT32_MAX;
+    data_util_mov_avg_u32_add_sample(&ma, 20);
+    assert_int_equal(ma.total_sum, UINT32_MAX);
+}
+
+TEST_FUNCTION(test_data_util_mov_avg_u32_get_fail, test_setup, test_teardown)
+{
+    moving_avg_u32_t ma;
+    uint32_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+    data_util_mov_avg_u32_init(&ma, samples, 5);
+
+    // Test with NULL pointer
+    assert_int_equal(data_util_mov_avg_u32_get(nullptr), 0);
+
+    // Test with no samples added
+    assert_int_equal(data_util_mov_avg_u32_get(&ma), 0);
+}
+
+// add unit tests for data_util_mov_avg_u32_clear
+TEST_FUNCTION(test_data_util_mov_avg_u32_clear, test_setup, test_teardown)
+{
+    moving_avg_u32_t ma;
+    uint32_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+    data_util_mov_avg_u32_init(&ma, samples, 5);
+
+    // Add some samples
+    data_util_mov_avg_u32_add_sample(&ma, 100);
+    data_util_mov_avg_u32_add_sample(&ma, 200);
+    assert_int_equal(ma.sample_count, 2);
+    assert_int_equal(ma.total_sum, 300);
+
+    // Clear the moving average
+    data_util_mov_avg_u32_clear(&ma);
+    assert_int_equal(ma.sample_count, 0);
+    assert_int_equal(ma.total_sum, 0);
+    assert_int_equal(ma.sample_index, 0);
+}
+
+// add unit tests for data_util_mov_avg_u32_clear corner cases
+TEST_FUNCTION(test_data_util_mov_avg_u32_clear_corner, test_setup, test_teardown)
+{
+    moving_avg_u32_t ma;
+    uint32_t samples[5] = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+    data_util_mov_avg_u32_init(&ma, samples, 5);
+
+    // Clear with NULL pointer
+    data_util_mov_avg_u32_clear(nullptr);
 }

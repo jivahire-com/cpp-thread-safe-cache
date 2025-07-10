@@ -36,7 +36,15 @@ typedef struct {
     uint16_t   sample_index;    // Current circular write index
     uint16_t   sample_count;    // Current number of valid samples (<= sample_capacity)
     uint32_t  total_sum;       // Running sum of all values
-} moving_avg_t;
+} moving_avg_u16_t;
+
+typedef struct {
+    uint32_t* samples;          // Pointer to circular sample array
+    uint16_t   sample_capacity; // Total capacity of the sample array
+    uint16_t   sample_index;    // Current circular write index
+    uint16_t   sample_count;    // Current number of valid samples (<= sample_capacity)
+    uint32_t  total_sum;        // Running sum of all values
+} moving_avg_u32_t;
 
 
 /*-- Declarations (Statics and globals) --*/
@@ -152,43 +160,97 @@ uint16_t data_util_mean_of_summations(uint32_t summation1, uint16_t count1, uint
  *   the total sum saturates to UINT32_MAX.
  * - Invalid parameters (NULL pointers or zero capacity) are safely rejected by initialization.
  * - After initialization, all public functions are safe to call with NULL; they will return 0 or no-op.
- * - The `data_util_mov_avg_clear()` function clears sample history while preserving configuration.
+ * - The `data_util_mov_avg_u16_clear()` function clears sample history while preserving configuration.
  */
 
  /**
  * Initialize moving average structure.
  *
- * @param[in/out] ma Pointer to moving_avg_t object.
+ * @param[in/out] ma Pointer to moving_avg_u16_t object.
  * @param[in/out] samples Pointer to user-provided sample array (uint16_t array).
  * @param[in] sample_capacity Capacity of the sample array ie, number of uint16_t samples it can hold.
  * @return None
  */
-void data_util_mov_avg_init(moving_avg_t* ma, uint16_t* samples, uint16_t sample_capacity);
+void data_util_mov_avg_u16_init(moving_avg_u16_t* ma, uint16_t* samples, uint16_t sample_capacity);
 
 /**
  * Add one sample to the moving average.
  *
- * @param ma Pointer to moving_avg_t object.
+ * @param ma Pointer to moving_avg_u16_t object.
  * @param value The new sample to add.
  * @return None
  */
-void data_util_mov_avg_add_sample(moving_avg_t* ma, uint16_t value);
+void data_util_mov_avg_u16_add_sample(moving_avg_u16_t* ma, uint16_t value);
 
 /**
  * Retrieve the current moving average.
  *
- * @param ma Pointer to moving_avg_t object.
+ * @param ma Pointer to moving_avg_u16_t object.
  * @return Current average, or 0 if no samples or NULL input.
  * @return None
  */
-uint16_t data_util_mov_avg_get(const moving_avg_t* ma);
+uint16_t data_util_mov_avg_u16_get(const moving_avg_u16_t* ma);
 
 /**
  * Clear accumulated samples and reset running sum.
  *
  * Keeps configuration and sample buffer intact.
  *
- * @param ma Pointer to moving_avg_t object.
+ * @param ma Pointer to moving_avg_u16_t object.
  * @return None
  */
-void data_util_mov_avg_clear(moving_avg_t* ma);
+void data_util_mov_avg_u16_clear(moving_avg_u16_t* ma);
+
+/**
+ * Moving Average handler
+ *
+ * Implements an efficient circular-buffer based simple moving average for
+ * streaming uint32_t data.
+ *
+ * - The caller provides external storage for the sample buffer.
+ * - Each new sample replaces the oldest sample when the buffer is full.
+ * - The total sum is maintained incrementally to allow O(1) insertion and O(1) average calculation.
+ * - Overflow protection is applied on the running sum; if an overflow occurs during summation,
+ *   the total sum saturates to UINT32_MAX.
+ * - Invalid parameters (NULL pointers or zero capacity) are safely rejected by initialization.
+ * - After initialization, all public functions are safe to call with NULL; they will return 0 or no-op.
+ * - The `data_util_mov_avg_u32_clear()` function clears sample history while preserving configuration.
+ */
+
+/**
+ * Initialize moving average structure.
+ *
+ * @param[in/out] ma Pointer to moving_avg_u32_t object.
+ * @param[in/out] samples Pointer to user-provided sample array (uint32_t array).
+ * @param[in] sample_capacity Capacity of the sample array ie, number of uint16_t samples it can hold.
+ * @return None
+ */
+void data_util_mov_avg_u32_init(moving_avg_u32_t* ma, uint32_t* samples, uint16_t sample_capacity);
+
+/**
+ * Add one sample to the moving average.
+ *
+ * @param ma Pointer to moving_avg_u32_t object.
+ * @param value The new sample to add.
+ * @return None
+ */
+void data_util_mov_avg_u32_add_sample(moving_avg_u32_t* ma, uint32_t value);
+
+/**
+ * Retrieve the current moving average.
+ *
+ * @param ma Pointer to moving_avg_u32_t object.
+ * @return Current average, or 0 if no samples or NULL input.
+ * @return None
+ */
+uint32_t data_util_mov_avg_u32_get(const moving_avg_u32_t* ma);
+
+/**
+ * Clear accumulated samples and reset running sum.
+ *
+ * Keeps configuration and sample buffer intact.
+ *
+ * @param ma Pointer to moving_avg_u32_t object.
+ * @return None
+ */
+void data_util_mov_avg_u32_clear(moving_avg_u32_t* ma);

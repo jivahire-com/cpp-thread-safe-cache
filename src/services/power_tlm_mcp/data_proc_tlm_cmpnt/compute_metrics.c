@@ -21,6 +21,7 @@
 #include <string.h>  // for memset
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define MICROWATTS_PER_MILLIWATT (1000)
 
 /*------------- Typedefs -----------------*/
 
@@ -46,13 +47,17 @@ void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
 
 void comp_metrics_init(void)
 {
-    data_util_mov_avg_init(&computed_metrics_oob.max_soc_temp_mov_avg_dC,
-                           computed_metrics_oob.max_soc_temp_samples_dC,
-                           MOVING_AVG_NUM_SAMPLES);
+    data_util_mov_avg_u16_init(&computed_metrics_oob.max_soc_temp_mov_avg_dC,
+                               computed_metrics_oob.max_soc_temp_samples_dC,
+                               MOVING_AVG_NUM_SAMPLES);
 
-    data_util_mov_avg_init(&computed_metrics_oob.max_dimm_temp_mov_avg_dC,
-                           computed_metrics_oob.max_dimm_temp_samples_dC,
-                           MOVING_AVG_NUM_SAMPLES);
+    data_util_mov_avg_u32_init(&computed_metrics_oob.soc_total_pwr_mov_avg_mW,
+                               computed_metrics_oob.soc_total_pwr_samples_mW,
+                               MOVING_AVG_NUM_SAMPLES);
+
+    data_util_mov_avg_u16_init(&computed_metrics_oob.max_dimm_temp_mov_avg_dC,
+                               computed_metrics_oob.max_dimm_temp_samples_dC,
+                               MOVING_AVG_NUM_SAMPLES);
 }
 
 void comp_metrics_for_sample_period(void)
@@ -125,24 +130,42 @@ void comp_metrics_for_single_tile_vsys(uint8_t tile_id, uint32_t time_diff_uS, u
                            residency_uS);
 }
 
-/* SOC VR rails update */
-void comp_metrics_for_soc_rail_voltage(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS])
+void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS],
+                                uint16_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS])
 {
-    for (uint16_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
+    uint16_t num_rails = NUM_DIE0_VR_RAILS;
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        num_rails = NUM_DIE1_VR_RAILS;
+    }
+
+    uint32_t total_power_mW = 0;
+
+    for (uint16_t vr_index = 0; vr_index < num_rails; vr_index++)
     {
         // Update the rail voltage
         data_util_calc_mma_u16(&computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV,
                                (*latest_rail_voltage_mV)[vr_index]);
-    }
-}
 
-void comp_metrics_for_soc_rail_current(uint16_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS])
-{
-    for (uint16_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
-    {
         // Update the rail current
         data_util_calc_mma_u16(&computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA,
                                (*latest_rail_current_mA)[vr_index]);
+
+        // Calculate the power for each rail
+        uint32_t rail_power_mW =
+            ((*latest_rail_voltage_mV)[vr_index] * (*latest_rail_current_mA)[vr_index]) / MICROWATTS_PER_MILLIWATT;
+
+        // Accumulate the total power
+        total_power_mW += rail_power_mW;
+    }
+
+    // Update the total power moving average
+    data_util_mov_avg_u32_add_sample(&computed_metrics_oob.soc_total_pwr_mov_avg_mW, total_power_mW);
+
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        die_2_die_exch_oob_write_window_soc_pwr(computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum,
+                                                computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count);
     }
 }
 
@@ -173,7 +196,7 @@ void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC)
 {
     data_util_calc_mma_u16(&computed_metrics_d2d_2mins.max_soc_temp_dC, latest_max_soc_temp_dC);
 
-    data_util_mov_avg_add_sample(&computed_metrics_oob.max_soc_temp_mov_avg_dC, latest_max_soc_temp_dC);
+    data_util_mov_avg_u16_add_sample(&computed_metrics_oob.max_soc_temp_mov_avg_dC, latest_max_soc_temp_dC);
 
     if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
     {
@@ -198,7 +221,7 @@ void comp_metrics_for_single_soc_dimm_power(uint8_t dimm_id, uint16_t latest_dim
 
 void comp_metrics_for_max_dimm_temp(uint16_t latest_max_dimm_temp_dC)
 {
-    data_util_mov_avg_add_sample(&computed_metrics_oob.max_dimm_temp_mov_avg_dC, latest_max_dimm_temp_dC);
+    data_util_mov_avg_u16_add_sample(&computed_metrics_oob.max_dimm_temp_mov_avg_dC, latest_max_dimm_temp_dC);
 
     if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
     {

@@ -231,7 +231,7 @@ uint16_t data_util_mean_of_summations(uint32_t summation1, uint16_t count1, uint
     return (uint16_t)mean;
 }
 
-void data_util_mov_avg_init(moving_avg_t* ma, uint16_t* samples, uint16_t sample_capacity)
+void data_util_mov_avg_u16_init(moving_avg_u16_t* ma, uint16_t* samples, uint16_t sample_capacity)
 {
     if (ma == NULL || samples == NULL || sample_capacity == 0)
     {
@@ -248,7 +248,7 @@ void data_util_mov_avg_init(moving_avg_t* ma, uint16_t* samples, uint16_t sample
     memset(samples, 0, sample_capacity * sizeof(uint16_t));
 }
 
-void data_util_mov_avg_add_sample(moving_avg_t* ma, uint16_t value)
+void data_util_mov_avg_u16_add_sample(moving_avg_u16_t* ma, uint16_t value)
 {
     if ((ma == NULL) || (ma->samples == NULL) || (ma->sample_capacity == 0))
     {
@@ -279,7 +279,7 @@ void data_util_mov_avg_add_sample(moving_avg_t* ma, uint16_t value)
     ma->sample_index = (ma->sample_index + 1) % ma->sample_capacity;
 }
 
-uint16_t data_util_mov_avg_get(const moving_avg_t* ma)
+uint16_t data_util_mov_avg_u16_get(const moving_avg_u16_t* ma)
 {
     if (ma == NULL)
     {
@@ -294,7 +294,7 @@ uint16_t data_util_mov_avg_get(const moving_avg_t* ma)
     return (uint16_t)(ma->total_sum / ma->sample_count);
 }
 
-void data_util_mov_avg_clear(moving_avg_t* ma)
+void data_util_mov_avg_u16_clear(moving_avg_u16_t* ma)
 {
     if (ma == NULL)
     {
@@ -303,6 +303,88 @@ void data_util_mov_avg_clear(moving_avg_t* ma)
     }
 
     memset(ma->samples, 0, ma->sample_capacity * sizeof(uint16_t));
+    ma->sample_index = 0;
+    ma->sample_count = 0;
+    ma->total_sum = 0;
+}
+
+void data_util_mov_avg_u32_init(moving_avg_u32_t* ma, uint32_t* samples, uint16_t sample_capacity)
+{
+    if (ma == NULL || samples == NULL || sample_capacity == 0)
+    {
+        FPFW_ET_LOG(MovingAvgParamError);
+        return;
+    }
+
+    ma->samples = samples;
+    ma->sample_capacity = sample_capacity;
+    ma->sample_index = 0;
+    ma->sample_count = 0;
+    ma->total_sum = 0;
+
+    memset(samples, 0, sample_capacity * sizeof(uint32_t));
+}
+
+void data_util_mov_avg_u32_add_sample(moving_avg_u32_t* ma, uint32_t value)
+{
+    if ((ma == NULL) || (ma->samples == NULL) || (ma->sample_capacity == 0))
+    {
+        FPFW_ET_LOG(MovingAvgParamError);
+        return;
+    }
+
+    if (ma->total_sum == UINT32_MAX)
+    {
+        return; // Avoid adding samples if already saturated
+    }
+
+    uint32_t old_value = ma->samples[ma->sample_index];
+    ma->total_sum -= old_value;
+
+    uint32_t new_total = ma->total_sum + value;
+    if (new_total < ma->total_sum)
+    {
+        ma->total_sum = UINT32_MAX; // Saturate on overflow
+    }
+    else
+    {
+        ma->total_sum = new_total;
+    }
+
+    ma->samples[ma->sample_index] = value;
+
+    if (ma->sample_count < ma->sample_capacity)
+    {
+        ma->sample_count++;
+    }
+
+    ma->sample_index = (ma->sample_index + 1) % ma->sample_capacity;
+}
+
+uint32_t data_util_mov_avg_u32_get(const moving_avg_u32_t* ma)
+{
+    if (ma == NULL)
+    {
+        FPFW_ET_LOG(MovingAvgParamError);
+        return 0;
+    }
+    if (ma->sample_count == 0)
+    {
+        return 0; // don't log error since valid case.
+    }
+
+    return (ma->total_sum / ma->sample_count);
+}
+
+void data_util_mov_avg_u32_clear(moving_avg_u32_t* ma)
+{
+    if (ma == NULL)
+    {
+        FPFW_ET_LOG(MovingAvgParamError);
+        return;
+    }
+
+    memset(ma->samples, 0, ma->sample_capacity * sizeof(uint32_t));
     ma->sample_index = 0;
     ma->sample_count = 0;
     ma->total_sum = 0;

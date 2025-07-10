@@ -31,6 +31,8 @@
 #define NUMBER_OF_SOC_VOLT_MON_SENSORS  (18)
 // One die has 8 VR's and the other has 2.  Reserve space for the max number.
 #define MAX_NUM_OF_VR_RAILS        (8)
+#define NUM_DIE0_VR_RAILS          (MAX_NUM_OF_VR_RAILS)
+#define NUM_DIE1_VR_RAILS          (2)
 #define QUADWORD_SIZE              (8)
 #define FIFO_TIMESTAMP_SIZE        (QUADWORD_SIZE)
 

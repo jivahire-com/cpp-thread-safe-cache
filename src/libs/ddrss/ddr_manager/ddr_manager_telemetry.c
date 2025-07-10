@@ -84,6 +84,7 @@ void ddr_telemetry_report()
         dimm_info.dimm_id = dimm_idx + (die_num * NUM_DIMM_PER_DIE);
         if (ddr_manager_power_mw_read(dimm_idx, &power_mW) != DDR_MANAGER_I3C_SUCCESS)
         {
+            printf("Error reading DIMM %d power\n", dimm_idx);
             power_mW = 0;
         };
         dimm_info.dimm_power_mW = power_mW;

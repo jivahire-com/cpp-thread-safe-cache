@@ -22,10 +22,8 @@
 #define UNUSED(x) (void)(x)
 #define KB        (1024)
 
-#define MS_PER_TICK             (10) // Todo:  Revisit this if/when we change from ThreadX SW timer to gtimer
-#define DDR_TIMER_INITIAL_TICKS (18) // Let things settle down before starting the timer
-#define DDR_STACK_SIZE          ((TX_MINIMUM_STACK) + ((4) * (KB)))
-#define DDR_THREAD_PRIORITY     (15)
+#define DDR_STACK_SIZE      ((TX_MINIMUM_STACK) + ((4) * (KB)))
+#define DDR_THREAD_PRIORITY (15)
 
 /*-------------- Functions ---------------*/
 // Todo: Add "ddr_training" to dependencies when available
@@ -58,12 +56,6 @@ FPFW_INIT_COMPONENT(
                                            .stack_size = sizeof(ddr_stack),
                                            .priority = DDR_THREAD_PRIORITY,
                                            .time_slice_option = TX_NO_TIME_SLICE,
-                                           .die_number = idhw_get_die_id(),
-                                       },
-                                   .timer_config =
-                                       {
-                                           .initial_ticks = DDR_TIMER_INITIAL_TICKS,
-                                           .reschedule_ticks = config_get_ddrmanager_bwl_polling_period_ms() / MS_PER_TICK,
                                        },
                                    .queue_config = {
                                        .p_queue = ddr_queue_pool,

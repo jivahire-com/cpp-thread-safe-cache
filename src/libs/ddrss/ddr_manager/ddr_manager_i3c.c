@@ -17,11 +17,13 @@
 #include <ddr_manager_i.h>
 #include <i3c_controller.h>
 #include <idhw.h>
+#include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 // 5 I3C Devices Per DIMM
 // See here: https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP?path=/src/libs/i3c_controller/inc/i3c_controller.h&version=GBmain&line=39&lineEnd=40&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents
-#define I3C_DEVICE_STRIDE 5
+#define I3C_DEVICE_STRIDE      5
+#define PRINT_VARS(var1, var2) printf("%s: %d != %s: %d\n", #var1, var1, #var2, var2)
 
 /*------------- Typedefs -----------------*/
 
@@ -192,9 +194,6 @@ static uint8_t get_pmic_reg(int dimm_idx)
     }
 }
 
-#include <stdio.h>
-#define PRINT_VARS(var1, var2) printf("%s: %d != %s: %d\n", #var1, var1, #var2, var2)
-
 int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manager_i3c_temperature_t* ts_scaled_celsius)
 {
     uint8_t ts_low_data = 0;
@@ -223,9 +222,12 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
 
     if (status != DDR_I3C_INTERFACE_SUCCESS)
     {
+        printf("Error reading DIMM %d TS %d low byte\n", dimm_idx, channel_idx);
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TEMPERATURE_SENSOR_MR49_READ, status);
         return DDR_MANAGER_I3C_TRANSACTION_ERROR;
     }
+
+    tx_thread_sleep(2); // This measures ~ 16 ms
 
     // Read TS[0/1] high
     status = ddr_i3c_interface_read_temp_sensor_mr_reg(ddr_i3c_sensors.dimm[dimm_idx].instance,
@@ -237,11 +239,13 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
 
     if (status != DDR_I3C_INTERFACE_SUCCESS)
     {
+        printf("Error reading DIMM %d TS %d high byte\n", dimm_idx, channel_idx);
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TEMPERATURE_SENSOR_MR50_READ, status);
         return DDR_MANAGER_I3C_TRANSACTION_ERROR;
     }
 
     *ts_scaled_celsius = ts_convert_temperature(ts_low_data, ts_high_data);
+
     return DDR_MANAGER_I3C_SUCCESS;
 }
 

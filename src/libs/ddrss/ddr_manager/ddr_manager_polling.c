@@ -49,6 +49,7 @@ void ddr_poll_dimms()
         }
         else
         {
+            printf("Error reading DIMM %d TS0\n", dimm_idx);
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_TEMPERATURE_SENSOR_0, dimm_idx);
         }
 
@@ -59,6 +60,7 @@ void ddr_poll_dimms()
         }
         else
         {
+            printf("Error reading DIMM %d TS1\n", dimm_idx);
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_TEMPERATURE_SENSOR_1, dimm_idx);
         }
     }
@@ -109,6 +111,7 @@ void check_dimm_temp_thresholds()
         if ((ts0_temp.is_positive && ts0_temp.temp_int > thresholds.crit) ||
             (ts1_temp.is_positive && ts1_temp.temp_int > thresholds.crit))
         {
+            printf("DIMM %d exceeded critical temperature threshold: %d\n", dimm_idx, thresholds.crit);
             DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD, dimm_idx);
 
             memset(&ddr_cper, 0x0, sizeof(ddr_cper));
@@ -136,6 +139,9 @@ void check_dimm_temp_thresholds()
         else
         {
             // May want to do something else here, like log an event
+            printf("BWL is disabled, but a DIMM temperature (%d) exceeded high threshold: %d\n",
+                   max_dimm_temp,
+                   thresholds.high);
             DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_DIMM_TEMPERATURES_EXCEED_HIGH_THRESHOLD_BWL_DISABLE);
         }
     }

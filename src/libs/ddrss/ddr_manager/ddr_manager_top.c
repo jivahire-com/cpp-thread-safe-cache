@@ -27,6 +27,9 @@
 // Tell cspell to ignore .. why are we using cSpell?
 /* cSpell:ignore DIMM DIMMS */
 
+/*-- Symbolic Constant Macros (defines) --*/
+#define DDR_TIMER_INITIAL_TICKS ((TX_TIMER_TICKS_PER_SECOND * 10))
+
 /*-------------- Typedefs ----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -83,6 +86,7 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
                 if (config_get_ddrmanager_bwl_polling_en())
                 {
+                    printf("Enabling DDR BWL polling timer\n");
                     enable_i3c_dimm_polling_timer();
                 }
                 break;
@@ -113,22 +117,23 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 void enable_i3c_dimm_polling_timer(void)
 {
     idsw_plat_id_t plat_id = idsw_get_platform_sdv();
+    ULONG reschedule_ticks = ((TX_TIMER_TICKS_PER_SECOND * config_get_ddrmanager_bwl_polling_period_ms()) / 1000UL);
 
     if (plat_id == PLATFORM_RVP_EVT_SILICON)
     {
         ddr_service_context_t* pddr_service_ctx = ddr_get_service_context();
-        ddr_service_config_t* pconfig = ddr_get_service_config();
 
         int status = tx_timer_create((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer, /* TX_TIMER *timer_ptr */
                                      (char*)DDR_TIMER_NAME,                           /* CHAR *name_ptr */
                                      ddr_timer_cb,            /* VOID (*expiration_function)(ULONG input) */
                                      (ULONG)pddr_service_ctx, /* ULONG expiration_input */
-                                     pconfig->timer_config.initial_ticks,    /* ULONG initial_ticks >= 1 */
-                                     pconfig->timer_config.reschedule_ticks, /* ULONG reschedule_ticks */
-                                     TX_AUTO_ACTIVATE);                      /* UINT auto_activate) */
+                                     (ULONG)DDR_TIMER_INITIAL_TICKS, /* ULONG initial_ticks >= 1 */
+                                     reschedule_ticks,               /* ULONG reschedule_ticks */
+                                     TX_AUTO_ACTIVATE);              /* UINT auto_activate) */
 
         if (status != TX_SUCCESS)
         {
+            printf("DDR Polling Timer creation failed with status: %d\n", status);
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, status);
             FPFwErrorRaise(status, 0, 0, 0, 0);
         }
@@ -186,6 +191,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     // Copy to globals so that we can access in other places
     ddr_service_ctx = pddr_service_ctx;
     ddr_service_config = pconfig;
+    KNG_DIE_ID die_id = idsw_get_die_id();
 
     uint32_t work_queue_msg = 0;
     int status = tx_queue_create((TX_QUEUE*)&pddr_service_ctx->work_queue, /* TX_QUEUE *queue_ptr */
@@ -259,8 +265,8 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     ddr_manager_i3c_init();
 
-    DDR_LOG_CRIT("DDR init, die_num: [%u]\n", pconfig->thread_config.die_number);
-    prod_ddrss_lib_init(pconfig->thread_config.die_number);
+    DDR_LOG_CRIT("DDR init, die_num: [%u]\n", die_id);
+    prod_ddrss_lib_init(die_id);
 
     ddr_init_telemetry();
     if (system_info_is_hsp_present() && (!system_info_is_warm_start()))
@@ -274,7 +280,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     // Add crash dump pre-dump callback to check DDR RAS for UE
     crash_dump_register_pre_dump_callback(crash_dump_predump_cb, NULL, CRASH_DUMP_TYPE_FULL);
-    DDR_LOG_CRIT("DDR init, die_num: [%u] Done\n", pconfig->thread_config.die_number);
+    DDR_LOG_CRIT("DDR init, die_num: [%u] Done\n", die_id);
 }
 
 static void crash_dump_predump_cb(void* ctx)

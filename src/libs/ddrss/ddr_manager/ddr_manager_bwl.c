@@ -74,6 +74,7 @@ void ddr_manager_enable_bwl_i3c()
     if (bwl_state == BWL_STATE_DISABLED)
     {
         ddr_manager_engage_bwl();
+        printf("DDR BWL enabled by I3C\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_ENABLED_BY_I3C);
     }
 
@@ -82,11 +83,13 @@ void ddr_manager_enable_bwl_i3c()
 
 void ddr_manager_disable_bwl_i3c()
 {
+    bwl_state_t previous_bwl_state = bwl_state;
     bwl_state &= ~(BWL_STATE_ENABLED_I3C);
 
-    if (bwl_state == BWL_STATE_DISABLED)
+    if ((bwl_state == BWL_STATE_DISABLED) && (previous_bwl_state == BWL_STATE_ENABLED_I3C))
     {
         ddr_manager_disengage_bwl();
+        printf("DDR BWL disabled by I3C\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_DISABLED_BY_I3C);
     }
 }
@@ -96,6 +99,7 @@ void ddr_manager_enable_bwl_mr4()
     if (bwl_state == BWL_STATE_DISABLED)
     {
         ddr_manager_engage_bwl();
+        printf("DDR BWL enabled by MR4\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_ENABLED_BY_MR4);
     }
 
@@ -104,11 +108,13 @@ void ddr_manager_enable_bwl_mr4()
 
 void ddr_manager_disable_bwl_mr4()
 {
+    bwl_state_t previous_bwl_state = bwl_state;
     bwl_state &= ~(BWL_STATE_ENABLED_MR4);
 
-    if (bwl_state == BWL_STATE_DISABLED)
+    if ((bwl_state == BWL_STATE_DISABLED) && (previous_bwl_state == BWL_STATE_ENABLED_MR4))
     {
         ddr_manager_disengage_bwl();
+        printf("DDR BWL disabled by MR4\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_DISABLED_BY_MR4);
     }
 }
@@ -118,6 +124,7 @@ void ddr_manager_enable_bwl_force()
     if (bwl_state == BWL_STATE_DISABLED)
     {
         ddr_manager_engage_bwl();
+        printf("DDR BWL forced enabled\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_FORCED_ENABLE);
     }
 
@@ -126,11 +133,13 @@ void ddr_manager_enable_bwl_force()
 
 void ddr_manager_disable_bwl_force()
 {
+    bwl_state_t previous_bwl_state = bwl_state;
     bwl_state &= ~(BWL_STATE_ENABLED_FORCED);
 
-    if (bwl_state == BWL_STATE_DISABLED)
+    if ((bwl_state == BWL_STATE_DISABLED) && (previous_bwl_state == BWL_STATE_ENABLED_FORCED))
     {
-        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_FORCED_DISABLE);
         ddr_manager_disengage_bwl();
+        printf("DDR BWL forced disabled\n");
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_FORCED_DISABLE);
     }
 }

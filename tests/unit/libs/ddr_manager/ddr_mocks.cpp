@@ -208,4 +208,10 @@ void __wrap_hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_
     function_called();
 }
 
+unsigned int __wrap__tx_thread_sleep(unsigned long ticks)
+{
+    FPFW_UNUSED(ticks);
+    return 0;
+}
+
 } // extern "C"

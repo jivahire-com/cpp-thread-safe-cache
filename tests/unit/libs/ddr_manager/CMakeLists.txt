@@ -54,6 +54,7 @@ format_target(${TARGET})
 coverage_target(${TARGET})
 unit_test_target(${TARGET})
 mock_target(${TARGET}
+    _tx_thread_sleep
     _txe_mutex_create
     _txe_queue_create
     _txe_thread_create

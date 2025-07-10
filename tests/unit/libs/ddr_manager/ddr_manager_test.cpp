@@ -55,6 +55,11 @@ extern "C" {
 
 #define DDRSS_PHY_TRAINING_MARGIN_SIZE_BYTES (7680)
 #define NUM_TEMP_SENSORS_PER_DIMM            (2)
+#define DDR_TEST_STACK_SIZE                  (1024)
+#define DDR_TEST_THREAD_PRIORITY             (10)
+#define DDR_TEST_TIMER_INITIAL_TICKS         (10)
+#define DDR_TEST_TIMER_RESCHEDULE_TICKS      (15)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -64,6 +69,21 @@ static int begin_bwl_disengaged(void** state);
 static fpfw_icc_base_ctx_t* icc_ctx;
 mscp_exp_spi_sync_point_t d2d_sync_point_test = {};
 uint8_t test_dq_training_margin[DDRSS_PHY_TRAINING_MARGIN_SIZE_BYTES] = {0};
+
+uint8_t ddr_test_stack[DDR_TEST_STACK_SIZE];
+static uint32_t ddr_queue_pool[10];
+ddr_service_config_t config = {.thread_config =
+                                   {
+                                       .p_stack = ddr_test_stack,
+                                       .stack_size = sizeof(ddr_test_stack),
+                                       .priority = DDR_TEST_THREAD_PRIORITY,
+                                       .time_slice_option = TX_NO_TIME_SLICE,
+                                   },
+                               .queue_config = {
+                                   .p_queue = ddr_queue_pool,
+                                   .msg_size = sizeof(ddr_queue_pool[0]) / sizeof(uint32_t),
+                                   .queue_num_words = sizeof(ddr_queue_pool) / sizeof(uint32_t),
+                               }};
 
 /*------------- Functions ----------------*/
 //
@@ -251,6 +271,8 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     ddr_service_context_t ddr_service_context = {};
     ddr_service_config_t ddr_service_config = {};
 
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+
     // tx queue fails
     expect_any_always(__wrap__txe_queue_create, queue_ptr);
     expect_any_always(__wrap__txe_queue_create, name_ptr);
@@ -367,33 +389,11 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     }
 }
 
-#define DDR_TEST_STACK_SIZE             (1024)
-#define DDR_TEST_THREAD_PRIORITY        (10)
-#define DDR_TEST_TIMER_INITIAL_TICKS    (10)
-#define DDR_TEST_TIMER_RESCHEDULE_TICKS (15)
 TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
 {
-    uint8_t ddr_test_stack[DDR_TEST_STACK_SIZE];
-    static uint32_t ddr_queue_pool[10];
     static ddr_service_context_t ddr_service_ctx = {};
 
-    ddr_service_config_t config = {.thread_config =
-                                       {
-                                           .p_stack = ddr_test_stack,
-                                           .stack_size = sizeof(ddr_test_stack),
-                                           .priority = DDR_TEST_THREAD_PRIORITY,
-                                           .time_slice_option = TX_NO_TIME_SLICE,
-                                       },
-                                   .timer_config =
-                                       {
-                                           .initial_ticks = DDR_TEST_TIMER_INITIAL_TICKS,
-                                           .reschedule_ticks = DDR_TEST_TIMER_RESCHEDULE_TICKS,
-                                       },
-                                   .queue_config = {
-                                       .p_queue = ddr_queue_pool,
-                                       .msg_size = sizeof(ddr_queue_pool[0]) / sizeof(uint32_t),
-                                       .queue_num_words = sizeof(ddr_queue_pool) / sizeof(uint32_t),
-                                   }};
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     expect_value(__wrap__txe_queue_create, queue_ptr, &ddr_service_ctx.work_queue);
     expect_value(__wrap__txe_queue_create, name_ptr, DDR_WORK_QUEUE_NAME);
@@ -470,27 +470,9 @@ void tx_queue_copy_parameter(void* p)
 
 TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
 {
-    uint8_t ddr_test_stack[DDR_TEST_STACK_SIZE];
-    static uint32_t ddr_queue_pool[10];
     static ddr_service_context_t ddr_service_ctx = {};
 
-    ddr_service_config_t config = {.thread_config =
-                                       {
-                                           .p_stack = ddr_test_stack,
-                                           .stack_size = sizeof(ddr_test_stack),
-                                           .priority = DDR_TEST_THREAD_PRIORITY,
-                                           .time_slice_option = TX_NO_TIME_SLICE,
-                                       },
-                                   .timer_config =
-                                       {
-                                           .initial_ticks = DDR_TEST_TIMER_INITIAL_TICKS,
-                                           .reschedule_ticks = DDR_TEST_TIMER_RESCHEDULE_TICKS,
-                                       },
-                                   .queue_config = {
-                                       .p_queue = ddr_queue_pool,
-                                       .msg_size = sizeof(ddr_queue_pool[0]) / sizeof(uint32_t),
-                                       .queue_num_words = sizeof(ddr_queue_pool) / sizeof(uint32_t),
-                                   }};
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     expect_value(__wrap__txe_queue_create, queue_ptr, &ddr_service_ctx.work_queue);
     expect_value(__wrap__txe_queue_create, name_ptr, DDR_WORK_QUEUE_NAME);

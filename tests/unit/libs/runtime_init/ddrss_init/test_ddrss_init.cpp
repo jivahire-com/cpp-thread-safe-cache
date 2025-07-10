@@ -133,10 +133,6 @@ TEST_FUNCTION(test_ddr_pcr_init, nullptr, nullptr)
 
 TEST_FUNCTION(test_ddr_init, nullptr, nullptr)
 {
-    // Set up expectations
-    const auto test_die = (KNG_DIE_ID)0;
-    will_return(__wrap_idhw_get_die_id, test_die);
-
     // Call API under test
     _fpfw_component_ddr.init_fn();
 }

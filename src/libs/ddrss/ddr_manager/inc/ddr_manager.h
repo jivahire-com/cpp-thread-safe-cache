@@ -36,13 +36,7 @@ typedef struct
         size_t stack_size;          // Size of the provided memory
         uint32_t priority;          // ThreadX Thread priority
         uint32_t time_slice_option; // ThreadX Thread slicing option
-        uint8_t die_number;         // Die number 0-1
     } thread_config;
-    struct
-    {
-        ULONG initial_ticks;    // Initial ticks for the timer
-        ULONG reschedule_ticks; // Reschedule ticks for the timer
-    } timer_config;
     struct
     {
         void* p_queue;        // Pointer to the queue

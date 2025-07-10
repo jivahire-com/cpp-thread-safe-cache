@@ -13,6 +13,7 @@ add_library(${TARGET}
         power_hw_int_gpio.c
         power_hw_int_telemetry.c
         power_hw_int_vrs.c
+        power_interrupt_handler.c
         power_knobs.c
         power_log.c
         power_loops.c
@@ -61,6 +62,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.status
         fwlib.lib.tmr_queue
         fwlib.service.iccBase
+        ms::lib::scp_interrupts
+        ms::lib::cortex_m7::nvic
         ms::client_interface::startup_shutdown
         ms::lib::cortex_m7::atomics
         ms::lib::event_trace::trace

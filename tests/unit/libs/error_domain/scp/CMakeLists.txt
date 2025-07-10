@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         ms::service::health_monitor
         ms::service::health_monitor::cli
+        ms::service::power
         ms::lib::arm_intrinsic
         ms::lib::cortex_m7::nvic
         ms::lib::error_domain::scp
@@ -42,6 +43,7 @@ target_include_directories(${TARGET}
 
 # Generic ports implement within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 target_compile_options(scp_error_domain.test PRIVATE -Wno-unused-function)
 

@@ -11,6 +11,7 @@
 #include <CMockaWrapper.h> // for assert_int_equal, assert_non_null, expe...
 
 extern "C" {
+#include "power_interrupt_handler.h" // for enable_scp_ecc_interrupts
 
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <atu_api.h>
@@ -107,6 +108,7 @@ isr_callback_fn_sans_params_t g_icache_tag_ce_isr = NULL;
 isr_callback_fn_sans_params_t g_rmss_remote_scp_scfram_bootram_isr = NULL;
 isr_callback_fn_with_params_t g_s_arsm_ecc_isr = NULL;
 isr_callback_fn_sans_params_t g_s_rsm_ecc_isr = NULL;
+isr_callback_fn_sans_params_t g_pll_isr = NULL;
 
 extern void pex_irq_handle(KNG_DIE_ID die_num, uint32_t pex_num, pex_rng_config_t* rng_cfg);
 
@@ -226,6 +228,12 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
         break;
     case HW_INT_SCP_RSM_RAM_FHI_INT:
         g_s_rsm_ecc_isr = isr;
+        break;
+    case HW_INT_CPU_67_64_31_0_PLL_LOCK_INT:
+    case HW_INT_CPU_63_32_PLL_LOCK_INT:
+    case HW_INT_CPU_67_64_31_0_PLL_UNLOCK_INT:
+    case HW_INT_CPU_63_32_PLL_UNLOCK_INT:
+        g_pll_isr = isr;
         break;
     default:
         assert_true(false);
@@ -501,6 +509,27 @@ TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_SCP_RSM_RAM_FHI_INT);
     expect_function_call(__wrap_nvic_irq_enable);
 
+    // PLL ISRs
+    // For HW_INT_CPU_67_64_31_0_PLL_LOCK_INT
+    expect_function_call(__wrap_nvic_irq_set_isr);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_67_64_31_0_PLL_LOCK_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // For HW_INT_CPU_63_32_PLL_LOCK_INT
+    expect_function_call(__wrap_nvic_irq_set_isr);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_63_32_PLL_LOCK_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // For HW_INT_CPU_67_64_31_0_PLL_UNLOCK_INT
+    expect_function_call(__wrap_nvic_irq_set_isr);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_67_64_31_0_PLL_UNLOCK_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // For HW_INT_CPU_63_32_PLL_UNLOCK_INT
+    expect_function_call(__wrap_nvic_irq_set_isr);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_CPU_63_32_PLL_UNLOCK_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
     // SCF RAM ECC
     expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_SCFRAM_ERRCTRL_REG);
     will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->scfram_errctrl_reg
@@ -629,9 +658,9 @@ static int test_setup(void** ctx)
     if (g_err_inject_cb == NULL || g_scfram_of_isr == NULL || g_scfram_ce_isr == NULL || g_ram0_of_isr == NULL ||
         g_ram0_ce_isr == NULL || g_ram1_of_isr == NULL || g_ram1_ce_isr == NULL || g_tcm_ce_isr == NULL ||
         g_tcm_ue_isr == NULL || g_tcm_of_isr == NULL || g_dcache_ue_isr == NULL || g_dcache_ce_isr == NULL ||
-        g_dcache_tag_ue_isr == NULL || g_dcache_tag_ce_isr == NULL || g_icache_ue_isr == NULL ||
-        g_icache_ce_isr == NULL || g_icache_tag_ue_isr == NULL || g_icache_tag_ce_isr == NULL ||
-        g_rmss_remote_scp_scfram_bootram_isr == NULL || g_s_arsm_ecc_isr == NULL || g_s_rsm_ecc_isr == NULL)
+        g_dcache_tag_ue_isr == NULL || g_dcache_tag_ce_isr == NULL || g_icache_ue_isr == NULL || g_icache_ce_isr == NULL ||
+        g_icache_tag_ue_isr == NULL || g_icache_tag_ce_isr == NULL || g_rmss_remote_scp_scfram_bootram_isr == NULL ||
+        g_s_arsm_ecc_isr == NULL || g_s_rsm_ecc_isr == NULL || g_pll_isr == NULL)
     {
         test_register_scp_error_domain(NULL);
     }

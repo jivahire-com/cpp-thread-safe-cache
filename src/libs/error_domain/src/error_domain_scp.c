@@ -20,6 +20,7 @@
 #include <mscp_error_domain.h>
 #include <mscp_ras_and_init_ctrl_registers_regs.h>
 #include <nvic.h>
+#include <power_interrupt_handler.h>
 #include <scp_exp_csr_regs.h>
 #include <scp_exp_top_regs.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
@@ -562,6 +563,7 @@ void register_scp_error_domain()
 
     // Register the error interrupt handlers
     enable_scp_ecc_interrupts();
+    enable_pll_interrupts();
 
     // Enable ECC error injection
     enable_scp_ecc_error();

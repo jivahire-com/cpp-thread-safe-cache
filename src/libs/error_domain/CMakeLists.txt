@@ -31,6 +31,7 @@ target_link_libraries(
             ms::lib::error_codes
             ms::lib::scp_interrupts
             ms::service::health_monitor
+            ms::service::power
             silibs::atu
             silibs::cmsdk_wd
             silibs::idhw

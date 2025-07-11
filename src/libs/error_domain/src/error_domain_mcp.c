@@ -194,6 +194,15 @@ static void enable_mcp_ecc_error()
         status = atu_unmap(ATU_ID_MSCP, &atu_entry);
         BUG_ASSERT(status == SILIBS_SUCCESS);
     }
+
+    // Enable RSM ECC errors
+    KNG_PLAT_ID plat = idsw_get_platform_sdv();
+
+    if (plat != PLATFORM_SVP_SIM)
+    {
+        // ADO - Current SVP doesn't support RSM ECC
+        enable_shared_sram_errors(get_rsm_ecc_atu_entry_wrapper, MSCP_RSM_RAM_COUNT);
+    }
 }
 
 static void register_mcp_ecc_isr(uint32_t irq_num, isr_callback_fn_sans_params_t isr)
@@ -238,9 +247,12 @@ static void enable_mcp_ecc_interrupts()
     register_mcp_ecc_isr_with_param(HW_INT_MCP_RT_ARSM_ECC_FHI_INT,
                                     shared_sram_ecc_isr,
                                     (void*)&s_hm_arsm_atu_entries[die_id][MSCP_RT_ARSM_RAM]); // Root onchip shared ARSM RAM ECC FHI Interrupt for MCP accesses
-    register_mcp_ecc_isr_with_param(HW_INT_MCP_RL_ARSM_ECC_FHI_INT,
-                                    shared_sram_ecc_isr,
-                                    (void*)&s_hm_arsm_atu_entries[die_id][MSCP_RL_ARSM_RAM]); // Realm onchip shared ARSM RAM ECC FHI Interrupt for MCP accesses
+    register_mcp_ecc_isr_with_param(
+        HW_INT_MCP_RL_ARSM_ECC_FHI_INT,
+        shared_sram_ecc_isr,
+        (void*)&s_hm_arsm_atu_entries[die_id][MSCP_RL_ARSM_RAM]); // Realm onchip shared ARSM RAM ECC FHI
+                                                                  // Interrupt for MCP accesses RSM ECC FHI
+    register_mcp_ecc_isr(HW_INT_MCP_RSM_RAM_FHI_INT, shared_sram_ecc_isr_ext); // MCP Secure&Non-Secure RSM RAM ECC
 }
 
 void register_mcp_error_domain(fpfw_icc_base_ctx_t* icc_ctx)

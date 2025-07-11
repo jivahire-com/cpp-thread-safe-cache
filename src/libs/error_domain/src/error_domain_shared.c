@@ -46,6 +46,42 @@
     #define MCP_EXP_CACHEABLE_SECTION_BASE (MCP_EXP_TOP_RAM0_BASE)
     #define MCP_EXP_CACHEABLE_SECTION_END  (MCP_EXP_CACHEABLE_SECTION_BASE + MCP_EXP_CACHEABLE_SIZE - 1)
 #endif
+#define RSM_RAM_DEFAULT_OFFSET (0x08)
+#define AP_RSM_ADDRESS_DIEn(n) (0x2F000000UL + 0x1000000000UL * (n))
+#define AP_RSM_SIZE            (0x00010000UL)
+#define ATU_MAPPING_RSM_RAM(die_id) \
+    ATU_MAPPING((die_id == 0 ? AP_RSM_ADDRESS_DIEn(0) : AP_RSM_ADDRESS_DIEn(1)), 0, AP_RSM_SIZE, {ATU_BUS_ATTR_NS})
+
+const atu_map_entry_t s_hm_arsm_atu_entries[2][MSCP_ARSM_RAM_COUNT] =
+#if defined(SCP_RUNTIME_INIT)
+    {{ATU_MAPPING_SCP_S_ARSM_RAM_ECC(DIE_0),
+      ATU_MAPPING_SCP_NS_ARSM_RAM_ECC(DIE_0),
+      ATU_MAPPING_SCP_RT_ARSM_RAM_ECC(DIE_0),
+      ATU_MAPPING_SCP_RL_ARSM_RAM_ECC(DIE_0)},
+     {ATU_MAPPING_SCP_S_ARSM_RAM_ECC(DIE_1),
+      ATU_MAPPING_SCP_NS_ARSM_RAM_ECC(DIE_1),
+      ATU_MAPPING_SCP_RT_ARSM_RAM_ECC(DIE_1),
+      ATU_MAPPING_SCP_RL_ARSM_RAM_ECC(DIE_1)}};
+#elif defined(MCP_RUNTIME_INIT)
+    {{ATU_MAPPING_MCP_S_ARSM_RAM_ECC(DIE_0),
+      ATU_MAPPING_MCP_NS_ARSM_RAM_ECC(DIE_0),
+      ATU_MAPPING_MCP_RT_ARSM_RAM_ECC(DIE_0),
+      ATU_MAPPING_MCP_RL_ARSM_RAM_ECC(DIE_0)},
+     {ATU_MAPPING_MCP_S_ARSM_RAM_ECC(DIE_1),
+      ATU_MAPPING_MCP_NS_ARSM_RAM_ECC(DIE_1),
+      ATU_MAPPING_MCP_RT_ARSM_RAM_ECC(DIE_1),
+      ATU_MAPPING_MCP_RL_ARSM_RAM_ECC(DIE_1)}};
+#endif
+
+static const atu_map_entry_t s_hm_rsm_atu_entries[2][MSCP_RSM_RAM_COUNT] = {
+#if defined(SCP_RUNTIME_INIT)
+    {ATU_MAPPING_SCP_S_RSM_RAM_ECC(DIE_0), ATU_MAPPING_SCP_NS_RSM_RAM_ECC(DIE_0)},
+    {ATU_MAPPING_SCP_S_RSM_RAM_ECC(DIE_1), ATU_MAPPING_SCP_NS_RSM_RAM_ECC(DIE_1)}
+#elif defined(MCP_RUNTIME_INIT)
+    {ATU_MAPPING_MCP_S_RSM_RAM_ECC(DIE_0), ATU_MAPPING_MCP_NS_RSM_RAM_ECC(DIE_0)},
+    {ATU_MAPPING_MCP_S_RSM_RAM_ECC(DIE_1), ATU_MAPPING_MCP_NS_RSM_RAM_ECC(DIE_1)}
+#endif
+};
 
 /*-------- Function Prototypes -----------*/
 
@@ -83,9 +119,9 @@ void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entr
     *atu_entry = s_hm_arsm_atu_entries[idsw_get_die_id()][type];
 }
 
-void get_rsm_ecc_atu_entry(scp_rsm_ram_type_t type, atu_map_entry_t* atu_entry)
+void get_rsm_ecc_atu_entry(mscp_rsm_ram_type_t type, atu_map_entry_t* atu_entry)
 {
-    BUG_ASSERT(type < SCP_RSM_RAM_COUNT);
+    BUG_ASSERT(type < MSCP_RSM_RAM_COUNT);
     *atu_entry = s_hm_rsm_atu_entries[idsw_get_die_id()][type];
 }
 
@@ -100,8 +136,8 @@ void trigger_shared_sram_fault(bool arsm, int type, uint32_t target_addr, uint32
     }
     else
     {
-        BUG_ASSERT(type < SCP_RSM_RAM_COUNT);
-        get_rsm_ecc_atu_entry((scp_rsm_ram_type_t)type, &entry);
+        BUG_ASSERT(type < MSCP_RSM_RAM_COUNT);
+        get_rsm_ecc_atu_entry((mscp_rsm_ram_type_t)type, &entry);
     }
 
     int status = atu_map(ATU_ID_MSCP, &entry);
@@ -155,7 +191,7 @@ void shared_sram_ecc_isr(void* ctx)
     atu_map_entry_t atu_entry = *(atu_map_entry_t*)ctx;
 
     // check ctx is one of the item in s_hm_rsm_atu_entries
-    for (scp_rsm_ram_type_t i = SCP_S_RSM_RAM; i < SCP_RSM_RAM_COUNT; i++)
+    for (mscp_rsm_ram_type_t i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
     {
         const atu_map_entry_t* rsm_entry = &s_hm_rsm_atu_entries[idsw_get_die_id()][i];
         if (ctx == rsm_entry)
@@ -241,5 +277,84 @@ void shared_sram_ecc_isr(void* ctx)
     if (severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
     {
         BUG_CHECK(err_code, err_status, err_addr);
+    }
+}
+
+uint32_t map_rsm_address(atu_map_entry_t* atu_entry)
+{
+    BUG_ASSERT(atu_entry != NULL);
+    KNG_DIE_ID die_id = idsw_get_die_id();
+
+    *atu_entry = (atu_map_entry_t)ATU_MAPPING_RSM_RAM(die_id);
+
+    int status = atu_map(ATU_ID_MSCP, atu_entry);
+    BUG_ASSERT(status == SILIBS_SUCCESS);
+
+    return atu_entry->mscp_start_address + RSM_RAM_DEFAULT_OFFSET;
+}
+
+void trigger_shared_sram_rsm_fault(mscp_rsm_ram_type_t type, uint32_t target_addr, uint32_t err_mask)
+{
+    BUG_ASSERT(type < MSCP_RSM_RAM_COUNT);
+    trigger_shared_sram_fault(false, (int)type, target_addr, err_mask);
+}
+
+void unmap_rsm_address(atu_map_entry_t* atu_entry)
+{
+    int status = atu_unmap(ATU_ID_MSCP, atu_entry);
+    BUG_ASSERT(status == SILIBS_SUCCESS);
+}
+
+void shared_sram_ecc_isr_ext()
+{
+    // RSM secure/non-secure share same interrupt
+    for (int idx = MSCP_S_RSM_RAM; idx < MSCP_RSM_RAM_COUNT; idx++)
+    {
+        atu_map_entry_t atu_entry = s_hm_rsm_atu_entries[idsw_get_die_id()][idx];
+        shared_sram_ecc_isr(&atu_entry);
+    }
+}
+
+void get_rsm_ecc_atu_entry_wrapper(int type, atu_map_entry_t* entry)
+{
+    get_rsm_ecc_atu_entry((mscp_rsm_ram_type_t)type, entry);
+}
+
+void enable_shared_sram_errors(ecc_entry_getter_fn get_entry, int count)
+{
+    for (int i = 0; i < count; i++)
+    {
+        atu_map_entry_t atu_entry;
+        get_entry(i, &atu_entry);
+        int status = atu_map(ATU_ID_MSCP, &atu_entry);
+        BUG_ASSERT(status == SILIBS_SUCCESS);
+
+        uint32_t feature = MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_ADDRESS);
+        uint32_t ctrl_mask = 0;
+        if (feature & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_ED_MASK) // Error reporting and logging
+        {
+            ctrl_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_ED_MASK; // Enable ECC error detection
+        }
+
+        if (feature & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_FI_MASK) // Fault handling interrupt
+        {
+            ctrl_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_FI_MASK; // Fault handling interrupt is generated for all detected errors
+        }
+
+        if (feature & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_UE_MASK) // In-band error response
+        {
+            ctrl_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_UE_MASK; // External abort response for uncorrected errors enabled
+        }
+
+        if (feature & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_CFI_MASK) // Fault handling interrupt for corrected errors
+        {
+            ctrl_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_CFI_MASK; // Fault handling interrupt generated for corrected errors
+        }
+
+        // Enable ECC errors for the shared SRAM ECC RAS registers
+        MMIO_SET_MASK32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRCTRL_ADDRESS, ctrl_mask);
+
+        status = atu_unmap(ATU_ID_MSCP, &atu_entry);
+        BUG_ASSERT(status == SILIBS_SUCCESS);
     }
 }

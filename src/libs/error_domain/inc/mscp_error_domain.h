@@ -28,10 +28,10 @@ typedef enum
 
 typedef enum
 {
-    SCP_S_RSM_RAM = 0,
-    SCP_NS_RSM_RAM,
-    SCP_RSM_RAM_COUNT
-} scp_rsm_ram_type_t;
+    MSCP_S_RSM_RAM = 0,
+    MSCP_NS_RSM_RAM,
+    MSCP_RSM_RAM_COUNT
+} mscp_rsm_ram_type_t;
 
 /*--------- Function Prototypes ----------*/
 /**
@@ -42,7 +42,7 @@ void get_shared_sram_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* a
 /**
  * @brief Get Shared ATU entry for Shared SRAM, RSM, ECC Registers.
  */
-void get_rsm_ecc_atu_entry(scp_rsm_ram_type_t type, atu_map_entry_t* atu_entry);
+void get_rsm_ecc_atu_entry(mscp_rsm_ram_type_t type, atu_map_entry_t* atu_entry);
 
 
 #if defined (SCP_RUNTIME_INIT)

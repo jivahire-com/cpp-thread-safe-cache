@@ -36,17 +36,10 @@
 // clang-format on
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define RSM_RAM_DEFAULT_OFFSET (0x08)
-
 #define SCF_RAM_ADDRESS   (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS)
 #define RMSS_RAM0_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS)
 #define RMSS_RAM1_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS)
 #define DTC_RAM_ADDRESS   (SCP_TOP_SCP_DATA_RAM_ADDRESS)
-
-#define AP_RSM_ADDRESS_DIEn(n) (0x2F000000UL + 0x1000000000UL * (n))
-#define AP_RSM_SIZE            (0x00010000UL)
-#define ATU_MAPPING_RSM_RAM(die_id) \
-    ATU_MAPPING((die_id == 0 ? AP_RSM_ADDRESS_DIEn(0) : AP_RSM_ADDRESS_DIEn(1)), 0, AP_RSM_SIZE, {ATU_BUS_ATTR_NS})
 
 /*-------- Function Prototypes -----------*/
 
@@ -58,31 +51,6 @@ static vptr_scp_exp_csr_reg scp_exp_csr_regs =
 static vptr_mscp_ras_and_init_ctrl_registers_reg scp_ras_and_init_ctrl_registers_reg =
     (vptr_mscp_ras_and_init_ctrl_registers_reg)(SCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS);
 /*-------------- Functions ---------------*/
-
-static void trigger_shared_sram_rsm_fault(scp_rsm_ram_type_t type, uint32_t target_addr, uint32_t err_mask)
-{
-    BUG_ASSERT(type < SCP_RSM_RAM_COUNT);
-    trigger_shared_sram_fault(false, (int)type, target_addr, err_mask);
-}
-
-static uint32_t map_rsm_address(atu_map_entry_t* atu_entry)
-{
-    BUG_ASSERT(atu_entry != NULL);
-    KNG_DIE_ID die_id = idsw_get_die_id();
-
-    *atu_entry = (atu_map_entry_t)ATU_MAPPING_RSM_RAM(die_id);
-
-    int status = atu_map(ATU_ID_MSCP, atu_entry);
-    BUG_ASSERT(status == SILIBS_SUCCESS);
-
-    return atu_entry->mscp_start_address + RSM_RAM_DEFAULT_OFFSET;
-}
-
-static void unmap_rsm_address(atu_map_entry_t* atu_entry)
-{
-    int status = atu_unmap(ATU_ID_MSCP, atu_entry);
-    BUG_ASSERT(status == SILIBS_SUCCESS);
-}
 
 acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
@@ -282,7 +250,7 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
     case SCP_ERROR_TYPE_RSM_RAM_CE: {
         atu_map_entry_t rsm_atu_entry;
         uint32_t read_addr = map_rsm_address(&rsm_atu_entry);
-        trigger_shared_sram_rsm_fault(SCP_S_RSM_RAM, read_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+        trigger_shared_sram_rsm_fault(MSCP_S_RSM_RAM, read_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         unmap_rsm_address(&rsm_atu_entry);
         break;
     }
@@ -290,7 +258,7 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RSM_RAM_UE is not supported in this build.\n");
         // atu_map_entry_t rsm_atu_entry;
         // uint32_t read_addr = map_rsm_address(&rsm_atu_entry);
-        // trigger_shared_sram_rsm_fault(SCP_S_RSM_RAM, read_addr,
+        // trigger_shared_sram_rsm_fault(MSCP_S_RSM_RAM, read_addr,
         // SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK); unmap_rsm_address(&rsm_atu_entry);
         break;
     }

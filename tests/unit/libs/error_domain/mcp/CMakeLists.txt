@@ -72,4 +72,5 @@ mock_target(${TARGET}
     nvic_irq_set_isr_with_param
     wdog_cmsdk_apb_disable
     wdog_cmsdk_apb_init
+    idsw_get_platform_sdv
 )

@@ -182,6 +182,20 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
                 //                           arsm_addr,
                 //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
                 break;
+            case MCP_ERROR_TYPE_RSM_RAM_CE:
+                atu_map_entry_t rsm_atu_entry;
+                uint32_t read_addr = map_rsm_address(&rsm_atu_entry);
+                trigger_shared_sram_rsm_fault(MSCP_S_RSM_RAM, read_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+                unmap_rsm_address(&rsm_atu_entry);
+                break;
+
+            case MCP_ERROR_TYPE_RSM_RAM_UE:
+                FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_RSM_RAM_UE is not supported in this build.\n");
+                // atu_map_entry_t rsm_atu_entry;
+                // uint32_t read_addr = map_rsm_address(&rsm_atu_entry);
+                // trigger_shared_sram_rsm_fault(MSCP_S_RSM_RAM, read_addr,
+                // SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK); unmap_rsm_address(&rsm_atu_entry);
+                break;
 
             default:
                 FPFW_DBGPRINT_ERROR("Invalid/Unsupported MCP error type(%d)\n",

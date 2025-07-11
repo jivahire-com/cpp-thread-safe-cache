@@ -593,7 +593,7 @@ TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
 
     // RSM ECC
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    for (int i = SCP_S_RSM_RAM; i < SCP_RSM_RAM_COUNT; i++)
+    for (int i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
     {
         expect_function_call(__wrap_atu_map);
         expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRFR_ADDRESS);
@@ -1766,7 +1766,7 @@ TEST_FUNCTION(test_shared_sram_ecc_isr_of, test_setup, nullptr)
 
 TEST_FUNCTION(test_rsm_ecc_isr_ce, test_setup, nullptr)
 {
-    for (int i = SCP_S_RSM_RAM; i < SCP_RSM_RAM_COUNT; i++)
+    for (int i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
     {
         // Map the shared SRAM ECC registers
         expect_function_call(__wrap_atu_map);
@@ -1803,7 +1803,7 @@ TEST_FUNCTION(test_rsm_ecc_isr_ce, test_setup, nullptr)
 
 TEST_FUNCTION(test_rsm_ecc_isr_ue, test_setup, nullptr)
 {
-    for (int i = SCP_S_RSM_RAM; i < SCP_RSM_RAM_COUNT; i++)
+    for (int i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
     {
         // Map the shared SRAM ECC registers
         expect_function_call(__wrap_atu_map);

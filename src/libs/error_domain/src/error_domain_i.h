@@ -26,34 +26,12 @@
 #define MASK_UE              0x40
 
 /*------------- Typedefs -----------------*/
+typedef void (*ecc_entry_getter_fn)(int type, atu_map_entry_t* entry);
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static const atu_map_entry_t s_hm_arsm_atu_entries[2][MSCP_ARSM_RAM_COUNT] = 
-#if defined (SCP_RUNTIME_INIT)
-{{ATU_MAPPING_SCP_S_ARSM_RAM_ECC(DIE_0),
-    ATU_MAPPING_SCP_NS_ARSM_RAM_ECC(DIE_0),
-    ATU_MAPPING_SCP_RT_ARSM_RAM_ECC(DIE_0),
-    ATU_MAPPING_SCP_RL_ARSM_RAM_ECC(DIE_0)},
-   {ATU_MAPPING_SCP_S_ARSM_RAM_ECC(DIE_1),
-    ATU_MAPPING_SCP_NS_ARSM_RAM_ECC(DIE_1),
-    ATU_MAPPING_SCP_RT_ARSM_RAM_ECC(DIE_1),
-    ATU_MAPPING_SCP_RL_ARSM_RAM_ECC(DIE_1)}};
-#elif defined(MCP_RUNTIME_INIT)
- {{ATU_MAPPING_MCP_S_ARSM_RAM_ECC(DIE_0),
-    ATU_MAPPING_MCP_NS_ARSM_RAM_ECC(DIE_0),
-    ATU_MAPPING_MCP_RT_ARSM_RAM_ECC(DIE_0),
-    ATU_MAPPING_MCP_RL_ARSM_RAM_ECC(DIE_0)},
-   {ATU_MAPPING_MCP_S_ARSM_RAM_ECC(DIE_1),
-    ATU_MAPPING_MCP_NS_ARSM_RAM_ECC(DIE_1),
-    ATU_MAPPING_MCP_RT_ARSM_RAM_ECC(DIE_1),
-    ATU_MAPPING_MCP_RL_ARSM_RAM_ECC(DIE_1)}};
-#endif
-
-static const atu_map_entry_t s_hm_rsm_atu_entries[2][SCP_RSM_RAM_COUNT] = {
-    {ATU_MAPPING_SCP_S_RSM_RAM_ECC(DIE_0), ATU_MAPPING_SCP_NS_RSM_RAM_ECC(DIE_0)},
-    {ATU_MAPPING_SCP_S_RSM_RAM_ECC(DIE_1), ATU_MAPPING_SCP_NS_RSM_RAM_ECC(DIE_1)}};
+extern const atu_map_entry_t s_hm_arsm_atu_entries[2][MSCP_ARSM_RAM_COUNT];
 
 /*------------- Functions ----------------*/
 void dcache_ue_isr();
@@ -75,3 +53,9 @@ void inject_err_by_access(uint32_t addr);
 void trigger_shared_sram_fault(bool arsm, int type, uint32_t target_addr, uint32_t err_mask);
 void trigger_shared_sram_arsm_fault(mscp_arsm_ram_type_t type, uint32_t target_addr, uint32_t err_mask);
 void shared_sram_ecc_isr(void* ctx);
+uint32_t map_rsm_address(atu_map_entry_t* atu_entry);
+void trigger_shared_sram_rsm_fault(mscp_rsm_ram_type_t type, uint32_t target_addr, uint32_t err_mask);
+void unmap_rsm_address(atu_map_entry_t* atu_entry);
+void shared_sram_ecc_isr_ext();
+void enable_shared_sram_errors(ecc_entry_getter_fn get_entry, int count);
+void get_rsm_ecc_atu_entry_wrapper(int type, atu_map_entry_t* entry);

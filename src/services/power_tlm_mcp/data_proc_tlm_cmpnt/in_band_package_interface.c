@@ -399,13 +399,13 @@ void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_
     else
     {
         /* Note : DIMM Temperatures obtained shall be the max of the two sensors in each DIMM. Each DIMM has two temperature sensors.  */
-        dimm_data->temperature_dC = latest_dimm[dimm_module].temperature_dC;
-        dimm_data->throttling_flags = latest_dimm[dimm_module].throttling_flags;
-        dimm_data->memory_freq_id = latest_dimm[dimm_module].memory_freq_id;
-        dimm_data->power_mW = latest_dimm[dimm_module].power_mW;
+        dimm_data->temperature_dC = dimm_rt.latest_dimm[dimm_module].temperature_dC;
+        dimm_data->throttling_flags = dimm_rt.latest_dimm[dimm_module].throttling_flags;
+        dimm_data->memory_freq_id = dimm_rt.latest_dimm[dimm_module].memory_freq_id;
+        dimm_data->power_mW = dimm_rt.latest_dimm[dimm_module].power_mW;
 
         // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592610
-        dimm_data->threshold_dC = latest_dimm[dimm_module].threshold_dC;
+        dimm_data->threshold_dC = dimm_rt.latest_dimm[dimm_module].threshold_dC;
     }
 }
 

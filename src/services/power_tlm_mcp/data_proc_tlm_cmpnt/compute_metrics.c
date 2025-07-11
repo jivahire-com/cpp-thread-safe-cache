@@ -49,15 +49,19 @@ void comp_metrics_init(void)
 {
     data_util_mov_avg_u16_init(&computed_metrics_oob.max_soc_temp_mov_avg_dC,
                                computed_metrics_oob.max_soc_temp_samples_dC,
-                               MOVING_AVG_NUM_SAMPLES);
+                               TEMPERATURE_MOVING_AVG_NUM_SAMPLES);
 
     data_util_mov_avg_u32_init(&computed_metrics_oob.soc_total_pwr_mov_avg_mW,
                                computed_metrics_oob.soc_total_pwr_samples_mW,
-                               MOVING_AVG_NUM_SAMPLES);
+                               TEMPERATURE_MOVING_AVG_NUM_SAMPLES);
 
     data_util_mov_avg_u16_init(&computed_metrics_oob.max_dimm_temp_mov_avg_dC,
                                computed_metrics_oob.max_dimm_temp_samples_dC,
-                               MOVING_AVG_NUM_SAMPLES);
+                               DIMM_MOVING_AVG_NUM_SAMPLES);
+
+    data_util_mov_avg_u32_init(&computed_metrics_oob.dimm_total_pwr_mov_avg_mW,
+                               computed_metrics_oob.dimm_total_pwr_samples_mW,
+                               DIMM_MOVING_AVG_NUM_SAMPLES);
 }
 
 void comp_metrics_for_sample_period(void)
@@ -227,6 +231,17 @@ void comp_metrics_for_max_dimm_temp(uint16_t latest_max_dimm_temp_dC)
     {
         die_2_die_exch_oob_write_window_max_dimm_temp(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum,
                                                       computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count);
+    }
+}
+
+void comp_metrics_for_total_dimm_pwr(uint32_t dimm_total_pwr_mW)
+{
+    data_util_mov_avg_u32_add_sample(&computed_metrics_oob.dimm_total_pwr_mov_avg_mW, dimm_total_pwr_mW);
+
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        die_2_die_exch_oob_write_window_dimm_pwr(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.total_sum,
+                                                 computed_metrics_oob.dimm_total_pwr_mov_avg_mW.sample_count);
     }
 }
 

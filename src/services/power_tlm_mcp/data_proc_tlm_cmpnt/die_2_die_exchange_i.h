@@ -126,7 +126,9 @@ void die_2_die_exch_oob_write_window_soc_pwr(uint32_t summation_mW, uint16_t num
  * @param[in] die_id The ID of the die to read the SoC power window from.
  * @param[out] die_soc_pwr_window Pointer to a structure to store the SoC power window data.
  */
-void die_2_die_exch_oob_read_window_soc_pwr(uint8_t die_id, p_sliding_window_data_t die_soc_pwr_window);/**
+void die_2_die_exch_oob_read_window_soc_pwr(uint8_t die_id, p_sliding_window_data_t die_soc_pwr_window);
+
+/**
  * @brief Write the maximum DIMM temperature to the die to die exchange.
  * This function writes the summation of DIMM temperatures and the number of samples to the exchange.
  *
@@ -143,3 +145,22 @@ void die_2_die_exch_oob_write_window_max_dimm_temp(uint32_t summation_dC, uint16
  * @param[out] max_dimm_temp_window Pointer to a structure to store the maximum DIMM temperature window data.
  */
 void die_2_die_exch_oob_read_window_max_dimm_temp(uint8_t die_id, p_sliding_window_data_t max_dimm_temp_window);
+
+/**
+ * @brief Write the Dimm power window to the die to die exchange.
+ * This function writes the summation of Dimm power and the number of samples to the exchange. It writes the location for
+ * the die specified by `this_die_id`, which is initialized using `die_2_die_exch_init`.
+ *
+ * @param[in] summation_mW The summation of SoC power in milliwatts.
+ * @param[in] num_samples The number of samples used to calculate the summation.
+ */
+void die_2_die_exch_oob_write_window_dimm_pwr(uint32_t summation_mW, uint16_t num_samples);
+
+/**
+ * @brief Read the Dimm power window from the die to die exchange.
+ * This function reads the Dimm power window for a specific die.
+ *
+ * @param[in] die_id The ID of the die to read the Dimm power window from.
+ * @param[out] die_dimm_pwr_window Pointer to a structure to store the Dimm power window data.
+ */
+void die_2_die_exch_oob_read_window_dimm_pwr(uint8_t die_id, p_sliding_window_data_t die_dimm_pwr_window);

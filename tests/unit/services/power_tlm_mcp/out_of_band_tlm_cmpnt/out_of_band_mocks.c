@@ -51,6 +51,11 @@ uint32_t __wrap_data_proc_tlm_cmpnt_get_oob_soc_pwr_mW(void)
     return mock_type(uint32_t);
 }
 
+uint32_t __wrap_data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW(void)
+{
+    return mock_type(uint32_t);
+}
+
 fpfw_status_t __wrap_fpfw_pldm_service_register_numeric_sensor(pldm_numeric_sensor_context_t* p_sensor,
                                                                pldm_numeric_sensor_config_t* p_config)
 {

@@ -593,28 +593,57 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core, tes
 
 TEST_FUNCTION(test_comp_metrics_for_max_dimm_temp, test_setup, test_teardown)
 {
-    uint16_t test_values_dC[5] = {180, 190, 200, 210, 220};
+    uint16_t test_values_dC[DIMM_MOVING_AVG_NUM_SAMPLES] = {200, 220};
     die_2_die_exch_init(0);
     comp_metrics_init();
 
-    for (uint8_t i = 0; i < 5; i++)
+    for (uint8_t i = 0; i < DIMM_MOVING_AVG_NUM_SAMPLES; i++)
     {
         comp_metrics_for_max_dimm_temp(test_values_dC[i]);
     }
 
     // Check the results
-    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum, 1000);
-    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count, 5);
+    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum, 420);
+    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count, 2);
 
     die_2_die_exch_init(1);
     comp_metrics_init();
 
-    for (uint8_t i = 0; i < 5; i++)
+    for (uint8_t i = 0; i < DIMM_MOVING_AVG_NUM_SAMPLES; i++)
     {
         comp_metrics_for_max_dimm_temp(test_values_dC[i]);
     }
 
     // Check the results
-    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum, 1000);
-    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count, 5);
+    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum, 420);
+    assert_int_equal(computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count, 2);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_total_dimm_pwr, test_setup, test_teardown)
+{
+    die_2_die_exch_init(0);
+    comp_metrics_init();
+
+    uint16_t test_values_mW[DIMM_MOVING_AVG_NUM_SAMPLES] = {190, 210};
+
+    for (uint8_t i = 0; i < DIMM_MOVING_AVG_NUM_SAMPLES; i++)
+    {
+        comp_metrics_for_total_dimm_pwr(test_values_mW[i]);
+    }
+
+    // Check the results
+    assert_int_equal(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.total_sum, 400);
+    assert_int_equal(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.sample_count, 2);
+
+    die_2_die_exch_init(1);
+    comp_metrics_init();
+
+    for (uint8_t i = 0; i < DIMM_MOVING_AVG_NUM_SAMPLES; i++)
+    {
+        comp_metrics_for_total_dimm_pwr(test_values_mW[i]);
+    }
+
+    // Check the results
+    assert_int_equal(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.total_sum, 400);
+    assert_int_equal(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.sample_count, 2);
 }

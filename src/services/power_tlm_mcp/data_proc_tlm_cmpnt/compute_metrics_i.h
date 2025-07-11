@@ -21,7 +21,8 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MOVING_AVG_DURATION_MS (250)
-#define MOVING_AVG_NUM_SAMPLES (MOVING_AVG_DURATION_MS / DATA_AGGR_PKG_PERIOD_MS)
+#define TEMPERATURE_MOVING_AVG_NUM_SAMPLES (MOVING_AVG_DURATION_MS / DATA_AGGR_PKG_PERIOD_MS)
+#define DIMM_MOVING_AVG_NUM_SAMPLES (2)
 
 /*-------------- Typedefs ----------------*/
 
@@ -107,12 +108,17 @@ typedef struct
 
 typedef struct
 {
-    uint16_t max_soc_temp_samples_dC[MOVING_AVG_NUM_SAMPLES];
+    uint16_t max_soc_temp_samples_dC[TEMPERATURE_MOVING_AVG_NUM_SAMPLES];
     moving_avg_u16_t max_soc_temp_mov_avg_dC;
-    uint32_t soc_total_pwr_samples_mW[MOVING_AVG_NUM_SAMPLES];
+
+    uint32_t soc_total_pwr_samples_mW[TEMPERATURE_MOVING_AVG_NUM_SAMPLES];
     moving_avg_u32_t soc_total_pwr_mov_avg_mW;
-    uint16_t max_dimm_temp_samples_dC[MOVING_AVG_NUM_SAMPLES];
+
+    uint16_t max_dimm_temp_samples_dC[DIMM_MOVING_AVG_NUM_SAMPLES];
     moving_avg_u16_t max_dimm_temp_mov_avg_dC;
+
+    uint32_t dimm_total_pwr_samples_mW[DIMM_MOVING_AVG_NUM_SAMPLES];
+    moving_avg_u32_t dimm_total_pwr_mov_avg_mW;
 } computed_metrics_oob_t;
 
 
@@ -302,6 +308,13 @@ void comp_metrics_for_single_soc_dimm_power(uint8_t dimm_id, uint16_t latest_dim
  * @param[in] latest_max_dimm_temp_dC - latest maximum DIMM temperature in dC.
  */
 void comp_metrics_for_max_dimm_temp(uint16_t latest_max_dimm_temp_dC);
+
+/**
+ * @brief  This API used to update the maximum DIMM power in mW.
+ *
+ * @param[in] dimm_total_pwr_mW - latest total DIMM power in mW.
+ */
+void comp_metrics_for_total_dimm_pwr(uint32_t dimm_total_pwr_mW);
 
 /**
  * @brief  This API used during cores are throttling, MMA calculation is triggerd by this APIs

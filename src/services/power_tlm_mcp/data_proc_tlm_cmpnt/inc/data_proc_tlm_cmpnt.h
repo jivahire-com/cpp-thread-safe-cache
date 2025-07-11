@@ -333,6 +333,13 @@ uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC(void);
 uint32_t data_proc_tlm_cmpnt_get_oob_soc_pwr_mW(void);
 
 /**
+ * @brief Get the out-of-band total dimm power.
+ *
+ * @return The total Dimm power in milliwatts.
+ */
+uint32_t data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW(void);
+
+/**
  * @brief Get the out-of-band critical sensor maximum DIMM temperature.
  *
  * @return The maximum DIMM temperature in degrees deci-Celsius.

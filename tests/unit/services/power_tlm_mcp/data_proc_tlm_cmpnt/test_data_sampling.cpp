@@ -993,7 +993,7 @@ TEST_FUNCTION(test_data_smpl_parse_pvt_temperature_entry, test_setup, test_teard
 // Test for tlm_logger_log_dimm_infromation
 TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
 {
-    soc_info.latest_max_dimm_temp_dC = 42;
+    dimm_rt.latest_max_dimm_temp_dC = 42;
     sensor_ram_dimm_info_t dimm_info = {
         .timestamp = 0,
         .dimm_temp_s0_dC = 26,
@@ -1007,13 +1007,13 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
     data_smpl_parse_dimm_entry(&dimm_info);
 
     // Check DIMM information
-    assert_int_equal(latest_dimm[dimm_info.dimm_id].power_mW, (dimm_info.dimm_power_mW));
-    assert_int_equal(latest_dimm[dimm_info.dimm_id].temperature_dC, (dimm_info.dimm_temp_s1_dC));
-    assert_int_equal(soc_info.latest_max_dimm_temp_dC, 42);
+    assert_int_equal(dimm_rt.latest_dimm[dimm_info.dimm_id].power_mW, (dimm_info.dimm_power_mW));
+    assert_int_equal(dimm_rt.latest_dimm[dimm_info.dimm_id].temperature_dC, (dimm_info.dimm_temp_s1_dC));
+    assert_int_equal(dimm_rt.latest_max_dimm_temp_dC, 42);
 
-    soc_info.latest_max_dimm_temp_dC = 16;
+    dimm_rt.latest_max_dimm_temp_dC = 16;
     data_smpl_parse_dimm_entry(&dimm_info);
-    assert_int_equal(soc_info.latest_max_dimm_temp_dC, 28);
+    assert_int_equal(dimm_rt.latest_max_dimm_temp_dC, 28);
 
     // invalid DIMM id.
     dimm_info.dimm_id = 17;

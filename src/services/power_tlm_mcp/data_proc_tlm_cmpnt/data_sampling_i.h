@@ -130,10 +130,14 @@ typedef struct {
     uint16_t latest_max_tile_temp_dC;
     uint16_t latest_max_soc_top_temp_dC;
     uint16_t latest_max_die_temp_dC; // max of latest_max_tile_temp_dC and latest_max_soc_top_temp_dC
-    uint16_t latest_max_dimm_temp_dC;
     uint64_t latest_core_states_proc_timestamp_uS; //a timestamp used for all core states processing ,when no pstate packet occurred.
 } soc_runtime_info_t;
 
+typedef struct {
+    uint32_t latest_dimm_total_pwr_mW;
+    uint16_t latest_max_dimm_temp_dC;
+    inst_soc_element_dimm_runtime_t  latest_dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
+} dimm_runtime_info_t;
 /**
  *  @brief Enum for Pstate message throttle status codes
  * // Status from KNG RMSSHASv0.p14 Document index value
@@ -177,7 +181,7 @@ typedef struct {
 extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_info;
-extern inst_soc_element_dimm_runtime_t  latest_dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
+extern dimm_runtime_info_t dimm_rt;
 
 /*--------- Function Prototypes ----------*/
 /**
@@ -193,7 +197,6 @@ void data_smpl_init(void);
  * @return none
  */
 void data_smpl_init_dts_coefficients(void);
-
 
 /**
  * @brief   Update the maximum die temperature based on the latest tile and SOC top temperatures.
@@ -233,7 +236,6 @@ bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t ti
  * @return bool   - true if a valid current entry
  */
 bool data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t core_index);
-
 
 /**
  * @brief Internal API to log voltage regulator (VR) temperatures

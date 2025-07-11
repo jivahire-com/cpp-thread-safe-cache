@@ -67,7 +67,6 @@ void hm_report_error_event(hm_error_report_type_t type, bool trigger)
         break;
     }
     default:
-        HM_ET_ERROR_PARAM(HM_ET_TYPE_UE_INVALID_PARAMS, type);
         BUG_ASSERT_PARAM(false, type, 0);
     }
 }

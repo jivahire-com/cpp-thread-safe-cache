@@ -28,6 +28,16 @@ static ras_einj_info_t einj_payload_local = {0};
 extern acpi_error_domain_t test_error_domain;
 
 /*-- Declarations (Statics and globals) --*/
+uint32_t __wrap_AP_GHES_ADDR(uint32_t mscp_addr)
+{
+    return mscp_addr;
+}
+
+uint32_t __wrap_MSCP_GHES_ADDR(uint32_t ap_addr)
+{
+    return ap_addr;
+}
+
 int pre_ddr_setup(void** state)
 {
     FPFW_UNUSED(state);

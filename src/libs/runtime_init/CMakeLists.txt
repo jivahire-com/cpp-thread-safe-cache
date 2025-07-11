@@ -35,7 +35,7 @@ add_library(${TARGET}
         fuse_init.c
         gpio_init.c
         gtimer_init.c
-        health_monitor_init.c
+        health_monitor_scp_init.c
         hw_semaphore_init.c
         hw_version_scp_init.c
         ib_telm_hsp_init.c
@@ -260,6 +260,7 @@ add_library(${TARGET}
         fuse_init.c
         gpio_init.c
         gtimer_init.c
+        health_monitor_mcp_init.c
         hw_semaphore_init.c
         hw_version_mcp_init.c
         oob_telm_mcp_init.c
@@ -365,6 +366,7 @@ target_link_libraries(
         ms::service::pwr_tlm_mcp
         ms::service::pwr_tlm_mcp::cli
         ms::service::wdog
+        ms::service::health_monitor::mcp
         silibs::atu
         silibs::common::lib_uart_pl011
         silibs::fuse

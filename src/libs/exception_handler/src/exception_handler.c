@@ -233,8 +233,8 @@ void exception_handler(exception_stack_frame_t* stack_frame)
     const int exceptionIdx = get_active_exception();
 
 #if defined(MCP_RUNTIME_INIT)
-    // acpi_error_domain_t err_domain = ACPI_ERROR_DOMAIN_MCP_PROC;
-    // const guid_t status_guid = exceptionIdx == NonMaskableInt_IRQn ? (guid_t)MCP_WD : (guid_t)MCP_EXCEPTION;
+    acpi_error_domain_t err_domain = ACPI_ERROR_DOMAIN_MCP_PROC;
+    const guid_t status_guid = exceptionIdx == NonMaskableInt_IRQn ? (guid_t)MCP_WD : (guid_t)MCP_EXCEPTION;
 #elif defined(SCP_RUNTIME_INIT)
     acpi_error_domain_t err_domain = ACPI_ERROR_DOMAIN_SCP_PROC;
     const guid_t status_guid = exceptionIdx == NonMaskableInt_IRQn ? (guid_t)SCP_WD : (guid_t)SCP_EXCEPTION;
@@ -295,7 +295,6 @@ void exception_handler(exception_stack_frame_t* stack_frame)
     // Provide printout for debugging
     print_context_info(&g_core_crash_context);
 
-#ifdef SCP_RUNTIME_INIT
     // Send CPER
     acpi_err_sec_firmware_t sec_fw_cper_section = {
         .severity = ACPI_ERROR_SEVERITY_CORRECTED,
@@ -306,7 +305,6 @@ void exception_handler(exception_stack_frame_t* stack_frame)
     cper_section.sec_fw = sec_fw_cper_section;
 
     hm_submit_cper(err_domain, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(cper_section));
-#endif
 
     // Call the crash dump handler
     crash_dump_handler(errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2], bugCheckParams[3]);

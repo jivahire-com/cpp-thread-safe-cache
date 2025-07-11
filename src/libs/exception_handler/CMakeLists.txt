@@ -63,7 +63,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_domain::mcp
         ms::lib::mcp_interrupts
         ms::lib::threadx
-        ms::service::health_monitor
+        ms::service::health_monitor::mcp
         silibs::atu
         silibs::cmsdk_wd
         silibs::idsw_kng

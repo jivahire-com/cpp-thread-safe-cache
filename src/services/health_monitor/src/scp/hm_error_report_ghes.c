@@ -107,8 +107,8 @@ void construct_mscp_ghes_table()
         {
             // GHES Structure update for current error domain
             default_ghes.source_id = error_domain_idx;
-            default_ghes.address.address = (uint32_t)current_ghes_error_record_location;
-            default_ghes.ack.address.address = (uint32_t)current_ghes_ack_base++;
+            default_ghes.address.address = (uint32_t)AP_GHES_ADDR((uint32_t)current_ghes_error_record_location);
+            default_ghes.ack.address.address = (uint32_t)AP_GHES_ADDR((uint32_t)current_ghes_ack_base++);
 
             for (size_t i = 0; i < sizeof(acpi_ghes_t); i++)
             {
@@ -135,8 +135,8 @@ void construct_mscp_ghes_table()
             }
 
             // update error record location table for current error domain
-            *current_ghes_error_record_location++ =
-                (uint32_t)current_ghes_error_record_base - hm_config->mscp_ghes_base_apcore_offset;
+            *current_ghes_error_record_location++ = (uint32_t)AP_GHES_ADDR(
+                (uint32_t)(current_ghes_error_record_base - hm_config->mscp_ghes_base_apcore_offset));
             *current_ghes_error_record_location++ = 0; // 64 bit address
 
             // get ghes error record base for next error domain
@@ -169,9 +169,11 @@ void activate_error_domain(uint16_t error_domain_idx, const guid_t* error_domain
     current_error_domain_ghes_base += error_domain_idx;
 
     // locate error record base of current error domain
-    uint32_t error_record_base = (uint32_t)(current_error_domain_ghes_base->address.address);
+    uint32_t error_record_base_addr = MSCP_GHES_ADDR((uint32_t)current_error_domain_ghes_base->address.address);
+    uint32_t error_record_base = MSCP_GHES_ADDR(*(uint32_t*)error_record_base_addr);
+
     volatile acpi_ghes_error_record_dual_die_t* current_error_domain_error_record_base =
-        (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+        (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
     // lock before updating error domain information
     wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
@@ -256,9 +258,11 @@ void update_error_record_section(uint16_t error_domain_idx,
         current_error_domain_ghes_base += error_domain_idx;
 
         // locate error record base of current error domain
-        uint32_t error_record_base = (uint32_t)(current_error_domain_ghes_base->address.address);
+        uint32_t error_record_base_addr = MSCP_GHES_ADDR((uint32_t)current_error_domain_ghes_base->address.address);
+        uint32_t error_record_base = MSCP_GHES_ADDR(*(uint32_t*)error_record_base_addr);
+
         volatile acpi_ghes_error_record_dual_die_t* current_domain_error_record_base =
-            (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+            (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
         // locate error record section
         uint32_t current_section_idx = current_domain_error_record_base->block_status_entry_count;

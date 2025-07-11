@@ -117,9 +117,11 @@ static FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
     acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base = NULL;
     for (uint32_t error_domain_idx = 0; error_domain_idx < ACPI_ERROR_DOMAIN_COUNT; error_domain_idx++)
     {
-        uint32_t error_record_base = (uint32_t)(current_ghes_base->address.address);
+        uint32_t error_record_base_addr = MSCP_GHES_ADDR((uint32_t)current_ghes_base->address.address);
+        uint32_t error_record_base = MSCP_GHES_ADDR(*(uint32_t*)error_record_base_addr);
+
         current_ghes_error_record_base =
-            (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+            (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
         current_ghes_base++;
     }

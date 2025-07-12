@@ -318,9 +318,11 @@ void dump_ghes(uint32_t ghes_idx)
     }
 
     // error record populate via GHES
-    uint32_t error_record_base = (uint32_t)(current_ghes_base->address.address);
+    uint32_t error_record_base_addr = MSCP_GHES_ADDR((uint32_t)current_ghes_base->address.address);
+    uint32_t error_record_base = MSCP_GHES_ADDR(*(uint32_t*)error_record_base_addr);
+
     acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base =
-        (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+        (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
     // Dump Error record associated with current GHES
     dump_ghes_error_record(current_ghes_error_record_base, current_ghes_base->max_sections_per_record);

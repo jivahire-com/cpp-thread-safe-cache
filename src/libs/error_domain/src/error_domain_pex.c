@@ -128,9 +128,8 @@ static void enable_pex_interrupts()
 
 void register_pex_error_domain()
 {
-    // TODO : Change error domain to PEX once silibs PR cpmpletes
     //  Register the error domain
-    hm_register_error_domain(ACPI_ERROR_DOMAIN_SCP_PROC, &PEX_GUID, PEX_FRU, mscp_error_injection_handler, NULL);
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_PEX, &PEX_GUID, PEX_FRU, mscp_error_injection_handler, NULL);
 
     // Register the error interrupt handlers
     enable_pex_interrupts();

@@ -24,6 +24,8 @@
 #define TEMPERATURE_MOVING_AVG_NUM_SAMPLES (MOVING_AVG_DURATION_MS / DATA_AGGR_PKG_PERIOD_MS)
 #define DIMM_MOVING_AVG_NUM_SAMPLES (2)
 
+#define VR_TEMP_MOVING_AVG_NUM_SAMPLES (10)
+
 /*-------------- Typedefs ----------------*/
 
 //
@@ -119,6 +121,9 @@ typedef struct
 
     uint32_t dimm_total_pwr_samples_mW[DIMM_MOVING_AVG_NUM_SAMPLES];
     moving_avg_u32_t dimm_total_pwr_mov_avg_mW;
+
+    uint16_t max_vr_temp_samples_dC[VR_TEMP_MOVING_AVG_NUM_SAMPLES];
+    moving_avg_u16_t max_vr_temp_mov_avg_dC;
 } computed_metrics_oob_t;
 
 

@@ -3,7 +3,6 @@ set(TARGET kng.service.pwr_tlm_mcp.cmpnt.out_of_band_tlm)
 add_library(${TARGET}
     STATIC
         out_of_band_tlm_cmpnt.c
-        pldm_comm.c
 )
 
 target_include_directories(${TARGET}

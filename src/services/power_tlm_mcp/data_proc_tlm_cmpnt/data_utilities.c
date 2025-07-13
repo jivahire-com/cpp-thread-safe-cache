@@ -231,6 +231,32 @@ uint16_t data_util_mean_of_summations(uint32_t summation1, uint16_t count1, uint
     return (uint16_t)mean;
 }
 
+uint16_t data_util_max_avg_of_summations(uint32_t summation1, uint16_t count1, uint32_t summation2, uint16_t count2)
+{
+    uint64_t avg1 = 0;
+    if (count1 > 0)
+    {
+        avg1 = ((uint64_t)summation1 + count1 / 2) / count1; // round up, use uint64_t to avoid overflow
+        if (avg1 > UINT16_MAX)
+        {
+            avg1 = UINT16_MAX;
+        }
+    }
+    uint64_t avg2 = 0;
+    if (count2 > 0)
+    {
+        avg2 = ((uint64_t)summation2 + count2 / 2) / count2; // round up, use uint64_t to avoid overflow
+        if (avg2 > UINT16_MAX)
+        {
+            avg2 = UINT16_MAX;
+        }
+    }
+
+    uint16_t max_avg = (avg1 > avg2) ? (uint16_t)avg1 : (uint16_t)avg2;
+
+    return max_avg;
+}
+
 void data_util_mov_avg_u16_init(moving_avg_u16_t* ma, uint16_t* samples, uint16_t sample_capacity)
 {
     if (ma == NULL || samples == NULL || sample_capacity == 0)

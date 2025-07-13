@@ -33,11 +33,11 @@ uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC(void)
     sliding_window_data_t die1_sliding_window_data = {0};
     die_2_die_exch_oob_read_window_max_die_temp(1, &die1_sliding_window_data);
 
-    uint16_t mean = data_util_mean_of_summations(computed_metrics_oob.max_soc_temp_mov_avg_dC.total_sum,
-                                                 computed_metrics_oob.max_soc_temp_mov_avg_dC.sample_count,
-                                                 die1_sliding_window_data.sum,
-                                                 die1_sliding_window_data.num_samples);
-    return mean;
+    uint16_t max_dC = data_util_max_avg_of_summations(computed_metrics_oob.max_soc_temp_mov_avg_dC.total_sum,
+                                                      computed_metrics_oob.max_soc_temp_mov_avg_dC.sample_count,
+                                                      die1_sliding_window_data.sum,
+                                                      die1_sliding_window_data.num_samples);
+    return max_dC;
 }
 
 uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC(void)
@@ -45,11 +45,11 @@ uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC(void)
     sliding_window_data_t die1_sliding_window_data = {0};
     die_2_die_exch_oob_read_window_max_dimm_temp(1, &die1_sliding_window_data);
 
-    uint16_t mean = data_util_mean_of_summations(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum,
-                                                 computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count,
-                                                 die1_sliding_window_data.sum,
-                                                 die1_sliding_window_data.num_samples);
-    return mean;
+    uint16_t max_dC = data_util_max_avg_of_summations(computed_metrics_oob.max_dimm_temp_mov_avg_dC.total_sum,
+                                                      computed_metrics_oob.max_dimm_temp_mov_avg_dC.sample_count,
+                                                      die1_sliding_window_data.sum,
+                                                      die1_sliding_window_data.num_samples);
+    return max_dC;
 }
 
 uint32_t data_proc_tlm_cmpnt_get_oob_soc_pwr_mW(void)
@@ -84,4 +84,16 @@ uint32_t data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW(void)
     uint32_t total_pwr_mW = data_util_mov_avg_u32_get(&computed_metrics_oob.dimm_total_pwr_mov_avg_mW) + die1_pwr_mw;
 
     return total_pwr_mW;
+}
+
+uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC(void)
+{
+    sliding_window_data_t die1_sliding_window_data = {0};
+    die_2_die_exch_oob_read_window_max_vr_temp(1, &die1_sliding_window_data);
+
+    uint16_t max_dC = data_util_max_avg_of_summations(computed_metrics_oob.max_vr_temp_mov_avg_dC.total_sum,
+                                                      computed_metrics_oob.max_vr_temp_mov_avg_dC.sample_count,
+                                                      die1_sliding_window_data.sum,
+                                                      die1_sliding_window_data.num_samples);
+    return max_dC;
 }

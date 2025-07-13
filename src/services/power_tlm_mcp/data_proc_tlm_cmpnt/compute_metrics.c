@@ -62,6 +62,10 @@ void comp_metrics_init(void)
     data_util_mov_avg_u32_init(&computed_metrics_oob.dimm_total_pwr_mov_avg_mW,
                                computed_metrics_oob.dimm_total_pwr_samples_mW,
                                DIMM_MOVING_AVG_NUM_SAMPLES);
+
+    data_util_mov_avg_u16_init(&computed_metrics_oob.max_vr_temp_mov_avg_dC,
+                               computed_metrics_oob.max_vr_temp_samples_dC,
+                               VR_TEMP_MOVING_AVG_NUM_SAMPLES);
 }
 
 void comp_metrics_for_sample_period(void)
@@ -175,10 +179,32 @@ void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR
 
 void comp_metrics_for_soc_rail_temperature(uint16_t (*latest_rail_temperature_dC)[MAX_NUM_OF_VR_RAILS])
 {
-    for (uint16_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
+    uint16_t num_rails = NUM_DIE0_VR_RAILS;
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        num_rails = NUM_DIE1_VR_RAILS;
+    }
+
+    uint16_t max_rail_temp_dC = 0;
+
+    for (uint16_t vr_index = 0; vr_index < num_rails; vr_index++)
     {
         data_util_calc_mma_u16(&computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC,
                                (*latest_rail_temperature_dC)[vr_index]);
+
+        if ((*latest_rail_temperature_dC)[vr_index] > max_rail_temp_dC)
+        {
+            max_rail_temp_dC = (*latest_rail_temperature_dC)[vr_index];
+        }
+    }
+
+    // Update the vr temp moving average
+    data_util_mov_avg_u16_add_sample(&computed_metrics_oob.max_vr_temp_mov_avg_dC, max_rail_temp_dC);
+
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        die_2_die_exch_oob_write_window_max_vr_temp(computed_metrics_oob.max_vr_temp_mov_avg_dC.total_sum,
+                                                    computed_metrics_oob.max_vr_temp_mov_avg_dC.sample_count);
     }
 }
 

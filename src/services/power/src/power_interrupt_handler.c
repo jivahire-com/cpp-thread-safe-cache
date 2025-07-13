@@ -48,7 +48,7 @@
 static vptr_scp_pwr_ctrl_reg scp_pwr_ctrl_regs = (vptr_scp_pwr_ctrl_reg)(SCP_TOP_SCP_PWR_CTRL_ADDRESS);
 
 /*-------------- Functions ---------------*/
-//Function to print the PLL error status for a specific core
+// Function to print the PLL error status for a specific core
 void core_pll_error_status(uint32_t core_idx, bool is_unlock)
 {
     power_runconfig_t* p_runconfig = power_runconfig_get();

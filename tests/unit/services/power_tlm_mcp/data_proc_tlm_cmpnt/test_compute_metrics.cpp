@@ -276,8 +276,11 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails_power, test_setup, test_teardown)
     assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count, 1);
 }
 
-TEST_FUNCTION(test_comp_metrics_for_soc_rail_TEMP, test_setup, test_teardown)
+TEST_FUNCTION(test_comp_metrics_for_soc_rail_temp, test_setup, test_teardown)
 {
+    comp_metrics_init();
+    die_2_die_exch_init(0);
+
     uint8_t vr_index = 4;
 
     computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.min = 500;
@@ -294,6 +297,29 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rail_TEMP, test_setup, test_teardown)
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.max, 2000);
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.average, 1063);
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.num_samples, 4);
+
+    comp_metrics_init();
+    die_2_die_exch_init(1);
+
+    vr_index = 1;
+
+    computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.min = 500;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.max = 1000;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.average = 750;
+    computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.num_samples = 3;
+
+    soc_info.latest_rail_temperature_dC[vr_index] = 2000;
+    // Call the function to be tested
+    comp_metrics_for_soc_rail_temperature(&soc_info.latest_rail_temperature_dC);
+
+    // Add assertions to verify the expected behavior
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.min, 500);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.max, 2000);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.average, 1063);
+    assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.num_samples, 4);
+
+    assert_int_equal(computed_metrics_oob.max_vr_temp_mov_avg_dC.total_sum, 2000);
+    assert_int_equal(computed_metrics_oob.max_vr_temp_mov_avg_dC.sample_count, 1);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_hnf_channel, test_setup, test_teardown)

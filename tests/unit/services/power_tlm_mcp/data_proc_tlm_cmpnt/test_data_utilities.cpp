@@ -186,6 +186,21 @@ TEST_FUNCTION(test_data_util_mean_of_means_corner, test_setup, test_teardown)
     assert_int_equal(mean, UINT16_MAX);
 }
 
+TEST_FUNCTION(test_data_util_max_avg_of_summations, test_setup, test_teardown)
+{
+    uint16_t max = data_util_max_avg_of_summations(1000, 10, 2000, 5);
+    assert_int_equal(max, 400);
+
+    max = data_util_max_avg_of_summations(0, 0, 0, 0);
+    assert_int_equal(max, 0);
+
+    max = data_util_max_avg_of_summations(2000, 4, 0, 0);
+    assert_int_equal(max, 500);
+
+    max = data_util_max_avg_of_summations(UINT32_MAX, UINT16_MAX, UINT32_MAX, UINT16_MAX);
+    assert_int_equal(max, UINT16_MAX);
+}
+
 TEST_FUNCTION(test_data_util_calc_mma_u16, test_setup, test_teardown)
 {
     mma_u16_t mma = {0};

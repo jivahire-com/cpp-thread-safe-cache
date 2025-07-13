@@ -346,3 +346,10 @@ uint32_t data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW(void);
  */
 uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC(void);
 
+/**
+ * @brief Get the out-of-band critical sensor maximum VR temperature.
+ *
+ * @return The maximum VR temperature in degrees deci-Celsius.
+ */
+uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC(void);
+

@@ -148,6 +148,18 @@ uint16_t data_util_mean_of_means(uint16_t mean1, uint16_t count1, uint16_t mean2
 uint16_t data_util_mean_of_summations(uint32_t summation1, uint16_t count1, uint32_t summation2, uint16_t count2);
 
 /**
+ * @brief Returns the MAX(summation1/count1, summation2/count2).
+ *
+ * @param[in] summation1 - The first summation value.
+ * @param[in] count1 - The count associated with the first summation.
+ * @param[in] summation2 - The second summation value.
+ * @param[in] count2 - The count associated with the second summation.
+ *
+ * @return The calculated maximum average of the two summations.
+ */
+uint16_t data_util_max_avg_of_summations(uint32_t summation1, uint16_t count1, uint32_t summation2, uint16_t count2);
+
+/**
  * Moving Average handler
  *
  * Implements an efficient circular-buffer based simple moving average for

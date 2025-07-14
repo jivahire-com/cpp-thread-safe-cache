@@ -134,15 +134,6 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         Test function to execute sensor fifo CLI commands and validate the response.
         Optionally executes a first command before the actual command.
         """
-        # Perform an additional OOB reset if the device type is bigFPGA. Being added to avoid the issue of the SCP/MCP not responding after some time. 
-        # Adding it in here as all the tests call this method and it will be executed every time.
-        # This is a temporary fix and should be removed after the root cause is found and fixed.
-        # Bug: https://azurecsi.visualstudio.com/Woodinville/_workitems/edit/2587745
-        # TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592872
-        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
-            KngPythiaTestSetup.fpga_oob_reset(self.log)
-
         self.log.info(f"Running SENSOR FIFO CLI TEST with command: {command}")
         
         try:
@@ -492,7 +483,12 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         try:
             self.log.info("Setting up DUT...")
             self.dut.setup()
-                
+            
+            # If on the FPGA perform an Out of Band Reset, 
+            if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+                self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+                KngPythiaTestSetup.fpga_oob_reset(self.log)
+
             if self.dut.mb.node_0.soc.secondary_die is not None:
                 self.log.info("Current Test is executing on DualDie Config, so secondary die will be used to open channel on SCP and MCP core")
                 self.core_com_channel_scp = self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
@@ -538,23 +534,12 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         try:
             self.log.info("Setting up prerequisites for FIFO testing")
 
-            # Wait for SCP heartbeat
+            # Wait for MCP / SCP heartbeat
             if not self.wait_for_scp_mcp_heartbeat():
                 self.log.error("Failed to receive SCP MCP heartbeat")
                 return False
-        
-            # Wait for SVP initialization
-            time.sleep(5)  # Short delay for SVP to settle
 
-            # Ensure UART is ready by checking channel
-            if not self.core_com_channel_scp.is_open():
-                self.log.info("Opening UART channel")
-                self.core_com_channel_scp.open()
-                if not self.core_com_channel_scp.is_open():
-                    self.log.error("Failed to open UART channel")
-                    return False
-
-            # Set power loop disable
+            # Disable the power control loop on the SCP
             pwr_loop_result = self.sensor_fifo_cli_test(
                 command="pwr set loopdis 7",
                 read_until_key="Ok",
@@ -564,8 +549,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                 self.log.error("❌ Failed to set power loop disable")
                 return False
             
-            # pwrtlm disable on MCP <MCP not getting loaded when sideloaded...
-            # In ADO might not work but have the code as it might be needed when we have to test in real hardware. 
+            # Disable the power telemetry servicer on the MCP (to stop it from reading from the sensor FIFOs)
             pwrtlm_result = self.run_command_on_mcp(
                 command="pwrtlm disable",
                 read_until_key="Ok",
@@ -581,8 +565,6 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                 read_until_key="Ok",
                 pass_logs="Fifos have been reset"
             )
-            time.sleep(5)
-            
             if not self.validate_test_result(reset_result):
                 self.log.error("❌ Failed to reset FIFOs")
                 return False
@@ -593,7 +575,6 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         except Exception as e:
             self.log.error(f"❌ Error setting up FIFO prerequisites: {str(e)}")
             return False
-
 
     # With improved error handling
     def test_fifo_write_read_entries_with_improved_error_handling(self, fifo_name: str = "TEMPERATURE", random_seed: int = None, num_entries: int = 10) -> tuple[bool, list]:

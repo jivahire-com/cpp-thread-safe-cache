@@ -1,3 +1,7 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
 *** Settings ***
 Documentation     Tests for sensor FIFO CLI commands
 ...               Verifies various sensor FIFO CLI commands functionality

@@ -1,11 +1,16 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
 *** Settings ***
+Documentation     Tests that the sensor fifo libraries are operational
 Resource          ${CURDIR}/../../../../commonResource/sensor_fifo_common.resource
 Library           ${CURDIR}/../../library/sensor_fifo_tests/sensor_fifo_lib.py
 Library           ${CURDIR}/../../library/sensor_fifo_tests/sensor_data_generator.py
 
 *** Variables ***
 ${RANDOM_SEED}    ${80}    # More explicit seed value
-${NUM_ENTRIES}    ${5}       # Number of entries to generate per FIFO
+${NUM_ENTRIES}    ${5}     # Number of entries to generate per FIFO
 
 *** Keywords ***
 Create Generator With Seed

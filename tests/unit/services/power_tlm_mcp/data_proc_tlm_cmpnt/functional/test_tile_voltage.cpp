@@ -322,16 +322,11 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
                    voltage_record.voltage_collection[1].voltage_element.average_mV);
 
             printf("\nTile VCPU Voltage:\n");
-            printf("  Latest (mV):      %8d   %8d\n", expected_vcpu_voltage, tile[0].vcpu.latest_value_mV);
-            printf("  Min (mV):         %8d   %8d\n", expected_vcpu_min, tile[0].vcpu.min_mV);
-            printf("  Max (mV):         %8d   %8d\n", expected_vcpu_max, tile[0].vcpu.max_mV);
-            printf("  Avg (mV):         %8d   %8d\n", expected_vcpu_avg, tile[0].vcpu.average_mV);
+            printf("  Latest (mV):      %8d   %8d\n", expected_vcpu_voltage, tile_rt[0].latest_vcpu_voltage_mV);
 
             printf("\nTile VSYS Voltage:\n");
-            printf("  Latest (mV):      %8d   %8d\n", expected_vsys_voltage, tile[0].vsys.latest_value_mV);
-            printf("  Min (mV):         %8d   %8d\n", expected_vsys_min, tile[0].vsys.min_mV);
-            printf("  Max (mV):         %8d   %8d\n", expected_vsys_max, tile[0].vsys.max_mV);
-            printf("  Avg (mV):         %8d   %8d\n", expected_vsys_avg, tile[0].vsys.average_mV);
+            printf("  Latest (mV):      %8d   %8d\n", expected_vsys_voltage, tile_rt[0].latest_vsys_voltage_mV);
+
             printf("----------------------------------------\n");
         }
 

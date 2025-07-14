@@ -28,6 +28,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.status
         fwlib.lib.utils
         ms::cmsis::interface
+        ms::lib::core_info
         ms::lib::error_codes
         ms::lib::arm_intrinsic
         ms::lib::power_fuse

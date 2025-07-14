@@ -157,7 +157,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_current_data(uint16_t core_id, p_pwr_core_
     }
     else
     {
-        current_data->latest_value_mA = core[core_id].latest_current_mA;
+        current_data->latest_value_mA = core_rt[core_id].latest_current_mA;
         current_data->average_mA = computed_metrics_2_mins.cores[core_id].current_mA.running_avg.average;
         current_data->max_mA = computed_metrics_2_mins.cores[core_id].current_mA.max;
         current_data->min_mA = computed_metrics_2_mins.cores[core_id].current_mA.min;
@@ -337,23 +337,23 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
     {
         // Depending on the throttling status, we need to use a different source for what pstate id the
         // core is currently in.
-        uint8_t current_pstate = core[core_id].latest_pstate;
-        if (core[core_id].throttling_status != NO_THROTTLE)
+        uint8_t current_pstate = core_rt[core_id].latest_pstate;
+        if (core_rt[core_id].throttling_status != NO_THROTTLE)
         {
             /* Note : DVFS engine can generate a lot of Pstate changes during throttling the
             Pstate telemetry get suppressed and the only way to see Pstate samples is from
             harvesting them from the periodic current telemetry packets */
-            current_pstate = core[core_id].pstate_from_current_pkt;
+            current_pstate = core_rt[core_id].pstate_from_current_pkt;
         }
 
         core_summary_data->pstate = current_pstate;
-        core_summary_data->cstate = core[core_id].latest_cstate;
+        core_summary_data->cstate = core_rt[core_id].latest_cstate;
         core_summary_data->frequency_Mhz = dvfs_get_freq_from_plimit(current_pstate);
-        core_summary_data->power_mW = core[core_id].latest_power_mW;
-        core_summary_data->voltage_mV = core[core_id].latest_voltage_mV;
-        core_summary_data->current_mA = core[core_id].latest_current_mA;
-        core_summary_data->temperature_dC = core[core_id].latest_max_value_dC;
-        core_summary_data->plimit = core[core_id].active_sample_plimit;
+        core_summary_data->power_mW = core_rt[core_id].latest_power_mW;
+        core_summary_data->voltage_mV = core_rt[core_id].latest_voltage_mV;
+        core_summary_data->current_mA = core_rt[core_id].latest_current_mA;
+        core_summary_data->temperature_dC = core_rt[core_id].latest_max_value_dC;
+        core_summary_data->plimit = core_rt[core_id].active_sample_plimit;
 
         // TODO :Below items need to be updated, when corresponding records will have implementation.
         // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584933
@@ -362,14 +362,12 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         core_summary_data->cstate_entry_latency_uS = 0;
         // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584925
         core_summary_data->cstate_exit_latency_uS = 0;
-        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584939
-        core_summary_data->guard_band_voltage_mV = 0;
         core_summary_data->velocity_boost_priority = 0;
         /* Note : Every bit represt an active throttling*/
         // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2684261
         core_summary_data->throttling_type = data_smpl_get_active_throttling_for_single_core(core_id);
         /* Note:  latest rack priority id*/
-        core_summary_data->throttling_rack_priority = core[core_id].latest_rack_throttling_priority_id;
+        core_summary_data->throttling_rack_priority = core_rt[core_id].latest_rack_throttling_priority_id;
     }
 }
 
@@ -383,9 +381,9 @@ void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_ele
     else
     {
         // Create Voltage, Current and Temperature Information
-        rail_data->current_mA = soc_info.latest_rail_current_mA[rail_id];
-        rail_data->temperature_dC = soc_info.latest_rail_temperature_dC[rail_id];
-        rail_data->voltage_mV = soc_info.latest_rail_voltage_mV[rail_id];
+        rail_data->current_mA = soc_rt.latest_rail_current_mA[rail_id];
+        rail_data->temperature_dC = soc_rt.latest_rail_temperature_dC[rail_id];
+        rail_data->voltage_mV = soc_rt.latest_rail_voltage_mV[rail_id];
     }
 }
 
@@ -417,13 +415,13 @@ void data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(uint16_t sensor_id, p_inst_
     }
     else
     {
-        sensor_temp_data->temperature_dC = soc_info.latest_soc_top_temp_dC[sensor_id];
+        sensor_temp_data->temperature_dC = soc_rt.latest_soc_top_temp_dC[sensor_id];
     }
 }
 
 void data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(p_inst_soc_element_max_temp_t max_temp_data)
 {
     // note:  packaging won't call this api for secondary dies
-    max_temp_data->die0_max_temperature_dC = soc_info.latest_max_die_temp_dC;
+    max_temp_data->die0_max_temperature_dC = soc_rt.latest_max_die_temp_dC;
     max_temp_data->die1_max_temperature_dC = die_2_die_exch_ib_read_inst_max_die_temp_dC(1);
 }

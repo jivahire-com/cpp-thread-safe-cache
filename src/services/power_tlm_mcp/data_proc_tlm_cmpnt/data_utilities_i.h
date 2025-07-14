@@ -25,25 +25,25 @@ typedef struct {
 } running_avg_t;
 
 typedef struct {
+    running_avg_t running_avg;
     uint16_t min;
     uint16_t max;
-    running_avg_t running_avg;
 } mma_u16_t, *p_mma_u16_t;
 
 typedef struct {
     uint16_t* samples;         // Pointer to circular sample array
+    uint32_t  total_sum;       // Running sum of all values
     uint16_t   sample_capacity; // Total capacity of the sample array
     uint16_t   sample_index;    // Current circular write index
     uint16_t   sample_count;    // Current number of valid samples (<= sample_capacity)
-    uint32_t  total_sum;       // Running sum of all values
 } moving_avg_u16_t;
 
 typedef struct {
     uint32_t* samples;          // Pointer to circular sample array
+    uint32_t  total_sum;        // Running sum of all values
     uint16_t   sample_capacity; // Total capacity of the sample array
     uint16_t   sample_index;    // Current circular write index
     uint16_t   sample_count;    // Current number of valid samples (<= sample_capacity)
-    uint32_t  total_sum;        // Running sum of all values
 } moving_avg_u32_t;
 
 
@@ -68,11 +68,10 @@ int16_t data_util_get_max_val(int16_t val0, int16_t val1, int16_t val2);
  *
  * @param[in,out] previous_timestamp_uS - Pointer to the variable that stores the previous timestamp in microseconds.
  * @param[in,out] time_stamp_uS - Pointer to the variable that stores the current timestamp in microseconds.
- * @param[in] update_type - The type of update (e.g., SOC update).
  *
  * @return The calculated time difference in microseconds.
  */
-uint64_t data_util_calc_time_diff(uint64_t* previous_timestamp_uS, uint64_t* time_stamp_uS, pwr_tlm_update_t update_type);
+uint64_t data_util_calc_time_diff(uint64_t* previous_timestamp_uS, uint64_t* time_stamp_uS);
 
 /**
  * @brief data_util_calc_mma_res function calculates the minimum, maximum, and average values of a

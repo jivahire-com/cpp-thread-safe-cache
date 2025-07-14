@@ -89,11 +89,11 @@ static int32_t test_setup(void** state)
     // Reset core state for clean test
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {
-        core[core_id].latest_cstate = 0;
-        core[core_id].cstate_timestamp_uS = 0;
-        core[core_id].flags.cstate_change = 0;
-        core[core_id].latest_pstate = 0;
-        core[core_id].pstate_timestamp_uS = 0;
+        core_rt[core_id].latest_cstate = 0;
+        core_rt[core_id].cstate_timestamp_uS = 0;
+        core_rt[core_id].flags.cstate_change = 0;
+        core_rt[core_id].latest_pstate = 0;
+        core_rt[core_id].pstate_timestamp_uS = 0;
     }
 
     return 0;
@@ -235,9 +235,9 @@ TEST_FUNCTION(test_tlm_logger_log_cstate_information, test_setup, test_teardown)
     pstate_telem_t mock_pstate_data = {0};
 
     // Initialize core state for proper C-state transitions
-    core[core_id].latest_cstate = 0; // Start with C-state 0
-    core[core_id].cstate_timestamp_uS = 0;
-    core[core_id].flags.cstate_change = 0;
+    core_rt[core_id].latest_cstate = 0; // Start with C-state 0
+    core_rt[core_id].cstate_timestamp_uS = 0;
+    core_rt[core_id].flags.cstate_change = 0;
 
     for (int iteration = 0; iteration < NO_OF_ITERATIONS; iteration++)
     {

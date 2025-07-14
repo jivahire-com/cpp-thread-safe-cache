@@ -54,6 +54,8 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_init, test_setup, test_teardown)
 
     will_return(__wrap_platform_power_fuses_get_dts_coeff_tile, FPFW_STATUS_SUCCESS);
 
+    will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
+
     data_proc_tlm_cmpnt_init(1);
 }
 

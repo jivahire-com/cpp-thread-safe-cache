@@ -33,7 +33,7 @@ int16_t data_util_get_max_val(int16_t val0, int16_t val1, int16_t val2)
     return ret_val;
 }
 
-uint64_t data_util_calc_time_diff(uint64_t* previous_timestamp_uS, uint64_t* time_stamp_uS, pwr_tlm_update_t update_type)
+uint64_t data_util_calc_time_diff(uint64_t* previous_timestamp_uS, uint64_t* time_stamp_uS)
 {
     uint64_t temp_stamp_uS = exec_tlm_cmpnt_get_timestamp_microseconds();
     uint64_t time_diff_uS = 0;
@@ -42,11 +42,6 @@ uint64_t data_util_calc_time_diff(uint64_t* previous_timestamp_uS, uint64_t* tim
     if (*previous_timestamp_uS != 0 && (temp_stamp_uS > *previous_timestamp_uS))
     {
         time_diff_uS = temp_stamp_uS - *previous_timestamp_uS;
-
-        if (update_type == PWR_TLM_SOC_UPDATE)
-        {
-            soc_info.time_counter_uS += time_diff_uS;
-        }
     }
 
     *previous_timestamp_uS = temp_stamp_uS;

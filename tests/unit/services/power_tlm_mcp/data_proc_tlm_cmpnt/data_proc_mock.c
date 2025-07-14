@@ -12,6 +12,7 @@
 
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <corebits.h>
 #include <data_sampling_i.h>
 #include <power_tlm_fuse.h>
 #include <semaphore_lib.h>
@@ -105,9 +106,7 @@ fpfw_status_t __wrap_platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dt
     check_expected_ptr(dts_coeff);
     return mock_type(int32_t);
 }
-void __wrap_comp_metrics_for_sample_period(void)
-{
-}
+
 uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
 {
     return mock_type(int64_t);
@@ -138,4 +137,14 @@ void __wrap_wait_for_semaphore(SEMAPHORE_ID id, uint32_t key)
 void __wrap_release_semaphore(SEMAPHORE_ID id)
 {
     FPFW_UNUSED(id);
+}
+
+corebits_t mock_cores_in_die;
+corebits_t* __wrap_core_info_get_enable_cores_result()
+{
+    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
+    {
+        mock_cores_in_die.bits[i] = mock_type(uint32_t);
+    }
+    return (&mock_cores_in_die);
 }

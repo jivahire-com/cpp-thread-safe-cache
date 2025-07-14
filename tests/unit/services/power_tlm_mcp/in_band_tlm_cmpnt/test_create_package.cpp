@@ -811,9 +811,9 @@ TEST_FUNCTION(test_package_create_power_pkg_all_enabled, test_setup, test_teardo
 
     // TODO: remove records below when added to the package
     assert_int_equal(pkg_size,
-                     POWER_PKG_MAX_SIZE - sizeof(pwr_core_record_droop_count_t) - sizeof(pwr_soc_record_die_mesh_t) -
-                         sizeof(pwr_soc_record_d2d_link_t) - sizeof(pwr_soc_record_die_phy_t) -
-                         sizeof(pwr_soc_record_mpam_power_t) - sizeof(pwr_core_record_guard_band_t));
+                     POWER_PKG_MAX_SIZE - sizeof(pwr_core_record_droop_count_t) -
+                         sizeof(pwr_soc_record_die_mesh_t) - sizeof(pwr_soc_record_d2d_link_t) -
+                         sizeof(pwr_soc_record_die_phy_t) - sizeof(pwr_soc_record_mpam_power_t));
 }
 
 TEST_FUNCTION(test_package_create_power_pkg_some_enabled, test_setup, test_teardown)

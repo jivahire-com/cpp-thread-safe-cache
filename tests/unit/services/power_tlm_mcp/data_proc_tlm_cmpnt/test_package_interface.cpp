@@ -29,9 +29,9 @@ extern "C" {
 
 /*-- Symbolic Constant Macros (defines) --*/
 extern "C" {
-extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
-extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
-extern soc_runtime_info_t soc_info;
+extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
+extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
+extern soc_runtime_info_t soc_rt;
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 }
 
@@ -526,41 +526,41 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
 {
     inst_core_element_summary_t core_summary_data = {0};
     // pstate
-    core[TEST_CORE_ID_5].throttling_status = NO_THROTTLE;
-    core[TEST_CORE_ID_5].pstate_from_pstate_pkt = 10;
-    uint8_t pstate_index = core[TEST_CORE_ID_5].latest_pstate;
+    core_rt[TEST_CORE_ID_5].throttling_status = NO_THROTTLE;
+    core_rt[TEST_CORE_ID_5].pstate_from_pstate_pkt = 10;
+    uint8_t pstate_index = core_rt[TEST_CORE_ID_5].latest_pstate;
 
-    // core[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz = 150;
+    // core_rt[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz = 150;
     //  cstate
-    core[TEST_CORE_ID_5].latest_cstate = 2;
-    uint16_t cstate_index = core[TEST_CORE_ID_5].latest_cstate;
+    core_rt[TEST_CORE_ID_5].latest_cstate = 2;
+    uint16_t cstate_index = core_rt[TEST_CORE_ID_5].latest_cstate;
 
     // core voltage
-    core[TEST_CORE_ID_5].latest_voltage_mV = 3200;
+    core_rt[TEST_CORE_ID_5].latest_voltage_mV = 3200;
     // core temperature and current,plimit.
-    core[TEST_CORE_ID_5].latest_current_mA = 30;
-    core[TEST_CORE_ID_5].latest_max_value_dC = 400;
+    core_rt[TEST_CORE_ID_5].latest_current_mA = 30;
+    core_rt[TEST_CORE_ID_5].latest_max_value_dC = 400;
     // plimit
-    core[TEST_CORE_ID_5].active_sample_plimit = 1;
+    core_rt[TEST_CORE_ID_5].active_sample_plimit = 1;
 
     uint8_t core_id = TEST_CORE_ID_5;
     for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
     { // make all active
-        core[core_id].core_throttling_tracker[i] = 1;
+        core_rt[core_id].core_throttling_tracker[i] = 1;
     }
     data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(TEST_CORE_ID_5, &core_summary_data);
     assert_int_equal(core_summary_data.pstate, pstate_index);
     assert_int_equal(core_summary_data.cstate, cstate_index);
 
-    assert_int_equal(core_summary_data.plimit, core[TEST_CORE_ID_5].active_sample_plimit);
-    assert_int_equal(core_summary_data.power_mW, core[TEST_CORE_ID_5].latest_power_mW);
+    assert_int_equal(core_summary_data.plimit, core_rt[TEST_CORE_ID_5].active_sample_plimit);
+    assert_int_equal(core_summary_data.power_mW, core_rt[TEST_CORE_ID_5].latest_power_mW);
     assert_int_equal(core_summary_data.frequency_Mhz, dvfs_get_freq_from_plimit(pstate_index));
 
-    assert_int_equal(core_summary_data.voltage_mV, core[TEST_CORE_ID_5].latest_voltage_mV);
-    assert_int_equal(core_summary_data.current_mA, core[TEST_CORE_ID_5].latest_current_mA);
-    assert_int_equal(core_summary_data.temperature_dC, core[TEST_CORE_ID_5].latest_max_value_dC);
+    assert_int_equal(core_summary_data.voltage_mV, core_rt[TEST_CORE_ID_5].latest_voltage_mV);
+    assert_int_equal(core_summary_data.current_mA, core_rt[TEST_CORE_ID_5].latest_current_mA);
+    assert_int_equal(core_summary_data.temperature_dC, core_rt[TEST_CORE_ID_5].latest_max_value_dC);
     assert_int_equal(core_summary_data.throttling_type, 0x7f);
-    assert_int_equal(core_summary_data.throttling_rack_priority, core[TEST_CORE_ID_5].latest_rack_throttling_priority_id);
+    assert_int_equal(core_summary_data.throttling_rack_priority, core_rt[TEST_CORE_ID_5].latest_rack_throttling_priority_id);
 }
 
 TEST_FUNCTION(test_get_inst_soc_rail_data, test_setup, test_teardown)
@@ -585,7 +585,7 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, test_setup, 
 {
     inst_soc_element_die_temp_t sensor_temp_data = {0};
 
-    soc_info.latest_soc_top_temp_dC[7] = 0x23;
+    soc_rt.latest_soc_top_temp_dC[7] = 0x23;
     data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data(7, &sensor_temp_data);
 
     assert_int_equal(sensor_temp_data.temperature_dC, 0x23);
@@ -598,7 +598,7 @@ TEST_FUNCTION(test_get_inst_soc_sensor_temp_data, test_setup, test_teardown)
 {
     inst_soc_element_max_temp_t read_data = {0};
 
-    soc_info.latest_max_die_temp_dC = 200;
+    soc_rt.latest_max_die_temp_dC = 200;
     die_2_die_exch_ib_write_inst_max_die_temp(400);
     data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(&read_data);
 

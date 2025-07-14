@@ -43,7 +43,6 @@ typedef struct
     pwr_soc_record_mpam_pstate_t mpam_pstate_record;
     pwr_soc_record_mpam_throttle_t mpam_throttle_record;
     pwr_soc_record_mpam_power_t mpam_power_record;
-    pwr_core_record_guard_band_t guard_band_record;
 } power_full_package_t;
 
 typedef struct

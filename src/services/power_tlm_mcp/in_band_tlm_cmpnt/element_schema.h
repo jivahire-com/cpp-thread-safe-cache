@@ -148,13 +148,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, reserved2))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
-                     POWER_TELEMETRY_ELEMENT_CORE_RELIABILITY_GUARD_BAND,
-                     pwr_core_element_guard_band,
-                     FPFW_ET_LEVEL_DEBUG,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, timestamp_uS),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, guard_band_voltage_mV))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_PKG_MON,
                      pwr_soc_element_pkg_monitor,
                      FPFW_ET_LEVEL_DEBUG,
@@ -308,7 +301,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, temperature_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, power_mW),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, frequency_Mhz),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, guard_band_voltage_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, pstate_id),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, cstate_id),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, plimit),

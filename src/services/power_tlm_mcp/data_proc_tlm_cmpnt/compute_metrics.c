@@ -10,11 +10,12 @@
 /*------------- Includes -----------------*/
 #include "compute_metrics_i.h"
 #include "data_proc_tlm_cmpnt.h"
-#include "data_sampling_i.h" // internal APIs
 #include "data_utilities_i.h"
 #include "die_2_die_exchange_i.h"
 #include "telemetry_events_i.h"
 
+#include <core_info.h>
+#include <corebits.h>
 #include <stdbool.h> // for false, true
 #include <stddef.h>  // for size_t
 #include <stdint.h>  // for uint8_t, uint16_t
@@ -33,6 +34,8 @@ computed_metrics_2_min_t computed_metrics_2_mins = {0};
 computed_metrics_24_hrs_t computed_metrics_24_hrs = {0};
 computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins = {0};
 computed_metrics_oob_t computed_metrics_oob = {0};
+
+bool core_is_active[NUMBER_OF_CORES_PER_DIE] = {0};
 
 /*------------- Functions ----------------*/
 
@@ -66,29 +69,21 @@ void comp_metrics_init(void)
     data_util_mov_avg_u16_init(&computed_metrics_oob.max_vr_temp_mov_avg_dC,
                                computed_metrics_oob.max_vr_temp_samples_dC,
                                VR_TEMP_MOVING_AVG_NUM_SAMPLES);
+
+    comp_metrics_init_active_cores();
 }
 
-void comp_metrics_for_sample_period(void)
+void comp_metrics_init_active_cores(void)
 {
-    comp_metrics_for_tiles_for_sampling_period();
-}
+    corebits_t* sys_cores_in_die = core_info_get_enable_cores_result();
 
-void comp_metrics_for_tiles_for_sampling_period(void)
-{
-    static uint64_t previous_tile_timestamp_uS = 0;
-    uint64_t time_stamp_uS = 0;
-
-    uint64_t time_diff_uS = data_util_calc_time_diff(&previous_tile_timestamp_uS, &time_stamp_uS, PWR_TLM_TILE_UPDATE);
-
-    // Go over all tiles
-    for (uint8_t tile_id = 0; tile_id < NUMBER_OF_TILES_PER_DIE; tile_id++)
+    for (unsigned int core = 0; core < NUMBER_OF_CORES_PER_DIE; ++core)
     {
-        // update the time counter
-        tile[tile_id].time_counter_uS += time_diff_uS;
-
-        // Update the tile Vcpu and Vsys MMA
-        comp_metrics_for_single_tile_vcpu(tile_id, time_diff_uS, tile[tile_id].time_counter_uS);
-        comp_metrics_for_single_tile_vsys(tile_id, time_diff_uS, tile[tile_id].time_counter_uS);
+        const corebits_t* enabled_cores = sys_cores_in_die;
+        if (corebits_is_bit_set(enabled_cores, core))
+        {
+            core_is_active[core] = true;
+        }
     }
 }
 
@@ -112,30 +107,6 @@ void comp_metrics_for_single_core_temperature(uint8_t core_id, uint16_t latest_t
 void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_mW)
 {
     data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].power_mW, latest_power_mW);
-}
-
-void comp_metrics_for_single_tile_vcpu(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS)
-{
-    /* For tile vcpu :min, max avg calculation*/
-    // Update the vcpu voltage  min, max average
-    data_util_calc_mma_res(&tile[tile_id].vcpu.min_mV,
-                           &tile[tile_id].vcpu.max_mV,
-                           &tile[tile_id].vcpu.average_mV,
-                           &tile[tile_id].vcpu.latest_value_mV,
-                           time_diff_uS,
-                           residency_uS);
-}
-
-void comp_metrics_for_single_tile_vsys(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS)
-{
-    /* For tile vsys :min, max avg calculation*/
-    // Update the vsys voltage min, max average
-    data_util_calc_mma_res(&tile[tile_id].vsys.min_mV,
-                           &tile[tile_id].vsys.max_mV,
-                           &tile[tile_id].vsys.average_mV,
-                           &tile[tile_id].vsys.latest_value_mV,
-                           time_diff_uS,
-                           residency_uS);
 }
 
 void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS],
@@ -344,17 +315,14 @@ void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate)
     // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319779
 }
 
-void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id,
-                                                    int8_t throttle_index,
-                                                    uint32_t time_diff_uS,
-                                                    uint32_t residency_mS,
-                                                    uint8_t latest_pstate)
+void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint8_t latest_pstate)
 {
     /* For core throttling : max avg pstate calculation*/
     uint16_t temp_min_pstate = 0;
     uint16_t temp_avg_pstate = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate;
     uint16_t temp_max_pstate = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate;
     uint16_t temp_pstate = latest_pstate;
+    uint32_t residency_mS = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS;
     /* For core pstate- min, max avg calculation during throttle*/
     data_util_calc_mma_res(&temp_min_pstate, &temp_max_pstate, &temp_avg_pstate, &temp_pstate, time_diff_uS, residency_mS * 1000);
     // Update core throttle info

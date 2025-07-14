@@ -114,11 +114,11 @@ static int32_t test_setup(void** state)
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_TO_TEST; core_id++)
     {
         // Initialize core state
-        core[core_id].pstate_from_pstate_pkt = 0x00; // Set to valid PSTATE 0
-        core[core_id].active_sample_plimit = 0;
-        core[core_id].pstate_timestamp_uS = 0;
-        core[core_id].flags.id_change_bit = 0;
-        core[core_id].flags.pstate_change = 0;
+        core_rt[core_id].pstate_from_pstate_pkt = 0x00; // Set to valid PSTATE 0
+        core_rt[core_id].active_sample_plimit = 0;
+        core_rt[core_id].pstate_timestamp_uS = 0;
+        core_rt[core_id].flags.id_change_bit = 0;
+        core_rt[core_id].flags.pstate_change = 0;
 
         // Initialize PSTATE data for each core in computed_metrics_2_mins
         for (uint8_t pstate = 0; pstate < MAX_PSTATE_VALUE; pstate++)
@@ -161,7 +161,7 @@ static expected_pstate_values_t calculate_expected_values(const test_pstate_conf
     expected.pstate = test_data.pstate;
     expected.plimit = test_data.plimit;
     // Entry count is only incremented when PSTATE actually changes AND there's a valid previous timestamp
-    // Since core[core_id].pstate_timestamp_uS is initialized to 0, the first iteration won't increment entry
+    // Since core_rt[core_id].pstate_timestamp_uS is initialized to 0, the first iteration won't increment entry
     // count Subsequent iterations will have entry_count = 0 (same PSTATE value, entry count is incremented only when PSTATE changes)
     expected.entry_count = 0; // Entry count is 0 for all iterations in this test
 
@@ -301,13 +301,13 @@ static uint32_t calculate_expected_residency_with_polling(uint8_t iteration)
     switch (iteration)
     {
     case 1:
-        additional_timestamp_calls_mS = 9; // 9 calls * 1ms = 9ms
+        additional_timestamp_calls_mS = 5;
         break;
     case 2:
-        additional_timestamp_calls_mS = 26; // 26 calls * 1ms = 26ms
+        additional_timestamp_calls_mS = 14;
         break;
     case 3:
-        additional_timestamp_calls_mS = 151; // 151 calls * 1ms = 151ms
+        additional_timestamp_calls_mS = 127;
         break;
     default:
         additional_timestamp_calls_mS = 0;
@@ -543,8 +543,8 @@ TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
             uint32_t expected_residency_with_polling = calculate_expected_residency_with_polling(iteration);
 
             // Verify PSTATE values
-            assert_int_equal(expected.pstate, core[core_index].pstate_from_pstate_pkt);
-            assert_int_equal(expected.plimit, core[core_index].active_sample_plimit);
+            assert_int_equal(expected.pstate, core_rt[core_index].pstate_from_pstate_pkt);
+            assert_int_equal(expected.plimit, core_rt[core_index].active_sample_plimit);
             assert_int_equal(expected.entry_count, pstate_array[current_pstate].entry_count);
             assert_int_equal(expected.min_power_mW, pstate_array[current_pstate].min_power_mW);
             assert_int_equal(expected.max_power_mW, pstate_array[current_pstate].max_power_mW);
@@ -608,7 +608,7 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
     pwr_core_element_pstate_t* pstate_array_initial =
         &pstate_record_initial.pstate_collection[core_index].pstate_element[0];
 
-    assert_int_equal(10, core[core_index].pstate_from_pstate_pkt);
+    assert_int_equal(10, core_rt[core_index].pstate_from_pstate_pkt);
     assert_int_equal(0, pstate_array_initial[10].entry_count);
 
     // Step 2: Same PSTATE 10 at T2
@@ -627,7 +627,7 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
         &pstate_record_update.pstate_collection[core_index].pstate_element[0];
 
     uint32_t expected_residency_T1_to_T2_mS = (T2_microseconds - T1_microseconds) / 1000;
-    assert_int_equal(10, core[core_index].pstate_from_pstate_pkt);
+    assert_int_equal(10, core_rt[core_index].pstate_from_pstate_pkt);
     assert_int_equal(0, pstate_array_update[10].entry_count);
     assert_int_equal(expected_residency_T1_to_T2_mS, pstate_array_update[10].residency_mS);
 
@@ -646,7 +646,7 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
     pwr_core_element_pstate_t* pstate_array_t3 = &pstate_record_t3.pstate_collection[core_index].pstate_element[0];
 
     uint32_t expected_residency_T1_to_T3_mS = (T3_microseconds - T1_microseconds) / 1000;
-    assert_int_equal(10, core[core_index].pstate_from_pstate_pkt);
+    assert_int_equal(10, core_rt[core_index].pstate_from_pstate_pkt);
     assert_int_equal(0, pstate_array_t3[10].entry_count);
     assert_int_equal(expected_residency_T1_to_T3_mS, pstate_array_t3[10].residency_mS);
 
@@ -678,10 +678,10 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
         printf("PSTATE 11: residency=%d ms (expected=0 ms)\n", pstate_array_exit[11].residency_mS);
         printf("PSTATE 10 entry_count=%d (expected=1)\n", pstate_array_exit[10].entry_count);
         printf("PSTATE 11 entry_count=%d (expected=0)\n", pstate_array_exit[11].entry_count);
-        printf("Current PSTATE=%d (expected=11)\n", core[core_index].pstate_from_pstate_pkt);
+        printf("Current PSTATE=%d (expected=11)\n", core_rt[core_index].pstate_from_pstate_pkt);
     }
 
-    assert_int_equal(11, core[core_index].pstate_from_pstate_pkt);
+    assert_int_equal(11, core_rt[core_index].pstate_from_pstate_pkt);
     assert_int_equal(0, pstate_array_exit[11].entry_count); // PSTATE 11 just started, hasn't completed cycle
     assert_int_equal(1, pstate_array_exit[10].entry_count); // PSTATE 10 completed one cycle
     assert_int_equal(expected_pstate10_final_residency_mS, pstate_array_exit[10].residency_mS);
@@ -719,10 +719,10 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
         printf("PSTATE 12: residency=%d ms (expected=0 ms), entry_count=%d (expected=0)\n",
                pstate_array_t5[12].residency_mS,
                pstate_array_t5[12].entry_count);
-        printf("Current PSTATE=%d (expected=12)\n", core[core_index].pstate_from_pstate_pkt);
+        printf("Current PSTATE=%d (expected=12)\n", core_rt[core_index].pstate_from_pstate_pkt);
     }
 
-    assert_int_equal(12, core[core_index].pstate_from_pstate_pkt);
+    assert_int_equal(12, core_rt[core_index].pstate_from_pstate_pkt);
     assert_int_equal(1, pstate_array_t5[10].entry_count); // PSTATE 10 completed one cycle
     assert_int_equal(1, pstate_array_t5[11].entry_count); // PSTATE 11 completed one cycle when PSTATE 12 arrived
     assert_int_equal(0, pstate_array_t5[12].entry_count);  // PSTATE 12 just started, hasn't completed cycle
@@ -807,11 +807,11 @@ TEST_FUNCTION(test_core_pstate_realistic_residency_functional, test_setup, test_
                pstate_array_exit[11].residency_mS,
                expected_pstate11_residency_mS,
                pstate_array_exit[11].entry_count);
-        printf("Current PSTATE: %d (expected=11)\n", core[core_index].pstate_from_pstate_pkt);
+        printf("Current PSTATE: %d (expected=11)\n", core_rt[core_index].pstate_from_pstate_pkt);
     }
 
     // Updated assertions based on correct entry count logic
-    assert_int_equal(11, core[core_index].pstate_from_pstate_pkt);
+    assert_int_equal(11, core_rt[core_index].pstate_from_pstate_pkt);
     assert_int_equal(0, pstate_array_exit[11].entry_count); // PSTATE 11 just started, hasn't completed cycle
     assert_int_equal(1, pstate_array_exit[10].entry_count); // PSTATE 10 completed one cycle when PSTATE 11 arrived
     assert_int_equal(expected_pstate11_residency_mS, pstate_array_exit[11].residency_mS);

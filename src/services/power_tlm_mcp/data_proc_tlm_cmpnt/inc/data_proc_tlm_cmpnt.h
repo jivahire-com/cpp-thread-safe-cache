@@ -14,8 +14,6 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-
-
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/

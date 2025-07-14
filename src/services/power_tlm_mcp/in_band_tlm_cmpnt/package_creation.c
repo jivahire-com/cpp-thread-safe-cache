@@ -274,8 +274,6 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
 
     // TODO: POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_POWER
 
-    // TODO: POWER_TELEMETRY_ELEMENT_CORE_RELIABILITY_GUARD_BAND
-
     uint32_t pkg_size = pkg_location - (uintptr_t)package_hdr;
     if (pkg_size == sizeof(telemetry_package_hdr_t))
     {

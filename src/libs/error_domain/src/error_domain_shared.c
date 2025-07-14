@@ -49,8 +49,11 @@
 #define RSM_RAM_DEFAULT_OFFSET (0x08)
 #define AP_RSM_ADDRESS_DIEn(n) ((0x2F000000UL) + (0x1000000000UL * (n)))
 #define AP_RSM_SIZE            (0x10000)
-#define ATU_MAPPING_RSM_RAM(die_id) \
-    ATU_MAPPING((die_id == 0 ? AP_RSM_ADDRESS_DIEn(0) : AP_RSM_ADDRESS_DIEn(1)), 0, (ALIGN_UP(AP_RSM_SIZE, ATU_PAGE_SIZE) - 1), {ATU_BUS_ATTR_NS})
+#define ATU_MAPPING_RSM_RAM(die_id)                                              \
+    ATU_MAPPING((die_id == 0 ? AP_RSM_ADDRESS_DIEn(0) : AP_RSM_ADDRESS_DIEn(1)), \
+                0,                                                               \
+                (ALIGN_UP(AP_RSM_SIZE, ATU_PAGE_SIZE) - 1),                      \
+                {ATU_BUS_ATTR_NS})
 
 const atu_map_entry_t s_hm_arsm_atu_entries[2][MSCP_ARSM_RAM_COUNT] =
 #if defined(SCP_RUNTIME_INIT)

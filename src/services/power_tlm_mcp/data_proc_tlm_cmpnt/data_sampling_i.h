@@ -59,14 +59,6 @@ typedef enum
     THROTTLE_SOURCE_ADAPTIVE_CLK_OVERRUN,
 } throttle_source_t;
 
-// enum for type of power telemetry components soc,tile or core.
-typedef enum
-{
-    PWR_TLM_SOC_UPDATE = 0,
-    PWR_TLM_CORE_UPDATE,
-    PWR_TLM_TILE_UPDATE,
-} pwr_tlm_update_t;
-
 /**
  *  @brief Core related runtime resources
  */
@@ -83,43 +75,40 @@ typedef struct {
 } core_control_flags_t;
 
 typedef struct {
-    core_control_flags_t flags;
     uint64_t cstate_timestamp_uS; //for cstate residency update.
     uint64_t pstate_timestamp_uS;
     uint64_t current_pkt_timestamp_uS;
-    uint8_t pstate_from_pstate_pkt; /* pstate from pstate packet*/
-    uint8_t latest_cstate; /* cstate from pstate packet from sensor fifo*/
-    uint8_t active_sample_plimit;
-    uint8_t throttling_status;/* this is throttling status, e.g pstate_throttle_status_t */
-    uint8_t throttle_event;
-    uint8_t throttle_source;
-    uint8_t latest_rack_throttling_priority_id;
     uint64_t latest_throttle_type_previous_timestamp_uS[NUMBER_OF_THROTTLE_TYPES];
     uint64_t latest_rack_priority_previous_timestamp_uS[NUMBER_OF_RACK_PRIORITIES];
     uint32_t time_counter_uS; // for general residency calculation for the core in uS
-    uint8_t pstate_from_current_pkt; /* pstate from current packet, during throttling */
     uint16_t latest_throttle_type; /* This is throttle index or source, e.g throttle_source_t */
     uint16_t latest_voltage_mV;
     uint16_t latest_current_mA;
     uint16_t latest_power_mW;
     uint16_t latest_max_value_dC;
     uint16_t active_sample_mpam_id;
+    uint8_t latest_cstate; /* cstate from pstate packet from sensor fifo*/
+    uint8_t active_sample_plimit;
+    uint8_t throttling_status;/* this is throttling status, e.g pstate_throttle_status_t */
+    uint8_t throttle_event;
+    uint8_t throttle_source;
+    uint8_t latest_rack_throttling_priority_id;
+    uint8_t pstate_from_pstate_pkt; /* pstate from pstate packet*/
+    uint8_t pstate_from_current_pkt; /* pstate from current packet, during throttling */
+    uint8_t latest_pstate; //either pstate_from_pstate_pkt or pstate_from_current_pkt
+    core_control_flags_t flags;
     bool core_throttling_tracker[NUMBER_OF_THROTTLE_TYPES];
-    /* depending on the throttling state of the core
-    this may update either from pstate packet or current packet */
-    uint8_t latest_pstate; //instantaneous pstate
 } core_runtime_info_t;
 
 typedef struct {
-    uint32_t time_counter_uS;
+    uint16_t latest_vcpu_voltage_mV;
+    uint16_t latest_vsys_voltage_mV;
     uint16_t latest_max_temp_dC;
     uint8_t latest_max_temp_sensor_index;
-    voltage_t vcpu;
-    voltage_t vsys;
 } tile_runtime_info_t;
 
 typedef struct {
-    uint32_t time_counter_uS;//time counter for residency calculation, add time_diff on every iteration.
+    uint64_t latest_core_states_proc_timestamp_uS; //a timestamp used for all core states processing ,when no pstate packet occurred.
     uint32_t soc_pc3_residency_mS;
     uint32_t soc_pc4_residency_mS;
     uint16_t latest_rail_temperature_dC[MAX_NUM_OF_VR_RAILS];
@@ -130,13 +119,12 @@ typedef struct {
     uint16_t latest_max_tile_temp_dC;
     uint16_t latest_max_soc_top_temp_dC;
     uint16_t latest_max_die_temp_dC; // max of latest_max_tile_temp_dC and latest_max_soc_top_temp_dC
-    uint64_t latest_core_states_proc_timestamp_uS; //a timestamp used for all core states processing ,when no pstate packet occurred.
 } soc_runtime_info_t;
 
 typedef struct {
+    inst_soc_element_dimm_runtime_t  latest_dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
     uint32_t latest_dimm_total_pwr_mW;
     uint16_t latest_max_dimm_temp_dC;
-    inst_soc_element_dimm_runtime_t  latest_dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
 } dimm_runtime_info_t;
 /**
  *  @brief Enum for Pstate message throttle status codes
@@ -160,6 +148,12 @@ typedef enum _pstate_throttle_status_t
 } pstate_throttle_status_t;
 
 typedef struct {
+    uint64_t cstate_time_diff_uS;
+    uint64_t pstate_time_diff_uS;
+    uint64_t throttle_time_diff_uS;
+    uint64_t rack_throttle_time_diff_uS;
+    uint8_t overrun_count_change;
+    uint8_t core_id;
     bool valid_entry_pstate;
     bool valid_entry_cstate;
     bool throttling_state_change;
@@ -168,19 +162,13 @@ typedef struct {
     bool new_ctstate;
     bool throttle_start;
     bool rack_priority_start;
-    uint64_t cstate_time_diff_uS;
-    uint64_t pstate_time_diff_uS;
-    uint64_t throttle_time_diff_uS;
-    uint64_t rack_throttle_time_diff_uS;
-    uint8_t overrun_count_change;
-    uint8_t core_id;
 } core_state_metrics_flags_t;
 
 /*-- Declarations (Statics and globals) --*/
 
-extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
-extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
-extern soc_runtime_info_t soc_info;
+extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
+extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
+extern soc_runtime_info_t soc_rt;
 extern dimm_runtime_info_t dimm_rt;
 
 /*--------- Function Prototypes ----------*/

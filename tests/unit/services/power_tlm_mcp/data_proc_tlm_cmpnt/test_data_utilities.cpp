@@ -28,9 +28,9 @@ extern "C" {
 
 /*-- Symbolic Constant Macros (defines) --*/
 extern "C" {
-extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
-extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
-extern soc_runtime_info_t soc_info;
+extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
+extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
+extern soc_runtime_info_t soc_rt;
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 }
 
@@ -203,7 +203,7 @@ TEST_FUNCTION(test_data_util_max_avg_of_summations, test_setup, test_teardown)
 
 TEST_FUNCTION(test_data_util_calc_mma_u16, test_setup, test_teardown)
 {
-    mma_u16_t mma = {0};
+    mma_u16_t mma = {{0}};
 
     // Feed a few test values and validate the min and max, as the average is
     // already tested.

@@ -68,7 +68,6 @@ typedef enum
     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM,
     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE,
     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_POWER,
-    POWER_TELEMETRY_ELEMENT_CORE_RELIABILITY_GUARD_BAND,
     POWER_TELEMETRY_ELEMENT_ID_MAX
 } pwr_telemetry_element_id_t;
 
@@ -338,23 +337,6 @@ typedef struct {
     pwr_core_collection_droop_count_t droop_count_collection[NUMBER_OF_CORES_PER_DIE];
 } pwr_core_record_droop_count_t, *p_pwr_core_record_droop_count_t;
 
-//----------------POWER_TELEMETRY_ELEMENT_CORE_RELIABILITY_GUARD_BAND----------------
-
-typedef struct {
-    uint64_t timestamp_uS;
-    uint16_t guard_band_voltage_mV;
-} pwr_core_element_guard_band_t, *p_pwr_core_element_guard_band_t;
-
-typedef struct {
-    telemetry_collection_hdr_t collection_header;
-    pwr_core_element_guard_band_t guard_band_element;
-} pwr_core_collection_guard_band_t, *p_pwr_core_collection_guard_band_t;
-
-typedef struct {
-    telemetry_record_hdr_t record_header;
-    pwr_core_collection_guard_band_t guard_band_collection[NUMBER_OF_CORES_PER_DIE];
-} pwr_core_record_guard_band_t, *p_pwr_core_record_guard_band_t;
-
 //----------------POWER_TELEMETRY_ELEMENT_SOC_PKG_MON----------------
 
 typedef struct {
@@ -412,7 +394,7 @@ typedef struct {
 
 typedef struct {
     power_t power_mW;
-    uint8_t dimm_id;   
+    uint8_t dimm_id;
 } pwr_soc_element_dimm_power_t, *p_pwr_soc_element_dimm_power_t;
 
 typedef struct {
@@ -612,7 +594,6 @@ typedef struct {
     uint16_t temperature_dC;
     uint16_t power_mW;
     uint16_t frequency_Mhz;
-    uint16_t guard_band_voltage_mV;
     uint8_t pstate;
     uint8_t cstate;
     uint8_t plimit;

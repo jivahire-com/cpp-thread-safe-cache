@@ -36,9 +36,9 @@
 
 typedef struct
 {
-    mma_u16_t  power_mW;//This is per pstate power metrics within a core.
     uint32_t  residency_uS;
     uint32_t  entry_count;
+    mma_u16_t  power_mW;//This is per pstate power metrics within a core.
 } pstate_metrics_t;
 
 typedef struct
@@ -49,14 +49,14 @@ typedef struct
 
 typedef struct
 {
-    mma_u16_t power_mW;
-    mma_u16_t temperature_dC;
-    mma_u16_t voltage_mV;
-    mma_u16_t current_mA;
     pstate_metrics_t pstate[NUMBER_OF_PSTATES];
     cstate_metrics_t cstate[NUMBER_OF_CSTATES];
     pwr_core_element_throttle_t throttle_info[NUMBER_OF_THROTTLE_TYPES];
     pwr_core_element_rack_priorities_t rack_priorities[NUMBER_OF_RACK_PRIORITIES];
+    mma_u16_t power_mW;
+    mma_u16_t temperature_dC;
+    mma_u16_t voltage_mV;
+    mma_u16_t current_mA;
 } computed_per_core_metrics_t;
 
 typedef struct
@@ -85,10 +85,10 @@ typedef struct
 
 typedef struct
 {
-    mma_u16_t top_sensor_temp_dC[NUMBER_OF_SOC_TEMP_SENSORS];
     computed_per_rail_metrics_t vr_rail[MAX_NUM_OF_VR_RAILS];
-    mma_u16_t hnf_temperature_dC[NUMBER_OF_HNF_CHANNELS_PER_DIE];
     computed_per_dimm_metrics_t dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
+    mma_u16_t top_sensor_temp_dC[NUMBER_OF_SOC_TEMP_SENSORS];
+    mma_u16_t hnf_temperature_dC[NUMBER_OF_HNF_CHANNELS_PER_DIE];
 } computed_per_soc_metrics_t;
 
 typedef struct {
@@ -132,11 +132,13 @@ typedef struct
 extern computed_metrics_2_min_t computed_metrics_2_mins;
 extern computed_metrics_24_hrs_t computed_metrics_24_hrs;
 
+extern computed_metrics_oob_t computed_metrics_oob;
 // these metrics are used for die-to-die exchange but are cleared differently depending on the die
 // The primary die may clear with the computed_metrics_2_min_t values, but secondary die will clear after
 // copying to the die to die exchange
 extern computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins;
-extern computed_metrics_oob_t computed_metrics_oob;
+
+extern bool core_is_active[NUMBER_OF_CORES_PER_DIE];
 
 /*--------- Function Prototypes ----------*/
 
@@ -148,11 +150,11 @@ extern computed_metrics_oob_t computed_metrics_oob;
 void comp_metrics_init(void);
 
 /**
- * @brief Comput metrics every sample period
+ * @brief Initialize the active cores based on the system configuration
  * @param   None
  * @return  None
  */
-void comp_metrics_for_sample_period(void);
+void comp_metrics_init_active_cores(void);
 
 /**
  * @brief function updates various metrics for all cores, including PState residency and power,
@@ -162,15 +164,6 @@ void comp_metrics_for_sample_period(void);
  * @return  None
  */
 void comp_metrics_for_cores_for_sampling_period(void);
-
-/**
- * @brief function updates various metrics for all tiles, including the maximum tile temperature,
- * vCPU voltage, and system voltage (Vsys). It calculates the time difference since the last update
- * and uses this information to update the residency and metrics for each tile.
- * @param   None
- * @return  None
- */
-void comp_metrics_for_tiles_for_sampling_period(void);
 
 /**
  * @brief  function updates the minimum, maximum, and average current values for a specified core based on the provided
@@ -224,26 +217,6 @@ void comp_metrics_for_single_core_histogram(uint8_t core_id);
  * @param[in] pstate_index - The index of the PState to be updated.
  */
 void comp_metrics_for_single_core_pstate_power(uint8_t core_id, uint8_t pstate_index);
-
-/**
- * @brief    function updates the minimum, maximum, and average voltage values for the
- * vCPU of a specified tile based on the provided time difference and residency time
- *
- * @param[in] core_id  core for which the current values are being updated.
- * @param[in] time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
- * @param[in] residency_uS  The total residency time in microseconds over which the average is calculated.
- */
-void comp_metrics_for_single_tile_vcpu(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS);
-
-/**
- * @brief    function updates the minimum, maximum, and average voltage values for the
- * vSYS of a specified tile based on the provided time difference and residency time
- *
- * @param[in] core_id  core for which the current values are being updated.
- * @param[in] time_diff_uS  time_diff_uS: The time difference in microseconds between the current and previous measurements.
- * @param[in] residency_uS  The total residency time in microseconds over which the average is calculated.
- */
-void comp_metrics_for_single_tile_vsys(uint8_t tile_id, uint32_t time_diff_uS, uint32_t residency_uS);
 
 /**
  * @brief  for each rail, updates the minimum, maximum, and average current values
@@ -327,10 +300,9 @@ void comp_metrics_for_total_dimm_pwr(uint32_t dimm_total_pwr_mW);
  * @param[in] core_id
  * @param[in] throttle_index  Throttling type.
  * @param[in] time_diff_uS    time diff between current timestamp and previous time stamp
- * @param[in] residency_mS  - residency in mS
  * @param[in] latest_pstate - latest_pstate
  */
-void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint32_t residency_mS, uint8_t latest_pstate);
+void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint8_t latest_pstate);
 
 /**
  * @brief This API used during cores's throttling for  overrun counter update.

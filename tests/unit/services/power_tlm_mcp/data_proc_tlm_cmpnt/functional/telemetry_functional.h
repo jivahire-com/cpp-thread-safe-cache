@@ -35,9 +35,9 @@ typedef struct
 
 /*-- Declarations (Statics and globals) --*/
 
-extern core_runtime_info_t core[NUMBER_OF_CORES_PER_DIE];
-extern tile_runtime_info_t tile[NUMBER_OF_TILES_PER_DIE];
-extern soc_runtime_info_t soc_info;
+extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
+extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
+extern soc_runtime_info_t soc_rt;
 
 
 /*--------- Function Prototypes ----------*/

@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Union, List, Dict, Optional
 
 sys.path.append(str(Path(__file__).parent.parent / 'kng_pythia_libs'))
+sys.path.append(str(Path(__file__).parent.parent / 'common'))
 
+from serial_utils import SerialUtility
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
@@ -59,75 +61,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         )
         self.core_com_channel_scp = None
         self.core_com_channel_mcp = None
-
-    def wait_for_scp_mcp_heartbeat(self) -> bool:
-        """Wait for both SCP and MCP heartbeat messages"""
-        try:
-            # Open channels
-            self.core_com_channel_scp.open()
-            self.core_com_channel_mcp.open()
-            
-            # Wait for SCP heartbeat
-            self.log.info("Waiting for initial SCP Heartbeat Message...")
-            try:
-                self.core_com_channel_scp.read_until(key="ScpHeartBeat", timeout_seconds=1800)
-                self.log.info("SCP Heartbeat received successfully")
-            except Exception as e:
-                self.log.error(f"Failed to receive SCP heartbeat: {str(e)}")
-                return False
-                
-            # Wait for MCP heartbeat
-            self.log.info("Waiting for initial MCP Heartbeat Message...")
-            try:
-                self.core_com_channel_mcp.read_until(key="McpHeartBeat", timeout_seconds=1800)
-                self.log.info("MCP Heartbeat received successfully")
-            except Exception as e:
-                self.log.error(f"Failed to receive MCP heartbeat: {str(e)}")
-                return False
-                
-            self.__class__._scp_mcp_heartbeat_received = True
-            return True
-            
-        except Exception as e:
-            self.log.error(f"Error during heartbeat check: {str(e)}")
-            return False
-        finally:
-            # Close channels
-            if self.core_com_channel_scp.is_open():
-                self.core_com_channel_scp.close()
-            if self.core_com_channel_mcp.is_open():
-                self.core_com_channel_mcp.close()    
-
-    def read_serial_until(self, channel, read_until_key: str, timeout_seconds: int = 60) -> Union[str, bool]:
-        """
-        Helper method to handle command response reading and error handling.
-        
-        Args:
-            channel: The communication channel to read from (core_com_channel_scp or core_com_channel_mcp)
-            read_until_key: The key to read until
-            timeout_seconds: Timeout in seconds for reading response
-            
-        Returns:
-            Union[str, bool]: Command response string if successful, False if failed and logs the error/UART-buffer.
-        """
-        try:
-            command_response = channel.read_until(key=read_until_key, timeout_seconds=timeout_seconds)
-            self.log.debug("Received Response Successfully from UART . . .")
-            self.log.debug(command_response)
-            return command_response
-        except Exception as e:
-            error_msg = f"Error reading UART: {e}"
-            buffer_content = e.incomplete_line if hasattr(e, 'incomplete_line') else str(e)
-            
-            # Log everything
-            self.log.error(f"{error_msg}\n"
-                         f"=== REMAINING BUFFER ===\n"
-                         f"Time: {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
-                         f"Read until key: {read_until_key}\n"
-                         f"Buffer content:\n{buffer_content}\n"
-                         f"=== END BUFFER ===")
-            
-            return False
+        self.serial_util = None
 
     def sensor_fifo_cli_test(self, command: str, read_until_key: str, pass_logs: Union[List[str], str] = None, optional_first_command: Optional[str] = None) -> bool:
         """
@@ -150,10 +84,10 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                 self.log.info(f"Executing command: {command}")
                 self.core_com_channel_scp.write_line(write_string=command)
                 
-                command_response = self.read_serial_until(self.core_com_channel_scp, read_until_key)
-                if not command_response:
+                command_response = self.serial_util.read_scp_serial_until(read_until_key)
+                if command_response is None:
                     return False
-
+                
                 if pass_logs is not None:
                     # Convert pass_logs to a list if they are strings
                     if isinstance(pass_logs, str):
@@ -174,98 +108,38 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                 # If no pass_logs are provided in a Robot test case, assume it's a command execution test and return command_response or true to pass.    
                 if command_response:
                     return command_response
-                else:
-                    return True                
+                return True
             else:
                 raise ValueError("Unsupported DUT type")
 
-           
         except Exception as e:
             self.log.error(f"Error during test execution: {str(e)}")
             return False
         finally:
             self.core_com_channel_scp.close()
 
-    def run_command_on_mcp(self, command: str, read_until_key: str, pass_logs: Union[List[str], str] = None) -> bool:
-        """
-        Execute a command on the MCP and validate the response.
-        """
-        self.log.info(f"Running command on MCP with command: {command}")
-        
-        try:
-            self.core_com_channel_mcp.open()
-            if not self.core_com_channel_mcp.is_open():
-                self.log.error("Failed to open MCP communication channel")
-                return False
-
-            self.log.info(f"Executing command: {command}")
-            self.core_com_channel_mcp.write_line(write_string=command)
-            
-            command_response = self.read_serial_until(self.core_com_channel_mcp, read_until_key)
-            if not command_response:
-                return False
-
-            if pass_logs is not None:
-                # Convert pass_logs to a list if they are strings
-                if isinstance(pass_logs, str):
-                    self.log.info(f"Pass log (string): {pass_logs}")
-                    pass_logs_list = [pass_logs]
-                else:
-                    pass_logs_list = pass_logs
-
-                for item in pass_logs_list:
-                    if item in command_response:
-                        self.log.info(f"Found: '{item}'")
-                    else:
-                        self.log.error(f"Not Found: '{item}'")
-                        return False
-
-            return command_response is not None
-
-        except Exception as e:
-            self.log.error(f"Error during MCP command execution: {str(e)}")
-            return False
-        finally:
-            self.core_com_channel_mcp.close()
-
-    def run_command_on_scp(self, command: str, read_until_key: str) -> Union[str, bool]:
-        """
-        Execute a single command on scp and get its output. This function doesn't handle dut setup and teardown. Added this function to handle the command execution only.
-        Args:
-            command (str): The command to execute
-            read_until_key (str): The key to read until (Most of the cases it's 'Ok')
-        Returns:
-            Union[str, bool]: Command response string if successful, False if failed
-        """
-        self.log.info(f"Running command: {command}")
-
-        try:
-            if self.dut.get_dut_type() in [DeviceType.BIGFPGA,DeviceType.SVP]:
-                self.log.info(f"Testing and Opening channel for {self.dut.get_dut_type().value}")
-                self.core_com_channel_scp.open()
-                if not self.core_com_channel_scp.is_open():
-                    self.log.error("Failed to open core communication channel")
-                    return False
-
-                self.log.info(f"Executing command: {command}")
-                self.core_com_channel_scp.write_line(write_string=command)
-                
-                return self.read_serial_until(self.core_com_channel_scp, read_until_key)
-            else:
-                raise ValueError("Unsupported DUT type")
-            
-        except Exception as e:
-            self.log.error(f"Error during command execution: {str(e)}")
-            return False
-        finally:
-            self.core_com_channel_scp.close()
-
     #Creating a separate keyword for validating test_result as the return value can be True or a string(Command response)
     def validate_test_result(self, test_result):
+        """
+        Validates the outcome of a test result.
+
+        Accepts:
+            - True
+            - A non-empty, non-whitespace-only string
+
+        Raises:
+            AssertionError: If the result is None, False, an empty string, or only whitespace.
+
+        Args:
+            test_result: The result to validate. Typically the output of a test or read operation.
+
+        Returns:
+            True if the result is valid.
+        """
         if test_result is True or (isinstance(test_result, str) and test_result.strip()):
             return True
-        else:
-            raise AssertionError("Test result is not True or a non-empty string.")
+        raise AssertionError("Test result is not True or a empty string.")
+
         
     def set_and_verify_fifo_state(self, fifo_id: int, enable: bool = True) -> bool:
         """
@@ -286,10 +160,10 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             self.log.info(f"Attempting to set FIFO {fifo_id} ({initial_info['name']}) to {expected_state}")
             
             # Execute the enable/disable command
-            command_result = self.run_command_on_scp(command, "Ok")
-            if not command_result:
+            command_result = self.serial_util.run_command_on_scp(command, "Ok")
+            if command_result is None:
                 self.log.error(f"Failed to execute {command}")
-                return False
+                return None
                 
             # Get FIFO info to verify the state change
             fifo_info = self.get_structured_fifo_info(fifo_id)
@@ -324,10 +198,9 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                 fifo_id = int(fifo_id)
                 self.log.info(f"Converted string fifo_id to int: {fifo_id}")
 
-            command_response = self.run_command_on_scp("snsrfifo lprop", "Ok")
-            # self.log.info(f"Raw command response:\n{command_response}")
+            command_response = self.serial_util.run_command_on_scp("snsrfifo lprop", "Ok")
             
-            if not command_response:
+            if command_response is None:
                 self.log.error("Expected string response from sensor_fifo_cli_test")
                 return None
                 
@@ -497,8 +370,15 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                 self.log.info("Current Test is executing on SingleDie Config, so primary die will be used to open channel on SCP and MCP core")
                 self.core_com_channel_scp = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
                 self.core_com_channel_mcp = self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
+            
+            self.serial_util = SerialUtility(
+            scp_channel=self.core_com_channel_scp,
+            mcp_channel=self.core_com_channel_mcp,
+            logger=self.log,
+            dut=self.dut)
+
             # Wait for SCP heartbeat during initial setup
-            if not self.wait_for_scp_mcp_heartbeat():
+            if not self.serial_util.wait_for_scp_mcp_heartbeat():
                 self.log.error("Failed to receive initial SCP-MCP heartbeat during setup")
                 return False
             return True
@@ -535,7 +415,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             self.log.info("Setting up prerequisites for FIFO testing")
 
             # Wait for MCP / SCP heartbeat
-            if not self.wait_for_scp_mcp_heartbeat():
+            if not self.serial_util.wait_for_scp_mcp_heartbeat():
                 self.log.error("Failed to receive SCP MCP heartbeat")
                 return False
 
@@ -550,7 +430,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
                 return False
             
             # Disable the power telemetry servicer on the MCP (to stop it from reading from the sensor FIFOs)
-            pwrtlm_result = self.run_command_on_mcp(
+            pwrtlm_result = self.serial_util.run_command_on_mcp(
                 command="pwrtlm disable",
                 read_until_key="Ok",
                 pass_logs="Power Telemetry Disabled!"

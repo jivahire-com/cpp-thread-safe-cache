@@ -33,8 +33,9 @@
  * they are waiting for phy sram load and reset events to complete
  * within an rpss.
  */
-#define PRE_SI_WORKER_YIELD_TICKS  (2)
-#define POST_SI_WORKER_YIELD_TICKS (8000)
+#define PRE_SI_WORKER_YIELD_TICKS        (2)
+#define PRE_RPSS_INIT_WORKER_YIELD_TICKS (500)
+#define POST_SI_WORKER_YIELD_TICKS       (8000)
 
 /*------------- Typedefs -----------------*/
 
@@ -58,6 +59,15 @@ static void send_full_pciess_init(pcie_manager_context_t* ctx)
      */
     send_sync_rpss_initial_config((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx);
     tx_event_flags_set(ctx->event_ptr, (1 << ctx->rpss_idx), TX_OR);
+
+    /*
+     * TODO WI: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2777075/
+     * Timing impact of aux_clk_active never going low on the PHYs is being
+     * investigated.
+     *
+     * Yielding the thread here for some time allow aux_clk_active to go low.
+     */
+    tx_thread_sleep(PRE_RPSS_INIT_WORKER_YIELD_TICKS);
 
     /*
      * Send pre root port initialization request to setup the RPSS.

@@ -15,7 +15,7 @@
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!-- DDR Manager knobs -->
     <Knob name="ddrmanager_bwl_en" type="bool" default="true" help="Enable/Disable bandwidth limiting (thermal throttling)" />
-    <Knob name="ddrmanager_bwl_polling_en" type="bool" default="true" help="Enable/Disable DIMM temperature/power polling" />
+    <Knob name="ddrmanager_bwl_polling_en" type="bool" default="false" help="Enable/Disable DIMM temperature/power polling" />
     <Knob name="ddrmanager_bwl_polling_period_ms" type="uint32_t" default="250" help="Default DIMM temperature/power polling period in ms" />
     <Knob name="ddrmanager_dimm_temp_low" type="uint32_t" default="80" help="Integer value representing low temperature to disengage BWL (80°C)" />
     <Knob name="ddrmanager_dimm_temp_high" type="uint32_t" default="85" help="Integer value representing high temperature to engage BWL (85°C)" />

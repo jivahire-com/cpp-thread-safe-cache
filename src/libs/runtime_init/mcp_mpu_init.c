@@ -266,6 +266,22 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  DISABLE_SUBREGION,
                                  ARM_MPU_REGION_SIZE_4KB),
         },
+        /**
+         * MPU Region 15 - DDR Payloads used for ICC MHU
+         *                 Normal Noncacheable
+         *                 Priviledged R/W
+         */
+        {
+            .RBAR = ARM_MPU_RBAR(15, MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR), // NOLINT
+            .RASR = ARM_MPU_RASR(DISABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_1,
+                                 SHAREABLE,
+                                 NON_CACHEABLE,
+                                 NON_BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_16KB),
+        },
     };
     // clang-format on
 

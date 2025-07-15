@@ -4,6 +4,8 @@
  */
 
 /*------------- Includes -----------------*/
+
+#include <atu_api.h>
 #include <fpfw_init.h>
 #include <mpu.h>
 #include <silibs_scp_exp_top_regs.h>
@@ -195,7 +197,23 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
                                  NON_BUFFERABLE,
                                  DISABLE_SUBREGION,
                                  ARM_MPU_REGION_SIZE_1MB),
-        }
+        },
+        /**
+         * MPU Region 12 - DDR Payloads used for ICC MHU
+         *                 Normal Noncacheable
+         *                 Priviledged R/W
+         */
+        {
+            .RBAR = ARM_MPU_RBAR(12, MSCP_ATU_AP_WINDOW_ICC_MHU_PAYLOAD_BASE_ADDR), // NOLINT
+            .RASR = ARM_MPU_RASR(DISABLE_EXEC,
+                                 ARM_MPU_AP_PRIV,
+                                 TYPE_EXT_1,
+                                 SHAREABLE,
+                                 NON_CACHEABLE,
+                                 NON_BUFFERABLE,
+                                 DISABLE_SUBREGION,
+                                 ARM_MPU_REGION_SIZE_16KB),
+        },
     };
     // clang-format on
 

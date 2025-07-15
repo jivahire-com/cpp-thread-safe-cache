@@ -15,10 +15,14 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::cortex_m7::mpu
+        ms::service::atu_service
         silibs::platform
         silibs::kng_silibs_platform
         register_headers
 )
+
+# Generic ports implemented within this project
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 lint_target(${TARGET})
 format_target(${TARGET})

@@ -55,9 +55,11 @@ uint32_t test_memory[2] = {0}; // Mock memory for testing
 bool wait_for_local_core_boot_stage(startup_shutdown_boot_stage_t current_boot_stage)
 {
 
-    if (!current_boot_stage.local_core_sync_required)
+    // No local core sync required, so we can return immediately
+    // The MCP does not boot in emulation, so we do not need to wait for local core sync
+    if (!current_boot_stage.local_core_sync_required || IS_PLATFORM_EMU())
     {
-        return true; // No local core sync required, so we can return immediately
+        return true;
     }
 
     FPFW_ET_LOG(LocalCoreSyncStageStart, current_boot_stage.stage);

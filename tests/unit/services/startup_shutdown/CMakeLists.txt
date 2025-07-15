@@ -85,6 +85,7 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     idsw_get_cpu_type
     idsw_get_die_id
+    idsw_get_platform_sdv
     mscp_exp_spi_synchronize_dies
     FpFwLockAcquire
     FpFwLockRelease

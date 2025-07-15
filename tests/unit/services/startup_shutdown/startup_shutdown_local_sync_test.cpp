@@ -33,6 +33,7 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 
 static bool update_remote_core_on_sleep = false;
+static bool mock_sdv = false;
 
 /*------------- Functions ----------------*/
 
@@ -46,6 +47,17 @@ extern uint32_t test_memory[2];
 idsw_cpu_type_t __wrap_idsw_get_cpu_type()
 {
     return mock_type(idsw_cpu_type_t);
+}
+
+// Provide the signature for the real version and provide the implementation for the wrapped version
+idsw_plat_id_t __real_idsw_get_platform_sdv();
+idsw_plat_id_t __wrap_idsw_get_platform_sdv()
+{
+    if (mock_sdv)
+    {
+        return mock_type(idsw_plat_id_t);
+    }
+    return __real_idsw_get_platform_sdv();
 }
 
 void __wrap_wait_for_semaphore(SEMAPHORE_ID id, uint32_t key)
@@ -77,6 +89,7 @@ static int test_setup(void** pContext)
     FPFW_UNUSED(pContext);
 
     update_remote_core_on_sleep = false;
+    mock_sdv = false;
     memset(test_memory, 0, sizeof(test_memory));
 
     return 0;
@@ -96,6 +109,23 @@ SOS_TEST(wait_for_local_core_boot_stage_not_needed, test_setup, test_teardown)
         .phase = STARTUP_PHASE_MSCP_ASYNC,
         .stage = STARTUP_AP_SOC_POWER_INIT_POST_SYNC,
         .local_core_sync_required = false,
+        .remote_die_sync_required = false,
+    };
+
+    bool result = wait_for_local_core_boot_stage(stage);
+
+    assert_true(result);
+}
+
+SOS_TEST(wait_for_local_core_boot_stage_needed_but_emulation_skips, test_setup, test_teardown)
+{
+    mock_sdv = true;
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_EMU);
+
+    startup_shutdown_boot_stage_t stage = {
+        .phase = STARTUP_PHASE_MSCP_ASYNC,
+        .stage = STARTUP_AP_SOC_POWER_INIT_POST_SYNC,
+        .local_core_sync_required = true,
         .remote_die_sync_required = false,
     };
 

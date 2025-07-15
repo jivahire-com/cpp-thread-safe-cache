@@ -755,12 +755,6 @@ void ddr_create_smbios_tables(void)
 
         dimm_spd = ddrss_get_dimm_spd(dimm_local_idx);
 
-        // Align to next 32bit addr
-        if (!FPFW_IS_ALIGNED(this_dies_smbios_next_addr, sizeof(uint32_t)))
-        {
-            this_dies_smbios_next_addr = FPFW_ALIGN_SIZE_TO_4_BYTES(this_dies_smbios_next_addr);
-        }
-
         /* Length of the structure, 15h for version 2.1, 1Bh for
         version 2.3, 1Ch for version 2.6, 22h for version
         2.7, 28h for version 2.8, 54h for version 3.2, 5Ch

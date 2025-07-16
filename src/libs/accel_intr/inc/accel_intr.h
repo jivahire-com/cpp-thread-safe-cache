@@ -24,12 +24,30 @@ typedef enum {
 } eACCEL_INTR_RET_CODES;
 
 /**
+ * @brief Configurations for ACCEL Interrupt Initialization
+ * E_ACCEL_INTR_INIT_FULL_INTR_TREE: Initialize all levels in the tree.
+ * E_ACCEL_INTR_INIT_ONLY_LEVEL1_INTR: Initialize only Level 1 interrupts.
+ * 
+ */
+typedef enum {
+    E_ACCEL_INTR_INIT_FULL_INTR_TREE,
+    E_ACCEL_INTR_INIT_ONLY_LEVEL1_INTR,
+    E_ACCEL_INTR_INIT_MAX,
+} E_ACCEL_INTR_INIT_CONFIG;
+
+/**
  * SDM and CDED IRQ Numbers
  * CDEDSS : 0x76 (118)
  * SDMSS  : 0x77 (119)
  */
 #define CDEDSS_IRQ_NUMBER           (0x76)
 #define SDMSS_IRQ_NUMBER            (0x77)
+
+/**
+ * ACCEL EmCPU WDT Enable / Disable
+ */
+#define ACCEL_INTR_DISABLE_ACCEL_EMCPU_WDT          (0x0)
+#define ACCEL_INTR_ENABLE_ACCEL_EMCPU_WDT           (0x1)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -127,5 +145,20 @@ int32_t accel_intr_init(ACCEL_ID accel_type);
  *
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ * @param[in] init_config : Initialization configuration
+ *                         E_ACCEL_INTR_INIT_FULL_INTR_TREE: Initialize all levels in the tree.
+ *                         E_ACCEL_INTR_INIT_ONLY_LEVEL1_INTR: Initialize only Level 1 interrupts.
  */
-void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr);
+void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
+
+/**
+ * @brief Enable / Disable ACCEL emCPU Watchdog
+ *
+ *
+ * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ * @param[in] enable : ACCEL_INTR_ENABLE_ACCEL_EMCPU_WDT for enable and ACCEL_INTR_DISABLE_ACCEL_EMCPU_WDT for disable
+ *
+ * @retval
+ * void
+ */
+void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable);

@@ -424,7 +424,6 @@ TEST_FUNCTION(scp_accelerators_init_warm_reset_pass, nullptr, nullptr)
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
 
     // In init_accelerator()
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_system_info_is_warm_start, true);
     will_return_always(__wrap_accel_scp_intr_init, ACCEL_INTR_RET_SUCCESS);
@@ -578,6 +577,7 @@ TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
 
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // In emcpu_recovery_sequence()
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
@@ -598,6 +598,7 @@ TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
 
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
 
     accel_core_warm_reset(ACCEL_ID_SDM, cb_fun, NULL, cb_fun, NULL);
@@ -611,6 +612,7 @@ TEST_FUNCTION(accelip_emcpu_reset_cded_test, nullptr, nullptr)
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
 
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // In emcpu_recovery_sequence()
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
@@ -631,6 +633,7 @@ TEST_FUNCTION(accelip_emcpu_reset_cded_test, nullptr, nullptr)
 
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
 
     accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
@@ -649,6 +652,7 @@ TEST_FUNCTION(accelip_emcpu_reset_null_cb_test, nullptr, nullptr)
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
 
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // Set common expectations of emcpu_recovery_sequence()
     will_return_always(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
@@ -695,6 +699,7 @@ TEST_FUNCTION(accelip_emcpu_reset_invalid_state_test, nullptr, nullptr)
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // In emcpu_recovery_sequence()
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
@@ -744,6 +749,7 @@ TEST_FUNCTION(accelip_emcpu_reset_recv_fail_test, nullptr, nullptr)
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // In emcpu_recovery_sequence()
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
@@ -788,6 +794,7 @@ TEST_FUNCTION(accelip_emcpu_reset_send_fail_test, nullptr, nullptr)
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // In emcpu_recovery_sequence()
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
@@ -833,6 +840,7 @@ TEST_FUNCTION(accelip_emcpu_reset_send_fail_mbox_cmd_cb, nullptr, nullptr)
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // In emcpu_recovery_sequence()
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
@@ -879,6 +887,7 @@ TEST_FUNCTION(accelip_emcpu_reset_send_fail_mbox_status_cb, nullptr, nullptr)
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // In emcpu_recovery_sequence()
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
@@ -950,7 +959,6 @@ TEST_FUNCTION(mcp_accelerators_init_test_die0_pass, nullptr, nullptr)
     will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     // init accelertor
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_SUCCESS, 2);
     expect_value_count(__wrap_FpFwAssert, expression, true, 2);
 
@@ -967,7 +975,6 @@ TEST_FUNCTION(mcp_accelerators_init_test_die1_pass, nullptr, nullptr)
     will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     // init accelertor
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_SUCCESS, 2);
     expect_value_count(__wrap_FpFwAssert, expression, true, 2);
 
@@ -1020,7 +1027,6 @@ TEST_FUNCTION(mcp_accelerators_init_test_fail3, nullptr, nullptr)
     will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     // init accelertor
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_FAIL_INTR_INIT, 2);
     expect_value_count(__wrap_FpFwAssert, expression, false, 2);
 
@@ -1029,6 +1035,7 @@ TEST_FUNCTION(mcp_accelerators_init_test_fail3, nullptr, nullptr)
 
 TEST_FUNCTION(accel_disable_cpu_wait_test, nullptr, nullptr)
 {
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
 
     accel_disable_cpu_wait(ACCEL_ID_SDM);
@@ -1037,6 +1044,7 @@ TEST_FUNCTION(accel_disable_cpu_wait_test, nullptr, nullptr)
 TEST_FUNCTION(accel_disable_cpu_wait_test_fail1, nullptr, nullptr)
 {
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
 
     should_return = true;

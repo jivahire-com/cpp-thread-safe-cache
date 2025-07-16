@@ -39,8 +39,6 @@
 
 /*--------------------------------- Externs ---------------------------------*/
 
-extern uint32_t accel_intr_atu_map_address[NUM_VALID_ACCEL_ID];
-
 /*----------------------------- Static Functions ----------------------------*/
 
 static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
@@ -52,8 +50,6 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     {
         return ACCEL_RET_FAIL_INVALID_PARAMS;
     }
-
-    accel_intr_atu_map_address[accel_type] = atu_svc_accel_atu_addr(accel_type);
 
     ret = accel_mcp_intr_init(accel_type);
     if (ret != ACCEL_INTR_RET_SUCCESS)

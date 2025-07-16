@@ -32,6 +32,7 @@
 #include <sdm_ext_cfg_regs.h> // for _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BPE_SB_TEL_ECC_CNTR_ADDRESS
 #include <stdbool.h>          // for false
 #include <string.h>           // for memset
+#include <system_info.h>      // for system_info_is_warm_start
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -48,6 +49,9 @@
     (_ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BPE_SB_TEL_ECC_CNTR_UE_MASK - \
      (0x1 << _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BPE_SB_TEL_ECC_CNTR_UE_LSB))
 #define ACCEL_CNTR_UE_CNTR_RESET_VALUE_MASK (_ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BPE_SB_TEL_ECC_CNTR_UE_MASK)
+
+#define DISABLE_INTERRUPT (true)  // Disable level-1 and level-2 interrupts
+#define ENABLE_INTERRUPT  (false) // Enable level-1 and level-2 interrupts
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -112,6 +116,53 @@ static uint32_t accel_intr_register_virtual_irq(ACCEL_ID accel_type, SDM_EXT_INT
     return FPFwCoreInterruptRegisterCallback(GET_VIRTUAL_IRQ(nvic_irq_num, bit_index, domain_num), p_cb_fun, (void*)nvic_irq_num);
 }
 
+/**
+ * @brief Initialize a interrupt at level 1 & level 2 for a specific interrupt line.
+ *
+ * @param ext_cfg_addr The external configuration address.
+ * @param lvl2_cat_id The level 2 category ID.
+ * @param lvl2_mask The level 2 mask.
+ * @param lvl1_intr_vector The level 1 interrupt vector.
+ * @param skip_enable Flag to skip enabling interrupts.
+ *                    If `skip_enable` is false, it enables the level-1 and level-2 interrupts.
+ *                    If `skip_enable` is true, it only enabled the level-1 interrupt.
+ *
+ * If the level-2 category ID is valid, it disables, clears and enables the level-2 interrupt
+ * in that order.
+ */
+static void accel_intr_init_irq_tree(uint32_t ext_cfg_addr, uint32_t lvl2_cat_id, uint32_t lvl2_mask, uint32_t lvl1_intr_vector, bool skip_enable)
+{
+    /* Clear and disable Level-2 Interrupts */
+    if (lvl2_cat_id < SDM_EXT_CATEGORY_ID_MAX)
+    {
+        sdm_ext_int_mask_disable(ext_cfg_addr, lvl2_cat_id, lvl2_mask);
+        sdm_ext_int_mask_status_clear(ext_cfg_addr, lvl2_cat_id, lvl2_mask);
+    }
+
+    /* Clear and disable Level-1 Interrupts */
+    sdm_ext_int_disable(ext_cfg_addr, lvl1_intr_vector);
+    sdm_ext_int_status_clear(ext_cfg_addr, lvl1_intr_vector);
+
+    if (!skip_enable)
+    {
+        /* Enable level 1 & 2 Interrupts */
+        if (lvl2_cat_id < SDM_EXT_CATEGORY_ID_MAX)
+        {
+            /**
+             * Level-2 interrupt is valid for this case.
+             * Silibs API will enable parent level interrupts upto the root level.
+             * No need to explicitly enable parent level interrupts
+             * This does not apply for silibs disable intr APIs
+             */
+            sdm_ext_int_mask_enable(ext_cfg_addr, lvl2_cat_id, lvl2_mask);
+        }
+        else
+        {
+            sdm_ext_int_enable(ext_cfg_addr, lvl1_intr_vector);
+        }
+    }
+}
+
 /*----------------------------- Global Functions ----------------------------*/
 
 // TODO ADO: 2617263 Make default type as error
@@ -168,7 +219,7 @@ void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable)
     cortex_m7_atomic_call_data_memory_barrier();
 }
 
-void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr)
+void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config)
 {
     // For each individual interrupt, re initialise them
     for (eACCEL_SCP_INTR idx = ACCEL_SCP_INTR_EMCPU_WDT_ERR; idx < ACCEL_SCP_INTR_MAX; idx++)
@@ -179,14 +230,14 @@ void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr)
             continue;
         }
         // Call init function for that IRQ, always returns SUCCESS
-        accel_irq_scp_data[idx].accel_irq_init_fn(accel_type, accel_irq_scp_data[idx].accel_irq_bit, ext_cfg_addr);
+        accel_irq_scp_data[idx].accel_irq_init_fn(accel_type, accel_irq_scp_data[idx].accel_irq_bit, ext_cfg_addr, init_config);
     }
 
     // To make sure all interrupts are cleared
     cortex_m7_atomic_call_data_memory_barrier();
 }
 
-void accel_intr_mcp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr)
+void accel_intr_mcp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config)
 {
     // For each individual interrupt, re initialise them
     for (eACCEL_MCP_INTR idx = ACCEL_MCP_INTR_FIRST; idx < ACCEL_MCP_INTR_MAX; idx++)
@@ -197,34 +248,10 @@ void accel_intr_mcp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr)
             continue;
         }
         // Call init function for that IRQ, always returns SUCCESS
-        accel_irq_mcp_data[idx].accel_irq_init_fn(accel_type, accel_irq_mcp_data[idx].accel_irq_bit, ext_cfg_addr);
+        accel_irq_mcp_data[idx].accel_irq_init_fn(accel_type, accel_irq_mcp_data[idx].accel_irq_bit, ext_cfg_addr, init_config);
     }
 
     // To make sure all interrupts are cleared
-    cortex_m7_atomic_call_data_memory_barrier();
-}
-
-void accel_intr_clear_disable_irq_in_sdm_intr_tree(uint32_t ext_cfg_addr,
-                                                   SDM_EXT_INT_CATEGORY category_id,
-                                                   uint32_t interrupt_mask,
-                                                   sdm_ext_int_t parent_vector)
-{
-    // Disable
-    sdm_ext_int_mask_disable(ext_cfg_addr, category_id, interrupt_mask);
-    // Clear status
-    sdm_ext_int_mask_status_clear(ext_cfg_addr, category_id, interrupt_mask);
-
-    cortex_m7_atomic_call_data_memory_barrier();
-
-    // If parent_vector is valid then clear and disable at parent level as well
-    if (parent_vector != SDM_EXT_INVALID_INTERRUPT_INPUT)
-    {
-        sdm_ext_int_disable(ext_cfg_addr, parent_vector);
-
-        sdm_ext_int_status_clear(ext_cfg_addr, parent_vector);
-    }
-
-    // Add memory barrier to make sure interrupt is cleared before it is enabled
     cortex_m7_atomic_call_data_memory_barrier();
 }
 
@@ -289,6 +316,14 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type)
     }
 
     uint32_t ret = ACCEL_INTR_RET_SUCCESS;
+    /**
+     * During cold boot we need to clear the entire interrupt tree to make sure
+     * no spurious interrupts are triggered(this case is extremely rare but can happen).
+     * If we are not in cold boot, we only need to clear the level 1 interrupt
+     * as the level 2 will anyways re-trigger the interrupt.
+     */
+    E_ACCEL_INTR_INIT_CONFIG init_config =
+        system_info_is_warm_start() ? E_ACCEL_INTR_INIT_ONLY_LEVEL1_INTR : E_ACCEL_INTR_INIT_FULL_INTR_TREE;
 
     /**
      * Create timers used in Crash dump collection handshake
@@ -314,7 +349,7 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type)
     sdm_ext_int_mask_disable(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
 
     // Initialize each interrupt
-    accel_intr_scp_init(accel_type, ext_cfg_addr);
+    accel_intr_scp_init(accel_type, ext_cfg_addr, init_config);
 
     // Enabled interrupts in NVIC
     FPFwCoreInterruptEnableVector(accel_intr_get_irq_num_from_accel_type(accel_type));
@@ -332,6 +367,9 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
         return ACCEL_INTR_RET_FAIL_INTR_INIT;
     }
 
+    E_ACCEL_INTR_INIT_CONFIG init_config =
+        system_info_is_warm_start() ? E_ACCEL_INTR_INIT_ONLY_LEVEL1_INTR : E_ACCEL_INTR_INIT_FULL_INTR_TREE;
+
     /**
      * Set subsystem in sdm_ext_interrupts.
      * This is later used to select between misc.sys_ext_intr0/1/2
@@ -346,7 +384,7 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
                              SL_GET_BIT_MASK_RANGE(SDM_EXT_EMCPU_WDT_ERR_INTR, SDM_EXT_SDM_MSG3_INTR));
 
     // Initialize each interrupt
-    accel_intr_mcp_init(accel_type, ext_cfg_addr);
+    accel_intr_mcp_init(accel_type, ext_cfg_addr, init_config);
 
     // Enabled interrupts in NVIC
     FPFwCoreInterruptEnableVector(accel_intr_get_irq_num_from_accel_type(accel_type));
@@ -354,13 +392,14 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
+uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type,
+                                       SDM_EXT_INTERRUPT_NUMBER bit_index,
+                                       uint32_t ext_cfg_addr,
+                                       E_ACCEL_INTR_INIT_CONFIG init_config)
 {
-    FPFW_UNUSED(bit_index);
-    FPFW_UNUSED(accel_type);
-
-    uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(SDM_EXT_EMCPU_WDT_FATAL_INTR);
-    uint32_t ret = ACCEL_INTR_RET_SUCCESS;
+    uint32_t lvl2_cat_id = SDM_EXT_CATEGORY_ID_MAX;
+    uint32_t lvl2_mask = 0;
+    uint32_t ret;
 
     ret = accel_intr_register_virtual_irq(accel_type, bit_index);
     if (ret != ACCEL_INTR_RET_SUCCESS)
@@ -368,20 +407,28 @@ uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NU
         return ret;
     }
 
-    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EMCPU_WATCHDOG, interrupt_mask, SDM_EXT_EMCPU_WDT_ERR_INTR_VECTOR);
-    accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EMCPU_WATCHDOG, interrupt_mask);
+    if (init_config == E_ACCEL_INTR_INIT_FULL_INTR_TREE)
+    {
+        lvl2_cat_id = SDM_EXT_CATEGORY_ID_EMCPU_WATCHDOG;
+        lvl2_mask = SL_GET_SINGLE_BIT_MASK(SDM_EXT_EMCPU_WDT_FATAL_INTR);
+    }
 
-    return ACCEL_INTR_RET_SUCCESS;
+    accel_intr_init_irq_tree(ext_cfg_addr, lvl2_cat_id, lvl2_mask, SDM_EXT_EMCPU_WDT_ERR_INTR_VECTOR, ENABLE_INTERRUPT);
+
+    return ret;
 }
 
 /**
  * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
  * Combine various interrupt inits in single silibs call
  */
-uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
+uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config)
 {
     // Clear and enable TEL_ECC errors
-    uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_BPE_SCRATCH_ERR_INTR, SDM_EXT_LSTRG_ERR_INTR);
+    uint32_t tcm_ue_ecc_err_lvl2_cat_id = SDM_EXT_CATEGORY_ID_MAX;
+    uint32_t tcm_ue_ecc_err_lvl2_mask = 0;
+    uint32_t ue_ecc_err_lvl2_cat_id = SDM_EXT_CATEGORY_ID_MAX;
+    uint32_t ue_ecc_err_lvl2_mask = 0;
     uint32_t ret = ACCEL_INTR_RET_SUCCESS;
 
     ret = accel_intr_register_virtual_irq(accel_type, bit_index);
@@ -410,22 +457,20 @@ uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBE
         cortex_m7_atomic_call_data_memory_barrier();
     }
 
-    // Clear and disable TEL_ECC errors and SDM_EXT_TCM_UE_ECC_ERR_INTR
-    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_UN_CORREC_ECC, interrupt_mask, SDM_EXT_TCM_UE_ECC_ERR_INTR);
-
-    // Clear and disable FAB_ECC errors and SDM_EXT_UE_ECC_ERR_INTR_VECTOR
-    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr,
-                                                  SDM_EXT_CATEGORY_ID_FABRIC_ERROR,
-                                                  FAB_UN_CORREC_ERR_BIT_MASK,
-                                                  SDM_EXT_UE_ECC_ERR_INTR_VECTOR);
-
     /**
      * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
      * Combine FAB_ECC and TEL_ECC errors for UE errors under one category
      */
-    // Enable the interrupts
-    accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_UN_CORREC_ECC, interrupt_mask);
-    accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_ERROR, FAB_UN_CORREC_ERR_BIT_MASK);
+    if (init_config == E_ACCEL_INTR_INIT_FULL_INTR_TREE)
+    {
+        tcm_ue_ecc_err_lvl2_cat_id = SDM_EXT_CATEGORY_ID_UN_CORREC_ECC;
+        tcm_ue_ecc_err_lvl2_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_BPE_SCRATCH_ERR_INTR, SDM_EXT_LSTRG_ERR_INTR);
+        ue_ecc_err_lvl2_cat_id = SDM_EXT_CATEGORY_ID_FABRIC_ERROR;
+        ue_ecc_err_lvl2_mask = FAB_UN_CORREC_ERR_BIT_MASK;
+    }
+
+    accel_intr_init_irq_tree(ext_cfg_addr, tcm_ue_ecc_err_lvl2_cat_id, tcm_ue_ecc_err_lvl2_mask, SDM_EXT_TCM_UE_ECC_ERR_INTR_VECTOR, ENABLE_INTERRUPT);
+    accel_intr_init_irq_tree(ext_cfg_addr, ue_ecc_err_lvl2_cat_id, ue_ecc_err_lvl2_mask, SDM_EXT_UE_ECC_ERR_INTR_VECTOR, ENABLE_INTERRUPT);
 
     /**
      * TODO: FW Task 779516: sdm_ext_interrupts and sdm_em_interrupts : Create separate category for TCM_UE_ECC_ERR
@@ -438,9 +483,15 @@ uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBE
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
+uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type,
+                                          SDM_EXT_INTERRUPT_NUMBER bit_index,
+                                          uint32_t ext_cfg_addr,
+                                          E_ACCEL_INTR_INIT_CONFIG init_config)
 {
-    uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(bit_index);
+    FPFW_UNUSED(init_config);
+    uint32_t lvl1_intr_vector = GET_INTERRUPT_VECTOR(SDM_EXT_CATEGORY_ID_EXT_INTR, bit_index);
+    uint32_t lvl2_cat_id = SDM_EXT_CATEGORY_ID_MAX;
+    uint32_t lvl2_mask = 0;
     uint32_t ret = ACCEL_INTR_RET_SUCCESS;
 
     ret = accel_intr_register_virtual_irq(accel_type, bit_index);
@@ -449,15 +500,17 @@ uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT
         return ret;
     }
 
-    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask, SDM_EXT_INVALID_INTERRUPT_INPUT);
-    accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
+    accel_intr_init_irq_tree(ext_cfg_addr, lvl2_cat_id, lvl2_mask, lvl1_intr_vector, ENABLE_INTERRUPT);
 
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
+uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config)
 {
-    uint32_t interrupt_mask = SL_GET_SINGLE_BIT_MASK(bit_index);
+    FPFW_UNUSED(init_config);
+    uint32_t lvl1_intr_vector = GET_INTERRUPT_VECTOR(SDM_EXT_CATEGORY_ID_EXT_INTR, bit_index);
+    uint32_t lvl2_cat_id = SDM_EXT_CATEGORY_ID_MAX;
+    uint32_t lvl2_mask = 0;
     uint32_t ret = ACCEL_INTR_RET_SUCCESS;
 
     ret = accel_intr_register_virtual_irq(accel_type, bit_index);
@@ -466,19 +519,16 @@ uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
         return ret;
     }
 
-    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask, SDM_EXT_INVALID_INTERRUPT_INPUT);
-    /* CDED CP fatal interrupt is only valid for CDEDSS */
-    if (accel_type == ACCEL_ID_CDED)
-    {
-        accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, interrupt_mask);
-    }
+    /* Skip enabling CDED CP interrupt on SDM core as SDM core doesn't support CDED CP interrupts */
+    accel_intr_init_irq_tree(ext_cfg_addr, lvl2_cat_id, lvl2_mask, lvl1_intr_vector, accel_type == ACCEL_ID_SDM ? DISABLE_INTERRUPT : ENABLE_INTERRUPT);
 
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
+uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config)
 {
-    uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_SDM_WDT_BP_INTR, SDM_EXT_SDM_WDT_MSI_INTR);
+    uint32_t lvl2_cat_id = SDM_EXT_CATEGORY_ID_MAX;
+    uint32_t lvl2_mask = 0;
     uint32_t ret = ACCEL_INTR_RET_SUCCESS;
 
     ret = accel_intr_register_virtual_irq(accel_type, bit_index);
@@ -487,15 +537,21 @@ uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
         return ret;
     }
 
-    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_SDM_WATCHDOG, interrupt_mask, SDM_EXT_SDM_WDT_ERR_INTR_VECTOR);
-    accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_SDM_WATCHDOG, interrupt_mask);
+    if (init_config == E_ACCEL_INTR_INIT_FULL_INTR_TREE)
+    {
+        lvl2_cat_id = SDM_EXT_CATEGORY_ID_SDM_WATCHDOG;
+        lvl2_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_SDM_WDT_BP_INTR, SDM_EXT_SDM_WDT_MSI_INTR);
+    }
+
+    accel_intr_init_irq_tree(ext_cfg_addr, lvl2_cat_id, lvl2_mask, SDM_EXT_SDM_WDT_ERR_INTR_VECTOR, ENABLE_INTERRUPT);
 
     return ACCEL_INTR_RET_SUCCESS;
 }
 
-uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr)
+uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config)
 {
-    uint32_t interrupt_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_FAB_BOOT_CONFIG_WDT, SDM_EXT_MISC_WDT);
+    uint32_t lvl2_cat_id = SDM_EXT_CATEGORY_ID_MAX;
+    uint32_t lvl2_mask = 0;
     uint32_t ret = ACCEL_INTR_RET_SUCCESS;
 
     ret = accel_intr_register_virtual_irq(accel_type, bit_index);
@@ -504,8 +560,13 @@ uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
         return ret;
     }
 
-    accel_intr_clear_disable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_WATCHDOG, interrupt_mask, SDM_EXT_FAB_WDT_ERR_INTR_VECTOR);
-    accel_intr_enable_irq_in_sdm_intr_tree(ext_cfg_addr, SDM_EXT_CATEGORY_ID_FABRIC_WATCHDOG, interrupt_mask);
+    if (init_config == E_ACCEL_INTR_INIT_FULL_INTR_TREE)
+    {
+        lvl2_cat_id = SDM_EXT_CATEGORY_ID_FABRIC_WATCHDOG;
+        lvl2_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_FAB_BOOT_CONFIG_WDT, SDM_EXT_MISC_WDT);
+    }
+
+    accel_intr_init_irq_tree(ext_cfg_addr, lvl2_cat_id, lvl2_mask, SDM_EXT_FAB_WDT_ERR_INTR_VECTOR, ENABLE_INTERRUPT);
 
     return ACCEL_INTR_RET_SUCCESS;
 }

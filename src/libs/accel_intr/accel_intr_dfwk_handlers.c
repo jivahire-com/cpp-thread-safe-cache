@@ -223,7 +223,7 @@ void accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel_type)
          * 1. Re-init all interrupts routed from ACCEL IP and supported in SCP in level 1 registers
          * Level 2 registers are cleared as part of Accel emCPU boot up
          */
-        accel_intr_scp_init(accel_type, ext_cfg_addr);
+        accel_intr_scp_init(accel_type, ext_cfg_addr, E_ACCEL_INTR_INIT_FULL_INTR_TREE);
         FPFwCoreInterruptEnableVector(IRQnum);
     }
 }

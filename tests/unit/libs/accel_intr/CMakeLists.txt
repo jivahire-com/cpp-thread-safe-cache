@@ -95,13 +95,17 @@ mock_target(${TARGET}
     scp_download_accel_knobs
     sdm_ext_get_category_mask_reg_addr
     sdm_ext_get_category_status_reg_addr
+    sdm_ext_int_disable
+    sdm_ext_int_enable
     sdm_ext_int_mask_disable
     sdm_ext_int_mask_enable
     sdm_ext_int_mask_status_clear
+    sdm_ext_int_status_clear
     send_fatal_intr_async_request
     send_mailbox_async_request
     send_sdm_msg_async_request
     set_ext_int_sub_system
+    system_info_is_warm_start
     virt_irq_disable
     virt_irq_enable
     virt_irq_set_isr_with_param

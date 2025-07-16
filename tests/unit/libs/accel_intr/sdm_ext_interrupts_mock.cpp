@@ -200,4 +200,55 @@ int __wrap_set_ext_int_sub_system(sdm_ext_subsystem_type_t sub_system_inp)
     return mock_type(uint32_t);
 }
 
+/**
+ * @brief sdm_ext_int_disable - Mock function
+ *
+ * @param[in] ext_cfg_addr : Ext CFG address offset
+ * @param[in] vector : Vector of interrupt to indicate interrupt to disable
+ *
+ *  @return
+ *      int
+ */
+int __wrap_sdm_ext_int_disable(uintptr_t ext_cfg_addr, sdm_ext_int_t vector)
+{
+    FPFW_UNUSED(ext_cfg_addr);
+    FPFW_UNUSED(vector);
+
+    return mock_type(int);
+}
+
+/**
+ * @brief sdm_ext_int_status_clear - Mock function
+ *
+ * @param[in] ext_cfg_addr : Ext CFG address offset
+ * @param[in] vector : Vector of interrupt to indicate interrupt to clear
+ *
+ *  @return
+ *      int
+ */
+int __wrap_sdm_ext_int_status_clear(uintptr_t ext_cfg_addr, sdm_ext_int_t vector)
+{
+    FPFW_UNUSED(ext_cfg_addr);
+    FPFW_UNUSED(vector);
+
+    return mock_type(int);
+}
+
+/**
+ * @brief sdm_ext_int_enable - Mock function
+ *
+ * @param[in] ext_cfg_addr : Ext CFG address offset
+ * @param[in] vector : Vector of interrupt to indicate interrupt to enable
+ *
+ *  @return
+ *      int
+ */
+int __wrap_sdm_ext_int_enable(uintptr_t ext_cfg_addr, sdm_ext_int_t vector)
+{
+    FPFW_UNUSED(ext_cfg_addr);
+    FPFW_UNUSED(vector);
+
+    return mock_type(int);
+}
+
 } // extern "c"

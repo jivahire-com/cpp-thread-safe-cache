@@ -70,12 +70,6 @@ typedef enum {
 #define ACCEL_INTR_IS_RESET_ACCEL_EMCPU_SET(val)    (BITWISE_AND(val, SET_BIT_MASK(ACCEL_INTR_RESET_ACCEL_EMCPU_POS)) != 0x0)
 
 /**
- * ACCEL EmCPU WDT Enable / Disable
- */
-#define ACCEL_INTR_DISABLE_ACCEL_EMCPU_WDT          (0x0)
-#define ACCEL_INTR_ENABLE_ACCEL_EMCPU_WDT           (0x1)
-
-/**
  * Macro to indicate if an interrupt needs to be handled / processed
  */
 #define ACCEL_INTR_PROCESS_INTR_IN_BOTTOM_HALF       (true)
@@ -93,7 +87,7 @@ typedef enum {
 typedef struct
 {
     SDM_EXT_INTERRUPT_NUMBER accel_irq_bit;
-    uint32_t (*accel_irq_init_fn)(ACCEL_ID, SDM_EXT_INTERRUPT_NUMBER, uint32_t);   // Interrupt specific init code.
+    uint32_t (*accel_irq_init_fn)(ACCEL_ID, SDM_EXT_INTERRUPT_NUMBER, uint32_t, E_ACCEL_INTR_INIT_CONFIG);   // Interrupt specific init code.
     uint32_t (*accel_irq_fn)(uint32_t, uint32_t, SDM_EXT_INTERRUPT_NUMBER, bool);  // Interrupt specific ISR handler code
 } accel_intr_irq_data_t, *paccel_intr_irq_data_t;
 
@@ -159,18 +153,6 @@ eACCEL_SCP_INTR accel_scp_get_intr_enum(SDM_EXT_INTERRUPT_NUMBER irq_bit);
 /*************************************************************************
  * Misc Functions
  *************************************************************************/
-
-/**
- * @brief Enable / Disable ACCEL emCPU Watchdog
- *
- *
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] enable : 0x1 for enable and 0x0 for disable
- *
- * @retval
- * void
- */
-void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable);
 
 /**
  * @brief Clear and disable interrupt in given interrupt tree
@@ -263,11 +245,12 @@ void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUP
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ * @param[in] init_config : Interrupt tree initialization configuration 
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
+uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
 
 /**
  * @brief Initialize UE_ECC_ERR Interrupt
@@ -278,11 +261,12 @@ uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NU
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ * @param[in] init_config : Interrupt tree initialization configuration 
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
+uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
 
 /**
  * @brief Initialize all ACCEL interrupts that have only level 1 register
@@ -293,11 +277,12 @@ uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBE
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ * @param[in] init_config : Interrupt tree initialization configuration 
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
+uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
 
 /**
  * @brief Initialize SDM_WDT_ERR Interrupt
@@ -308,11 +293,12 @@ uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ * @param[in] init_config : Interrupt tree initialization configuration 
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
+uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
 
 /**
  * @brief Initialize FAB_WDT_ERR Interrupt
@@ -324,11 +310,12 @@ uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ * @param[in] init_config : Interrupt tree initialization configuration 
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
+uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
 
 /**
  * @brief Initialize CDED_CP_FATAL_ERR Interrupt
@@ -340,11 +327,12 @@ uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMB
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
+ * @param[in] init_config : Interrupt tree initialization configuration 
  *
  * @retval
  *  Always returns, ACCEL_RET_SUCCESS
  */
-uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr);
+uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
 
 /*************************************************************************
  * IRQ Validation and Handler functions

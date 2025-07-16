@@ -111,10 +111,6 @@ typedef struct _emcpu_rst_struct
 /*--------------------------- Function Prototypes ---------------------------*/
 
 /*------------------- Declarations (Statics and globals) --------------------*/
-/**
- * Store ATU mapped address
- */
-uint32_t accel_intr_atu_map_address[NUM_VALID_ACCEL_ID] = {0};
 
 // Forward declaring static function to allow for creation of struct
 static void request_accel_fw_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status);
@@ -327,8 +323,6 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
         return ACCEL_RET_FAIL_INVALID_PARAMS;
     }
 
-    accel_intr_atu_map_address[accel_type] = atu_svc_accel_atu_addr(accel_type);
-
     if (!system_info_is_hsp_present())
     {
         p_ss_ctxt->p_init_params->fw_preload_enabled = false;
@@ -339,7 +333,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
      */
     if (!system_info_is_warm_start())
     {
-        ret = accelip_ss_init(accel_intr_atu_map_address[accel_type],
+        ret = accelip_ss_init(atu_svc_accel_atu_addr(accel_type),
                               p_ss_ctxt->accelip_metadata.accel_type,
                               p_ss_ctxt->p_init_params);
         if (ret != SILIBS_SUCCESS)
@@ -467,7 +461,7 @@ void accel_disable_cpu_wait(ACCEL_ID accel_type)
     char accel_name[ACCEL_NAME_LEN];
     uint32_t ext_cfg_offset_addr = get_accel_name_and_offset_addr(accel_type, accel_name);
 
-    sdm_init_disable_cpu_wait((accel_intr_atu_map_address[accel_type] + ext_cfg_offset_addr));
+    sdm_init_disable_cpu_wait((atu_svc_accel_atu_addr(accel_type) + ext_cfg_offset_addr));
 }
 
 int32_t scp_accelerators_init(void)
@@ -532,14 +526,16 @@ void accel_pre_warm_reset_cb(void* ctx)
     scp_download_accel_knobs(accel_type);
 
     /* Initialize the Accel core interrupt registers */
-    accel_intr_scp_init(accel_type, ext_cfg_addr);
+    accel_intr_scp_init(accel_type, ext_cfg_addr, E_ACCEL_INTR_INIT_FULL_INTR_TREE);
 }
 
 void accel_post_warm_reset_cb(void* ctx)
 {
     ACCEL_ID accel_type = (ACCEL_ID)ctx;
     uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
+    uint32_t ext_cfg_addr = atu_svc_accel_atu_addr(accel_type);
 
+    accel_intr_emcpu_wdt_control(ext_cfg_addr, ACCEL_INTR_ENABLE_ACCEL_EMCPU_WDT);
     FPFwCoreInterruptEnableVector(IRQnum);
 }
 
@@ -577,5 +573,5 @@ void accel_core_warm_reset(ACCEL_ID accel_type, crash_dump_cb_t pre_cb_fun, void
     cpu_rst_info[accel_type].post_cb_ctx = post_cb_ctx;
     cpu_rst_info[accel_type].mbox_params.recv_params.cb_ctx = (void*)p_ss_ctxt;
 
-    emcpu_recovery_sequence((ext_cfg_offset_addr + accel_intr_atu_map_address[accel_type]), p_ss_ctxt);
+    emcpu_recovery_sequence((ext_cfg_offset_addr + atu_svc_accel_atu_addr(accel_type)), p_ss_ctxt);
 }

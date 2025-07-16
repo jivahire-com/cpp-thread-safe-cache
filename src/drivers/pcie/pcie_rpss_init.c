@@ -10,10 +10,11 @@
 /*------------- Includes -----------------*/
 #define __NO_CSR_TYPEDEFS__     // Needed to avoid huge buffers in ap_top_regs.h
 #define __NO_ADDRMAP_TYPEDEFS__ // Needed to avoid huge buffers in ap_top_regs.h
+#include <DbgPrint.h>
 #include <DfwkDriver.h>
-#include <FpFwAssert.h>
 #include <ap_top_regs.h>
 #include <atu_lib.h>
+#include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
 #include <kng_atu_mappings.h>
@@ -29,7 +30,6 @@
 #include <silibs_status.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <vab.h>
 #include <vab_rpss_top_regs.h>
 
@@ -71,14 +71,14 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     /* Map rpss in the ATU */
     sts = atu_map(ATU_ID_MSCP, &atu_pciess_config_map[rpss_id]);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
     /* Setup resolved addresses */
     uint64_t ap_subsystem_config_addr = rpss_addrs[rpss_id] + VAB_RPSS_TOP_RPSS_ADDRESS;
     uint64_t resolved_subsystem_config_addr = atu_pciess_config_map[rpss_id].mscp_start_address;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(rpss_id);
-    FPFW_RUNTIME_ASSERT(rpss != NULL);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
     override_default_pcie_cfg(rpss_id);
 
@@ -88,19 +88,19 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
                                get_configuration_for_rpss(rpss_id),
                                plat_get_phy_programming_support(),
                                true);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
     /* Override settings based on the platform we are running on */
     plat_overrides_pre_pciess_config_ss_for_bifur(rpss);
 
     sts = pciess_config_ss_for_bifur(rpss);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
     sts = pciess_deassert_por_reset(rpss);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
     sts = pciess_phys_toggle_clocks(rpss);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
     pciess_device_interface_t* iface = (pciess_device_interface_t*)(req->OwningInterface);
     pciess_device_t* dev = (pciess_device_t*)(iface->dev);
@@ -121,24 +121,24 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     phyfw.loaded = true;
     phyfw.base = (uintptr_t)SCP_EXP_PCIE_PHY_FW_BASE;
 
-    FPFW_RUNTIME_ASSERT(rpss != NULL);
+    BUG_ASSERT(rpss != NULL);
 
     if (plat_get_phy_programming_support() == true)
     {
         sts = pciess_poll_phys_sram_init_done(rpss);
         if (sts == SILIBS_E_TIMEOUT)
         {
-            printf("RPSS[%d]: PHY SRAM init not asserted, timeout!\n", rpss->id);
+            FPFW_DBGPRINT_WARNING("RPSS[%d]: PHY SRAM init not asserted, timeout!\n", rpss->id);
         }
 
         // There is no PHY Loaded other than the this, so any failure here should be
         // treated as FATAL
         sts = pciess_phys_program_fw(rpss, &phyfw);
-        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
     }
 
     sts = pciess_rps_pre_rp_ready_init(rpss);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
 
     return sts;
 }
@@ -149,16 +149,16 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     silibs_status_t sts = SILIBS_SUCCESS;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    FPFW_RUNTIME_ASSERT(rpss != NULL);
+    BUG_ASSERT(rpss != NULL);
 
     sts = pciess_rps_ready(rpss);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
 
     sts = pciess_rps_post_rp_ready_init(rpss);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
 
     sts = pciess_rps_clear_intus(rpss);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
 
     /* Enable RPSS VAB ISRs now as the rpss is programmed and ready to go */
     enable_vab_isrs((1 << rpss->id));
@@ -170,7 +170,7 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
         if (rpss_workarounds->prod_rp_cfgs[i].hide_dpc == true)
         {
             sts = oi_pcie_rp_dbi_hide_dpc_cap(&(rpss->rps[i]));
-            FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
         }
 
         // Apply force read allocate
@@ -185,7 +185,7 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
                                                        COHERENCY_READ_WRITE_CACHE_MODE,
                                                        COHERENCY_READ_WRITE_CACHE_VALUE);
             sts |= oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides, false);
-            FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
         }
 
         // Apply force write allocate
@@ -200,7 +200,7 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
                                                         COHERENCY_READ_WRITE_CACHE_MODE,
                                                         COHERENCY_READ_WRITE_CACHE_VALUE);
             sts |= oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides, true);
-            FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
         }
     }
 
@@ -212,7 +212,7 @@ void begin_link_training(PDFWK_SYNC_REQUEST_HEADER req)
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    FPFW_RUNTIME_ASSERT(rpss != NULL);
+    BUG_ASSERT(rpss != NULL);
 
     pciess_rp_initiate_link_training(&(rpss->rps[r->rp_index]));
 }
@@ -223,7 +223,7 @@ int get_rp_ready(PDFWK_SYNC_REQUEST_HEADER req)
     silibs_status_t sts = SILIBS_SUCCESS;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    FPFW_RUNTIME_ASSERT(rpss != NULL);
+    BUG_ASSERT(rpss != NULL);
 
     sts = pciess_rp_ready(&(rpss->rps[r->rp_index]));
 
@@ -236,7 +236,7 @@ int get_rp_link_status(PDFWK_SYNC_REQUEST_HEADER req)
     silibs_status_t sts = SILIBS_SUCCESS;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    FPFW_RUNTIME_ASSERT(rpss != NULL);
+    BUG_ASSERT(rpss != NULL);
 
     sts = pciess_rp_get_link_train_done(&(rpss->rps[r->rp_index]));
 

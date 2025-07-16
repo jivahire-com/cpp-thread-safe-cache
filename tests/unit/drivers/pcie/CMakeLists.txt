@@ -51,6 +51,7 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     # Mock external MSCP interfaces
+    crash_dump_bug_check
     enable_vab_isrs
     system_info_get_board_id
     system_info_get_board_rework_id

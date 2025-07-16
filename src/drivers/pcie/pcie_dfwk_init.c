@@ -11,7 +11,7 @@
 #include <DbgPrint.h>
 #include <DfwkDriver.h>
 #include <DfwkHost.h>
-#include <FpFwAssert.h>
+#include <bug_check.h>
 #include <oi_pcie.h>
 #include <pcie_cli_helpers_i.h>
 #include <pcie_dfwk.h>
@@ -116,8 +116,8 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
 
 void pcie_dfwk_interface_init(pciess_device_t* dev, pciess_device_interface_t* iface)
 {
-    FPFW_RUNTIME_ASSERT(dev != NULL);
-    FPFW_RUNTIME_ASSERT(iface != NULL);
+    BUG_ASSERT(dev != NULL);
+    BUG_ASSERT(iface != NULL);
 
     DfwkInterfaceInitialize(&iface->header, &dev->header, &dev->default_queue, pcie_sched_sync_op);
     iface->dev = dev;
@@ -125,10 +125,10 @@ void pcie_dfwk_interface_init(pciess_device_t* dev, pciess_device_interface_t* i
 
 void pcie_dfwk_init(pciess_device_t* dev, PDFWK_SCHEDULE schedule)
 {
-    FPFW_RUNTIME_ASSERT(dev != NULL);
-    FPFW_RUNTIME_ASSERT(schedule != NULL);
+    BUG_ASSERT(dev != NULL);
+    BUG_ASSERT(schedule != NULL);
 
-    FPFW_RUNTIME_ASSERT(init_async_request_pool() == TX_SUCCESS);
+    BUG_ASSERT(init_async_request_pool() == TX_SUCCESS);
     DfwkDeviceInitialize(&(dev->header), schedule);
     DfwkQueueInitialize(&(dev->default_queue), &(dev->header), pcie_default_dispatch, NULL, DfwkQueueType_ImmediateDispatch);
 

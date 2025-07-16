@@ -53,6 +53,8 @@ bool __real_config_get_pcie_configuration_mirroring(void);
  * Number of rpss per die (4) * Number of rps per rpss (4)
  * Upto 1 outstanding 1 req. per rp can be sent by the service.
  */
+#define BUGCHECK_MOCK_RETURN    (setjmp(mock_jump_buf))
+#define bugcheck_mock_return()  BUGCHECK_MOCK_RETURN
 #define MAX_ASYNC_REQ_POOL_SIZE (16)
 
 /*------------- Typedefs -----------------*/
@@ -63,10 +65,32 @@ bool __real_config_get_pcie_configuration_mirroring(void);
 static pciess_device_t dev;
 static pciess_device_interface_t iface;
 static pcie_async_request_t r;
+static jmp_buf mock_jump_buf;
+static bool should_return;
+
 /* mock entity*/
 pcie_ss_entity_t mock_pcie_ent;
 
 /*------------- Functions ----------------*/
+extern "C" {
+void __wrap_crash_dump_bug_check(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    FPFW_UNUSED(p0);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
+
+    function_called();
+
+    /* Handle noreturn, allowing control to return to test */
+    if (!should_return)
+    {
+        longjmp(mock_jump_buf, 1);
+    }
+}
+}
+
 static int test_setup(void** ctx)
 {
     FPFW_UNUSED(ctx);
@@ -111,8 +135,8 @@ TEST_FUNCTION(driver_init, NULL, NULL)
     auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
 
     /* Check whether bad inputs are rejected */
-    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
-    if (!set_error_handler_return())
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+    if (!bugcheck_mock_return())
     {
         pcie_dfwk_init(nullptr, nullptr);
     }
@@ -129,8 +153,8 @@ TEST_FUNCTION(driver_init, NULL, NULL)
 TEST_FUNCTION(interface_init, test_setup, test_teardown)
 {
     /* Check whether bad inputs are rejected */
-    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
-    if (!set_error_handler_return())
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+    if (!bugcheck_mock_return())
     {
         pcie_dfwk_interface_init(nullptr, nullptr);
     }
@@ -305,8 +329,8 @@ TEST_FUNCTION(test_pcie_rpss_init_atu_map_fail, test_setup, test_teardown)
 
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_E_RANGE);
-    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
-    if (!set_error_handler_return())
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+    if (!bugcheck_mock_return())
     {
         pcie_sched_sync_op(&(r.header));
     }
@@ -840,8 +864,8 @@ TEST_FUNCTION(test_invalid_irq, test_setup, test_teardown)
         mock_pcie_ent.rps[2].enabled = true;
         mock_pcie_ent.rps[3].enabled = true;
 
-        expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
-        if (!set_error_handler_return())
+        expect_function_calls(__wrap_crash_dump_bug_check, 1);
+        if (!bugcheck_mock_return())
         {
             rpss_irq_callback(irq_num);
         }
@@ -1295,14 +1319,14 @@ TEST_FUNCTION(test_get_config, test_setup, test_teardown)
     }
 
     /* Test that get_configuration_for_rpss rejects invalid RPSS ids */
-    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if (!set_error_handler_return())
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+    if (!bugcheck_mock_return())
     {
         get_configuration_for_rpss(NUM_RPSS);
     }
 
-    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if (!set_error_handler_return())
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+    if (!bugcheck_mock_return())
     {
         get_configuration_for_rpss((NUM_RPSS + 5));
     }
@@ -1318,8 +1342,8 @@ TEST_FUNCTION(test_get_workarounds, test_setup, test_teardown)
         assert_non_null(pcie_workaround_cfg);
     }
     /* Test that get_workaround_for_rpss rejects invalid RPSS ids */
-    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if (!set_error_handler_return())
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+    if (!bugcheck_mock_return())
     {
         get_workaround_for_rpss(NUM_RPSS);
     }

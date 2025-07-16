@@ -10,7 +10,7 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
-#include <FpFwAssert.h>
+#include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <kng_soc_constants.h>
 #include <mu_public.h>
@@ -282,7 +282,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         /* Invalid RPSS ID */
         /* This should never happen */
         FPFW_DBGPRINT_ERROR("[PCIe Configuration] Critical error! Invalid RPSS ID: %d\n", rpss_id);
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT_PARAM(rpss_id < NUM_RPSS, rpss_id, 0);
         break;
     }
     pcie_cfg->rp_cfgs[0] = rp_knobs[0].silibs_rp_cfg;
@@ -407,7 +407,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         /* Invalid RPSS ID */
         /* This should never happen */
         FPFW_DBGPRINT_ERROR("[PCIe Configuration] Critical error! Invalid RPSS ID: %d\n", rpss_id);
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT_PARAM(rpss_id < NUM_RPSS, rpss_id, 0);
         break;
     }
     pcie_cfg->rp_cfgs[0] = rp_knobs[0].silibs_rp_cfg;
@@ -531,7 +531,7 @@ pcie_cfg_t* get_configuration_for_rpss(uint8_t rpss_id)
         /* Invalid RPSS ID */
         /* This should never happen */
         FPFW_DBGPRINT_ERROR("[PCIe Configuration] Critical error! Invalid RPSS ID: %d\n", rpss_id);
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT_PARAM(rpss_id < NUM_RPSS, rpss_id, 0);
     }
 
     pcie_cfg = &pcie_cfg_np[rpss_id];
@@ -546,7 +546,7 @@ pcie_prod_cfg_workarounds_t* get_workaround_for_rpss(uint8_t rpss_id)
         /* Invalid RPSS ID */
         /* This should never happen */
         FPFW_DBGPRINT_ERROR("[PCIe Workaround] Critical error! Invalid RPSS ID: %d\n", rpss_id);
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT_PARAM(rpss_id < NUM_RPSS, rpss_id, 0);
     }
 
     return &pcie_cfg_workarounds_np[rpss_id];

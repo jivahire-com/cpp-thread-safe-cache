@@ -10,7 +10,7 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
-#include <FpFwAssert.h>
+#include <bug_check.h>
 #include <idsw.h>
 #include <interrupts.h>
 #include <intu_lib.h>
@@ -68,7 +68,7 @@ static pcie_ss_entity_t* get_rpss_entity_from_irq_num(uint32_t irq_num)
     case HW_INT_VAB4_COMBINED_SCP_INT:
     case HW_INT_VAB5_COMBINED_SCP_INT:
     default:
-        FPFW_RUNTIME_ASSERT(irq_num <= HW_INT_VAB3_COMBINED_SCP_INT);
+        BUG_ASSERT_PARAM(irq_num <= HW_INT_VAB3_COMBINED_SCP_INT, irq_num, 0);
         break;
     }
 

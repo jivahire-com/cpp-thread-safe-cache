@@ -201,7 +201,7 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
     uint8_t ts_per_channel_idx = 0;
     uint8_t data_len = 1; // Size of MR Read in Temp Sensor
 
-    BUG_ASSERT_PARAM(dimm_idx >= 0 && dimm_idx <= 11, dimm_idx, 0);
+    BUG_ASSERT_PARAM(dimm_idx >= 0 && dimm_idx < NUM_DIMM_PER_DIE, dimm_idx, 0);
     BUG_ASSERT_PARAM(channel_idx == 0 || channel_idx == 1, channel_idx, 0);
 
     if (ddr_i3c_sensors.is_initialized == false)
@@ -254,7 +254,7 @@ int ddr_manager_power_mw_read(int dimm_idx, uint16_t* power_mW)
     uint8_t data_len = 1;
     uint8_t power_byte = 0;
 
-    BUG_ASSERT_PARAM(dimm_idx >= 0 && dimm_idx <= 11, dimm_idx, 0);
+    BUG_ASSERT_PARAM(dimm_idx >= 0 && dimm_idx < NUM_DIMM_PER_DIE, dimm_idx, 0);
 
     if (ddr_i3c_sensors.is_initialized == false)
     {

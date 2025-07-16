@@ -436,6 +436,12 @@ STATIC FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** Argv)
     }
 
     ddrss_index = (uint8_t)(strtoul(Argv[1], NULL, 0));
+    if (ddrss_index > 5)
+    {
+        FpFwCliPrint("Invalid argument. <dimm_idx> range = 0 - 5\n");
+        return CLI_ERROR;
+    }
+
     sts = ddr_manager_power_mw_read(ddrss_index, &power_mw);
     if (sts != 0)
     {
@@ -460,7 +466,19 @@ STATIC FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** Argv)
     }
 
     ddrss_index = (uint8_t)(strtoul(Argv[1], NULL, 0));
+    if (ddrss_index > 5)
+    {
+        FpFwCliPrint("Invalid argument. <dimm_idx> range = 0 - 5\n");
+        return CLI_ERROR;
+    }
+
     channel_idx = (uint8_t)(strtoul(Argv[2], NULL, 0));
+    if (channel_idx > 1)
+    {
+        FpFwCliPrint("Invalid argument. <channel_idx> range = 0 - 1\n");
+        return CLI_ERROR;
+    }
+
     sts = ddr_manager_temperature_sensor_read(ddrss_index, channel_idx, &temperature);
     if (sts != 0)
     {

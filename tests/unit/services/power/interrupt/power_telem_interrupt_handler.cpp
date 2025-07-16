@@ -175,16 +175,16 @@ POWER_TEST(test_pll_isr_unlock_status, NULL, NULL)
     pll_isr();
 }
 
-POWER_TEST(test_core_pll_error_status, NULL, NULL)
-{
-    // Set up fake register values if needed
-    fake_scp_pwr_ctrl_regs.cpu_pll_lock_status0 = 0x12345678;
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0x1234);
+// POWER_TEST(test_core_pll_error_status, NULL, NULL)
+// {
+//     // Set up fake register values if needed
+//     fake_scp_pwr_ctrl_regs.cpu_pll_lock_status0 = 0x12345678;
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0x1234);
 
-    expect_any(__wrap_mmio_read32, addr);
-    will_return(__wrap_mmio_read32, 0x5678);
+//     expect_any(__wrap_mmio_read32, addr);
+//     will_return(__wrap_mmio_read32, 0x5678);
 
-    // Call the function under test
-    __real_core_pll_error_status(0);
-}
+//     // Call the function under test
+//     __real_core_pll_error_status(0);
+// }

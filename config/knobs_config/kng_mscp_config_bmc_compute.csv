@@ -3,3 +3,5 @@ FE3ED49F-B173-41ED-9076-356661D46A42,pcie_rpss4_cfg.pcie_ss_en,false,"Override f
 *,pcie_rpss5_cfg.pcie_ss_en,false,"Override for bmc compute mode"
 *,pcie_rpss6_cfg.pcie_ss_en,false,"Override for bmc compute mode"
 *,pcie_rpss7_cfg.pcie_ss_en,false,"Override for bmc compute mode"
+*,usb_knobs.power_on_port0,false,"Override for bmc compute mode"
+*,usb_knobs.power_on_port1,false,"Override for bmc compute mode"

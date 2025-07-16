@@ -64,7 +64,7 @@ void ddr_ecc_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint
 
     if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP))
     {
-        printf("Cannot support ecc_ue_error_injection in FPGA series platform! \n");
+        printf("Cannot support ecc_ue_error_injection on FPGA\n");
         return;
     }
 
@@ -244,7 +244,7 @@ acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, voi
         // Handle vendor-specific memory controller errors
         break;
     default:
-        printf("Invalid/Unsupported DDR error type(%d)\n", einj_payload->component_type);
+        printf("Invalid/Unsupported DDR error type(%d)\n", einj_payload->param_type.error_type);
         return ACPI_EINJ_INVALID_ACCESS;
     }
 

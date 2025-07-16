@@ -140,15 +140,13 @@ STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
 {
     KNG_DIE_ID die_id = idsw_get_die_id();
     uint32_t mc = 0;
-    uint64_t p_addr = 0;
-    uint16_t BIT_Value = 0;
+    uint64_t p_addr = 0x20080000000ULL;
+    uint16_t BIT_Value = BIT0 | BIT1;
     bool check_null = false;
 
     if (Argc == 1) // no argument passed
     {
         mc = 0;
-        p_addr = 0;
-        BIT_Value = BIT0 | BIT1;
         check_null |= true;
     }
     else if (Argc == 2) // only mc is passed as argument
@@ -158,8 +156,6 @@ STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
             mc = (uint32_t)(strtoul(Argv[1], 0, 0));
             check_null |= true;
         }
-        p_addr = 0;
-        BIT_Value = BIT0 | BIT1;
     }
     else if (Argc == 3) // only mc & phy_addr is passed as argument
     {
@@ -169,50 +165,16 @@ STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
             p_addr = (uint64_t)(strtoul(Argv[2], 0, 0));
             check_null |= true;
         }
-        BIT_Value = BIT0 | BIT1;
-    }
-    else if (Argc >= 5) // Mc, phy_addr & atleast two bit is passed as argument.
-    {
-        int i;
-        int bit;
-        if ((Argv[1] != NULL) && (Argv[2] != NULL))
-        {
-            mc = (uint32_t)(strtoul(Argv[1], 0, 0));
-            p_addr = (uint64_t)(strtoul(Argv[2], 0, 0));
-            check_null |= true;
-        }
-        for (i = 3; i < Argc; i++)
-        {
-            if (Argv[i] != NULL)
-            {
-                bit = (uint16_t)(strtoul(Argv[i], 0, 0));
-                if (bit >= 0 && bit < 10)
-                {
-                    BIT_Value |= 1 << bit;
-                    check_null |= true;
-                }
-                else
-                {
-                    check_null &= false;
-                    break;
-                }
-            }
-            else
-            {
-                check_null &= false;
-                break;
-            }
-        }
     }
     else
     {
-        FpFwCliPrint("Invalid Argument");
+        FpFwCliPrint("Invalid # arguments");
         return CLI_ERROR;
     }
 
     if ((check_null == false) || (!ddr_ecc_err_inj_validation(mc, BIT_Value)))
     {
-        FpFwCliPrint("Invalid Argument");
+        FpFwCliPrint("Invalid Argument mc or BIT_Value\n");
         return CLI_ERROR;
     }
 

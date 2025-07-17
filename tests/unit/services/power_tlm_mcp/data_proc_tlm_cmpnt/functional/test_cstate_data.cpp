@@ -96,6 +96,12 @@ static int32_t test_setup(void** state)
         core_rt[core_id].pstate_timestamp_uS = 0;
     }
 
+    // enable all cores for these tests
+    for (unsigned int core = 0; core < NUMBER_OF_CORES_PER_DIE; ++core)
+    {
+        core_is_active[core] = true;
+    }
+
     return 0;
 }
 

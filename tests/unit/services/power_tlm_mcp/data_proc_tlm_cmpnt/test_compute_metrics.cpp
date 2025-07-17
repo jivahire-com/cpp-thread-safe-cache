@@ -27,6 +27,8 @@ extern "C" {
 extern "C" {
 }
 
+#define TEST_CORE_ID (7)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -59,8 +61,23 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_current, test_setup, test_teardo
 {
 
     // Feed a few values into the core current computation and validate the results
-    uint8_t core_id = 0;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
+
     uint16_t test_values_mA[5] = {18, 20, 30, 40, 50};
+
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_core_current(core_id, test_values_mA[i]);
+    }
+
+    // Check the results
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].current_mA.min, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].current_mA.max, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].current_mA.running_avg.average, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].current_mA.running_avg.num_samples, 0);
+
+    core_is_active[core_id] = true;
 
     for (uint8_t i = 0; i < 5; i++)
     {
@@ -78,8 +95,23 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_current, test_setup, test_teardo
 TEST_FUNCTION(test_comp_metrics_for_single_core_voltage, test_setup, test_teardown)
 {
     // Feed a few values into the core power computation and validate the results
-    uint8_t core_id = 0;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
     uint16_t test_values_mV[5] = {180, 200, 300, 400, 500};
+
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_core_voltage(core_id, test_values_mV[i]);
+    }
+
+    // Check the results
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.min, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.max, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.running_avg.average, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.running_avg.num_samples, 0);
+
+    core_is_active[core_id] = true;
+    ;
 
     for (uint8_t i = 0; i < 5; i++)
     {
@@ -96,12 +128,16 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_voltage, test_setup, test_teardo
 // Unit test for  comp_metrics_for_single_core_temperature
 TEST_FUNCTION(test_comp_metrics_for_single_core_temperature, test_setup, test_teardown)
 {
-    uint8_t core_id = 0;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
 
-    // Test case: Initial values
-    computed_metrics_2_mins.cores[core_id].temperature_dC.min = 0;
-    computed_metrics_2_mins.cores[core_id].temperature_dC.max = 0;
-    computed_metrics_2_mins.cores[core_id].temperature_dC.running_avg.average = 0;
+    comp_metrics_for_single_core_temperature(core_id, 500);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.min, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.max, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].temperature_dC.running_avg.average, 0);
+
+    core_is_active[core_id] = true;
 
     comp_metrics_for_single_core_temperature(core_id, 500);
 
@@ -347,10 +383,26 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm_power, test_setup, test_tear
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, test_teardown)
 {
-    uint8_t core_id = 0;
-    int pstate_index = 0;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
+
     // Feed a few values into the core power computation and validate the results
     uint16_t test_values_mW[5] = {100, 200, 300, 400, 500};
+
+    int pstate_index = 0;
+
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i]);
+    }
+
+    // Check the results
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.max, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average, 0);
+
+    pstate_index = 0;
+    core_is_active[core_id] = true;
 
     for (uint8_t i = 0; i < 5; i++)
     {
@@ -366,7 +418,9 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, te
 // comp_metrics_for_single_core_throttling_pstate(core_id, i, time_diff_uS, core_rt[core_id].throttle_info[i].residency_mS);
 TEST_FUNCTION(test_comp_metrics_for_single_core_throttling_pstate, test_setup, test_teardown)
 {
-    uint8_t core_id = 0;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
+
     uint8_t throttle_index = 1;
     uint64_t time_stamp_uS = 5000;
 
@@ -377,18 +431,40 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_throttling_pstate, test_setup, t
     computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS = 10;
     computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate = 10;
     computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate = 5;
+
     uint32_t time_diff_uS = time_stamp_uS - core_rt[core_id].latest_throttle_type_previous_timestamp_uS[throttle_index];
     comp_metrics_for_single_core_throttling_pstate(core_id, throttle_index, time_diff_uS, core_rt[core_id].latest_pstate);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate, 5);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate, 10);
+
+    core_is_active[core_id] = true;
+    comp_metrics_for_single_core_throttling_pstate(core_id, throttle_index, time_diff_uS, core_rt[core_id].latest_pstate);
+
     assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate, 20);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate, 14);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_power, test_setup, test_teardown)
 {
-
     // Feed a few values into the core power computation and validate the results
-    uint8_t core_id = 0;
+    uint8_t core_id = TEST_CORE_ID;
+
     uint16_t test_values_mW[5] = {100, 200, 300, 400, 500};
+    core_is_active[core_id] = false;
+
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_core_power(core_id, test_values_mW[i]);
+    }
+
+    // Check the results
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.min, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.max, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.running_avg.num_samples, 0);
+
+    core_is_active[core_id] = true;
 
     for (uint8_t i = 0; i < 5; i++)
     {
@@ -404,8 +480,15 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_power, test_setup, test_teardown
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_single_throttle_overrun_count_update, test_setup, test_teardown)
 {
-    uint8_t core_id = 0;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
+
     uint8_t throttle_index = THROTTLE_SOURCE_CURRENT;
+
+    comp_metrics_for_single_core_single_throttle_overrun_count_update(core_id, throttle_index);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count, 0);
+
+    core_is_active[core_id] = true;
 
     comp_metrics_for_single_core_single_throttle_overrun_count_update(core_id, throttle_index);
 
@@ -418,31 +501,46 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_single_throttle_overrun_count_up
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_single_throttle_update, test_setup, test_teardown)
 {
-    uint8_t core_id = 0;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
+
     uint8_t throttle_index = THROTTLE_SOURCE_CURRENT;
     uint64_t timestamp_diff_uS = 1000;
     bool throttle_start = true;
-    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count = 0;
-    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS = 10;
 
     comp_metrics_for_single_core_single_throttle_update(core_id, throttle_index, timestamp_diff_uS, throttle_start);
 
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 0);
+
+    core_is_active[core_id] = true;
+    comp_metrics_for_single_core_single_throttle_update(core_id, throttle_index, timestamp_diff_uS, throttle_start);
+
     assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count, 1);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 10);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 0);
 
     throttle_start = false;
     comp_metrics_for_single_core_single_throttle_update(core_id, throttle_index, timestamp_diff_uS, throttle_start);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count, 1);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 11);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 1);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_single_rack_throttle_update, test_setup, test_teardown)
 {
-    uint8_t core_id = 0;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
+
     uint8_t priority_id = 0;
     uint64_t timestamp_diff_uS = 1000;
     computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS = 10;
     bool rack_throttle_priority_start = true;
+
+    comp_metrics_for_single_core_single_rack_throttle_update(core_id, priority_id, timestamp_diff_uS, rack_throttle_priority_start);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].entry_count, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS, 10);
+
+    core_is_active[core_id] = true;
 
     comp_metrics_for_single_core_single_rack_throttle_update(core_id, priority_id, timestamp_diff_uS, rack_throttle_priority_start);
 
@@ -458,10 +556,18 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_single_rack_throttle_update, tes
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_single_pstate, test_setup, test_teardown)
 {
-    uint8_t core_id = 5;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
+
     uint8_t pstate_id = 0;
     uint64_t timestamp_diff_uS = 1000;
     uint8_t update_pstate_entry = 1;
+    comp_metrics_for_single_core_single_pstate(core_id, pstate_id, timestamp_diff_uS, update_pstate_entry);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].residency_uS, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].entry_count, 0);
+
+    core_is_active[core_id] = true;
     comp_metrics_for_single_core_single_pstate(core_id, pstate_id, timestamp_diff_uS, update_pstate_entry);
 
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].residency_uS, 1000);
@@ -470,10 +576,18 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_single_pstate, test_setup, test_
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_single_cstate, test_setup, test_teardown)
 {
-    uint8_t core_id = 5;
+    uint8_t core_id = TEST_CORE_ID;
+    core_is_active[core_id] = false;
+
     uint8_t cstate_id = 0;
     uint64_t timestamp_diff_uS = 1000;
     uint8_t update_cstate_entry = 1;
+    comp_metrics_for_single_core_single_cstate(core_id, cstate_id, timestamp_diff_uS, update_cstate_entry);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[cstate_id].residency_uS, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[cstate_id].entry_count, 0);
+
+    core_is_active[core_id] = true;
     comp_metrics_for_single_core_single_cstate(core_id, cstate_id, timestamp_diff_uS, update_cstate_entry);
 
     assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[cstate_id].residency_uS, 1000);

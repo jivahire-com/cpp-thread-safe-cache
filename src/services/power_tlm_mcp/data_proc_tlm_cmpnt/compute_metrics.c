@@ -89,24 +89,132 @@ void comp_metrics_init_active_cores(void)
 
 void comp_metrics_for_single_core_current(uint8_t core_id, uint16_t latest_value_mA)
 {
-    /* For core current :min, max avg calculation*/
-    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].current_mA, latest_value_mA);
+    if (core_is_active[core_id])
+    {
+        data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].current_mA, latest_value_mA);
+    }
 }
 
 void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value_mV)
 {
-    /* For core voltage :min, max avg calculation*/
-    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].voltage_mV, latest_value_mV);
+    if (core_is_active[core_id])
+    {
+        data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].voltage_mV, latest_value_mV);
+    }
 }
 
 void comp_metrics_for_single_core_temperature(uint8_t core_id, uint16_t latest_temperature_dC)
 {
-    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].temperature_dC, latest_temperature_dC);
+    if (core_is_active[core_id])
+    {
+        data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].temperature_dC, latest_temperature_dC);
+    }
 }
 
 void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_mW)
 {
-    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].power_mW, latest_power_mW);
+    if (core_is_active[core_id])
+    {
+        data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].power_mW, latest_power_mW);
+    }
+}
+
+void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, uint8_t update_pstate_entry)
+{
+    if (core_is_active[core_id])
+    {
+        computed_metrics_2_mins.cores[core_id].pstate[pstate].residency_uS += timestamp_diff_uS;
+        if (update_pstate_entry)
+        {
+            computed_metrics_2_mins.cores[core_id].pstate[pstate].entry_count += 1;
+        }
+    }
+}
+
+void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, uint8_t update_cstate_entry)
+{
+    if (core_is_active[core_id])
+    {
+        computed_metrics_2_mins.cores[core_id].cstate[cstate].residency_uS += timestamp_diff_uS;
+        // update entry count on compute matrics.
+        if (update_cstate_entry)
+        {
+            computed_metrics_2_mins.cores[core_id].cstate[cstate].entry_count += 1;
+        }
+    }
+}
+
+void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t pstate_index, uint16_t latest_power_mW)
+{
+    if (core_is_active[core_id])
+    {
+        data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW, latest_power_mW);
+    }
+}
+
+void comp_metrics_for_single_core_single_throttle_overrun_count_update(uint8_t core_id, uint8_t throttle_index)
+{
+    if (core_is_active[core_id])
+    {
+        if (throttle_index == THROTTLE_SOURCE_ADAPTIVE_CLK || throttle_index == THROTTLE_SOURCE_CURRENT)
+        {
+            computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count += 1;
+        }
+    }
+}
+
+void comp_metrics_for_single_core_single_throttle_update(uint8_t core_id, uint8_t throttle_index, uint64_t timestamp_diff_uS, bool throttle_start)
+{
+    if (core_is_active[core_id])
+    {
+        if (throttle_start)
+        {
+            computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count += 1;
+        }
+        else
+        {
+            computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS +=
+                MICROSECONDS_TO_MILLISECONDS(timestamp_diff_uS);
+        }
+    }
+}
+
+void comp_metrics_for_single_core_single_rack_throttle_update(uint8_t core_id,
+                                                              uint8_t priority_id,
+                                                              uint64_t timestamp_diff_uS,
+                                                              bool rack_throttle_priority_start)
+{
+    if (core_is_active[core_id])
+    {
+        /* Note :  rack_throttle_priority_start means a new rack prority started */
+        if (rack_throttle_priority_start)
+        {
+            computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].entry_count += 1;
+        }
+        else
+        {
+            computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS +=
+                MICROSECONDS_TO_MILLISECONDS(timestamp_diff_uS);
+        }
+    }
+}
+
+void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint8_t latest_pstate)
+{
+    if (core_is_active[core_id])
+    {
+        /* For core throttling : max avg pstate calculation*/
+        uint16_t temp_min_pstate = 0;
+        uint16_t temp_avg_pstate = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate;
+        uint16_t temp_max_pstate = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate;
+        uint16_t temp_pstate = latest_pstate;
+        uint32_t residency_mS = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS;
+        /* For core pstate- min, max avg calculation during throttle*/
+        data_util_calc_mma_res(&temp_min_pstate, &temp_max_pstate, &temp_avg_pstate, &temp_pstate, time_diff_uS, residency_mS * 1000);
+        // Update core throttle info
+        computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate = temp_avg_pstate;
+        computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate = temp_max_pstate;
+    }
 }
 
 void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS],
@@ -179,11 +287,6 @@ void comp_metrics_for_soc_rail_temperature(uint16_t (*latest_rail_temperature_dC
     }
 }
 
-void comp_metrics_for_single_hnf_channel(uint8_t hnf_channel, uint16_t latest_temperature_dC)
-{
-    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel], latest_temperature_dC);
-}
-
 void comp_metrics_for_soc_top_temp_sensor(uint16_t (*latest_soc_top_temp_dC)[NUMBER_OF_SOC_TEMP_SENSORS])
 {
     for (uint16_t sensor_index = 0; sensor_index < NUMBER_OF_SOC_TEMP_SENSORS; sensor_index++)
@@ -242,67 +345,9 @@ void comp_metrics_for_total_dimm_pwr(uint32_t dimm_total_pwr_mW)
     }
 }
 
-void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, uint8_t update_cstate_entry)
+void comp_metrics_for_single_hnf_channel(uint8_t hnf_channel, uint16_t latest_temperature_dC)
 {
-    computed_metrics_2_mins.cores[core_id].cstate[cstate].residency_uS += timestamp_diff_uS;
-    // update entry count on compute matrics.
-    if (update_cstate_entry)
-    {
-        computed_metrics_2_mins.cores[core_id].cstate[cstate].entry_count += 1;
-    }
-}
-
-void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, uint8_t update_pstate_entry)
-{
-    computed_metrics_2_mins.cores[core_id].pstate[pstate].residency_uS += timestamp_diff_uS;
-    if (update_pstate_entry)
-    {
-        computed_metrics_2_mins.cores[core_id].pstate[pstate].entry_count += 1;
-    }
-}
-
-void comp_metrics_for_single_core_single_throttle_overrun_count_update(uint8_t core_id, uint8_t throttle_index)
-{
-
-    if (throttle_index == THROTTLE_SOURCE_ADAPTIVE_CLK || throttle_index == THROTTLE_SOURCE_CURRENT)
-    {
-        computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count += 1;
-    }
-}
-
-void comp_metrics_for_single_core_single_throttle_update(uint8_t core_id, uint8_t throttle_index, uint64_t timestamp_diff_uS, bool throttle_start)
-{
-    if (throttle_start)
-    {
-        computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count += 1;
-    }
-    else
-    {
-        computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS +=
-            MICROSECONDS_TO_MILLISECONDS(timestamp_diff_uS);
-    }
-}
-
-void comp_metrics_for_single_core_single_rack_throttle_update(uint8_t core_id,
-                                                              uint8_t priority_id,
-                                                              uint64_t timestamp_diff_uS,
-                                                              bool rack_throttle_priority_start)
-{
-    /* Note :  rack_throttle_priority_start means a new rack prority started */
-    if (rack_throttle_priority_start)
-    {
-        computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].entry_count += 1;
-    }
-    else
-    {
-        computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS +=
-            MICROSECONDS_TO_MILLISECONDS(timestamp_diff_uS);
-    }
-}
-
-void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t pstate_index, uint16_t latest_power_mW)
-{
-    data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW, latest_power_mW);
+    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel], latest_temperature_dC);
 }
 
 void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate)
@@ -313,21 +358,6 @@ void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate)
     FPFW_UNUSED(pstate);
     // Update the core - mpam - pstate instantaneous power
     // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319779
-}
-
-void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t throttle_index, uint32_t time_diff_uS, uint8_t latest_pstate)
-{
-    /* For core throttling : max avg pstate calculation*/
-    uint16_t temp_min_pstate = 0;
-    uint16_t temp_avg_pstate = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate;
-    uint16_t temp_max_pstate = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate;
-    uint16_t temp_pstate = latest_pstate;
-    uint32_t residency_mS = computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS;
-    /* For core pstate- min, max avg calculation during throttle*/
-    data_util_calc_mma_res(&temp_min_pstate, &temp_max_pstate, &temp_avg_pstate, &temp_pstate, time_diff_uS, residency_mS * 1000);
-    // Update core throttle info
-    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate = temp_avg_pstate;
-    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate = temp_max_pstate;
 }
 
 void comp_metrics_reset_2_mins_metrics()

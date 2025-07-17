@@ -136,6 +136,12 @@ static int32_t test_setup(void** state)
     // Enable PSTATE mock for all tests
     g_enable_mock_pstate = 1;
 
+    // enable all cores for these tests
+    for (unsigned int core = 0; core < NUMBER_OF_CORES_PER_DIE; ++core)
+    {
+        core_is_active[core] = true;
+    }
+
     return 0;
 }
 

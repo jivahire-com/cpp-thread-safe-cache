@@ -44,6 +44,13 @@ void get_shared_sram_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* a
  */
 void get_rsm_ecc_atu_entry(mscp_rsm_ram_type_t type, atu_map_entry_t* atu_entry);
 
+/**
+ * @brief Checks if the address is in cached space.
+ * @param address
+ * @return 
+ *      true if address is in cached space, false otherwise.
+ */
+bool is_cached_space(uint32_t addr);
 
 #if defined (SCP_RUNTIME_INIT)
 /**

@@ -267,6 +267,13 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 {
     return mock_type(KNG_PLAT_ID);
 }
+
+bool __wrap_is_cached_space(uint32_t addr)
+{
+    FPFW_UNUSED(addr);
+    // This function is used to determine if the address is in cached space.
+    return mock_type(bool);
+}
 }
 
 //
@@ -476,6 +483,7 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
         switch (error_type)
         {
         case MCP_ERROR_TYPE_TCM_CE:
+            will_return(__wrap_is_cached_space, false);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_TCM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);
             expect_function_call(__wrap_mmio_read32);
@@ -487,6 +495,7 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32);
             break;
         case MCP_ERROR_TYPE_TCM_UE:
+            will_return(__wrap_is_cached_space, false);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_TCM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);
             expect_function_call(__wrap_mmio_read32);
@@ -498,6 +507,7 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32);
             break;
         case MCP_ERROR_TYPE_TCM_OVERFLOW:
+            will_return(__wrap_is_cached_space, false);
             expect_function_call(__wrap_nvic_global_disable);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_TCM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);
@@ -509,6 +519,7 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             will_return(__wrap_mmio_read32, 0);
             expect_function_call(__wrap_mmio_read32);
 
+            will_return(__wrap_is_cached_space, false);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_TCM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);
             expect_function_call(__wrap_mmio_read32);
@@ -533,6 +544,7 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
         case MCP_ERROR_TYPE_NS_ARSM_CE:
         case MCP_ERROR_TYPE_RT_ARSM_CE:
         case MCP_ERROR_TYPE_RL_ARSM_CE:
+            will_return(__wrap_is_cached_space, false);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
                                                 MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
             break;
@@ -550,6 +562,7 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             break;
         case MCP_ERROR_TYPE_RSM_RAM_CE: {
             uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;
+            will_return(__wrap_is_cached_space, false);
             expect_function_call(__wrap_atu_map);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
                                                 mapped_rsm_addr + RSM_RAM_DEFAULT_OFFSET);

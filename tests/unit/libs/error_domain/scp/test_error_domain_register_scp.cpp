@@ -365,6 +365,13 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 {
     return mock_type(KNG_PLAT_ID);
 }
+
+bool __wrap_is_cached_space(uint32_t addr)
+{
+    FPFW_UNUSED(addr);
+    // This function is used to determine if the address is in cached space.
+    return mock_type(bool);
+}
 }
 //
 // Tests
@@ -680,6 +687,7 @@ void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offs
 
     if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK)
     {
+        will_return(__wrap_is_cached_space, false);
         expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
         will_return(__wrap_mmio_read32, 0);
         expect_function_call(__wrap_mmio_read32);
@@ -753,6 +761,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
         switch (error_type)
         {
         case SCP_ERROR_TYPE_SCF_RAM_CE:
+            will_return(__wrap_is_cached_space, false);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_SCFRAM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->scfram_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->scfram_errctrl_reg
@@ -764,6 +773,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32); // CP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS
             break;
         case SCP_ERROR_TYPE_SCF_RAM_OVERFLOW:
+            will_return(__wrap_is_cached_space, false);
             expect_function_call(__wrap_nvic_global_disable);
 
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_SCFRAM_ERRCTRL_REG);
@@ -776,6 +786,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             will_return(__wrap_mmio_read32, 0);       // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS
             expect_function_call(__wrap_mmio_read32); // CP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS
 
+            will_return(__wrap_is_cached_space, false);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_SCFRAM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->scfram_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->scfram_errctrl_reg
@@ -789,6 +800,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_nvic_global_enable);
             break;
         case SCP_ERROR_TYPE_SCF_RAM_UE:
+            will_return(__wrap_is_cached_space, false);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_SCFRAM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->scfram_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->scfram_errctrl_reg
@@ -800,6 +812,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32); // CP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS
             break;
         case SCP_ERROR_TYPE_RMSS_RAM0_CE:
+            will_return(__wrap_is_cached_space, true);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM0_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram0_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram0_errctrl_reg
@@ -814,8 +827,8 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32); // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS
             break;
         case SCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW:
+            will_return(__wrap_is_cached_space, true);
             expect_function_call(__wrap_nvic_global_disable);
-
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM0_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram0_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram0_errctrl_reg
@@ -829,6 +842,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             will_return(__wrap_mmio_read32, 0);       // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS
             expect_function_call(__wrap_mmio_read32); // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS
 
+            will_return(__wrap_is_cached_space, true);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM0_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram0_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram0_errctrl_reg
@@ -845,6 +859,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_nvic_global_enable);
             break;
         case SCP_ERROR_TYPE_RMSS_RAM0_UE:
+            will_return(__wrap_is_cached_space, true);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM0_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram0_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram0_errctrl_reg
@@ -859,6 +874,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32); // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS
             break;
         case SCP_ERROR_TYPE_RMSS_RAM1_CE:
+            will_return(__wrap_is_cached_space, true);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM1_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram1_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram1_errctrl_reg
@@ -873,6 +889,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32); // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS
             break;
         case SCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW:
+            will_return(__wrap_is_cached_space, true);
             expect_function_call(__wrap_nvic_global_disable);
 
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM1_ERRCTRL_REG);
@@ -888,6 +905,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             will_return(__wrap_mmio_read32, 0);       // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS
             expect_function_call(__wrap_mmio_read32); // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS
 
+            will_return(__wrap_is_cached_space, true);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM1_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram1_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram1_errctrl_reg
@@ -904,6 +922,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_nvic_global_enable);
             break;
         case SCP_ERROR_TYPE_RMSS_RAM1_UE:
+            will_return(__wrap_is_cached_space, true);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_CSR_RAM1_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);       // scp_exp_csr_regs->rmss_ram1_errctrl_reg
             expect_function_call(__wrap_mmio_read32); // scp_exp_csr_regs->rmss_ram1_errctrl_reg
@@ -918,6 +937,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32); // SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS
             break;
         case SCP_ERROR_TYPE_TCM_CE:
+            will_return(__wrap_is_cached_space, false);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_TCM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);
             expect_function_call(__wrap_mmio_read32);
@@ -929,6 +949,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32);
             break;
         case SCP_ERROR_TYPE_TCM_UE:
+            will_return(__wrap_is_cached_space, false);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_TCM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);
             expect_function_call(__wrap_mmio_read32);
@@ -940,6 +961,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32);
             break;
         case SCP_ERROR_TYPE_TCM_OVERFLOW:
+            will_return(__wrap_is_cached_space, false);
             expect_function_call(__wrap_nvic_global_disable);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_TCM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);
@@ -951,6 +973,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             will_return(__wrap_mmio_read32, 0);
             expect_function_call(__wrap_mmio_read32);
 
+            will_return(__wrap_is_cached_space, false);
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_TCM_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);
             expect_function_call(__wrap_mmio_read32);

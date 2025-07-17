@@ -81,4 +81,5 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     get_rng_config
     idsw_get_platform_sdv
+    is_cached_space
 )

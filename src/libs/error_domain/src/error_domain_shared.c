@@ -100,15 +100,24 @@ void get_shared_sram_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* a
     *atu_entry = s_hm_arsm_atu_entries[idsw_get_die_id()][type];
 }
 
-void inject_err_by_access(uint32_t addr)
+bool is_cached_space(uint32_t addr)
 {
-    __DSB();
-
 #if defined(SCP_RUNTIME_INIT)
     if (SCP_EXP_CACHEABLE_SECTION_BASE <= addr && addr <= SCP_EXP_CACHEABLE_SECTION_END)
 #else
     if (MCP_EXP_CACHEABLE_SECTION_BASE <= addr && addr <= MCP_EXP_CACHEABLE_SECTION_END)
 #endif
+    {
+        return true;
+    }
+    return false;
+}
+
+void inject_err_by_access(uint32_t addr)
+{
+    __DSB();
+
+    if (is_cached_space(addr))
     {
         SCB_InvalidateDCache_by_Addr((uint32_t*)addr, sizeof(uint32_t));
     }

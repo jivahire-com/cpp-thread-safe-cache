@@ -39,7 +39,8 @@
                                     "serial_port": "COM5",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"scp0_logs"
+                                    "file_name":"scp0_logs",
+                                    "throttle_seconds":0.15
                                 },
                                 "default": "serial"
                             },
@@ -59,7 +60,8 @@
                                     "serial_port": "COM6",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"mcp0_logs"
+                                    "file_name":"mcp0_logs",
+                                    "throttle_seconds":0.15
                                 },
                                 "default": "serial"
                             },
@@ -79,7 +81,8 @@
                                     "serial_port": "COM6",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"sdm0_logs"
+                                    "file_name":"sdm0_logs",
+                                    "throttle_seconds":0.15
                                 },
                                 "default": "serial"
                             },
@@ -99,7 +102,8 @@
                                     "serial_port": "COM4",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"sdm_cded0_logs"
+                                    "file_name":"sdm_cded0_logs",
+                                    "throttle_seconds":0.15
                                 },
                                 "default": "serial"
                             },
@@ -119,7 +123,8 @@
                                     "serial_port": "COM7",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"apns0_logs"
+                                    "file_name":"apns0_logs",
+                                    "throttle_seconds":0.15
                                 },
                                 "default": "serial"
                             },
@@ -162,7 +167,8 @@
                                     "serial_port": "COM10",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"scp1_logs"
+                                    "file_name":"scp1_logs",
+                                    "throttle_seconds":0.15
                                 },
                                 "default": "serial"
                             },
@@ -182,7 +188,8 @@
                                     "serial_port": "COM11",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"mcp1_logs"
+                                    "file_name":"mcp1_logs",
+                                    "throttle_seconds":0.15
                                 },
                                 "default": "serial"
                             },
@@ -202,7 +209,8 @@
                                     "serial_port": "COM10",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"sdm1_logs"
+                                    "file_name":"sdm1_logs",
+                                    "throttle_seconds":0.15
                                 },
                                 "default": "serial"
                             },
@@ -222,7 +230,8 @@
                                     "serial_port": "COM10",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
-                                    "file_name":"sdm_cded1_logs"
+                                    "file_name":"sdm_cded1_logs",
+                                    "throttle_seconds":0.15
                                 },
                                 "default": "serial"
                             },

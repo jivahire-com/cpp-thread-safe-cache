@@ -33,5 +33,7 @@
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\Config_Knobs\*.xml" target="Config_Knobs\" />
         <file src="..\..\..\..\.build\Debug\arm-eabi-aarch\start_of_borgens_range.txt" target="Config_Knobs\" />
 
+        <!-- CPER Parser Definitionss -->
+        <file src="..\..\..\..\.externs\repo\silibs\soc_fw_shared\cper_descriptors\*.json" target="cper_descriptors\" />
     </files>
 </package>

@@ -26,7 +26,7 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static const guid_t pcie_vendor_defined_error_domain_guid = ACPI_ERROR_TYPE_VENDOR_DEFINED_PCIE;
+static const guid_t pcie_vendor_defined_error_domain_guid = ACPI_ERROR_TYPE_VENDOR_PCIE;
 
 /*------------- Functions ----------------*/
 const guid_t* get_pcie_vendor_defined_error_domain_guid(void)

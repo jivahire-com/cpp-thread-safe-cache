@@ -458,7 +458,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc, setup, teardown)
 TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
 {
     g_should_check_cper_section = true;
-    acpi_err_sec_mem_vendor_t ddr_vendor_cper = {0};
+    acpi_err_sec_mem_vendor_t ddr_vendor_cper = {{0}};
 
     g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_HSP_INT) | (1 << DDRSS_INTU_PLL_INTERRUPT_OUT) |
                      (1 << DDRSS_INTU_PCR_PAR_ERR) | (1 << DDRSS_INTU_INTU_PAR_ERR);

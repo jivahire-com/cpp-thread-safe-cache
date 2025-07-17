@@ -46,7 +46,7 @@
 /*-------------- Typedefs ----------------*/
 typedef struct
 {
-    guid_t err_source_id;
+    uint32_t err_source_id;
     uint32_t err_source_irq;
     acpi_error_severity_t err_severity;
     KNG_STATUS err_code;
@@ -110,7 +110,7 @@ static void mcp_ram_ecc_isr(const mcp_ecc_isr_params_t* params)
 
 static void tcm_overflow_isr()
 {
-    mcp_ecc_isr_params_t params = {.err_source_id = (guid_t)MCP_TCM,
+    mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_MCP_TCM,
                                    .err_source_irq = HW_INT_TCM_ECCOF_INT,
                                    .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                    .err_code = KNG_HM_TCM_OF,
@@ -124,7 +124,7 @@ static void tcm_overflow_isr()
 
 static void tcm_ce_isr()
 {
-    mcp_ecc_isr_params_t params = {.err_source_id = (guid_t)MCP_TCM,
+    mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_MCP_TCM,
                                    .err_source_irq = HW_INT_TCM_ECCCE_INT,
                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_TCM_CE,
@@ -138,7 +138,7 @@ static void tcm_ce_isr()
 
 static void tcm_ue_isr()
 {
-    mcp_ecc_isr_params_t params = {.err_source_id = (guid_t)MCP_TCM,
+    mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_MCP_TCM,
                                    .err_source_irq = HW_INT_TCM_ECCUE_INT,
                                    .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                    .err_code = KNG_HM_TCM_UE,

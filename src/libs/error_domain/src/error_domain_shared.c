@@ -254,9 +254,9 @@ void shared_sram_ecc_isr(void* ctx)
 
         // Submit CPER
 #if defined(SCP_RUNTIME_INIT)
-        guid_t err_record_id = (is_rsm) ? (guid_t)SCP_RSM_RAM : (guid_t)SCP_ARSM_RAM;
+        uint32_t err_record_id = (is_rsm) ? RECORD_ID_SCP_RSM_RAM : RECORD_ID_SCP_ARSM_RAM;
 #else
-        guid_t err_record_id = (is_rsm) ? (guid_t)MCP_RSM_RAM : (guid_t)MCP_ARSM_RAM;
+        uint32_t err_record_id = (is_rsm) ? RECORD_ID_MCP_RSM_RAM : RECORD_ID_MCP_ARSM_RAM;
 #endif
 
         acpi_err_sec_firmware_t sec_fw_cper_section = {.severity = severity,

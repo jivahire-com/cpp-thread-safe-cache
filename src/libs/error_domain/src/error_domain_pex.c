@@ -105,7 +105,7 @@ void pex_irq_handle(KNG_DIE_ID die_num, uint32_t pex_num, pex_rng_config_t* rng_
     {
         // Submit CPER
         acpi_err_sec_firmware_t sec_fw_cper_section = {.severity = ACPI_ERROR_SEVERITY_CORRECTED,
-                                                       .record_id = (guid_t)PEX_GUID,
+                                                       .record_id = RECORD_ID_PEX,
                                                        .param = {status, KNG_PEX_RNG_ERR, 0}};
 
         acpi_cper_section_t cper_section;

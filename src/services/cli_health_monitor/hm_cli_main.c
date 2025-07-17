@@ -56,13 +56,13 @@ static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
     {NULL_LIST_ENTRY, "hm", "hm_submit_sample_cper", hm_submit_sample_cper_cli, "submit cper {sev}", ""}};
 
 static const guid_name_map_t guid_map[] = {
-    {ACPI_ERROR_TYPE_VENDOR_DEFINED_MEMORY, "vendor mem"},
-    {ACPI_ERROR_TYPE_MESH_NODE, "mesh node"},
+    {ACPI_ERROR_TYPE_VENDOR_DDR, "ddr mem"},
+    {ACPI_ERROR_TYPE_VENDOR_MESH_NODE, "mesh node"},
     {ACPI_ERROR_TYPE_PLATFORM_MEMORY, "platform mem"},
-    {ACPI_ERROR_TYPE_VENDOR_DEFINED_FIRMWARE, "vendor f/w"},
+    {ACPI_ERROR_TYPE_VENDOR_FIRMWARE, "vendor f/w"},
     {ACPI_ERROR_TYPE_PROCESSOR_GENERIC, "proc generic"},
-    {ACPI_ERROR_TYPE_AP, "AP"},
-    {ACPI_ERROR_TYPE_VENDOR_DEFINED_PCIE, "vendor pcie"},
+    {ACPI_ERROR_TYPE_VENDOR_AP, "AP"},
+    {ACPI_ERROR_TYPE_VENDOR_PCIE, "vendor pcie"},
     {ACPI_ERROR_TYPE_PROCESSOR_ARM, "proc arm"},
 };
 
@@ -166,8 +166,7 @@ static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
     input_einj_payload.status_operation.value = (uint16_t)strtol(argv[4], NULL, 0);
     input_einj_payload.param_type.error_type = (uint16_t)strtol(argv[5], NULL, 0);
     input_einj_payload.param_type.severity = (uint16_t)strtol(argv[6], NULL, 0);
-    // ADO 2721417 - we will prevent using address_64 until new silibs is available
-    // input_einj_payload.param_type.address_64 = (uint64_t*)(uintptr_t)strtoull(argv[7], NULL, 0);
+    input_einj_payload.param_type.address_64 = (uint64_t)strtoull(argv[7], NULL, 0);
     input_einj_payload.value_type.error_values = (uint64_t)strtoull(argv[8], NULL, 0);
 
     print_einj_payload(&input_einj_payload);

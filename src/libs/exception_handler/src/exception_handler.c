@@ -234,10 +234,10 @@ void exception_handler(exception_stack_frame_t* stack_frame)
 
 #if defined(MCP_RUNTIME_INIT)
     acpi_error_domain_t err_domain = ACPI_ERROR_DOMAIN_MCP_PROC;
-    const guid_t status_guid = exceptionIdx == NonMaskableInt_IRQn ? (guid_t)MCP_WD : (guid_t)MCP_EXCEPTION;
+    const uint32_t record_id = exceptionIdx == NonMaskableInt_IRQn ? RECORD_ID_MCP_WD : RECORD_ID_MCP_EXCEPTION;
 #elif defined(SCP_RUNTIME_INIT)
     acpi_error_domain_t err_domain = ACPI_ERROR_DOMAIN_SCP_PROC;
-    const guid_t status_guid = exceptionIdx == NonMaskableInt_IRQn ? (guid_t)SCP_WD : (guid_t)SCP_EXCEPTION;
+    const uint32_t record_id = exceptionIdx == NonMaskableInt_IRQn ? RECORD_ID_SCP_WD : RECORD_ID_SCP_EXCEPTION;
 #endif
 
     switch (exceptionIdx)
@@ -298,7 +298,7 @@ void exception_handler(exception_stack_frame_t* stack_frame)
     // Send CPER
     acpi_err_sec_firmware_t sec_fw_cper_section = {
         .severity = ACPI_ERROR_SEVERITY_CORRECTED,
-        .record_id = status_guid,
+        .record_id = record_id,
         .param = {errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2]}};
 
     acpi_cper_section_t cper_section;

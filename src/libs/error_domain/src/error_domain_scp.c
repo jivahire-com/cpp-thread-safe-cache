@@ -42,7 +42,7 @@
 /*-------------- Typedefs ----------------*/
 typedef struct
 {
-    guid_t err_source_id;
+    uint32_t err_source_id;
     uint32_t err_source_irq;
     acpi_error_severity_t err_severity;
     KNG_STATUS err_code;
@@ -133,7 +133,7 @@ static void ram_ecc_isr(const mscp_ecc_isr_params_t* params)
 
 static void rmss_scfram_ecc_ce_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_SCF_RAM,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_SCF_RAM,
                                     .err_source_irq = HW_INT_SCP_SCFRAM_ECCCE_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_SCF_CE,
@@ -147,7 +147,7 @@ static void rmss_scfram_ecc_ce_isr()
 
 static void rmss_scfram_ecc_of_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_SCF_RAM,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_SCF_RAM,
                                     .err_source_irq = HW_INT_SCP_SCFRAM_ECCOF_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_SCF_OF,
@@ -161,7 +161,7 @@ static void rmss_scfram_ecc_of_isr()
 
 static void rmss_ram0_ecc_ce_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_RMSS_RAM0,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM0,
                                     .err_source_irq = HW_INT_SCP_RAM0_ECCCE_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_RMSS_RAM0_CE,
@@ -175,7 +175,7 @@ static void rmss_ram0_ecc_ce_isr()
 
 static void rmss_ram0_ecc_of_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_RMSS_RAM0,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM0,
                                     .err_source_irq = HW_INT_SCP_RAM0_ECCOF_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_RMSS_RAM0_OF,
@@ -189,7 +189,7 @@ static void rmss_ram0_ecc_of_isr()
 
 static void rmss_ram1_ecc_ce_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_RMSS_RAM1,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM1,
                                     .err_source_irq = HW_INT_SCP_RAM1_ECCCE_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_RMSS_RAM1_CE,
@@ -203,7 +203,7 @@ static void rmss_ram1_ecc_ce_isr()
 
 static void rmss_ram1_ecc_of_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_RMSS_RAM1,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM1,
                                     .err_source_irq = HW_INT_SCP_RAM1_ECCOF_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_RMSS_RAM1_OF,
@@ -236,7 +236,7 @@ static void rmss_remote_scp_scfram_bootram_isr()
 
     // Submit CPER
     acpi_err_sec_firmware_t sec_fw_cper_section = {.severity = ACPI_ERROR_SEVERITY_CORRECTED,
-                                                   .record_id = (guid_t)SCP_REMOTE_SCP_RAM,
+                                                   .record_id = RECORD_ID_SCP_REMOTE_RAM,
                                                    .param = {scf_status, ram0_status, ram1_status, KNG_HM_REMOTE_SCP_CE_OF}};
 
     acpi_cper_section_t cper_section;
@@ -247,7 +247,7 @@ static void rmss_remote_scp_scfram_bootram_isr()
 
 static void tcm_overflow_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_TCM,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_TCM,
                                     .err_source_irq = HW_INT_SCP_TCM_ECCOF_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_TCM_OF,
@@ -261,7 +261,7 @@ static void tcm_overflow_isr()
 
 static void tcm_ce_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_TCM,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_TCM,
                                     .err_source_irq = HW_INT_SCP_TCM_ECCCE_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_TCM_CE,
@@ -275,7 +275,7 @@ static void tcm_ce_isr()
 
 static void tcm_ue_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_TCM,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_TCM,
                                     .err_source_irq = HW_INT_SCP_TCM_ECCUE_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_TCM_UE,
@@ -289,7 +289,7 @@ static void tcm_ue_isr()
 
 void dcache_ue_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_DCACHE,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_DCACHE,
                                     .err_source_irq = HW_INT_DCDET_DATA_UE,
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_DCACHE_UE,
@@ -302,7 +302,7 @@ void dcache_ue_isr()
 
 void dcache_ce_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_DCACHE,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_DCACHE,
                                     .err_source_irq = HW_INT_DCDET_DATA_CE,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_DCACHE_CE,
@@ -315,7 +315,7 @@ void dcache_ce_isr()
 
 void dcache_tag_ue_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_DCACHE,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_DCACHE,
                                     .err_source_irq = HW_INT_DCDET_TAG_UE,
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_DCACHE_TAG_UE,
@@ -328,7 +328,7 @@ void dcache_tag_ue_isr()
 
 void dcache_tag_ce_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_DCACHE,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_DCACHE,
                                     .err_source_irq = HW_INT_DCDET_TAG_CE,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_DCACHE_TAG_CE,
@@ -341,7 +341,7 @@ void dcache_tag_ce_isr()
 
 void icache_ue_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_ICACHE,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_ICACHE,
                                     .err_source_irq = HW_INT_ICDET_DATA_UE,
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_ICACHE_UE,
@@ -354,7 +354,7 @@ void icache_ue_isr()
 
 void icache_ce_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_ICACHE,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_ICACHE,
                                     .err_source_irq = HW_INT_ICDET_DATA_CE,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_ICACHE_CE,
@@ -367,7 +367,7 @@ void icache_ce_isr()
 
 void icache_tag_ue_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_ICACHE,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_ICACHE,
                                     .err_source_irq = HW_INT_ICDET_TAG_UE,
                                     .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
                                     .err_code = KNG_HM_ICACHE_TAG_UE,
@@ -380,7 +380,7 @@ void icache_tag_ue_isr()
 
 void icache_tag_ce_isr()
 {
-    mscp_ecc_isr_params_t params = {.err_source_id = (guid_t)SCP_ICACHE,
+    mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_ICACHE,
                                     .err_source_irq = HW_INT_ICDET_TAG_CE,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_ICACHE_TAG_CE,

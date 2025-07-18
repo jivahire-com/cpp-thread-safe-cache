@@ -122,11 +122,6 @@ void die_2_die_exch_init(uint8_t die_id)
 
     if (this_die_id == PRIMARY_DIE_ID)
     {
-        if (IS_PLATFORM_SVP() == false)
-        {
-            initialize_semaphore(PWR_TLM_DIE_2_DIE_SEMAPHORE);
-        }
-
         d2d_exch_wait_for_sem();
 
         zero_fortified_memory(s_die_2_die_exch, sizeof(die_2_die_exch_t));

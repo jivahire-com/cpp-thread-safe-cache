@@ -160,10 +160,6 @@ void set_expectations_initialize_crash_dump_header(bool wait, SEMAPHORE_ID sem_i
 {
     if (!wait)
     {
-        // ToDo: Remove this when HSP initialize HW semaphore.
-        expect_value(__wrap_initialize_semaphore, id, sem_id);
-        expect_function_call(__wrap_initialize_semaphore);
-
         expect_value(__wrap_wait_for_semaphore, id, sem_id);
         expect_value(__wrap_wait_for_semaphore, key, sem_key);
         expect_function_call(__wrap_wait_for_semaphore);

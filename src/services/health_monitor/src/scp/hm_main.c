@@ -41,11 +41,6 @@ void hm_post_ddr_init()
     HM_ET_INFO(HM_ET_TYPE_MAIN_GET_CONFIG);
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
-    if (hm_config->is_primary == true)
-    {
-        initialize_semaphore(hm_config->semaphore_id);
-    }
-
     // De-assert FATAL_ERROR GPIO
     hm_report_error_event(HM_ERROR_REPORT_GPIO, false);
 

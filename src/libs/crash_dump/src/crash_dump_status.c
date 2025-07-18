@@ -144,9 +144,6 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
 
     if ((type_context->type == CRASH_DUMP_TYPE_MINI || ctx->die_index == DIE_0) && ctx->core_index == CRASH_DUMP_CORE_SCP)
     {
-        // ToDo: Remove this when HSP initialize HW semaphore.
-        initialize_semaphore(type_context->semaphore.id);
-
         // Initialize core status to CRASH_DUMP_STATE_NOT_AVAILABLE
         if (type_context->header != NULL)
         {

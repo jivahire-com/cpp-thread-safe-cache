@@ -4,10 +4,10 @@
  */
 
 /*------------- Includes -----------------*/
-#include <bug_check.h>          // for BUG_CHECK
-#include <fpfw_init.h>          // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
-#include <hw_semaphore.h>       // for init_hw_semaphore
-#include <silibs_platform.h>    // for DEBUG_PRINT
+#include <bug_check.h>       // for BUG_CHECK
+#include <fpfw_init.h>       // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
+#include <hw_semaphore.h>    // for init_hw_semaphore
+#include <silibs_platform.h> // for DEBUG_PRINT
 
 /*------------- Typedefs -----------------*/
 
@@ -17,9 +17,9 @@
 
 /*------------- Functions ----------------*/
 #if defined(SCP_RUNTIME_INIT)
-FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("atu_svc", "mesh_stg_2"))
+FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "mesh_stg_2"))
 #elif defined(MCP_RUNTIME_INIT)
-FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("atu_svc"))
+FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc"))
 #endif
 {
     KNG_STATUS status = init_hw_semaphore();

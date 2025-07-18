@@ -56,8 +56,7 @@ mock_target(${TARGET}
     core_pll_error_status
     power_loops_control_handle_event
     nvic_get_current_irq
-    POWER_LOG_ERR
-    POWER_LOG_INFO
+    power_runconfig_get
 )
  
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

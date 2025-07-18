@@ -16,6 +16,7 @@
 
 extern "C" {
 #include "power_interrupt_handler.h"
+#include "power_runconfig_i.h"
 
 #include <CMockaWrapper.h>
 #include <corebits.h>
@@ -28,47 +29,20 @@ extern "C" {
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
-typedef struct
-{
-    uint32_t cpu_pll_lock_status0;
-    uint32_t cpu_pll_lock_status1;
-    uint32_t cpu_pll_lock_status2;
-} fake_scp_pwr_ctrl_regs_t;
-fake_scp_pwr_ctrl_regs_t fake_scp_pwr_ctrl_regs;
-typeof(&fake_scp_pwr_ctrl_regs) scp_pwr_ctrl_regs = &fake_scp_pwr_ctrl_regs;
-
-typedef struct
-{
-    uint32_t cluster_pex_base;
-    uint32_t cluster_stride;
-} power_service_config_t;
-
-typedef struct
-{
-    const power_service_config_t* p_sconfig;
-} power_runconfig_t;
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-power_service_config_t fake_config = {0x1000, 0x100};
-power_runconfig_t fake_runconfig = {&fake_config};
-void __real_core_pll_error_status(uint32_t core_idx);
+void __real_core_pll_error_status(uint32_t core_idx, bool is_unlock);
+static power_service_config_t sconfig = {};
+static power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
 
 /*------------- Functions ----------------*/
 //
 // Mocks
 //
-power_runconfig_t* power_runconfig_get(void)
-{
-    return &fake_runconfig;
-}
-// --- Provide a raw buffer for the register block ---
-static uint32_t fake_regs[6]; // Enough for 6 status fields
 
-// --- Redirect the hardware address macro to our buffer ---
-#undef SCP_TOP_SCP_PWR_CTRL_ADDRESS
-#define SCP_TOP_SCP_PWR_CTRL_ADDRESS ((uintptr_t)fake_regs)
+// --- Provide a raw buffer for the register block ---
 
 uint32_t __wrap_mmio_read32(const volatile uint32_t* addr)
 {
@@ -80,9 +54,10 @@ void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
     check_expected(addr);
     check_expected(data);
 }
-void __wrap_core_pll_error_status(uint32_t core_idx)
+void __wrap_core_pll_error_status(uint32_t core_idx, bool is_unlock)
 {
     check_expected(core_idx);
+    check_expected(is_unlock);
 }
 nvic_status_t __wrap_nvic_get_current_irq(uint32_t* irq_num)
 {
@@ -92,13 +67,11 @@ nvic_status_t __wrap_nvic_get_current_irq(uint32_t* irq_num)
 
     return NVIC_STATUS_SUCCESS;
 }
-void __wrap_POWER_LOG_ERR(const char*, ...)
-{
-}
-void __wrap_POWER_LOG_INFO(const char*, ...)
-{
-}
 
+power_runconfig_t* __wrap_power_runconfig_get()
+{
+    return mock_type(power_runconfig_t*);
+}
 } // extern "C"
 
 // end mocks
@@ -109,9 +82,6 @@ void __wrap_POWER_LOG_INFO(const char*, ...)
 
 POWER_TEST(test_pll_isr_lock_status, NULL, NULL)
 {
-    // Optionally clear the buffer
-    memset(fake_regs, 0, sizeof(fake_regs));
-
     // Setup: IRQ is HW_INT_CPU_67_64_31_0_PLL_LOCK_INT
     uint32_t irq_num = HW_INT_CPU_67_64_31_0_PLL_LOCK_INT;
 
@@ -132,7 +102,9 @@ POWER_TEST(test_pll_isr_lock_status, NULL, NULL)
 
     // core_pll_error_status for core 0 and 2
     expect_value(__wrap_core_pll_error_status, core_idx, 0);
+    expect_any(__wrap_core_pll_error_status, is_unlock);
     expect_value(__wrap_core_pll_error_status, core_idx, 2);
+    expect_any(__wrap_core_pll_error_status, is_unlock);
 
     expect_any(__wrap_mmio_read32, addr);
     will_return(__wrap_mmio_read32, 0x0);
@@ -143,8 +115,6 @@ POWER_TEST(test_pll_isr_lock_status, NULL, NULL)
 
 POWER_TEST(test_pll_isr_unlock_status, NULL, NULL)
 {
-    // Optionally clear the buffer
-    memset(fake_regs, 0, sizeof(fake_regs));
 
     // Setup: IRQ is HW_INT_CPU_67_64_31_0_PLL_UNLOCK_INT
     uint32_t irq_num = HW_INT_CPU_67_64_31_0_PLL_UNLOCK_INT;
@@ -166,7 +136,9 @@ POWER_TEST(test_pll_isr_unlock_status, NULL, NULL)
 
     // core_pll_error_status for core 0 and 2
     expect_value(__wrap_core_pll_error_status, core_idx, 0);
+    expect_any(__wrap_core_pll_error_status, is_unlock);
     expect_value(__wrap_core_pll_error_status, core_idx, 2);
+    expect_any(__wrap_core_pll_error_status, is_unlock);
 
     expect_any(__wrap_mmio_read32, addr);
     will_return(__wrap_mmio_read32, 0x0);
@@ -175,16 +147,16 @@ POWER_TEST(test_pll_isr_unlock_status, NULL, NULL)
     pll_isr();
 }
 
-// POWER_TEST(test_core_pll_error_status, NULL, NULL)
-// {
-//     // Set up fake register values if needed
-//     fake_scp_pwr_ctrl_regs.cpu_pll_lock_status0 = 0x12345678;
-//     expect_any(__wrap_mmio_read32, addr);
-//     will_return(__wrap_mmio_read32, 0x1234);
+POWER_TEST(test_core_pll_error_status, NULL, NULL)
+{
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
 
-//     expect_any(__wrap_mmio_read32, addr);
-//     will_return(__wrap_mmio_read32, 0x5678);
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, 0x1234);
 
-//     // Call the function under test
-//     __real_core_pll_error_status(0);
-// }
+    expect_any(__wrap_mmio_read32, addr);
+    will_return(__wrap_mmio_read32, 0x5678);
+
+    // Call the function under test
+    __real_core_pll_error_status(0, false);
+}

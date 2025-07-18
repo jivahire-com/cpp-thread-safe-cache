@@ -142,59 +142,6 @@ void pll_isr(void)
         }
     }
 
-    /*
-    // Read and clear status0
-    status[0] = MMIO_READ32((uint32_t*)status_regs[0]);
-    if (status[0] != 0)
-    {
-        MMIO_SET_MASK32((uint32_t*)status_regs[0], status[0]);
-    }
-    temp_status = status[0];
-    core_idx = 0;
-    while (temp_status != 0)
-    {
-        if (temp_status & 1)
-        {
-            core_pll_error_status(core_idx, is_unlock);
-        }
-        temp_status >>= 1;
-        core_idx++;
-    }
-    // Read and clear status1
-    status[1] = MMIO_READ32((uint32_t*)status_regs[1]);
-    if (status[1] != 0)
-    {
-        MMIO_SET_MASK32((uint32_t*)status_regs[1], status[1]);
-    }
-    temp_status = status[1];
-    core_idx = 32;
-    while (temp_status != 0)
-    {
-        if (temp_status & 1)
-        {
-            core_pll_error_status(core_idx, is_unlock);
-        }
-        temp_status >>= 1;
-        core_idx++;
-    }
-    // Read and clear status2
-    status[2] = MMIO_READ32((uint32_t*)status_regs[2]);
-    if (status[2] != 0)
-    {
-        MMIO_SET_MASK32((uint32_t*)status_regs[2], status[2]);
-    }
-    temp_status = status[2];
-    core_idx = 64;
-    while (temp_status != 0)
-    {
-        if (temp_status & 1)
-        {
-            core_pll_error_status(core_idx, is_unlock);
-        }
-        temp_status >>= 1;
-        core_idx++;
-    }
-*/
     POWER_LOG_INFO("Status0 = 0x%x, Status1 = 0x%x, Status2 = 0x%x\n",
                    (unsigned int)status[0],
                    (unsigned int)status[1],

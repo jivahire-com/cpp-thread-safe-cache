@@ -61,6 +61,11 @@ uint16_t __wrap_data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC(void)
     return mock_type(uint16_t);
 }
 
+uint16_t __wrap_data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz(void)
+{
+    return mock_type(uint16_t);
+}
+
 fpfw_status_t __wrap_fpfw_pldm_service_register_numeric_sensor(pldm_numeric_sensor_context_t* p_sensor,
                                                                pldm_numeric_sensor_config_t* p_config)
 {

@@ -19,6 +19,7 @@ extern "C" {
 #include <compute_metrics_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <die_2_die_exchange_i.h>
+#include <dvfs.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
 #include <string.h> // for memcmp
 
@@ -120,4 +121,18 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC, test_setup, 
     computed_metrics_oob.max_vr_temp_mov_avg_dC.sample_count = 20;
     uint16_t temp_dC = data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC();
     assert_int_equal(temp_dC, 100);
+}
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+    die_2_die_exch_oob_write_window_avg_pstate(200, 10);
+    computed_metrics_oob.pstate_mov_avg.total_sum = 100;
+    computed_metrics_oob.pstate_mov_avg.sample_count = 20;
+    uint16_t calc_freq_Mhz = data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz();
+
+    uint16_t avg_pstate = 300 / 30;
+
+    uint16_t exp_freq_Mhz = dvfs_get_freq_from_plimit(avg_pstate);
+    assert_int_equal(calc_freq_Mhz, exp_freq_Mhz);
 }

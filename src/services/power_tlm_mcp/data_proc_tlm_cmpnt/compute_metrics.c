@@ -70,6 +70,8 @@ void comp_metrics_init(void)
                                computed_metrics_oob.max_vr_temp_samples_dC,
                                VR_TEMP_MOVING_AVG_NUM_SAMPLES);
 
+    data_util_mov_avg_u16_init(&computed_metrics_oob.pstate_mov_avg, computed_metrics_oob.pstate_samples, PSTATE_MOVING_AVG_NUM_SAMPLES);
+
     comp_metrics_init_active_cores();
 }
 
@@ -217,6 +219,11 @@ void comp_metrics_for_single_core_throttling_pstate(uint8_t core_id, int8_t thro
     }
 }
 
+void comp_metrics_for_single_hnf_channel(uint8_t hnf_channel, uint16_t latest_temperature_dC)
+{
+    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel], latest_temperature_dC);
+}
+
 void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS],
                                 uint16_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS])
 {
@@ -345,9 +352,32 @@ void comp_metrics_for_total_dimm_pwr(uint32_t dimm_total_pwr_mW)
     }
 }
 
-void comp_metrics_for_single_hnf_channel(uint8_t hnf_channel, uint16_t latest_temperature_dC)
+void comp_metrics_for_soc_avg_pstate(uint8_t (*pstate)[NUMBER_OF_CORES_PER_DIE])
 {
-    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel], latest_temperature_dC);
+    uint32_t total_pstate = 0;
+    uint16_t num_active_cores = 0;
+
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        if (core_is_active[core_id])
+        {
+            total_pstate += (*pstate)[core_id];
+            num_active_cores++;
+        }
+    }
+
+    if (num_active_cores > 0)
+    {
+        // round up
+        uint16_t avg_pstate = (total_pstate + num_active_cores / 2) / num_active_cores;
+        data_util_mov_avg_u16_add_sample(&computed_metrics_oob.pstate_mov_avg, avg_pstate);
+
+        if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+        {
+            die_2_die_exch_oob_write_window_avg_pstate(computed_metrics_oob.pstate_mov_avg.total_sum,
+                                                       computed_metrics_oob.pstate_mov_avg.sample_count);
+        }
+    }
 }
 
 void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate)

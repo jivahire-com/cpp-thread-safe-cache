@@ -351,3 +351,10 @@ uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC(void);
  */
 uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC(void);
 
+/**
+ * @brief Get the out-of-band average SoC frequency in MHz.
+ *
+ * @return The average SoC frequency in MHz.
+ */
+uint16_t data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz(void);
+

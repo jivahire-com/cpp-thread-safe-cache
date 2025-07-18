@@ -12,6 +12,7 @@
 #include "data_proc_tlm_cmpnt.h"
 
 #include <die_2_die_exchange_i.h>
+#include <dvfs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -96,4 +97,18 @@ uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC(void)
                                                       die1_sliding_window_data.sum,
                                                       die1_sliding_window_data.num_samples);
     return max_dC;
+}
+
+uint16_t data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz(void)
+{
+    sliding_window_data_t die1_sliding_window_data = {0};
+    die_2_die_exch_oob_read_avg_pstate(1, &die1_sliding_window_data);
+
+    uint16_t avg_pstate = data_util_mean_of_summations(computed_metrics_oob.pstate_mov_avg.total_sum,
+                                                       computed_metrics_oob.pstate_mov_avg.sample_count,
+                                                       die1_sliding_window_data.sum,
+                                                       die1_sliding_window_data.num_samples);
+
+    uint16_t freq_Mhz = dvfs_get_freq_from_plimit(avg_pstate); // api range checks
+    return freq_Mhz;
 }

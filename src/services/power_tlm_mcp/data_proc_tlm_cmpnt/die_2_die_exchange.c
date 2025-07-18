@@ -35,6 +35,7 @@ typedef struct __attribute__((packed))
     sliding_window_data_t oob_window_max_dimm_temp_dC; // sliding window for max dimm temperature
     sliding_window_data_t oob_window_dimm_pwr_mW;      // sliding window dimm power
     sliding_window_data_t oob_window_max_vr_temp_dC;   // sliding window for max voltage rail temperature
+    sliding_window_data_t oob_window_avg_pstate;       // sliding window for average pstate
 
 } secondary_mcp_to_die0_mcp_t;
 
@@ -335,6 +336,33 @@ void die_2_die_exch_oob_read_window_max_vr_temp(uint8_t die_id, p_sliding_window
         *max_die_temp_window = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_vr_temp_dC;
 
         memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_vr_temp_dC,
+               0,
+               sizeof(sliding_window_data_t)); // clear the value after reading
+        d2d_exch_release_sem();
+    }
+}
+
+void die_2_die_exch_oob_write_window_avg_pstate(uint32_t summation, uint16_t num_samples)
+{
+    if (die_id_is_valid(this_die_id))
+    {
+        // only secondary dies can write to the exchange
+        d2d_exch_wait_for_sem();
+        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_avg_pstate.sum = summation;
+        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_avg_pstate.num_samples = num_samples;
+        d2d_exch_release_sem();
+    }
+}
+
+void die_2_die_exch_oob_read_avg_pstate(uint8_t die_id, p_sliding_window_data_t avg_pstate_window)
+{
+    if (die_id_is_valid(die_id) && avg_pstate_window != NULL)
+    {
+        // only secondary dies values can be read from the exchange
+        d2d_exch_wait_for_sem();
+        *avg_pstate_window = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_avg_pstate;
+
+        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_avg_pstate,
                0,
                sizeof(sliding_window_data_t)); // clear the value after reading
         d2d_exch_release_sem();

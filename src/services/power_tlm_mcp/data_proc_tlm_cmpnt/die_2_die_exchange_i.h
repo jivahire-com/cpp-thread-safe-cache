@@ -182,3 +182,21 @@ void die_2_die_exch_oob_write_window_max_vr_temp(uint32_t summation_dC, uint16_t
  * @param[out] max_vr_temp_window Pointer to a structure to store the maximum VR temperature window data.
  */
 void die_2_die_exch_oob_read_window_max_vr_temp(uint8_t die_id, p_sliding_window_data_t max_die_temp_window);
+
+/**
+ * @brief Write the average P-state to the die to die exchange.
+ * This function writes the summation of P-state values and the number of samples to the exchange.
+ *
+ * @param[in] summation The summation of P-state values.
+ * @param[in] num_samples The number of samples used to calculate the summation.
+ */
+void die_2_die_exch_oob_write_window_avg_pstate(uint32_t summation, uint16_t num_samples);
+
+/**
+ * @brief Read the average P-state from the die to die exchange.
+ * This function reads the average P-state for a specific die.
+ *
+ * @param[in] die_id The ID of the die to read the P-state from.
+ * @param[out] avg_pstate_window Pointer to a structure to store the average P-state data.
+ */
+void die_2_die_exch_oob_read_avg_pstate(uint8_t die_id, p_sliding_window_data_t avg_pstate_window);

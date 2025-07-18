@@ -22,8 +22,8 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define MOVING_AVG_DURATION_MS (250)
 #define TEMPERATURE_MOVING_AVG_NUM_SAMPLES (MOVING_AVG_DURATION_MS / DATA_AGGR_PKG_PERIOD_MS)
+#define PSTATE_MOVING_AVG_NUM_SAMPLES (MOVING_AVG_DURATION_MS / DATA_AGGR_PKG_PERIOD_MS)
 #define DIMM_MOVING_AVG_NUM_SAMPLES (2)
-
 #define VR_TEMP_MOVING_AVG_NUM_SAMPLES (10)
 
 /*-------------- Typedefs ----------------*/
@@ -124,6 +124,10 @@ typedef struct
 
     uint16_t max_vr_temp_samples_dC[VR_TEMP_MOVING_AVG_NUM_SAMPLES];
     moving_avg_u16_t max_vr_temp_mov_avg_dC;
+
+    uint16_t pstate_samples[PSTATE_MOVING_AVG_NUM_SAMPLES];
+    moving_avg_u16_t pstate_mov_avg;
+
 } computed_metrics_oob_t;
 
 
@@ -342,6 +346,16 @@ void comp_metrics_for_single_core_single_rack_throttle_update(uint8_t core_id, u
  * @return none
  */
 void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, uint8_t update_pstate_entry);
+
+
+/**
+ * @brief helper function to update the average pstate for the soc, used by out of band telemetry
+ *
+ * @param[in] pstate  Array of latest core pstates.
+ *
+ * @return none
+ */
+void comp_metrics_for_soc_avg_pstate(uint8_t (*pstate)[NUMBER_OF_CORES_PER_DIE]);
 
 /**
  * @brief helper function to update the cstate compute metrics

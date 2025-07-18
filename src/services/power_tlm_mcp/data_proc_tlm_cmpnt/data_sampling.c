@@ -399,6 +399,8 @@ void data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry(void)
     // Note :  soc_rt.latest_core_states_proc_timestamp_uS will be updated by helper here.
     uint64_t time_diff_uS = data_util_calc_time_diff(&soc_rt.latest_core_states_proc_timestamp_uS, &timestamp_uS);
 
+    uint8_t latest_pstate[NUMBER_OF_CORES_PER_DIE];
+
     // Go over all cores
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {
@@ -407,13 +409,14 @@ void data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry(void)
         // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2659115
         if (core_rt[core_id].current_pkt_timestamp_uS != 0)
         {
+            latest_pstate[core_id] = core_rt[core_id].latest_pstate;
 
             if (core_rt[core_id].throttling_status == NO_THROTTLING)
             {
                 /*Update the current pstate residencies*/
                 comp_metrics_for_single_core_single_pstate(core_id, core_rt[core_id].latest_pstate, time_diff_uS, false);
 
-                // Update the core - mpam - matrics
+                // Update the core - mpam - metrics
                 comp_metrics_for_mpam(core_id, core_rt[core_id].active_sample_mpam_id, core_rt[core_id].latest_pstate);
             }
             else
@@ -423,6 +426,8 @@ void data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry(void)
             }
         }
     }
+
+    comp_metrics_for_soc_avg_pstate(&latest_pstate);
 }
 
 void data_smpl_update_max_die_temp(void)

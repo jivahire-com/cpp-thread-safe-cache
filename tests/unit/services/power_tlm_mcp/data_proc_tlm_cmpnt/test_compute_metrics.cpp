@@ -574,6 +574,50 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_single_pstate, test_setup, test_
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].entry_count, 1);
 }
 
+TEST_FUNCTION(test_comp_metrics_for_soc_avg_pstate, test_setup, test_teardown)
+{
+    die_2_die_exch_init(0);
+
+    // Setup: Mark some cores as active
+    memset(core_is_active, 0, sizeof(core_is_active));
+    core_is_active[0] = true;
+    core_is_active[1] = true;
+    core_is_active[2] = false;
+    core_is_active[3] = true;
+
+    // Setup: Provide pstate values for all cores
+    uint8_t pstate[NUMBER_OF_CORES_PER_DIE] = {0};
+    pstate[0] = 10; // Core 0
+    pstate[1] = 20; // Core 1
+    pstate[2] = 16; // Core 2 (inactive)
+    pstate[3] = 30; // Core 3
+
+    // Call function under test
+    comp_metrics_for_soc_avg_pstate(&pstate);
+
+    // Only active cores: 0, 1, 3 (values: 10, 20, 30)
+    // total_pstate = 10 + 20 + 30 = 60
+    // num_active_cores = 3
+    // avg_pstate = (60 + 3/2) / 3 = (60 + 1) / 3 = 61 / 3 = 20 (integer division)
+
+    assert_int_equal(computed_metrics_oob.pstate_mov_avg.total_sum, 20);
+    assert_int_equal(computed_metrics_oob.pstate_mov_avg.sample_count, 1);
+
+    die_2_die_exch_init(1);
+    data_util_mov_avg_u16_clear(&computed_metrics_oob.pstate_mov_avg);
+    comp_metrics_for_soc_avg_pstate(&pstate);
+
+    assert_int_equal(computed_metrics_oob.pstate_mov_avg.total_sum, 20);
+    assert_int_equal(computed_metrics_oob.pstate_mov_avg.sample_count, 1);
+
+    // Test: No active cores
+    data_util_mov_avg_u16_clear(&computed_metrics_oob.pstate_mov_avg);
+    memset(core_is_active, 0, sizeof(core_is_active));
+    memset(pstate, 0, sizeof(pstate));
+    comp_metrics_for_soc_avg_pstate(&pstate);
+    assert_int_equal(computed_metrics_oob.pstate_mov_avg.sample_count, 0);
+}
+
 TEST_FUNCTION(test_comp_metrics_for_single_core_single_cstate, test_setup, test_teardown)
 {
     uint8_t core_id = TEST_CORE_ID;

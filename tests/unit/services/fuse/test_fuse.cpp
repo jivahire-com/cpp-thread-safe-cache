@@ -54,6 +54,7 @@ extern "C" {
 
 static jmp_buf cd_mock_jump_buf;
 static kng_fuse_disable_core_t DIE0_fuse_disable_test = {0x00, 0x00, 0x0, 0xFFFFFFFF};
+static kng_fuse_disable_core_t DIE1_core_disable_post_knob_test = {0x04000000, 0x40, 0xfffffff0, 0xffffffff};
 
 /*------------- Functions ----------------*/
 
@@ -866,10 +867,9 @@ TEST_FUNCTION(test_fuse_save_remote_die_config, NULL, NULL)
     // mocks
     DFWK_ASYNC_REQUEST_HEADER dummy_request;
     register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
-    kng_fuse_disable_core_t DIE1_core_disable_post_knob_test = {0x00, 0x00, 0xFFFFFFF0, 0xFFFFFFFF};
-
+    kng_fuse_disable_core_t expected = DIE1_core_disable_post_knob_test;
     expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE1_STRUCT_ID);
-    expect_memory(__wrap_sds_block_write, buffer, &(DIE1_core_disable_post_knob_test), FUSE_DISABLE_CORE_DIE1_SIZE);
+    expect_memory(__wrap_sds_block_write, buffer, &expected, FUSE_DISABLE_CORE_DIE1_SIZE);
     expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE1_SIZE);
 
     static rmss_d2d_mailbox_msg test_msg;
@@ -983,4 +983,40 @@ TEST_FUNCTION(test_fuse_init_dual_die, NULL, NULL)
     will_return(__wrap_config_get_die1_core_spare_en_95_64, 0x00000002);
 
     fuse_init(dummy_icc_hspmbx_ctx, dummy_icc_d2dmbx_ctx);
+}
+TEST_FUNCTION(test_fuse_disable_cores_to_66_total_zero, NULL, NULL)
+{
+    // Arrange
+    kng_fuse_disable_core_t fuse = {0}; // all fields 0
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    // Act
+    fuse_disable_cores_to_66(&fuse);
+
+    // Assert
+    // Bit 26 of fuse_dis_core_31_0 should be set
+    assert_true(fuse.fuse_dis_core_31_0 & (1u << 26));
+    // Bit 6 of fuse_dis_core_63_32 should be set
+    assert_true(fuse.fuse_dis_core_63_32 & (1u << 5));
+}
+
+// Simple test when exactly one core is disabled (no change to struct)
+TEST_FUNCTION(test_fuse_disable_cores_to_66_total_one, NULL, NULL)
+{
+    // Arrange
+    kng_fuse_disable_core_t fuse = {0};
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    // Disable only bit 3 in first word (simulate 1 core disabled)
+    fuse.fuse_dis_core_31_0 = (1u << 3);
+
+    // Save a copy
+    kng_fuse_disable_core_t before = fuse;
+
+    // Act
+    fuse_disable_cores_to_66(&fuse);
+
+    // Assert
+    assert_int_equal(fuse.fuse_dis_core_31_0, before.fuse_dis_core_31_0);
+    assert_int_equal(fuse.fuse_dis_core_63_32, before.fuse_dis_core_63_32);
+    assert_int_equal(fuse.fuse_dis_core_95_64, before.fuse_dis_core_95_64);
 }

@@ -39,6 +39,29 @@
 static corebits_t sys_cores_in_die;
 
 /*------------- Functions ----------------*/
+
+static void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
+{
+    int total_disable_cores = __builtin_popcount(~(p_fuse_disable->fuse_dis_core_31_0)) +
+                              __builtin_popcount(~(p_fuse_disable->fuse_dis_core_63_32)) +
+                              __builtin_popcount((~(p_fuse_disable->fuse_dis_core_95_64) & 0x0F));
+    if (total_disable_cores == 0)
+    {
+        printf("total disable cores are 0 so we turn off Core26 and Core37\n");
+        p_fuse_disable->fuse_dis_core_31_0 = p_fuse_disable->fuse_dis_core_31_0 & ~(1 << 26);
+        p_fuse_disable->fuse_dis_core_63_32 = p_fuse_disable->fuse_dis_core_63_32 & ~(1 << 5);
+    }
+    else if (total_disable_cores == 1)
+    {
+        printf("DIE [%d] : core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32 " \n",
+               idsw_get_die_id(),
+               p_fuse_disable->fuse_dis_core_31_0,
+               p_fuse_disable->fuse_dis_core_63_32,
+               p_fuse_disable->fuse_dis_core_95_64);
+        printf("total disable cores are 1 so waiting for algorithm\n");
+    }
+}
+
 void core_info_get_platform_disable_cores()
 {
 
@@ -75,10 +98,11 @@ void core_info_get_platform_disable_cores()
                                             (~p_config_spare_en.fuse_dis_core_31_0));
     p_result_disable.fuse_dis_core_63_32 = ~((p_fuse_disable.fuse_dis_core_63_32 | p_config_disable.fuse_dis_core_63_32) &
                                              (~p_config_spare_en.fuse_dis_core_63_32));
-    p_result_disable.fuse_dis_core_95_64 =
-        ~(((p_fuse_disable.fuse_dis_core_95_64 | p_config_disable.fuse_dis_core_95_64) & (~p_config_spare_en.fuse_dis_core_95_64)) &
-          0x0F);
+    p_result_disable.fuse_dis_core_95_64 = ~((p_fuse_disable.fuse_dis_core_95_64 | p_config_disable.fuse_dis_core_95_64) &
+                                             (~p_config_spare_en.fuse_dis_core_95_64)) &
+                                           0x0F;
 
+    fuse_disable_cores_to_66(&p_result_disable);
     printf("DIE [%d] : core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32 " \n",
            idsw_get_die_id(),
            p_result_disable.fuse_dis_core_31_0,

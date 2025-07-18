@@ -97,6 +97,35 @@ void scp_remote_die_config_req_cb(void* context, fpfw_status_t status)
     FPFW_UNUSED(status);
 }
 
+void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
+{
+    int total_disable_cores = __builtin_popcount(p_fuse_disable->fuse_dis_core_31_0) +
+                              __builtin_popcount(p_fuse_disable->fuse_dis_core_63_32) +
+                              __builtin_popcount(p_fuse_disable->fuse_dis_core_95_64 & 0x0f);
+    if (total_disable_cores == 0)
+    {
+        printf(FUSE_NAME "total disable cores are 0 so we turn off Core26 and Core37\n");
+        p_fuse_disable->fuse_dis_core_31_0 = p_fuse_disable->fuse_dis_core_31_0 | (1 << 26);
+        p_fuse_disable->fuse_dis_core_63_32 = p_fuse_disable->fuse_dis_core_63_32 | (1 << 5);
+        printf(FUSE_NAME "DIE [%d] : core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32
+                         " \n",
+               idsw_get_die_id(),
+               p_fuse_disable->fuse_dis_core_31_0,
+               p_fuse_disable->fuse_dis_core_63_32,
+               p_fuse_disable->fuse_dis_core_95_64);
+    }
+    else if (total_disable_cores == 1) // TODO: TASK 2772469 : SoC FW to enable 132 cores only in KNG SoC based on core selection algorithm - Copy
+    {
+        printf(FUSE_NAME "DIE [%d] : core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32
+                         " \n",
+               idsw_get_die_id(),
+               p_fuse_disable->fuse_dis_core_31_0,
+               p_fuse_disable->fuse_dis_core_63_32,
+               p_fuse_disable->fuse_dis_core_95_64);
+        printf(FUSE_NAME "total disable cores are 1 so waiting for algorithm\n");
+    }
+}
+
 // write recieived information via sds
 void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
@@ -118,7 +147,7 @@ void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_sta
 
     result = sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
     BUG_ASSERT(result == KNG_SUCCESS);
-
+    fuse_disable_cores_to_66(&remote_die_core_disable);
     result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &remote_die_core_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
     BUG_ASSERT(result == KNG_SUCCESS);
 
@@ -279,9 +308,10 @@ int write_fuse_info_to_ap()
     // TODO: TASK 2598729 : [SCP] DIE1 sends fuse info to DIE0 to write.This assumes DIE0 and DIE1 has same fuses
     if (idsw_get_die_id() == DIE_0)
     {
+
         result = sds_block_creation(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, FUSE_DISABLE_CORE_DIE0_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
         BUG_ASSERT(result == KNG_SUCCESS);
-
+        fuse_disable_cores_to_66(&DIE0_fuse_disable);
         result = sds_block_write(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, &DIE0_fuse_disable, FUSE_DISABLE_CORE_DIE0_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
 

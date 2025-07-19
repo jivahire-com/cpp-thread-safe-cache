@@ -203,7 +203,7 @@ class mod_power_ft(EchoFallsBaseTest):
         command="pwr set desired 0 0 1"
         core_com_channel.write_line(write_string=command)
         try:
-            command_response_cli = core_com_channel.read_until(key="throttle_pri", timeout_seconds=300)
+            command_response_cli = core_com_channel.read_until(key="throttle_pri -", timeout_seconds=300)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set desired cmd status: Fail", msg="Test Fail", _is_error=True)
@@ -211,7 +211,7 @@ class mod_power_ft(EchoFallsBaseTest):
             time.sleep(30)
             return False
 
-        pattern = re.compile(r"pwr set desired: core - (\d+)")
+        pattern = re.compile(r"pwr set desired: core - (\d+) \(0x([0-9A-Fa-f]+)\) desired - 0x([0-9A-Fa-f]+) throttle_pri - 0x([0-9A-Fa-f]+)")
         match = pattern.search(command_response_cli)
 
         if match:

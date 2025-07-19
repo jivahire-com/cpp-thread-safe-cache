@@ -123,19 +123,22 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
     // 2) icc_die2die
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
-    // 3) Platform ID
+    // 3) icc_d2dmbx
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
+    // 4) Platform ID
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, test_die);
-    // 4) AVS bus 0
+    // 5) AVS bus 0
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs0_test_host);
-    // 5) AVS bus 1
+    // 6) AVS bus 1
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs1_test_host);
-    // 6) AVS bus 2
+    // 7) AVS bus 2
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs2_test_host);
-    // 7) AVS bus 3
+    // 8) AVS bus 3
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs3_test_host);
     // collect array for then pwr_avs_initialize
@@ -143,7 +146,7 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
     avs_test_array[1] = &avs1_test_host;
     avs_test_array[2] = &avs2_test_host;
     avs_test_array[3] = &avs3_test_host;
-    // 8) dfwk handle，用于 power_init schedule
+    // 9) dfwk handle，用于 power_init schedule
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
@@ -264,8 +267,8 @@ TEST_FUNCTION(power_init_pwr_svc__evt_silicon, nullptr, nullptr)
 
     // when single die boot is not enabled, there will be a call to get icc handle
     will_return(__wrap_idhw_is_single_die_boot_en, false);
-    will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
-    expect_any(__wrap_fpfw_init_get_handle, id);
+    will_return_count(__wrap_fpfw_init_get_handle, TEST_HANDLE, 2);
+    expect_any_count(__wrap_fpfw_init_get_handle, id, 2);
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 

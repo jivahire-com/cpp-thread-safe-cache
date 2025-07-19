@@ -23,8 +23,9 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define DFVS_FUSED_COREMEMASST_COUNT 5
-#define INFO_ROWS                    3
+#define DFVS_FUSED_COREMEMASST_COUNT    5
+#define INFO_ROWS                       3
+#define POWER_KNOB_FORCE_PSTATE_DISABLE 32
 
 /*-- Declarations (Statics and globals) --*/
 static const char* s_true_str = "true";
@@ -53,6 +54,13 @@ static void print_power_config_vf(power_fuse_data_t* fuses);
 static void print_power_config_vft(power_runconfig_t* p_runconfig);
 static void print_power_config_vftpre(power_vft_curveset_precalc_t* precalculated_current);
 static void print_power_config_vcpucalc(power_knobs_t* knobs);
+static void print_power_tdp_fuse(power_fuse_data_t* fuses);
+static void print_ldodac_to_volt_slope_fuse(power_fuse_data_t* fuses);
+static void print_power_fuse_vcpu_interp_data(const power_fuse_data_t* fuses);
+static void print_power_avs_ds_cfg(power_knobs_t* knobs);
+static void print_power_leakage_temp_scaler(power_knobs_t* knobs);
+static void print_power_force_vrs(power_knobs_t* knobs);
+static void print_power_adclk_offset_cfg(power_knobs_t* knobs);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -60,6 +68,9 @@ static void print_power_config_vcpucalc(power_knobs_t* knobs);
 /* Structure storing the dictionary of sub-command string against its corresponding print function */
 const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_dictionary[] = {
     {"fuse",                (print_function)print_power_config_fuse,                POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"tdp",                 (print_function)print_power_tdp_fuse,                   POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"ldo2volt",            (print_function)print_ldodac_to_volt_slope_fuse,        POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"vcpuinterp",          (print_function)print_power_fuse_vcpu_interp_data,      POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"dts",                 (print_function)print_power_config_dts,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"memasst",             (print_function)print_power_config_memasst,             POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"intervals",           (print_function)print_power_config_interval,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
@@ -74,13 +85,11 @@ const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_di
     {"allowed_min_plimit",  (print_function)print_power_config_min_allowed_plimit,  POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"allowed_max_plimit",  (print_function)print_power_config_max_allowed_plimit,  POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"fgpll",               (print_function)print_power_config_fgpll,               POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"avs_ds",              (print_function)print_power_avs_ds_cfg,                 POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"lkg_temp_scaler",     (print_function)print_power_leakage_temp_scaler,        POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"force_vrs",           (print_function)print_power_force_vrs,                  POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"adclk_offset",        (print_function)print_power_adclk_offset_cfg,           POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"knobs",               (print_function)print_power_config_knobs,               POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
-    /* TODO: The below functions need to be added after the underlying print functions are ported.
-    These CLI functions are not implemented in this PR. */
-    /*
-    {"coremin",             (print_function)print_power_config_min_plimit,          POWER_IF_CMD_GET_RUNCONFIG_FUSES},
-    {"lkgcalc",             (print_function)print_power_config_lkg,                 POWER_IF_CMD_GET_RUNCONFIG_FUSES},
-    */
     {"vf",                  (print_function)print_power_config_vf,                  POWER_IF_CMD_GET_RUNCONFIG_FUSES},
     {"vft",                 (print_function)print_power_config_vft,                 POWER_IF_CMD_GET_RUNCONFIG},
     {"vftpre",              (print_function)print_power_config_vftpre,              POWER_IF_CMD_GET_RUNCONFIG_VFTPRE},
@@ -92,7 +101,6 @@ const uint32_t length_dictionary =
     sizeof(power_cli_config_sub_command_dictionary) / sizeof(power_cli_sub_command_dictionary_element_t);
 
 /*-------------- Functions ---------------*/
-/* -------------------------------------- */
 static void print_padding(uint32_t decimal, unsigned places)
 {
     uint32_t value = 1;
@@ -105,12 +113,10 @@ static void print_padding(uint32_t decimal, unsigned places)
         }
     }
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
-static void print_power_config_fuse(power_fuse_data_t* fuses)
+static void print_power_tdp_fuse(power_fuse_data_t* fuses)
 {
-    FpFwCliPrint("\nMisc Fuse configs\n");
+    FpFwCliPrint("\nTDP Fuse configs\n");
     FpFwCliPrint("-----------------\n");
     FpFwCliPrint("TDP cores  : %d\n", fuses->tdp_config.num_cores);
     FpFwCliPrint("TDP power  : %d A\n", fuses->tdp_config.power_A);
@@ -119,9 +125,16 @@ static void print_power_config_fuse(power_fuse_data_t* fuses)
 
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
+static void print_ldodac_to_volt_slope_fuse(power_fuse_data_t* fuses)
+{
+    FpFwCliPrint("\nLDODAC to mV Slope Fuse\n");
+    FpFwCliPrint("------------------------\n");
+    FpFwCliPrint("Slope (uV/LSB): %u\n", fuses->ldodac_to_volt.slope_uvolt);
+    FpFwCliPrint("Offset (uV): %d\n", fuses->ldodac_to_volt.offset_uvolt);
+    FpFwCliPrint("\n");
+}
+
 static void print_dts_coeffs(dts_coeff_t* coeff, unsigned count)
 {
     for (unsigned int idx = 0; idx < count; ++idx)
@@ -140,24 +153,23 @@ static void print_power_config_dts(power_fuse_data_t* fuses)
     print_dts_coeffs(fuses->dts_coeff_soctop, ARRAY_SIZE(fuses->dts_coeff_soctop));
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_memasst(power_fuse_data_t* fuses)
 {
     FpFwCliPrint("\n");
-    FpFwCliPrint("  ldo   hdrawlm hdema hshcrawlm hshscema tpemaa tpemab hd_emaw\n");
+    // Print table header
+    FpFwCliPrint("+--------+---------+-------+-----------+----------+--------+--------+---------+\n");
+    FpFwCliPrint("|  LDO   | hdrawlm | hdema | hshcrawlm | hshscema | tpemaa | tpemab | hd_emaw |\n");
+    FpFwCliPrint("+--------+---------+-------+-----------+----------+--------+--------+---------+\n");
     for (unsigned r_idx = 0; r_idx < DFVS_FUSED_COREMEMASST_COUNT; ++r_idx)
     {
-        FpFwCliPrint(" ");
         if (!fuses->memasst.entry[r_idx].valid_boundary)
         {
-            FpFwCliPrint("---\n");
+            FpFwCliPrint("|   ---  |   ---   |  ---  |    ---    |   ---    |  ---   |  ---   |   ---   |\n");
             continue;
         }
         unsigned ldo = fuses->memasst.entry[r_idx].ldo_dac_in;
-        print_padding(ldo, 2);
-        FpFwCliPrint("%d    %d    %d      %d      %d     %d     %d    %d\n",
+        FpFwCliPrint("| %6d | %7d | %5d | %9d | %8d | %6d | %6d | %7d |\n",
                ldo,
                fuses->memasst.entry[r_idx].hd_rawlm,
                fuses->memasst.entry[r_idx].hd_ema,
@@ -167,11 +179,65 @@ static void print_power_config_memasst(power_fuse_data_t* fuses)
                fuses->memasst.entry[r_idx].tp_emab,
                fuses->memasst.entry[r_idx].hd_emaw);
     }
+    FpFwCliPrint("+--------+---------+-------+-----------+----------+--------+--------+---------+\n\n");
+}
+
+static void print_power_fuse_vcpu_interp_data(const power_fuse_data_t* fuses)
+{
+    FpFwCliPrint("\nVCPU Leakage Points\n");
+    FpFwCliPrint("-------------------\n");
+    FpFwCliPrint("Idx  LDO_DAC  Current(mA)  VCPU(mV)  Temp_Offset\n");
+    for (unsigned i = 0; i < VCPU_LEAKAGE_COUNT; ++i) {
+        const power_fuse_vcpu_current_t* v = &fuses->vcpu_leakage[i].current;
+        FpFwCliPrint("%2u   %6u   %10u   %7u   %11u\n", i, v->ldo_dac, v->current_ma, v->vcpu_mv, v->temp_offset);
+    }
+
+    FpFwCliPrint("\nVCPU LDO Dynamic Points\n");
+    FpFwCliPrint("-----------------------\n");
+    FpFwCliPrint("Idx  LDO_DAC  Current(mA)  VCPU(mV)  Temp_Offset\n");
+    for (unsigned i = 0; i < VCPU_LDO_DYNAMIC_COUNT; ++i) {
+        const power_fuse_vcpu_current_t* v = &fuses->vcpu_ldo_dyn[i].current;
+        FpFwCliPrint("%2u   %6u   %10u   %7u   %11u\n", i, v->ldo_dac, v->current_ma, v->vcpu_mv, v->temp_offset);
+    }
+
+    FpFwCliPrint("\nCore Cdyn Points\n");
+    FpFwCliPrint("-----------------\n");
+    FpFwCliPrint("Idx  LDO_DAC  Cdyn(pF)\n");
+    for (unsigned i = 0; i < CORE_CDYN_COUNT; ++i) {
+        const power_fuse_core_cdyn_t* c = &fuses->core_cdyn[i].cdyn;
+        FpFwCliPrint("%2u   %6u   %9u\n", i, c->ldo_dac, c->cdyn_pf);
+    }
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
+static void print_power_config_fuse(power_fuse_data_t* fuses)
+{
+    FpFwCliPrint("\n---------------------------All Power Fuses---------------------------\n");
+    FpFwCliPrint("LDO Dropout Voltage (mV): %u\n", fuses->v_ldo_dropout_mv);
+    FpFwCliPrint("VCPU Guardband (mV): %u\n", fuses->vcpu_guardband_mv);
+    FpFwCliPrint("Curve Max Temps (C):");
+    for (unsigned i = 0; i < ARRAY_SIZE(fuses->curve_max_temp); ++i) {
+        FpFwCliPrint(" %d", fuses->curve_max_temp[i]);
+    }
+    FpFwCliPrint("\n");
+    static const char* process_names[] = { "Unknown0", "SS", "TT", "FF", "Unknown" };
+    const char* process_str = "Unknown";
+    if (fuses->process_id >= PROCESS_SS && fuses->process_id <= PROCESS_FF) {
+        process_str = process_names[fuses->process_id];
+    } else if (fuses->process_id == PROCESS_UNKNOWN_0) {
+        process_str = process_names[0];
+    } else if (fuses->process_id == PROCESS_UNKNOWN) {
+        process_str = process_names[4];
+    }
+    FpFwCliPrint("Process ID: %s (%d)\n", process_str, fuses->process_id);
+    print_power_tdp_fuse(fuses);
+    print_power_config_vf(fuses);
+    print_power_config_memasst(fuses);
+    print_ldodac_to_volt_slope_fuse(fuses);
+    print_power_config_dts(fuses);
+    print_power_fuse_vcpu_interp_data(fuses);
+}
+
 static void print_power_config_interval(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nConfigured Loop Intervals\n");
@@ -187,9 +253,7 @@ static void print_power_config_interval(power_knobs_t* knobs)
     FpFwCliPrint("%ums\n", knobs->pvt_loop_interval);
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_limits(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nConfigured Control Loop Limits\n");
@@ -203,12 +267,7 @@ static void print_power_config_limits(power_knobs_t* knobs)
     FpFwCliPrint("%uA", knobs->soc_maximum_electrical_current_limit_vcpu1);
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
-/* -------------------------------------- */
-
-/* -------------------------------------- */
 static void print_power_config_pidcfg(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nCtrl loop PID config.\n");
@@ -217,13 +276,8 @@ static void print_power_config_pidcfg(power_knobs_t* knobs)
     FpFwCliPrint("Ki : (%u.%03u)\n", (unsigned int)knobs->pid.kit / 1000, (unsigned int)knobs->pid.kit % 1000);
     FpFwCliPrint("Kd : (%u.%03u)\n", (unsigned int)knobs->pid.kdt / 1000, (unsigned int)knobs->pid.kdt % 1000);
     FpFwCliPrint("Setpoint offset : %umW\n", (unsigned int)knobs->pid.setpoint_offset);
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // FpFwCliPrint("Resource max   : %u\n", knobs->pid.resource_max);
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
-
-/* -------------------------------------- */
 
 static void print_voltage(uint16_t voltage)
 {
@@ -241,6 +295,18 @@ static void print_temp(uint16_t temp)
 
 static void print_power_config_thresholds(power_knobs_t* knobs)
 {
+    FpFwCliPrint("\nAlarm Status\n");
+    FpFwCliPrint("----------------\n");
+    FpFwCliPrint("SOC VM Overvolt Alarm    : %s\n", knobs->soc_vm_overvolt_en ? "enabled" : "disabled");
+    FpFwCliPrint("SOC VM Undervolt Alarm   : %s\n", knobs->soc_vm_undervolt_en ? "enabled" : "disabled");
+    FpFwCliPrint("Tile VM Overvolt Alarm   : %s\n", knobs->tile_vm_overvolt_en ? "enabled" : "disabled");
+    FpFwCliPrint("Tile VM Undervolt Alarm  : %s\n", knobs->tile_vm_undervolt_en ? "enabled" : "disabled");
+    FpFwCliPrint("SOC Temp Hot Alarm       : %s\n", knobs->soc_temp_hot_en ? "enabled" : "disabled");
+    FpFwCliPrint("SOC Temp Thermtrip Alarm : %s\n", knobs->soc_temp_thermtrip_en ? "enabled" : "disabled");
+    FpFwCliPrint("Tile Temp Hot Alarm      : %s\n", knobs->tile_temp_hot_en ? "enabled" : "disabled");
+    FpFwCliPrint("Tile Temp Thermtrip Alarm: %s\n", knobs->tile_temp_thermtrip_en ? "enabled" : "disabled");
+    FpFwCliPrint("\n");
+
     FpFwCliPrint("\nPVT Thresholds\n");
     FpFwCliPrint("--------------\n");
     FpFwCliPrint("Tile\n");
@@ -296,63 +362,41 @@ static void print_power_config_thresholds(power_knobs_t* knobs)
     }
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_loopcfg(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nCtrl loop configs\n");
     FpFwCliPrint("-----------------\n");
-    FpFwCliPrint("Pwr capping mode  : %s\n", knobs->capping_mode == power_capping_mode_t_ALL ? "all" : "per VM");
-    FpFwCliPrint("C2 limits to nom.: %s\n", knobs->c2_cores_limit_to_nominal ? s_true_str : s_false_str);
-    FpFwCliPrint("C3 limits to nom.: %s\n", knobs->c3_cores_limit_to_nominal ? s_true_str : s_false_str);
-    FpFwCliPrint("Allow plimit<nom.: %s\n", knobs->allow_plimit_below_nominal ? s_true_str : s_false_str);
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // FpFwCliPrint("Minimal turbo pri   : %s\n", knobs->allow_minimal_turbo_prioritization ? s_true_str : s_false_str);
+    FpFwCliPrint("Pwr capping mode : %s\n", knobs->capping_mode == power_capping_mode_t_ALL ? "all" : "per VM");
+    FpFwCliPrint("Power Loops Disable Status : %s\n", knobs->loops_disable == power_loops_disable_t_NONE ? "All power module loops enabled." : "Some power module loops disabled.");
+    if (knobs->loops_disable & power_loops_disable_t_CTRL_LOOP)
+    {
+        FpFwCliPrint("Power control loop disabled.\n");
+    }
+    if (knobs->loops_disable & power_loops_disable_t_VR_TELEM_LOOP)
+    {
+        FpFwCliPrint("Power VR telemetry loop disabled.\n");
+    }
+    if (knobs->loops_disable & power_loops_disable_t_PVT_TELEM_LOOP)
+    {
+        FpFwCliPrint("Power PVT telemetry loop disabled.\n");
+    }
+    FpFwCliPrint("Nominal Pstate : %u Frequency : %d MHz\n", knobs->nominal_pstate, dvfs_get_freq_from_plimit(knobs->nominal_pstate));
+    FpFwCliPrint("C2 limits to nominal : %s\n", knobs->c2_cores_limit_to_nominal ? s_true_str : s_false_str);
+    FpFwCliPrint("C3 limits to nominal : %s\n", knobs->c3_cores_limit_to_nominal ? s_true_str : s_false_str);
+    FpFwCliPrint("Allow plimit < nominal : %s\n", knobs->allow_plimit_below_nominal ? s_true_str : s_false_str);
+    FpFwCliPrint("FLLCap Pstate Bounds : min=%u, max=%u\n", knobs->fllcal_pstate_bounds.pstate_min, knobs->fllcal_pstate_bounds.pstate_max);
+    FpFwCliPrint("Velocity Boost status : %s\n", knobs->power_enable_velocity_boost ? "enabled" : "disabled");
     FpFwCliPrint("Intervals to lwr : %u\n", knobs->intervals_to_lower_plimit);
-    FpFwCliPrint("Allwd plimit min.: %u\n", knobs->allowed_plimit_minimum);
-    FpFwCliPrint("Allwd plimit max.: %u\n", knobs->allowed_plimit_maximum);
-    FpFwCliPrint("Step size up max.: %u\n", knobs->max_plimit_step_size_up);
-    FpFwCliPrint("Step size dn max.: %u\n", knobs->max_plimit_step_size_down);
-    FpFwCliPrint("Min plimit upds/loop: ");
-
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // print_minupdate(knobs->minimum_plimit_updates);
-    // FpFwCliPrint("\n");
-    // FpFwCliPrint("Nominal pstate      : ");
-    // if (knobs->nominal_pstate == 0) {
-    //     FpFwCliPrint("fused default (P%d)\n", power_context.runconfig.pnominal);
-    // } else {
-    //     FpFwCliPrint("P%d\n", knobs->nominal_pstate);
-    // }
-    // FpFwCliPrint("\nForced pstates\n");
-    // for (int count = 0; count < ST_COUNT; ++count)
-    // {
-    //     FpFwCliPrint("Core:Pxx ");
-    // }
-    // FpFwCliPrint("\n");
-    // for (int count = 0; count < ST_COUNT; ++count)
-    // {
-    //     FpFwCliPrint("=========");
-    // }
-    // FpFwCliPrint("\n");
-    // for (unsigned core_idx = 0; core_idx < power_context.core_count; ++core_idx) {
-    //     if (knobs->force_pstate[core_idx] == POWER_KNOB_FORCE_PSTATE_DISABLE) {
-    //         FpFwCliPrint("%04d:--- ", core_idx);
-    //     } else {
-    //         FpFwCliPrint("%04d:P%02d ", core_idx, knobs->force_pstate[core_idx]);
-    //     }
-    //
-    //     if (core_idx % ST_COUNT == ST_COUNT - 1) {
-    //         FpFwCliPrint("\n");
-    //     }
-    // }
-    //
+    FpFwCliPrint("Allwd plimit min : %u\n", knobs->allowed_plimit_minimum);
+    FpFwCliPrint("Allwd plimit max : %u\n", knobs->allowed_plimit_maximum);
+    FpFwCliPrint("Step size up max : %u\n", knobs->max_plimit_step_size_up);
+    FpFwCliPrint("Step size dn max : %u\n", knobs->max_plimit_step_size_down);
+    FpFwCliPrint("Min plimit upds/loop : %u\n", knobs->minimum_plimit_updates);
+    FpFwCliPrint("Force pstate status : %s\n", knobs->force_pstate == POWER_KNOB_FORCE_PSTATE_DISABLE ? "disabled" : "enabled");
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_survivability_mode(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nSurvivability Mode\n");
@@ -360,13 +404,10 @@ static void print_power_config_survivability_mode(power_knobs_t* knobs)
     FpFwCliPrint("Enabled : %s\n", knobs->enable_survivability_mode ? s_true_str : s_false_str);
     FpFwCliPrint("P-State : %d", knobs->survivability_mode_pstate);
     FpFwCliPrint(" / ");
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // FpFwCliPrint("%d MHz", dvfs_get_freq_from_plimit(knobs->survivability_mode_pstate));
+    FpFwCliPrint("%d MHz", dvfs_get_freq_from_plimit(knobs->survivability_mode_pstate));
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_static_rails(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nStatic rails\n");
@@ -376,9 +417,7 @@ static void print_power_config_static_rails(power_knobs_t* knobs)
     FpFwCliPrint("Static rail pwr: %sW\n", tempstr);
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_tel(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nTelemetry config\n");
@@ -386,18 +425,20 @@ static void print_power_config_tel(power_knobs_t* knobs)
     FpFwCliPrint("C1 telem. enabled : %s\n", knobs->c1_tel_enable ? s_true_str : s_false_str);
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_throttling(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nThrottle config.\n");
     FpFwCliPrint("----------------\n");
-    FpFwCliPrint("Current throttling\n");
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // FpFwCliPrint("  Lower threshold   : %u\n", knobs->current_throt.lower_threshold_percent);
-    // FpFwCliPrint("  Upper threshold   : %u\n", knobs->current_throt.upper_threshold_percent);
-    // FpFwCliPrint("  Peak threshold    : %u\n", knobs->current_throt.peak_threshold_percent);
+    const power_currthrot_threshold_cfg_t* currthrot_cfg = &knobs->current_threshold;
+    FpFwCliPrint("\nCurrent Threshold % Per Pstate Generation\n");
+    FpFwCliPrint("-----------------------------------\n");
+    FpFwCliPrint("Current Throttling Enabled : %s\n", currthrot_cfg->power_current_throt_en ? s_true_str : s_false_str);
+    FpFwCliPrint("Iref to Max Percent        : %u\n", currthrot_cfg->iref_to_max_percent);
+    FpFwCliPrint("T1 Percent                 : %u\n", currthrot_cfg->t1_percent);
+    FpFwCliPrint("T2 Percent                 : %u\n", currthrot_cfg->t2_percent);
+    FpFwCliPrint("T3 Percent                 : %u\n", currthrot_cfg->t3_percent);
+    FpFwCliPrint("\nCurrent throttling (odcm & dvfs)\n");
     FpFwCliPrint(" Rolling windw cnt: %u\n", knobs->current_throt.rolling_window_count);
     FpFwCliPrint(" Telem epoch count: %u\n", knobs->current_throt.telemetry_epoch_count);
     FpFwCliPrint(" Inc Counter  : %u\n", knobs->current_throt.inc_ctr);
@@ -405,12 +446,12 @@ static void print_power_config_throttling(power_knobs_t* knobs)
     FpFwCliPrint(" Inc Amount   : %u\n", knobs->current_throt.inc_amt);
     FpFwCliPrint(" Dec Amount0  : %u\n", knobs->current_throt.dec_amt0);
     FpFwCliPrint(" Dec Amount1  : %u\n", knobs->current_throt.dec_amt1);
-    FpFwCliPrint("Tile temp. throttling\n");
+    FpFwCliPrint("\nTile temp throttling\n");
     FpFwCliPrint(" Inc Counter  : %u\n", knobs->tile_temp_throt.inc_ctr);
     FpFwCliPrint(" Dec Counter  : %u\n", knobs->tile_temp_throt.dec_ctr);
     FpFwCliPrint(" Inc Amount   : %u\n", knobs->tile_temp_throt.inc_amt);
     FpFwCliPrint(" Dec Amount   : %u\n", knobs->tile_temp_throt.dec_amt);
-    FpFwCliPrint("Adaptive clocking throttling\n");
+    FpFwCliPrint("\nAdaptive clocking throttling\n");
     FpFwCliPrint(" Enabled      : %s\n", knobs->adclk_throt.enable ? s_true_str : s_false_str);
     FpFwCliPrint(" Inc Counter  : %u\n", knobs->adclk_throt.inc_ctr);
     FpFwCliPrint(" Dec Counter  : %u\n", knobs->adclk_throt.dec_ctr);
@@ -427,23 +468,21 @@ static void print_power_config_throttling(power_knobs_t* knobs)
     FpFwCliPrint(" Input Sense Enable: %s\n", knobs->adclk_throt.input_sense_enable ? "LDO input" : "LDO output");
     FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_fgpll(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nFGPLL Config\n");
     FpFwCliPrint("------------\n");
     FpFwCliPrint("Cal Enabled : %s\n", knobs->calsm_enable ? s_true_str : s_false_str);
-    /* TODO: These values don't exist in the struct. Check if these values will exist in Kingsgate and enable them when they are supported ADO: 1887411 */
-    // FpFwCliPrint("P-State Cap : %d", knobs->ftable_pstate_cap);
-    // FpFwCliPrint(" / ");
-    // FpFwCliPrint("%d MHz", dvfs_get_freq_from_plimit(knobs->ftable_pstate_cap));
-    FpFwCliPrint("\n");
     FpFwCliPrint("ErrDetect : %s\n", knobs->plllock_cfg.enable_error ? s_true_str : s_false_str);
     FpFwCliPrint("LckCntSel : %d\n", knobs->plllock_cfg.lckcntsel);
+    FpFwCliPrint("Mask PLL Lock Raw      : %s\n", knobs->plllock_cfg.mask_plllockraw ? s_true_str : s_false_str);
+    FpFwCliPrint("Mask Freq Change Timeout: %s\n", knobs->plllock_cfg.mask_freqchangetimeout ? s_true_str : s_false_str);
+    FpFwCliPrint("Mask FLL Cal Timeout   : %s\n", knobs->plllock_cfg.mask_fllcaltimeout ? s_true_str : s_false_str);
+    FpFwCliPrint("Mask Lock Timeout      : %s\n", knobs->plllock_cfg.mask_locktimeout ? s_true_str : s_false_str);
+    FpFwCliPrint("Mask Freq Error        : %s\n", knobs->plllock_cfg.mask_freqerror ? s_true_str : s_false_str);
+    FpFwCliPrint("\n");
 }
-/* -------------------------------------- */
 
 static void print_power_config_itd_cfg(power_knobs_t* knobs)
 {
@@ -452,9 +491,75 @@ static void print_power_config_itd_cfg(power_knobs_t* knobs)
     FpFwCliPrint("ITD Enabled : %d\n", knobs->itd_cfg);
 }
 
-/* -------------------------------------- */
+static void print_power_avs_ds_cfg(power_knobs_t* knobs)
+{
+    avs_ds_cfg_array_t* avs_ds_cfg = &knobs->avs_ds;
+    FpFwCliPrint("\nAVS Drive Strength Config\n");
+    FpFwCliPrint("--------------------------\n");
+    FpFwCliPrint("AVS Drive Strength Config Array:\n");
+    for (unsigned i = 0; i < ARRAY_SIZE(avs_ds_cfg->array); ++i) {
+        FpFwCliPrint("  AVS%d: clk=%d, mdata=%d\n", i, avs_ds_cfg->array[i].clk, avs_ds_cfg->array[i].mdata);
+    }
+}
+
+static void print_power_leakage_temp_scaler(power_knobs_t* knobs)
+{
+    const power_leakage_temp_scaler_t* scaler = &knobs->leakage_temp_scaler;
+    static const char* corner_names[] = { "SS", "TT", "FF", "Unknown" };
+    FpFwCliPrint("\nLeakage Temperature Scaling Polynomials\n");
+    FpFwCliPrint("--------------------------------------\n");
+    for (unsigned i = 0; i < 4; ++i) {
+        FpFwCliPrint("Corner %s:\n", corner_names[i]);
+        FpFwCliPrint("  y = %f * x^3 + %f * x^2 + %f * x + %f\n",
+            scaler->poly_coefficients[i].a,
+            scaler->poly_coefficients[i].b,
+            scaler->poly_coefficients[i].c,
+            scaler->poly_coefficients[i].d);
+    }
+    FpFwCliPrint("\n");
+}
+
+static void print_power_force_vrs(power_knobs_t* knobs)
+{
+    const power_force_vrs_t* force_vrs = &knobs->forced_vrs;
+    static const char* vr_names[10] = {
+        "VCPU0",      // 0 Die0
+        "VPCIE0P75", // 1 Die0
+        "VSYS",      // 2 Die0
+        "VDDQ1P1",   // 3 Die0
+        "VSOC",      // 4 Die0
+        "VD2D0P55",  // 5 Die0
+        "VPLL1P2",   // 6 Die0
+        "VGPIO1P2",  // 7 Die0
+        "VCPU1",     // 8 Die1
+        "VD2D0P875"  // 9 Die1
+    };
+
+    FpFwCliPrint("\nForced VR Values\n");
+    FpFwCliPrint("----------------\n");
+    for (int i = 0; i < 10; ++i) {
+        const char* die = (i < 8) ? "Die 0" : "Die 1";
+        FpFwCliPrint("VR[%d] (%s, %s): %u mV\n", i, die, vr_names[i], force_vrs->vr[i]);
+    }
+    FpFwCliPrint("\n");
+}
+
+static void print_power_adclk_offset_cfg(power_knobs_t* knobs)
+{
+    const power_adclk_offset_cfg_t* adclk_offset_cfg = &knobs->adclk_offset;
+    FpFwCliPrint("\nAdaptive Clocking Offset Config\n");
+    FpFwCliPrint("--------------------------------\n");
+    FpFwCliPrint("Adaptive Clocking Offset Enabled: %s\n", adclk_offset_cfg->enable ? s_true_str : s_false_str);
+    FpFwCliPrint("Offset Values (per core):\n");
+    for (unsigned i = 0; i < ARRAY_SIZE(adclk_offset_cfg->offset_value); ++i) {
+        FpFwCliPrint("  Core %u: %u\n", i, adclk_offset_cfg->offset_value[i]);
+    }
+    FpFwCliPrint("\n");
+}
+
 static void print_power_config_knobs(power_knobs_t* knobs)
 {
+    FpFwCliPrint("\n---------------------------All Power Knobs---------------------------\n");
     print_power_config_interval(knobs);
     print_power_config_tel(knobs);
     print_power_config_limits(knobs);
@@ -467,25 +572,22 @@ static void print_power_config_knobs(power_knobs_t* knobs)
     print_power_config_fgpll(knobs);
     print_power_config_static_rails(knobs);
     print_power_config_itd_cfg(knobs);
-
+    print_power_avs_ds_cfg(knobs);
+    print_power_leakage_temp_scaler(knobs);
+    print_power_force_vrs(knobs);
+    print_power_adclk_offset_cfg(knobs);
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_max_allowed_plimit(power_knobs_t* knobs)
 {
-    FpFwCliPrint("Allowed plimit max.: %u\n", (unsigned int)knobs->allowed_plimit_maximum);
+    FpFwCliPrint("Allowed plimit max: %u\n", (unsigned int)knobs->allowed_plimit_maximum);
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 static void print_power_config_min_allowed_plimit(power_knobs_t* knobs)
 {
-    FpFwCliPrint("Allowed plimit min.: %u\n", (unsigned int)knobs->allowed_plimit_minimum);
+    FpFwCliPrint("Allowed plimit min: %u\n", (unsigned int)knobs->allowed_plimit_minimum);
 }
-/* -------------------------------------- */
 
-/* -------------------------------------- */
 power_if_cmd_t cli_power_config_get_cmd_id(char* sub_command)
 {
     if (sub_command == NULL)
@@ -539,14 +641,15 @@ static void print_power_config_vf(power_fuse_data_t* fuses)
     FpFwCliPrint("%-12s %-10s %-8s %-16s %-14s\n", "CurveSet", "Curve", "Pair", "Frequency (MHz)", "LDO DAC Code");
     FpFwCliPrint("=======================================================================\n");
 
-    for (int cs = 0; cs < VFT_CURVESET_COUNT; ++cs) {
-        for (int curve = 0; curve < VFT_CURVE_COUNT_PER_CURVESET; ++curve) {
-            for (int pair = 0; pair < DVFS_FUSED_PAIRS_COUNT; ++pair) {
-                const dvfs_vf_pair_t* p = &vf_curves->curveset[cs].curve[curve].pair[pair];
-                FpFwCliPrint("%-12d %-10d %-8d %-16u %-14u\n", cs, curve, pair, p->freq_Mhz, p->ldo_dac_in);
-            }
+    int cs = 0; // Only print for curve set 0
+    for (int curve = 0; curve < VFT_CURVE_COUNT_PER_CURVESET; ++curve) {
+        for (int pair = 0; pair < DVFS_FUSED_PAIRS_COUNT; ++pair) {
+            const dvfs_vf_pair_t* p = &vf_curves->curveset[cs].curve[curve].pair[pair];
+            FpFwCliPrint("%-12d %-10d %-8d %-16u %-14u\n", cs, curve, pair, p->freq_Mhz, p->ldo_dac_in);
         }
+        FpFwCliPrint("\n");
     }
+    FpFwCliPrint("\n");
 }
 
 static void print_power_config_vft(power_runconfig_t* p_runconfig)
@@ -607,10 +710,8 @@ static void print_power_config_vftpre(power_vft_curveset_precalc_t* precalculate
     }
 }
 
-
 static void print_power_config_vcpucalc(power_knobs_t* knobs)
 {
-
     FpFwCliPrint("\nConfigured Vcpu Calc Inputs\n");
     FpFwCliPrint("---------------------------\n");
     FpFwCliPrint("R_loadline VCPU0 uohm : %uuOhm\n", knobs->r_loadline_vcpu0_uohm);
@@ -621,5 +722,3 @@ static void print_power_config_vcpucalc(power_knobs_t* knobs)
     FpFwCliPrint("forced Pstate(32 to disable, 0-31 to force pstate): %i\n", knobs->force_pstate);
     FpFwCliPrint("\n");
 }
-
-/* -------------------------------------- */

@@ -17,12 +17,18 @@
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <dvfs.h>       // for dvfs_get_cppc_from_pstate, dvfs_pll_g...
+#include <dvfs_regs.h>
+#include <fpfw_icc_base.h> // for fpfw_icc_base_send, fpfw_icc_base_recv
+#include <icc_platform_defines.h>
+#include <inttypes.h> // for PRId32, PRIx32
+#include <pex_regs.h>
 #include <power_dfwk.h> // for (anonymous), ppower_service_cli_re...
 #include <stdbool.h>    // for false
 #include <stddef.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-
+#define CORE_CLUSTER_PEX_TOP_ALARM_CFG_OFFSET(alarm_num, ab_sel) \
+    (0x280 + ((alarm_num) * 0x10) + ((ab_sel) == 'B' ? 0x4 : 0x0))
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -30,9 +36,13 @@ static void power_set_cap(uint16_t cap_value, ppower_service_cli_request_t p_req
 
 static void power_set_cap_callback(int result, uint16_t current, uint16_t previous);
 static void power_set_minupdate(power_runconfig_t* p_runconfig, uint16_t minupdate_val);
+static void power_cli_remote_die_send_complete_notify(void* context, fpfw_status_t status);
+static fpfw_status_t power_cli_remote_die_send(power_runconfig_t* p_runconfig, ppower_service_cli_request_t p_cli_request);
 
 /*-- Declarations (Statics and globals) --*/
-
+static bool d2d_send_in_progress = false;
+static remote_pwrcli_request_t d2d_cli_msg = {.icc_cmd_code = RMSS_D2D_MAILBOX_PWR_CLI_REQ};
+static fpfw_icc_base_send_req_t d2d_send_params = {0};
 static ppower_service_cli_request_t sp_cli_cap_request = NULL;
 
 /*------------- Functions ----------------*/
@@ -69,8 +79,81 @@ static void power_set_cap(uint16_t cap_value, ppower_service_cli_request_t p_req
 // "pwr set minupdate" command
 static void power_set_minupdate(power_runconfig_t* p_runconfig, uint16_t minupdate_val)
 {
-    p_runconfig = power_runconfig_get(); //&power_runconfig;
     p_runconfig->knobs.minimum_plimit_updates = minupdate_val;
+}
+
+static void power_cli_remote_die_send_complete_notify(void* context, fpfw_status_t status)
+{
+    FPFW_RUNTIME_ASSERT(context != NULL);
+    ppower_service_cli_request_t p_request = (ppower_service_cli_request_t)context;
+    //! Check for errors
+    if (status != DFWK_SUCCESS)
+    {
+        printf("[PWR CLI] D2D Send Failed: Status[0x%" PRIx32 "] Internal Status[0x%" PRIx32 "] Cmd[0x%x]\n",
+               status,
+               d2d_send_params.send_req.Output.Status,
+               p_request->power_ext_if_cmd_id);
+    }
+    else
+    {
+        printf("[PWR CLI] D2D Send Completed Successfully for Cmd [0x%x]\n", p_request->power_ext_if_cmd_id);
+        POWER_LOG_TRACE("[PWR CLI] Payload contents (hex): ");
+        for (size_t i = 0; i < d2d_send_params.buffer_size / sizeof(uint32_t); ++i)
+        {
+            POWER_LOG_TRACE("Word %zu: 0x%lx\n", i, ((uint32_t*)d2d_send_params.payload_buffer)[i]);
+        }
+
+        switch (p_request->power_ext_if_cmd_id)
+        {
+        case POWER_IF_CMD_SET_LOOP_DISABLES:
+            printf("[PWR CLI] Remote die loop disables Cmd Sent successfully.\n");
+            //! complete the request
+            DfwkAsyncRequestComplete(&p_request->header);
+            break;
+        // Add other cases as needed for different command IDs
+        default:
+            printf("[PWR CLI] Remote die command [0x%x] not supported!\n", p_request->power_ext_if_cmd_id);
+            break;
+        }
+    }
+    d2d_send_in_progress = false;
+}
+
+static fpfw_status_t power_cli_remote_die_send(power_runconfig_t* p_runconfig, ppower_service_cli_request_t p_cli_request)
+{
+    FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
+    FPFW_RUNTIME_ASSERT(p_cli_request != NULL);
+
+    if (d2d_send_in_progress)
+    {
+        printf("[PWR CLI] D2D send already in progress, cannot send another request.");
+        return FPFW_STATUS_BUSY;
+    }
+    d2d_send_in_progress = true;
+
+    //! clear previous send message
+    memset(&d2d_cli_msg, 0, sizeof(d2d_cli_msg));
+    memset(&d2d_send_params, 0, sizeof(d2d_send_params));
+
+    // Initialize the remote request structure
+    d2d_cli_msg.icc_cmd_code = RMSS_D2D_MAILBOX_PWR_CLI_REQ;
+    d2d_cli_msg.power_ext_if_cmd_id = p_cli_request->power_ext_if_cmd_id;
+    memcpy(&d2d_cli_msg.pwrset_sub_command_args, &p_cli_request->pwrset_sub_command_args, sizeof(d2d_cli_msg.pwrset_sub_command_args));
+
+    //! Prepare send request
+    d2d_send_params.payload_buffer = &d2d_cli_msg;
+    d2d_send_params.buffer_size = sizeof(d2d_cli_msg);
+    d2d_send_params.cb = power_cli_remote_die_send_complete_notify;
+    d2d_send_params.cb_ctx = p_cli_request; // pass the request context for completion callback
+
+    size_t num_words = sizeof(d2d_cli_msg) / sizeof(uint32_t);
+    POWER_LOG_TRACE("[PWR CLI] Payload contents (hex): ");
+    for (size_t i = 0; i < num_words; ++i)
+    {
+        POWER_LOG_TRACE("Word %zu: 0x%lx\n", i, d2d_cli_msg.as_uint32[i]);
+    }
+    //! Send the payload
+    return fpfw_icc_base_send((fpfw_icc_base_ctx_t*)(p_runconfig->p_sconfig->icc_d2d_cli_ctx), &d2d_send_params);
 }
 
 static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
@@ -126,9 +209,39 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
             {
                 const uintptr_t cluster_pex_base_addr =
                     (p_config->cluster_pex_base + (p_config->cluster_stride * core));
-                if (core < core_count)
-                { // NUM_AP_CORES_PER_DIE) {
+                vptr_dvfs_nonsecure_cppc_desired_perf cppc_desired_perf =
+                    (vptr_dvfs_nonsecure_cppc_desired_perf)(cluster_pex_base_addr + PEX_DVFS_NON_ADDRESS +
+                                                            DVFS_NONSECURE_CPPC_DESIRED_PERF_ADDRESS);
+                vptr_dvfs_dvfs_fsm_sr fsm_sr =
+                    (vptr_dvfs_dvfs_fsm_sr)(cluster_pex_base_addr + PEX_DVFS_ROOT_ADDRESS + DVFS_DVFS_FSM_SR_ADDRESS);
+                if (core < core_count) // NUM_AP_CORES_PER_DIE) {
+                {
+                    printf(
+                        "\nCore[%d]: CPPC_DESIRED_PERF addr = 0x%x\nBefore: cppc_value = 0x%x, base_perf = "
+                        "0x%x, boost_pri = 0x%x, mpam_h = 0x%x, throttle_pri = 0x%x",
+                        core,
+                        (uintptr_t)cppc_desired_perf,
+                        cppc_desired_perf->cppc_value,
+                        cppc_desired_perf->base_perf,
+                        cppc_desired_perf->boost_pri,
+                        cppc_desired_perf->mpam_h,
+                        cppc_desired_perf->throttle_pri);
+
+                    // Set the CPPC desired performance for the core, should effect the DVFS FSM SR
                     dvfs_ns_set_cppc_desired(cluster_pex_base_addr, desired, throttle);
+                    printf("After: cppc_value = 0x%x, base_perf = 0x%x, boost_pri = 0x%x, mpam_h = 0x%x, "
+                           "throttle_pri = 0x%x\n",
+                           cppc_desired_perf->cppc_value,
+                           cppc_desired_perf->base_perf,
+                           cppc_desired_perf->boost_pri,
+                           cppc_desired_perf->mpam_h,
+                           cppc_desired_perf->throttle_pri);
+
+                    // Check the DVFS FSM SR to see if the cppc_desired_pstate is set correctly
+                    printf("DVFS_FSM_SR addr = 0x%x, cppc_desired_pstate = 0x%x, vfsm_pstate = 0x%x\n",
+                           (uintptr_t)fsm_sr,
+                           fsm_sr->cppc_desired_pstate,
+                           fsm_sr->vfsm_pstate);
 
                     p_cli_request->fetch_data.pwrset_response_val.desiredparams.core = core;
                     p_cli_request->fetch_data.pwrset_response_val.desiredparams.cluster_pex_base_addr = cluster_pex_base_addr;
@@ -143,7 +256,6 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
 
             } while (all && core < core_count); // power_context.core_count);
 
-            // will complete request in callback
             DfwkAsyncRequestComplete(p_request);
             break;
         }
@@ -158,19 +270,34 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
             {
                 const uintptr_t cluster_pex_base_addr =
                     (p_config->cluster_pex_base + (p_config->cluster_stride * core));
-
+                vptr_dvfs_plimit plimit_reg =
+                    (vptr_dvfs_plimit)(cluster_pex_base_addr + PEX_DVFS_ROOT_ADDRESS + DVFS_PLIMIT_ADDRESS);
+                vptr_dvfs_dvfs_fsm_sr fsm_sr =
+                    (vptr_dvfs_dvfs_fsm_sr)(cluster_pex_base_addr + PEX_DVFS_ROOT_ADDRESS + DVFS_DVFS_FSM_SR_ADDRESS);
                 if ((core < core_count) && corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core))
                 {
-
                     dvfs_plimit plimit_as_uint32 = {
                         .vf_index = desired,
                         .power_cap = false,
-                        .currthresh_1 = 0x66,
-                        .currthresh_2 = 0xA7,
-                        .currthresh_3 = 0xE6,
+                        .currthresh_1 = plimit_reg->currthresh_1,
+                        .currthresh_2 = plimit_reg->currthresh_2,
+                        .currthresh_3 = plimit_reg->currthresh_3,
                     };
+                    printf("\nCore[%d]: PLIMIT addr = 0x%x\nBefore: vf_index = 0x%x power_cap = 0x%x\n",
+                           core,
+                           (uintptr_t)plimit_reg,
+                           plimit_reg->vf_index,
+                           plimit_reg->power_cap);
 
+                    // Set the PLIMIT for the core
                     power_set_plimit(p_runconfig, core, plimit_as_uint32);
+                    printf("After: vf_index = 0x%x power_cap = 0x%x\n", plimit_reg->vf_index, plimit_reg->power_cap);
+
+                    // Check the DVFS FSM SR to see if the vfsm pstate is set correctly
+                    printf("DVFS_FSM_SR addr = 0x%x, cppc_desired_pstate = 0x%x, vfsm_pstate = 0x%x\n",
+                           (uintptr_t)&fsm_sr,
+                           fsm_sr->cppc_desired_pstate,
+                           fsm_sr->vfsm_pstate);
 
                     p_cli_request->fetch_data.pwrset_response_val.plimitparams.core = core;
                     p_cli_request->fetch_data.pwrset_response_val.plimitparams.cluster_pex_base_addr = cluster_pex_base_addr;
@@ -184,16 +311,33 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
 
             } while (all && core < core_count);
 
-            // will complete request in callback
             DfwkAsyncRequestComplete(p_request);
             break;
         }
 
         case POWER_IF_CMD_SET_LOOP_DISABLES: {
-            value = p_runconfig->knobs.loops_disable = p_cli_request->pwrset_sub_command_args.loopdis_bits;
+            value = p_runconfig->knobs.loops_disable = p_cli_request->pwrset_sub_command_args.loopdis_params.loopdis_bits;
+            p_cli_request->fetch_data.pwrset_response_val.loopdis_params.loopdis_bits = value;
+            p_cli_request->fetch_data.pwrset_response_val.loopdis_params.mode =
+                p_cli_request->pwrset_sub_command_args.loopdis_params.mode;
 
-            p_cli_request->fetch_data.pwrset_response_val.loopdis_bits = value;
-            DfwkAsyncRequestComplete(p_request);
+            if (p_cli_request->pwrset_sub_command_args.loopdis_params.mode == LOOP_DISABLE_MODE_DUAL_DIE)
+            {
+                printf("[PWR CLI] [POWER_IF_CMD_SET_LOOP_DISABLES] Dual Die\n");
+                fpfw_status_t status = power_cli_remote_die_send(p_runconfig, p_cli_request);
+                if (status != FPFW_STATUS_SUCCESS)
+                {
+                    printf("[PWR CLI] POWER_IF_CMD_SET_LOOP_DISABLES power_cli_remote_die_send failed: "
+                           "0x%" PRIx32 "\n",
+                           status);
+                }
+            }
+            else
+            {
+                printf("[PWR CLI] [POWER_IF_CMD_SET_LOOP_DISABLES] Single Die\n");
+                //! complete the request
+                DfwkAsyncRequestComplete(p_request);
+            }
             break;
         }
 
@@ -340,12 +484,186 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
                     // end of code for debugging
                 }
             }
-
-            // // will complete request in callback
             DfwkAsyncRequestComplete(p_request);
             break;
         }
 
+        case POWER_IF_CMD_SET_ALARM_THRESHOLD: {
+            all = p_cli_request->pwrset_sub_command_args.alarm_cfg.all;
+            core = p_cli_request->pwrset_sub_command_args.alarm_cfg.core;
+            uint16_t alarm_thresh = p_cli_request->pwrset_sub_command_args.alarm_cfg.alarm_threshold;
+            uint16_t hist_thresh = p_cli_request->pwrset_sub_command_args.alarm_cfg.hist_threshold;
+            char alarm_type = p_cli_request->pwrset_sub_command_args.alarm_cfg.ab_selector;
+            bool dual_die = p_cli_request->pwrset_sub_command_args.alarm_cfg.dual_die;
+            uint8_t alarm_id = p_cli_request->pwrset_sub_command_args.alarm_cfg.alarm_id;
+            uint8_t pex_group = p_cli_request->pwrset_sub_command_args.alarm_cfg.pex_group;
+
+            do
+            {
+                //! figure out the base address for the alarm chosen
+                const uintptr_t cluster_pex_base_addr =
+                    (p_config->cluster_pex_base + (p_config->cluster_stride * core));
+                uintptr_t dvfs_throt_sr = cluster_pex_base_addr + PEX_DVFS_ROOT_ADDRESS + DVFS_DVFS_THROT_SR_ADDRESS;
+                uintptr_t alarm_base_addr =
+                    cluster_pex_base_addr + PEX_PVT_ADDRESS +
+                    (pex_group == 0 ? PEX_PVTC_RDL_REGMAP_PEX_G0_ADDRESS : PEX_PVTC_RDL_REGMAP_PEX_G1_ADDRESS) +
+                    CORE_CLUSTER_PEX_TOP_ALARM_CFG_OFFSET(alarm_id, alarm_type);
+                vptr_pex_g0_alarma_cfg_0 pex_alarm_cfg = (vptr_pex_g0_alarma_cfg_0)alarm_base_addr;
+
+                if (core < core_count) // NUM_AP_CORES_PER_DIE) {
+                {
+                    printf(
+                        "Alarm Config: core=%u, pex_group=%u, alarm_id=%u, type=%c, alarm_cfg_addr=0x%lx\n",
+                        (unsigned int)core,
+                        (unsigned int)pex_group,
+                        (unsigned int)alarm_id,
+                        alarm_type,
+                        (unsigned long)alarm_base_addr);
+
+                    printf("Current alarm_thresh=0x%04x, hist_thresh=0x%04x\n",
+                           (unsigned int)pex_alarm_cfg->alarm_thresh,
+                           (unsigned int)pex_alarm_cfg->hist_thresh);
+
+                    //! Print the current status of dvfs throt sr
+                    parse_dvfs_throttle_status(dvfs_throt_sr);
+
+                    //! Set the thresholds
+                    pex_alarm_cfg->hist_thresh = hist_thresh;
+                    pex_alarm_cfg->alarm_thresh = alarm_thresh;
+
+                    //! fill in the response params
+                    p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.core = core;
+                    p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.alarm_threshold = alarm_thresh;
+                    p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.hist_threshold = hist_thresh;
+                    p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.ab_selector = alarm_type;
+                    p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.pex_group = pex_group;
+                    p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.alarm_id = alarm_id;
+                    p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.dual_die = dual_die;
+                    p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.base_addr = alarm_base_addr;
+                    printf("Set alarm_thresh=0x%04x, hist_thresh=0x%04x\n",
+                           (unsigned int)pex_alarm_cfg->alarm_thresh,
+                           (unsigned int)pex_alarm_cfg->hist_thresh);
+
+                    // Insert a small delay to ensure hardware registers settle after setting thresholds
+                    for (volatile int delay = 0; delay < 10000; ++delay)
+                    {
+                        // simple busy-wait loop
+                    }
+                    //! Print the current status of dvfs throt sr post setting the alarm
+                    parse_dvfs_throttle_status(dvfs_throt_sr);
+                }
+                else
+                {
+                    p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.core = core;
+                }
+                ++core;
+
+            } while (all && core < core_count); // power_context.core_count);
+            DfwkAsyncRequestComplete(p_request);
+            break;
+        }
+        case POWER_IF_CMD_SET_FORCE_PMIN: {
+            power_pmin_type_t pmin_type = (power_pmin_type_t)p_cli_request->pwrset_sub_command_args.pmin_type;
+            if ((pmin_type > PM_PMIN_ALL) && (pmin_type <= PM_FW_PMIN_CONTROL))
+            {
+                printf("[PWR CLI] Forcing PMIN type: %d\n", pmin_type);
+                power_hw_force_pmin(pmin_type);
+            }
+            if (pmin_type == PM_PMIN_ALL)
+            {
+                printf("[PWR CLI] Clearing Force Pmin\n");
+                power_hw_clear_force_pmin(PM_PMIN_ALL);
+            }
+            DfwkAsyncRequestComplete(p_request);
+            break;
+        }
+        case POWER_IF_CMD_SET_SOC_HOT: {
+            bool state = p_cli_request->pwrset_sub_command_args.io_thermal;
+            if (state)
+            {
+                printf("[PWR CLI] Setting SOC_HOT state to ON\n");
+            }
+            else
+            {
+                printf("[PWR CLI] Setting SOC_HOT state to OFF\n");
+            }
+            power_hw_set_thermal_io_state(SOC_HOT, state);
+            DfwkAsyncRequestComplete(p_request);
+            break;
+        }
+        case POWER_IF_CMD_SET_MEM_HOT: {
+            bool state = p_cli_request->pwrset_sub_command_args.io_thermal;
+            if (state)
+            {
+                printf("[PWR CLI] Setting MEM_HOT state to ON\n");
+            }
+            else
+            {
+                printf("[PWR CLI] Setting MEM_HOT state to OFF\n");
+            }
+            power_hw_set_thermal_io_state(MEM_HOT, state);
+            DfwkAsyncRequestComplete(p_request);
+            break;
+        }
+        case POWER_IF_CMD_SET_THERM_TRIP: {
+            bool state = p_cli_request->pwrset_sub_command_args.io_thermal;
+            if (state)
+            {
+                printf("[PWR CLI] Setting THERM_TRIP state to ON\n");
+            }
+            else
+            {
+                printf("[PWR CLI] Setting THERM_TRIP state to OFF\n");
+            }
+            power_hw_set_thermal_io_state(THERM_TRIP, state);
+            DfwkAsyncRequestComplete(p_request);
+            break;
+        }
+        case POWER_IF_CMD_SET_CURR_THROTTLE: {
+            p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop = get_s_ctrl_loop();
+            core = p_cli_request->pwrset_sub_command_args.currthresh_params.core;
+            all = p_cli_request->pwrset_sub_command_args.currthresh_params.all;
+
+            do
+            {
+                const uintptr_t cluster_pex_base_addr =
+                    (p_config->cluster_pex_base + (p_config->cluster_stride * core));
+                vptr_dvfs_plimit plimit_reg =
+                    (vptr_dvfs_plimit)(cluster_pex_base_addr + PEX_DVFS_ROOT_ADDRESS + DVFS_PLIMIT_ADDRESS);
+
+                printf("Current PLIMIT register values for core %d:\n", core);
+                printf("  vf_index = 0x%x\n", plimit_reg->vf_index);
+                printf("  power_cap = 0x%x\n", plimit_reg->power_cap);
+                printf("  currthresh_1 = 0x%x\n", plimit_reg->currthresh_1);
+                printf("  currthresh_2 = 0x%x\n", plimit_reg->currthresh_2);
+                printf("  currthresh_3 = 0x%x\n", plimit_reg->currthresh_3);
+
+                if ((core < core_count) && corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core))
+                {
+                    p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop->cores.core[core].plimit_t1 =
+                        p_cli_request->pwrset_sub_command_args.currthresh_params.curr_threshold_1;
+                    p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop->cores.core[core].plimit_t2 =
+                        p_cli_request->pwrset_sub_command_args.currthresh_params.curr_threshold_2;
+                    p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop->cores.core[core].plimit_t3 =
+                        p_cli_request->pwrset_sub_command_args.currthresh_params.curr_threshold_3;
+
+                    p_cli_request->fetch_data.pwrset_response_val.currthresh_params.core = core;
+                    p_cli_request->fetch_data.pwrset_response_val.currthresh_params.curr_threshold_1 =
+                        p_cli_request->pwrset_sub_command_args.currthresh_params.curr_threshold_1;
+                    p_cli_request->fetch_data.pwrset_response_val.currthresh_params.curr_threshold_2 =
+                        p_cli_request->pwrset_sub_command_args.currthresh_params.curr_threshold_2;
+                    p_cli_request->fetch_data.pwrset_response_val.currthresh_params.curr_threshold_3 =
+                        p_cli_request->pwrset_sub_command_args.currthresh_params.curr_threshold_3;
+                }
+                else
+                {
+                    p_cli_request->fetch_data.pwrset_response_val.currthresh_params.core = core;
+                }
+            } while (all && ++core < core_count);
+
+            DfwkAsyncRequestComplete(p_request);
+            break;
+        }
         default:
             DfwkAsyncRequestComplete(p_request);
             break;

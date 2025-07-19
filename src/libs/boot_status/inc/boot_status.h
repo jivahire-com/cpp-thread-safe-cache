@@ -29,6 +29,15 @@
 (((uint32_t)(subgroup) & 0xFFU) << 8U) | \
 (((uint32_t)(instance) & 0xFFU) << 16U) & 0x00FFFFFFU)
 
+
+#define DECODE_BOOT_STATUS_EX_LED_CODE(value, group, subgroup, instance, status) \
+do { \
+    (group) = ((value) >> 0) & 0xFFU; \
+    (subgroup) = ((value) >> 8) & 0xFFU; \
+    (instance) = ((value) >> 16) & 0xFFU; \
+    (status) = ((value) >> 24) & 0xFFU; \
+} while (0)
+
 /*-------------- Typedefs ----------------*/
 /**
  * @brief Optional cb to be called when the boot status send request is completed.

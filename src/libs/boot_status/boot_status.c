@@ -60,13 +60,29 @@ static void boot_status_extd_notify_complete(void* context, fpfw_status_t status
         req->cb(req->cb_ctx);
     }
 
+    //! decode the boot status extended field
+    uint8_t decoded_group = 0;
+    uint8_t decoded_subgroup = 0;
+    uint8_t decoded_instance = 0;
+    uint8_t decoded_status = 0;
+    DECODE_BOOT_STATUS_EX_LED_CODE(req->msg.boot_stat_extd_notif.boot_status_ex.boot_status_int,
+                                   decoded_group,
+                                   decoded_subgroup,
+                                   decoded_instance,
+                                   decoded_status);
+
     //! Print the boot status notification message on uart
     FPFW_DBGPRINT_INFO("[Boot Status Extd] Async Notif Send Complete, Cmd[0x%" PRIx16 "] ID[%" PRId32
-                       "] Stat[0x%" PRIx32 "] Stat_ex[0x%" PRIx32 "]\n",
+                       "] Stat[0x%" PRIx32 "] Stat_ex[0x%" PRIx32 "] : Grp[0x%02" PRIx8 "] Subgrp[0x%02" PRIx8
+                       "] Inst[0x%02" PRIx8 "] Stat[0x%02" PRIx8 "]\n",
                        req->msg.header.cmd,
                        req->msg.boot_stat_extd_notif.id,
                        req->msg.boot_stat_extd_notif.boot_status,
-                       req->msg.boot_stat_extd_notif.boot_status_ex.boot_status_int);
+                       req->msg.boot_stat_extd_notif.boot_status_ex.boot_status_int,
+                       decoded_group,
+                       decoded_subgroup,
+                       decoded_instance,
+                       decoded_status);
 }
 
 static bool check_boot_status_ex_param_validity(uint32_t boot_status_ex, KNG_CPU_TYPE cpu_type, KNG_DIE_ID die_id)
@@ -362,14 +378,30 @@ void boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status,
     }
     else
     {
+        //! decode the boot status extended code
+        uint8_t decoded_group = 0;
+        uint8_t decoded_subgroup = 0;
+        uint8_t decoded_instance = 0;
+        uint8_t decoded_status = 0;
+        DECODE_BOOT_STATUS_EX_LED_CODE(p_req_mem->msg.boot_stat_extd_notif.boot_status_ex.boot_status_int,
+                                       decoded_group,
+                                       decoded_subgroup,
+                                       decoded_instance,
+                                       decoded_status);
+
         FPFW_DBGPRINT_INFO("[Boot Status Extd] %s Notif Send %s, Cmd[0x%" PRIx16 "] ID[%" PRId32
-                           "] Stat[0x%" PRIx32 "] Stat_ex[0x%" PRIx32 "]\n",
+                           "] Stat[0x%" PRIx32 "] Stat_ex[0x%" PRIx32 "]: Grp[0x%02" PRIx8
+                           "] Subgrp[0x%02" PRIx8 "] Inst[0x%02" PRIx8 "] Stat[0x%02" PRIx8 "]\n",
                            ((is_icc_sync) ? "Sync" : "Async"),
                            ((is_icc_sync) ? "Completed" : "Raised"),
                            p_req_mem->msg.header.cmd,
                            p_req_mem->msg.boot_stat_extd_notif.id,
                            p_req_mem->msg.boot_stat_extd_notif.boot_status,
-                           p_req_mem->msg.boot_stat_extd_notif.boot_status_ex.boot_status_int);
+                           p_req_mem->msg.boot_stat_extd_notif.boot_status_ex.boot_status_int,
+                           decoded_group,
+                           decoded_subgroup,
+                           decoded_instance,
+                           decoded_status);
 
         //! call the callback function if provided & sync request is raised since the request is completed immediately
         if (is_icc_sync && p_req_mem->cb != NULL)

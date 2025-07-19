@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <FpFwCli.h>
+#include <fpfw_icc_base.h>
 #include <power_dfwk.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -26,4 +27,4 @@
  *
  *  @return status of initialization (CLI_SUCCESS?CLI_ERROR)
  */
-FPFW_CLI_STATUS cli_power_init(ppower_service_interface_t p_interface);
+FPFW_CLI_STATUS cli_power_init(ppower_service_interface_t p_interface, fpfw_icc_base_ctx_t* p_icc_base_ctx);

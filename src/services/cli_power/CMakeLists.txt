@@ -26,12 +26,16 @@ target_link_libraries(
             ms::build_data
             ms::lib::corebits
             ms::lib::threadx
+            ms::lib::error_codes
+            ms::lib::icc_platform_defines
             ms::service::power
-            silibs::kng_silibs_platform
             fwlib.dfwk
             fwlib.service.cli
             fwlib.lib.assert
-            ms::lib::error_codes
+            fwlib.lib.interface.platform.dbgprint
+            fwlib.service.iccBase
+            silibs::kng_silibs_platform
+            
 )
 
 lint_target(${TARGET})

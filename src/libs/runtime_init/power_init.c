@@ -39,6 +39,7 @@ FPFW_INIT_COMPONENT(pwr_svc,
                                            "fuse_post_mesh",
                                            "atu_svc",
                                            "gpio_lib",
+                                           "icc_d2dmbx",
                                            "icc_die2die",
                                            "avs0_int",
                                            "avs1_int",
@@ -183,6 +184,7 @@ FPFW_INIT_COMPONENT(pwr_svc,
     if (power_config.platform_is_multi_die)
     {
         power_config.icc_d2d_ctx = fpfw_init_get_handle("icc_die2die");
+        power_config.icc_d2d_cli_ctx = fpfw_init_get_handle("icc_d2dmbx");
     }
 
     power_config.scp_avs_insts[AVS_BUS0] = (scp_avs_interface_t*)fpfw_init_get_handle("avs0_int");

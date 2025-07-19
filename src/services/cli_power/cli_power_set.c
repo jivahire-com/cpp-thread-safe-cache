@@ -28,15 +28,21 @@
 /* Structure storing the dictionary of sub-command string against its corresponding command id and callback function */
 /* For now, since the set functions are only dummy calls, the completion callbacks are set to NULL. To be updated (ADO: 1887411)*/
 const power_cli_sub_command_dictionary_element_t power_cli_set_sub_command_dictionary[] = {
-    {"cap",        NULL, POWER_IF_CMD_SET_CAP            },
-    {"desired",    NULL, POWER_IF_CMD_SET_DESIRED_PSTATE },
-    {"plimit",     NULL, POWER_IF_CMD_SET_PLIMIT         },
-    {"loopdis",    NULL, POWER_IF_CMD_SET_LOOP_DISABLES  },
-    {"minupdate",  NULL, POWER_IF_CMD_SET_MINUPDATE      },
-    {"nominal",    NULL, POWER_IF_CMD_SET_NOMINAL        },
-    {"racklimit",  NULL, POWER_IF_CMD_SET_RACK_LIMIT     },
-    {"forced",     NULL, POWER_IF_CMD_SET_FORCED         },
-    {"pstate_freq", NULL, POWER_IF_CMD_SET_PSTATE_FREQ },
+    {"cap",            NULL, POWER_IF_CMD_SET_CAP               },
+    {"desired",        NULL, POWER_IF_CMD_SET_DESIRED_PSTATE    },
+    {"plimit",         NULL, POWER_IF_CMD_SET_PLIMIT            },
+    {"loopdis",        NULL, POWER_IF_CMD_SET_LOOP_DISABLES     },
+    {"minupdate",      NULL, POWER_IF_CMD_SET_MINUPDATE         },
+    {"nominal",        NULL, POWER_IF_CMD_SET_NOMINAL           },
+    {"racklimit",      NULL, POWER_IF_CMD_SET_RACK_LIMIT        },
+    {"forced",         NULL, POWER_IF_CMD_SET_FORCED            },
+    {"pstate_freq",    NULL, POWER_IF_CMD_SET_PSTATE_FREQ       },
+    {"alarm",          NULL, POWER_IF_CMD_SET_ALARM_THRESHOLD   },
+    {"force_pmin",     NULL, POWER_IF_CMD_SET_FORCE_PMIN        },
+    {"soc_hot",        NULL, POWER_IF_CMD_SET_SOC_HOT           },
+    {"mem_hot",        NULL, POWER_IF_CMD_SET_MEM_HOT           },
+    {"therm_trip",     NULL, POWER_IF_CMD_SET_THERM_TRIP        },
+    {"curr_throttle",  NULL, POWER_IF_CMD_SET_CURR_THROTTLE     },
 };
 //clang-format on
 
@@ -126,7 +132,7 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
         }
 
         case POWER_IF_CMD_SET_LOOP_DISABLES: {
-            value = p_cli_request->fetch_data.pwrset_response_val.loopdis_bits; //p_cli_request->sub_command_args.pwrset_sub_command_args.loopdis_bits;
+            value = p_cli_request->fetch_data.pwrset_response_val.loopdis_params.loopdis_bits;
 
             printf("\n loop disables: %x (%s%s%s%s)\n",
                    value,
@@ -190,7 +196,31 @@ void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
                     (unsigned long)p_cli_request->fetch_data.pwrset_response_val.pstatefreq.frac_div);
             break;
         }
-
+        case POWER_IF_CMD_SET_ALARM_THRESHOLD: {
+            printf("pwr set alarm core[%d] Addr[0x%08x] Pex_grp[%d] alarm%c_cfg%d: alarm_thresh[%x] hist_thresh[%x] dual_die[%s]\n", 
+                   p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.core,
+                   p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.base_addr,
+                   p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.pex_group,
+                   p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.ab_selector,
+                   p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.alarm_id,
+                   p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.alarm_threshold,
+                   p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.hist_threshold,
+                   (p_cli_request->fetch_data.pwrset_response_val.alarm_cfg.dual_die ? "true" : "false"));
+            break;
+        }
+        case POWER_IF_CMD_SET_FORCE_PMIN:
+        case POWER_IF_CMD_SET_SOC_HOT:
+        case POWER_IF_CMD_SET_MEM_HOT:
+        case POWER_IF_CMD_SET_THERM_TRIP:
+            break;
+        case POWER_IF_CMD_SET_CURR_THROTTLE: {
+            printf("pwr set curr_throttle: core - %d, threshold_1 - %d threshold_2 - %d threshold_3 - %d\n",
+                   p_cli_request->fetch_data.pwrset_response_val.currthresh_params.core,
+                   p_cli_request->fetch_data.pwrset_response_val.currthresh_params.curr_threshold_1,
+                   p_cli_request->fetch_data.pwrset_response_val.currthresh_params.curr_threshold_2,
+                   p_cli_request->fetch_data.pwrset_response_val.currthresh_params.curr_threshold_3);
+            break;
+        }
         default:
             break;
         }

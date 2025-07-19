@@ -124,7 +124,6 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
     }
 
     FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
-
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &gpio_init_config};
 }
 

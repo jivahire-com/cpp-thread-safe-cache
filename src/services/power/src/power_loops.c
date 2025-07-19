@@ -26,7 +26,7 @@
 #define PWR_THREAD_PRIORITY          (10)
 #define PWR_THREAD_PREEMPT_THRESHOLD (10)
 
-#define PWR_STACK_SIZE         ((TX_MINIMUM_STACK) + ((2) * (FPFW_KB)))
+#define PWR_STACK_SIZE         ((TX_MINIMUM_STACK) + ((3) * (FPFW_KB)))
 #define PWR_QUEUE_ENTRIES      (15)
 #define PWR_IDLE_QUEUE_ENTRIES (5)
 

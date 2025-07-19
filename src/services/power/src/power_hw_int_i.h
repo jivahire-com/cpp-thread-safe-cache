@@ -66,6 +66,18 @@ typedef enum _power_pmin_type_t
     PM_FW_PMIN_CONTROL, // Firmware PMIN Control
 } power_pmin_type_t;
 
+/**
+ * @brief Enum for IO thermal trigger types
+ *  Used to set the IO thermal register to trigger SOC_HOT, MEM_HOT, or THERM_TRIP
+ */
+typedef enum _power_io_thermal_trigger_type_t
+{
+    SOC_HOT = 0,
+    MEM_HOT,
+    THERM_TRIP,
+    MAX_IO_THERMAL_TRIGGER_TYPE // This is used to define the size of the enum
+} power_io_thermal_trigger_type_t;
+
 // Callback function pointer types for update/success message handling
 typedef void (*power_hw_update_cb_t)(unsigned int core, uint8_t desired_pstate, uint8_t base_pstate, uint8_t throttle_pri, uint8_t boost_pri);
 typedef void (*power_hw_success_cb_t)(unsigned int core, uint8_t desired_pstate, uint8_t current_pstate);
@@ -74,6 +86,19 @@ typedef void (*power_hw_success_cb_t)(unsigned int core, uint8_t desired_pstate,
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @brief Sets the state of the thermal IO trigger.
+ * Can be used to assert or clear SOC_HOT, MEM_HOT, or THERM_TRIP.
+ *
+ * @param type   - type of thermal trigger to set
+ * @param state  - state to set (true/false)
+ * @note True asserts the trigger, false clears it.
+ *
+ * @return none
+ *
+ */
+void power_hw_set_thermal_io_state(power_io_thermal_trigger_type_t type, bool state);
 
 /**
  * @brief Sets force PMIN bit to force HW to minimum (perf) pstate
@@ -94,7 +119,6 @@ void power_hw_force_pmin(power_pmin_type_t type);
  *
  */
 void power_hw_clear_force_pmin(power_pmin_type_t type);
-
 /**
  * @brief Initializes core-specific power HW (dvfs, odcm, tile pvt, etc)
  *
@@ -281,6 +305,13 @@ void pwr_hw_vrs_init(void);
  *
  */
 void setup_forced_pstate(uintptr_t cluster_pex_base_addr, dvfs_config_t* dvfs_cfg, dvfs_vft_t* temp_vft, unsigned int core, uint8_t pstate);
+
+/**
+ * @brief Parses the DVFS throttle status register.
+ *
+ * @param reg_addr The address of the DVFS throttle status register.
+ */
+void parse_dvfs_throttle_status(uintptr_t reg_addr);
 
 bool all_requests_completed(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus);
 bool no_errors(avs_pwr_request_context_t* pwr_avs_request, uint8_t max_avs_bus);

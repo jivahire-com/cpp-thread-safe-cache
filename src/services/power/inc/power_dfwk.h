@@ -11,8 +11,12 @@
 
 /*----------- Nested includes ------------*/
 #include <DfwkDriver.h>
+#include <assert.h>
 #include <power_runconfig.h>
 #include <stdint.h>
+
+/*-- Symbolic Constant Macros (defines) --*/
+#define POWER_IF_ALARM_ID_MAX 14
 
 /*-------------- Typedefs ----------------*/
 
@@ -26,6 +30,11 @@ typedef enum {
     CLI_COMMANDS_POWER_STATUS,
     CLI_COMMANDS_POWER_LOG,
 } e_cli_power_command_id_t;
+
+typedef enum {
+    LOOP_DISABLE_MODE_SINGLE_DIE = 0,
+    LOOP_DISABLE_MODE_DUAL_DIE
+} loop_disable_mode_t;
 
 // struct for the power service/device
 typedef struct
@@ -81,17 +90,49 @@ struct _pstatefreq
     uint8_t pstate;                          // sets the forced pstate (0 - 31)
 };
 
+struct _loopdisparams
+{
+    uint16_t loopdis_bits;                   // sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)
+    loop_disable_mode_t mode;                            // sets the mode for loop disable (single/dual)
+};
+
+struct _alarmparams
+{
+    uintptr_t base_addr;
+    uint16_t alarm_threshold;        // sets the temperature threshold for power management
+    uint16_t hist_threshold;
+    uint8_t core;                    // 0-64
+    uint8_t alarm_id;                // 0 - 13
+    uint8_t pex_group;                   // 0 or 1, group selector
+    char ab_selector;                // Takes either 'a' or 'b'
+    bool all;                        // False - all , true - Core 
+    bool dual_die;                   // True - dual die, false - single die
+};
+
+struct _currthrottleparams
+{
+    bool all;                        // False - all , true - Core 
+    uint8_t core;                   
+    uint8_t curr_threshold_1;
+    uint8_t curr_threshold_2;
+    uint8_t curr_threshold_3;
+};
+
 typedef union 
 {
+    uint8_t      pmin_type;                      // set the pmin type (0 - 3)
+    bool         io_thermal;                     // set the iothermal reg to trigger SOC_HOT, MEM_HOT, THERM_TRIP
 	uint16_t     cap_val;                        // set the rack power cap (W)
 	struct      _desiredparams  desiredparams;   // sets OS desired pstate register
 	struct      _plimitparams  	plimitparams;         // sets plimit
-    uint16_t    loopdis_bits;                   // sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)
+    struct      _loopdisparams loopdis_params; // sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)
     uint16_t    minupdate_val;                  // sets the minimum plimit update per loop iteration, 0 disables    
     struct      _nominalparams  nominalparams;  // sets the nominal pstate used in loop (does not affect DVFS/ACPI)
     uint16_t    racklimit;                      // sets the rack limit gpio for simulated implementations  
     struct     _forcedparams    forcedparams;   // sets forced pstate and ldodacin
     struct     _pstatefreq      pstatefreq;     // sets forced frequency for testing/verification via (dco_frac, freq_ctrl, dco_div)
+    struct     _alarmparams     alarm_cfg;     // sets alarm & hist threshold for VR & Temp throttle
+    struct     _currthrottleparams currthresh_params; // sets current thresholds for throttling
 } _pwrset_subcommand_args;
 
 typedef struct _pwr_icc_cap_complete_payload_t {
@@ -105,12 +146,14 @@ typedef union
     pwr_icc_cap_complete_payload_t pwr_icc_cap_result; // set the rack power cap (W)
 	struct      _desiredparams  desiredparams;   // sets OS desired pstate register
 	struct      _plimitparams  	plimitparams;         // sets plimit
-    uint16_t    loopdis_bits;                   // sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)
+    struct      _loopdisparams loopdis_params; // sets loop disable bits (1-ctrl, 2-vrtelem, 4-pvttelem)
     uint16_t    minupdate_val;                  // sets the minimum plimit update per loop iteration, 0 disables    
     struct      _nominalparams  nominalparams;  // sets the nominal pstate used in loop (does not affect DVFS/ACPI)
     uint16_t    racklimit;                      // sets the rack limit gpio for simulated implementations  
     struct     _forcedparams    forcedparams;   // sets forced pstate and ldodacin  
     struct     _pstatefreq      pstatefreq;     // sets forced frequency for a particular pstate (used for testing/verification)
+    struct     _alarmparams     alarm_cfg;     // sets alarm & hist threshold for power management
+    struct     _currthrottleparams currthresh_params; // sets current thresholds for throttling
 } _pwrset_response_val;
 
 /* Structure for the async dfwk CLI request to the power interface */
@@ -136,7 +179,16 @@ typedef struct {
 
 } power_service_cli_request_t, *ppower_service_cli_request_t;
 
+typedef union _remote_pwrcli_request_union_t {
+    struct {
+        uint32_t icc_cmd_code;
+        power_if_cmd_t power_ext_if_cmd_id; // command ID for the request
+        _pwrset_subcommand_args pwrset_sub_command_args; // sub-command arguments for the request
+    };
+    uint32_t as_uint32[16];
+} remote_pwrcli_request_t, *p_remote_pwrcli_request_t;
 
+static_assert(sizeof(remote_pwrcli_request_t) == 64, "remote_pwrcli_request_t size must be 64 bytes");
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus

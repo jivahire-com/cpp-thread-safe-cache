@@ -279,7 +279,8 @@ typedef struct _power_service_config_t
     unsigned int platform_die_core_count;    // platform core count
     uint8_t num_vr;                          // max number of VRs (8 VRs on Die0, 2 VRs on Die1)
     power_vr_idx_t vr_idx_info;              // VR index    
-    void* icc_d2d_ctx;                       // icc d2d context
+    void* icc_d2d_ctx;                       // icc d2d context for power control loop
+    void* icc_d2d_cli_ctx;                   // icc d2d context for power cli
     bool platform_soc_power_support;         // true if soc power supported on platform
     bool platform_core_power_support;        // true if tile/core power supported on platform
     bool platform_is_multi_die;              // true if platform is multi-die
@@ -363,6 +364,12 @@ typedef enum
     POWER_IF_CMD_SET_NOMINAL,
     POWER_IF_CMD_SET_FORCED,
     POWER_IF_CMD_SET_PSTATE_FREQ,
+    POWER_IF_CMD_SET_ALARM_THRESHOLD,
+    POWER_IF_CMD_SET_FORCE_PMIN,
+    POWER_IF_CMD_SET_SOC_HOT,
+    POWER_IF_CMD_SET_MEM_HOT,
+    POWER_IF_CMD_SET_THERM_TRIP,
+    POWER_IF_CMD_SET_CURR_THROTTLE,
 
     //! All status commands
     POWER_IF_CMD_STATUS_CL,
@@ -377,8 +384,17 @@ typedef enum
     POWER_IF_CMD_STATUS_SELECTIONS,
     POWER_IF_CMD_STATUS_VCPU,
     POWER_IF_CMD_STATUS_WARMSTART,
+    POWER_IF_CMD_STATUS_FORCE_PMIN,
+    POWER_IF_CMD_STATUS_CORE,
+    POWER_IF_CMD_STATUS_DVFS_FSM,
+    POWER_IF_CMD_STATUS_DVFS_PLIMIT,
+    POWER_IF_CMD_STATUS_DVFS_CPPC,
+    POWER_IF_CMD_STATUS_CORE_PRIO,
+    POWER_IF_CMD_STATUS_PRIO_CNT,
+    POWER_IF_CMD_STATUS_VR_INST,
+    POWER_IF_CMD_STATUS_PSTATE2CPPC,
+    POWER_IF_CMD_STATUS_DVFS_THROT_SR,
 
-    
     //! All log commands
     POWER_IF_CMD_LOG_DUMP,
     POWER_IF_CMD_LOG_DDR,

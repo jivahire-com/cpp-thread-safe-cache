@@ -1017,6 +1017,29 @@ void power_hw_force_pmin(power_pmin_type_t type)
     }
 }
 
+void power_hw_set_thermal_io_state(power_io_thermal_trigger_type_t type, bool state)
+{
+    power_runconfig_t* config = power_runconfig_get();
+    FPFW_RUNTIME_ASSERT(type != MAX_IO_THERMAL_TRIGGER_TYPE);
+
+    vptr_scp_exp_csr_reg scp_exp_csr_regs_base = (vptr_scp_exp_csr_reg)config->p_sconfig->scp_exp_csr_base;
+
+    switch (type)
+    {
+    case SOC_HOT:
+        scp_exp_csr_regs_base->thermal_io_reg.soc_hot = state ? 1 : 0;
+        break;
+    case MEM_HOT:
+        scp_exp_csr_regs_base->thermal_io_reg.memory_hot = state ? 1 : 0;
+        break;
+    case THERM_TRIP:
+        scp_exp_csr_regs_base->thermal_io_reg.thermal_trip = state ? 1 : 0;
+        break;
+    default:
+        break;
+    }
+}
+
 // when the HW boots, this function can be used to capture initial state that would be delivered via update messages at runtime;
 // this is mainly for warmboot scenario where AP core is already running, but useful at cold boot, also
 void power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
@@ -1049,6 +1072,79 @@ void power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
         BUG_ASSERT_PARAM(status == DVFS_SUCCESS, status, 0);
         // call update callback with detail from this core's CPPC detail
         p_update_cb(core, dvfs_get_pstate_from_cppc(cppc_desired_perf), dvfs_get_pstate_from_cppc(cppc_base_perf), throttle_pri, boost_pri);
+    }
+}
+
+void parse_dvfs_throttle_status(uintptr_t reg_addr)
+{
+    uint32_t value = *((volatile uint32_t*)reg_addr);
+    printf("DVFS_THROT_SR register address: 0x%lx, value: 0x%" PRIx32 "\n", (unsigned long)reg_addr, value);
+
+    // Individual bit descriptions
+    const char* bit_descriptions[] = {
+        "adclkThrottle_Q",      // bit 0
+        "endAdclkThrottle_Q",   // bit 1
+        "startAdclkThrottle_Q", // bit 2
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,                  // bits 3-7 are a field
+        "currThrottle_Q",      // bit 8
+        "endCurrThrottle_Q",   // bit 9
+        "startCurrThrottle_Q", // bit 10
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,                  // bits 11-15 are a field
+        "tempThrottle_Q",      // bit 16
+        "endTempThrottle_Q",   // bit 17
+        "startTempThrottle_Q", // bit 18
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,                 // bits 19-23 are a field
+        "adClkThrottle",      // bit 24
+        "ODCM_cteAlarm",      // bit 25
+        "ODCM_cteAmt",        // bit 26
+        "DTS_tteAlarm",       // bit 27
+        "SYS_forcePmin_syncQ" // bit 28
+        // bits 29-31 are reserved
+    };
+
+    for (int i = 0; i <= 28; ++i)
+    {
+        if (bit_descriptions[i] && (value & (1 << i)))
+        {
+            printf("%s is SET\n", bit_descriptions[i]);
+        }
+    }
+
+    // Bit fields
+    uint8_t adclkThrottleTargetPn_Q = (value >> 3) & 0x1F;
+    if (adclkThrottleTargetPn_Q)
+    {
+        printf("adclkThrottleTargetPn_Q[4:0] = %u\n", adclkThrottleTargetPn_Q);
+    }
+
+    uint8_t currThrottleTargetPn_Q = (value >> 11) & 0x1F;
+    if (currThrottleTargetPn_Q)
+    {
+        printf("currThrottleTargetPn_Q[4:0] = %u\n", currThrottleTargetPn_Q);
+    }
+
+    uint8_t tempThrottleTargetPn_Q = (value >> 19) & 0x1F;
+    if (tempThrottleTargetPn_Q)
+    {
+        printf("tempThrottleTargetPn_Q[4:0] = %u\n", tempThrottleTargetPn_Q);
+    }
+
+    uint8_t reserved = (value >> 29) & 0x7;
+    if (reserved != 0)
+    {
+        printf("Reserved bits [31:29] = %u (Expected 000)\n", reserved);
     }
 }
 

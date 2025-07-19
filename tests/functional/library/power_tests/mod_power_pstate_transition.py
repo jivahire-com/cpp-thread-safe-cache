@@ -163,7 +163,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
         command="pwr cfg allowed_max_plimit"
         core_com_channel.write_line(write_string=command)
         try:
-            command_response_cli = core_com_channel.read_until(key="Allowed plimit max.: 31", timeout_seconds=300)
+            command_response_cli = core_com_channel.read_until(key="Allowed plimit max: 31", timeout_seconds=300)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr cfg allowed_max_plimit cmd status: Fail", msg="Test Fail", _is_error=True)
@@ -175,7 +175,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
         command="pwr cfg knobs ctrlloop"
         core_com_channel.write_line(write_string=command)
         try:
-            command_response_cli = core_com_channel.read_until(key="Allwd plimit max.: 31", timeout_seconds=300)
+            command_response_cli = core_com_channel.read_until(key="Allwd plimit max : 31", timeout_seconds=300)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr cfg knobs ctrlloop cmd status: Fail", msg="Test Fail", _is_error=True)

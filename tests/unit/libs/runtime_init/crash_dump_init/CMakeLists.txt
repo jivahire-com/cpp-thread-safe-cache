@@ -97,6 +97,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         fwlib.lib.init
         fwlib.lib.crashDump
+        fwlib.service.pldm
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::crash_dump
@@ -130,9 +131,9 @@ mock_target(${TARGET}
     crash_dump_register_dump
     crash_dump_config_icc
     exception_handler_init
+    fpfw_pldm_service_register_platform_event_ready_notification
     idsw_get_die_id
     idsw_get_cpu_type
     idsw_get_platform_sdv
-    system_info_is_warm_start
     crash_dump_transfer_full_dump_to_bmc
 )

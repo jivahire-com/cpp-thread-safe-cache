@@ -16,6 +16,7 @@ set (SOURCES
         src/crash_dump_payload_threadx.c
         src/crash_dump_pldm.c
         src/crash_dump_status.c
+        src/crash_dump_stream.c
         src/crash_dump_events.c
 )
 
@@ -34,8 +35,10 @@ target_link_libraries(${TARGET}
         fwlib.service.iccBase
         ms::lib::debug
         ms::lib::error_codes
+        ms::lib::event_trace::trace
         ms::lib::threadx
         ms::service::atu_service
+        silibs::atu
         silibs::sdm_command_desc
         silibs::semaphore
     PRIVATE
@@ -54,7 +57,6 @@ target_link_libraries(${TARGET}
         ms::lib::icc_platform_defines
         ms::lib::register_headers
         ms::lib::system_info
-        ms::lib::event_trace::trace
         silibs::gpio
         silibs::icc_mhu
         silibs::idhw

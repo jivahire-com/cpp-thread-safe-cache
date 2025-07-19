@@ -56,3 +56,19 @@ void cd_gpio_assert_cd_available(bool available)
         gpio_set_output(GPIO_CD_AVAILABLE, !available);
     }
 }
+
+/**
+ * @brief Check if Crash Dump is available
+ *
+ * @return true if crash dump is available, otherwise false.
+ */
+bool cd_gpio_is_cd_available()
+{
+    uint32_t available = 0;
+    if (SILIBS_SUCCESS == gpio_get_input(GPIO_CD_AVAILABLE, &available))
+    {
+        return !available;
+    }
+
+    return false;
+}

@@ -57,6 +57,8 @@ static_assert(CRASH_DUMP_MINI_HSP_ADDR + CRASH_DUMP_MINI_HSP_SIZE - 1 <= SCP_EXP
 // |  DIE0 CDED Crash Dump   | |  DIE1 CDED Crash Dump   |
 // +-------------------------+ +-------------------------+  CRASH_DUMP_FULL_SDM_ADDR (CRASH_DUMP_FULL_SDM_SIZE)
 // |  DIE0 SDM Crash Dump    | |  DIE1 SDM Crash Dump    |
+// +-------------------------+ +-------------------------+  CRASH_DUMP_FULL_KMP_ADDR (CRASH_DUMP_FULL_KMP_SIZE)
+// |  DIE0 KMP Crash Dump    | |  DIE1 KMP Crash Dump    |
 // +-------------------------+ +-------------------------+
 #define CRASH_DUMP_FULL_SIZE_PER_DIE    MSCP_ATU_AP_WINDOW_CRASH_DUMP_DIE_SIZE
 #define CRASH_DUMP_FULL_SIZE_PER_CORE   CD_ALIGN_DOWN(CRASH_DUMP_FULL_SIZE_PER_DIE / CRASH_DUMP_CORE_NUM, DUMP_ALIGNMENT)
@@ -80,7 +82,14 @@ static_assert(sizeof(crash_dump_header_t) <= CRASH_DUMP_FULL_HEADER_SIZE, "crash
 
 #define CRASH_DUMP_FULL_SDM_ADDR    CD_ALIGN_BY(CRASH_DUMP_FULL_CDED_ADDR + CRASH_DUMP_FULL_CDED_SIZE, DUMP_ALIGNMENT)
 #define CRASH_DUMP_FULL_SDM_SIZE    CRASH_DUMP_FULL_SIZE_PER_CORE
-static_assert(CRASH_DUMP_FULL_SDM_ADDR + CRASH_DUMP_FULL_SDM_SIZE - 1 <= MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR, "Full crash dump memory region exceeds MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR");
+
+#define CRASH_DUMP_FULL_KMP_ADDR    CD_ALIGN_BY(CRASH_DUMP_FULL_SDM_ADDR + CRASH_DUMP_FULL_SDM_SIZE, DUMP_ALIGNMENT)
+#define CRASH_DUMP_FULL_KMP_SIZE    CRASH_DUMP_FULL_SIZE_PER_CORE
+
+static_assert(CRASH_DUMP_FULL_KMP_ADDR + CRASH_DUMP_FULL_KMP_SIZE - 1 <= MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR, "Full crash dump memory region exceeds MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR");
+
+#define CRASH_DUMP_CORE_ADDRESS(base_addr, core_id) \
+    ((uint8_t*)(intptr_t)(CD_ALIGN_BY((base_addr), DUMP_ALIGNMENT) + ((core_id) * CRASH_DUMP_FULL_SIZE_PER_CORE)))
 
 /*-------------- Typedefs ----------------*/
 

@@ -7,6 +7,7 @@ set(SOURCES
     test_crash_dump.cpp
     test_crash_dump_cli.cpp
     test_crash_dump_mocks.cpp
+    test_crash_dump_transfer.cpp
 )
 
 # Compile test
@@ -80,6 +81,8 @@ mock_target(${TARGET}
     CdRegisterAddress32PointerArray
     CdRegisterCallback
     CdRegisterRegisterSet
+    atu_map
+    atu_unmap
     atu_svc_accel_atu_addr
     fpfw_icc_base_recv
     fpfw_icc_base_recv_sync
@@ -91,6 +94,8 @@ mock_target(${TARGET}
     _tx_mutex_put
     _tx_thread_sleep
     gpio_set_output
+    gpio_get_input
+    get_crash_dump_region_address
     crash_dump_context
     initialize_semaphore
     memcpy
@@ -101,8 +106,6 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     idsw_get_platform_sdv
     crash_dump_get_is_dump_complete
-    crash_dump_is_dump_complete
     crash_dump_get_dump_size
     fpfw_pldm_service_raise_platform_event
-    FPFwCDMemcpyGlobalToLocal
 )

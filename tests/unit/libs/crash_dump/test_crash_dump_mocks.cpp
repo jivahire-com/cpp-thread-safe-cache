@@ -57,7 +57,6 @@ void crash_dump_wait_forever()
 
 crash_dump_context_t* __wrap_crash_dump_context()
 {
-    printf(" __wrap_crash_dump_context called\n");
     return mock_type(crash_dump_context_t*);
 }
 
@@ -443,6 +442,17 @@ int __wrap_gpio_set_output(uint32_t gpio_pin_id, uint32_t level)
 {
     check_expected(gpio_pin_id);
     check_expected(level);
+
+    function_called();
+
+    return 0;
+}
+
+int __wrap_gpio_get_input(uint32_t gpio_ctrl_pin_id, uint32_t* level)
+{
+    check_expected(gpio_ctrl_pin_id);
+    assert_non_null(level);
+    *level = mock_type(uint32_t);
 
     function_called();
 

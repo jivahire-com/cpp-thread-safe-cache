@@ -365,5 +365,6 @@ void crash_dump_transfer_full_dump_to_bmc()
         // HSP will transfer mini dump to BMC
         return;
     }
+
     crash_dump_pldm_transfer_dump();
 }

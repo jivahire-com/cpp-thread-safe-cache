@@ -12,9 +12,11 @@
 #include <addressblock0_regs.h>      // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
 #include <bug_check.h>               // for BUG_CHECK
 #include <crash_dump.h>              // for crash_dump_init
+#include <crash_dump_events.h>       // for CRASH_DUMP_ET
 #include <crash_dump_memory.h>       // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE
 #include <exception_handler.h>       // for exception_handler_init
 #include <fpfw_init.h>               // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
+#include <fpfw_pldm_service.h>       // for pldm_platform_event_ready_notification
 #include <idhw.h>                    // for idhw_get_cpu_type, idhw_get_die_id
 #include <idsw.h>                    // for idsw_get_cpu_type, idsw_get_die_id
 #include <idsw_kng.h>                // for DIE_0, DIE_1
@@ -113,11 +115,28 @@ FPFW_INIT_COMPONENT(cd_mhu_loc, FPFW_INIT_DEPENDENCIES("cd_init", "icc_mscp2mscp
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
-FPFW_INIT_COMPONENT(cd_pldm, FPFW_INIT_DEPENDENCIES("cd_init", "icc_hspmbx"))
+
+static void pldm_platform_event_ready_callback(uint16_t event_id, void* context)
 {
-    if (system_info_is_warm_start())
+    FPFW_UNUSED(event_id);
+    FPFW_UNUSED(context);
+
+    CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_PLDM_READY);
+    crash_dump_transfer_full_dump_to_bmc();
+}
+
+FPFW_INIT_COMPONENT(cd_pldm, FPFW_INIT_DEPENDENCIES("cd_init", "pldm"))
+{
+    if (idsw_get_die_id() == DIE_0)
     {
-        crash_dump_transfer_full_dump_to_bmc();
+        pldm_platform_event_ready_notification ready_notification = {
+            .CallBack = pldm_platform_event_ready_callback,
+            .context = NULL, // No context needed for this callback
+        };
+
+        fpfw_status_t status = fpfw_pldm_service_register_platform_event_ready_notification(&ready_notification);
+        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
     }
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

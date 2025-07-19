@@ -16,44 +16,34 @@
 #include <modules/CdDumpDescriptor.h> // for _FPFwCdDumpPriority
 #include <silibs_common.h>
 #include <stddef.h> // for NULL
-#include <string.h>
 #include <tx_api.h> // for TX_THREAD, ULONG
 
 extern "C" {
-#include <../src/crash_dump_accel.h> // for crash_dump_copy_accel_cd_file
-#include <../src/crash_dump_context.h>
+#include <../src/crash_dump_accel.h>     // for crash_dump_copy_accel_cd_file
 #include <../src/crash_dump_gpio.h>      // for cd_gpio_assert_cd_available, cd_gpio_as...
 #include <../src/crash_dump_icc.h>       // for crash_dump_transfer_full_dump_to_bmc
 #include <../src/crash_dump_overrides.h> // for inMemoryOverride
 #include <../src/crash_dump_payload.h>   // for CD_THREADX_DATA, crash_dump_capture_threadx
-#include <../src/crash_dump_pldm.h>
-#include <../src/crash_dump_status.h> // for crash_dump_dump_status
-#include <CrashDump.h>                // for FPFW_PLDM_CC_SUCCESS
-#include <FpFwUtils.h>                // for FPFW_UNUSED
-#include <cmsis_m7.h>                 // for SCB
-#include <crash_dump.h>               // for crash_dump_init
-#include <crash_dump_dfwk.h>          // for crash_dump_device_t, crash_dump_interface_t
-#include <crash_dump_memory.h>        // for CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE...
-#include <fpfw_pldm_service.h>        // pldm service
-#include <icc_platform_defines.h>     // for accel_cd_addr_msg
-#include <kng_icc_shared.h>           // for ICC_SIGNAL_CRASH_DUMP_COLLECT
-#include <memory_map/ddrss_reserved_regions.h>
-#include <modules/CdDumpManager.h>
-#include <modules/CdMemory.h>
-#include <nvic.h> // for NVIC_STATUS_SUCCESS
-#include <platform_management_component/pldm_oem_event_types.h>
-#include <sdm_ext_cfg_regs.h>     // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
-#include <silibs_platform_mock.h> // for mmio_set_mock_data
-#include <startup_shutdown_ssi.h> // for sos_register_ssi
+#include <../src/crash_dump_status.h>    // for crash_dump_dump_status
+#include <cmsis_m7.h>                    // for SCB
+#include <crash_dump.h>                  // for crash_dump_init
+#include <crash_dump_dfwk.h>             // for crash_dump_device_t, crash_dump_interface_t
+#include <crash_dump_memory.h>           // for CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE...
+#include <icc_platform_defines.h>        // for accel_cd_addr_msg
+#include <kng_icc_shared.h>              // for ICC_SIGNAL_CRASH_DUMP_COLLECT
+#include <nvic.h>                        // for NVIC_STATUS_SUCCESS
+#include <sdm_ext_cfg_regs.h>            // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
+#include <silibs_platform_mock.h>        // for mmio_set_mock_data
+#include <startup_shutdown_ssi.h>        // for sos_register_ssi
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CD_DEFAULT_MEM_POOL_SIZE 1024
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
 extern int init_crash_dump_context(void** pContext);
-static pldm_platform_event_config_t* captured_event;
-static pldm_platform_event_notification* captured_notif;
+
 /*-- Declarations (Statics and globals) --*/
 extern uint8_t __stack_start__;
 extern uint8_t __stack_end__;
@@ -73,67 +63,14 @@ extern jmp_buf cd_test_setjmp_context;
 
 extern DFWK_ASYNC_REQUEST_DISPATCH static_dispatch_routine;
 extern VOID (*static_timer_cb)(ULONG id);
-extern bool transfer_completed;
-void crash_dump_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* context);
-void crash_dump_transfer_dump_platform_event_cb(void* pCtx, void* dest, size_t offset, size_t numBytes);
+
 bool __real_crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
 bool __use_real_crash_dump_get_is_dump_complete = false;
-bool __use_real_crash_dump_is_dump_complete = false;
-bool __real_crash_dump_is_dump_complete(uint8_t die_id, crash_dump_core_t core_id);
-bool __use_real_crash_dump_get_dump_size = false;
-size_t __real_crash_dump_get_dump_size(uint8_t die_id, crash_dump_core_t core_id);
+
 /*------------- Functions ----------------*/
 //
 // Mocks
 //
-
-bool __wrap_crash_dump_is_dump_complete(uint8_t die_id, crash_dump_core_t core_id)
-{
-    FPFW_UNUSED(die_id);
-    FPFW_UNUSED(core_id);
-    if (__use_real_crash_dump_is_dump_complete)
-    {
-        printf(" __real_crash_dump_is_dump_complete\n");
-        return __real_crash_dump_is_dump_complete(die_id, core_id);
-    }
-    printf(" __wrap_crash_dump_is_dump_complete\n");
-    return mock_type(bool);
-}
-size_t __wrap_crash_dump_get_dump_size(uint8_t die_id, crash_dump_core_t core_id)
-{
-    FPFW_UNUSED(die_id);
-    FPFW_UNUSED(core_id);
-    if (__use_real_crash_dump_get_dump_size)
-    {
-        printf(" __real_crash_dump_get_dump_size\n");
-        return __real_crash_dump_get_dump_size(die_id, core_id);
-    }
-    printf(" __wrap_crash_dump_get_dump_size\n");
-    return mock_type(size_t);
-}
-
-fpfw_status_t __wrap_fpfw_pldm_service_raise_platform_event(pldm_platform_event_config_t* event,
-                                                            pldm_platform_event_notification* notif)
-{
-    printf("  __wrap_fpfw_pldm_service_raise_platform_event\n");
-    captured_event = event;
-    captured_notif = notif;
-    FPFW_UNUSED(event);
-    FPFW_UNUSED(notif);
-    return FPFW_STATUS_SUCCESS;
-}
-
-void __wrap_FPFwCDMemcpyGlobalToLocal(void* memAPIs, void* dest, uint64_t src, size_t size)
-{
-    printf(" __wrap_fpfw_pldm_service_raise_platform_event called\n");
-    FPFW_UNUSED(memAPIs);
-    FPFW_UNUSED(dest);
-    FPFW_UNUSED(src);
-    FPFW_UNUSED(size);
-    function_called();
-    printf("FPFwCDMemcpyGlobalToLocal called\n");
-}
-
 bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
 {
     assert_true(start_addr <= end_addr);
@@ -379,12 +316,6 @@ void set_expectations_crash_dump_register_default_registers(const core_register_
     expect_value(__wrap_CdRegisterMMIORegisterSet, regAddress, &SCB->CFSR);
     expect_value(__wrap_CdRegisterMMIORegisterSet, regCount, 1);
     expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
-}
-void gpio_set_output(int gpio_pin_id, int level)
-{
-
-    (void)gpio_pin_id;
-    (void)level;
 }
 
 //
@@ -1949,178 +1880,16 @@ TEST_FUNCTION(test_crash_dump_dump, nullptr, nullptr)
     bool is_transfering = crash_dump_get_is_dump_transferring(&type_context);
     assert_true(is_transfering);
 }
-TEST_FUNCTION(test_transfer_not_started, nullptr, nullptr)
+
+TEST_FUNCTION(test_cd_gpio_is_cd_available, nullptr, nullptr)
 {
-    will_return(__wrap_crash_dump_is_dump_complete, false);
-    // Arrange: full-dump context in-use
-    static crash_dump_header_t header = {.status = CRASH_DUMP_IN_TRANSFER};
-    static crash_dump_type_context_t type_ctx = {.type = CRASH_DUMP_TYPE_FULL, .header = &header};
-    static crash_dump_context_t ctx;
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-    will_return(__wrap_crash_dump_context, &ctx);
-    // Return our test context on every call
-    // will_return_always(__wrap_crash_dump_context, &_pldm_test_ctx);
-    //  Silence any unexpected memcpy calls
+    // Set up expectations
+    expect_function_call(__wrap_gpio_get_input);
+    will_return(__wrap_gpio_get_input, true);
+    expect_value(__wrap_gpio_get_input, gpio_ctrl_pin_id, 0x0603); // MSCP_EXP_GPIO_6 | GPIO_CD_AVAILABLE (3)
 
-    // Act
-    crash_dump_pldm_transfer_dump();
-
-    // Assert no transfer occurred
-    assert_false(crash_dump_pldm_transfer_completed());
-}
-TEST_FUNCTION(test_transfer_and_callbacks, nullptr, nullptr)
-{
-
-    // Arrange: full-dump context and stub memAPIs
-    will_return(__wrap_crash_dump_is_dump_complete, false);
-    static crash_dump_header_t header = {.status = CRASH_DUMP_IN_TRANSFER};
-    static crash_dump_type_context_t type_ctx = {.type = CRASH_DUMP_TYPE_FULL, .header = &header};
-    static crash_dump_context_t ctx;
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-    will_return_always(__wrap_crash_dump_context, &ctx);
-    // Return our test context on every call
-    // will_return_always(__wrap_crash_dump_context, &_pldm_test_ctx); //
-    // :contentReference[oaicite:1]{index=1} Silence any unexpected memcpy during PLDM transfer
-
-    // Act: kick off the PLDM transfer
-    crash_dump_pldm_transfer_dump();
-    assert_false(crash_dump_pldm_transfer_completed());
-}
-
-TEST_FUNCTION(test_pldm_transfer_already_completed, nullptr, nullptr)
-{
-    static crash_dump_context_t ctx;
-    will_return(__wrap_crash_dump_context, &ctx);
-    will_return(__wrap_crash_dump_is_dump_complete, true);
-    will_return(__wrap_crash_dump_get_dump_size, 128);
-    expect_function_call(__wrap_gpio_set_output);
-    expect_any(__wrap_gpio_set_output, gpio_pin_id);
-    expect_any(__wrap_gpio_set_output, level);
-    static crash_dump_header_t header = {.status = CRASH_DUMP_IN_TRANSFER};
-    static crash_dump_type_context_t type_ctx = {.type = CRASH_DUMP_TYPE_FULL, .header = &header};
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-
-    will_return_always(__wrap_crash_dump_context, &ctx);
-
-    // expect_function_call_any(__wrap_fpfw_pldm_service_raise_platform_event);
-
-    expect_any(__wrap_wait_for_semaphore, id);
-    expect_any(__wrap_wait_for_semaphore, key);
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_any(__wrap_release_semaphore, id);
-    expect_function_call(__wrap_release_semaphore);
-    crash_dump_pldm_transfer_dump();
-    assert_false(crash_dump_pldm_transfer_completed());
-}
-TEST_FUNCTION(test_pldm_transfer_bad_header, nullptr, nullptr)
-{
-    will_return(__wrap_crash_dump_is_dump_complete, false);
-    static crash_dump_header_t header = {.status = CRASH_DUMP_IN_TRANSFER};
-    static crash_dump_type_context_t type_ctx = {.type = CRASH_DUMP_TYPE_FULL, .header = &header};
-    static crash_dump_context_t ctx;
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-    will_return_always(__wrap_crash_dump_context, &ctx);
-    // will_return_always(__wrap_crash_dump_context, &_pldm_test_ctx);
-
-    crash_dump_pldm_transfer_dump();
-    assert_false(crash_dump_pldm_transfer_completed());
-}
-// --- Directly test PLDM transfer completion callback (success) ---
-TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete_success, nullptr, nullptr)
-{
-
-    static crash_dump_header_t header = {.status = CRASH_DUMP_IN_TRANSFER};
-    static crash_dump_type_context_t type_ctx = {.type = CRASH_DUMP_TYPE_FULL, .header = &header};
-    static crash_dump_context_t ctx;
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-    expect_any(__wrap_wait_for_semaphore, id);
-    expect_any(__wrap_wait_for_semaphore, key);
-    expect_function_call(__wrap_wait_for_semaphore);
-
-    expect_any(__wrap_release_semaphore, id);
-    expect_function_call(__wrap_release_semaphore);
-
-    crash_dump_pldm_on_ppe_complete(FPFW_PLDM_CC_SUCCESS, &ctx);
-
-    assert_true(header.status == CRASH_DUMP_IN_USE);
-}
-
-// --- Directly test PLDM transfer completion callback (failure) ---
-TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete_failure, nullptr, nullptr)
-{
-
-    static crash_dump_header_t header = {.status = CRASH_DUMP_IN_TRANSFER};
-    static crash_dump_type_context_t type_ctx = {.type = CRASH_DUMP_TYPE_FULL, .header = &header};
-    static crash_dump_context_t ctx;
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-    expect_any(__wrap_wait_for_semaphore, id);
-    expect_any(__wrap_wait_for_semaphore, key);
-    expect_function_call(__wrap_wait_for_semaphore);
-
-    expect_any(__wrap_release_semaphore, id);
-    expect_function_call(__wrap_release_semaphore);
-
-    crash_dump_pldm_on_ppe_complete(FPFW_PLDM_CC_ERROR, &ctx);
-
-    assert_true(header.status == CRASH_DUMP_IN_USE);
-}
-
-// --- Test the memory copy callback actually calls memcpy ---
-TEST_FUNCTION(test_crash_dump_pldm_memcpy_callback, nullptr, nullptr)
-{
-    static crash_dump_header_t header = {.status = CRASH_DUMP_IN_TRANSFER};
-    static crash_dump_type_context_t type_ctx = {.type = CRASH_DUMP_TYPE_FULL, .header = &header};
-    static crash_dump_context_t ctx;
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-
-    expect_function_call(__wrap_FPFwCDMemcpyGlobalToLocal);
-
-    uint8_t dummy_dest[16] = {0};
-    crash_dump_transfer_dump_platform_event_cb(&ctx, dummy_dest, 0, sizeof(dummy_dest));
-}
-
-TEST_FUNCTION(test_crash_dump_pldm_memcpy_callback_null, nullptr, nullptr)
-{
-
-    crash_dump_transfer_dump_platform_event_cb(nullptr, nullptr, 0, 0);
-}
-TEST_FUNCTION(test_real_crash_dump_is_dump_complete, nullptr, nullptr)
-{
-    __use_real_crash_dump_is_dump_complete = true;
-    static DUMP_HEADER header = {};
-    static crash_dump_type_context_t type_ctx = {.type = CRASH_DUMP_TYPE_FULL};
-    static crash_dump_context_t ctx;
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-
-    will_return_always(__wrap_crash_dump_context, &ctx);
-    expect_function_call(__wrap_FPFwCDMemcpyGlobalToLocal);
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = NULL;
-    bool is_completed = crash_dump_is_dump_complete(0, CRASH_DUMP_CORE_MCP);
-    assert_false(is_completed);
-
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-    header.Magic = 0x12345678;
-    is_completed = crash_dump_is_dump_complete(0, CRASH_DUMP_CORE_MCP);
-    assert_false(is_completed);
-    __use_real_crash_dump_is_dump_complete = false;
-}
-TEST_FUNCTION(test_real_crash_dump_get_dump_size, nullptr, nullptr)
-{
-    __use_real_crash_dump_get_dump_size = true;
-    static DUMP_HEADER header = {};
-    static crash_dump_type_context_t type_ctx = {.type = CRASH_DUMP_TYPE_FULL};
-    static crash_dump_context_t ctx;
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-
-    will_return_always(__wrap_crash_dump_context, &ctx);
-    expect_function_call(__wrap_FPFwCDMemcpyGlobalToLocal);
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = NULL;
-    size_t size = crash_dump_get_dump_size(0, CRASH_DUMP_CORE_MCP);
-    assert_int_equal(size, 0);
-    ctx.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_ctx;
-    header.FileSize = 0;
-    size = crash_dump_get_dump_size(0, CRASH_DUMP_CORE_MCP);
-    assert_int_equal(size, 0);
-    __use_real_crash_dump_get_dump_size = false;
+    // Call API under test
+    bool is_available = cd_gpio_is_cd_available();
+    assert_false(is_available);
 }
 }

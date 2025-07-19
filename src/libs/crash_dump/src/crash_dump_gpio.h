@@ -19,3 +19,5 @@
 void cd_gpio_assert_cd_in_progress(bool in_progress);
 
 void cd_gpio_assert_cd_available(bool available);
+
+bool cd_gpio_is_cd_available();

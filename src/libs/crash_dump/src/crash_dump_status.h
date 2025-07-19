@@ -57,19 +57,3 @@ void crash_dump_dump_status(crash_dump_type_context_t *type_context);
  * @param state Desired state of the accelerator.
  */
 void crash_dump_update_accel_state(ACCEL_ID accel_type, crash_dump_core_state_t state);
-
-/*-------- Function Prototypes -----------*/
-/**
- * Returns DDR crash dump size
- *
- * @return uint32_t
- *      Crash dump size
- */
-uint32_t crash_dump_get_dump_size(uint8_t die_id, crash_dump_core_t core_id);
-/**
- * Returns whether dump is complete
- *
- * @return bool
- *      Is dump complete
- */
-bool crash_dump_is_dump_complete(uint8_t die_id, crash_dump_core_t core_id);

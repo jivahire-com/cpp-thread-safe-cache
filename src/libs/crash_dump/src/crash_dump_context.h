@@ -9,7 +9,9 @@
 #pragma once
 
 /*---------- Nested Includes -------------*/
+#include <atu_lib.h>    // for atu_map_entry_t
 #include <crash_dump.h> // for crash_dump_context_t
+#include <idsw_kng.h>   // for KNG_DIE_ID
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -23,3 +25,10 @@
  */
 void set_crash_dump_context(crash_dump_context_t* ctx);
 
+/**
+ * @brief Get the Crash Dump memory region address for a specific DIE and core.
+ *        This helps to make mock for unit tests.
+ *
+ * @return Pointer to crash dump raw buffer.
+ */
+uint8_t* get_crash_dump_region_address(atu_map_entry_t* die1_entry, KNG_DIE_ID die_id, crash_dump_core_t core_id);

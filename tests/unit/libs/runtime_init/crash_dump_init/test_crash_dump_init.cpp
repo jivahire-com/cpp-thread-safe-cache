@@ -18,6 +18,9 @@ extern "C" {
 #include <crash_dump_dfwk.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
+#if defined(MCP_RUNTIME_INIT)
+    #include <fpfw_pldm_service.h>
+#endif
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <kng_error.h>
@@ -139,16 +142,28 @@ bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
 
     return mock_type(bool);
 }
+
 #if defined(MCP_RUNTIME_INIT)
-bool __wrap_system_info_is_warm_start()
-{
-    return mock_type(bool);
-}
 void __wrap_crash_dump_transfer_full_dump_to_bmc()
 {
     function_called();
 }
+
+PlatformEventReadyNotificationCb __wrap_pldm_platform_event_ready_callback = NULL;
+
+fpfw_status_t __wrap_fpfw_pldm_service_register_platform_event_ready_notification(pldm_platform_event_ready_notification* p_notification)
+{
+    assert_non_null(p_notification);
+    assert_non_null(p_notification->CallBack);
+
+    __wrap_pldm_platform_event_ready_callback = p_notification->CallBack;
+
+    function_called();
+
+    return FPFW_STATUS_SUCCESS;
+}
 #endif
+
 #if defined(SCP_RUNTIME_INIT)
 void __wrap_crash_dump_device_initialize(pcrash_dump_device_t device, PDFWK_SCHEDULE schedule)
 {
@@ -293,13 +308,17 @@ TEST_FUNCTION(test_cd_hsp, nullptr, nullptr)
 #if defined(MCP_RUNTIME_INIT)
 TEST_FUNCTION(test_cd_bmc, nullptr, nullptr)
 {
-    will_return_always(__wrap_system_info_is_warm_start, true);
-    expect_function_call(__wrap_crash_dump_transfer_full_dump_to_bmc);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    expect_function_call(__wrap_fpfw_pldm_service_register_platform_event_ready_notification);
     // Check dependencies
     assert_string_equal("cd_init", _fpfw_component_cd_pldm.children[0]);
-    assert_string_equal("icc_hspmbx", _fpfw_component_cd_pldm.children[1]);
+    assert_string_equal("pldm", _fpfw_component_cd_pldm.children[1]);
 
     _fpfw_component_cd_pldm.init_fn();
+
+    expect_function_call(__wrap_crash_dump_transfer_full_dump_to_bmc);
+    __wrap_pldm_platform_event_ready_callback(0, NULL);
 }
 #endif
 #if defined(SCP_RUNTIME_INIT)

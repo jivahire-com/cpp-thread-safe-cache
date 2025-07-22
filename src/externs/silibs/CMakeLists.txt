@@ -16,3 +16,6 @@ if (NOT silibs_POPULATED)
 endif()
 
 add_subdirectory(libraries)
+
+file(COPY ${CMAKE_SOURCE_DIR}/.externs/repo/silibs/soc_fw_shared/include/cper_descriptors
+     DESTINATION ${CMAKE_BINARY_DIR}/cper_descriptors)

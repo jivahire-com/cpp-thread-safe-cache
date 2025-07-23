@@ -373,6 +373,10 @@ static void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
         pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_device_id = config_get_sdm_pf_device_id().pf_pci_t0_device_id[die_id];
         pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_int_pin = config_get_sdm_pf_int_pin().pf_pci_t0_int_pin[die_id];
         pre_pcie_cfg->rcec_pci_t0_cfg.pci_t0_int_pin = config_get_sdm_rcec_int_pin().rcec_pci_t0_int_pin[die_id];
+        /* Overwriting the SDM VF's - Subsystem ID and Device ID */
+        pre_pcie_cfg->rciep_pci_t0_vf_cfg.pci_t0_subsystem_id =
+            config_get_sdm_pf_subsystem_id().pf_pci_t0_subsystem_id[die_id];
+        pre_pcie_cfg->sriov_vf_dev_id = config_get_sdm_pf_subsystem_id().pf_pci_t0_subsystem_id[die_id];
         pre_pcie_cfg->tee_io_supp = config_get_sdm_tee_io_supp().tee_io_supp[die_id];
         pre_pcie_cfg->dis_pri = config_get_sdm_dis_pri().dis_pri[die_id];
         pre_pcie_cfg->allow_gpa = config_get_sdm_allow_gpa().allow_gpa[die_id];
@@ -407,8 +411,10 @@ static void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
         pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_device_id = config_get_cded_pf_device_id().pf_pci_t0_device_id[die_id];
         pre_pcie_cfg->rciep_pci_t0_pf_cfg.pci_t0_int_pin = config_get_cded_pf_int_pin().pf_pci_t0_int_pin[die_id];
         pre_pcie_cfg->rcec_pci_t0_cfg.pci_t0_int_pin = config_get_cded_rcec_int_pin().rcec_pci_t0_int_pin[die_id];
-        /*Overwriting the CDED VF device ID*/
-        pre_pcie_cfg->sriov_vf_dev_id = CDED_PCI_DEVICE_ID;
+        /* Overwriting the CDED VF's - Subsystem ID and Device ID */
+        pre_pcie_cfg->rciep_pci_t0_vf_cfg.pci_t0_subsystem_id =
+            config_get_cded_pf_subsystem_id().pf_pci_t0_subsystem_id[die_id];
+        pre_pcie_cfg->sriov_vf_dev_id = config_get_cded_pf_subsystem_id().pf_pci_t0_subsystem_id[die_id];
         pre_pcie_cfg->tee_io_supp = config_get_cded_tee_io_supp().tee_io_supp[die_id];
         pre_pcie_cfg->dis_wrt_buff_cont = config_get_cded_dis_wrt_buff_cont().dis_wrt_buff_cont[die_id];
         pre_pcie_cfg->dis_pri = config_get_cded_dis_pri().dis_pri[die_id];

@@ -31,8 +31,8 @@ target_link_libraries(${TARGET}
  )
 
 
-target_include_directories(${TARGET} 
-    PRIVATE 
+target_include_directories(${TARGET}
+    PRIVATE
         $<TARGET_PROPERTY:fwlib.lib.cfg_mgr,INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:ms::lib::config_manager,INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:ms::service::fuse,INCLUDE_DIRECTORIES>
@@ -80,6 +80,7 @@ mock_target(${TARGET}
     config_get_die1_core_spare_en_31_0
     config_get_die1_core_spare_en_63_32
     config_get_die1_core_spare_en_95_64
+    mesh_get_hns_sds_vector_from_hns_sparring
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

@@ -878,3 +878,29 @@ void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     // Register the error domain for mesh in Health Monitor
     hm_register_error_domain(ACPI_ERROR_DOMAIN_MESH, &MESH_ERROR_DOMAIN_FRU_GUID, "Mesh Error Domain", mesh_error_injection_cb, NULL);
 }
+
+/*!
+ * @brief API to get the HNS Defect Vector from Fuses
+ *
+ * @retval int Success or Failure
+ */
+int mesh_get_hns_sds_vector_from_hns_sparring(kng_hns_fuses_t* hns_fuses_sds)
+{
+    int status = SILIBS_SUCCESS;
+    if (idsw_get_platform_sdv() == PLATFORM_SVP_SIM)
+    {
+        // Set the Default Values for SVP SIM Platform
+        MESH_INFO("Setting Default HNS Fuses for SVP SIM Platform\n");
+        hns_fuses_sds->hns_fuses_31_0 = MESH_DEFAULT_HNS_FUSES_31_0;
+        hns_fuses_sds->hns_fuses_63_32 = MESH_DEFAULT_HNS_FUSES_63_32;
+        hns_fuses_sds->hns_fuses_95_64 = MESH_DEFAULT_HNS_FUSES_95_64;
+    }
+    else
+    {
+        MESH_INFO("Reading HNS Fuses from HNS Sparring\n");
+        MESH_INFO("Platform 0x%x\n", idsw_get_platform_sdv());
+        // Call the CMN800_Sequence Lib API
+        status = get_hns_sds_vector_from_hns_sparring(hns_fuses_sds);
+    }
+    return status;
+}

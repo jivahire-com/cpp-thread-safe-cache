@@ -45,7 +45,8 @@ target_link_libraries(${TARGET}
     silibs::idhw
     silibs::idsw_kng
     silibs::platform
-    silibs::kng_silibs_platform    
+    silibs::kng_silibs_platform
+    ms::lib::mesh
 )
 
 lint_target(${TARGET})
@@ -53,4 +54,3 @@ format_target(${TARGET})
 coverage_target(${TARGET})
 
 add_library(ms::service::fuse ALIAS ${TARGET})
-

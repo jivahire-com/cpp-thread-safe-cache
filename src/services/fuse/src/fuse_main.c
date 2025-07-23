@@ -28,6 +28,7 @@
 #include <kingsgate_fuse_defines.h> // Test revision get
 #include <kng_soc_constants.h>      // for DIE_INSTANCE
 #include <memory_map/mscp_exp_rmss_memory_map.h>
+#include <mesh.h> // for mesh_get_hns_sds_vector_from_hns_sparring
 #include <sds_api.h>
 #include <sds_configuration.h>
 #include <sds_init.h>
@@ -149,6 +150,17 @@ void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_sta
     BUG_ASSERT(result == KNG_SUCCESS);
     fuse_disable_cores_to_66(&remote_die_core_disable);
     result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &remote_die_core_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
+    BUG_ASSERT(result == KNG_SUCCESS);
+    kng_hns_fuses_t remote_die_hns_fuses = {0};
+
+    remote_die_hns_fuses.hns_fuses_31_0 = recv_payload[5];
+    remote_die_hns_fuses.hns_fuses_63_32 = recv_payload[6];
+    remote_die_hns_fuses.hns_fuses_95_64 = recv_payload[7];
+
+    result = sds_block_creation(HNS_FUSES_DIE1_STRUCT_ID, HNS_FUSES_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+    BUG_ASSERT(result == KNG_SUCCESS);
+
+    result = sds_block_write(HNS_FUSES_DIE1_STRUCT_ID, &remote_die_hns_fuses, HNS_FUSES_SIZE);
     BUG_ASSERT(result == KNG_SUCCESS);
 
     // Call the registered callback to notify the completion of remote die config
@@ -315,6 +327,19 @@ int write_fuse_info_to_ap()
         result = sds_block_write(FUSE_DISABLE_CORE_DIE0_STRUCT_ID, &DIE0_fuse_disable, FUSE_DISABLE_CORE_DIE0_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
 
+        kng_hns_fuses_t DIE0_hns_fuses = {0x0};
+        result = mesh_get_hns_sds_vector_from_hns_sparring(&DIE0_hns_fuses);
+        if (result != SILIBS_SUCCESS)
+        {
+            printf(FUSE_NAME "Unable to read HNS fuses for DIE%d\n", idsw_get_die_id());
+            return result;
+        }
+        result = sds_block_creation(HNS_FUSES_DIE0_STRUCT_ID, HNS_FUSES_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+        BUG_ASSERT(result == KNG_SUCCESS);
+
+        result = sds_block_write(HNS_FUSES_DIE0_STRUCT_ID, &DIE0_hns_fuses, HNS_FUSES_SIZE);
+        BUG_ASSERT(result == KNG_SUCCESS);
+
         if (idhw_is_single_die_boot_en())
         {
             //! complete the ap core handover immediately
@@ -324,11 +349,25 @@ int write_fuse_info_to_ap()
     else
     {
         d2d_send_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_DIE_CONFIG_REQ, 0, 0);
-        // set d2d_send_msg_.as_uint32[1] to asuint32_t[3] same as DIE1_fuse_disable[0] to [3]
+        // set d2d_send_msg_.as_uint32[1] to asuint32_t[4] same as DIE1_fuse_disable[0] to [3]
         d2d_send_msg.as_uint32[1] = DIE1_fuse_disable.fuse_dis_core_31_0;
         d2d_send_msg.as_uint32[2] = DIE1_fuse_disable.fuse_dis_core_63_32;
         d2d_send_msg.as_uint32[3] = DIE1_fuse_disable.fuse_dis_core_95_64;
         d2d_send_msg.as_uint32[4] = DIE1_fuse_disable.fuse_dis_core_127_96;
+
+        // set d2d_send_msg_.as_uint32[5] to asuint32_t[7] same as DIE1_hns_fuses[0] to [2]
+        // This is the HNS fuses that will be sent to the Remote die
+        // Send the HNS fuses to the Remote die
+        kng_hns_fuses_t DIE1_hns_fuses = {0x0};
+        result = mesh_get_hns_sds_vector_from_hns_sparring(&DIE1_hns_fuses);
+        if (result != SILIBS_SUCCESS)
+        {
+            printf(FUSE_NAME "Unable to read HNS fuses for DIE%d\n", idsw_get_die_id());
+            return result;
+        }
+        d2d_send_msg.as_uint32[5] = DIE1_hns_fuses.hns_fuses_31_0;
+        d2d_send_msg.as_uint32[6] = DIE1_hns_fuses.hns_fuses_63_32;
+        d2d_send_msg.as_uint32[7] = DIE1_hns_fuses.hns_fuses_95_64;
 
         scp_send_params.payload_buffer = &d2d_send_msg;
         scp_send_params.buffer_size = sizeof(d2d_send_msg);

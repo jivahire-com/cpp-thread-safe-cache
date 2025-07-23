@@ -102,4 +102,5 @@ mock_target(${TARGET}
     hm_submit_cper
     ras_arm_agent_notify_warm
     ras_arm_agent_set_record_counter_thresholds_by_index
+    get_hns_sds_vector_from_hns_sparring
 )

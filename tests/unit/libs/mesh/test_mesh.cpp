@@ -509,6 +509,13 @@ void __wrap_d2d_cntr_sync_enable(void)
     function_called();
 }
 
+int __wrap_get_hns_sds_vector_from_hns_sparring(kng_hns_fuses_t* hns_fuses_sds)
+{
+    FPFW_UNUSED(hns_fuses_sds);
+    function_called();
+    return SILIBS_SUCCESS;
+}
+
 cmn800_snf_to_mc_config_t* __wrap_cmn800_generate_ddr_mc_map_from_snf_config(const config_t* config)
 {
     FPFW_UNUSED(config);
@@ -1832,5 +1839,34 @@ TEST_FUNCTION(test_mesh_error_injection_cb_failure_4, setup_svp_platform, setup_
     // Call API under test
     status = mesh_error_injection_cb(&einj_payload, NULL);
     assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+}
+
+// Test for SDS API
+TEST_FUNCTION(test_mesh_get_hns_sds_vector_from_hns_sparring, setup_soc_platform_dual_die, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    int status = 0x0;
+    kng_hns_fuses_t DIE0_hns_fuses = {0x0};
+    expect_function_call(__wrap_get_hns_sds_vector_from_hns_sparring);
+    // Call API under test
+    status = mesh_get_hns_sds_vector_from_hns_sparring(&DIE0_hns_fuses);
+    assert_int_equal(status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_mesh_get_hns_sds_vector_from_hns_sparring_svp, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    int status = 0x0;
+    kng_hns_fuses_t DIE0_hns_fuses = {0x0};
+    // Call API under test
+    status = mesh_get_hns_sds_vector_from_hns_sparring(&DIE0_hns_fuses);
+    assert_int_equal(status, SILIBS_SUCCESS);
+    assert_int_equal(DIE0_hns_fuses.hns_fuses_31_0, MESH_DEFAULT_HNS_FUSES_31_0);
+    assert_int_equal(DIE0_hns_fuses.hns_fuses_63_32, MESH_DEFAULT_HNS_FUSES_63_32);
+    assert_int_equal(DIE0_hns_fuses.hns_fuses_95_64, MESH_DEFAULT_HNS_FUSES_95_64);
 }
 }

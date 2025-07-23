@@ -13,6 +13,7 @@
 #include <DbgPrint.h>
 #include <cper.h>
 #include <numa_config_variable.h>
+#include "shared_sds_def.h"
 
 #define MESH_INFO(...) FPFW_DBGPRINT_INFO("[CMN800] " __VA_ARGS__)
 #define MESH_DBG(...) FPFW_DBGPRINT_VERBOSE("[CMN800] " __VA_ARGS__)
@@ -59,6 +60,10 @@ typedef enum{
     DDRSS_MAX = 24,
 } ddrss_mc_id_t;
 
+// 0xFFFFFFFC_03000000_00000000
+#define MESH_DEFAULT_HNS_FUSES_31_0  0x00000000
+#define MESH_DEFAULT_HNS_FUSES_63_32 0x03000000
+#define MESH_DEFAULT_HNS_FUSES_95_64 0xFFFFFFFC
 /**
  * @brief Initializes the mesh.
  *
@@ -87,3 +92,10 @@ void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx);
  * @return void
  */
 void print_numa_info(NUMA_CFG* numa_cfg);
+
+/*!
+ * @brief API to get the HNS Defect Vector from Fuses
+ *
+ * @retval int Success or Failure
+ */
+int mesh_get_hns_sds_vector_from_hns_sparring(kng_hns_fuses_t *hns_fuses_sds);

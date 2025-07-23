@@ -64,15 +64,9 @@ typedef enum
  */
 
 typedef struct {
-    uint8_t pstate_change : 1;
-    uint8_t cstate_change : 1;
-    uint8_t throttling_type_change : 1;
-    uint8_t rack_priority_change : 1;
-    uint8_t id_change_bit : 1;
-    uint8_t throttling_start_occurred : 1;
-    uint8_t throttling_end_occurred : 1;
-    uint8_t overrun_count_change : 1;
-} core_control_flags_t;
+    uint8_t pstate_residency_updated : 1;
+    uint8_t cstate_residency_updated : 1;
+} core_poll_flags_t;
 
 typedef struct {
     uint64_t cstate_timestamp_uS; //for cstate residency update.
@@ -96,8 +90,8 @@ typedef struct {
     uint8_t pstate_from_pstate_pkt; /* pstate from pstate packet*/
     uint8_t pstate_from_current_pkt; /* pstate from current packet, during throttling */
     uint8_t latest_pstate; //either pstate_from_pstate_pkt or pstate_from_current_pkt
-    core_control_flags_t flags;
     bool core_throttling_tracker[NUMBER_OF_THROTTLE_TYPES];
+    core_poll_flags_t poll_flags;//reset for every poll period
 } core_runtime_info_t;
 
 typedef struct {
@@ -153,16 +147,16 @@ typedef struct {
     uint64_t throttle_time_diff_uS;
     uint64_t rack_throttle_time_diff_uS;
     uint8_t overrun_count_change;
-    uint8_t core_id;
+
     bool valid_entry_pstate;
+    bool pstate_change;
     bool valid_entry_cstate;
+    bool cstate_change;
     bool throttling_state_change;
     bool rack_throttling_state_change;
-    bool new_pstate;
-    bool new_ctstate;
     bool throttle_start;
     bool rack_priority_start;
-} core_state_metrics_flags_t;
+} core_state_entry_data_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -187,6 +181,62 @@ void data_smpl_init(void);
 void data_smpl_init_dts_coefficients(void);
 
 /**
+ * @brief Process the tile temperature sensor FIFO.
+ *
+ * @return true if the FIFO was processed successfully, false otherwise.
+ */
+bool data_smpl_process_tile_temperature_sensor_fifo(void);
+
+/**
+ * @brief Process the tile voltage sensor FIFO.
+ *
+ * @return none
+ */
+void data_smpl_process_tile_voltage_sensor_fifo(void);
+
+/**
+ * @brief Process the core current sensor FIFO.
+ *
+ * @return none
+ */
+bool data_smpl_process_pstate_sensor_fifo(void);
+
+/**
+ * @brief Process the core current sensor FIFO.
+ *
+ * @return none
+ */
+void data_smpl_process_core_current_sensor_fifo(void);
+
+/**
+ * @brief Process the voltage regulator (VR) temperature sensor FIFO.
+ *
+ * @return none
+ */
+void data_smpl_process_vr_temp_sensor_fifo(void);
+
+/**
+ * @brief Process the voltage regulator (VR) current sensor FIFO.
+ *
+ * @return none
+ */
+void data_smpl_process_vr_current_sensor_fifo(void);
+
+/**
+ * @brief Process the SOC PVT temperature sensor FIFO.
+ *
+ * @return true if the FIFO was processed successfully, false otherwise.
+ */
+bool data_smpl_process_pvt_temperature_sensor_fifo(void);
+
+/**
+ * @brief Process the DIMM sensor FIFO.
+ *
+ * @return true if the FIFO was processed successfully, false otherwise.
+ */
+bool data_smpl_process_dimm_sensor_fifo(void);
+
+/**
  * @brief   Update the maximum die temperature based on the latest tile and SOC top temperatures.
  *          This function compares the latest maximum tile temperature and the latest maximum SOC top temperature,
  *          and updates the maximum die temperature accordingly.
@@ -198,79 +248,80 @@ void data_smpl_update_max_die_temp(void);
 /**
  * @brief Internal API to log tile/core/hnf temperature parameters
  *
- * @param[in] temperature_data - SCF RAM formatted resource for temperature packets
+ * @param[in] tile_temp_entry - SCF RAM formatted resource for temperature packets
  * @param[in] tile_index - index to the tile id being referenced by the entry
  *
  * @return true if valid
  */
-bool data_smpl_parse_tile_temperature_entry(tile_temp_t* temperature_data, uint8_t tile_index);
+bool data_smpl_parse_tile_temperature_entry(tile_temp_t* tile_temp_entry, uint8_t tile_index);
 
 /**
  * @brief Internal API to log tile/core voltages
  *
- * @param[in] voltage_data - SCF RAM formatted resource for voltage packets
+ * @param[in] tile_voltage_entry - SCF RAM formatted resource for voltage packets
  * @param[in] tile_index - index to the tile id being referenced by the entry
  *
  * @return true if valid
  */
-bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* voltage_data, uint8_t tile_index);
+bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* tile_voltage_entry, uint8_t tile_index);
 
 /**
  * @brief Internal API to log core currents and power
  *
- * @param[in] current_data - SCF RAM formatted resource for core current packets
+ * @param[in] core_current_entry - SCF RAM formatted resource for core current packets
  * @param[in] core_index - index to the core id being referenced by the entry
  *
  * @return bool   - true if a valid current entry
  */
-bool data_smpl_parse_core_current_entry(core_current_t* current_data, uint8_t core_index);
+bool data_smpl_parse_core_current_entry(core_current_t* core_current_entry, uint8_t core_index);
 
 /**
  * @brief Internal API to log voltage regulator (VR) temperatures
  *
- * @param[in] vr_temperature - SCF RAM formatted resource for VR Temperatures
+ * @param[in] vr_temp_entry - SCF RAM formatted resource for VR Temperatures
  *
  * @return None
  */
-void data_smpl_parse_vr_temperature_entry(vr_temp_t* vr_temperature);
+void data_smpl_parse_vr_temperature_entry(vr_temp_t* vr_temp_entry);
 
 /**
  * @brief Internal API to log voltage regulator (VR) current and voltage
  *
- * @param[in] vr_current - SCF RAM formatted resource for VR Currents (and voltages)
+ * @param[in] vr_current_entry - SCF RAM formatted resource for VR Currents (and voltages)
  *
  * @return None
  */
-void data_smpl_parse_vr_current_entry(vr_current_t* vr_current);
+void data_smpl_parse_vr_current_entry(vr_current_t* vr_current_entry);
 
 /**
  * @brief Internal API to log soc pvt temperature (SOC_TOP_TEMP)
  *
- * @param[in] soc_pvt_temp_t - SCF RAM formatted resource for soc_pvt_temp
+ * @param[in] pvt_temp_entry - SCF RAM formatted resource for soc_pvt_temp
  *
  * @return None
  */
-void data_smpl_parse_pvt_temperature_entry(soc_pvt_temp_t* pvt_temperature);
+void data_smpl_parse_pvt_temperature_entry(soc_pvt_temp_t* pvt_temp_entry);
 
 /**
  * @brief Internal API to log soc dimm information (DIMM)
  *
- * @param[in] sensor_ram_dimm_info_t - SCF RAM formatted resource for dimm
+ * @param[in] dimm_info_entry - SCF RAM formatted resource for dimm
  *
  * @return true if valid
  */
-bool  data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info);
+bool data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info_entry);
 
 /**
  * @brief Internal API to log pstate telemetry packets, for pstate, cstate and throttling info
  *
- * @param[in] pstate_telemetry - SCF RAM formatted resource for pstate packets
+ * @param[in] pstate_entry - SCF RAM formatted resource for pstate packets
  *        NOTE: The Pstate packet contains the core id reference internally.
  * @param[in] timestamp_uS - latest timestamp
+ * @param[out] entry_data - update the core state entry data
  *
  * @return none
  */
-void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_telemetry, uint64_t timestamp_uS);
+void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_entry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
 
 /**
  * @brief Internal API to log cstate telemetry.
@@ -278,30 +329,29 @@ void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_telemetry, uint
  *        (IMPORTANT : pstate telemetry packet provide both p state/c state))
  *        NOTE: The Pstate packet contains the core id reference internally.
  * @param[in] timestamp_uS - latest timestamp
+ * @param[out] entry_data - update the cstate entry data
  * @return none
  */
-void  data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry, uint64_t timestamp_uS);
+void  data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
 
 /**
  * @brief update rack throttling
  *
- * @param[in] pstate_telemetry  provide pstate tlm pkt.
- * @return  true -if there is rack throttle start or rack throttle end,
- *          false - in case there is a invalid rack_priority_id or throttle index
+ * @param[in] pstate_entry  provide pstate tlm pkt.
+ * @param[in] timestamp_uS - latest timestamp
+ * @param[out] entry_data  update the core state entry data
+ * @return  none
  */
-bool data_smpl_parse_rack_throttling(pstate_telem_t* pstate_telemetry);
+void data_smpl_parse_rack_throttling(pstate_telem_t* pstate_entry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
 
 /**
  * @brief Internal API to log states-pstate,cstate and also log core throttling telemetry.
- * @param[in] pstate_telemetry - SCF RAM formatted resource for pstate packets
+ * @param[in] pstate_entry - SCF RAM formatted resource for pstate packets
  *        (IMPORTANT : pstate telemetry packet provide both p state/c state and throttling status))
- *
- * @return core_state_metrics_flags_t - returning flags based on the core states processing to
- *         handle the compute update in the main sensor fifo loop.
- *         boolean value in the flag structure "valid_entry_pstate" indicate a valid pstate entry and update residency.
- *         "new_pstate" boolean on the return flag indicates for the "enrtry count" update if pstate change.
+ * @param[in] entry_data - update the core state entry data
+ * @return none
  */
-core_state_metrics_flags_t data_smpl_parse_core_states_entry(pstate_telem_t* pstate_telemetry);
+void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_entry,  core_state_entry_data_t* entry_data);
 
 /**
  * @brief  calculate throttling index based on throttle status in telemetry pkt.
@@ -315,10 +365,13 @@ int8_t data_smpl_parse_throttling_state_change_get_index_from_status(pstate_thro
  * @brief log the throttling states, based on pstate pkt and start/end event
  * from pkt.
  *
- * @param[in] pstate_telemetry
- * @return true if a valid entry
+ * @param[in] pstate_entry - incoming packet
+ * @param[in] timestamp_uS - latest timestamp
+ * @param[out] entry_data - update the core state entry data
+ * This function will update the core state entry data with the latest throttling state change.
+ * @return none
  */
-bool data_smpl_parse_throttling_state_change(pstate_telem_t* pstate_telemetry);
+void data_smpl_parse_throttling_state_change(pstate_telem_t* pstate_entry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
 
 /**
  * @brief This api clear the throttling tracker.

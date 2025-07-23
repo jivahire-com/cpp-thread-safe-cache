@@ -143,6 +143,8 @@ TEST_FUNCTION(test_soc_pvt_temp_collection_functional, test_setup, test_teardown
             mock_pvt_temp_data.sensor_temp_dC[pvt_index] = temperature_data_sets[iteration].sensor_temp_dC[pvt_index];
         }
 
+        will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
+
         // 2. Set up polling expectations
         // Tile_Temperature polling - no data
         will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, 0);     // tile_index

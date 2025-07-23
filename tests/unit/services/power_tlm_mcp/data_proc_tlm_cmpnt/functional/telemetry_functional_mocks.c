@@ -22,6 +22,7 @@
 #include <string.h>
 
 int g_enable_mock_pstate = 0;
+bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
 
 void update_stats(stats_t* stats, uint16_t latest_value)
 {
@@ -211,6 +212,15 @@ uint32_t __wrap_gtimer_prodfw_get_frequency(void)
     return mock_type(uint32_t);
 }
 
+void __wrap_sensor_fifo_svc_is_empty(bool (*is_empty)[SENSOR_FIFO_MAX_ID])
+{
+    bool(*mock_data)[SENSOR_FIFO_MAX_ID] = mock_ptr_type(bool(*)[SENSOR_FIFO_MAX_ID]);
+    if (mock_data != NULL && is_empty != NULL)
+    {
+        memcpy(*is_empty, *mock_data, sizeof(bool) * SENSOR_FIFO_MAX_ID);
+    }
+}
+
 // Reset Time
 void reset_time(void)
 {
@@ -222,6 +232,16 @@ void reset_pwr_tlm_data(void)
     reset_time();
     data_proc_tlm_cmpnt_clear_pwr_tlm_data();
     fflush(stdout);
+    setup_snsr_fifo_is_empty();
+}
+
+void setup_snsr_fifo_is_empty(void)
+{
+    // Set all FIFOs to empty
+    for (uint32_t i = 0; i < SENSOR_FIFO_MAX_ID; i++)
+    {
+        test_snsr_fifo_is_empty[i] = false;
+    }
 }
 
 // Modifing the timestamp function to return larger intervals

@@ -30,11 +30,32 @@
 
 /*------------- Functions ----------------*/
 
+void __wrap_sensor_fifo_svc_is_empty(bool (*is_empty)[SENSOR_FIFO_MAX_ID])
+{
+    bool(*mock_data)[SENSOR_FIFO_MAX_ID] = mock_ptr_type(bool(*)[SENSOR_FIFO_MAX_ID]);
+    if (mock_data != NULL && is_empty != NULL)
+    {
+        memcpy(*is_empty, *mock_data, sizeof(bool) * SENSOR_FIFO_MAX_ID);
+    }
+}
+
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_tile_temperature(tile_temp_t* temperature_data, uint16_t* tile_index)
 {
-    FPFW_UNUSED(temperature_data);
-    FPFW_UNUSED(tile_index);
-    return *(sensor_ram_poll_status_t*)mock();
+    sensor_ram_poll_status_t status = *(sensor_ram_poll_status_t*)mock();
+
+    if (status.curr_data_is_valid)
+    {
+        tile_temp_t* mock_data = mock_ptr_type(tile_temp_t*);
+        assert_non_null(mock_data);
+        assert_non_null(temperature_data);
+        memcpy(temperature_data, mock_data, sizeof(tile_temp_t));
+        if (tile_index != NULL)
+        {
+            *tile_index = mock_type(uint16_t);
+        }
+    }
+
+    return status;
 }
 
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_tile_voltage(tile_voltage_t* voltage_data, uint16_t* tile_index)
@@ -69,14 +90,30 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_core_pstate(pstate_telem_t*
 
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_vr_temperature(vr_temp_t* vr_temperature)
 {
-    FPFW_UNUSED(vr_temperature);
-    return *(sensor_ram_poll_status_t*)mock();
+    sensor_ram_poll_status_t status = *(sensor_ram_poll_status_t*)mock();
+
+    if (status.curr_data_is_valid)
+    {
+        vr_temp_t* mock_data = mock_ptr_type(vr_temp_t*);
+        assert_non_null(mock_data);
+        assert_non_null(vr_temperature);
+        memcpy(vr_temperature, mock_data, sizeof(vr_temp_t));
+    }
+    return status;
 }
 
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_vr_current(vr_current_t* vr_current)
 {
-    FPFW_UNUSED(vr_current);
-    return *(sensor_ram_poll_status_t*)mock();
+    sensor_ram_poll_status_t status = *(sensor_ram_poll_status_t*)mock();
+
+    if (status.curr_data_is_valid)
+    {
+        vr_current_t* mock_data = mock_ptr_type(vr_current_t*);
+        assert_non_null(mock_data);
+        assert_non_null(vr_current);
+        memcpy(vr_current, mock_data, sizeof(vr_current_t));
+    }
+    return status;
 }
 
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperature)

@@ -72,6 +72,7 @@ static int32_t test_setup(void** state)
     FPFW_UNUSED(state);
     comp_metrics_reset_2_mins_metrics();
     comp_metrics_reset_24_hrs_metrics();
+    setup_snsr_fifo_is_empty();
     return 0;
 }
 
@@ -112,6 +113,8 @@ TEST_FUNCTION(test_soc_rails_vr_current_and_voltage_collection_functional, test_
             update_stats(&expected_vr_current_mA[index], current_data_sets[iteration].vr_current_mA[index]);
             update_stats(&expected_vr_voltage_mV[index], current_data_sets[iteration].vr_voltage_mV[index]);
         }
+
+        will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
 
         // Temperature polling - no data
         will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, 0);     // tile_index

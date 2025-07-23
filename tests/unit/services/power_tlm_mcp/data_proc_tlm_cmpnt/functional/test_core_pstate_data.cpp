@@ -117,8 +117,6 @@ static int32_t test_setup(void** state)
         core_rt[core_id].pstate_from_pstate_pkt = 0x00; // Set to valid PSTATE 0
         core_rt[core_id].active_sample_plimit = 0;
         core_rt[core_id].pstate_timestamp_uS = 0;
-        core_rt[core_id].flags.id_change_bit = 0;
-        core_rt[core_id].flags.pstate_change = 0;
 
         // Initialize PSTATE data for each core in computed_metrics_2_mins
         for (uint8_t pstate = 0; pstate < MAX_PSTATE_VALUE; pstate++)
@@ -329,6 +327,7 @@ static uint32_t calculate_expected_residency_with_polling(uint8_t iteration)
 // Used by: All test functions (test_core_pstate_collection_functional, test_core_pstate_timestamp_residency_functional, test_core_pstate_realistic_residency_functional)
 static void setup_mock_sensor_polling_no_data(void)
 {
+    will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
     // Mock all other sensors to return no data
     // Temperature polling - no data
     will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, 0);     // tile_index
@@ -531,6 +530,7 @@ TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
                                     current_data_sets[iteration][core_index].volt,
                                     current_data_sets[iteration][core_index].pwr,
                                     current_pstate);
+
             setup_mock_sensor_polling_no_data();
 
             // Process the data
@@ -673,7 +673,7 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
     pwr_core_element_pstate_t* pstate_array_exit = &pstate_record_exit.pstate_collection[core_index].pstate_element[0];
 
     // PSTATE 10 gets residency from T3 to T4 when PSTATE 11 packet arrives
-    // (flags.new_pstate == true) PSTATE 10 total residency = (T2-T1) + (T3-T2) + (T4-T3) = (T4-T1) = 3000ms
+    // (core_rt[core_id].poll_flags.pstate_change == true) PSTATE 10 total residency = (T2-T1) + (T3-T2) + (T4-T3) = (T4-T1) = 3000ms
     uint32_t expected_pstate10_final_residency_mS = (T4_microseconds - T1_microseconds) / 1000;
 
     // Debug prints to see actual vs expected values
@@ -738,7 +738,6 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
 // Test realistic residency accumulation with multiple polling calls between PSTATE entries
 TEST_FUNCTION(test_core_pstate_realistic_residency_functional, test_setup, test_teardown)
 {
-
     // Test timestamps: T1=PSTATE10 entry, T2=T3=polling without packets, T4=PSTATE11 entry
     uint64_t T1_microseconds = 1000000, T2_microseconds = 1500000, T3_microseconds = 2000000, T4_microseconds = 2500000;
     uint64_t T1_ticks = (T1_microseconds * 2400000) / 1000000, T2_ticks = (T2_microseconds * 2400000) / 1000000;

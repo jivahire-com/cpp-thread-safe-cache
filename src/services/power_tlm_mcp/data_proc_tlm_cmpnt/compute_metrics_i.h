@@ -345,7 +345,7 @@ void comp_metrics_for_single_core_single_rack_throttle_update(uint8_t core_id, u
  *
  * @return none
  */
-void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, uint8_t update_pstate_entry);
+void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, bool update_pstate_entry);
 
 
 /**
@@ -361,10 +361,10 @@ void comp_metrics_for_soc_avg_pstate(uint8_t (*pstate)[NUMBER_OF_CORES_PER_DIE])
  * @brief helper function to update the cstate compute metrics
  * @param[in] core_id  core that is referenced to that owns this timestamp
  * @param[in] cstate  -cstate that is reference to where it needs to be updated
- * @param[in] timestamp_diff_uS diff of timestamp from previous and new .
- * @param[in] update_cstate_entry new entry in this state  .
+ * @param[in] timestamp_diff_uS diff of timestamp from previous and new 
+ * @param[in] update_cstate_entry new entry in this state
  */
-void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, uint8_t update_cstate_entry);
+void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, bool update_cstate_entry);
 
 /**
  * @brief function is intended to update the core power state (PState) based on the provided core ID and PState index.

@@ -91,10 +91,10 @@ static int32_t test_setup(void** state)
     {
         core_rt[core_id].latest_cstate = 0;
         core_rt[core_id].cstate_timestamp_uS = 0;
-        core_rt[core_id].flags.cstate_change = 0;
         core_rt[core_id].latest_pstate = 0;
         core_rt[core_id].pstate_timestamp_uS = 0;
     }
+    setup_snsr_fifo_is_empty();
 
     // enable all cores for these tests
     for (unsigned int core = 0; core < NUMBER_OF_CORES_PER_DIE; ++core)
@@ -115,6 +115,7 @@ static int32_t test_teardown(void** state)
 // Helper function to set up mock sensor polling with no data
 static void setup_mock_sensor_polling_no_data(void)
 {
+    will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
     // Set up mocks
     // 1. Tile temperature polling - no data
     will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, 0);     // tile_index
@@ -243,7 +244,6 @@ TEST_FUNCTION(test_tlm_logger_log_cstate_information, test_setup, test_teardown)
     // Initialize core state for proper C-state transitions
     core_rt[core_id].latest_cstate = 0; // Start with C-state 0
     core_rt[core_id].cstate_timestamp_uS = 0;
-    core_rt[core_id].flags.cstate_change = 0;
 
     for (int iteration = 0; iteration < NO_OF_ITERATIONS; iteration++)
     {

@@ -53,6 +53,7 @@ unit_test_target(${TARGET})
 # Mock functions - only mock hardware/platform interfaces
 mock_target(${TARGET}
     # Sensor mocks (hardware interface)
+    sensor_fifo_svc_is_empty
     sensor_fifo_svc_poll_tile_temperature
     sensor_fifo_svc_poll_tile_voltage
     sensor_fifo_svc_poll_core_current

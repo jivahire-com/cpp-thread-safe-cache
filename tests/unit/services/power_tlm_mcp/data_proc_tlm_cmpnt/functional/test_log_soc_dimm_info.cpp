@@ -174,7 +174,6 @@ static void calculate_expected_avg_values(int32_t iteration, int32_t* s0_avg, in
 
 TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
 {
-
     /* Note: dimm_id will less than NUMBER_OF_DIMM_MODULES_PER_DIE(12) */
     // Expected values are set to the input values for each iteration.
     // As there is no transformation, conversion, or aggregation logic for these fields in tlm_logger,
@@ -196,6 +195,8 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
         mock_dimm_data.dimm_id = dimm_info[iteration].dimm_id;
         mock_dimm_data.dimm_throttling = dimm_info[iteration].dimm_throttling;
         mock_dimm_data.dimm_memory_frequency_id = dimm_info[iteration].dimm_memory_frequency_id;
+
+        will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
 
         // Temperature polling - no data
         will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, 0);     // tile_index

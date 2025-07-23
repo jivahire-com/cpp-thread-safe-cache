@@ -424,7 +424,7 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_throttling_pstate, test_setup, t
     uint8_t throttle_index = 1;
     uint64_t time_stamp_uS = 5000;
 
-    core_rt[core_id].core_throttling_tracker[throttle_index] = 1;
+    core_rt[core_id].core_throttling_tracker[throttle_index] = true;
     core_rt[core_id].latest_throttle_type_previous_timestamp_uS[throttle_index] = 1000;
     core_rt[core_id].latest_pstate = core_rt[core_id].pstate_from_current_pkt = 20;
 
@@ -561,7 +561,7 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_single_pstate, test_setup, test_
 
     uint8_t pstate_id = 0;
     uint64_t timestamp_diff_uS = 1000;
-    uint8_t update_pstate_entry = 1;
+    bool update_pstate_entry = true;
     comp_metrics_for_single_core_single_pstate(core_id, pstate_id, timestamp_diff_uS, update_pstate_entry);
 
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].residency_uS, 0);

@@ -167,6 +167,7 @@ typedef struct
 
 TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown)
 {
+
     // Track previous values for calculations
     static int32_t prev_core0_min = 0, prev_core0_max = 0, prev_core0_avg = 0;
     static int32_t prev_core1_min = 0, prev_core1_max = 0, prev_core1_avg = 0;
@@ -253,6 +254,8 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
         prev_vsys_min = expected_vsys_min;
         prev_vsys_max = expected_vsys_max;
         prev_vsys_avg = expected_vsys_avg;
+
+        will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
 
         // Temperature polling - no data
         will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, 0);     // tile_index

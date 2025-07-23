@@ -40,6 +40,7 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
+    sensor_fifo_svc_is_empty
     sensor_fifo_svc_poll_tile_temperature
     sensor_fifo_svc_poll_tile_voltage
     sensor_fifo_svc_poll_core_current

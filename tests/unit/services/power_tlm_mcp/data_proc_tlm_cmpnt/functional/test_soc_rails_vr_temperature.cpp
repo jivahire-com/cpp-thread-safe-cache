@@ -69,6 +69,7 @@ static int32_t test_setup(void** state)
     FPFW_UNUSED(state);
     comp_metrics_reset_2_mins_metrics();
     comp_metrics_reset_24_hrs_metrics();
+    setup_snsr_fifo_is_empty();
     return 0;
 }
 
@@ -105,6 +106,8 @@ TEST_FUNCTION(test_soc_rails_vr_temperature_collection_functional, test_setup, t
             mock_temp_data.vr_temp_dC[index] = temperature_data_sets_dC[iteration][index];
             update_stats(&expected_vr_temp_dC[index], temperature_data_sets_dC[iteration][index]);
         }
+
+        will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
 
         // Temperature polling - no data
         will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, 0);     // tile_index

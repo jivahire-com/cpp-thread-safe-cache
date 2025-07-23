@@ -121,7 +121,7 @@ void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_m
     }
 }
 
-void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, uint8_t update_pstate_entry)
+void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, bool update_pstate_entry)
 {
     if (core_is_active[core_id])
     {
@@ -133,7 +133,7 @@ void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate,
     }
 }
 
-void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, uint8_t update_cstate_entry)
+void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, bool update_cstate_entry)
 {
     if (core_is_active[core_id])
     {

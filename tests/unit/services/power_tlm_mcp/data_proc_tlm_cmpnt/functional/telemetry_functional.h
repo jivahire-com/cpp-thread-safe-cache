@@ -38,7 +38,7 @@ typedef struct
 extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_rt;
-
+extern bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID];
 
 /*--------- Function Prototypes ----------*/
 
@@ -53,6 +53,7 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_soc_pvt_temperature(soc_pvt
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_dimm_info(sensor_ram_dimm_info_t* dimm_info);
 
 void reset_pwr_tlm_data(void);
+void setup_snsr_fifo_is_empty(void);
 void update_stats(stats_t* stats, uint16_t latest_value);
 extern tile_temp_t g_stored_temperatures[];
 

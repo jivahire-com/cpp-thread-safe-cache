@@ -204,6 +204,8 @@ TEST_FUNCTION(test_core_current_collection_functional, test_setup, test_teardown
         prev_max = expected_max_mA;
         prev_avg = expected_average_mA;
 
+        will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
+
         // Current polling - with data
         will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
         will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);     // core_index

@@ -38,7 +38,6 @@ uint64_t data_util_calc_time_diff(uint64_t* previous_timestamp_uS, uint64_t* tim
     uint64_t temp_stamp_uS = exec_tlm_cmpnt_get_timestamp_microseconds();
     uint64_t time_diff_uS = 0;
 
-    // Calculate the general residency for the core
     if (*previous_timestamp_uS != 0 && (temp_stamp_uS > *previous_timestamp_uS))
     {
         time_diff_uS = temp_stamp_uS - *previous_timestamp_uS;

@@ -242,6 +242,8 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
         mock_temp_data.temp2.temp4 = TEST_TEMP_CEL_2_DOUT(mock_temp_data.temp2.temp4);
         mock_temp_data.temp2.temp5 = TEST_TEMP_CEL_2_DOUT(mock_temp_data.temp2.temp5);
 
+        will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
+
         // Set up expectations for tile 0
         // Temperature polling - with data
         will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, 0);               // tile_index = 0

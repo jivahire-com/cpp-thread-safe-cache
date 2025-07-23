@@ -546,7 +546,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     uint8_t core_id = TEST_CORE_ID_5;
     for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
     { // make all active
-        core_rt[core_id].core_throttling_tracker[i] = 1;
+        core_rt[core_id].core_throttling_tracker[i] = true;
     }
     data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(TEST_CORE_ID_5, &core_summary_data);
     assert_int_equal(core_summary_data.pstate, pstate_index);

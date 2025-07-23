@@ -127,6 +127,13 @@ void __wrap_ap_core_ppu_init(ap_core_service_context_t* p_context)
     s_ap_core_ctx = p_context;
 }
 
+void __wrap_ap_core_ppu_clusters_on_off(ap_core_service_context_t* p_context, uint32_t timeout_ms)
+{
+    assert_non_null(p_context);
+    check_expected_ptr(p_context);
+    FPFW_UNUSED(timeout_ms);
+}
+
 void __wrap_ap_core_ppu_clusters_on(ap_core_service_context_t* p_context, uint32_t timeout_ms)
 {
     assert_non_null(p_context);
@@ -515,6 +522,7 @@ AP_CORE_TEST(dispatch_cluster_core_init, setup, NULL)
     expect_value(__wrap_mmio_write32, data, 1);
     expect_function_call(__wrap_mmio_write32);
 
+    will_return(__wrap_idsw_get_platform_sdv, 0x41); // simulate PLATFORM_SVP_SIM
     // expect a call to turn on cluster PPUs
     expect_value(__wrap_ap_core_ppu_clusters_on, p_context, s_ap_core_ctx);
 
@@ -522,6 +530,28 @@ AP_CORE_TEST(dispatch_cluster_core_init, setup, NULL)
 
     assert_non_null(s_dispatch_routine);
     s_dispatch_routine(&test_request.header, &test_device.header);
+
+    ssi_startup_notification_request_t test_request_onoff;
+    ap_core_service_t test_device_onoff;
+    test_request_onoff.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request_onoff.stage = STARTUP_CLUSTER_CORE_INIT;
+    test_request_onoff.boot_type = COLD_BOOT;
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)REF_MACRO_CTRL_REG_ADDR);
+    will_return(__wrap_mmio_read32, 0);
+
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)REF_MACRO_CTRL_REG_ADDR);
+    expect_value(__wrap_mmio_write32, data, 1);
+    expect_function_call(__wrap_mmio_write32);
+
+    will_return(__wrap_idsw_get_platform_sdv, 0xBC); // simulate PLATFORM_RVP_EVT_SILICON
+    // expect a call to turn onoff cluster PPUs
+    expect_value(__wrap_ap_core_ppu_clusters_on_off, p_context, s_ap_core_ctx);
+
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request_onoff.header);
+
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request_onoff.header, &test_device_onoff.header);
 }
 
 AP_CORE_TEST(dispatch_start_default, NULL, NULL)

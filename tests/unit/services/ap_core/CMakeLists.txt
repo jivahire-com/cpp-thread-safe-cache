@@ -59,6 +59,7 @@ mock_target(${TARGET}
     ap_core_ppu_cores_off
     ap_core_ppu_core_set_power_state
     ap_core_ppu_init
+    ap_core_ppu_clusters_on_off
 
     ap_core_util_boot_core
     ap_core_util_set_all_rvbaraddr

@@ -81,6 +81,7 @@ target_include_directories(${TARGET}
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/core_clusters/private_include
 )
 
 lint_target(${TARGET})

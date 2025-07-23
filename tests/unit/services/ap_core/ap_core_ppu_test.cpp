@@ -199,3 +199,85 @@ AP_CORE_TEST(ap_core_ppu_disable_handshaking, NULL, NULL)
     // Act
     ap_core_ppu_disable_handshaking(&context);
 }
+
+AP_CORE_TEST(ap_core_ppu_clusters_on_off, NULL, NULL)
+{
+    // Arrange
+    ap_core_service_context_t context = {};
+    ap_core_service_config_t test_config = {
+        .cluster_pex_base = 0x1000,
+        .cluster_stride = 0x100,
+        .platform_die_core_count = 3,
+    };
+    context.p_config = &test_config;
+
+    // Set enabled cores: 0 and 2 enabled, 1 disabled
+    corebits_set_bit(&context.enabled_cores, 0);
+    corebits_set_bit(&context.enabled_cores, 2);
+
+    uint32_t timeout_ms = 100;
+
+    // Mock platform detection
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    expect_value(__wrap_FpFwAssert, expression, 1);
+
+    // For all clusters: Expect ON sequence
+    for (unsigned int core_idx = 0; core_idx < 3; ++core_idx)
+    {
+        // Expect clock power transition for each cluster and clock device
+        for (int clk_dev_id = PIK_DEV_ID_CLUS_CORECLK; clk_dev_id <= PIK_DEV_ID_CLUS_PPUCLK; clk_dev_id++)
+        {
+            expect_value(__wrap_pik_clock_power_transition, dev_id, PIK_CLUS_PIK_DEV_ID(core_idx, clk_dev_id));
+            expect_value(__wrap_pik_clock_power_transition, state, MOD_PD_STATE_ON);
+            expect_value(__wrap_FpFwAssert, expression, 1);
+        }
+
+        uintptr_t base_addr = test_config.cluster_pex_base + (core_idx * test_config.cluster_stride) +
+                              CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS;
+
+        expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, ppu_v1_base_addr, base_addr);
+        expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, ppu_mode, PPU_V1_MODE_ON);
+        expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, op_policy, PPU_V1_OPMODE_00);
+        expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, timeout_us, timeout_ms);
+
+        expect_value(__wrap_ppu_dynamic_enable, ppu_v1_base_addr, base_addr);
+        expect_value(__wrap_ppu_dynamic_enable, min_dyn_state, PPU_V1_MODE_OFF);
+    }
+
+    unsigned int core_idx = 1;
+    uintptr_t base_addr = test_config.cluster_pex_base + (core_idx * test_config.cluster_stride) +
+                          CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS;
+
+    expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, ppu_v1_base_addr, base_addr);
+    expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, ppu_mode, PPU_V1_MODE_OFF);
+    expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, op_policy, PPU_V1_OPMODE_00);
+    expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, timeout_us, timeout_ms);
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
+    __real_ap_core_ppu_clusters_on_off(&context, timeout_ms);
+}
+
+AP_CORE_TEST(ap_core_ppu_clusters_on_off_non_support, NULL, NULL)
+{
+    // Arrange
+    ap_core_service_context_t context = {};
+    ap_core_service_config_t test_config = {
+        .cluster_pex_base = 0x1000,
+        .cluster_stride = 0x100,
+        .platform_die_core_count = 3,
+    };
+    context.p_config = &test_config;
+
+    // Set enabled cores: 0 and 2 enabled, 1 disabled
+    corebits_set_bit(&context.enabled_cores, 0);
+    corebits_set_bit(&context.enabled_cores, 2);
+
+    uint32_t timeout_ms = 100;
+
+    // Mock platform detection
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    expect_value(__wrap_FpFwAssert, expression, 1);
+
+    __real_ap_core_ppu_clusters_on_off(&context, timeout_ms);
+}

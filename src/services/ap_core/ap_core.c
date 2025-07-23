@@ -49,6 +49,9 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define IS_PLATFORM_REQUIRING_WORKAROUND_CLUSTER_POWER_ON_OFF(p)                            \
+    ((p) == PLATFORM_RVP_EVT_SILICON || (p) == PLATFORM_EMU_1D || (p) == PLATFORM_EMU_2D || \
+     (p) == PLATFORM_EMU_1D_8C || (p) == PLATFORM_EMU_2D_8C)
 
 /*------------- Typedefs -----------------*/
 
@@ -136,7 +139,22 @@ static void ap_core_ssi_start_cluster_init(pssi_startup_notification_request_t p
 {
     // turn on cluster PPUs
     APCORE_LOG_INFO("Cluster power on");
-    ap_core_ppu_clusters_on(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+    KNG_PLAT_ID platform = idsw_get_platform_sdv();
+    if (IS_PLATFORM_REQUIRING_WORKAROUND_CLUSTER_POWER_ON_OFF(platform))
+    {
+        /**
+         * ERRATUM 632023       - PPUCLK is not gated when the cluster is powered off.
+         * FW Workaround 724307 - During boot all DSU's must transition the Cluster PPU from OFF to ON,
+         *                        even those clusters which have a core disabled.
+         *                        Following transition to ON for all Cluster PPUs, those that have a
+         *                        disabled core can be moved back to OFF state.
+         */
+        ap_core_ppu_clusters_on_off(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+    }
+    else
+    {
+        ap_core_ppu_clusters_on(&s_ap_core_ctx, DEFAULT_POWER_TRANSITION_TIMEOUT_MS);
+    }
     // for now, PPU is synchronous
     DfwkAsyncRequestComplete(&p_request->header);
 }
@@ -211,7 +229,6 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
     case SSI_STARTUP_STAGE_START_ASYNC: {
         pssi_startup_notification_request_t ssi_request = (pssi_startup_notification_request_t)p_request;
-
         // Complete request immediately if not a cold boot or stage is not MCP
         if (ssi_request->boot_type != COLD_BOOT && ssi_request->stage != STARTUP_MCP_LOAD)
         {
@@ -473,7 +490,6 @@ void ap_core_init(pap_core_service_t p_device,
 
     // initialize pik cluster remap base
     pik_clock_set_cluster_remapped_base(p_config->cluster_pex_base);
-
     ap_core_ppu_init(&s_ap_core_ctx);
 }
 

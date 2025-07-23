@@ -14,6 +14,7 @@
 #include <bug_check.h>
 #include <cluster_ppu_regs.h>
 #include <core_cluster_with_pvt_regs.h> // for CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS
+#include <core_clusters_common.h>
 #include <corebits.h>
 #include <idhw.h>
 #include <kng_error.h>
@@ -260,6 +261,53 @@ void ap_core_ppu_disable_handshaking(ap_core_service_context_t* p_context)
 
             ppu_v1_disable_handshake(core_ppu_addr);
             ppu_v1_disable_handshake(cluster_ppu_addr);
+        }
+    }
+}
+
+/**
+ * ERRATUM 632023       - PPUCLK is not gated when the cluster is powered off.
+ * FW Workaround 724307 - During boot all DSU's must transition the Cluster PPU from OFF to ON,
+ *                        even those clusters which have a core disabled.
+ *                        Following transition to ON for all Cluster PPUs, those that have a
+ *                        disabled core can be moved back to OFF state.
+ */
+void ap_core_ppu_clusters_on_off(ap_core_service_context_t* p_context, uint32_t timeout_ms)
+{
+    FPFW_RUNTIME_ASSERT(p_context != NULL);
+    KNG_PLAT_ID platform = idsw_get_platform_sdv();
+    uint8_t num_cores_per_die = 0;
+    if (platform == PLATFORM_RVP_EVT_SILICON)
+    {
+        num_cores_per_die = p_context->p_config->platform_die_core_count;
+    }
+    else if ((platform == PLATFORM_EMU_1D) || (platform == PLATFORM_EMU_2D))
+    {
+        num_cores_per_die = CORE_CLUSTER_AP_CORES_EMU;
+    }
+    else if ((platform == PLATFORM_EMU_1D_8C) || (platform == PLATFORM_EMU_2D_8C))
+    {
+        num_cores_per_die = CORE_CLUSTER_AP_CORES_EMU_8C;
+    }
+    else
+    {
+        // Handle unsupported platform values
+        APCORE_LOG_INFO("Unsupported platform detected");
+        return;
+    }
+
+    for (unsigned int core_idx = 0; core_idx < num_cores_per_die; ++core_idx)
+    {
+        // Transition all cluster PPU from OFF->ON
+        cluster_set_power_state(p_context, core_idx, true, timeout_ms);
+    }
+
+    for (unsigned int core_idx = 0; core_idx < num_cores_per_die; ++core_idx)
+    {
+        // Transition cluster PPU from ON->OFF that have disabled cores
+        if (!corebits_is_bit_set(&p_context->enabled_cores, core_idx))
+        {
+            cluster_set_power_state(p_context, core_idx, false, timeout_ms);
         }
     }
 }

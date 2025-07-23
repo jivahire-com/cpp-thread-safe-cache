@@ -31,7 +31,23 @@
     </Struct>
 
     <Struct name="pcie_prod_phy_cfg_t" help="Knobs to configure PHY per lane per RPSS">
-      <Member name="phy_lane_cfgs" type="pcie_phy_lane_cfg_t" count="16" help="Per-PHY lane configuration structure" />
+      <!--                                                                                                                      rec_ctrl_en,  rec_ctrl_mode,  rec_addr,  rec_base,  rec_en_sts-->
+      <Member name="phy_lane_cfgs" type="pcie_phy_lane_cfg_t" count="16" help="Per-PHY lane configuration structure" default="{{  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      },
+                                                                                                                               {  false,        false,          0,         0,        false      }}"/>
     </Struct>
   </Structs>
 

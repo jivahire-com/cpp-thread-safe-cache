@@ -97,23 +97,45 @@ static int get_ts_idx(uint8_t i3c_dev_idx, int channel_idx)
     return (I3C_DEVICE_STRIDE * (i3c_dev_idx) + (channel_idx == 0 ? DDR0_TS0 : DDR0_TS1));
 }
 
-static uint8_t i3c_get_dev_id(uint32_t ddrss_index)
+static uint8_t i3c_get_dev_id(KNG_DIE_ID die_id, uint32_t ddrss_index)
 {
+    // DDRSS Index || Device ID
+    //     0-1             0
+    //     2-3             2
+    //     4-5             1
+    if (die_id == DIE_0)
+    {
+        if (ddrss_index <= DDR1_DIMM)
+        {
+            return DDR_I3C_DEV_ID_0;
+        }
+        if (ddrss_index <= DDR3_DIMM)
+        {
+            return DDR_I3C_DEV_ID_2;
+        }
+        if (ddrss_index <= DDR5_DIMM)
+        {
+            return DDR_I3C_DEV_ID_1;
+        }
+    }
     // DDRSS Index || Device ID
     //     0-1             0
     //     2-3             1
     //     4-5             2
-    if (ddrss_index <= DDR1_DIMM)
+    if (die_id == DIE_1)
     {
-        return DDR_I3C_DEV_ID_0;
-    }
-    if (ddrss_index <= DDR3_DIMM)
-    {
-        return DDR_I3C_DEV_ID_1;
-    }
-    if (ddrss_index <= DDR5_DIMM)
-    {
-        return DDR_I3C_DEV_ID_2;
+        if (ddrss_index <= DDR1_DIMM)
+        {
+            return DDR_I3C_DEV_ID_0;
+        }
+        if (ddrss_index <= DDR3_DIMM)
+        {
+            return DDR_I3C_DEV_ID_1;
+        }
+        if (ddrss_index <= DDR5_DIMM)
+        {
+            return DDR_I3C_DEV_ID_2;
+        }
     }
     return DDR_I3C_DEV_MAX;
 }
@@ -147,7 +169,7 @@ void ddr_manager_i3c_init()
         }
 
         // Convert from DDRSS_EN to I3C Slave Device Enum
-        i3c_dev_idx = i3c_get_dev_id(dimm);
+        i3c_dev_idx = i3c_get_dev_id(die_id, dimm);
         ddr_i3c_sensors.dimm[dimm].ts0_dev_id = get_ts_idx(i3c_dev_idx, 0);
         ddr_i3c_sensors.dimm[dimm].ts1_dev_id = get_ts_idx(i3c_dev_idx, 1);
         ddr_i3c_sensors.dimm[dimm].pmic_dev_id = get_pmic_reg(dimm);

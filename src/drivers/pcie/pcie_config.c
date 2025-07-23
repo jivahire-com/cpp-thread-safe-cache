@@ -366,10 +366,10 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
     case RPSS3:
         *pcie_cfg_knob = config_get_pcie_rpss0_cfg();
         *phy_cfg_knob = config_get_pcie_rpss0_phy_cfg();
-        rp_knobs[0] = config_get_pcie_rpss0_rp0_cfg(); // RP0  maps to RPSS0 RP2
-        rp_knobs[1] = config_get_pcie_rpss0_rp1_cfg(); // RP1  maps to RPSS0 RP3
-        rp_knobs[2] = config_get_pcie_rpss0_rp2_cfg(); // RP2  maps to RPSS0 RP0
-        rp_knobs[3] = config_get_pcie_rpss0_rp3_cfg(); // RP3  maps to RPSS0 RP1
+        rp_knobs[0] = config_get_pcie_rpss0_rp2_cfg(); // RP0  maps to RPSS0 RP2
+        rp_knobs[1] = config_get_pcie_rpss0_rp3_cfg(); // RP1  maps to RPSS0 RP3
+        rp_knobs[2] = config_get_pcie_rpss0_rp0_cfg(); // RP2  maps to RPSS0 RP0
+        rp_knobs[3] = config_get_pcie_rpss0_rp1_cfg(); // RP3  maps to RPSS0 RP1
         break;
     case RPSS4:
         *pcie_cfg_knob = config_get_pcie_rpss7_cfg();

@@ -64,7 +64,9 @@ void update_error_record_section(uint16_t error_domain_idx,
         }
 
         // update error record
-        current_domain_error_record_base->error_severity = err_severity;
+        // override error severity if it is recoverable 
+        // As OS tries to recover but will end up with OS BUG_CHECK as don't know how to recover
+        current_domain_error_record_base->error_severity = ((err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL) ? ACPI_ERROR_SEVERITY_CORRECTED : err_severity);
 
         if ((err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL) ||
             (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL))

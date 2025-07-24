@@ -178,7 +178,10 @@ void wait_ssi_complete(sos_stage_timeout_t current_stage)
                                     MS_TO_TX_TICKS(current_stage.timeout_ms));
     SOS_LOG_TRACE("Received flags: %lx", flags);
 
-    BUG_ASSERT_PARAM((status == TX_SUCCESS), status, TX_SUCCESS);
+    BUG_ASSERT_PARAM((status == TX_SUCCESS),
+                     status,
+                     (current_stage.stage_category == BOOT_STAGE) ? current_stage.operation_stage.boot
+                                                                  : current_stage.operation_stage.shutdown);
 }
 
 void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,

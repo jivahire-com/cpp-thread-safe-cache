@@ -35,6 +35,7 @@ target_link_libraries(${TARGET}
         ms::lib::gtimer
         ms::lib::pwr_tlm_core_ex
         silibs::dvfs
+        silibs::pvt
         silibs::semaphore
 )
 

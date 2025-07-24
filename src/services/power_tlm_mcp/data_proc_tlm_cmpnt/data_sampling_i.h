@@ -16,6 +16,7 @@
 
 #include <FpFwUtils.h>
 #include <fpfw_status.h>
+#include <pvt_struct.h>
 #include <sensor_fifo_service.h> // for sensor ram data structures
 #include <stdint.h>
 #include <telemetry_package_defs.h>
@@ -24,7 +25,11 @@
 
 #define MAX_BUFFER_ENTRIES 		 8
 #define MAX_NUMBER_POWER_SAMPLE  100
-#define DOUT2MILLIVOLTS(voltage) (voltage * 1000)
+
+
+#define DOUT2MILLIVOLTS(dout) ((uint16_t)(DOUT2VOLTS((dout)) * 1000.0f))
+#define MILLIVOLTS2DOUT(mv) (VOLTS2DOUT(((mv) / 1000.0f)))
+
 #define MICROSECONDS_TO_MILLISECONDS(time_diff_uS) ((time_diff_uS) / 1000)
 
 

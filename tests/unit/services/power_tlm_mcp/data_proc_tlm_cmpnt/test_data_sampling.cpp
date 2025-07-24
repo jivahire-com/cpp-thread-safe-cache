@@ -445,10 +445,10 @@ TEST_FUNCTION(test_data_smpl_parse_tile_voltage_entry, test_setup, test_teardown
         .timestamp = 0,
         .data =
             {
-                .vcore0 = 5,
-                .vcore1 = 6,
-                .vcpu = 10,
-                .vsys = 80,
+                .vcore0 = MILLIVOLTS2DOUT(500),
+                .vcore1 = MILLIVOLTS2DOUT(6),
+                .vcpu = MILLIVOLTS2DOUT(10),
+                .vsys = MILLIVOLTS2DOUT(80),
             },
     };
 
@@ -456,10 +456,11 @@ TEST_FUNCTION(test_data_smpl_parse_tile_voltage_entry, test_setup, test_teardown
     data_smpl_parse_tile_voltage_entry(&voltage_data, index);
 
     // Check core 0 and core 1 voltage
-    assert_int_equal(core_rt[index].latest_voltage_mV, (uint16_t)(voltage_data.data.vcore0 * 1000));
-    assert_int_equal(core_rt[index + 1].latest_voltage_mV, (uint16_t)(voltage_data.data.vcore1 * 1000));
-    assert_int_equal(tile_rt[index].latest_vcpu_voltage_mV, (uint16_t)(voltage_data.data.vcpu * 1000));
-    assert_int_equal(tile_rt[index].latest_vsys_voltage_mV, (uint16_t)(voltage_data.data.vsys * 1000));
+    // have to use range check due to float/fixed point conversions
+    assert_in_range(core_rt[index].latest_voltage_mV, 499, 500);
+    assert_in_range(core_rt[index + 1].latest_voltage_mV, 5, 6);
+    assert_in_range(tile_rt[index].latest_vcpu_voltage_mV, 9, 10);
+    assert_in_range(tile_rt[index].latest_vsys_voltage_mV, 79, 80);
 
     // test index out of range
     index = NUMBER_OF_TILES_PER_DIE;

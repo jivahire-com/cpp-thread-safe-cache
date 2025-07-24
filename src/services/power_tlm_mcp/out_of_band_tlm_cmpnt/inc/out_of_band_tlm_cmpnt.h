@@ -29,3 +29,8 @@ void out_of_band_tlm_cmpnt_init(uint8_t die_id);
  * @brief Handle PLDM requests
  */
 void out_of_band_tlm_cmpnt_handle_new_pldm_requests(void);
+
+/**
+ * @brief Print the sensors in the out of band telemetry component.
+ */
+void out_of_band_tlm_cmpnt_print_sensors(void);

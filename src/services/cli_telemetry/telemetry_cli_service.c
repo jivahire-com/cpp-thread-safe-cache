@@ -39,6 +39,7 @@ static FPFW_CLI_STATUS read_power_fuse_soctop(int Argc, const char** Argv);
 static FPFW_CLI_STATUS disable_collection(int Argc, const char** Argv);
 static FPFW_CLI_STATUS change_mode(int Argc, const char** Argv);
 static FPFW_CLI_STATUS change_timer_periods(int Argc, const char** Argv);
+static FPFW_CLI_STATUS oob_log(int Argc, const char** Argv);
 
 static bool parse_arg(const char* arg, uint32_t* out);
 
@@ -51,6 +52,7 @@ static FPFW_CLI_COMMAND cli_pwr_tlm_commands[] = {
     {NULL_LIST_ENTRY, "pwrtlm", "disable", disable_collection, "Disable data Collection", "Usage: disable"},
     {NULL_LIST_ENTRY, "pwrtlm", "mode", change_mode, "Change Mode", "Usage: mode <disabled | publish | collect | snsr_fifo_dbg> "},
     {NULL_LIST_ENTRY, "pwrtlm", "timers", change_timer_periods, "Change timer periods in mS", "Usage: timers (mS) <aggr_tmr> <inst_tmr> <pwr_tmr> <24hr_tmr> "},
+    {NULL_LIST_ENTRY, "pwrtlm", "ooblog", oob_log, "Log Out of Band Sensors", "Usage: ooblog <enable | disable> "},
 };
 
 /*------------- Functions ----------------*/
@@ -223,6 +225,35 @@ static FPFW_CLI_STATUS change_timer_periods(int Argc, const char** Argv)
     }
 
     FpFwCliPrint("\nERROR:: %s\n", cli_pwr_tlm_commands[6].Usage);
+    return CLI_ERROR;
+}
+
+static FPFW_CLI_STATUS oob_log(int Argc, const char** Argv)
+{
+    if (Argc == 2)
+    {
+        bool oob_logging = false;
+
+        if (strcmp(Argv[1], "enable") == 0)
+        {
+            oob_logging = true;
+        }
+        else if (strcmp(Argv[1], "disable") == 0)
+        {
+            oob_logging = false;
+        }
+        else
+        {
+            FpFwCliPrint("\nERROR:: %s\n", cli_pwr_tlm_commands[7].Usage);
+            return CLI_ERROR;
+        }
+
+        exec_tlm_cmpnt_set_oob_log_enable(oob_logging);
+
+        return CLI_SUCCESS;
+    }
+
+    FpFwCliPrint("\nERROR:: %s\n", cli_pwr_tlm_commands[7].Usage);
     return CLI_ERROR;
 }
 

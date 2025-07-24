@@ -102,6 +102,11 @@ bool in_band_tlm_cmpnt_is_any_instantaneous_enabled(void)
     return mock_type(bool);
 }
 
+void out_of_band_tlm_cmpnt_print_sensors(void)
+{
+    function_called();
+}
+
 UINT __wrap__txe_timer_info_get(TX_TIMER* timer_ptr, CHAR** name, UINT* active, ULONG* remaining_ticks, ULONG* reschedule_ticks, TX_TIMER** next_timer)
 {
     FPFW_UNUSED(timer_ptr);

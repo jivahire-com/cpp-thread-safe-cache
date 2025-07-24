@@ -243,3 +243,13 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_soc_avg_freq_negative, test_setup, test_teard
     fpfw_pldm_composite_value_t sensor_value = {{{0}}};
     pwr_tlm_oob_get_soc_avg_freq(PLDM_SENSOR_ID_POWER_TLM_LAST, &sensor_value);
 }
+
+TEST_FUNCTION(test_out_of_band_tlm_cmpnt_print_sensors, test_setup, test_teardown)
+{
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC, 800);
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_pwr_mW, 0xFF000000);
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC, 1000);
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW, 0xFF000000);
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz, 3600);
+    out_of_band_tlm_cmpnt_print_sensors();
+}

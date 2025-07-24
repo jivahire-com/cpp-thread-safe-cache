@@ -123,3 +123,9 @@ uint64_t exec_tlm_cmpnt_get_timestamp_microseconds(void);
  * @return None
  */
 void exec_tlm_cmpnt_udpdate_timer_periods(uint32_t data_aggr_period_ms, uint32_t inst_pkg_sample_period_ms, uint32_t pwr_pkg_period_ms, uint32_t twenty_four_hr_pkg_period_ms);
+
+/**
+ * @brief Set the Out of Band logging enable state.
+ * @param[in] enable true to enable OOB logging, false to disable.
+ */
+void exec_tlm_cmpnt_set_oob_log_enable(bool enable);

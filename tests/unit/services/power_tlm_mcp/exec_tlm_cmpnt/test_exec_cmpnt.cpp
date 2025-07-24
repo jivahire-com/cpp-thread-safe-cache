@@ -57,6 +57,7 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_change_telemetry_mode_disable, test_setup, tes
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
 
     exec_tlm_cmpnt_change_telemetry_mode(TLM_OP_MODE_DISABLED);
 
@@ -209,13 +210,14 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_init, test_setup, test_teardown)
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
     expect_any_always(__wrap__txe_event_flags_create, group_ptr);
     expect_any_always(__wrap__txe_event_flags_create, name_ptr);
     expect_any_always(__wrap__txe_event_flags_create, event_control_block_size);
     will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
 
-    expect_function_calls(__wrap_FpFwAssertWithArgs, 6);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 7);
 
     exec_tlm_cmpnt_init(1, 1000, 100, 86000);
 
@@ -269,6 +271,18 @@ TEST_FUNCTION(test_every_24hr_pkg_timer_cb, test_setup, test_teardown)
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
     every_24hr_pkg_timer_cb(0);
+}
+
+TEST_FUNCTION(test_oob_timer_cb, test_setup, test_teardown)
+{
+    expect_any_always(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, OOB_TMR_EXPIRED);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+    oob_timer_cb(0);
 }
 
 TEST_FUNCTION(test_exec_tlm_cmpnt_notify_new_in_band_mts_message, test_setup, test_teardown)
@@ -341,7 +355,7 @@ TEST_FUNCTION(test_exec_tlm_run_timer_enter_actions, test_setup, test_teardown)
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     run_timer_enter_actions(TLM_OP_MODE_COLLECTING_DATA);
 
-    // no entry actions
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     run_timer_enter_actions(TLM_OP_MODE_SENSOR_FIFO_RAW_DATA);
 
     // test invalid mode
@@ -466,4 +480,20 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_is_oob_data_valid, test_setup, test_teardown)
 
     tlm_executive_status.op_mode = TLM_OP_MODE_SENSOR_FIFO_RAW_DATA;
     assert_false(exec_tlm_cmpnt_is_oob_data_valid());
+}
+
+TEST_FUNCTION(test_exec_tlm_cmpnt_set_oob_log_enable, test_setup, test_teardown)
+{
+    exec_set_die_id(0);
+
+    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
+
+    exec_tlm_cmpnt_set_oob_log_enable(true);
+
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    exec_tlm_cmpnt_set_oob_log_enable(false);
+
+    exec_set_die_id(1);
+    exec_tlm_cmpnt_set_oob_log_enable(true);
+    exec_tlm_cmpnt_set_oob_log_enable(false);
 }

@@ -23,8 +23,9 @@
 #define INST_SAMPLE_TMR_EXPIRED    (1 << 2)
 #define PWR_PKG_TMR_EXPIRED        (1 << 3)
 #define EVERY_24HR_PKG_TMR_EXPIRED (1 << 4)
-#define NEW_INBAND_MTS_MESSAGE     (1 << 5)
-#define NEW_OUT_OF_BAND_PLDM_REQ   (1 << 6)
+#define OOB_TMR_EXPIRED            (1 << 5)
+#define NEW_INBAND_MTS_MESSAGE     (1 << 6)
+#define NEW_OUT_OF_BAND_PLDM_REQ   (1 << 7)
 
 /*-------------- Typedefs ----------------*/
 
@@ -44,6 +45,8 @@ void data_aggr_timer_cb(ULONG context);
 void inst_sample_timer_cb(ULONG context);
 void pwr_pkg_timer_cb(ULONG context);
 void every_24hr_pkg_timer_cb(ULONG context);
+void oob_timer_cb(ULONG context);
 
 void run_timer_exit_actions(tlm_operating_mode_t exiting_mode);
 void run_timer_enter_actions(tlm_operating_mode_t entering_mode);
+void exec_set_die_id(uint8_t die_id);

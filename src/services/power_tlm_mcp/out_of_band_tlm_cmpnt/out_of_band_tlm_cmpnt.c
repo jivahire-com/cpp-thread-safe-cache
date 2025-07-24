@@ -12,6 +12,7 @@
 
 #include "out_of_band_tlm_cmpnt_i.h"
 
+#include <DbgPrint.h>
 #include <FpFwAssert.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <exec_tlm_cmpnt.h>
@@ -225,4 +226,20 @@ void pwr_tlm_oob_get_soc_avg_freq(uint16_t sensor_id, fpfw_pldm_composite_value_
     {
         FPFW_ET_LOG(UnexpectedSensorId, PLDM_SENSOR_ID_POWER_TLM_SOC_AVG_FREQ_NUM_SENS, sensor_id);
     }
+}
+
+void out_of_band_tlm_cmpnt_print_sensors(void)
+{
+    uint16_t max_soc_temp_dC = data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC();
+    uint32_t soc_pwr_mW = data_proc_tlm_cmpnt_get_oob_soc_pwr_mW();
+    uint16_t max_dimm_tmp_dC = data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC();
+    uint32_t dimm_total_pwr_mW = data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW();
+    uint16_t soc_avg_freq_Mhz = data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz();
+
+    FPFW_DBGPRINT_ALWAYS("OOB Sensors:\n");
+    FPFW_DBGPRINT_ALWAYS("SOC_TMP_MAX: %d dC\n", max_soc_temp_dC);
+    FPFW_DBGPRINT_ALWAYS("SOC_PWR: %d mW\n", soc_pwr_mW);
+    FPFW_DBGPRINT_ALWAYS("DIMM_TMP_MAX: %d dC\n", max_dimm_tmp_dC);
+    FPFW_DBGPRINT_ALWAYS("DIMM_TOTAL_PWR: %d mW\n", dimm_total_pwr_mW);
+    FPFW_DBGPRINT_ALWAYS("SOC_AVG_FREQ: %d MHz\n", soc_avg_freq_Mhz);
 }

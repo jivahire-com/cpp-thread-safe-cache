@@ -37,6 +37,8 @@
 
 #define ALL_EVENT_GROUP_BITS (0xFFFFFFFF)
 
+#define PRIMARY_DIE_ID (0)
+
 // Both power package and 24 hour package need to get data from other cores. This is the amount of delay
 // for data to be written for the package
 #define PACKAGE_GENERATION_DELAY_MS (100)
@@ -62,6 +64,7 @@ TX_TIMER data_aggr_tmr;
 TX_TIMER inst_sample_tmr;
 TX_TIMER power_pkg_tmr;
 TX_TIMER _24hr_pkg_tmr;
+TX_TIMER oob_print_tmr;
 
 TX_EVENT_FLAGS_GROUP s_thread_control;
 tlm_operating_mode_t pending_mode_change;
@@ -77,6 +80,11 @@ telemetry_executive_status_t tlm_executive_status = {
     .data_aggr_timer_active = false,
     .twenty_four_hr_pkg_timer_active = false,
 };
+
+void exec_set_die_id(uint8_t die_id)
+{
+    this_die_id = die_id;
+}
 
 /*------------- Functions ----------------*/
 void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t inst_pkg_sample_period_ms, uint32_t _24_hr_pkg_sample_period_ms)
@@ -139,6 +147,15 @@ void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t in
         MS_TO_TX_TICKS(tlm_executive_status.twenty_four_hr_pkg_period_ms), /* ULONG initial_ticks >= 1 */
         MS_TO_TX_TICKS(tlm_executive_status.twenty_four_hr_pkg_period_ms), /* ULONG  reschedule_ticks */
         TX_NO_ACTIVATE);                                                   /* UINT auto_activate) */
+    FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
+
+    txStatus = tx_timer_create(&oob_print_tmr,       /* TX_TIMER *timer_ptr */
+                               "oob_print_tmr",      /* CHAR *name_ptr */
+                               oob_timer_cb,         /* VOID (*expiration_function)(ULONG input)*/
+                               0,                    /* ULONG expiration_input */
+                               MS_TO_TX_TICKS(2000), /* ULONG initial_ticks >= 1 */
+                               MS_TO_TX_TICKS(2000), /* ULONG  reschedule_ticks */
+                               TX_NO_ACTIVATE);      /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
     txStatus = tx_event_flags_create(&s_thread_control, "Telemetry Service Event");
@@ -233,6 +250,13 @@ void tlm_svc_thread(ULONG thread_input)
         {
             in_band_tlm_cmpnt_handle_incoming_mts_msgs();
         }
+
+        if (current_bits & OOB_TMR_EXPIRED)
+        {
+            // this timer is used to print out the OOB sensor data
+            // it is not used for any other purpose
+            out_of_band_tlm_cmpnt_print_sensors();
+        }
     }
 }
 
@@ -265,6 +289,14 @@ void every_24hr_pkg_timer_cb(ULONG context)
     FPFW_UNUSED(context);
 
     UINT txStatus = tx_event_flags_set(&s_thread_control, EVERY_24HR_PKG_TMR_EXPIRED, TX_OR);
+    FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
+}
+
+void oob_timer_cb(ULONG context)
+{
+    FPFW_UNUSED(context);
+
+    UINT txStatus = tx_event_flags_set(&s_thread_control, OOB_TMR_EXPIRED, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
@@ -406,6 +438,24 @@ void exec_tlm_cmpnt_change_telemetry_mode(tlm_operating_mode_t new_mode)
     FPFW_ET_LOG(ExecTlmSvcModeChange, current_mode, new_mode);
 }
 
+void exec_tlm_cmpnt_set_oob_log_enable(bool enable)
+{
+    if (this_die_id == PRIMARY_DIE_ID)
+    {
+
+        if (enable)
+        {
+            // Enable OOB logging
+            tx_timer_activate(&oob_print_tmr);
+        }
+        else
+        {
+            // Disable OOB logging
+            tx_timer_deactivate(&oob_print_tmr);
+        }
+    }
+}
+
 void run_timer_exit_actions(tlm_operating_mode_t exiting_mode)
 {
     switch (exiting_mode)
@@ -454,6 +504,7 @@ void run_timer_enter_actions(tlm_operating_mode_t entering_mode)
         tx_timer_deactivate(&inst_sample_tmr);
         tx_timer_deactivate(&power_pkg_tmr);
         tx_timer_deactivate(&_24hr_pkg_tmr);
+        tx_timer_deactivate(&oob_print_tmr);
         break;
 
     case TLM_OP_MODE_COLLECTING_DATA:
@@ -461,6 +512,7 @@ void run_timer_enter_actions(tlm_operating_mode_t entering_mode)
         break;
 
     case TLM_OP_MODE_SENSOR_FIFO_RAW_DATA:
+        tx_timer_deactivate(&oob_print_tmr);
         break;
 
     default:

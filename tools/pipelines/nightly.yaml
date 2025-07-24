@@ -74,8 +74,9 @@ stages:
     parameters:
       ArtifactName: MSCP_DualDie
       TestPlan: .\tests\functional\test_plan\fpga_dual_die_test_plan.args
-      TestVehicleCapability: 'DualDieFPGA'
-      Pool: '1pfw-kingsgate-bigfpga-pipelines'
+      #TestVehicleCapability: 'DualDieFPGA'
+      TestAgent: 'RDU-120015-DF14'
+      Pool: '1pfw-kingsgate-big-fpga'
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote

@@ -8,10 +8,12 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DfwkThreadXHost.h>         // for DFWK_THREADX_HOST
 #include <FpFwAssert.h>              // for FPFW_RUNTIME_ASSERT
 #include <addressblock0_regs.h>      // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
 #include <bug_check.h>               // for BUG_CHECK
 #include <crash_dump.h>              // for crash_dump_init
+#include <crash_dump_dfwk.h>         // for crash_dump_device_t, crash_dump_interface_t
 #include <crash_dump_events.h>       // for CRASH_DUMP_ET
 #include <crash_dump_memory.h>       // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE
 #include <exception_handler.h>       // for exception_handler_init
@@ -116,6 +118,19 @@ FPFW_INIT_COMPONENT(cd_mhu_loc, FPFW_INIT_DEPENDENCIES("cd_init", "icc_mscp2mscp
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
+FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk"))
+{
+    // Initialize the crash dump driver
+    static crash_dump_device_t crash_dump_device;
+    static crash_dump_interface_t crash_dump_interface;
+    DFWK_THREADX_HOST* dfwk_host = (DFWK_THREADX_HOST*)fpfw_init_get_handle("dfwk");
+
+    crash_dump_device_initialize(&crash_dump_device, &(dfwk_host->Schedule));
+    crash_dump_interface_initialize(&crash_dump_interface, &crash_dump_device);
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &crash_dump_interface};
+}
+
 static void pldm_platform_event_ready_callback(uint16_t event_id, void* context)
 {
     FPFW_UNUSED(event_id);
@@ -125,7 +140,7 @@ static void pldm_platform_event_ready_callback(uint16_t event_id, void* context)
     crash_dump_transfer_full_dump_to_bmc();
 }
 
-FPFW_INIT_COMPONENT(cd_pldm, FPFW_INIT_DEPENDENCIES("cd_init", "pldm"))
+FPFW_INIT_COMPONENT(cd_pldm, FPFW_INIT_DEPENDENCIES("cd_drv", "pldm"))
 {
     if (idsw_get_die_id() == DIE_0)
     {

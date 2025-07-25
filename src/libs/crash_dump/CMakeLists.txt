@@ -31,6 +31,7 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PUBLIC
+        fwlib.dfwk
         fwlib.lib.crashDump
         fwlib.service.iccBase
         ms::lib::debug
@@ -42,7 +43,6 @@ target_link_libraries(${TARGET}
         silibs::sdm_command_desc
         silibs::semaphore
     PRIVATE
-        fwlib.dfwk
         fwlib.lib.assert
         fwlib.lib.cfg_mgr
         fwlib.lib.init

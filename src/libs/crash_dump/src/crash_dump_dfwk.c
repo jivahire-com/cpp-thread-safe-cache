@@ -4,8 +4,10 @@
  */
 
 /*------------- Includes -----------------*/
+#include "crash_dump_pldm.h"
 #include "crash_dump_status.h"
 
+#include <DfwkClient.h>
 #include <DfwkHost.h>
 #include <bug_check.h>
 #include <crash_dump.h>
@@ -57,6 +59,13 @@ static void crash_dump_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* contex
         BUG_ASSERT(ret == TX_SUCCESS);
     }
     break;
+    case CRASH_DUMP_START_TRANSFER_ASYNC: {
+        pcrash_dump_request_t cd_request = (pcrash_dump_request_t)request;
+        cd_request->status = crash_dump_pldm_transfer_dump();
+
+        DfwkAsyncRequestComplete(request);
+    }
+    break;
     default:
         // Unsupported request type. Complete immediately.
         DfwkAsyncRequestComplete(request);
@@ -77,4 +86,38 @@ void crash_dump_interface_initialize(pcrash_dump_interface_t intf, pcrash_dump_d
     // Initialize interface with device.
     intf->Device = device;
     DfwkInterfaceInitialize(&intf->Header, &intf->Device->Header, &intf->Device->Queue, NULL); // Synchonous request is not supported.
+}
+
+uint32_t crash_dump_start_transfer_async(pcrash_dump_interface_t iface,
+                                         pcrash_dump_request_t request,
+                                         DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE callback,
+                                         void* context)
+{
+    // Validate input arguments.
+    if (iface == NULL || request == NULL || callback == NULL)
+    {
+        return KNG_E_INVALIDARG;
+    }
+
+    if (iface->Device == NULL)
+    {
+        // Crash dump interface is not initialized properly.
+        return KNG_E_HANDLE;
+    }
+
+    if (request->Header.AllocatedSize != sizeof(crash_dump_request_t))
+    {
+        // Request is not properly initialized. Initialize the request.
+        DfwkAsyncRequestInitialize(&request->Header, sizeof(crash_dump_request_t));
+    }
+
+    // Configure the request.
+    request->Header.RequestType = CRASH_DUMP_START_TRANSFER_ASYNC;
+    DfwkAsyncRequestSetCompletionRoutine(&request->Header, callback, context);
+
+    // Send the request to Crash dump driver.
+    DfwkClientInterfaceOpen(&iface->Header);
+    DfwkInterfaceSendAsync(&iface->Header, &request->Header);
+
+    return KNG_SUCCESS;
 }

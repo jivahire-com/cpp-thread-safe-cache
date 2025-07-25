@@ -432,7 +432,14 @@ uint32_t crash_dump_stream_read(crash_dump_stream_t* stream, uint8_t* buffer, co
 
             if (bytes_to_read > 0)
             {
-                memcpy(buffer + bytes_read, (uint8_t*)(chunk->start + stream->current_chunk_offset), bytes_to_read);
+                // memcpy(buffer + bytes_read,
+                //        (uint8_t*)(chunk->start + stream->current_chunk_offset),
+                //        bytes_to_read);
+                // buffer or size can be un-aligned, so we copy byte by byte
+                for (uint32_t i = 0; i < bytes_to_read; i++)
+                {
+                    buffer[bytes_read + i] = *((uint8_t*)(chunk->start + stream->current_chunk_offset + i));
+                }
                 bytes_read += bytes_to_read;
                 stream->current_chunk_offset += bytes_to_read;
 

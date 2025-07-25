@@ -14,6 +14,7 @@ extern "C" {
 #include <CrashDump.h>                // for FPFW_CD_DUMP_CALLBACK
 #include <FpFwUtils.h>                // for FPFW_UNUSED
 #include <crash_dump.h>               // for crash_dump_config_t, GetCrashDu...
+#include <crash_dump_dfwk.h>          // for crash_dump_interface_t
 #include <fpfw_icc_base.h>            // for icc_base_recv_complete_notify
 #include <idsw.h>                     // for idsw_plat_id_t
 #include <modules/CdDumpDescriptor.h> // for FPFwCDDumpDescriptorCtx, FPFwC...
@@ -101,6 +102,47 @@ void __wrap_DfwkInterfaceInitialize(PDFWK_INTERFACE_HEADER Interface,
     check_expected_ptr(Device);
     check_expected_ptr(DispatchQueue);
     check_expected_ptr(DispatchSync);
+
+    function_called();
+}
+
+void __wrap_DfwkAsyncRequestInitialize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
+{
+    assert_non_null(Request);     // Ensure the request is not NULL
+    assert_true(RequestSize > 0); // Ensure the request size is valid
+
+    function_called();
+}
+
+DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE static_cd_dfwk_CompletionRoutine = NULL;
+
+void __wrap_DfwkAsyncRequestSetCompletionRoutine(PDFWK_ASYNC_REQUEST_HEADER Request,
+                                                 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
+                                                 void* CompletionContext)
+{
+    assert_non_null(Request);
+    assert_non_null(CompletionRoutine);
+    check_expected(CompletionContext);
+
+    static_cd_dfwk_CompletionRoutine = CompletionRoutine;
+
+    function_called();
+}
+
+int32_t __wrap_DfwkClientInterfaceOpen(PDFWK_INTERFACE_HEADER Interface)
+{
+    assert_non_null(Interface);
+
+    function_called();
+
+    // Return success for the mock
+    return mock_type(int32_t);
+}
+
+void __wrap_DfwkInterfaceSendAsync(PDFWK_INTERFACE_HEADER Interface, PDFWK_ASYNC_REQUEST_HEADER Request)
+{
+    assert_non_null(Interface);
+    assert_non_null(Request);
 
     function_called();
 }
@@ -509,6 +551,14 @@ fpfw_status_t __wrap_fpfw_icc_base_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, void*
     function_called();
 
     return mock_type(fpfw_status_t);
+}
+
+void* __wrap_fpfw_init_get_handle(const char* id)
+{
+    assert_string_equal(id, "cd_drv");
+    function_called();
+
+    return mock_type(pcrash_dump_interface_t);
 }
 
 void __wrap_initialize_semaphore(SEMAPHORE_ID id)

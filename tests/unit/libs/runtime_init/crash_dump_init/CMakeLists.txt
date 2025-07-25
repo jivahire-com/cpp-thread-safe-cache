@@ -94,9 +94,11 @@ target_include_directories(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
+        fwlib.dfwk
         fwlib.lib.assert
         fwlib.lib.init
         fwlib.lib.crashDump
+        fwlib.platform.dfwkhost.threadx
         fwlib.service.pldm
         ms::cmocka::testrunner
         ms::cmsis::interface
@@ -130,6 +132,8 @@ mock_target(${TARGET}
     crash_dump_init
     crash_dump_register_dump
     crash_dump_config_icc
+    crash_dump_device_initialize
+    crash_dump_interface_initialize
     exception_handler_init
     fpfw_pldm_service_register_platform_event_ready_notification
     idsw_get_die_id

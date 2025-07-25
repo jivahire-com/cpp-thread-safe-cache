@@ -18,9 +18,11 @@
 #include <accelip_id.h>           // for ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <bug_check.h>            // for BUG_CHECK_EXTERNAL
 #include <crash_dump.h>           // for crash_dump_context
+#include <crash_dump_dfwk.h>      // for crash_dump_request_t
 #include <crash_dump_events.h>    // for CRASH_DUMP_ET
 #include <fpfw_cfg_mgr.h>         // for knobs
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
+#include <fpfw_init.h>            // for fpfw_init_get_handle
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
 #include <icc_mhu.h>              // for icc_mhu_request_t
 #include <icc_platform_defines.h> // for RMSS_D2D_MAILBOX_MSG_CRASHDUMP_SIGNAL_REQ
@@ -356,15 +358,33 @@ void crash_dump_remote_trigger()
     crash_dump_notify_hsp();
 }
 
-void crash_dump_transfer_full_dump_to_bmc()
+static void crash_dump_started_cb(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
+{
+    FPFW_UNUSED(CompletionContext);
+
+    crash_dump_request_t* cd_request = (crash_dump_request_t*)Request;
+
+    if (cd_request->status == FPFW_STATUS_SUCCESS)
+    {
+        FPFwCDPrintf("Crash dump transfer started successfully.\n");
+    }
+    else
+    {
+        FPFwCDPrintf("Crash dump transfer failed to start: status = 0x%08lx\n", cd_request->status);
+    }
+}
+uint32_t crash_dump_transfer_full_dump_to_bmc()
 {
     crash_dump_context_t* ctx = crash_dump_context();
 
     if (config_get_crash_dump_emit_only_minidump() || ctx->die_index != 0 || ctx->core_index != CRASH_DUMP_CORE_MCP)
     {
         // HSP will transfer mini dump to BMC
-        return;
+        return KNG_SUCCESS;
     }
 
-    crash_dump_pldm_transfer_dump();
+    pcrash_dump_interface_t cd_iface = fpfw_init_get_handle("cd_drv");
+    static crash_dump_request_t cd_request = {};
+
+    return crash_dump_start_transfer_async(cd_iface, &cd_request, crash_dump_started_cb, NULL);
 }

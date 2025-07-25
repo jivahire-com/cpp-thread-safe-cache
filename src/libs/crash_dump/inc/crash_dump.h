@@ -355,8 +355,9 @@ bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type);
 /**
  * @brief Transfers full crash dump to BMC.
  * 
+ * @return uint32_t Status of the operation.
  */
-void crash_dump_transfer_full_dump_to_bmc();
+uint32_t crash_dump_transfer_full_dump_to_bmc();
 
 #ifdef __cplusplus
 }

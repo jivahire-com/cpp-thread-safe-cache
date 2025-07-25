@@ -18,9 +18,9 @@
 /**
  * Transfers dump to BMC via PLDM
  *
- * @return None
+ * @return uint32_t Status of the operation.
  */
-void crash_dump_pldm_transfer_dump();
+uint32_t crash_dump_pldm_transfer_dump();
 
 /**
  * Returns whether dump transfer has completed

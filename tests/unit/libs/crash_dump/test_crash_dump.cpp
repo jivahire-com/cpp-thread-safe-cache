@@ -64,6 +64,9 @@ extern jmp_buf cd_test_setjmp_context;
 extern DFWK_ASYNC_REQUEST_DISPATCH static_dispatch_routine;
 extern VOID (*static_timer_cb)(ULONG id);
 
+extern bool transfer_completed;
+extern DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE static_cd_dfwk_CompletionRoutine;
+
 bool __real_crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
 bool __use_real_crash_dump_get_is_dump_complete = false;
 
@@ -1686,13 +1689,63 @@ TEST_FUNCTION(test_crash_dump_tx_full_dump_to_bm, nullptr, nullptr)
     crash_dump_header_t full_header = {.status = CRASH_DUMP_NOT_IN_USE};
     crash_dump_type_context_t mini_context = {.type = CRASH_DUMP_TYPE_MINI, .header = &mini_header};
     crash_dump_type_context_t full_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
-    crash_dump_context_t context = {.type_ctx = {&mini_context, &full_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
+    crash_dump_context_t context = {.type_ctx = {&mini_context, &full_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_MCP};
     will_return_always(__wrap_crash_dump_context, &context);
 
-    // ToDo: Add expectations once the function is fully implemented.
-    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484995
+    crash_dump_device_t crash_dump_device = {};
+    crash_dump_interface_t crash_dump_interface = {.Device = &crash_dump_device};
+    will_return(__wrap_fpfw_init_get_handle, &crash_dump_interface);
+    expect_function_call(__wrap_fpfw_init_get_handle);
 
-    crash_dump_transfer_full_dump_to_bmc();
+    expect_function_call(__wrap_DfwkAsyncRequestInitialize);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, NULL);
+    expect_function_call(__wrap_DfwkAsyncRequestSetCompletionRoutine);
+    will_return(__wrap_DfwkClientInterfaceOpen, 0);
+    expect_function_call(__wrap_DfwkClientInterfaceOpen);
+    expect_function_call(__wrap_DfwkInterfaceSendAsync);
+
+    uint32_t result = crash_dump_transfer_full_dump_to_bmc();
+    assert_int_equal(result, FPFW_STATUS_SUCCESS);
+
+    // Test completion callback
+    crash_dump_request_t cd_request = {.Header = {.RequestType = CRASH_DUMP_START_TRANSFER_ASYNC},
+                                       .status = FPFW_STATUS_SUCCESS};
+    static_cd_dfwk_CompletionRoutine(&cd_request.Header, NULL);
+
+    cd_request.status = FPFW_STATUS_FAIL;
+    static_cd_dfwk_CompletionRoutine(&cd_request.Header, NULL);
+
+    static_cd_dfwk_CompletionRoutine = NULL;
+}
+
+TEST_FUNCTION(test_crash_dump_tx_full_dump_to_bm_no_op, nullptr, nullptr)
+{
+    crash_dump_header_t mini_header = {.status = CRASH_DUMP_NOT_IN_USE};
+    crash_dump_header_t full_header = {.status = CRASH_DUMP_NOT_IN_USE};
+    crash_dump_type_context_t mini_context = {.type = CRASH_DUMP_TYPE_MINI, .header = &mini_header};
+    crash_dump_type_context_t full_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
+    crash_dump_context_t context = {.type_ctx = {&mini_context, &full_context}, .die_index = 1, .core_index = CRASH_DUMP_CORE_MCP};
+    will_return_always(__wrap_crash_dump_context, &context);
+
+    uint32_t result = crash_dump_transfer_full_dump_to_bmc();
+    assert_int_equal(result, FPFW_STATUS_SUCCESS); // Die1 does no-op
+
+    context.die_index = 0; // Reset to Die0 for next test
+
+    crash_dump_device_t crash_dump_device = {};
+    crash_dump_interface_t crash_dump_interface = {.Device = &crash_dump_device};
+    will_return(__wrap_fpfw_init_get_handle, NULL); // no interface case
+    expect_function_call(__wrap_fpfw_init_get_handle);
+
+    result = crash_dump_transfer_full_dump_to_bmc();
+    assert_int_equal(result, (uint32_t)KNG_E_INVALIDARG); // No interface, invalid argument
+
+    crash_dump_interface.Device = NULL; // No device case
+    will_return(__wrap_fpfw_init_get_handle, &crash_dump_interface);
+    expect_function_call(__wrap_fpfw_init_get_handle);
+
+    result = crash_dump_transfer_full_dump_to_bmc();
+    assert_int_equal(result, (uint32_t)KNG_E_HANDLE); // No request type set, invalid argument
 }
 
 TEST_FUNCTION(test_crash_dump_mem_api_override, nullptr, nullptr)
@@ -1764,6 +1817,21 @@ TEST_FUNCTION(test_crash_dump_dfwk, nullptr, nullptr)
         expect_function_call(__wrap__txe_timer_create);
 
         static_dispatch_routine(&ssi_request.header, &cd_device);
+    }
+
+    {
+        // Test crash_dump_dispatch for PLDM request
+        crash_dump_request_t cd_request = {};
+        crash_dump_device_t cd_device = {};
+
+        cd_request.Header.RequestType = CRASH_DUMP_START_TRANSFER_ASYNC;
+
+        expect_function_call(__wrap_DfwkAsyncRequestComplete);
+        expect_value(__wrap_DfwkAsyncRequestComplete, Request, &cd_request);
+
+        transfer_completed = false;
+        static_dispatch_routine(&cd_request.Header, &cd_device);
+        transfer_completed = true;
     }
 
     {

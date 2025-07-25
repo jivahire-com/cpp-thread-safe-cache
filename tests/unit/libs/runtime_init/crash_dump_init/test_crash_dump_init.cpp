@@ -40,6 +40,7 @@ extern bool in_memory(uintptr_t start_addr, uintptr_t end_addr);
 extern fpfw_init_component_t _fpfw_component_cd_init;
 extern fpfw_init_component_t _fpfw_component_cd_mhu_loc;
 extern fpfw_init_component_t _fpfw_component_cd_hsp;
+extern fpfw_init_component_t _fpfw_component_cd_drv;
 #if defined(MCP_RUNTIME_INIT)
 extern fpfw_init_component_t _fpfw_component_cd_pldm;
 #endif
@@ -49,7 +50,6 @@ extern fpfw_init_component_t _fpfw_component_cd_mhu_rem;
 extern fpfw_init_component_t _fpfw_component_cd_spi_rem;
 extern fpfw_init_component_t _fpfw_component_cd_pomesh;
 extern fpfw_init_component_t _fpfw_component_cd_accel;
-extern fpfw_init_component_t _fpfw_component_cd_drv;
 #endif
 
 /*------------- Functions ----------------*/
@@ -164,7 +164,6 @@ fpfw_status_t __wrap_fpfw_pldm_service_register_platform_event_ready_notificatio
 }
 #endif
 
-#if defined(SCP_RUNTIME_INIT)
 void __wrap_crash_dump_device_initialize(pcrash_dump_device_t device, PDFWK_SCHEDULE schedule)
 {
     FPFW_UNUSED(schedule);
@@ -181,6 +180,7 @@ void __wrap_crash_dump_interface_initialize(pcrash_dump_interface_t intf, pcrash
     function_called();
 }
 
+#if defined(SCP_RUNTIME_INIT)
 int32_t __wrap_sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
                                 pstartup_ssi_registration_t p_registration,
                                 PDFWK_INTERFACE_HEADER p_ssi_interface)
@@ -305,14 +305,23 @@ TEST_FUNCTION(test_cd_hsp, nullptr, nullptr)
     _fpfw_component_cd_hsp.init_fn();
 }
 #endif
+
 #if defined(MCP_RUNTIME_INIT)
+TEST_FUNCTION(test_cd_drv, nullptr, nullptr)
+{
+    expect_function_call(__wrap_crash_dump_device_initialize);
+    expect_function_call(__wrap_crash_dump_interface_initialize);
+
+    _fpfw_component_cd_drv.init_fn();
+}
+
 TEST_FUNCTION(test_cd_bmc, nullptr, nullptr)
 {
     will_return(__wrap_idsw_get_die_id, DIE_0);
 
     expect_function_call(__wrap_fpfw_pldm_service_register_platform_event_ready_notification);
     // Check dependencies
-    assert_string_equal("cd_init", _fpfw_component_cd_pldm.children[0]);
+    assert_string_equal("cd_drv", _fpfw_component_cd_pldm.children[0]);
     assert_string_equal("pldm", _fpfw_component_cd_pldm.children[1]);
 
     _fpfw_component_cd_pldm.init_fn();
@@ -321,6 +330,7 @@ TEST_FUNCTION(test_cd_bmc, nullptr, nullptr)
     __wrap_pldm_platform_event_ready_callback(0, NULL);
 }
 #endif
+
 #if defined(SCP_RUNTIME_INIT)
 TEST_FUNCTION(test_cd_drv, nullptr, nullptr)
 {

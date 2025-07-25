@@ -42,20 +42,20 @@ bool transfer_completed = true; // Flag to indicate if the transfer is completed
 
 /*------------- Functions ----------------*/
 
-void crash_dump_pldm_transfer_dump()
+uint32_t crash_dump_pldm_transfer_dump()
 {
     static crash_dump_stream_t crash_dump_stream = {0};
 
     if (transfer_completed == false)
     {
         // Crashdump transfer already in progress
-        return;
+        return KNG_E_BUSY;
     }
 
     if (!crash_dump_stream_open(&crash_dump_stream))
     {
         transfer_completed = true;
-        return;
+        return KNG_E_NOT_READY;
     }
 
     if (crash_dump_stream.header_aggregate.FileSize == 0)
@@ -63,7 +63,7 @@ void crash_dump_pldm_transfer_dump()
         CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_PLDM_EMPTY_DUMP);
         crash_dump_stream_close(&crash_dump_stream, false);
         transfer_completed = true;
-        return;
+        return KNG_E_NOT_READY;
     }
 
     // Initialize the PLDM PE parameters
@@ -86,7 +86,8 @@ void crash_dump_pldm_transfer_dump()
         CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_PLDM_START_TRANSFER_ERROR, status);
         crash_dump_stream_close(&crash_dump_stream, false);
         transfer_completed = true;
-        return;
+
+        return status;
     }
 
     // De-assert CD available GPIO
@@ -99,6 +100,8 @@ void crash_dump_pldm_transfer_dump()
 
     transfer_completed = false;
     CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_PLDM_START_TRANSFER);
+
+    return KNG_SUCCESS;
 }
 
 bool crash_dump_pldm_transfer_completed()

@@ -18,9 +18,13 @@ target_include_directories(
 target_link_libraries(
     ${TARGET}
         PUBLIC
-        ms::build_data    
+        ms::build_data
         PRIVATE
         fwlib.service.cli
+        silibs::idhw
+        silibs::idsw
+        silibs::idsw_kng
+        silibs::kng_silibs_platform
 )
 
 lint_target(${TARGET})

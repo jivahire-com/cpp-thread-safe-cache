@@ -12,7 +12,10 @@
 #include <FpFwLinkedList.h> // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>      // for FPFW_UNUSED
 #include <build_data.h>     // for BUILD_PC, BUILD_TIMESTAMP, GIT_BRANCH
-#include <stdio.h>          // for printf
+#include <idhw.h>
+#include <idsw.h>
+#include <idsw_kng.h>
+#include <stdio.h> // for printf
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -50,6 +53,66 @@ static FPFW_CLI_STATUS whoami(int Argc, const char** Argv)
     /* SDM Info */
     printf("SDM tag " SDM_DESCRIBE "\n");
     printf("SDM Commit " SDM_LAST_COMMIT_DESCRIBE "\n");
+
+    /* SoC Die Info */
+    printf("SoC CPU Type: ");
+    switch ((uint8_t)idsw_get_cpu_type())
+    {
+    case CPU_AP:
+        printf("AP\n");
+        break;
+    case CPU_SCP:
+        printf("SCP\n");
+        break;
+    case CPU_MCP:
+        printf("MCP\n");
+        break;
+    case CPU_HSP:
+        printf("HSP\n");
+        break;
+    case CPU_TBP:
+        printf("TBP\n");
+        break;
+    case CPU_SDM:
+        printf("SDM\n");
+        break;
+    case CPU_CDED_SDM:
+        printf("CDED_SDM\n");
+        break;
+    case CPU_CDED_KMP:
+        printf("CDED_KMP\n");
+        break;
+    default:
+        printf("Unknown\n");
+        break;
+    }
+    printf("SoC Platform: ");
+    switch (idsw_get_platform_sdv())
+    {
+    case PLATFORM_FPGA:
+        printf("FPGA\n");
+        break;
+    case PLATFORM_FPGA_LARGE:
+        printf("FPGA_LARGE\n");
+        break;
+    case PLATFORM_FPGA_LARGE_RVP:
+        printf("FPGA_LARGE_RVP\n");
+        break;
+    case PLATFORM_SVP_SIM:
+        printf("SVP_SIM\n");
+        break;
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        printf("SVP_MIN_CONFIG_SIM\n");
+        break;
+    case PLATFORM_RVP_EVT_SILICON:
+        printf("RVP_EVT_SILICON\n");
+        break;
+    default:
+        printf("Unknown\n");
+        break;
+    }
+    printf("SoC Die ID: %d\n", (uint8_t)idsw_get_die_id());
+    printf("SoC Single Die Boot Enable: %s\n", idhw_is_single_die_boot_en() ? "true" : "false");
 
     printf("----------------------------------------------------------------\n");
 

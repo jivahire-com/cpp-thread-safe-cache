@@ -1,0 +1,203 @@
+#
+# Copyright (C) Microsoft Corporation. All rights reserved.
+#
+
+parameters:
+- name: Toolchain
+  type: string
+  default: 'arm-eabi-aarch'
+- name: Configuration
+  type: string
+  default: 'Debug' 
+- name: ArtifactName
+  type: string
+  default: 'bins'
+- name: Pool
+  type: string
+  default: '1pfw-kingsgate-soc'
+- name: TestVehicleCapability
+  type: string
+  default: 'SocSingleDie'  
+- name: TestPlan
+  type: string
+  default: '.\tests\functional\test_plan\soc_single_die_test_plan.args'
+- name: TestAgent
+  type: string
+  default: ''
+- name: build_id
+  type: string
+  default: '0'
+- name: ifwi
+  type: string
+  default: 'kingsgate.ifwi.soc.debug.custom.dat'
+- name : TimeoutInMinutes
+  type: number
+  default: 240
+
+jobs:
+- job: 'SOC_Pythia_Tests'
+  timeoutInMinutes: ${{ parameters.TimeoutInMinutes }}
+  displayName: SOC Pythia Tests
+  pool: 
+    name: ${{ parameters.Pool }}
+    demands:
+      - ${{ if eq(parameters.Pool, '1pfw-kingsgate-soc') }}:
+          - TestVehicle -equals ${{ parameters.TestVehicleCapability }}
+    isCustom: true
+    type: windows
+
+  variables:
+    ob_outputDirectory: '$(Build.SourcesDirectory)\.testlogs\pythia'
+    ob_artifactSuffix: '$(System.JobAttempt)'
+
+  steps: 
+
+    # Set up permissions for other repos
+    - template: auth.yaml
+
+    # Dump agent information (useful for debugging)
+    - template: agent_info.yaml
+
+    # Download input artifact for CI & nightly run
+    - task: DownloadPipelineArtifact@2
+      condition: and(succeeded(), eq('${{ parameters.build_id }}', '0'))
+      inputs:
+          buildType: 'current'
+          downloadType: 'single'
+          artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
+          downloadPath: '$(Build.SourcesDirectory)\.build\Debug\arm-eabi-aarch'
+
+    # Download input artifact for Nightly and Weekend Stress
+    - task: DownloadPipelineArtifact@2
+      condition: and(succeeded(), ne('${{ parameters.build_id }}', '0'))
+      inputs:
+          buildType: 'specific'
+          project: '2610da6a-0168-48f8-b34a-f1c882cb6660'  # Woodinville
+          definition: '8678'  # Kingsgate.MSCP-Official
+          buildVersionToDownload: 'specific'
+          buildId: ${{ parameters.build_id}}
+          artifactName: 'drop_Build_Arm_EABI_AARCH_Debug_Build'
+          downloadPath: '$(Build.SourcesDirectory)\.build\Debug\arm-eabi-aarch'
+
+    # Setup the SOC
+    - task: PowerShell@2
+      displayName: 'Flash SOC IFWI'
+      env:
+        AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
+      inputs:
+        workingDirectory: '$(Build.SourcesDirectory)'
+        targetType: 'inline'
+        showWarnings: true
+        script: | 
+          # Cleanup pip cache
+          pip cache purge
+
+          # Init Env
+          ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+
+          # Kill all Trace32 Sessions
+          killt32soc
+
+          # Kill all Putty Sessions 
+          killputtysoc
+
+          # Reset all COM ports
+          #python .\tests\functional\library\kng_pythia_libs\fpga_reset_com_ports.py
+
+          # Get system name
+          $system_name = $env:COMPUTERNAME
+          $split_system_name = $system_name -split '-'
+          $system_name = "$($split_system_name[-2])-$($split_system_name[-1])"
+          
+          # Kick all users out
+          kickusersoc -system $system_name
+
+          # Flash firmware
+          flashscpfwsoc -system $system_name
+
+          # OOB Reset
+          #soc_reset
+
+          # Reset FPGA ROM and Fuse Data
+          # Any agent starting with 'DF' is considered a DualDieFPGA Agent
+          #if ($trimmedAgentName -like 'DF*') {
+          #    Write-Host "Agent Type: DualDieFPGA Agent"
+          #    Invoke-Pythia .\tests\functional\test_suites\fpga_init\fpga_init_dualdie.robot -platform "fpga"
+          #}
+          #else {
+          #    Write-Host "Agent Type: SingleDieFPGA Agent"
+          #    Invoke-Pythia .\tests\functional\test_suites\fpga_init\fpga_init_singledie.robot -platform "fpga"
+          #}
+
+
+    # 1. Setup the environment
+    # 2. Invoke Pythia
+    # Logs will be under $(Build.SourcesDirectory)\.testlogs\pythia
+    - task: PowerShell@2
+      displayName: 'Test: Run SOC Pythia Tests'
+      env:
+        AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
+      inputs:
+        workingDirectory: '$(Build.SourcesDirectory)'
+        targetType: 'inline'
+        showWarnings: true
+        script: | 
+          ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
+          Invoke-Pythia -test ${{ parameters.TestPlan }} -platform soc
+
+          # Remove intermediate output / output that contains system variables (ie: Azure credentials)
+          Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\output.xml"
+          Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\rlog.txt"
+          Remove-Item "$(Build.SourcesDirectory)\.testlogs\pythia\**\generated" -Recurse -Force
+          Remove-Item .externs -Force -Recurse
+
+          # Cleanup pip cache after the test
+          pip cache purge
+
+    # Publish the results of the test suite
+    - task: PublishTestResults@2
+      displayName: 'Publish: SOC Pythia Test Results'
+      condition: succeededOrFailed()
+      inputs:
+        testRunTitle: 'Kingsgate SOC Pythia Tests'
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**\Results.xml'
+        searchFolder: '$(Build.SourcesDirectory)\.testlogs\pythia'
+        failTaskOnFailedTests: true
+        publishRunAttachments: true
+        mergeTestResults: true
+
+    - task: PowerShell@2
+      displayName: 'Prepare Pythia Logs for Publishing'
+      condition: always()
+      inputs:
+        targetType: 'inline'
+        script: |
+          $source = "$(Build.SourcesDirectory)\.testlogs\pythia"
+          $target = "$(Build.ArtifactStagingDirectory)\pythia_clean"
+          New-Item -ItemType Directory -Force -Path $target
+
+          Get-ChildItem -Path $source -Recurse | ForEach-Object {
+            try {
+              $relativePath = $_.FullName.Substring($source.Length)
+              $destPath = Join-Path -Path $target -ChildPath $relativePath
+              $destDir = Split-Path -Path $destPath -Parent
+              New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+
+              $stream = [System.IO.File]::Open($_.FullName, 'Open', 'Read', 'None')
+              $stream.Close()
+              Copy-Item $_.FullName -Destination $destPath -Force
+            } catch {
+              Write-Host "Skipping locked file: $($_.FullName)"
+            }
+          }
+
+    # Publish results as a pipeline artifact
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish: Pipeline Artifacts'
+      condition: always()
+      inputs:
+        targetPath: $(Build.ArtifactStagingDirectory)\pythia_clean
+        artifact: 'drop_${{ parameters.ArtifactName }}_FPGA_Pythia_Tests$(System.JobAttempt)'
+        publishLocation: 'pipeline'
+        parallel: true

@@ -1,0 +1,79 @@
+{
+    "id": "HIO-211-J10-R5",
+    "ip": "HIO-211-J10-R5",
+    "type": "rvp",
+    "connections": {
+        "mb": {
+            "node_0": {
+                "is_present": true,
+                "soc": {
+                    "is_present": true,
+                    "primary_die": {
+                        "is_present": true,
+                        "hsp": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM8",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs": false,
+                                    "file_name":"hsp0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        },
+                        "scp": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM9",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs": false,
+                                    "file_name":"scp0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        },
+                        "mcp": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM10",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs": false,
+                                    "file_name": "mcp0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        },
+                        "apns": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM11",
+                                    "enable_warning_logs": false,
+                                    "file_name": "apns0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        }
+                    }
+                },
+                "dcscm": {
+                    "is_present": true,
+                    "bmc": {
+                        "ssh": {
+                            "host": "M1120-SCM-392.svceng.com",
+                            "port": "2200",
+                            "credential": {
+                                "service": "account",
+                                "username": "admin",
+                                "keyring_name": "bmc_admin_password"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -144,3 +144,38 @@ class KngPythiaTestSetup():
                 if time.time() - start_time > 60:
                     log.error(f"Timeout waiting for reset complete signal file to be created at: {reset_signal_file}")
                     break
+    
+    #@staticmethod
+    def execute_command(self, command):
+        """Execute a command on the BMC host."""
+        self.connect()
+
+        print(f"Executing command: {command}")
+        stdin, stdout, stderr = self.client.exec_command(f"echo 0penBmc | sudo -S su -c '{command}'")
+        print(f"Command output: {stdout.read().decode('latin-1')}")
+        print(f"Command error: {stderr.read().decode('latin-1')}")
+
+        self.disconnect()
+
+        return stdout.read().decode('latin-1'), stderr.read().decode('latin-1')
+
+    #@staticmethod
+    def soc_reset(self):
+        """Perform a cold reset of the system"""
+        command = "ipmitool power cycle"
+        stdout, stderr = self.execute_command(command)
+        if stderr:
+            print(f"Error during power cycle: {stderr}")
+            raise AssertionError
+        else:
+            print("Power cycle command executed successfully.")
+
+        time.sleep(15)
+
+        command = "ipmitool power on"
+        stdout, stderr = self.execute_command(command)
+        if stderr:
+            print(f"Error during power on: {stderr}")
+            raise AssertionError
+        else:
+            print("Power on command executed successfully.")

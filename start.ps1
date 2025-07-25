@@ -25,3 +25,4 @@ if (-not $SkipEnv) {
 Get-SvpHelp
 Get-SvpGuiHelp
 Get-FPGAHelp
+Get-SocHelp

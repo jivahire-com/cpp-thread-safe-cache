@@ -45,7 +45,7 @@ Invoke-Pythia -test .\tests\functional\test_suites\heart_beat\
 #>
 Function Invoke-Pythia(
     [Parameter(Mandatory=$true)] [string] $test,
-    [Parameter(Mandatory=$true)] [ValidateSet('svp', 'fpga')] [string] $platform = "svp",
+    [Parameter(Mandatory=$true)] [ValidateSet('svp', 'fpga', 'soc')] [string] $platform = "svp",
     [Parameter(Mandatory=$false)] [string] $ifwi = "$env:REPO_APP_BUILD_DIR/Debug/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
     [Parameter(Mandatory=$false)] [string] $hostjson = "hsp_scp_bl_embed_fw.json"
 )
@@ -110,6 +110,8 @@ Function Invoke-Pythia(
         $host_configs_path = Join-Path -Path $env:RESOURCES -ChildPath "hosts/svp_hosts"
     } elseif ($platform -eq "fpga") {
         $host_configs_path = Join-Path -Path $env:RESOURCES -ChildPath "hosts/fpga_hosts"
+    } elseif ($platform -eq "soc") {
+        $host_configs_path = Join-Path -Path $env:RESOURCES -ChildPath "hosts/soc_hosts"
     }
 
     $iteration = 1

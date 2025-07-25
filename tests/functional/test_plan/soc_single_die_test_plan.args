@@ -1,0 +1,6 @@
+
+## Boot tests
+./../../../tests/functional/test_suites/boot_tests/soc_uefi_boot_single_die.robot
+
+## Heartbeat Tests
+#./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot

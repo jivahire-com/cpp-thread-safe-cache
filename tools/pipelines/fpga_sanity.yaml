@@ -23,6 +23,7 @@ parameters:
   values:
   - 1pfw-kingsgate-big-fpga
   - 1pfw-kingsgate-bigfpga-pipelines
+  - 1pfw-kingsgate-soc
 - name: 'fpga_custom_pipeline_dut'
   displayName: 'FPGA Device Name (Select DH3 and DF8 only for URGENT Debug)'
   type: string
@@ -41,6 +42,7 @@ parameters:
   - RDU-120015-DF8
   - RDU-120015-DF11
   - RDU-120015-DF14
+  - HIO-211-J10-R5
 
 - name: 'fpga_custom_pipeline_test_plan'
   displayName: 'Set Custom pipeline test plan (Select correct plan according to FPGA Device)'

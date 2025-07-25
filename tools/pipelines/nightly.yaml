@@ -78,6 +78,16 @@ stages:
       TestAgent: 'RDU-120015-DF14'
       Pool: '1pfw-kingsgate-big-fpga'
 
+- stage: MSCP_SOC_Pythia_Singledie_Tests
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  jobs:
+  - template: templates/soc_pythia_test.yaml
+    parameters:
+      ArtifactName: MSCP_SOC_SingleDie
+      TestPlan: .\tests\functional\test_plan\soc_single_die_test_plan.args
+      TestVehicleCapability: 'SocSingleDie'
+      Pool: '1pfw-kingsgate-soc'
+
 # This is to tag the commits that pass nightly tests.
 - stage: Promote
   dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie, SVP_Pythia_Tests_DualDie, MSCP_FPGA_Pythia_Tests, ACCEL_FPGA_Pythia_Tests, MSCP_FPGA_Pythia_Dualdie_Tests]

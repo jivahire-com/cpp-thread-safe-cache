@@ -36,8 +36,12 @@ static FPFW_CLI_STATUS gpio_cli_set_pin(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS gpio_cli_get_pin(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS gpio_cli_restore(int argc, const char** pp_argv);
-static FPFW_CLI_STATUS gpio_cli_uart_afm(int argc, const char** pp_argv);
-static FPFW_CLI_STATUS gpio_cli_uart_die(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS gpio_cli_set_single_uart_afm(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS gpio_cli_set_uart_afm(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS gpio_cli_set_uart_die_config(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS gpio_cli_set_single_uart_die(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS gpio_cli_get_uart_ownership(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS gpio_cli_get_uart_afm(int argc, const char** pp_argv);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND s_gpio_cmd_list[] = {
@@ -49,9 +53,12 @@ static FPFW_CLI_COMMAND s_gpio_cmd_list[] = {
     {NULL_LIST_ENTRY, "gpio", "get_pin", gpio_cli_get_pin, "Get GPIO pin input", "Usage: get_pin <ctrl_id> <pin_id>"},
     {NULL_LIST_ENTRY, "gpio", "register_isr", gpio_cli_register_isr, "Register single GPIO interrupt callback", "Usage: register_isr <ctrl_id> <pin_id>"},
     {NULL_LIST_ENTRY, "gpio", "restore", gpio_cli_restore, "Restore initial GPIO config", "Usage: restore (no arguments)"},
-    {NULL_LIST_ENTRY, "gpio", "uart_afm", gpio_cli_uart_afm, "Set UART AFM", "Usage: uart_afm <afm_u0> <afm_u1> <afm_u2> <afm_u3>"},
-    {NULL_LIST_ENTRY, "gpio", "uart_die", gpio_cli_uart_die, "Set UART die configuration", "Usage: uart_die <die_id_u1> <die_id_u2>"},
-};
+    {NULL_LIST_ENTRY, "gpio", "uart_afm", gpio_cli_set_uart_afm, "Set UART AFM", "Usage: uart_afm <afm_u0> <afm_u1> <afm_u2> <afm_u3>"},
+    {NULL_LIST_ENTRY, "gpio", "uart_die", gpio_cli_set_uart_die_config, "Set UART die configuration", "Usage: uart_die <die_id_u1> <die_id_u2>"},
+    {NULL_LIST_ENTRY, "gpio", "uart_single_afm", gpio_cli_set_single_uart_afm, "Set UART single AFM", "Usage: uart_single_afm <uart_num> <afm_uart>"},
+    {NULL_LIST_ENTRY, "gpio", "uart_single_die", gpio_cli_set_single_uart_die, "Set single UART ownership ", "Usage: uart_single_die <uart_num> <own_uart>"},
+    {NULL_LIST_ENTRY, "gpio", "uart_get_ownership", gpio_cli_get_uart_ownership, "Get UART ownership", "Usage: uart_get_ownership (no arguments)"},
+    {NULL_LIST_ENTRY, "gpio", "uart_get_afm", gpio_cli_get_uart_afm, "Get UART AFM", "Usage: uart_get_afm (no arguments)"}};
 
 // Cache the GPIO configuration table to restore the GPIO configuration
 static pgpio_interface_t s_gpio_iface = NULL;
@@ -354,25 +361,53 @@ static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-/** uart_afm x x x 3  will update only COM7 for example*/
-static FPFW_CLI_STATUS gpio_cli_uart_afm(int argc, const char** pp_argv)
+/* ------------------------ */
+/* GPIO UART AFM Management */
+/* ------------------------ */
+
+/* This command retrieves the current UART AFM settings for the particular Die */
+static FPFW_CLI_STATUS gpio_cli_get_uart_afm(int argc, const char** pp_argv)
 {
-    static uart_afm_cfg_t afm_knobs;
-    static bool is_initialized = false;
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
 
     uint8_t die_id = idsw_get_die_id();
+    uart_afm_cfg_t afm_knobs = {0};
+    uint32_t status = gpio_get_uart_afmsel(die_id, &afm_knobs);
 
-    if (!is_initialized)
+    if (KNG_FAILED(status))
     {
-        if (die_id == DIE_0)
-        {
-            afm_knobs = config_get_uart_afm_cfg_die0();
-        }
-        else
-        {
-            afm_knobs = config_get_uart_afm_cfg_die1();
-        }
-        is_initialized = true;
+        FpFwCliPrint("Failed - 0x%08x\n", status);
+        return CLI_ERROR;
+    }
+
+    FpFwCliPrint("Die %d AFM - UART0 %x: UART1 %x, UART2: %x, UART3: %x\n",
+                 idsw_get_die_id(),
+                 afm_knobs.uart_afm[0],
+                 afm_knobs.uart_afm[1],
+                 afm_knobs.uart_afm[2],
+                 afm_knobs.uart_afm[3]);
+
+    return CLI_SUCCESS;
+}
+
+/* This command updates the UART AFM Config for that particular die.
+ * It supports both complete configuration (when all AFM mux values are entered),
+ * as well as partial configuration (when only specific AFM mux values are updated).
+ * To use partial configuration, use the x mark to indicate that there is no change.
+ * For example, uart_afm x x 3 x will update only UART3. The other UARTs will remain unchanged.
+ * Meanwhile, the command uart_afm 1 0 1 0 will set UART0 to 1, UART1 to 0, UART2 to 1, and UART3 to 0.
+ * Can be run from both MCP and SCP, takes into account any overrides performed via by T32)
+ */
+static FPFW_CLI_STATUS gpio_cli_set_uart_afm(int argc, const char** pp_argv)
+{
+    uart_afm_cfg_t afm_knobs = {0};
+    uint8_t die_id = idsw_get_die_id();
+    uint32_t status = gpio_get_uart_afmsel(die_id, &afm_knobs);
+    if (KNG_FAILED(status))
+    {
+        FpFwCliPrint("Failed to get current UART AFM - 0x%08x\n", status);
+        return CLI_ERROR;
     }
 
     if (argc == 5)
@@ -399,7 +434,7 @@ static FPFW_CLI_STATUS gpio_cli_uart_afm(int argc, const char** pp_argv)
                  afm_knobs.uart_afm[2],
                  afm_knobs.uart_afm[3]);
 
-    uint32_t status = gpio_override_uart_afmsel(die_id, &afm_knobs);
+    status = gpio_override_uart_afmsel(die_id, &afm_knobs);
 
     if (KNG_FAILED(status))
     {
@@ -410,14 +445,107 @@ static FPFW_CLI_STATUS gpio_cli_uart_afm(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS gpio_cli_uart_die(int argc, const char** pp_argv)
+/* This command sets the AFM for a single UART.
+ * It is used to override the AFM for a specific UART temporarily.
+ * For example, the command uart_single_afm 0 1 will set the AFM for UART0 to 1.
+ */
+static FPFW_CLI_STATUS gpio_cli_set_single_uart_afm(int argc, const char** pp_argv)
 {
-    uart_die_cfg_t die_cfg_knobs;
+    uint32_t uart_num = 0;
+    uint32_t afm_uart = 0;
 
     if (argc == 3)
     {
-        die_cfg_knobs.uart1_die_id = atoi(pp_argv[1]);
-        die_cfg_knobs.uart2_die_id = atoi(pp_argv[2]);
+        uart_num = atoi(pp_argv[1]);
+        afm_uart = atoi(pp_argv[2]);
+    }
+    else
+    {
+        FpFwCliPrint("Failed: Invalid Args\n");
+        return CLI_ERROR;
+    }
+
+    FpFwCliPrint("Set UART %d AFM to %d temporarily. Use cfg_mgr_set for persistence!\n", uart_num, afm_uart);
+
+    uint32_t status = gpio_override_single_uart_afmsel(idsw_get_die_id(), uart_num, afm_uart);
+
+    if (KNG_FAILED(status))
+    {
+        FpFwCliPrint("Failed - 0x%08x\n", status);
+        return CLI_ERROR;
+    }
+
+    return CLI_SUCCESS;
+}
+
+/* ----------------------------------------------------- */
+/* GPIO UART Die Management - For UART 1 and UART 2 Only */
+/* ----------------------------------------------------- */
+
+/**
+ * This command returns the UART die ownership for the current die.
+ * It will indicate whether UART1 and UART2 are owned by this die.
+ */
+static FPFW_CLI_STATUS gpio_cli_get_uart_ownership(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+    bool is_uart1_owned = false;
+    bool is_uart2_owned = false;
+
+    int status = gpio_get_shared_uart_ownership(idsw_get_die_id(), &is_uart1_owned, &is_uart2_owned);
+    if (status != SILIBS_SUCCESS)
+    {
+        FpFwCliPrint("Failed to get UART ownership - 0x%08x\n", status);
+        return CLI_ERROR;
+    }
+
+    FpFwCliPrint("Die %d owns UART 1? %s\n", idsw_get_die_id(), is_uart1_owned ? "Yes" : "No");
+    FpFwCliPrint("Die %d owns UART 2? %s\n", idsw_get_die_id(), is_uart2_owned ? "Yes" : "No");
+
+    return CLI_SUCCESS;
+}
+
+/*
+ * This command sets the UART die configuration UARt 1 and 2 on the current Die.
+ * For example, the command uart_die 0 1 will set the Die ID for UART1 to 0 and for UART2 to 1.
+ *
+ * Important Note: This command will need another corresponding command on the other die as well to set IE OE
+ * bits. For the above example, the user will have to run the command uart_die 0 1 on the other die as well.
+ *
+ * This command also supports partial configuration. For example, the command
+ * uart_die 0 x will set the Die ID for UART1 to 0 and leave the Die ID for UART2 unchanged.
+ */
+static FPFW_CLI_STATUS gpio_cli_set_uart_die_config(int argc, const char** pp_argv)
+{
+    uint8_t this_die_id = idsw_get_die_id();
+    uint8_t other_die_id = (this_die_id == 0) ? 1 : 0;
+
+    bool is_uart1_owned = false;
+    bool is_uart2_owned = false;
+
+    uint32_t status = gpio_get_shared_uart_ownership(idsw_get_die_id(), &is_uart1_owned, &is_uart2_owned);
+    if (status != SILIBS_SUCCESS)
+    {
+        FpFwCliPrint("Failed to get UART ownership - 0x%08x\n", status);
+        return CLI_ERROR;
+    }
+
+    uart_die_cfg_t die_cfg_knobs;
+    die_cfg_knobs.uart1_die_id = (is_uart1_owned ? this_die_id : other_die_id);
+    die_cfg_knobs.uart2_die_id = (is_uart2_owned ? this_die_id : other_die_id);
+
+    if (argc == 3)
+    {
+        if (atoi(pp_argv[1]) == 0 || atoi(pp_argv[1]) == 2)
+        {
+            die_cfg_knobs.uart1_die_id = atoi(pp_argv[1]);
+        }
+
+        if (atoi(pp_argv[2]) == 1 || atoi(pp_argv[2]) == 2)
+        {
+            die_cfg_knobs.uart2_die_id = atoi(pp_argv[2]);
+        }
     }
     else
     {
@@ -426,13 +554,53 @@ static FPFW_CLI_STATUS gpio_cli_uart_die(int argc, const char** pp_argv)
     }
 
     FpFwCliPrint("Updating UART config temporarily. Use cfg_mgr_set for persistent update!\n");
+    FpFwCliPrint("For the update to be complete, please run the same command on the other die as well\n");
 
-    uint32_t status =
-        gpio_configure_shared_uart(idsw_get_die_id(), die_cfg_knobs.uart1_die_id, die_cfg_knobs.uart2_die_id);
+    status = gpio_configure_shared_uart(idsw_get_die_id(), die_cfg_knobs.uart1_die_id, die_cfg_knobs.uart2_die_id);
+
+    // TODO: Send a message to the other Die to update the UART configuration
 
     if (KNG_FAILED(status))
     {
         FpFwCliPrint("Failed to register GPIO ISR - 0x%08x\n", status);
+        return CLI_ERROR;
+    }
+
+    return CLI_SUCCESS;
+}
+
+/**
+ * This command sets/clears the ownership of a single UART on the current die.
+ * For example, the command uart_single_die 0 1 will set the IE and OE of UART0 to the current
+ * Die to 1 (owned by this die).
+ *
+ * Important Note: This command will need another corresponding command on the other die to set/clear the ownership.
+ * For the above example, the user will have to run the command uart_single_die 0 0 on the other die to clear the ownership.
+ */
+
+static FPFW_CLI_STATUS gpio_cli_set_single_uart_die(int argc, const char** pp_argv)
+{
+    uint32_t uart_num = 0;
+    uint32_t value = 0;
+
+    if (argc == 3)
+    {
+        uart_num = atoi(pp_argv[1]);
+        value = atoi(pp_argv[2]);
+    }
+    else
+    {
+        FpFwCliPrint("Failed: Invalid Args\n");
+        return CLI_ERROR;
+    }
+
+    FpFwCliPrint("Set UART %d to value %d temporarily. Use cfg_mgr_set for persistence!\n", uart_num, value);
+
+    uint32_t status = gpio_configure_single_shared_uart(idsw_get_die_id(), uart_num, value);
+
+    if (KNG_FAILED(status))
+    {
+        FpFwCliPrint("Failed - 0x%08x\n", status);
         return CLI_ERROR;
     }
 

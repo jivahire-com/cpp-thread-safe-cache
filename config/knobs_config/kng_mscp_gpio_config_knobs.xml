@@ -17,6 +17,18 @@
       <!-- Default routing, UART 1-> Die0, UART 2 -> Die1 --> <!-- GPIO Knobs for to fetch both SCPs for flexibility  -->
       <Member name="uart_die_sel" type="uint8_t" count="2" default="{0, 1}" help="Die to route Shared UARTs to" />
     </Struct>
+    <Struct name="uart_afm_cfg_prod_t">
+      <Member name="uart0_afm" type="UART0_AFM_VAL" help="UART0 AFM" />
+      <Member name="uart1_afm" type="UART1_AFM_VAL" help="UART1 AFM" />
+      <Member name="uart2_afm" type="UART2_AFM_VAL" help="UART2 AFM" />
+      <Member name="uart3_afm" type="UART3_AFM_VAL" help="UART3 AFM" />
+    </Struct>
+    <Struct name="uart_afm_cfg_d1_prod_t">
+      <Member name="uart0_afm" type="D1_UART0_AFM_VAL" help="UART0 AFM" />
+      <Member name="uart1_afm" type="D1_UART1_AFM_VAL" help="UART1 AFM" />
+      <Member name="uart2_afm" type="D1_UART2_AFM_VAL" help="UART2 AFM" />
+      <Member name="uart3_afm" type="D1_UART3_AFM_VAL" help="UART3 AFM" />
+    </Struct>
   </Structs>
   
   <!-- namespace indicates the GUID namespace the values are stored in -->
@@ -24,10 +36,10 @@
     <Knob name="gpio_knobs" type="gpio_cfg_t" help="GPIO config knobs"/>
     
     <!-- Die 0 Config: Retain Default Config -->
-    <Knob name="uart_afm_cfg_die0" type="uart_afm_cfg_t" default="{{0, 0, 0, 0}}" help="UART AFM config knobs for Die 0"/>
+    <Knob name="uart_afm_cfg_die0" type="uart_afm_cfg_prod_t" default="{D0_U0_HSP, D0_U1_SCP, D0_U2_MCP, D0_U3_AP_NS}" help="UART AFM config knobs for Die 0"/>
     <!-- Die 1 Config: Since UART 2 of Die 1 is routed to SCP, UART 1 of of Die 1 needs to be routed elsewhere, or SCP Die 1 Rx would not work. Hence routed by default to SDM -->
-    <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_t" default="{{0, 1, 1, 0}}" help="UART AFM config knobs for Die 1"/>
-    
+    <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_d1_prod_t" default="{D1_U0_HSP, D1_U1_SDM, D1_U2_SCP, 0}" help="UART AFM config knobs for Die 1"/>
+
     <Knob name="uart_die_cfg" type="uart_die_sel_t" help="Die Config for Shared UARTs (UART1 and UART2 respectively)"/>
   </Knobs>
 

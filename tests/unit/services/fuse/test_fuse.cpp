@@ -41,6 +41,7 @@ extern "C" {
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <stdnoreturn.h>
+#include <system_info.h>
 #include <utils.h> // for UNUSED
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -312,6 +313,10 @@ bool __wrap_system_info_is_warm_start()
     return mock_type(bool);
 }
 
+hsp_security_state_t __wrap_system_info_get_security_state()
+{
+    return mock_type(hsp_security_state_t);
+}
 //
 // Tests
 //
@@ -322,6 +327,7 @@ TEST_FUNCTION(test_fuse_override_SIM, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
 
     will_return_always(__wrap_fuse_dma_copy_to_ram_blocking, 0);
     expect_value(__wrap_fuse_read, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);
@@ -386,6 +392,7 @@ TEST_FUNCTION(test_fuse_distribution_SVP_PRE_MESH, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
     // Setup expectations for __wrap_fuse_dist_get_exclusion_list
@@ -438,6 +445,7 @@ TEST_FUNCTION(test_fuse_distribution_SVP_POST_MESH, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
 
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
@@ -525,6 +533,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_0, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
 
@@ -581,6 +590,7 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
 
     // Debug prints
     // Debug prints
@@ -672,6 +682,7 @@ TEST_FUNCTION(test_fuse_distribution_emulation_PRE_MESH, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
     // Setup expectations for __wrap_fuse_dist_get_exclusion_list
@@ -724,6 +735,7 @@ TEST_FUNCTION(test_fuse_distribution_emulation_POST_MESH, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
 
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
@@ -958,6 +970,7 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
     expect_value(__wrap_fuse_read, fuse_bit_offset, SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET);

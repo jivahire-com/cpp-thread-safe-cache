@@ -190,34 +190,32 @@ static bool platform_requires_fuse_distribution()
 {
     bool status = false;
     KNG_PLAT_ID plat_id = idsw_get_platform_sdv();
+    bool is_secure_state = (system_info_get_security_state() == HSP_SECURITY_STATE_SECURE);
+
     switch (plat_id)
     {
     case PLATFORM_RVP_EVT_SILICON:
-        status = true;
+        status = true; // Always distribute fuses regardless of security state
         break;
-    // TODO: leave FPGA platforms here until tested working
-    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2002810
     case PLATFORM_RTL_SIM:
-        status = true;
-        break;
     case PLATFORM_FPGA:
-        status = true;
-        break;
     case PLATFORM_FPGA_LARGE:
-        status = true;
-        break;
     case PLATFORM_FPGA_LARGE_RVP:
-        status = true;
-        break;
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
     case PLATFORM_EMU_2D:
     case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D_8C:
-        status = true;
-        break;
     case PLATFORM_SVP_SIM:
-        status = true;
+        if (is_secure_state)
+        {
+            status = false;
+            printf(FUSE_NAME "Fuse distribution is not supported in secure state\n");
+        }
+        else
+        {
+            status = true;
+        }
         break;
     default:
         printf(FUSE_NAME "Fuse distribution not supported in FW for platform\n");
@@ -538,6 +536,7 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
         break;
     case PLATFORM_RVP_EVT_SILICON:
         printf(FUSE_NAME "Platform is PLATFORM_RVP_EVT_SILICON\n");
+        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
         break;
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
@@ -565,11 +564,6 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
 
     printf(FUSE_NAME "Fuse Distribution Start\n");
     FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_START);
-    if (system_info_get_security_state() == HSP_SECURITY_STATE_SECURE)
-    {
-        printf(FUSE_NAME "Fuse Distribution is not supported in secure state\n");
-        return FUSE_ERROR_NO_DISTRIBUTION;
-    }
 
     if (platform_requires_fuse_distribution())
     {

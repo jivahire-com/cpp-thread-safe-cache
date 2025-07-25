@@ -64,6 +64,7 @@ mock_target(${TARGET}
     fpfw_icc_base_send_recv_sync
     sds_block_creation
     sds_block_write
+    system_info_get_security_state
     fpfw_icc_base_send
     fpfw_icc_base_recv
     idhw_is_single_die_boot_en

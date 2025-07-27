@@ -107,10 +107,10 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
     if (die_id == SOC_D0)
     {
         uart_afm_cfg_prod_t uart_afm_knobs_prod = config_get_uart_afm_cfg_die0();
-            uart_afm_knobs.uart_afm[0] = uart_afm_knobs_prod.uart0_afm;
-            uart_afm_knobs.uart_afm[1] = uart_afm_knobs_prod.uart1_afm;
-            uart_afm_knobs.uart_afm[2] = uart_afm_knobs_prod.uart2_afm;
-            uart_afm_knobs.uart_afm[3] = uart_afm_knobs_prod.uart3_afm;
+        uart_afm_knobs.uart_afm[0] = uart_afm_knobs_prod.uart0_afm;
+        uart_afm_knobs.uart_afm[1] = uart_afm_knobs_prod.uart1_afm;
+        uart_afm_knobs.uart_afm[2] = uart_afm_knobs_prod.uart2_afm;
+        uart_afm_knobs.uart_afm[3] = uart_afm_knobs_prod.uart3_afm;
     }
     else
     {

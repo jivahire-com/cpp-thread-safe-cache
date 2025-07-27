@@ -17,12 +17,14 @@ target_link_libraries(${TARGET}
         ms::lib::core_info
         ms::lib::register_headers
         ms::lib::system_info
+        ms::service::fuse
         silibs::fuse
         silibs::kng_silibs_platform
         silibs::platform
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 lint_target(${TARGET})
 format_target(${TARGET})

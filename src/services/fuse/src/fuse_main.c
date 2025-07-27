@@ -53,6 +53,7 @@
 #define MAX_BYTES_PER_FUSE                   8
 #define MAX_BITS_PER_FUSE                    (MAX_BYTES_PER_FUSE * 8)
 #define BITS_PER_BYTE                        (8)
+#define PRIORITY_COUNT                       (13)
 
 /*-------- Function Prototypes -----------*/
 static bool platform_requires_fuse_distribution();
@@ -105,7 +106,110 @@ void scp_remote_die_config_req_cb(void* context, fpfw_status_t status)
     FPFW_UNUSED(status);
     printf(FUSE_NAME "distribution completed 0x%" PRIx32 "\n", status);
 }
+inline bool is_core_disabled(const kng_fuse_disable_core_t* fuse, uint32_t core)
+{
+    bool result = false;
+    if (core < 32)
+    {
+        result = (fuse->fuse_dis_core_31_0 >> core) & 1U;
+    }
+    else if ((core >= 32) && (core < 64))
+    {
+        result = (fuse->fuse_dis_core_63_32 >> (core - 32)) & 1U;
+    }
+    else if ((core >= 64) && (core < 96))
+    {
+        result = ((fuse->fuse_dis_core_95_64 & 0x0f) >> (core - 64)) & 1U;
+    }
+    return result;
+}
 
+inline void disable_core(kng_fuse_disable_core_t* fuse, uint32_t core)
+{
+    if (core < 32)
+    {
+        fuse->fuse_dis_core_31_0 |= (1U << core);
+    }
+    else if ((core >= 31) && (core < 64))
+    {
+        fuse->fuse_dis_core_63_32 |= (1U << (core - 32));
+    }
+    else
+    {
+        fuse->fuse_dis_core_95_64 |= (1U << (core - 64));
+    }
+}
+void fuse_disable_pick_algorithm(kng_fuse_disable_core_t* f)
+{
+    static const uint8_t column_map[5][12] = {{8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
+                                              {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31},
+                                              {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43},
+                                              {44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55},
+                                              {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67}};
+    static const uint8_t row_map[8][5] = {{10, 22, 34, 46, 58},
+                                          {11, 23, 35, 47, 59},
+                                          {12, 24, 36, 48, 60},
+                                          {13, 25, 37, 49, 61},
+                                          {14, 26, 38, 50, 62},
+                                          {15, 27, 39, 51, 63},
+                                          {16, 28, 40, 52, 64},
+                                          {17, 29, 41, 53, 65}};
+    static const uint8_t priority[PRIORITY_COUNT][3] = {{37, 2, 3},
+                                                        {38, 2, 4},
+                                                        {49, 3, 3},
+                                                        {25, 1, 3},
+                                                        {26, 1, 4},
+                                                        {50, 3, 4},
+                                                        {35, 2, 1},
+                                                        {40, 2, 6},
+                                                        {47, 3, 1},
+                                                        {23, 1, 1},
+                                                        {28, 1, 6},
+                                                        {52, 3, 6},
+                                                        {61, 4, 3}};
+    for (int i = 0; i < 13; ++i)
+    {
+        uint32_t core = priority[i][0];
+        uint32_t col_idx = priority[i][1];
+        uint32_t row_idx = priority[i][2];
+
+        if (is_core_disabled(f, core))
+        {
+            continue;
+        }
+
+        bool col_ok = true;
+        for (int j = 0; j < 12; ++j)
+        {
+            if (is_core_disabled(f, column_map[col_idx][j]))
+            {
+                col_ok = false;
+                break;
+            }
+        }
+        if (!col_ok)
+        {
+            continue;
+        }
+
+        bool row_ok = true;
+        for (int j = 0; j < 5; ++j)
+        {
+            if (is_core_disabled(f, row_map[row_idx][j]))
+            {
+                row_ok = false;
+                break;
+            }
+        }
+        if (!row_ok)
+        {
+            continue;
+        }
+
+        disable_core(f, core);
+        break;
+    }
+}
 void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
 {
     int total_disable_cores = __builtin_popcount(p_fuse_disable->fuse_dis_core_31_0) +
@@ -116,7 +220,7 @@ void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
         printf(FUSE_NAME "total disable cores are 0 so we turn off Core26 and Core37\n");
         p_fuse_disable->fuse_dis_core_31_0 = p_fuse_disable->fuse_dis_core_31_0 | (1 << 26);
         p_fuse_disable->fuse_dis_core_63_32 = p_fuse_disable->fuse_dis_core_63_32 | (1 << 5);
-        printf(FUSE_NAME "DIE [%d] : core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32
+        printf(FUSE_NAME "DIE [%d] : core31-0=0x%" PRIx32 " core63-323=0x%" PRIx32 " core95-63=0x%" PRIx32
                          " \n",
                idsw_get_die_id(),
                p_fuse_disable->fuse_dis_core_31_0,
@@ -125,13 +229,25 @@ void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
     }
     else if (total_disable_cores == 1) // TODO: TASK 2772469 : SoC FW to enable 132 cores only in KNG SoC based on core selection algorithm - Copy
     {
-        printf(FUSE_NAME "DIE [%d] : core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32
-                         " \n",
+        printf(FUSE_NAME "DIE [%d] :  core31-0=0x%" PRIx32 " core63-323=0x%" PRIx32 " core95-63=0x%" PRIx32 " \n",
                idsw_get_die_id(),
                p_fuse_disable->fuse_dis_core_31_0,
                p_fuse_disable->fuse_dis_core_63_32,
                p_fuse_disable->fuse_dis_core_95_64);
-        printf(FUSE_NAME "total disable cores are 1 so waiting for algorithm\n");
+        printf(FUSE_NAME "total disable cores are 1 so enter pickup algorithm\n");
+        fuse_disable_pick_algorithm(p_fuse_disable);
+        printf(FUSE_NAME "After : core31-0=0x%" PRIx32 " core63-323=0x%" PRIx32 " core95-63=0x%" PRIx32 " \n",
+               p_fuse_disable->fuse_dis_core_31_0,
+               p_fuse_disable->fuse_dis_core_63_32,
+               p_fuse_disable->fuse_dis_core_95_64);
+    }
+    else
+    {
+        printf(FUSE_NAME "equal or above 2 cores selected : core31-0=0x%" PRIx32 " core64-32=0x%" PRIx32
+                         " core95-64=0x%" PRIx32 " \n",
+               p_fuse_disable->fuse_dis_core_31_0,
+               p_fuse_disable->fuse_dis_core_63_32,
+               p_fuse_disable->fuse_dis_core_95_64);
     }
 }
 

@@ -31,7 +31,7 @@
 /* Microsoft MIPI vendor ID is 0x02CB https://mid.mipi.org/  */
 #define MSFT_MFR_ID (0x02CB)
 
-#define MSFT_TEST_PID 0x12345678
+#define MSFT_TEST_PID   0x12345678
 #define MSFT_TARGET_PID 0x434F0200
 
 /*-------- Function Prototypes -----------*/

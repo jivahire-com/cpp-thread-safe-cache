@@ -13,6 +13,7 @@
 #include <fpfw_icc_base.h>
 #include <hsp_firmware_headers.h>
 #include <kingsgate_hsp_mailbox_commands.h>
+#include <shared_sds_def.h>
 /*-- Symbolic Constant Macros (defines) --*/
 #define FUSE_NAME                            "[Fuse] "
 
@@ -118,6 +119,7 @@ void register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx);
  */
 void fuse_print_version(void);
 
+void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable);
 #ifdef __cplusplus
 }
 #endif

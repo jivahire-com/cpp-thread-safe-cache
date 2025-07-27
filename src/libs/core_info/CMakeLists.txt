@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         fwlib.service.iccBase
         ms::lib::corebits
         silibs::fuse
+        ms::service::fuse
         silibs::fuse_common
         silibs::idsw_kng
         silibs::platform

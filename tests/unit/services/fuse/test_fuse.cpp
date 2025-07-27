@@ -1061,7 +1061,7 @@ TEST_FUNCTION(test_fuse_disable_cores_to_66_total_zero, NULL, NULL)
 }
 
 // Simple test when exactly one core is disabled (no change to struct)
-TEST_FUNCTION(test_fuse_disable_cores_to_66_total_one, NULL, NULL)
+TEST_FUNCTION(test_fuse_disable_cores_to_66_total_two, NULL, NULL)
 {
     // Arrange
     kng_fuse_disable_core_t fuse = {0};
@@ -1076,9 +1076,90 @@ TEST_FUNCTION(test_fuse_disable_cores_to_66_total_one, NULL, NULL)
     fuse_disable_cores_to_66(&fuse);
 
     // Assert
+    // core”0 count=1 still triggers slot1 => bit 6 in the 32–63 word
     assert_int_equal(fuse.fuse_dis_core_31_0, before.fuse_dis_core_31_0);
-    assert_int_equal(fuse.fuse_dis_core_63_32, before.fuse_dis_core_63_32);
+    assert_true(fuse.fuse_dis_core_63_32 & (1u << 5));
     assert_int_equal(fuse.fuse_dis_core_95_64, before.fuse_dis_core_95_64);
+}
+TEST_FUNCTION(test_is_core_disabled, NULL, NULL)
+{
+    kng_fuse_disable_core_t fuse = {0};
+
+    //
+    fuse.fuse_dis_core_31_0 = (1U << (5));
+    assert_true(is_core_disabled(&fuse, 5));
+    fuse.fuse_dis_core_31_0 = 0;
+    fuse.fuse_dis_core_63_32 = (1u << (40 - 32));
+    assert_true(is_core_disabled(&fuse, 40));
+    fuse.fuse_dis_core_31_0 = 0;
+    fuse.fuse_dis_core_63_32 = 0;
+    fuse.fuse_dis_core_95_64 = (1u << (66 - 64));
+    assert_true(is_core_disabled(&fuse, 66));
+    assert_false(is_core_disabled(&fuse, 70));
+
+    assert_false(is_core_disabled(&fuse, 6));
+}
+
+//
+// disable_core should set the correct bit in the proper word
+//
+TEST_FUNCTION(test_disable_core, NULL, NULL)
+{
+    kng_fuse_disable_core_t fuse = {0};
+
+    // Disable core 10 (word0)
+    disable_core(&fuse, 10);
+    assert_true(fuse.fuse_dis_core_31_0 & (1U << 10));
+
+    // Disable core 33 (word1)
+    disable_core(&fuse, 33);
+    assert_true(fuse.fuse_dis_core_63_32 & (1U << (33 - 32)));
+
+    // Disable core 65 (word2)
+    disable_core(&fuse, 65);
+    assert_true(fuse.fuse_dis_core_95_64 & (1U << (65 - 64)));
+}
+
+//
+// fuse_disable_pick_algorithm should pick the first valid priority core (37)
+//
+TEST_FUNCTION(test_fuse_disable_pick_algorithm_default, NULL, NULL)
+{
+    kng_fuse_disable_core_t fuse = {0};
+
+    fuse_disable_pick_algorithm(&fuse);
+
+    assert_true(fuse.fuse_dis_core_63_32 & (1U << (37 - 32)));
+}
+TEST_FUNCTION(test_fuse_disable_pick_algorithm_skip_self, NULL, NULL)
+{
+    kng_fuse_disable_core_t fuse = {0};
+
+    disable_core(&fuse, 37);
+
+    fuse_disable_pick_algorithm(&fuse);
+
+    assert_true(is_core_disabled(&fuse, 26));
+}
+
+TEST_FUNCTION(test_fuse_disable_pick_algorithm_column_block, NULL, NULL)
+{
+    kng_fuse_disable_core_t fuse = {0};
+
+    disable_core(&fuse, 32);
+
+    fuse_disable_pick_algorithm(&fuse);
+
+    assert_true(is_core_disabled(&fuse, 49));
+}
+
+TEST_FUNCTION(test_fuse_disable_pick_algorithm_row_block, NULL, NULL)
+{
+    kng_fuse_disable_core_t fuse = {0};
+
+    disable_core(&fuse, 25);
+    fuse_disable_pick_algorithm(&fuse);
+    assert_true(is_core_disabled(&fuse, 38));
 }
 
 TEST_FUNCTION(test_fuse_post_mesh_init, NULL, NULL)

@@ -13,7 +13,8 @@
 extern "C" {
 #include <core_info.h>
 #include <fpfw_cfg_mgr.h>
-#include <fpfw_icc_base.h>        // for fpfw_icc_base_send_recv_req_t, fpfw...
+#include <fpfw_icc_base.h> // for fpfw_icc_base_send_recv_req_t, fpfw...
+#include <fuse_init.h>
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
 #define __NO_CSR_TYPEDEFS__
 #include <scp_exp_top_regs.h>
@@ -249,5 +250,26 @@ TEST_FUNCTION(test_core_info_fuse_disable_core_to_66, nullptr, nullptr)
     corebits_t* result = core_info_get_enable_cores_result();
 
     assert_false(corebits_is_bit_set(result, 26));
+    assert_false(corebits_is_bit_set(result, 37));
+}
+
+TEST_FUNCTION(test_core_info_fuse_disable_1_core, nullptr, nullptr)
+{
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+
+    will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
+    will_return(__wrap_config_get_die0_core_disable_value_31_0, 0x00000010);
+    will_return(__wrap_config_get_die0_core_disable_value_63_32, 0x00000000);
+    will_return(__wrap_config_get_die0_core_disable_value_95_64, 0x00000000);
+
+    will_return(__wrap_config_get_die0_core_spare_en_31_0, 0x00000000);
+    will_return(__wrap_config_get_die0_core_spare_en_63_32, 0x000000000);
+    will_return(__wrap_config_get_die0_core_spare_en_95_64, 0x00000000);
+
+    // calculation
+    core_info_get_platform_disable_cores();
+
+    // get the result
+    corebits_t* result = core_info_get_enable_cores_result();
     assert_false(corebits_is_bit_set(result, 37));
 }

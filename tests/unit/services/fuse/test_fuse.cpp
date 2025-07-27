@@ -27,10 +27,12 @@ extern "C" {
 #include <fuse_struct.h>
 #include <fuses_top_regs.h>
 #include <hsp_firmware_headers.h>
+#include <icc_mhu.h>
 #include <icc_platform_defines.h>
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <kingsgate_fuse_defines.h> // Test revision get
+#include <kng_icc_shared.h>
 #include <memory_map/mscp_exp_rmss_memory_map.h>
 #include <sds_api.h>
 #include <sds_configuration.h>
@@ -46,8 +48,14 @@ extern "C" {
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define BUGCHECK_MOCK_RETURN() (setjmp(cd_mock_jump_buf))
+#define FUSE_PAYLOAD_SIZE      7
 
 /*------------- Typedefs -----------------*/
+typedef struct
+{
+    icc_mhu_header_t header;
+    uint32_t payload[FUSE_PAYLOAD_SIZE];
+} icc_mhu_d2d_fuse_packet_t;
 
 /*-------- Function Prototypes -----------*/
 
@@ -272,7 +280,7 @@ fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
 
     assert_true(params != NULL);
     assert_true(params->payload_buffer != NULL);
-    assert_true(params->buffer_size == sizeof(rmss_d2d_mailbox_msg));
+    assert_true(params->buffer_size == 0x200);
 
     function_called();
     if (params->cb != NULL)
@@ -827,8 +835,7 @@ TEST_FUNCTION(test_fuse_core_to_ap_die0, NULL, NULL)
 
     // fuse_init mocks to get config_knobs
     fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(1);
-    fpfw_icc_base_ctx_t* dummy_icc_d2dmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(2);
-    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     will_return(__wrap_config_get_die0_core_disable_value_31_0, 0x00000002);
@@ -839,7 +846,7 @@ TEST_FUNCTION(test_fuse_core_to_ap_die0, NULL, NULL)
     will_return(__wrap_config_get_die0_core_spare_en_63_32, 0x00000000);
     will_return(__wrap_config_get_die0_core_spare_en_95_64, 0x0000000C);
 
-    fuse_init(dummy_icc_hspmbx_ctx, dummy_icc_d2dmbx_ctx);
+    fuse_init(dummy_icc_hspmbx_ctx);
 
     // Set fuses
     expect_memory(__wrap_read_core_defect_fuses,
@@ -858,7 +865,6 @@ TEST_FUNCTION(test_fuse_core_to_ap_die0, NULL, NULL)
 
     read_core_disables();
 
-    will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_mesh_get_hns_sds_vector_from_hns_sparring, 0x0);
     expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE0_STRUCT_ID);
     expect_memory(__wrap_sds_block_write, buffer, &(DIE0_core_disable_post_knob_test), FUSE_DISABLE_CORE_DIE0_SIZE);
@@ -933,32 +939,24 @@ TEST_FUNCTION(test_fuse_save_remote_die_config, NULL, NULL)
     expect_memory(__wrap_sds_block_write, buffer, &(DIE1_hns_fuses_test), HNS_FUSES_SIZE);
     expect_value(__wrap_sds_block_write, buffer_size, HNS_FUSES_SIZE);
 
-    static rmss_d2d_mailbox_msg test_msg;
-    test_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_DIE_CONFIG_REQ, 0, 0);
-    test_msg.as_uint32[1] = DIE1_core_disable_post_knob_test.fuse_dis_core_31_0;
-    test_msg.as_uint32[2] = DIE1_core_disable_post_knob_test.fuse_dis_core_63_32;
-    test_msg.as_uint32[3] = DIE1_core_disable_post_knob_test.fuse_dis_core_95_64;
-    test_msg.as_uint32[4] = DIE1_core_disable_post_knob_test.fuse_dis_core_127_96;
-    test_msg.as_uint32[5] = DIE1_hns_fuses_test.hns_fuses_31_0;
-    test_msg.as_uint32[6] = DIE1_hns_fuses_test.hns_fuses_63_32;
-    test_msg.as_uint32[7] = DIE1_hns_fuses_test.hns_fuses_95_64;
-
-    static fpfw_icc_base_recv_req_t test_recv_req = {
-        .payload_buffer = (uint8_t*)&test_msg,
-        .buffer_size = sizeof(test_msg),
-        .recv_cmd_code = RMSS_D2D_MAILBOX_DIE_CONFIG_REQ,
-        .cb = NULL,
-        .cb_ctx = &test_recv_req,
-    };
+    static uint8_t icc_mhu_send_die2die_payload[512] = {0};
+    icc_mhu_d2d_fuse_packet_t* die2die_send_msg = (icc_mhu_d2d_fuse_packet_t*)icc_mhu_send_die2die_payload;
+    die2die_send_msg->payload[0] = DIE1_core_disable_post_knob_test.fuse_dis_core_31_0;
+    die2die_send_msg->payload[1] = DIE1_core_disable_post_knob_test.fuse_dis_core_63_32;
+    die2die_send_msg->payload[2] = DIE1_core_disable_post_knob_test.fuse_dis_core_95_64;
+    die2die_send_msg->payload[3] = DIE1_core_disable_post_knob_test.fuse_dis_core_127_96;
+    die2die_send_msg->payload[4] = DIE1_hns_fuses_test.hns_fuses_31_0;
+    die2die_send_msg->payload[5] = DIE1_hns_fuses_test.hns_fuses_63_32;
+    die2die_send_msg->payload[6] = DIE1_hns_fuses_test.hns_fuses_95_64;
 
     expect_function_call(mock_ap_core_die_cfg_cb);
-    save_remote_die_config_cb(&test_recv_req, 0, 0);
+    save_remote_die_config_cb(&icc_mhu_send_die2die_payload, 0, 0);
 }
 
 TEST_FUNCTION(test_fuse_prepare_remote_die_config_listner, NULL, NULL)
 {
 
-    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, RMSS_D2D_MAILBOX_DIE_CONFIG_REQ);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, ICC_SSI_STAGE_SDS_DIE_CFG);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     prepare_remote_die_config_listener((fpfw_icc_base_ctx_t*)1234);
 }
@@ -1016,9 +1014,7 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
 TEST_FUNCTION(test_fuse_init_single_die, NULL, NULL)
 {
     fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(1);
-    fpfw_icc_base_ctx_t* dummy_icc_d2dmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(2);
 
-    will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_idsw_get_die_id, DIE_0);
 
     will_return(__wrap_config_get_die0_core_disable_value_31_0, 0x00000000);
@@ -1029,15 +1025,13 @@ TEST_FUNCTION(test_fuse_init_single_die, NULL, NULL)
     will_return(__wrap_config_get_die0_core_spare_en_63_32, 0x00000000);
     will_return(__wrap_config_get_die0_core_spare_en_95_64, 0x00000002);
 
-    fuse_init(dummy_icc_hspmbx_ctx, dummy_icc_d2dmbx_ctx);
+    fuse_init(dummy_icc_hspmbx_ctx);
 }
 
 TEST_FUNCTION(test_fuse_init_dual_die, NULL, NULL)
 {
     fpfw_icc_base_ctx_t* dummy_icc_hspmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(1);
-    fpfw_icc_base_ctx_t* dummy_icc_d2dmbx_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(2);
 
-    will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
     will_return(__wrap_config_get_die1_core_disable_value_31_0, 0x00000000);
     will_return(__wrap_config_get_die1_core_disable_value_63_32, 0x00000001);
@@ -1047,7 +1041,7 @@ TEST_FUNCTION(test_fuse_init_dual_die, NULL, NULL)
     will_return(__wrap_config_get_die1_core_spare_en_63_32, 0x00000000);
     will_return(__wrap_config_get_die1_core_spare_en_95_64, 0x00000002);
 
-    fuse_init(dummy_icc_hspmbx_ctx, dummy_icc_d2dmbx_ctx);
+    fuse_init(dummy_icc_hspmbx_ctx);
 }
 
 TEST_FUNCTION(test_fuse_disable_cores_to_66_total_zero, NULL, NULL)
@@ -1085,4 +1079,12 @@ TEST_FUNCTION(test_fuse_disable_cores_to_66_total_one, NULL, NULL)
     assert_int_equal(fuse.fuse_dis_core_31_0, before.fuse_dis_core_31_0);
     assert_int_equal(fuse.fuse_dis_core_63_32, before.fuse_dis_core_63_32);
     assert_int_equal(fuse.fuse_dis_core_95_64, before.fuse_dis_core_95_64);
+}
+
+TEST_FUNCTION(test_fuse_post_mesh_init, NULL, NULL)
+{
+    will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    fpfw_icc_base_ctx_t* dummy_icc_d2d_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(1);
+
+    fuse_post_mesh_init(dummy_icc_d2d_ctx);
 }

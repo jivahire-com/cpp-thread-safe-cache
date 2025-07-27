@@ -50,7 +50,7 @@ typedef void (*ap_core_die_cfg_cb)(void* context);
 extern "C" {
 #endif
 
-void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, fpfw_icc_base_ctx_t* icc_d2dmbx_ctx);
+void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx);
 /**
  * Read fuse API
  *
@@ -61,6 +61,8 @@ void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, fpfw_icc_base_ctx_t* icc_d2d
  * @return FPFW_INIT_STATUS_SUCCES on success
  *
  */
+void fuse_post_mesh_init(fpfw_icc_base_ctx_t* icc_die2die_ctx);
+
 int platform_fuse_override(void);
 /**
  * Read fuse API

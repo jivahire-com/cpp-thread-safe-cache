@@ -59,4 +59,6 @@ mock_target(${TARGET}
    platform_fuse_init_cli
    system_info_get_platform_disable_cores 
    system_info_get_platform_disable_cores 
+   fuse_post_mesh_init
+   idhw_is_single_die_boot_en
 )

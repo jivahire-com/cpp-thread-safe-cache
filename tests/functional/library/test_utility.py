@@ -153,7 +153,7 @@ class test_utility(EchoFallsBaseTest):
             assert False, f"DUT setup failed: {setup_error}"
 
         total_timeout = 600
-        iteration_timeout = 10
+        iteration_timeout = 100
         timeout_count_max = int(total_timeout/iteration_timeout)
 
         # Open SCP Die 0 UART to monitor Boot

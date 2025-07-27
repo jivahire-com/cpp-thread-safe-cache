@@ -22,11 +22,13 @@
 #include <fuse_main_i.h>
 #include <fuse_struct.h>
 #include <fuses_top_regs.h>
+#include <icc_mhu.h> // for icc_mhu_packet_t
 #include <icc_platform_defines.h>
 #include <idsw.h> // SW platform id
 #include <idsw_kng.h>
 #include <kingsgate_fuse_defines.h> // Test revision get
-#include <kng_soc_constants.h>      // for DIE_INSTANCE
+#include <kng_icc_shared.h>
+#include <kng_soc_constants.h> // for DIE_INSTANCE
 #include <memory_map/mscp_exp_rmss_memory_map.h>
 #include <mesh.h> // for mesh_get_hns_sds_vector_from_hns_sparring
 #include <sds_api.h>
@@ -44,6 +46,7 @@
 #include <tx_api.h> // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 #include <utils.h>  // for sleep_ms()...
 /*-- Symbolic Constant Macros (defines) --*/
+#define FUSE_PAYLOAD_SIZE 7
 
 /*------------- Typedefs -----------------*/
 #define NUM_CSR_BACKED_CORE_FUSE_DESCRIPTORS (4)
@@ -58,15 +61,12 @@ static int platform_fuse_copy_to_ram();
 /*-- Declarations (Statics and globals) --*/
 
 static fpfw_icc_base_ctx_t* icc_base_ctx_fuse;
-static fpfw_icc_base_ctx_t* icc_base_ctx_d2dmbx;
+static fpfw_icc_base_ctx_t* icc_base_ctx_die2die;
 kng_fuse_disable_core_t DIE0_fuse_disable, DIE1_fuse_disable;
 static kng_fuse_disable_core_t remote_die_core_disable = {0};
 
 static fpfw_icc_base_send_req_t scp_send_params;
 static fpfw_icc_base_recv_req_t scp_recv_params;
-
-static rmss_d2d_mailbox_msg d2d_recv_msg;
-static rmss_d2d_mailbox_msg d2d_send_msg;
 
 static uint32_t die0_core_disable_config_knob_31_0 = 0;
 static uint32_t die0_core_disable_config_knob_63_32 = 0;
@@ -89,6 +89,13 @@ struct ap_core_die_cfg_cb_t
     ap_core_die_cfg_cb cb;
     void* context;
 };
+
+typedef struct
+{
+    icc_mhu_header_t header;
+    uint32_t payload[FUSE_PAYLOAD_SIZE];
+} icc_mhu_d2d_fuse_packet_t;
+
 static struct ap_core_die_cfg_cb_t ap_core_die_cfg_completion = {.cb = NULL, .context = NULL};
 
 /*------------- Functions ----------------*/
@@ -96,6 +103,7 @@ void scp_remote_die_config_req_cb(void* context, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
     FPFW_UNUSED(status);
+    printf(FUSE_NAME "distribution completed 0x%" PRIx32 "\n", status);
 }
 
 void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
@@ -133,18 +141,17 @@ void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_sta
     FPFW_UNUSED(output_size_bytes);
     uint32_t result = 0;
 
-    fpfw_icc_base_recv_req_t* req_params = (fpfw_icc_base_recv_req_t*)context;
+    icc_mhu_d2d_fuse_packet_t* req_params = (icc_mhu_d2d_fuse_packet_t*)context;
     if (status != FPFW_STATUS_SUCCESS)
     {
         printf(FUSE_NAME "Failed to receive remote die config request\n");
         return;
     }
-    uint32_t* recv_payload = (uint32_t*)req_params->payload_buffer;
 
-    remote_die_core_disable.fuse_dis_core_31_0 = recv_payload[1];
-    remote_die_core_disable.fuse_dis_core_63_32 = recv_payload[2];
-    remote_die_core_disable.fuse_dis_core_95_64 = recv_payload[3];
-    remote_die_core_disable.fuse_dis_core_127_96 = recv_payload[4];
+    remote_die_core_disable.fuse_dis_core_31_0 = req_params->payload[0];
+    remote_die_core_disable.fuse_dis_core_63_32 = req_params->payload[1];
+    remote_die_core_disable.fuse_dis_core_95_64 = req_params->payload[2];
+    remote_die_core_disable.fuse_dis_core_127_96 = req_params->payload[3];
 
     result = sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
     BUG_ASSERT(result == KNG_SUCCESS);
@@ -153,9 +160,9 @@ void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_sta
     BUG_ASSERT(result == KNG_SUCCESS);
     kng_hns_fuses_t remote_die_hns_fuses = {0};
 
-    remote_die_hns_fuses.hns_fuses_31_0 = recv_payload[5];
-    remote_die_hns_fuses.hns_fuses_63_32 = recv_payload[6];
-    remote_die_hns_fuses.hns_fuses_95_64 = recv_payload[7];
+    remote_die_hns_fuses.hns_fuses_31_0 = req_params->payload[4];
+    remote_die_hns_fuses.hns_fuses_63_32 = req_params->payload[5];
+    remote_die_hns_fuses.hns_fuses_95_64 = req_params->payload[6];
 
     result = sds_block_creation(HNS_FUSES_DIE1_STRUCT_ID, HNS_FUSES_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
     BUG_ASSERT(result == KNG_SUCCESS);
@@ -172,16 +179,17 @@ void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_sta
 
 int prepare_remote_die_config_listener(fpfw_icc_base_ctx_t* icc_ctx)
 {
-    // prepare recv request
-    memset(&scp_recv_params, 0, sizeof(scp_recv_params));
+    // Static buffer to hold the received message
+    static uint8_t scp_recv_payload[512] = {0};
 
-    scp_recv_params.payload_buffer = &d2d_recv_msg;
-    scp_recv_params.buffer_size = sizeof(d2d_recv_msg);
-    scp_recv_params.recv_cmd_code = RMSS_D2D_MAILBOX_DIE_CONFIG_REQ;
-    scp_recv_params.cb = save_remote_die_config_cb;
-    scp_recv_params.cb_ctx = &scp_recv_params;
+    scp_recv_params.recv_cmd_code = ICC_SSI_STAGE_SDS_DIE_CFG; // Command code to listen for
+    scp_recv_params.payload_buffer = scp_recv_payload;         // Buffer to receive the message
+    scp_recv_params.buffer_size = sizeof(scp_recv_payload);    // Size of the buffer
+    scp_recv_params.cb = save_remote_die_config_cb; // Callback function for handling the received message
+    scp_recv_params.cb_ctx = scp_recv_payload;      // Context for the callback
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &scp_recv_params);
+
     BUG_ASSERT(status == KNG_SUCCESS);
     return status;
 }
@@ -346,14 +354,20 @@ int write_fuse_info_to_ap()
     }
     else
     {
-        d2d_send_msg.as_uint32[0] = SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_DIE_CONFIG_REQ, 0, 0);
-        // set d2d_send_msg_.as_uint32[1] to asuint32_t[4] same as DIE1_fuse_disable[0] to [3]
-        d2d_send_msg.as_uint32[1] = DIE1_fuse_disable.fuse_dis_core_31_0;
-        d2d_send_msg.as_uint32[2] = DIE1_fuse_disable.fuse_dis_core_63_32;
-        d2d_send_msg.as_uint32[3] = DIE1_fuse_disable.fuse_dis_core_95_64;
-        d2d_send_msg.as_uint32[4] = DIE1_fuse_disable.fuse_dis_core_127_96;
+        static uint8_t icc_mhu_send_die2die_payload[512] = {0};
 
-        // set d2d_send_msg_.as_uint32[5] to asuint32_t[7] same as DIE1_hns_fuses[0] to [2]
+        icc_mhu_d2d_fuse_packet_t* die2die_send_msg = (icc_mhu_d2d_fuse_packet_t*)icc_mhu_send_die2die_payload;
+
+        // set up mhu header
+        die2die_send_msg->header.msg_header.command = ICC_SSI_STAGE_SDS_DIE_CFG;
+        die2die_send_msg->header.msg_header.payload_size = FUSE_PAYLOAD_SIZE * sizeof(uint32_t);
+
+        // fill the payload with fuse disable info
+        die2die_send_msg->payload[0] = DIE1_fuse_disable.fuse_dis_core_31_0;
+        die2die_send_msg->payload[1] = DIE1_fuse_disable.fuse_dis_core_63_32;
+        die2die_send_msg->payload[2] = DIE1_fuse_disable.fuse_dis_core_95_64;
+        die2die_send_msg->payload[3] = DIE1_fuse_disable.fuse_dis_core_127_96;
+
         // This is the HNS fuses that will be sent to the Remote die
         // Send the HNS fuses to the Remote die
         kng_hns_fuses_t DIE1_hns_fuses = {0x0};
@@ -363,20 +377,21 @@ int write_fuse_info_to_ap()
             printf(FUSE_NAME "Unable to read HNS fuses for DIE%d\n", idsw_get_die_id());
             return result;
         }
-        d2d_send_msg.as_uint32[5] = DIE1_hns_fuses.hns_fuses_31_0;
-        d2d_send_msg.as_uint32[6] = DIE1_hns_fuses.hns_fuses_63_32;
-        d2d_send_msg.as_uint32[7] = DIE1_hns_fuses.hns_fuses_95_64;
 
-        scp_send_params.payload_buffer = &d2d_send_msg;
-        scp_send_params.buffer_size = sizeof(d2d_send_msg);
+        die2die_send_msg->payload[4] = DIE1_hns_fuses.hns_fuses_31_0;
+        die2die_send_msg->payload[5] = DIE1_hns_fuses.hns_fuses_63_32;
+        die2die_send_msg->payload[6] = DIE1_hns_fuses.hns_fuses_95_64;
+
+        scp_send_params.payload_buffer = icc_mhu_send_die2die_payload;
+        scp_send_params.buffer_size = sizeof(icc_mhu_send_die2die_payload);
         scp_send_params.cb = scp_remote_die_config_req_cb;
-        scp_send_params.cb_ctx = &scp_send_params;
+        scp_send_params.cb_ctx = icc_mhu_send_die2die_payload;
 
-        fpfw_status_t icc_status = fpfw_icc_base_send(icc_base_ctx_d2dmbx, &scp_send_params);
+        fpfw_status_t icc_status = fpfw_icc_base_send(icc_base_ctx_die2die, &scp_send_params);
         if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
-            printf(FUSE_NAME "send fuse info to primary die fail\n");
-            BUG_ASSERT(result == KNG_SUCCESS);
+            printf(FUSE_NAME "send fuse info to primary die fail 0x%" PRIx32 "\n", icc_status);
+            BUG_ASSERT_PARAM((icc_status == FPFW_ICC_BASE_STATUS_SUCCESS), icc_status, icc_mhu_send_die2die_payload);
         }
 
         if ((ap_core_die_cfg_completion.cb == NULL) || (ap_core_die_cfg_completion.context == NULL))
@@ -625,16 +640,9 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
     return status;
 }
 
-void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, fpfw_icc_base_ctx_t* icc_d2dmbx_ctx)
+void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx)
 {
     icc_base_ctx_fuse = icc_hspmbx_ctx;
-    icc_base_ctx_d2dmbx = icc_d2dmbx_ctx;
-
-    if (!idhw_is_single_die_boot_en() && (idsw_get_die_id() == DIE_0))
-    {
-        // prepare the listener for remote die config request
-        prepare_remote_die_config_listener(icc_base_ctx_d2dmbx);
-    }
 
     if (idsw_get_die_id() == DIE_0)
     {
@@ -659,6 +667,15 @@ void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, fpfw_icc_base_ctx_t* icc_d2d
     FUSE_ET_STATUS(FUSE_ET_TYPE_SVC_START);
 }
 
+void fuse_post_mesh_init(fpfw_icc_base_ctx_t* icc_die2die_ctx)
+{
+    icc_base_ctx_die2die = icc_die2die_ctx;
+    if (!idhw_is_single_die_boot_en() && (idsw_get_die_id() == DIE_0))
+    {
+        // prepare the listener for remote die config request
+        prepare_remote_die_config_listener(icc_base_ctx_die2die);
+    }
+}
 void fuse_print_version(void)
 {
     FPFW_DBGPRINT_INFO(FUSE_NAME "Current fuse artifacts version %d.%d.%d \n",

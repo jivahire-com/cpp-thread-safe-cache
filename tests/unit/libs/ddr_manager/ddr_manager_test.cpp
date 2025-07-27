@@ -933,6 +933,9 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_0, NULL, NULL)
         expect_function_calls(__wrap_mmio_write8, 1);
     }
 
+    // Write SMBIOS length
+    expect_function_calls(__wrap_mmio_write32, 1);
+
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     ddr_create_smbios_tables();
@@ -962,10 +965,9 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_timer, NULL
     expect_value(__wrap_mscp_exp_spi_synchronize_dies, die_id, DIE_1);
     will_return(__wrap_mscp_exp_spi_synchronize_dies, SILIBS_SUCCESS);
 
-    // Calculating offsets for DIE_1 to begin hits mocked functions that need values..
-    will_return(__wrap_dimm_vendor_from_id, "MICRON");
-    will_return(__wrap_get_dimm_serial_number_string, "12345678");
-    will_return(__wrap_get_dimm_part_number_string, "MT8JTF25664HZ-1G4F1");
+    // Read SMBIOS length
+    expect_function_call(__wrap_mmio_read32);
+    will_return(__wrap_mmio_read32, 0);
 
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {
@@ -1013,6 +1015,10 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_timer, NULL
         // Additional NULL byte between type17 tables
         expect_function_calls(__wrap_mmio_write8, 1);
     }
+
+    // Additional 8 byte for the end
+    expect_function_calls(__wrap_mmio_write8, 8);
+
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     // end of ddr_create_smbios_tables()
 

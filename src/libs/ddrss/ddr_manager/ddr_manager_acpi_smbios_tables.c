@@ -624,93 +624,9 @@ static size_t trim_trailing_whitespace(char* tempString, int max_chars)
     return num_chars;
 }
 
-void ddr_create_smbios_tables(void)
+static void ddr_wait_for_smbios_sync_point(void)
 {
-    // Get each DIMM's SPD data  from ddrss silicon libs - or read via I3C
-    // Get relevant config data (number of DIMMs, rank, speed, etc.)
-    // Create SMBIOS Type 16/17
-    // Copy to reserved DDR region specified by shared header file
-
-    atu_map_entry_t smbios_mem_atu_map_struct;
-    uint16_t data_len;
-    SMBIOS_PHYS_MEM_ARRAY_16 smb_table16 = {0};
-    SMBIOS_MEM_DEVICE_17 smb_table17 = {0};
-    char tempString[STRING_SIZE] = {0};
-    atu_entry_attr_t smbios_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
-    KNG_DIE_ID die_num = idsw_get_die_id();
-    ddrss_cfg_knobs_t ddrss_prd_cfg_knobs = {0};
     int sts = SILIBS_SUCCESS;
-    sts = ddrss_get_config(&ddrss_prd_cfg_knobs);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
-
-    smbios_mem_atu_map_struct.ap_base_address = SMBIOS_HANDOFF_RESERVATION_BASE;
-    smbios_mem_atu_map_struct.mscp_start_address = 0;
-    smbios_mem_atu_map_struct.mscp_end_address = SMBIOS_HANDOFF_RESERVATION_SIZE - 1;
-    smbios_mem_atu_map_struct.attribute.as_uint32 = smbios_test_atu_root_attr.as_uint32;
-
-    sts = atu_map(ATU_ID_MSCP, &smbios_mem_atu_map_struct);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
-
-    uint32_t dimm_capacity_gb = get_i3c_dimm_cap_per_ch();
-    uint32_t dimm_capacity_mb = dimm_capacity_gb * 1024;
-    uint32_t dimm_capacity_kb = dimm_capacity_mb * 1024;
-    uint32_t smbios_next_addr = smbios_mem_atu_map_struct.mscp_start_address;
-
-    const uint16_t JEDEC_MICROSOFT_ID = 0xD5;
-    const uint32_t EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16 = 0x80000000;
-    const uint32_t EXTENDED_DIMM_CAP_LIMIT_MB_TYPE17 = 0x7FFF;
-
-    // Clear memory first
-    if (die_num == DIE_0)
-    {
-        for (uint32_t i = 0; i < (SMBIOS_HANDOFF_RESERVATION_SIZE / 4); i++)
-        {
-            MMIO_WRITE32((smbios_mem_atu_map_struct.mscp_start_address + (4 * i)), 0);
-        }
-
-        // --------------------------- Type 16 table ---------------------------
-        smb_table16.Type = 16;
-        smb_table16.Length = 0x17; // Length of the structure, 0Fh for version 2.1, 17h for version 2.7 and later
-        smb_table16.Handle = 0;
-        smb_table16.Location = 0x3; // System board or motherboard, refer to Table 72 of SMBIOS Ref Spec (DSP0134_3.8.0)
-        smb_table16.Use = 0x3; // System memory, refer to Table 73 of SMBIOS Ref Spec (DSP0134_3.8.0)
-        smb_table16.MemoryErrorCorrection = 0x3; // None, refer to Table 74 of SMBIOS Ref Spec (DSP0134_3.8.0)
-
-        /* Maximum memory capacity, in kilobytes, for this array
-        If the capacity is not represented in this field, then this
-        field contains 8000 0000h and the Extended
-        Maximum Capacity field should be used. Values 2 TB
-        (8000 0000h) or greater must be represented in the
-        Extended Maximum Capacity field.
-
-        MaximumCapacity expressed in kB
-        ExtendedMaximumCapacity expressed in B
-        */
-        if (dimm_capacity_kb >= EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16)
-        {
-            smb_table16.MaximumCapacity = EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16;
-            smb_table16.ExtendedMaximumCapacity = (uint64_t)dimm_capacity_kb * 1024; // In Bytes
-        }
-        else
-        {
-            smb_table16.MaximumCapacity = dimm_capacity_kb;
-            smb_table16.ExtendedMaximumCapacity = 0;
-        }
-
-        smb_table16.MemoryErrorInformationHandle = 0;
-        smb_table16.NumberOfMemoryDevices = NUM_DIMM_PER_DIE;
-
-        // Copy Type16 table to memory
-        uint8_t* table16ptr = (uint8_t*)&smb_table16;
-        for (size_t byte_idx = 0; byte_idx < sizeof(smb_table16); byte_idx++)
-        {
-            MMIO_WRITE8(smbios_next_addr++, *table16ptr++);
-        }
-
-        // Append double NULL to signify end of (empty) string section for Type 16 table
-        MMIO_WRITE8(smbios_next_addr++, 0);
-        MMIO_WRITE8(smbios_next_addr++, 0);
-    } // end of DIE_0 ONLY
 
     if (!idhw_is_single_die_boot_en())
     {
@@ -719,12 +635,64 @@ void ddr_create_smbios_tables(void)
         d2d_ddr_sync_point.remote_write_addr = SCP_EXP_D2D_SYNC_DDR_SMBIOS16_BASE + sizeof(uint32_t);
         d2d_ddr_sync_point.value = RMSS_D2D_DDR_SMBIOS16_DONE_SYNC_POINT;
 
-        if (mscp_exp_spi_synchronize_dies(d2d_ddr_sync_point, die_num) != SILIBS_SUCCESS)
-        {
-            // Raise error
-            printf("Error Syncing dies\n");
-        }
+        KNG_DIE_ID die_num = idsw_get_die_id();
+        sts = mscp_exp_spi_synchronize_dies(d2d_ddr_sync_point, die_num);
+        BUG_ASSERT(sts == SILIBS_SUCCESS);
     }
+}
+
+static uint32_t ddr_create_smbios_type_16(uint32_t smbios_next_addr)
+{
+    uint32_t dimm_capacity_gb = get_i3c_dimm_cap_per_ch();
+    uint32_t dimm_capacity_mb = dimm_capacity_gb * 1024;
+    uint32_t dimm_capacity_kb = dimm_capacity_mb * 1024;
+
+    const uint32_t EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16 = 0x80000000;
+
+    SMBIOS_PHYS_MEM_ARRAY_16 smb_table16 = {0};
+    // --------------------------- Type 16 table ---------------------------
+    smb_table16.Type = 16;
+    smb_table16.Length = 0x17; // Length of the structure, 0Fh for version 2.1, 17h for version 2.7 and later
+    smb_table16.Handle = 0;
+    smb_table16.Location = 0x3; // System board or motherboard, refer to Table 72 of SMBIOS Ref Spec (DSP0134_3.8.0)
+    smb_table16.Use = 0x3; // System memory, refer to Table 73 of SMBIOS Ref Spec (DSP0134_3.8.0)
+    smb_table16.MemoryErrorCorrection = 0x3; // None, refer to Table 74 of SMBIOS Ref Spec (DSP0134_3.8.0)
+
+    /* Maximum memory capacity, in kilobytes, for this array
+    If the capacity is not represented in this field, then this
+    field contains 8000 0000h and the Extended
+    Maximum Capacity field should be used. Values 2 TB
+    (8000 0000h) or greater must be represented in the
+    Extended Maximum Capacity field.
+
+    MaximumCapacity expressed in kB
+    ExtendedMaximumCapacity expressed in B
+    */
+    if (dimm_capacity_kb >= EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16)
+    {
+        smb_table16.MaximumCapacity = EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16;
+        smb_table16.ExtendedMaximumCapacity = (uint64_t)dimm_capacity_kb * 1024; // In Bytes
+    }
+    else
+    {
+        smb_table16.MaximumCapacity = dimm_capacity_kb;
+        smb_table16.ExtendedMaximumCapacity = 0;
+    }
+
+    smb_table16.MemoryErrorInformationHandle = 0;
+    smb_table16.NumberOfMemoryDevices = NUM_DIMM_PER_DIE;
+
+    // Copy Type16 table to memory
+    uint8_t temp_buffer[sizeof(smb_table16)];
+    memcpy(temp_buffer, &smb_table16, sizeof(smb_table16));
+    for (size_t byte_idx = 0; byte_idx < sizeof(smb_table16); byte_idx++)
+    {
+        MMIO_WRITE8(smbios_next_addr++, temp_buffer[byte_idx]);
+    }
+
+    // Append double NULL to signify end of (empty) string section for Type 16 table
+    MMIO_WRITE8(smbios_next_addr++, 0);
+    MMIO_WRITE8(smbios_next_addr++, 0);
 
     // Align to next 32bit addr
     if (!FPFW_IS_ALIGNED(smbios_next_addr, sizeof(uint32_t)))
@@ -733,6 +701,21 @@ void ddr_create_smbios_tables(void)
     }
 
     printf("SMBIOS 16 DONE\n");
+    return smbios_next_addr;
+}
+
+static uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
+{
+    char tempString[STRING_SIZE] = {0};
+    SMBIOS_MEM_DEVICE_17 smb_table17 = {0};
+    ddrss_cfg_knobs_t ddrss_prd_cfg_knobs = {0};
+
+    uint32_t dimm_capacity_gb = get_i3c_dimm_cap_per_ch();
+    uint32_t dimm_capacity_mb = dimm_capacity_gb * 1024;
+    uint32_t dimm_capacity_kb = dimm_capacity_mb * 1024;
+
+    const uint16_t JEDEC_MICROSOFT_ID = 0xD5;
+    const uint32_t EXTENDED_DIMM_CAP_LIMIT_MB_TYPE17 = 0x7FFF;
 
     // --------------------------- Type 17 tables ---------------------------
     uint32_t this_dies_smbios_next_addr = smbios_next_addr;
@@ -741,14 +724,13 @@ void ddr_create_smbios_tables(void)
     uint16_t data_offset = START_OF_VENDOR_INFO;
     i3c_cmd_t s_i3c_cmd = {0};
     ddrss_dimm_spd_t* dimm_spd = {0};
-    data_len = 0;
+    uint16_t data_len = 0;
+    int sts = SILIBS_SUCCESS;
 
-    if (die_num == DIE_1)
-    {
-        // Find size of single Type 17 table + all strings + nulls to get starting point for die_1
-        this_dies_smbios_next_addr += (6 * (get_single_type17_table_and_strings_size(spd_buff))); // 6 DIMMs per die
-    }
+    sts = ddrss_get_config(&ddrss_prd_cfg_knobs);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
+    KNG_DIE_ID die_num = idsw_get_die_id();
     for (uint16_t dimm_local_idx = 0; dimm_local_idx < NUM_DIMM_PER_DIE; dimm_local_idx++)
     {
         dimm_global_idx = (die_num * 6) + dimm_local_idx; // 6 dimm per die: die0- 0 to 5, die1- 6 to 11
@@ -930,11 +912,84 @@ void ddr_create_smbios_tables(void)
 
         // Additional NULL byte to terminate list of strings between TYPE17 tables
         MMIO_WRITE8(this_dies_smbios_next_addr++, 0);
+
+        // Align to next 32bit addr
+        if (!FPFW_IS_ALIGNED(this_dies_smbios_next_addr, sizeof(uint32_t)))
+        {
+            this_dies_smbios_next_addr = FPFW_ALIGN_SIZE_TO_4_BYTES(this_dies_smbios_next_addr);
+        }
+    }
+
+    printf("SMBIOS 17 DONE\n");
+    return this_dies_smbios_next_addr;
+}
+
+void ddr_create_smbios_tables(void)
+{
+    // Get each DIMM's SPD data  from ddrss silicon libs - or read via I3C
+    // Get relevant config data (number of DIMMs, rank, speed, etc.)
+    // Create SMBIOS Type 16/17
+    // Copy to reserved DDR region specified by shared header file
+    atu_map_entry_t smbios_mem_atu_map_struct;
+
+    atu_entry_attr_t smbios_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
+
+    smbios_mem_atu_map_struct.ap_base_address = SMBIOS_HANDOFF_RESERVATION_BASE;
+    smbios_mem_atu_map_struct.mscp_start_address = 0;
+    smbios_mem_atu_map_struct.mscp_end_address = SMBIOS_HANDOFF_RESERVATION_SIZE - 1;
+    smbios_mem_atu_map_struct.attribute.as_uint32 = smbios_test_atu_root_attr.as_uint32;
+
+    int sts = SILIBS_SUCCESS;
+    sts = atu_map(ATU_ID_MSCP, &smbios_mem_atu_map_struct);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
+
+    uint32_t start_addr = smbios_mem_atu_map_struct.mscp_start_address;
+    uint32_t next_addr = start_addr;
+    uint32_t size_off = SMBIOS_HANDOFF_RESERVATION_SIZE - sizeof(uint32_t);
+    KNG_DIE_ID die_num = idsw_get_die_id();
+    if (die_num == DIE_0)
+    {
+        // Clear memory first
+        for (uint32_t i = 0; i < (SMBIOS_HANDOFF_RESERVATION_SIZE / 4); i++)
+        {
+            MMIO_WRITE32((next_addr + (4 * i)), 0);
+        }
+
+        next_addr = ddr_create_smbios_type_16(start_addr);
+
+        next_addr = ddr_create_smbios_type_17(next_addr);
+        BUG_ASSERT(next_addr - start_addr < SMBIOS_HANDOFF_RESERVATION_SIZE);
+
+        // Update the SMBIOS length
+        MMIO_WRITE32(start_addr + size_off, next_addr - start_addr);
+
+        ddr_wait_for_smbios_sync_point();
+    }
+    else
+    {
+        // Wait for D0 to finish building SMBIOS type 16/17.
+        // Only after it, we know where to start building SMBIOS table for D1.
+        ddr_wait_for_smbios_sync_point();
+
+        // Retrieve the SMBIOS table length built by D0
+        uint32_t d0_smbios_len = MMIO_READ32(start_addr + size_off);
+        BUG_ASSERT(d0_smbios_len < SMBIOS_HANDOFF_RESERVATION_SIZE);
+
+        // Append SMBIOS type 17 for D1
+        next_addr = ddr_create_smbios_type_17(start_addr + d0_smbios_len);
+        BUG_ASSERT(next_addr - start_addr + 8 < SMBIOS_HANDOFF_RESERVATION_SIZE);
+
+        // Zero out the next 8 bytes to indicate the end of SMBIOS table
+        for (uint32_t i = 0; i < 8; i++)
+        {
+            MMIO_WRITE8(next_addr + i, 0);
+        }
     }
 
     sts = atu_unmap(ATU_ID_MSCP, &smbios_mem_atu_map_struct);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
-    printf("SMBIOS 17 DONE\n");
+
+    printf("DDR SMBIOS DONE\n");
 }
 
 /**
@@ -1015,24 +1070,6 @@ const char* dimm_vendor_from_id(uint8_t id_byte)
     default:
         return dimm_vendor_str[UNKNOWN_IDX];
     }
-}
-
-uint32_t get_single_type17_table_and_strings_size(uint8_t* spd_buff)
-{
-    char buffer[STRING_SIZE] = {0};
-    uint32_t single_type17_table_size = 0;
-
-    single_type17_table_size += sizeof(SMBIOS_MEM_DEVICE_17);
-    single_type17_table_size += get_deviceLocator_string(0, buffer, sizeof(buffer)) + 1;     // Device Locator
-    single_type17_table_size += get_dimm_bank_locator_string(0, buffer, sizeof(buffer)) + 1; // Bank Locator
-    single_type17_table_size += get_dimm_manufacturer_string(spd_buff, buffer, sizeof(buffer)) + 1; // DIMM Manufacturer
-    single_type17_table_size += get_dimm_serial_number_string(spd_buff, buffer, sizeof(buffer)) + 1; // DIMM Serial Number
-    single_type17_table_size += get_dimm_asset_tag_string(buffer, sizeof(buffer)) + 1; // Asset Tag
-    single_type17_table_size += get_dimm_part_number_string(spd_buff, buffer, sizeof(buffer)) + 1; // DIMM Part Number
-    single_type17_table_size += get_dimm_phy_fw_version_string(buffer, sizeof(buffer)) + 1; // PHY FW Version
-    single_type17_table_size += 1; // Additional NULL Byte to terminate list of strings between TYPE17 tables
-
-    return single_type17_table_size;
 }
 
 size_t get_deviceLocator_string(uint32_t dimm_global_idx, char* buffer, size_t bufferSize)

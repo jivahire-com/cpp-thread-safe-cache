@@ -74,4 +74,5 @@ mock_target(${TARGET}
     wdog_cmsdk_apb_init
     idsw_get_platform_sdv
     is_cached_space
+    mmu_fault
 )

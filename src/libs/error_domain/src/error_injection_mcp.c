@@ -105,6 +105,30 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
                 inject_err_by_access(DTC_RAM_ADDRESS);
                 nvic_global_enable();
                 break;
+            case MCP_ERROR_TYPE_DATA_CACHE_CE:
+                dcache_ce_isr();
+                break;
+            case MCP_ERROR_TYPE_DATA_CACHE_UE:
+                dcache_ue_isr();
+                break;
+            case MCP_ERROR_TYPE_DATA_CACHE_TAG_CE:
+                dcache_tag_ce_isr();
+                break;
+            case MCP_ERROR_TYPE_DATA_CACHE_TAG_UE:
+                dcache_tag_ue_isr();
+                break;
+            case MCP_ERROR_TYPE_INSTRUCTION_CACHE_CE:
+                icache_ce_isr();
+                break;
+            case MCP_ERROR_TYPE_INSTRUCTION_CACHE_UE:
+                icache_ue_isr();
+                break;
+            case MCP_ERROR_TYPE_INSTRUCTION_CACHE_TAG_CE:
+                icache_tag_ce_isr();
+                break;
+            case MCP_ERROR_TYPE_INSTRUCTION_CACHE_TAG_UE:
+                icache_tag_ue_isr();
+                break;
             case MCP_ERROR_TYPE_HARD_FAULT:
                 trigger_hard_fault();
                 break;

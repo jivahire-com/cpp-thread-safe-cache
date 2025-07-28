@@ -4,7 +4,7 @@
 
 /**
  @file test_err_domain_register_mcp_init.cpp
- * Tests the init of the smcp error domain
+ * Tests the init of the mcp error domain
  */
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for assert_int_equal, assert_non_null, expe...
@@ -41,9 +41,20 @@ extern "C" {
 #define MCP_TCM_ERRADDRESS_REG \
     (MCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS + MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRADDR_ADDRESS)
 
+#define MCP_CORTEX_M7_SystemControl_ADDRESS \
+    (MCP_TOP_CORTEX_M7_ADDRESS + CORTEXM7INTEGRATIONCS_MCP_SYSTEMCONTROL_ADDRESS)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+void test_dcache_ue_isr();
+void test_dcache_ce_isr();
+void test_dcache_tag_ue_isr();
+void test_dcache_tag_ce_isr();
+void test_icache_ue_isr();
+void test_icache_ce_isr();
+void test_icache_tag_ue_isr();
+void test_icache_tag_ce_isr();
 void test_hard_fault_handler();
 void test_bus_fault_handler();
 void test_watchdog_handler();
@@ -56,6 +67,15 @@ isr_callback_fn_sans_params_t g_tcm_ue_isr = NULL;
 isr_callback_fn_sans_params_t g_tcm_of_isr = NULL;
 isr_callback_fn_with_params_t g_s_arsm_ecc_isr = NULL;
 isr_callback_fn_sans_params_t g_s_rsm_ecc_isr = NULL;
+isr_callback_fn_sans_params_t g_dcache_ue_isr = NULL;
+isr_callback_fn_sans_params_t g_dcache_ce_isr = NULL;
+isr_callback_fn_sans_params_t g_dcache_tag_ue_isr = NULL;
+isr_callback_fn_sans_params_t g_dcache_tag_ce_isr = NULL;
+isr_callback_fn_sans_params_t g_icache_ue_isr = NULL;
+isr_callback_fn_sans_params_t g_icache_ce_isr = NULL;
+isr_callback_fn_sans_params_t g_icache_tag_ue_isr = NULL;
+isr_callback_fn_sans_params_t g_icache_tag_ce_isr = NULL;
+
 mcp_proc_err_type_t g_last_mcp_err_type = MCP_ERROR_TYPE_COUNT;
 ras_einj_info_t ras_einj_payload = {};
 
@@ -136,8 +156,29 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
     case HW_INT_TCM_ECCOF_INT:
         g_tcm_of_isr = isr;
         break;
-    case MCP_ERROR_TYPE_WATCHDOG:
-        test_watchdog_handler();
+    case HW_INT_DCDET_DATA_UE:
+        g_dcache_ue_isr = isr;
+        break;
+    case HW_INT_DCDET_DATA_CE:
+        g_dcache_ce_isr = isr;
+        break;
+    case HW_INT_DCDET_TAG_UE:
+        g_dcache_tag_ue_isr = isr;
+        break;
+    case HW_INT_DCDET_TAG_CE:
+        g_dcache_tag_ce_isr = isr;
+        break;
+    case HW_INT_ICDET_DATA_UE:
+        g_icache_ue_isr = isr;
+        break;
+    case HW_INT_ICDET_DATA_CE:
+        g_icache_ce_isr = isr;
+        break;
+    case HW_INT_ICDET_TAG_UE:
+        g_icache_tag_ue_isr = isr;
+        break;
+    case HW_INT_ICDET_TAG_CE:
+        g_icache_tag_ce_isr = isr;
         break;
     case MCP_ERROR_TYPE_BUS_FAULT:
         test_bus_fault_handler();
@@ -152,7 +193,6 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
     case HW_INT_MCP_RSM_RAM_FHI_INT:
         g_s_rsm_ecc_isr = isr;
         break;
-
     default:
         assert_true(false);
         break;
@@ -333,6 +373,50 @@ TEST_FUNCTION(test_register_mcp_error_domain, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_MCP_RSM_RAM_FHI_INT);
     expect_function_call(__wrap_nvic_irq_enable);
 
+    // Data Cache ECC
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_DATA_UE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_DATA_CE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_TAG_UE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_DCDET_TAG_CE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_DCDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // Instruction Cache ECC
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_DATA_UE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_DATA_CE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_TAG_UE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_ICDET_TAG_CE
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_ICDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_enable);
+
     // TCM ECC
     expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_TCM_ERRCTRL_REG);
     will_return(__wrap_mmio_read32, 0);
@@ -403,7 +487,9 @@ static int test_setup(void** ctx)
     FPFW_UNUSED(ctx);
 
     if (g_err_inject_cb == NULL || g_tcm_ce_isr == NULL || g_tcm_ue_isr == NULL || g_tcm_of_isr == NULL ||
-        g_s_arsm_ecc_isr == NULL || g_s_rsm_ecc_isr == NULL)
+        g_s_arsm_ecc_isr == NULL || g_s_rsm_ecc_isr == NULL || g_dcache_ue_isr == NULL || g_dcache_ce_isr == NULL ||
+        g_dcache_tag_ue_isr == NULL || g_dcache_tag_ce_isr == NULL || g_icache_ue_isr == NULL ||
+        g_icache_ce_isr == NULL || g_icache_tag_ue_isr == NULL || g_icache_tag_ce_isr == NULL)
     {
         test_register_mcp_error_domain(NULL);
     }
@@ -531,6 +617,32 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32);
             expect_function_call(__wrap_nvic_global_enable);
             break;
+
+        case MCP_ERROR_TYPE_DATA_CACHE_CE:
+            test_dcache_ce_isr();
+            break;
+        case MCP_ERROR_TYPE_DATA_CACHE_UE:
+            test_dcache_ue_isr();
+            break;
+        case MCP_ERROR_TYPE_DATA_CACHE_TAG_CE:
+            test_dcache_tag_ce_isr();
+            break;
+        case MCP_ERROR_TYPE_DATA_CACHE_TAG_UE:
+            test_dcache_tag_ue_isr();
+            break;
+        case MCP_ERROR_TYPE_INSTRUCTION_CACHE_CE:
+            test_icache_ce_isr();
+            break;
+        case MCP_ERROR_TYPE_INSTRUCTION_CACHE_UE:
+            test_icache_ue_isr();
+            break;
+        case MCP_ERROR_TYPE_INSTRUCTION_CACHE_TAG_CE:
+            test_icache_tag_ce_isr();
+            break;
+        case MCP_ERROR_TYPE_INSTRUCTION_CACHE_TAG_UE:
+            test_icache_tag_ue_isr();
+            break;
+
         case MCP_ERROR_TYPE_HARD_FAULT:
             test_hard_fault_handler();
             break;
@@ -786,6 +898,226 @@ TEST_FUNCTION(test_tcm_ecc_ue_isr, nullptr, nullptr)
     expect_function_call(__wrap_hm_submit_cper);
     expect_function_call(__wrap_crash_dump_bug_check);
     g_tcm_ue_isr();
+}
+
+// Test function to check the behavior of the Data Cache ECC UE ISR
+void test_dcache_ue_isr()
+{
+    // Read the DEBR0
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_DEBR0H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read the DEBR1
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_DEBR1H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear interrupt source
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    // Submit CPER and Bugcheck as UE
+    expect_function_call(__wrap_hm_submit_cper);
+    expect_function_call(__wrap_crash_dump_bug_check);
+}
+
+TEST_FUNCTION(test_dcache_ue_isr, test_setup, nullptr)
+{
+    test_dcache_ue_isr();
+    g_dcache_ue_isr();
+}
+
+void test_dcache_ce_isr()
+{
+    // Read the DEBR0
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_DEBR0H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read the DEBR1
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_DEBR1H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear interrupt source
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    // Submit CPER
+    expect_function_call(__wrap_hm_submit_cper);
+}
+
+// Test function to check the behavior of the Data Cache ECC CE ISR
+TEST_FUNCTION(test_dcache_ce_isr, test_setup, nullptr)
+{
+    test_dcache_ce_isr();
+    g_dcache_ce_isr();
+}
+
+void test_dcache_tag_ue_isr()
+{
+    // Read the DEBR0
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_DEBR0H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read the DEBR1
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_DEBR1H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear interrupt source
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    // Submit CPER and Bugcheck as UE
+    expect_function_call(__wrap_hm_submit_cper);
+    expect_function_call(__wrap_crash_dump_bug_check);
+}
+
+// Test function to check the behavior of the Data Cache Tag ECC UE ISR
+TEST_FUNCTION(dcache_tag_ue_isr, test_setup, nullptr)
+{
+    test_dcache_tag_ue_isr();
+    g_dcache_tag_ue_isr();
+}
+
+// Test function to check the behavior of the Data Cache Tag ECC CE ISR
+void test_dcache_tag_ce_isr()
+{
+    // Read the DEBR0
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_DEBR0H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read the DEBR1
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_DEBR1H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear interrupt source
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_DCDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    // Submit CPER
+    expect_function_call(__wrap_hm_submit_cper);
+}
+
+TEST_FUNCTION(dcache_tag_ce_isr, test_setup, nullptr)
+{
+    test_dcache_tag_ce_isr();
+    g_dcache_tag_ce_isr();
+}
+
+// Test function to check the behavior of the Instruction Cache ECC UE ISR
+void test_icache_ue_isr()
+{
+    // Read the DEBR0
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_IEBR0_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read the DEBR1
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_IEBR1H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear interrupt source
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_DATA_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    // Submit CPER and Bugcheck as UE
+    expect_function_call(__wrap_hm_submit_cper);
+    expect_function_call(__wrap_crash_dump_bug_check);
+}
+
+TEST_FUNCTION(test_icache_ue_isr, test_setup, nullptr)
+{
+    test_icache_ue_isr();
+    g_icache_ue_isr();
+}
+
+// Test function to check the behavior of the Instruction Cache ECC CE ISR
+void test_icache_ce_isr()
+{
+    // Read the DEBR0
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_IEBR0_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read the DEBR1
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_IEBR1H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear interrupt source
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_DATA_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    // Submit CPER
+    expect_function_call(__wrap_hm_submit_cper);
+}
+
+TEST_FUNCTION(test_icache_ce_isr, test_setup, nullptr)
+{
+    test_icache_ce_isr();
+    g_icache_ce_isr();
+}
+
+// Test function to check the behavior of the Instruction Cache Tag ECC UE ISR
+void test_icache_tag_ue_isr()
+{
+    // Read the DEBR0
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_IEBR0_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read the DEBR1
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_IEBR1H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear interrupt source
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_TAG_UE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    // Submit CPER and Bugcheck as UE
+    expect_function_call(__wrap_hm_submit_cper);
+    expect_function_call(__wrap_crash_dump_bug_check);
+}
+
+TEST_FUNCTION(test_icache_tag_ue_isr, test_setup, nullptr)
+{
+    test_icache_tag_ue_isr();
+    g_icache_tag_ue_isr();
+}
+
+// Test function to check the behavior of the Instruction Cache Tag ECC CE ISR
+void test_icache_tag_ce_isr()
+{
+    // Read the DEBR0
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_IEBR0_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Read the DEBR1
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)MCP_CORTEX_M7_SystemControl_ADDRESS + SYSTEMCONTROL_IEBR1H_ADDRESS);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear interrupt source
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_ICDET_TAG_CE);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    // Submit CPER
+    expect_function_call(__wrap_hm_submit_cper);
+}
+
+TEST_FUNCTION(test_icache_tag_ce_isr, test_setup, nullptr)
+{
+    test_icache_tag_ce_isr();
+    g_icache_tag_ce_isr();
 }
 
 void test_hard_fault_handler()

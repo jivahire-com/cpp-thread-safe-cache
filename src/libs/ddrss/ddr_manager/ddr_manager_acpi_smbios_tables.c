@@ -643,7 +643,7 @@ static void ddr_wait_for_smbios_sync_point(void)
 
 static uint32_t ddr_create_smbios_type_16(uint32_t smbios_next_addr)
 {
-    uint32_t dimm_capacity_gb = get_i3c_dimm_cap_per_ch();
+    uint32_t dimm_capacity_gb = get_i3c_dimm_cap_in_gb();
     uint32_t dimm_capacity_mb = dimm_capacity_gb * 1024;
     uint32_t dimm_capacity_kb = dimm_capacity_mb * 1024;
 
@@ -710,7 +710,7 @@ static uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
     SMBIOS_MEM_DEVICE_17 smb_table17 = {0};
     ddrss_cfg_knobs_t ddrss_prd_cfg_knobs = {0};
 
-    uint32_t dimm_capacity_gb = get_i3c_dimm_cap_per_ch();
+    uint32_t dimm_capacity_gb = get_i3c_dimm_cap_in_gb();
     uint32_t dimm_capacity_mb = dimm_capacity_gb * 1024;
     uint32_t dimm_capacity_kb = dimm_capacity_mb * 1024;
 

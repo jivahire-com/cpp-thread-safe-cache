@@ -143,6 +143,31 @@ uint32_t get_i3c_dimm_detected(void)
     return g_ddrss_en;
 }
 
+uint32_t get_i3c_dimm_cap_in_gb(void)
+{
+    FPFW_RUNTIME_ASSERT(g_dimm_cap_per_ch < DIMM_CMN800_NUM_SUPPORTED_DRAM_SIZES);
+
+    switch (g_dimm_cap_per_ch)
+    {
+    case DIMM_40_BIT_CH_4GB:
+        return 4 * 2;
+    case DIMM_40_BIT_CH_8GB:
+        return 8 * 2;
+    case DIMM_40_BIT_CH_16GB:
+        return 16 * 2;
+    case DIMM_40_BIT_CH_32GB:
+        return 32 * 2;
+    case DIMM_40_BIT_CH_64GB:
+        return 64 * 2;
+    case DIMM_40_BIT_CH_24GB:
+        return 24 * 2;
+    case DIMM_40_BIT_CH_48GB:
+        return 48 * 2;
+    default:
+        return 64 * 2;
+    }
+}
+
 uint8_t get_i3c_dimm_cap_per_ch(void)
 {
     return g_dimm_cap_per_ch;

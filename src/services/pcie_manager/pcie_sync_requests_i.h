@@ -72,14 +72,14 @@ silibs_status_t send_sync_rpss_post_rp_init_request(PDFWK_INTERFACE_HEADER iface
  *
  * @param[in] iface     - Pointer to the driver interface header for this RPSS.
  * @param[in] rpss_idx  - The RPSS instance index.
- * @param[in] einj_params - Pointer to the PCIe error injection parameters structure.
+ * @param[in] einj_payload - Pointer to the EINJ payload structure.
  *
  * @retval SILIBS_SUCCESS: Error injection request sent successfully.
  * @retval Other:          Error occurred while sending error injection request.
  */
 silibs_status_t send_sync_rpss_inject_pcie_error(PDFWK_INTERFACE_HEADER iface,
                                                  RPSS_INSTANCE rpss_idx,
-                                                 pcie_einj_params_t* einj_params);
+                                                 ras_einj_info_t* einj_payload);
 
 /*--------------- Root port (RP) level synchronous requests -----------------*/
 /**

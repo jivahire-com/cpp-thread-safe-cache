@@ -218,7 +218,7 @@ acpi_einj_cmd_status_t pcie_error_injection_cb(ras_einj_info_t* einj_payload, vo
 
     /* Request the driver to inject the requested error */
     pcie_manager_context_t* ctx = scp_pcie_get_manager_context(rpss_idx);
-    silibs_status_t status = send_sync_rpss_inject_pcie_error((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, pcie_params);
+    silibs_status_t status = send_sync_rpss_inject_pcie_error((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, einj_payload);
     if (status != SILIBS_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("[PCIe EINJ]: The PCIe driver failed to inject an error! Status: %d\n", status);

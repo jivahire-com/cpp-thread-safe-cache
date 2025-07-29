@@ -118,6 +118,7 @@ void handle_pcie_link_down_event(pcie_manager_context_t* ctx, pciess_completion_
      */
     if (send_sync_rp_is_ready((PDFWK_INTERFACE_HEADER)(ctx->iface), rpss_idx, rp_index) == false)
     {
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: root port not ready after linkdown - cannot re-train!\n", rpss_idx, rp_index);
         return;
     }
 

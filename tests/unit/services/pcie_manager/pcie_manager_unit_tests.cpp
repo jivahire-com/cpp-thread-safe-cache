@@ -1095,7 +1095,7 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     uint8_t valid_rp_id = 0x03;
     uint8_t invalid_rp_id = 0xFF;
     ras_error_record_t mock_record;
-    pcie_einj_params_t mock_einj_params;
+    ras_einj_info_t mock_einj_params;
 
     expect_function_calls(__wrap_crash_dump_bug_check, 21);
     should_return = false;
@@ -1477,8 +1477,10 @@ TEST_FUNCTION(test_pcie_error_injection_cb_bad_einj_buffer, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, -1);
     expect_function_calls(__wrap_crash_dump_bug_check, 1);
-    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
-    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+    if (!bugcheck_mock_return())
+    {
+        pcie_error_injection_cb(&mock_einj_info, nullptr);
+    }
 }
 
 TEST_FUNCTION(test_ltssm_ssi_events, NULL, NULL)

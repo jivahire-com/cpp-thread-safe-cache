@@ -153,6 +153,17 @@ Function Invoke-Pythia(
     # Move to the test directory
     Push-Location -Path $test_results_dir
 
+    $destinationPath = "$env:REPO_APP_BUILD_DIR"
+    # since we are using soc dat file for fpga platform, the binaries will be in .build/soc folder
+    $pctoolFilePath = "$destinationPath/postcodes_and_traces.json"
+    if([System.IO.File]::Exists($pctoolFilePath))
+    {
+        Write-Host "Set pctool file path to: $pctoolFilePath"
+        $env:PCTOOL_PATH = $pctoolFilePath
+    } else {
+        Write-Host "$pctoolFilePath not found"
+    }
+
     $extension = [System.IO.Path]::GetExtension($test)
     if ($extension -eq ".args") {
         

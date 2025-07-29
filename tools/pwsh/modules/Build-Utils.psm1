@@ -496,6 +496,23 @@ Function Set-RepoEnv()
         Get-PipPackages -PackageFile "$env:REPO_APP_TOOLS_DIR/packages.$Toolchain.xml"
         Set-GitReferences -PackageFile "$env:REPO_APP_TOOLS_DIR/packages.$Toolchain.xml"
 
+        # Find the matching directory
+        $releaseDir = Get-ChildItem -Path $env:REPO_APP_NUGET_DIR -Directory | Where-Object { $_.Name -like "kingsgate.sprt.release.*" }
+        # If found, copy the files
+        if ($releaseDir) {
+            $basePath = $releaseDir.FullName
+            $destinationPath = "$env:REPO_APP_BUILD_DIR"
+            # Create destination folder if it doesn't exist
+            if (-not (Test-Path $destinationPath)) {
+                New-Item -ItemType Directory -Path $destinationPath -Force
+            }
+            Copy-Item -Path "$basePath/release/pctool/hsptrace_decoder.json" -Destination $destinationPath -Force
+            Copy-Item -Path "$basePath/release/pctool/pctool*" -Destination $destinationPath -Force
+            Copy-Item -Path "$basePath/release/pctool/postcodes_and_traces.json" -Destination $destinationPath -Force
+        } else {
+            Write-Host "No matching kingsgate.sprt.release.* directory found."
+        }
+
         # Set Build
         Write-Title -Title "Setting Cmake" -Color Cyan
         Set-Cmake -Toolchain $Toolchain -Configuration $Configuration

@@ -258,15 +258,12 @@ void mts_manager_handle_trp_msg(p_trp_msg_t trp_msg)
     switch (trp_msg->hdr.trp_msg_id)
     {
     case TRP_MSG_ID_PACKAGE_NOTIFICATION: {
-        if (exec_tlm_cmpnt_is_telemetry_publishing_enabled())
+        p_tlm_package_t tlm_pkg = mts_manager_get_pkg_from_free_list();
+        if (tlm_pkg != NULL)
         {
-            p_tlm_package_t tlm_pkg = mts_manager_get_pkg_from_free_list();
-            if (tlm_pkg != NULL)
-            {
-                tlm_pkg->pkg = trp_msg->payload.package_notification;
-                mts_manager_add_tlm_package_to_active_list(tlm_pkg);
-                break;
-            }
+            tlm_pkg->pkg = trp_msg->payload.package_notification;
+            mts_manager_add_tlm_package_to_active_list(tlm_pkg);
+            break;
         }
 
         // unable to store, send complete back to sender to free memory

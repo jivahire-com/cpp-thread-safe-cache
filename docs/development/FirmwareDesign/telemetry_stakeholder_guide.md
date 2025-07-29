@@ -124,9 +124,10 @@ Details:
 
    via Die 0 MCP CLI - 'pwrtlm mode disabled'
 
-1. Retrieve the single debug package using the same DCP commands used for production telemetry and save to a file.
+1. Retrieve the debug packages(1 per die) only using the DCP Read and ReadComplete commands.
+   (NOTE: do not send any other DCP commands, such as State Start as that will cause the package to be discarded)
 
-1. Decode the package using the script listed in the refeference section above - 'python parse_snsr_fifo_pkg.py package.bin decoded.json'
+1. Decode the package using the script listed in the reference section above - 'python parse_snsr_fifo_pkg.py package.bin decoded.json'
 
 NOTE: To prepare for another run, empty the sensor fifo's first:
    via Die 0 MCP CLI - 'pwrtlm mode collect'

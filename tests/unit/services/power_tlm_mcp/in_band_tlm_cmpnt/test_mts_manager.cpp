@@ -729,7 +729,6 @@ TEST_FUNCTION(test_mts_manager_handle_trp_msg_pkg_notif, test_setup, nullptr)
 
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_PACKAGE_NOTIFICATION;
 
-    will_return(exec_tlm_cmpnt_is_telemetry_publishing_enabled, true);
     will_return(__wrap_mts_is_primary_instance, false);
     expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
@@ -748,7 +747,6 @@ TEST_FUNCTION(test_mts_manager_handle_trp_msg_pkg_notif, test_setup, nullptr)
     assert_int_equal(queued_pkg->pkg.crc, 0x4267);
 
     // free list is now empty, test that read complete is sent back to sender
-    will_return(exec_tlm_cmpnt_is_telemetry_publishing_enabled, true);
     will_return(__wrap_mts_is_primary_instance, false);
     expect_function_call(__wrap_mts_client_send_new_trp_msg);
     mts_manager_handle_trp_msg(&trp_msg);

@@ -143,7 +143,7 @@ class MtsDcpTest(EchoFallsBaseTest):
     def test_client_read_data_polling(self, command=None):
         """A request to a client to provide the memory descriptor for where the telemetry manifest"""
 
-        try:    
+        try:
 
             self.log.debug("Provider id 0x202, event id 0x4   (SOC MAX TEMP).  Send to power telemetry client.")
             event_tuple = [
@@ -161,7 +161,7 @@ class MtsDcpTest(EchoFallsBaseTest):
                             dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
                             client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
                             events=event_tuple)
-           
+
             self.log.debug("Send a client start message to Power Telemetry")
             dcp_commands.client_start_stop(
                             src_endpoint = self.die0_scp_trp_endpoint,
@@ -199,7 +199,7 @@ class MtsDcpTest(EchoFallsBaseTest):
                     else:
                         package_count = package_count + 1
                         self.log.debug(f"Package data available for {loop_counter} iteration, Total package count received till now is {package_count}")
-                        
+
                         self.log.debug(f"phys: {response.physical_start_addr:x}, size: {response.physical_buffer_size:x}, offset: {response.rd_data_addr_offset:x}, size: {response.rd_data_size:x}, crc: {response.crc:x}\n")
                         self.log.debug("Construct read complete message and send back to power telemetry client.")
                         dcp_commands.client_send_read_data_complete(
@@ -211,7 +211,7 @@ class MtsDcpTest(EchoFallsBaseTest):
                             rd_data_size=response.rd_data_size
                             )
                         loop_counter = loop_counter + 1
-                        
+
             self.log.debug("Send a stop message to power telemetry client")
             dcp_commands.client_start_stop(
                             src_endpoint = self.die0_scp_trp_endpoint,
@@ -219,14 +219,14 @@ class MtsDcpTest(EchoFallsBaseTest):
                             dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
                             client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
                             state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_STOP)
-            
+
             if package_count > 0:
                 self.log.info(f"PASS : Test CLIENT_READ_DATA and CLIENT_READ_DATA_COMPLETE ,Total Package data received {package_count}")
                 return True
             else:
                 self.log.info(f"FAIL : Test CLIENT_READ_DATA and CLIENT_READ_DATA_COMPLETE ,Total Package data received {package_count}")
                 return False
-            
+
         except Exception as e:
             self.log.error(f"❌ Error in test_client_read_data_polling: {e}")
             self.log.debug("Send a stop message to power telemetry client")
@@ -236,7 +236,7 @@ class MtsDcpTest(EchoFallsBaseTest):
                             dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
                             client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
                             state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_STOP)
-            
+
             return False
 
 
@@ -584,11 +584,11 @@ def main():
 
     die0_scp_trp_endpoint = mts_cli_trp_endpoint(telnet_port, 0, transfer_relay_protocol.cpu_type.CPU_SCP)
 
-    msg_status = dcp_commands.client_reset(
-                    src_endpoint = die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
+    # msg_status = dcp_commands.client_reset(
+    #                 src_endpoint = die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM)
 
     # client_state = dcp_commands.client_get_state(
     #                 src_endpoint = die0_scp_trp_endpoint,
@@ -598,31 +598,31 @@ def main():
 
     # print(client_state)
 
-    event_tuple = [(
-        0x0201,
-        20,
-        data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_ENABLE
-    ),
-    (
-        0x0202,
-        4,
-        data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_ENABLE
-    )
-    ]
+    # event_tuple = [(
+    #     0x0201,
+    #     20,
+    #     data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_ENABLE
+    # ),
+    # (
+    #     0x0202,
+    #     4,
+    #     data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_ENABLE
+    # )
+    # ]
 
-    dcp_commands.client_enable_disable_events(
-                    src_endpoint = die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
-                    events=event_tuple)
+    # dcp_commands.client_enable_disable_events(
+    #                 src_endpoint = die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
+    #                 events=event_tuple)
 
-    dcp_commands.client_start_stop(
-                    src_endpoint = die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
-                    state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_START)
+    # dcp_commands.client_start_stop(
+    #                 src_endpoint = die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
+    #                 state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_START)
 
     # client_state = dcp_commands.client_get_state(
     #                 src_endpoint = die0_scp_trp_endpoint,
@@ -635,7 +635,7 @@ def main():
     # uncomment to manually stress test telemetry data collection
     start_time = time.time()
     while True:
-        if time.time() - start_time > 40:
+        if time.time() - start_time > 10:
             print("Loop timeout reached")
             break
 
@@ -654,7 +654,7 @@ def main():
                 ]:
                 break
 
-            print(f"phys: {response.physical_start_addr:x}, size: {response.physical_buffer_size:x}, offset: {response.rd_data_addr_offset:x}, size: {response.rd_data_size:x}, crc: {response.crc:x}\n")
+            print(f"phys: {response.physical_start_addr:x}, size: {response.physical_buffer_size:x}, offset: {response.rd_data_addr_offset:x}, phys offset start: {response.physical_start_addr + response.rd_data_addr_offset:x}, size: {response.rd_data_size:x}, crc: {response.crc:x}\n")
 
             dcp_commands.client_send_read_data_complete(
                 src_endpoint=die0_scp_trp_endpoint,
@@ -667,12 +667,12 @@ def main():
 
     #     time.sleep(60)
 
-    dcp_commands.client_start_stop(
-                    src_endpoint = die0_scp_trp_endpoint,
-                    dest_die=0,
-                    dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
-                    client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
-                    state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_STOP)
+    # dcp_commands.client_start_stop(
+    #                 src_endpoint = die0_scp_trp_endpoint,
+    #                 dest_die=0,
+    #                 dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+    #                 client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
+    #                 state=data_collection_protocol.client_start_stop_msg.dcp_start_stop_state_t.DCP_START_STOP_STATE_STOP)
 
     telnet_port.close()
 

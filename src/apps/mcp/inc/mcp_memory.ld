@@ -17,7 +17,12 @@ __DTCMSTART__        = 0x20000000;
 __DTCMEND__          = 0x20077FFF;
 __RMSSDATASTART__    = 0x0138D000;
 __RMSSDATAEND__      = 0x0139CFFF;
-__RESERVED_CODE_SIZE = 0x2000;
+
+/*
+ * ADO 2809728 - Rollback original reserved space 
+ * after create a new section in RMSS ro region for functions,
+ */
+__RESERVED_CODE_SIZE = 0;
 
 /* 
  * CODE and DATA sizes map directly to the sizes of the respective TCM (plus one for size).

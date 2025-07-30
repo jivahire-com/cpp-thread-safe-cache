@@ -15,7 +15,9 @@ extern "C" {
 #include "fpfw_timer_types.h" // for _fpfw_timer_variant_t, fpfw_timer_call...
 
 #include <FpFwUtils.h>  // for fpfw_dur_t, FPFW_UNUSED
+#include <accelip_id.h> // for NUM_VALID_ACCEL_ID
 #include <fpfw_timer.h> // for fpfw_timer_t
+#include <stdint.h>     // for uint
 #include <stdint.h>     // for UINT64_MAX
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -26,13 +28,28 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 
-static fpfw_timer_callback s_cur_cb = NULL;
+static fpfw_timer_callback s_crashdump_timeout_cb[NUM_VALID_ACCEL_ID] = {nullptr};
+static void* s_crashdump_timeout_ctx[NUM_VALID_ACCEL_ID] = {nullptr};
+static ACCEL_ID s_active_accel_type = NUM_VALID_ACCEL_ID;
 
 /*------------- Functions ----------------*/
 
-fpfw_timer_callback fpfw_mock_get_timer_cb(void)
+fpfw_timer_callback fpfw_mock_get_timer_cb(ACCEL_ID accel_type)
 {
-    return s_cur_cb;
+    assert_in_range(accel_type, 0, NUM_VALID_ACCEL_ID - 1);
+    return s_crashdump_timeout_cb[accel_type];
+}
+
+void* fpfw_mock_get_timer_ctx(ACCEL_ID accel_type)
+{
+    assert_in_range(accel_type, 0, NUM_VALID_ACCEL_ID - 1);
+    return s_crashdump_timeout_ctx[accel_type];
+}
+
+void fpfw_mock_set_active_accel_type(ACCEL_ID accel_type)
+{
+    assert_in_range(accel_type, 0, NUM_VALID_ACCEL_ID - 1);
+    s_active_accel_type = accel_type;
 }
 
 /*****************************************
@@ -49,12 +66,16 @@ fpfw_status_t __wrap_fpfw_timer_create(fpfw_timer_t* timer,
                                        fpfw_timer_callback cb,
                                        void* ctx)
 {
-    FPFW_UNUSED(ctx);
     check_expected_ptr(timer);
     check_expected_ptr(cb);
     assert_in_range(variant, FPFW_TIMER_ONESHOT, FPFW_TIMER_PERIODIC);
     assert_in_range(period, 0, UINT64_MAX);
-    s_cur_cb = cb;
+    if (s_crashdump_timeout_cb[s_active_accel_type] == nullptr)
+    {
+        s_crashdump_timeout_cb[s_active_accel_type] = cb;
+        s_crashdump_timeout_ctx[s_active_accel_type] = ctx;
+    }
+
     return mock_type(fpfw_status_t);
 }
 

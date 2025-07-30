@@ -61,7 +61,9 @@ typedef enum _ssi_startup_stage
     STARTUP_DIE_CONFIG_INIT,
     STARTUP_PCIE_LTSSM_INIT,
     STARTUP_PRIMARY_AP_CORE_BOOT,
-    STARTUP_PCIE_PHY_LOAD
+    STARTUP_PCIE_PHY_LOAD,
+    STARTUP_WARM_BOOT_SDM_ASYNC,
+    STARTUP_WARM_BOOT_CDED_ASYNC,
 } ssi_startup_stage_t;
 
 /**
@@ -76,6 +78,7 @@ typedef enum _startup_type
     COLD_BOOT,
     WARM_BOOT_PRE_AP,
     WARM_BOOT_POST_AP,
+    WARM_BOOT_ACCEL,
 } ssi_startup_type_t;
 
 /**

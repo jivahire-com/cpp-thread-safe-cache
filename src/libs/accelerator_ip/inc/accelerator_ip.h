@@ -11,6 +11,7 @@
 
 /*----------------------------- Nested includes -----------------------------*/
 #include <accelip_id.h>                   // for ACCEL_ID_CDED, ACCEL_ID_SDM
+#include <accel_intr.h>                   // for E_ACCEL_INTR_INIT_CONFIG
 #include <atu_lib.h>                      // for atu_id_t, atu_map_entry_t
 #include <fpfw_status.h>                  // for fpfw_status_t
 #include <kng_soc_constants.h>            // for DIE_INSTANCE
@@ -120,15 +121,10 @@ int32_t scp_accelerators_isolation_control(void);
  * It performs the necessary steps to reset the EMCPU and
  * invokes the pre and post reset callbacks if provided.
  * @param[in] accel_type - Accelerator type
- * @param[in] pre_cb_fun - Callback function to be invoked before the reset
- * @param[in] pre_cb_ctx - Context to be passed to the pre reset callback
- * @param[in] post_cb_fun - Callback function to be invoked after the reset
- * @param[in] post_cb_ctx - Context to be passed to the post reset callback
  * @return
  *  No return value
  */
-void accel_core_warm_reset(ACCEL_ID accel_type, crash_dump_cb_t pre_cb_fun, void* pre_cb_ctx, crash_dump_cb_t post_cb_fun,
-                           void* post_cb_ctx);
+void accel_core_warm_reset(ACCEL_ID accel_type);
 
 /**
  * @brief Function to overwrite the default values of knobs provided by Silibs
@@ -208,17 +204,3 @@ fpfw_status_t accel_setup_boot_status_code(ACCEL_ID accel_type);
  * @return fpfw_status_t
  */
 fpfw_status_t accel_start_boot_status_timer(ACCEL_ID accel_type);
-
-/**
- * @brief Callback function to be invoked before the warm reset of the accelerator
- * 
- * @param ctx Accel instance to be passed to the callback function
- */
-void accel_pre_warm_reset_cb(void* ctx);
-
-/**
- * @brief Callback function to be invoked after the warm reset of the accelerator
- * 
- * @param ctx Accel instance to be passed to the callback function
- */
-void accel_post_warm_reset_cb(void* ctx);

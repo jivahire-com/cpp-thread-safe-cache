@@ -229,8 +229,9 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
     case SSI_STARTUP_STAGE_START_ASYNC: {
         pssi_startup_notification_request_t ssi_request = (pssi_startup_notification_request_t)p_request;
-        // Complete request immediately if not a cold boot or stage is not MCP
-        if (ssi_request->boot_type != COLD_BOOT && ssi_request->stage != STARTUP_MCP_LOAD)
+        // Complete request immediately if not cold boot or not MCP load or accel warm boot
+        if (ssi_request->boot_type != COLD_BOOT && ssi_request->stage != STARTUP_MCP_LOAD &&
+            ssi_request->boot_type != WARM_BOOT_ACCEL)
         {
             DfwkAsyncRequestComplete(p_request);
             break;

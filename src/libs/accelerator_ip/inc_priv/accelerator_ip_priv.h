@@ -23,6 +23,8 @@
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
+#define ACCEL_NAME_LEN 8
+
 /*-------------------------------- Typedefs ---------------------------------*/
 
 /*------------------- Declarations (Statics and globals) --------------------*/

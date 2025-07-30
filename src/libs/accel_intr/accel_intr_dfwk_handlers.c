@@ -38,17 +38,19 @@
 
 /**
  * For One-shot timer this is the time after which timer will expire
- * Currently we are setting this to 100 timer ticks which is 1 second
+ * Currently we are setting this to 500 timer ticks which is 2 second
  * Reference: tx_initialised_low_level.S from Cortex_m7 repo
  * TODO: Task 1974315: [SCP] Update timeout in SCP for Crash dump collection in SDM
  */
-#define ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS (FPFW_TIMER_TX_TICK_PERIOD_NS * 100)
+#define ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS (FPFW_TIMER_TX_TICK_PERIOD_NS * 200)
 
 /**
  * Pass reset request selection to SDM_MSG handler function
  */
 #define ACCEL_INTR_REQUEST_SOC_RESET         (true)
 #define ACCEL_INTR_REQUEST_ACCEL_EMCPU_RESET (false)
+
+#define ACCEL_MAX_CD_COMPLETE_RETRIES (4)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -70,6 +72,8 @@ static accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_colle
 
     // ACCEL_ID_CDED
     {.accel_type = ACCEL_ID_CDED, .is_soc_reset = false, .is_collecting_crashdump = false}};
+
+static uint32_t accel_cd_complete_retries[NUM_VALID_ACCEL_ID] = {0};
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -132,38 +136,91 @@ static void accel_intr_handle_sdm_msg_recv_timeout(void* ctx, fpfw_dur_t latency
 
     paccel_intr_crash_dump_collection_timer_data_t timer_ctx = ctx;
     ACCEL_ID accel_type = timer_ctx->accel_type;
+    bool is_soc_reset = timer_ctx->is_soc_reset;
+    bool is_cd_complete = false;
 
     FPFW_ET_LOG(AccelIntrCrashdumpCollectTimeout, accel_type);
+
+    accel_cd_complete_retries[accel_type]++;
+
+    /**
+     * @brief Check if crash dump collection is complete
+     * If it is not complete, we will wait again for crash dump collection to
+     * finish. We will retry wait for crash dump collection only for a limited
+     * number of times `ACCEL_MAX_CD_COMPLETE_RETRIES`.
+     *
+     * If it is not complete after the retries, we will reset the timer context
+     * and request SoC reset or Accel emCPU reset based on is_soc_reset flag
+     * and will ignore CD file transfer.
+     */
+    if (!crash_dump_is_accel_cd_complete(accel_type))
+    {
+        if (accel_cd_complete_retries[accel_type] < ACCEL_MAX_CD_COMPLETE_RETRIES)
+        {
+            FPFW_ET_LOG(AccelIntrCrashdumpCollectRetry, accel_type, accel_cd_complete_retries[accel_type]);
+            // Restart the timer to wait for crash dump collection completion
+            fpfw_timer_enable(&accel_intr_crash_dump_collection_timers[accel_type],
+                              ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS);
+            return;
+        }
+
+        // Else reset the retry count for next crash dump collection
+        FPFW_ET_LOG(AccelIntrCrashdumpCollectFailed, accel_type);
+    }
+    else
+    {
+        is_cd_complete = true;
+    }
+
+    /**
+     * @brief Reset the timer context for crash dump collection
+     * This is done to ensure that the timer context is read
+     * for the next crash dump collection
+     */
+    timer_ctx->is_soc_reset = false;
+    timer_ctx->is_collecting_crashdump = false;
+
+    /**
+     * @brief Reset the crash dump collection retry count
+     * This is done to ensure that the retry count is reset
+     * for the next crash dump collection
+     */
+    accel_cd_complete_retries[accel_type] = 0;
 
     /**
      * 1. TODO: Task 1908548: [SCP] Implementation of SDM Fatal Interrupt in SCP
      * Reset Accel emCPU and wait for emCPU to bootup
      */
 
-    if (timer_ctx->is_soc_reset)
+    if (is_soc_reset)
     {
         FPFW_ET_LOG(AccelIntrSoCReset, accel_type);
+        // Request SoC reset in SCP
+        BUG_CHECK_EXTERNAL();
     }
     else
     {
         FPFW_ET_LOG(AccelIntremCPUReset, accel_type);
-    }
-
-    if (crash_dump_is_accel_cd_complete(accel_type))
-    {
-        // Crash SCP
-        BUG_CHECK_EXTERNAL();
-    }
-    else
-    {
-        /**
-         * As per design we should warm reset accel core in this path.
-         * TODO:
-         * 1) Warm reset accel core
-         * 2) Collect crashdump
-         * 3) Crash SCP
-         */
-        BUG_CHECK_EXTERNAL();
+        if (is_cd_complete)
+        {
+            /**
+             * CD collection is completed by accel core
+             * Request Accel emCPU reset
+             */
+            accel_core_warm_reset(accel_type);
+        }
+        else
+        {
+            /**
+             * Looks like accel core failed to collect crash dump
+             * after ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS
+             * Warm reset Accel emCPU.
+             *
+             * TODO: Since CD is not complete, we will not transfer the
+             * CD file for this case.
+             */
+            accel_core_warm_reset(accel_type);
+        }
     }
 }
 
@@ -215,7 +272,7 @@ void accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel_type)
     }
     else if (ACCEL_INTR_IS_RESET_ACCEL_EMCPU_SET(irq_status))
     {
-        accel_core_warm_reset(accel_type, accel_pre_warm_reset_cb, (void*)accel_type, accel_post_warm_reset_cb, (void*)accel_type);
+        accel_intr_request_crash_dump_collection(accel_type, ACCEL_INTR_REQUEST_ACCEL_EMCPU_RESET);
     }
     else
     {

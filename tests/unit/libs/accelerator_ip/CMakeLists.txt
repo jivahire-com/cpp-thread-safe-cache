@@ -22,11 +22,13 @@ target_link_libraries(${TARGET}
         silibs::tower_vab
         ms::lib::accelerator_ip
         ms::lib::boot_status
+        ms::lib::cortex_m7::nvic
         ms::lib::hsp_firmware_headers
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::utils
         ms::cmocka::testrunner
+        ms::service::scp_startup_shutdown
         kng_silibs_platform
     PUBLIC
         fwlib.lib.assert
@@ -49,7 +51,10 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
+    DfwkAsyncRequestInitialize
+    FPFwCoreInterruptEnableVector
     accel_intr_get_atu_mapped_cfg_address
+    accel_intr_scp_init
     accel_mcp_intr_init
     accel_scp_intr_init
     accelip_ss_init
@@ -76,6 +81,7 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     mmio_read32
     mmio_update32
+    mmio_write32
     pcr_rpss_configure_clock
     pcr_rpss_deassert_por_reset
     pcr_rpss_init_entity
@@ -87,6 +93,7 @@ mock_target(${TARGET}
     sdm_init_enable_fence
     sdm_init_enable_fence
     sdm_init_itcm_enable
+    sos_start_phase
     system_info_is_hsp_present
     system_info_is_warm_start
 )

@@ -44,6 +44,8 @@ typedef enum {
     SCP_ACCEL_EVENT_ID_INTERRUPT_SOC_RESET,                     // Printed when going for SoC Reset
     SCP_ACCEL_EVENT_ID_INTERRUPT_EMCPU_RESET,                   // Printed when going for emCPU Reset
     SCP_ACCEL_EVENT_ID_INTERRUPT_CRASHDUMP_COLLECTION_TIMEOUT,  // Printed when timeout for Crash Dump Collection happens
+    SCP_ACCEL_EVENT_ID_CD_COMPLETION_RETRY,                     // Printed when giving more time Crash Dump Collection of accel core
+    SCP_ACCEL_EVENT_ID_CD_COMPLETION_FAILED,                    // Printed when Crash Dump Collection of accel core failed
     SCP_ACCEL_EVENT_ID_INTERRUPT_INVALID,                       // Printed when accel device receives an invalid interrupt
 } SCP_ACCEL_EVENT_ID;
 
@@ -279,6 +281,33 @@ FPFW_ET_DEFINE_EVENT(
     EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR,
     SCP_ACCEL_EVENT_ID_INTERRUPT_CRASHDUMP_COLLECTION_TIMEOUT,
     AccelIntrCrashdumpCollectTimeout,
+    FPFW_ET_LEVEL_INFO,
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id)
+)
+
+/**
+ * This prints:
+ * Accel type (SDM / CDED)
+ * Retry count for crash dump collection
+ */
+FPFW_ET_DEFINE_EVENT(
+    EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR,
+    SCP_ACCEL_EVENT_ID_CD_COMPLETION_RETRY,
+    AccelIntrCrashdumpCollectRetry,
+    FPFW_ET_LEVEL_INFO,
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id),
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, retry_count)
+)
+
+/**
+ * This prints:
+ * Accel type (SDM / CDED)
+ * Crash dump collection failure log
+ */
+FPFW_ET_DEFINE_EVENT(
+    EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR,
+    SCP_ACCEL_EVENT_ID_CD_COMPLETION_FAILED,
+    AccelIntrCrashdumpCollectFailed,
     FPFW_ET_LEVEL_INFO,
     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id)
 )

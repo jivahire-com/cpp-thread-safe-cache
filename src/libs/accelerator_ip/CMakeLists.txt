@@ -12,6 +12,7 @@ add_library(
             accelerator_ip_isolation.c
             accelerator_ip_knobs.c
             accelerator_ip_mcp.c
+            accelerator_ip_warm_reset.c
 )
 
 target_include_directories(
@@ -36,6 +37,7 @@ target_link_libraries(
         silibs::sdm_command_desc
         silibs::sdm_init
     PRIVATE
+        fwlib.dfwk
         fwlib.lib.assert
         fwlib.driver.mboxIccTransport
         fwlib.lib.cfg_mgr
@@ -44,6 +46,7 @@ target_link_libraries(
         fwlib.lib.utils
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase
+        ms::client_interface::startup_shutdown
         ms::lib::boot_status
         ms::lib::config_manager
         ms::lib::crash_dump

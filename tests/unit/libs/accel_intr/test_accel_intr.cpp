@@ -38,11 +38,6 @@ extern "C" {
 
 static uint32_t irq_num = SDMSS_IRQ_NUMBER;
 
-crash_dump_cb_t g_pre_cb_fun = NULL;
-void* g_pre_cb_ctx = NULL;
-crash_dump_cb_t g_post_cb_fun = NULL;
-void* g_post_cb_ctx = NULL;
-
 /*--------------------------------- Externs ---------------------------------*/
 
 extern uint32_t accel_intr_atu_map_address[NUM_VALID_ACCEL_ID];
@@ -124,17 +119,9 @@ bool __wrap_crash_dump_is_accel_cd_complete(ACCEL_ID accel_type)
     return mock_type(bool);
 }
 
-void __wrap_accel_core_warm_reset(ACCEL_ID accel_type, crash_dump_cb_t pre_cb_fun, void* pre_cb_ctx, crash_dump_cb_t post_cb_fun, void* post_cb_ctx)
+void __wrap_accel_core_warm_reset(ACCEL_ID accel_type)
 {
-    g_pre_cb_fun = pre_cb_fun;
-    g_pre_cb_ctx = pre_cb_ctx;
-    g_post_cb_fun = post_cb_fun;
-    g_post_cb_ctx = post_cb_ctx;
     check_expected(accel_type);
-    assert_non_null(pre_cb_fun);
-    assert_non_null(post_cb_fun);
-    check_expected(pre_cb_ctx);
-    check_expected(post_cb_ctx);
     function_called();
 }
 
@@ -158,6 +145,11 @@ bool __wrap_system_info_is_warm_start()
  */
 TEST_FUNCTION(test_accel_scp_intr_init_pass_sdm, nullptr, nullptr)
 {
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
+    uint32_t accel_irq_num = SDMSS_IRQ_NUMBER;
+
+    fpfw_mock_set_active_accel_type(accel_type);
+
     // Set expectations for accel_scp_intr_init()
     will_return(__wrap_system_info_is_warm_start, false);
     expect_any(__wrap_fpfw_timer_create, timer);
@@ -181,18 +173,18 @@ TEST_FUNCTION(test_accel_scp_intr_init_pass_sdm, nullptr, nullptr)
 
     // Set expectations for accel_intr_register_virtual_irq()
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, (LargestIntegralType)accel_irq_num, ACCEL_SCP_INTR_MAX);
     expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, ACCEL_SCP_INTR_MAX);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)SDMSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)accel_irq_num, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     // Expectations for FPFwCoreInterruptEnableVector()
-    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, SDMSS_IRQ_NUMBER);
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, accel_irq_num);
     will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
 
-    accel_intr_set_irq_num_for_accel(ACCEL_ID_SDM, SDMSS_IRQ_NUMBER);
+    accel_intr_set_irq_num_for_accel(accel_type, accel_irq_num);
 
-    assert_int_equal(accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(SDMSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
+    assert_int_equal(accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(accel_irq_num)), ACCEL_INTR_RET_SUCCESS);
 }
 
 /**
@@ -200,6 +192,11 @@ TEST_FUNCTION(test_accel_scp_intr_init_pass_sdm, nullptr, nullptr)
  */
 TEST_FUNCTION(test_accel_scp_intr_init_pass_cded, nullptr, nullptr)
 {
+    ACCEL_ID accel_type = ACCEL_ID_CDED;
+    uint32_t accel_irq_num = CDEDSS_IRQ_NUMBER;
+
+    fpfw_mock_set_active_accel_type(accel_type);
+
     // Set expectations for accel_scp_intr_init()
     will_return(__wrap_system_info_is_warm_start, false);
     expect_any(__wrap_fpfw_timer_create, timer);
@@ -223,18 +220,18 @@ TEST_FUNCTION(test_accel_scp_intr_init_pass_cded, nullptr, nullptr)
 
     // Set expectations for accel_intr_register_virtual_irq()
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, (LargestIntegralType)accel_irq_num, ACCEL_SCP_INTR_MAX);
     expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, ACCEL_SCP_INTR_MAX);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
+    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)accel_irq_num, ACCEL_SCP_INTR_MAX);
     will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
 
     // Expectations for FPFwCoreInterruptEnableVector()
-    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, CDEDSS_IRQ_NUMBER);
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, accel_irq_num);
     will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
 
-    accel_intr_set_irq_num_for_accel(ACCEL_ID_CDED, CDEDSS_IRQ_NUMBER);
+    accel_intr_set_irq_num_for_accel(accel_type, accel_irq_num);
 
-    assert_int_equal(accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(CDEDSS_IRQ_NUMBER)), ACCEL_INTR_RET_SUCCESS);
+    assert_int_equal(accel_scp_intr_init(accel_intr_get_accel_type_from_irq_num(accel_irq_num)), ACCEL_INTR_RET_SUCCESS);
 }
 
 /**
@@ -583,6 +580,20 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass, NULL, NULL)
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
 
     accel_intr_handle_fatal_intr_recvd(accel_type);
+
+    /* Set expections for timeout callback accel_intr_handle_sdm_msg_recv_timeout() */
+    fpfw_timer_callback timer_cb = fpfw_mock_get_timer_cb(accel_type);
+    paccel_intr_crash_dump_collection_timer_data_t timer_ctx =
+        (paccel_intr_crash_dump_collection_timer_data_t)fpfw_mock_get_timer_ctx(accel_type);
+    assert_non_null(timer_cb);
+    assert_non_null(timer_ctx);
+    assert_int_equal(timer_ctx->accel_type, accel_type);
+
+    /* Set expectations for SOC reset flow */
+    will_return(__wrap_crash_dump_is_accel_cd_complete, true);
+    expect_function_call(__wrap_crash_dump_bug_check_external);
+
+    timer_cb(timer_ctx, 0);
 }
 
 /**
@@ -591,9 +602,9 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass, NULL, NULL)
  */
 TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_accel_emcpu_reset, NULL, NULL)
 {
-    mmio_set_mock_data(0x12345678, 0x3);
+    mmio_set_mock_data(0x12345678, 0x1);
     mmio_set_mock_data(0xABCDEF12, 0x0);
-    ACCEL_ID accel_type = ACCEL_ID_CDED;
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
 
     set_int_status(true);
 
@@ -601,44 +612,84 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_accel_emcpu_reset, NU
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
 
     // Expectations for accel_intr_process_fatal_interrupts()
-    will_return_always(__wrap_is_sdm_ext_int_status_set, SILIBS_SUCCESS);
-    will_return_always(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
-    will_return_always(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
-    will_return_always(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
+    will_return(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
+    will_return(__wrap_is_sdm_ext_int_status_set, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+    expect_any_count(__wrap_mmio_read32, addr, 2);
 
-    expect_any_always(__wrap_mmio_read32, addr);
+    // Expectations for accel_intr_request_crash_dump_collection()
+    expect_any(__wrap_fpfw_timer_enable, timer);
+    will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
 
-    // Expectations for accel_core_warm_reset()
-    expect_value(__wrap_accel_core_warm_reset, accel_type, accel_type);
-    expect_value(__wrap_accel_core_warm_reset, pre_cb_ctx, (void*)accel_type);
-    expect_value(__wrap_accel_core_warm_reset, post_cb_ctx, (void*)accel_type);
-    expect_function_call(__wrap_accel_core_warm_reset);
+    /******************************* Accel successfully collects CD *****************************/
 
     accel_intr_handle_fatal_intr_recvd(accel_type);
 
-    // Expectations for accel_pre_warm_reset_cb()
-    expect_value(__wrap_scp_download_accel_knobs, accel_type, accel_type);
-    will_return(__wrap_scp_download_accel_knobs, STATUS_KNOB_TRANSFER_SUCCESS);
-    will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
-    will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
-    will_return_always(__wrap_sdm_ext_int_disable, SILIBS_SUCCESS);
-    will_return_always(__wrap_sdm_ext_int_status_clear, SILIBS_SUCCESS);
-    will_return_always(__wrap_sdm_ext_int_enable, SILIBS_SUCCESS);
-    will_return_always(__wrap_sdm_ext_int_mask_enable, SILIBS_SUCCESS);
-    expect_any_always(__wrap_mmio_update32, addr);
-    expect_any_always(__wrap_mmio_update32, data);
-    expect_any_always(__wrap_mmio_update32, mask);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, irq_num, CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, isr, accel_intr_isr_scp, ACCEL_SCP_INTR_MAX);
-    expect_value_count(__wrap_virt_irq_set_isr_with_param, parameter, (void*)CDEDSS_IRQ_NUMBER, ACCEL_SCP_INTR_MAX);
-    will_return_always(__wrap_virt_irq_set_isr_with_param, NVIC_STATUS_SUCCESS);
-    g_pre_cb_fun(g_pre_cb_ctx);
-    // Expectations for accel_post_warm_reset_cb()
-    expect_any_always(__wrap_mmio_write32, addr);
-    expect_any_always(__wrap_mmio_write32, data);
-    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, CDEDSS_IRQ_NUMBER);
-    will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
-    g_post_cb_fun(g_post_cb_ctx);
+    /* Set expections for timeout callback accel_intr_handle_sdm_msg_recv_timeout() */
+    fpfw_timer_callback timer_cb = fpfw_mock_get_timer_cb(accel_type);
+    paccel_intr_crash_dump_collection_timer_data_t timer_ctx =
+        (paccel_intr_crash_dump_collection_timer_data_t)fpfw_mock_get_timer_ctx(accel_type);
+    assert_non_null(timer_cb);
+    assert_non_null(timer_ctx);
+    assert_int_equal(timer_ctx->accel_type, accel_type);
+
+    /**
+     * Set expectations for emCPU warm boot reset flow & accel core
+     * completes CD collection
+     */
+    will_return(__wrap_crash_dump_is_accel_cd_complete, true);
+    expect_value(__wrap_accel_core_warm_reset, accel_type, accel_type);
+    expect_function_call(__wrap_accel_core_warm_reset);
+    timer_cb(timer_ctx, 0);
+
+    /********************************* Accel failed to collect CD ********************************/
+
+    // Expectations for accel_intr_process_fatal_interrupts()
+    will_return(__wrap_sdm_ext_get_category_status_reg_addr, 0x12345678);
+    will_return(__wrap_sdm_ext_get_category_mask_reg_addr, 0xABCDEF12);
+    will_return(__wrap_is_sdm_ext_int_status_set, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_ext_int_mask_disable, SILIBS_SUCCESS);
+    expect_any_count(__wrap_mmio_read32, addr, 2);
+    // Expectations for accel_intr_request_crash_dump_collection()
+    expect_any(__wrap_fpfw_timer_enable, timer);
+    will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
+
+    accel_intr_handle_fatal_intr_recvd(accel_type);
+
+    /* Set expections for timeout callback accel_intr_handle_sdm_msg_recv_timeout() */
+    timer_cb = fpfw_mock_get_timer_cb(accel_type);
+    timer_ctx = (paccel_intr_crash_dump_collection_timer_data_t)fpfw_mock_get_timer_ctx(accel_type);
+    assert_non_null(timer_cb);
+    assert_non_null(timer_ctx);
+    assert_int_equal(timer_ctx->accel_type, accel_type);
+
+    /**
+     * Set expectations for emCPU warm boot reset flow & accel core
+     * fails to completes CD collection
+     */
+    will_return(__wrap_crash_dump_is_accel_cd_complete, false);
+    expect_any(__wrap_fpfw_timer_enable, timer);
+    will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
+    timer_cb(timer_ctx, 0);
+
+    /********************************* Accel max retry to collect CD ********************************/
+
+    // 2nd retry
+    will_return(__wrap_crash_dump_is_accel_cd_complete, false);
+    expect_any(__wrap_fpfw_timer_enable, timer);
+    will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
+    timer_cb(timer_ctx, 0);
+    // 3rd retry
+    will_return(__wrap_crash_dump_is_accel_cd_complete, false);
+    expect_any(__wrap_fpfw_timer_enable, timer);
+    will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
+    timer_cb(timer_ctx, 0);
+    // 4th retry
+    will_return(__wrap_crash_dump_is_accel_cd_complete, false);
+    expect_value(__wrap_accel_core_warm_reset, accel_type, accel_type);
+    expect_function_call(__wrap_accel_core_warm_reset);
+    timer_cb(timer_ctx, 0);
 }
 
 TEST_FUNCTION(test_accel_intr_handle_ecc_itcm_ue, NULL, NULL)
@@ -668,7 +719,7 @@ TEST_FUNCTION(test_accel_intr_handle_ecc_itcm_ue, NULL, NULL)
 
     // Expectations for accel_intr_request_crash_dump_collection()
     expect_any(__wrap_fpfw_timer_enable, timer);
-    will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
 
     accel_intr_handle_fatal_intr_recvd(accel_type);
 }
@@ -751,6 +802,10 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_no_level2_intr, NULL,
     will_return_always(__wrap_sdm_ext_int_mask_status_clear, SILIBS_SUCCESS);
     expect_any_always(__wrap_mmio_read32, addr);
 
+    // Expectations for accel_intr_request_crash_dump_collection()
+    expect_any(__wrap_fpfw_timer_enable, timer);
+    will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
+
     accel_intr_handle_fatal_intr_recvd(ACCEL_ID_SDM);
 }
 
@@ -792,76 +847,6 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_no_interrupt, NULL, N
     will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
 
     accel_intr_handle_fatal_intr_recvd(ACCEL_ID_SDM);
-}
-
-/**
- * @brief : Tests accel_intr_handle_sdm_msg_recvd_timeout : Check on SDM core
- */
-TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_sdm, NULL, NULL)
-{
-    accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_collection_timer_data = {};
-    accel_intr_crash_dump_collection_timer_data.accel_type = ACCEL_ID_SDM;
-
-    fpfw_timer_callback timer_cb = fpfw_mock_get_timer_cb();
-    assert_non_null(timer_cb);
-
-    will_return(__wrap_crash_dump_is_accel_cd_complete, true);
-    expect_function_call(__wrap_crash_dump_bug_check_external);
-
-    timer_cb(&accel_intr_crash_dump_collection_timer_data, 0x0);
-}
-
-/**
- * @brief : Tests accel_intr_handle_sdm_msg_recvd_timeout : Check on CDED core
- */
-TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_cded, NULL, NULL)
-{
-    accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_collection_timer_data = {};
-    accel_intr_crash_dump_collection_timer_data.accel_type = ACCEL_ID_CDED;
-
-    fpfw_timer_callback timer_cb = fpfw_mock_get_timer_cb();
-    assert_non_null(timer_cb);
-
-    will_return(__wrap_crash_dump_is_accel_cd_complete, true);
-    expect_function_call(__wrap_crash_dump_bug_check_external);
-
-    timer_cb(&accel_intr_crash_dump_collection_timer_data, 0x0);
-}
-
-/**
- * @brief : CD collection is not complete. Warm reset.
- */
-TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_cd_incomplete, NULL, NULL)
-{
-    accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_collection_timer_data = {};
-    accel_intr_crash_dump_collection_timer_data.accel_type = ACCEL_ID_CDED;
-    accel_intr_crash_dump_collection_timer_data.is_soc_reset = false;
-
-    fpfw_timer_callback timer_cb = fpfw_mock_get_timer_cb();
-    assert_non_null(timer_cb);
-
-    will_return(__wrap_crash_dump_is_accel_cd_complete, false);
-    expect_function_call(__wrap_crash_dump_bug_check_external);
-
-    timer_cb(&accel_intr_crash_dump_collection_timer_data, 0x0);
-}
-
-/**
- * @brief : CD collection is not complete. SOC reset.
- */
-TEST_FUNCTION(test_accel_intr_handle_sdm_msg_recv_timeout_count_cd_soc_reset, NULL, NULL)
-{
-    accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_collection_timer_data = {};
-    accel_intr_crash_dump_collection_timer_data.accel_type = ACCEL_ID_CDED;
-    accel_intr_crash_dump_collection_timer_data.is_soc_reset = true;
-
-    fpfw_timer_callback timer_cb = fpfw_mock_get_timer_cb();
-    assert_non_null(timer_cb);
-
-    will_return(__wrap_crash_dump_is_accel_cd_complete, false);
-    expect_function_call(__wrap_crash_dump_bug_check_external);
-
-    timer_cb(&accel_intr_crash_dump_collection_timer_data, 0x0);
 }
 
 TEST_FUNCTION(test_accel_intr_init_sdm_scp__pass, NULL, NULL)

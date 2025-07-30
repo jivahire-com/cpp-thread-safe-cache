@@ -17,6 +17,7 @@ extern "C" {
 #include "kng_soc_constants.h" // for SOC_D0, SDMSS_INSTANCE
 #include "silibs_status.h"     // for SILIBS_SUCCESS, SILIBS_E_PARAM
 
+#include <DfwkPtrTypes.h> // for PDFWK_ASYNC_REQUEST_HEADER
 #include <FpFwUtils.h>
 #include <accelerator_ip.h> // for scp_accelerators_init, ACCEL_RET_SUCCESS
 #include <accelip_id.h>
@@ -28,8 +29,12 @@ extern "C" {
 #include <fpfw_timer_port.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h> // for KNG_DIE_ID
+#include <nvic.h>     // for NVIC_STATUS_SUCCESS
 #include <pcr_rpss.h> // for pcr_rpss_entity_t
-#include <stdint.h>   // for uintptr_t, uint32_t, uint8_t, uint64_t
+#include <silibs_common.h>
+#include <startup_shutdown.h>     // for pstartup_start_phase_request_t
+#include <startup_shutdown_ssi.h> // for WARM_BOOT_ACCEL
+#include <stdint.h>               // for uintptr_t, uint32_t, uint8_t, uint64_t
 #include <stdnoreturn.h>
 #include <utils.h> // for UNUSED
 
@@ -51,10 +56,10 @@ static icc_base_send_complete_notify s_icc_send_resp_cb = NULL;
 static void* s_icc_send_resp_ctx = NULL;
 static kng_hsp_mailbox_msg* mbox_recv_buffs = NULL;
 static icc_base_send_complete_notify s_icc_send_cb = NULL;
+static DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE sos_start_phase_cb = NULL;
+static void* sos_start_phase_ctx = NULL;
 
 static uint32_t atu_map_buff[FOUR_MB_SIZE];
-static fpfw_icc_base_ctx_t* icc_ctx = nullptr;
-static uint32_t dummy_icc_ctx = 0;
 static jmp_buf mock_jump_buf;
 static bool should_return;
 
@@ -320,6 +325,12 @@ void __wrap_mmio_update32(volatile uint32_t* addr, uint32_t data, uint32_t mask)
     FPFW_UNUSED(mask);
 }
 
+void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(data);
+}
+
 accel_isolation_enable_t __wrap_config_get_sdm_isolation_enable(void)
 {
     accel_isolation_enable_t* accel_isolation_enable = mock_ptr_type(accel_isolation_enable_t*);
@@ -385,7 +396,56 @@ fpfw_status_t __wrap_fpfw_icc_base_send_resp(fpfw_icc_base_ctx_t* icc_ctx, fpfw_
 
     return mock_type(fpfw_status_t);
 }
+
+void __wrap_accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config)
+{
+    FPFW_UNUSED(ext_cfg_addr);
+
+    check_expected(init_config);
+    check_expected(accel_type);
 }
+
+void __wrap_DfwkAsyncRequestInitialize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
+{
+    FPFW_UNUSED(Request);
+    FPFW_UNUSED(RequestSize);
+}
+
+void __wrap_sos_start_phase(PDFWK_INTERFACE_HEADER p_interface,
+                            pstartup_start_phase_request_t p_request,
+                            ssi_startup_type_t boot_type,
+                            ssi_startup_stage_t startup_stage,
+                            DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE completion_routine,
+                            void* p_completion_context)
+{
+    FPFW_UNUSED(p_interface);
+    FPFW_UNUSED(p_request);
+
+    LargestIntegralType expected_startup_stage[] = {
+        STARTUP_WARM_BOOT_SDM_ASYNC,
+        STARTUP_WARM_BOOT_CDED_ASYNC,
+    };
+
+    assert_true(boot_type == WARM_BOOT_ACCEL);
+    assert_in_set(startup_stage, expected_startup_stage, ARRAY_SIZE(expected_startup_stage));
+    check_expected(startup_stage);
+    assert_non_null(completion_routine);
+    sos_start_phase_cb = completion_routine;
+    sos_start_phase_ctx = p_completion_context;
+
+    function_called();
+}
+
+uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum)
+{
+    printf("Enabling IRQ %u\n", irqnum);
+    check_expected(irqnum);
+    return mock_type(uint32_t);
+}
+
+} // end of extern "C"
+
+/*----------------------------- Start of Unit test cases -----------------------------*/
 
 TEST_FUNCTION(accelip_pre_boot_config_pass_test, nullptr, nullptr)
 {
@@ -573,13 +633,18 @@ TEST_FUNCTION(test_scp_accelerators_init_intr_init_failed, nullptr, nullptr)
 
 TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
 {
-    uint32_t accel_ctxt_size = 0x0;
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
+    ssi_startup_stage_t startup_stage;
+    uint32_t accel_irq_num = SDMSS_IRQ_NUMBER;
+
+    accel_intr_set_irq_num_for_accel(accel_type, accel_irq_num);
+
+    startup_stage = accel_type == ACCEL_ID_SDM ? STARTUP_WARM_BOOT_SDM_ASYNC : STARTUP_WARM_BOOT_CDED_ASYNC;
 
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
-    // In emcpu_recovery_sequence()
+    // In accel_warm_boot_sequence()
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
@@ -590,31 +655,35 @@ TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
     will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
 
-    // In invoke_hsp_accel_fw_download
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
-    will_return_always(__wrap_system_info_is_hsp_present, true);
+    // Set expectations accel_intr_scp_init()
+    expect_value(__wrap_accel_intr_scp_init, accel_type, accel_type);
+    expect_value(__wrap_accel_intr_scp_init, init_config, E_ACCEL_INTR_INIT_FULL_INTR_TREE);
 
-    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+    // Set expectations for sos_start_phase
+    will_return(__wrap_fpfw_init_get_handle, 0xDEADDEED);
+    expect_value(__wrap_sos_start_phase, startup_stage, startup_stage);
+    expect_function_call(__wrap_sos_start_phase);
+
+    accel_core_warm_reset(accel_type);
+
+    // Set expectations for accel_post_warm_reset_cb()
     will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
-    will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
-
-    accel_core_warm_reset(ACCEL_ID_SDM, cb_fun, NULL, cb_fun, NULL);
-    s_icc_recv_cb(&p_ss_ctxt[0], 0, FPFW_STATUS_SUCCESS);
-    s_icc_recv_cb(&p_ss_ctxt[0], 0, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, accel_irq_num);
+    will_return(__wrap_FPFwCoreInterruptEnableVector, NVIC_STATUS_SUCCESS);
+    sos_start_phase_cb(NULL, sos_start_phase_ctx);
 }
 
 TEST_FUNCTION(accelip_emcpu_reset_cded_test, nullptr, nullptr)
 {
-    uint32_t accel_ctxt_size = 0x0;
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
+    ACCEL_ID accel_type = ACCEL_ID_CDED;
+    ssi_startup_stage_t startup_stage;
+
+    startup_stage = accel_type == ACCEL_ID_SDM ? STARTUP_WARM_BOOT_SDM_ASYNC : STARTUP_WARM_BOOT_CDED_ASYNC;
 
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
-    // In emcpu_recovery_sequence()
+    // In accel_warm_boot_sequence()
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
@@ -625,314 +694,26 @@ TEST_FUNCTION(accelip_emcpu_reset_cded_test, nullptr, nullptr)
     will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
 
-    // In invoke_hsp_accel_fw_download
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
-    will_return_always(__wrap_system_info_is_hsp_present, true);
+    // Set expectations accel_intr_scp_init()
+    expect_value(__wrap_accel_intr_scp_init, accel_type, accel_type);
+    expect_value(__wrap_accel_intr_scp_init, init_config, E_ACCEL_INTR_INIT_FULL_INTR_TREE);
 
-    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
-    will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
+    // Set expectations for sos_start_phase
+    will_return(__wrap_fpfw_init_get_handle, 0xDEADDEED);
+    expect_value(__wrap_sos_start_phase, startup_stage, startup_stage);
+    expect_function_call(__wrap_sos_start_phase);
 
-    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-}
-
-/**
- * Test case to verify that the emcpu reset flow works correctly when the callback function is NULL.
- * This test case is designed to ensure that the accelerator core warm reset can be invoked without
- * a callback function.
- */
-TEST_FUNCTION(accelip_emcpu_reset_null_cb_test, nullptr, nullptr)
-{
-    uint32_t accel_ctxt_size = 0x0;
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
-
-    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
-
-    // Set common expectations of emcpu_recovery_sequence()
-    will_return_always(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
-    will_return_always(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return_always(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
-    will_return_always(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return_always(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
-
-    // In invoke_hsp_accel_fw_download
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
-    will_return_always(__wrap_system_info_is_hsp_present, true);
-
-    // Setting up the ICC flow
-    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return_always(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
-
-    // Set specific expectations of emcpu_recovery_sequence()
-    will_return(__wrap_mmio_read32, 0);
-    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
-    accel_core_warm_reset(ACCEL_ID_CDED, NULL, NULL, cb_fun, NULL);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-
-    // Set specific expectations of emcpu_recovery_sequence()
-    will_return(__wrap_mmio_read32, 0);
-    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
-    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, NULL, NULL);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-
-    // Expectations for request_send_complete_cb
-    s_icc_send_cb(NULL, FPFW_STATUS_SUCCESS);
-}
-
-TEST_FUNCTION(accelip_emcpu_reset_invalid_state_test, nullptr, nullptr)
-{
-    uint32_t accel_ctxt_size = 0x0;
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
-
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
-
-    // In emcpu_recovery_sequence()
-    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
-
-    // In invoke_hsp_accel_fw_download
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
-    will_return_always(__wrap_system_info_is_hsp_present, true);
-
-    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
-
-    should_return = false;
-    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
-
-    // Invoke emcpu reset again to trigger failure scenario
-    if (!bugcheck_mock_return())
-    {
-        accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
-    }
-    else
-    {
-        // We will hit here when we error out the invalid call - we need to invoke the valid call
-        // flow to ensure the rst flow returns to normal
-        s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-        s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-    }
-}
-
-TEST_FUNCTION(accelip_emcpu_reset_recv_fail_test, nullptr, nullptr)
-{
-    uint32_t accel_ctxt_size = 0x0;
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
-
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
-
-    // In emcpu_recovery_sequence()
-    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
-
-    // In invoke_hsp_accel_fw_download
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
-    will_return_always(__wrap_system_info_is_hsp_present, true);
-
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_DISABLED);
-    will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
-
-    should_return = true;
-
-    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
-    // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
-    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
-
-    // Invoking callback to trigger reset to normal flow
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-}
-
-TEST_FUNCTION(accelip_emcpu_reset_send_fail_test, nullptr, nullptr)
-{
-    uint32_t accel_ctxt_size = 0x0;
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
-
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
-
-    // In emcpu_recovery_sequence()
-    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
-
-    // In invoke_hsp_accel_fw_download
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
-    will_return_always(__wrap_system_info_is_hsp_present, true);
-
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_DISABLED);
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_DISABLED);
-    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
-
-    should_return = true;
-
-    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
-    // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
-    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
-
-    // Invoking callback to trigger reset to normal flow
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-}
-
-TEST_FUNCTION(accelip_emcpu_reset_send_fail_mbox_cmd_cb, nullptr, nullptr)
-{
-    uint32_t accel_ctxt_size = 0x0;
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
-
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
-
-    // In emcpu_recovery_sequence()
-    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
-
-    // In invoke_hsp_accel_fw_download
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
-    will_return_always(__wrap_system_info_is_hsp_present, true);
-
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_DISABLED);
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_DISABLED);
-    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
-
-    should_return = true;
-
-    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
-    // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
-    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
-
-    // Invoking callback to trigger reset to normal flow
-    mbox_recv_buffs->header.cmd = HSP_MAILBOX_CMD_MAX;
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_FAIL);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
-}
-
-TEST_FUNCTION(accelip_emcpu_reset_send_fail_mbox_status_cb, nullptr, nullptr)
-{
-    uint32_t accel_ctxt_size = 0x0;
-    subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
-
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
-    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
-
-    // In emcpu_recovery_sequence()
-    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0);
-    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
-    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
-    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
-    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
-
-    // In invoke_hsp_accel_fw_download
-    // Setting up the ICC flow
-    icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    will_return_always(__wrap_fpfw_init_get_handle, &icc_ctx);
-    will_return_always(__wrap_system_info_is_hsp_present, true);
-
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_DISABLED);
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_DISABLED);
-    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
-    will_return(__wrap_sdm_init_disable_cpu_wait, SILIBS_SUCCESS);
-
-    should_return = true;
-
-    // The first recv call will fail - BUT WE FORCIBLY CONTINUE EXECUTION
-    // IF WE DON'T THE RESET STATE WILL STUCK IN ITCM LOAD PREVENTING FURTHER TESTS
-    accel_core_warm_reset(ACCEL_ID_CDED, cb_fun, NULL, cb_fun, NULL);
-
-    // Invoking callback to trigger reset to normal flow
-    mbox_recv_buffs->rsp.status = FPFW_STATUS_FAIL;
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_FAIL);
-    s_icc_recv_cb(&p_ss_ctxt[1], 0, FPFW_STATUS_SUCCESS);
+    accel_core_warm_reset(accel_type);
 }
 
 TEST_FUNCTION(accelip_emcpu_reset_send_invalid_accel, nullptr, nullptr)
 {
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-    will_return(__wrap_idsw_get_die_id, SOC_D0);
 
     should_return = false;
     if (!bugcheck_mock_return())
     {
-        accel_core_warm_reset(NUM_VALID_ACCEL_ID, cb_fun, NULL, cb_fun, NULL);
+        accel_core_warm_reset(NUM_VALID_ACCEL_ID);
     }
 }
 

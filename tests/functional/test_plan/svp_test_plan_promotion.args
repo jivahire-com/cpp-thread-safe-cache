@@ -27,10 +27,6 @@
 #./../../../tests/functional/test_suites/sdm_pcie_tests/sdm_pcie_tests.robot
 #./../../../tests/functional/test_suites/cded_pcie_tests/cded_pcie_tests.robot
 
-## Sensor FIFO short duration tests
-./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
-./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_single_fifo_test.robot
-
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot
 
@@ -38,6 +34,13 @@
 #./../../../tests/functional/test_suites/mts_tests/mts_dcp_test.robot
 
 ## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Sensor FIFO short duration tests
+## SVP Teardown required before sensor fifo tests so ensure tests run after boot is complete
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_single_fifo_test.robot
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
 ## Crash Dump Tests

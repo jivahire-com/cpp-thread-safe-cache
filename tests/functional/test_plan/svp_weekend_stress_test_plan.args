@@ -46,16 +46,28 @@
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
 
 ## Sensor FIFO Tests
+## SVP Teardown required before sensor fifo tests to ensure tests run after boot is complete
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_core_current_hw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_dimm_temp_fw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_pstate_tlm_hw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_pvt_temp_fw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_pvt_voltage_fw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_scp_message_hw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_tile_temperature_hw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_tile_voltage_hw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_vr_current_fw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli-verify_vr_temp_fw_fifo.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_all_fifo_test.robot
 
 ## Variable Service Tests

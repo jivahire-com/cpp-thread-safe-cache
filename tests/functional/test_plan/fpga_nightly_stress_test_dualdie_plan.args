@@ -23,5 +23,6 @@
 ./../../../tests/functional/test_suites/varserv_tests/varserv_dd_test.robot
 
 ## Sensor FIFO Tests
+## Tests will do an OOB reset on FPGA, no need to have a reset test between
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot

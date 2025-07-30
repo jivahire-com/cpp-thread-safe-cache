@@ -28,6 +28,8 @@
 ./../../../tests/functional/test_suites/varserv_tests/varserv_dd_test.robot
 
 ## Sensor FIFO short duration tests
+## SVP Teardown required before sensor fifo tests so ensure tests run after boot is complete
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
 
 ## SVP Teardown

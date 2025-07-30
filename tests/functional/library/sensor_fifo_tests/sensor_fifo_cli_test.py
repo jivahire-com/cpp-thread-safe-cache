@@ -381,6 +381,16 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             if not self.serial_util.wait_for_scp_mcp_heartbeat():
                 self.log.error("Failed to receive initial SCP-MCP heartbeat during setup")
                 return False
+            
+            # Wait for the SCP to finish the SOS Boot to ensure no other services make Sensor FIFO changes
+            try:
+                self.log.info("Waiting for boot complete message on SCP UART")
+                self.serial_util.read_scp_serial_until(read_until_key="SOS boot completed", timeout_seconds=900)
+            except Exception as e:
+                self.log.error(f"Failed to read SOS boot completed message from SCP: {e}")
+                self.test_notify(step="SOS boot completed", msg="Test Fail", _is_error=True)
+                return False
+
             return True
         except Exception as e:
             self.log.error(f"Error during DUT setup: {str(e)}")

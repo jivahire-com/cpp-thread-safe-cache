@@ -62,7 +62,7 @@ bool wait_for_local_core_boot_stage(startup_shutdown_boot_stage_t current_boot_s
         return true;
     }
 
-    FPFW_ET_LOG(LocalCoreSyncStageStart, current_boot_stage.stage);
+    LOCAL_CORE_ET_START_INFO_PARAM(current_boot_stage.stage);
 
     // We want to:
     // 1. Update the exp ram with local core's stage
@@ -100,7 +100,7 @@ bool wait_for_local_core_boot_stage(startup_shutdown_boot_stage_t current_boot_s
         __DSB();
         release_semaphore(STARTUP_SHUTDOWN_RMSS_EXP_SEMAPHORE_ID);
 
-        FPFW_ET_LOG(LocalCoreSyncStageRemoteRead, current_boot_stage.stage, remote_stage, iteration);
+        REMOTE_CORE_ET_READ_INFO_PARAM(current_boot_stage.stage, remote_stage, iteration);
 
         // Check if the remote core's stage matches the current stage
         if (remote_stage == current_boot_stage.stage)
@@ -117,7 +117,7 @@ bool wait_for_local_core_boot_stage(startup_shutdown_boot_stage_t current_boot_s
         tx_thread_sleep(1);
     }
 
-    FPFW_ET_LOG(LocalCoreSyncStageRemoteEnd, current_boot_stage.stage, iteration);
+    REMOTE_CORE_ET_END_INFO_PARAM(current_boot_stage.stage, iteration);
 
     return true;
 }

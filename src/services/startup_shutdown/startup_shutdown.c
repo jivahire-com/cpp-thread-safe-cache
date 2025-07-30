@@ -11,6 +11,7 @@
 
 #include "startup_shutdown.h"
 
+#include "startup_shutdown_events_i.h"
 #include "startup_shutdown_i.h"
 #include "startup_shutdown_init.h"
 
@@ -69,32 +70,32 @@ void sos_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context)
     /* these are here as test, this interface was registered as an SSI */
     case SSI_STARTUP_STAGE_START_ASYNC: {
         pssi_startup_notification_request_t ssi_request = (pssi_startup_notification_request_t)request;
-        FPFW_UNUSED(ssi_request)
-        SOS_LOG_TRACE("SSI stage %d start, boot type %d", ssi_request->stage, ssi_request->boot_type);
+        FPFW_UNUSED(ssi_request);
+        SOS_ET_INFO_PARAM(ssi_request->stage, SOS_ET_TYPE_SSI_STARTUP_STAGE_START_ASYNC, ssi_request->boot_type);
         // complete immediately, since nothing to do
         DfwkAsyncRequestComplete(request);
     }
     break;
     case SSI_STARTUP_STAGE_COMPLETE_ASYNC: {
         pssi_startup_notification_request_t ssi_request = (pssi_startup_notification_request_t)request;
-        FPFW_UNUSED(ssi_request)
-        SOS_LOG_TRACE("SSI stage %d complete, boot type %d", ssi_request->stage, ssi_request->boot_type);
+        FPFW_UNUSED(ssi_request);
+        SOS_ET_INFO_PARAM(ssi_request->stage, SOS_ET_TYPE_SSI_STARTUP_STAGE_COMPLETE_ASYNC, ssi_request->boot_type);
         // complete immediately, since nothing to do
         DfwkAsyncRequestComplete(request);
     }
     break;
     case SSI_SHUTDOWN_ASYNC: {
         pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)request;
-        FPFW_UNUSED(ssi_request)
-        SOS_LOG_TRACE("SSI shutdown, shutdown type %d", ssi_request->shutdown_type);
+        FPFW_UNUSED(ssi_request);
+        SSI_ET_INFO_PARAM(ssi_request->shutdown_type, SOS_ET_TYPE_SSI_SHUTDOWN_ASYNC);
         // complete immediately, since nothing to do
         DfwkAsyncRequestComplete(request);
     }
     break;
     case SSI_QUIESCE_ASYNC: {
         pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)request;
-        FPFW_UNUSED(ssi_request)
-        SOS_LOG_TRACE("SSI quiesce, shutdown type %d", ssi_request->shutdown_type);
+        FPFW_UNUSED(ssi_request);
+        SSI_ET_INFO_PARAM(ssi_request->shutdown_type, SOS_ET_TYPE_SSI_SHUTDOWN_QUIESCE_ASYNC);
         // complete immediately, since nothing to do
         DfwkAsyncRequestComplete(request);
     }

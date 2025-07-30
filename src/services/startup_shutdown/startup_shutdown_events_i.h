@@ -16,6 +16,39 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+#define SOS_ET_INFO_PARAM(stage, type, boot_type)    EventWriteSosInfoParam((stage), (type), (boot_type))
+#define SSI_ET_INFO_PARAM(type, shutdown_type)   EventWriteSsiInfoParam((type), (shutdown_type))
+#define LOCAL_CORE_ET_START_INFO_PARAM(local_stage)   EventWriteLocalCoreSyncStageStart((local_stage))
+#define REMOTE_CORE_ET_END_INFO_PARAM(local_stage, iteration)   EventWriteLocalCoreSyncStageRemoteEnd((local_stage), (iteration))
+#define REMOTE_CORE_ET_READ_INFO_PARAM(local_stage, remote_stage, iteration)   EventWriteLocalCoreSyncStageRemoteRead((local_stage), (remote_stage), (iteration))
+
+// clang-format off
+
+/**
+ * Define Event Trace events for the SOS provider
+*/
+typedef enum {
+    SOS_ET_ID_TYPE_INFO_PARAMS,
+    SSI_ET_ID_TYPE_INFO_PARAMS,
+    LOCAL_CORE_SYNC_STAGE_PARAM,
+    LOCAL_CORE_SYNC_STAGE_REMOTE_PARAM,
+    LOCAL_CORE_SYNC_STAGE_PARAM_VERBOSE = 0x0A,
+
+    SOS_ET_ID_TYPE_COUNT
+} SOS_EVENT_ID;
+typedef enum
+{
+    SOS_ET_TYPE_LOCAL_CORE_SYNC_START,
+    SOS_ET_TYPE_LOCAL_CORE_SYNC_REMOTE_END,
+    SOS_ET_TYPE_LOCAL_CORE_SYNC_REMOTE_READ,
+    SOS_ET_TYPE_SSI_STARTUP_STAGE_START_ASYNC,
+    SOS_ET_TYPE_SSI_STARTUP_STAGE_COMPLETE_ASYNC,
+    SOS_ET_TYPE_SSI_SHUTDOWN_ASYNC,
+    SOS_ET_TYPE_SSI_SHUTDOWN_QUIESCE_ASYNC,
+    
+    SOS_ET_TYPE_COUNT
+} SOS_ET_TYPE_T;
+
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
@@ -29,13 +62,28 @@ FPFW_ET_DEFINE_PROVIDER_EX(EVENT_TRACE_PROVIDER_ID_COMMON_STARTUP_SHUTDOWN,
 //
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_STARTUP_SHUTDOWN,
-                     0,
+                     SOS_ET_ID_TYPE_INFO_PARAMS,
+                     SosInfoParam,
+                     FPFW_ET_LEVEL_INFO,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, stage),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, boot_type))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_STARTUP_SHUTDOWN,
+                     SSI_ET_ID_TYPE_INFO_PARAMS,
+                     SsiInfoParam,
+                     FPFW_ET_LEVEL_INFO,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, shutdown_type),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_STARTUP_SHUTDOWN,
+                     LOCAL_CORE_SYNC_STAGE_PARAM,
                      LocalCoreSyncStageStart,
                      FPFW_ET_LEVEL_INFO,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, local_stage))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_STARTUP_SHUTDOWN,
-                     1,
+                     LOCAL_CORE_SYNC_STAGE_REMOTE_PARAM,
                      LocalCoreSyncStageRemoteEnd,
                      FPFW_ET_LEVEL_INFO,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, local_stage),
@@ -47,7 +95,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_STARTUP_SHUTDOWN,
 //
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_STARTUP_SHUTDOWN,
-                     10,
+                     LOCAL_CORE_SYNC_STAGE_PARAM_VERBOSE,
                      LocalCoreSyncStageRemoteRead,
                      FPFW_ET_LEVEL_VERBOSE,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, local_stage),

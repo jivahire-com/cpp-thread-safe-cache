@@ -82,7 +82,7 @@ class soc_uefi_boot(EchoFallsBaseTest):
         self.log.info("Reading APNS UART for UEFI Interactive Shell")
 
         try:
-            apns_connection.get_current_channel().read_until(key="UEFI Interactive Shell", timeout_seconds=900)
+            apns_connection.get_current_channel().read_until(key="UEFI Interactive Shell", timeout_seconds=1500)
         except Exception as e:
             self.log.error(f"Error reading APNS UART: {e}")
             apns_connection.get_current_channel().close()

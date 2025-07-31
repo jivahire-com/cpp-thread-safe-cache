@@ -56,12 +56,18 @@ static_assert(sizeof(union _icc_max_msg_size_padding) == 16, "Size of hsp mbox p
 
 /*-- Declarations (Statics and globals) --*/
 static kng_hsp_mailbox_msg recv_payload_buffer;
+static ap_fw_id_t last_requested_fw_id;
 
 /*------------- Functions ----------------*/
 static void request_send_complete_cb(void* context, fpfw_status_t status)
 {
-    FPFW_UNUSED(context);
-    FPFW_UNUSED(status);
+    BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, context);
+
+    if (context != NULL)
+    {
+        ap_fw_id_t fw_id = *(ap_fw_id_t*)context;
+        APCORE_LOG_INFO("AP FW load request sent: id(%d)", fw_id);
+    }
 }
 
 static void request_ap_load_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -74,7 +80,12 @@ static void request_ap_load_recv_complete_notify(void* context, size_t output_si
     BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
 
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
-    APCORE_LOG_TRACE("AP FW load response received");
+
+    if (context != NULL)
+    {
+        ap_fw_id_t fw_id = *(ap_fw_id_t*)context;
+        APCORE_LOG_INFO("AP FW load response received: id (%d)", fw_id);
+    }
 }
 
 static void request_pcie_phy_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -98,6 +109,8 @@ static void request_mcp_load_complete_notify(void* context, size_t output_size_b
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
 
+    last_requested_fw_id = AP_FW_ID_MCP;
+
     static union _icc_max_msg_size_padding mcp_start_req = {
         .start_req.header.cmd = HSP_MAILBOX_CMD_START_CORE_REQ,
         .start_req.id = HSP_FIRMWARE_ID_MCP,
@@ -106,7 +119,7 @@ static void request_mcp_load_complete_notify(void* context, size_t output_size_b
     static fpfw_icc_base_send_req_t send_params = {
         .payload_buffer = &mcp_start_req,
         .cb = request_send_complete_cb,
-        .cb_ctx = NULL,
+        .cb_ctx = &last_requested_fw_id,
         .buffer_size = sizeof(mcp_start_req),
     };
 
@@ -128,6 +141,8 @@ static void request_kmp_load_complete_notify(void* context, size_t output_size_b
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
 
+    last_requested_fw_id = AP_FW_ID_KMP;
+
     static union _icc_max_msg_size_padding kmp_start_req = {
         .start_req.header.cmd = HSP_MAILBOX_CMD_START_CORE_REQ,
         .start_req.id = HSP_FIRMWARE_ID_KMP,
@@ -137,7 +152,7 @@ static void request_kmp_load_complete_notify(void* context, size_t output_size_b
     static fpfw_icc_base_send_req_t send_params = {
         .payload_buffer = &kmp_start_req,
         .cb = request_send_complete_cb,
-        .cb_ctx = NULL,
+        .cb_ctx = &last_requested_fw_id,
         .buffer_size = sizeof(kmp_start_req),
     };
 
@@ -219,6 +234,8 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
         .cb_ctx = NULL,
     };
 
+    last_requested_fw_id = fw_id;
+
     if (fw_id == AP_FW_PCIE_PHY)
     {
         recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP;
@@ -260,9 +277,12 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
     {
         //! Default case for all other firmware IDs that use
         //! req cmd code HSP_MAILBOX_CMD_LOAD_FW_RSP to send & resp code HSP_MAILBOX_CMD_LOAD_FW_REQ to recv
+        static ap_fw_id_t last_loaded_fw_id;
+        last_loaded_fw_id = fw_id;
+
         recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_RSP;
         recv_params.cb = request_ap_load_recv_complete_notify;
-        recv_params.cb_ctx = NULL;
+        recv_params.cb_ctx = &last_loaded_fw_id;
     }
     fpfw_status_t status = fpfw_icc_base_recv(icc_hspmbx_ctx, &recv_params);
     BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -360,12 +380,11 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
     static fpfw_icc_base_send_req_t send_params = {
         .payload_buffer = &send_request,
         .cb = request_send_complete_cb,
-        .cb_ctx = NULL,
+        .cb_ctx = &last_requested_fw_id,
         .buffer_size = sizeof(send_request),
     };
 
     status = fpfw_icc_base_send(icc_hspmbx_ctx, &send_params);
-    BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
-
-    APCORE_LOG_TRACE("Request FW load sent for FW ID: [%d]", fw_id);
+    BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, fw_id);
+    APCORE_LOG_INFO("Request FW load initiated (%d)", fw_id);
 }

@@ -167,6 +167,13 @@ fpfw_status_t read_knob_from_default_db_cb(const fpfw_cfg_mgr_guid_t* knob_names
 
 bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, size_t data_size, update_knob_completion_routine cb, bool permanent)
 {
+    // Check we are in mission mode or not
+    if ((idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON) && system_info_get_mission_mode())
+    {
+        CFG_ERR("Knob override not allowed in mission mode\n");
+        return false;
+    }
+
     // report something wrong.
     if (data_size != current_entry->size)
     {
@@ -231,8 +238,14 @@ bool update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
     return true;
 }
 
-void apply_override_knob_from_hsp()
+void apply_override_knob_from_hsp(bool mission_mode)
 {
+    if (mission_mode)
+    {
+        CFG_INFO("mission mode is enabled, skipping override knob application");
+        return;
+    }
+
     CFG_INFO("Query knob data from HSP");
 
     for (uint32_t idx = 0; idx < cached_knob_data_size(); idx++)
@@ -257,24 +270,33 @@ void cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shared_mem_
 
     fpfw_cfg_mgr_init(cfg_mgr_config);
 
+    if ((idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON) && system_info_get_mission_mode())
+    {
+        cfg_mgr_config->mission_mode = true;
+    }
+    else
+    {
+        cfg_mgr_config->mission_mode = false;
+    }
+
     // check all knob data properly loaded
     BUG_ASSERT_PARAM(knob_index == KNOB_MAX, knob_index, KNOB_MAX);
 
-    if (cfg_mgr_config->mission_mode == false && system_info_is_hsp_present())
+    if (system_info_is_hsp_present())
     {
         if (idsw_get_cpu_type() == CPU_SCP)
         {
             if (idhw_is_single_die_boot_en())
             {
                 hsp_variable_service_initialize(var_svc_mem_ctx);
-                apply_override_knob_from_hsp();
+                apply_override_knob_from_hsp(cfg_mgr_config->mission_mode);
             }
             else
             {
                 if (idsw_get_die_id() == DIE_0)
                 {
                     hsp_variable_service_initialize(var_svc_mem_ctx);
-                    apply_override_knob_from_hsp();
+                    apply_override_knob_from_hsp(cfg_mgr_config->mission_mode);
                     write_override_knob_to_shared_rmss((void*)SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE,
                                                        SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE);
                 }

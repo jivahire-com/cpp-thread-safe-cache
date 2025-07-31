@@ -252,6 +252,11 @@ void update_knob_cb(cached_knob_data_t* requested_knob, uint8_t* updated_data, s
     FPFW_UNUSED(updated_data);
     FPFW_UNUSED(data_size);
 }
+
+bool __wrap_system_info_get_mission_mode()
+{
+    return mock_type(bool);
+}
 }
 
 //
@@ -259,6 +264,7 @@ void update_knob_cb(cached_knob_data_t* requested_knob, uint8_t* updated_data, s
 //
 TEST_FUNCTION(test_cfg_mgr_init_no_hsp, nullptr, nullptr)
 {
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_system_info_is_hsp_present, false);
 
     cfg_mgr_init(&config_manager_setting, NULL);
@@ -270,6 +276,7 @@ TEST_FUNCTION(test_cfg_mgr_init_no_hsp, nullptr, nullptr)
 TEST_FUNCTION(test_cfg_mgr_init_mcp, nullptr, nullptr)
 {
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_set_cached_knob_values, FPFW_STATUS_SUCCESS);
@@ -284,6 +291,7 @@ TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
     hsp_variable_svc_invoke_count = 0;
 
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -314,6 +322,7 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die0, rmss_memory_map_setup, nullptr)
 {
     hsp_variable_svc_invoke_count = 0;
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -336,6 +345,7 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die1, rmss_memory_map_setup, nullptr)
     hsp_variable_svc_invoke_count = 0;
 
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
@@ -350,6 +360,7 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die1, rmss_memory_map_setup, nullptr)
 
 TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 {
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
     expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
     expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
@@ -373,6 +384,7 @@ TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
 
 TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
 {
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
     expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
     expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
@@ -403,6 +415,7 @@ TEST_FUNCTION(test_read_fails_on_max_knob, rmss_memory_map_setup, nullptr)
     // Initialize the config manager, which will increment the knob cindex used
     // to read the knob from the default database.
     //
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_system_info_is_hsp_present, false);
 
     cfg_mgr_init(&config_manager_setting, NULL);
@@ -425,6 +438,7 @@ TEST_FUNCTION(test_check_var_store_knob_data_async, rmss_memory_map_setup, nullp
     expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
 
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
@@ -440,4 +454,20 @@ TEST_FUNCTION(test_check_var_store_knob_data_async, rmss_memory_map_setup, nullp
 
     check_var_store_knob_data_async(&get_cached_knob_data()[0]);
     check_var_store_knob_data_async(&get_cached_knob_data()[1]);
+}
+
+TEST_FUNCTION(test_check_var_store_mission_mode, rmss_memory_map_setup, nullptr)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_system_info_get_mission_mode, true);
+    will_return_always(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
+
+    cfg_mgr_init(&config_manager_setting, &shared_mem);
 }

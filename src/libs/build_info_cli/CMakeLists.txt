@@ -19,6 +19,7 @@ target_link_libraries(
     ${TARGET}
         PUBLIC
         ms::build_data
+        ms::lib::system_info
         PRIVATE
         fwlib.service.cli
         silibs::idhw

@@ -64,5 +64,5 @@ mock_target(${TARGET}
     spi_controller_read_direct_instruction
     idsw_get_cpu_type
     idsw_get_platform_sdv
-
+    system_info_get_mission_mode
 )

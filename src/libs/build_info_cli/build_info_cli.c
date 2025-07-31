@@ -15,7 +15,8 @@
 #include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
-#include <stdio.h> // for printf
+#include <stdio.h>
+#include <system_info.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -41,7 +42,7 @@ static FPFW_CLI_STATUS whoami(int Argc, const char** Argv)
     printf("Commit: %s\n", GIT_COMMIT_SHA);
     printf("Build Timestamp: %s\n", BUILD_TIMESTAMP);
     printf("Build PC: %s\n", BUILD_PC);
-    printf("----------------------------------------------------------------\n");
+
     /* MSCP Build Info */
     printf("MSCP tag " SCP_DESCRIBE "\n");
     printf("MSCP Commit " GIT_COMMIT_SHA "\n");
@@ -111,8 +112,14 @@ static FPFW_CLI_STATUS whoami(int Argc, const char** Argv)
         printf("Unknown\n");
         break;
     }
+
+    // Print SoC Die Info
     printf("SoC Die ID: %d\n", (uint8_t)idsw_get_die_id());
     printf("SoC Single Die Boot Enable: %s\n", idhw_is_single_die_boot_en() ? "true" : "false");
+
+    // Print SoC secure state
+    printf("SoC Secure State: [%d]\n", system_info_get_security_state());
+    printf("SoC Mission Mode: %s\n", system_info_get_mission_mode() ? "true" : "false");
 
     printf("----------------------------------------------------------------\n");
 

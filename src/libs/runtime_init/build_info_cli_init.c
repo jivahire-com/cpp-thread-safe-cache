@@ -24,7 +24,7 @@
 /*----------------------------- Static Functions ----------------------------*/
 
 /*----------------------------- Global Functions ----------------------------*/
-FPFW_INIT_COMPONENT(build_info_cli, FPFW_INIT_DEPENDENCIES("cli"))
+FPFW_INIT_COMPONENT(build_info_cli, FPFW_INIT_DEPENDENCIES("cli", "sysinfo"))
 {
     FPFW_CLI_STATUS status = build_info_cli_init();
     return (fpfw_init_result_t){status, NULL};

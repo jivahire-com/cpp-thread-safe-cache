@@ -8,6 +8,7 @@
 /*------------- Includes -----------------*/
 #include "warm_start.h"
 
+#include "warm_start_events.h"
 #include "warm_start_i.h"
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
@@ -101,6 +102,7 @@ void* ws_data_get(mod_ws_data_id_t id, uint32_t* p_size)
     if (p_size != NULL)
     {
         WS_LOG_INFO("[WS] Data Get %d", (int)id);
+        WS_ET_INFO_PARAM(WS_ET_TYPE_DATA_GET_ID, id);
 
         tx_status = tx_mutex_get(&ws_data_mutex, TX_THREAD_GET_SYSTEM_STATE() == 0 ? TX_WAIT_FOREVER : TX_NO_WAIT);
         BUG_ASSERT(tx_status == TX_SUCCESS);
@@ -117,6 +119,7 @@ void* ws_data_get(mod_ws_data_id_t id, uint32_t* p_size)
                     // Valid data
                     p_data = &p_entry->data;
                     *p_size = p_entry->size;
+                    WS_ET_INFO_PARAM(WS_ET_TYPE_DATA_FOUND, id);
                     break;
                 }
                 p_entry = p_entry->p_next;
@@ -136,6 +139,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
     void* p_entry_data = NULL;
 
     WS_LOG_INFO("[WS] Data put %d", (int)id);
+    WS_ET_INFO_PARAM(WS_ET_TYPE_DATA_PUT_ID, id);
 
     tx_status = tx_mutex_get(&ws_data_mutex, TX_THREAD_GET_SYSTEM_STATE() == 0 ? TX_WAIT_FOREVER : TX_NO_WAIT);
     BUG_ASSERT(tx_status == TX_SUCCESS);
@@ -149,6 +153,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
         p_entry->size = ws_size - sizeof(ws_data_list_t);
         p_entry->p_next = NULL;
         SCB_CleanDCache_by_Addr(p_ws_list, sizeof(ws_data_list_t));
+        WS_ET_INFO(WS_ET_TYPE_LIST_INIT);
     }
 
     // Traverse list looking for existing data or end
@@ -167,6 +172,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
                 p_entry->checksum = calculate_checksum(p_data, size);
                 SCB_CleanDCache_by_Addr(p_entry, sizeof(ws_data_entry_t) + size - sizeof(uint8_t));
                 p_entry_data = &p_entry->data;
+                WS_ET_INFO_PARAM(WS_ET_TYPE_DATA_REUSED, id);
                 break;
             }
             // ID found but size doesn't match, mark as reserved
@@ -214,6 +220,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
                 SCB_CleanDCache_by_Addr(p_entry, sizeof(ws_data_entry_t) + size - sizeof(uint8_t));
 
                 p_entry_data = &p_entry->data;
+                WS_ET_INFO_PARAM(WS_ET_TYPE_DATA_INSERT, id);
                 break;
             }
 
@@ -228,6 +235,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
     if (p_entry_data == NULL)
     {
         WS_LOG_ERR("[WS] No Space available %d, size %d", (int)id, (int)size);
+        WS_ET_ERROR_PARAM(WS_ET_TYPE_DATA_NO_SPACE_AVAILABLE, id);
         BUG_ASSERT(false);
     }
 
@@ -244,4 +252,5 @@ void warm_start_init(void)
     FPFW_RUNTIME_ASSERT(tx_mutex_create(&ws_data_mutex, "ws data mutex", TX_NO_INHERIT) == TX_SUCCESS);
 
     WS_LOG_INFO("[WARM_START] Init done");
+    WS_ET_INFO(WS_ET_TYPE_INIT_DONE);
 }

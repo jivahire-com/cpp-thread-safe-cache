@@ -3,6 +3,7 @@ set(TARGET kng.lib.warm_start)
 
 set (SOURCES 
         src/warm_start.c
+        src/warm_start_events.c
 )
 add_library(${TARGET}  STATIC ${SOURCES})
 
@@ -15,6 +16,7 @@ target_link_libraries(
             ms::lib::cortex_m7::nvic
             ms::lib::crash_dump
             ms::lib::error_codes
+            ms::lib::event_trace::trace
             ms::lib::threadx
 )
 

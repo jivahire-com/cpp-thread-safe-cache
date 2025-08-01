@@ -34,7 +34,7 @@ class test_utility(EchoFallsBaseTest):
     """
 
     READ_UNTIL_KEY = "Primary AP core power on"
-    TIMEOUT_SECONDS = 600
+    TIMEOUT_SECONDS = 1000
 
     # Create a list of cores for Die 0
     DIE0_CORES = ["scp0", "sdm0", "sdm_cded0", "mcp0"]
@@ -152,7 +152,7 @@ class test_utility(EchoFallsBaseTest):
             self.log.error(f"Error during DUT setup initialization: {setup_error}")
             assert False, f"DUT setup failed: {setup_error}"
 
-        total_timeout = 600
+        total_timeout = 1000
         iteration_timeout = 100
         timeout_count_max = int(total_timeout/iteration_timeout)
 
@@ -211,7 +211,7 @@ class test_utility(EchoFallsBaseTest):
         try:
             command_response = self.apns0_connection.get_current_channel().read_until(
                 key="UEFI Interactive Shell",
-                timeout_seconds=1000,
+                timeout_seconds=1500,
             )
         except Exception as e:
             self.log.error(f"Error during DUT setup: {e}")

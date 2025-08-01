@@ -497,7 +497,7 @@ Function Set-RepoEnv()
         Set-GitReferences -PackageFile "$env:REPO_APP_TOOLS_DIR/packages.$Toolchain.xml"
 
         # Find the matching directory
-        $releaseDir = Get-ChildItem -Path $env:REPO_APP_NUGET_DIR -Directory | Where-Object { $_.Name -like "kingsgate.sprt.release.*" }
+        $releaseDir = Get-ChildItem -Path $env:REPO_APP_NUGET_DIR -Directory | Where-Object { $_.Name -like "kingsgate.sprt.release.*" } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
         # If found, copy the files
         if ($releaseDir) {
             $basePath = $releaseDir.FullName

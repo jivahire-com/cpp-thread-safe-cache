@@ -626,6 +626,9 @@ void cli_power_config_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
         if (strcmp(request->sub_command, power_cli_config_sub_command_dictionary[index].sub_command) == 0)
         {
             power_cli_config_sub_command_dictionary[index].fn(request->fetch_data.p_requested_data);
+
+            // Print completion message
+            FpFwCliPrint("pwr_cli_comp\n");
             return;
         }
     }

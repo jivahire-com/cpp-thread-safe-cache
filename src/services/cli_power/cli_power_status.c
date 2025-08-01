@@ -230,6 +230,9 @@ void cli_power_status_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
         default:
            break;
     }    
+
+    // Print completion message
+    printf("pwr_cli_comp\n");
 }
 
 static void print_power_status_clinfo(ppower_service_cli_request_t p_cli_request) 

@@ -432,8 +432,8 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             # Disable the power control loop on the SCP
             pwr_loop_result = self.sensor_fifo_cli_test(
                 command="pwr set loopdis 7",
-                read_until_key="Ok",
-                pass_logs="pwr_cli_comp"
+                read_until_key="pwr_cli_comp",
+                pass_logs="loop disables: 7"
             )
             if not self.validate_test_result(pwr_loop_result):
                 self.log.error("❌ Failed to set power loop disable")

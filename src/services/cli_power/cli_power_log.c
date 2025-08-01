@@ -166,4 +166,7 @@ void cli_power_log_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* compl
         default:
            break;
     }    
+
+    // Print completion message
+    printf("pwr_cli_comp\n");
 }

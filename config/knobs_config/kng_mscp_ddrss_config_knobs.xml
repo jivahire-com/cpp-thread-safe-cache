@@ -23,7 +23,7 @@
 
     <!-- DDRSS knobs -->
     <Knob name="ddrss_init" type="uint8_t" default="0" help="DDRSS init enable. Used by DV only, ignored by silibs. 0 - Disable, 1 - Enable" />
-    <Knob name="intu_init_en" type="uint8_t" default="0" help="DDRSS INTU init enable. 0 - Disable, 1 - Enable" />
+    <Knob name="intu_init_en" type="uint8_t" default="1" help="DDRSS INTU init enable. 0 - Disable, 1 - Enable" />
     <Knob name="ddrss_mask" type="uint16_t" default="0x0001" help="DDRSS enable mask for both dies (12 DDRSSes). Each bit is one DDRSS. (0 ~ 0xFFF)" />
     <Knob name="cfg_profile" type="uint32_t" default="0" help="DIMM configuration profile for DV only. Please refer to ddrss_cfg_profile_t for encoding. (0 ~ 0xFFFFFFFF)" />
     <Knob name="ddr_speed_grade" type="DDRSS_SPEED_GRADE" default="DDRSS_SPEED_7200" help="DDR Speed Grade" />
@@ -49,7 +49,7 @@
     <Knob name="refresh_cmd_delay_same_bank" type="uint16_t" default="0x0fff" help="Minimum number of cycles from a same bank command to a subsequent same bank or all bank command. Does not apply to Precharge All and Refresh All Bank Immediate requests. This is counted in media cycles. Specially, value 0xfff means AUTO. (0 ~ 0xfff)" />
     <Knob name="refresh_cmd_delay_all_bank" type="uint16_t" default="0xffff" help="Minimum number of cycles from an all bank command to a subsequent same bank or all bank command. Does not apply to Precharge All and Refresh All Bank Immediate requests. This is counted in media cycles. Specially, value 0xffff means AUTO. (0 ~ 0xffff)" />
     <Knob name="media_ecc_mode" type="DDRSS_MEDIA_ECC_MODE" default="DDRSS_MEDIA_ECC_MODE_REED_SOLOMON" help="Media ECC mode." />
-    <Knob name="ras_init_en" type="uint8_t" default="0" help="Enable RAS initialzation. 0 - Disable, 1 - Enable" />
+    <Knob name="ras_init_en" type="uint8_t" default="1" help="Enable RAS initialzation. 0 - Disable, 1 - Enable" />
     <Knob name="ue_max_retry" type="uint8_t" default="4" help="The number of read retries to do before giving up and flagging an uncorrectable error and marking the page as poisoned. (0 ~ 7)" />
     <Knob name="drop_prefetch_tgt" type="uint8_t" default="0" help="FECQ prefetch target drop control. BIT0 - Drop new PREFETCHTGT if targeted bank is UNAVAIL;  BIT1 - Drop new PREFETCHTGT if current read/write preference is write-only;  BIT2 - Drop existing PREFETCHTGT if current read/write preference is write-only.  All bits combination are legal. (0 ~ 7)" />
     <Knob name="page_policy" type="DDRSS_PAGE_POLICY" default="DDRSS_PAGE_POLICY_STRICT_PAGE_CLOSED" help="Sets the page policy." />
@@ -59,8 +59,8 @@
     <Knob name="ca_parity_check_en" type="uint8_t" default="1" help="Enable DRAM command/address bus parity check. 0 - Disable, 1 - Enable" />
     <Knob name="ca_parity_err_recovery_en" type="uint8_t" default="1" help="CA Parity Error Recovery Procedure upon ALERT_n assertion. 0 - No action, report transient error if CRC or MBIST is disabled; 1 - No recovery, report persistent error; 2 - Attemp to recover. If error re-occurs, report persistent error;  3 - Attemp to recover. If error re-occurs, retry recovery." />
     <Knob name="manual_ecs_en" type="uint8_t" default="1" help="Specify the mode that the MC perform DRAM ECS operation. 0 - Use auto-ECS with refresh 1 - Use manual ECS command" />
-    <Knob name="address_hashing_mode" type="DDRSS_ADDR_HASHING_MODE" default="DDRSS_ADDR_HASHING_MODE_DISABLED" help="Enable Physical Bank hashing on bus/semi address." />
-    <Knob name="sub_bank_hashing_mode" type="DDRSS_SUB_BANK_HASHING_MODE" default="DDRSS_SUB_BANK_HASHING_MODE_DISABLED" help="Enable Row Sub-Bank Hashing for row-hammer mitigation." />
+    <Knob name="address_hashing_mode" type="DDRSS_ADDR_HASHING_MODE" default="DDRSS_ADDR_HASHING_MODE_ROW_BASED_BANK_HASHING" help="Enable Physical Bank hashing on bus/semi address." />
+    <Knob name="sub_bank_hashing_mode" type="DDRSS_SUB_BANK_HASHING_MODE" default="DDRSS_SUB_BANK_HASHING_MODE_8_SUB_BANK" help="Enable Row Sub-Bank Hashing for row-hammer mitigation." />
     <Knob name="auto_phy_lp_en" type="uint8_t" default="0" help="Enable automatic entry of DDR PHY's low power mode. 0 - Disable, 1 - Enable when in self-refresh mode, 2 - Enable when in self-refresh or power-down mode, 3 - Enable when in self-refresh or power-down mode, or MC idle" />
     <Knob name="phy_lp_entry_delay" type="uint8_t" default="8" help="Specify the delay to enter PHY low-power mode once all conditions are satisfied, in multiple-of-8 memory controller cycles. (0 ~ 255)" />
     <Knob name="phy_lp_wakeup" type="uint8_t" default="2" help="DFI wakeup parameter. (0 ~ 15)" />
@@ -68,11 +68,11 @@
     <Knob name="phy_lp2_entry_delay" type="uint8_t" default="10" help="Specify the delay to enter PHY low-power mode type 2 once all conditions are satisfied, in the time units specified by the delay unit. (0 ~ 255)" />
     <Knob name="phy_lp2_entry_delay_unit" type="DDRSS_POWER_DELAY_TIME_UNIT" default="DDRSS_POWER_DELAY_TIME_UNIT_100US" help="Specifies the time unit used for entry delay of PHY low-power mode type 2" />
     <Knob name="auto_self_refresh_en" type="uint8_t" default="0" help="Enable automatic entry of DRAM self-refresh mode. 0 - Disable, 1 - Enable" />
-    <Knob name="temp_comp_refresh_en" type="uint8_t" default="0" help="Enable periodic Temp Compensation operation. 0 - Disable, 1 - Enable" />
+    <Knob name="temp_comp_refresh_en" type="uint8_t" default="1" help="Enable periodic Temp Compensation operation. 0 - Disable, 1 - Enable" />
     <Knob name="periodic_ecs_readout_en" type="uint8_t" default="0" help="Periodic ECS readout enable. 0 - Disable, 1 - Enable" />
-    <Knob name="periodic_zq_cal_en" type="uint8_t" default="0" help="Periodic ZQ cal enable. 0 - Disable, 1 - Enable" />
-    <Knob name="periodic_osc_cal_en" type="uint8_t" default="0" help="Periodic DQS osc cal enable. 0 - Disable, 1 - Enable" />
-    <Knob name="periodic_phy_update" type="uint8_t" default="0" help="Periodic PHY update enable. 0 - Disable, 1 - Enable" />
+    <Knob name="periodic_zq_cal_en" type="uint8_t" default="1" help="Periodic ZQ cal enable. 0 - Disable, 1 - Enable" />
+    <Knob name="periodic_osc_cal_en" type="uint8_t" default="1" help="Periodic DQS osc cal enable. 0 - Disable, 1 - Enable" />
+    <Knob name="periodic_phy_update" type="uint8_t" default="1" help="Periodic PHY update enable. 0 - Disable, 1 - Enable" />
     <Knob name="periodic_ecs_en" type="uint8_t" default="0" help="Periodic ecs enable. 0 - Disable, 1 - Enable" />
     <Knob name="self_refresh_entry_delay" type="uint8_t" default="10" help="Delay time for entering DRAM self-refresh mode after entry conditions are satisfied, in the units specified by the delay unit. (0 ~ 255)" />
     <Knob name="self_refresh_entry_delay_unit" type="DDRSS_POWER_DELAY_TIME_UNIT" default="DDRSS_POWER_DELAY_TIME_UNIT_100US" help="Specifies the time unit used for self-refresh entry delay" />
@@ -81,7 +81,7 @@
     <Knob name="dram_power_down_en" type="uint8_t" default="0" help="Enable automatic entry of DRAM power-down mode. 0 - Disable, 1 - Enable" />
     <Knob name="dram_power_down_entry_delay" type="uint8_t" default="16" help="Delay time for entering DRAM power down mode after entry conditions are satisfied. In multiple-of-8 memory controller cycles. (0 ~ 255)" />
     <Knob name="keystore_scrub_en" type="uint8_t" default="0" help="Enable keystore patrol scrubbing. 0 - Disable, 1 - Enable" />
-    <Knob name="media_scrub_en" type="uint8_t" default="0" help="Enable media patrol scrubbing. 0 - Disable, 1 - Enable" />
+    <Knob name="media_scrub_en" type="uint8_t" default="1" help="Enable media patrol scrubbing. 0 - Disable, 1 - Enable" />
     <Knob name="media_scrub_interval" type="uint8_t" default="0" help="Media patrol scrub interval in unit specified by media_scrub_interval_unit. 0: AUTO interval, 1 ~ 255: customized interval" />
     <Knob name="media_scrub_interval_unit" type="DDRSS_PATROL_SCRUB_INTERVAL_TIME_UNIT" default="DDRSS_PATROL_SCRUB_INTERVAL_UNIT_1US" help="Media patrol scrub interval unit" />
     <Knob name="phy_train_max_retry" type="uint8_t" default="0" help="Controls the max number of retry attempts in case of a DDRSS PHY training failure. (0 ~ 255)" />
@@ -97,7 +97,7 @@
     <!-- <Knob name="sys_timer_delay_adder" type="uint32_t" count="12" default="{0x17, 0x05, 0x1b, 0x09, 0x1f, 0x0d, 0x17, 0x5, 0x1b, 0x9, 0x1f, 0x0d}" help="This values indicates the delay addition value to global system timer count per DDRSS based on floorplan data. (0 ~ 0xffffffff)" /> -->
     <Knob name="ppr_type" type="DDRSS_PPR_TYPE" default="DDRSS_PPR_NONE" help="This value indicates the kind of PPR to be performed" />
     <Knob name="ppr_defect_list" type="ddrss_defect_list_t" help="List that contains info on the defect addresses for PPR operation" />
-    <Knob name="rfm_en" type="uint8_t" default="0x0" help="Enable Refresh managment 0 - Disable, 1 - Enable" />
+    <Knob name="rfm_en" type="uint8_t" default="0x0" help="Enable Refresh managment 0 - Disable, 1 - Enable, 2 - Auto" />
     <Knob name="erhm_en" type="uint8_t" default="0x0" help="Enable Enhanced Row Hammer mitigation logic 0 - Disable, 1 - Enable, 2 - AUTO (Enable if DIMM requests)" />
     <Knob name="rfm_raaimt_ovr" type="uint8_t" default="0" help="Override RFM RAA Initial Management Threshold (0 ~ 15) , 0 - No override: raaimt_ovr,raammt_ovr and raa_dec_ref_val_ovr will be ignored, 1 - override the values" />
     <Knob name="rfm_raammt_ovr" type="uint8_t" default="6" help="Override RFM RAA Maximum Management Threshold (0 ~ 7)" />
@@ -242,7 +242,7 @@
     <Knob name="ddrss_ras_fw_first" type="uint8_t" default="1" help="Entire DDRSS FW-first RAS flow enable. 0 - Disable, 1 - Enable" />
     <Knob name="pll_bypass_en" type="uint8_t" default="0" help="DDRSS PLL programming is disabled and PLL is in bypass 0 - Disable (plls are programmed), 1 - Enable (pll are in bypass)" />
     <Knob name="inband_crc_mode" type="uint8_t" default="0" help="DDRSS inband CRC mode. 0: Disable  1: CRC Enable for RD only  2: CRC Enable for WR only  3: CRC Enable for RD and WR" />
-    <Knob name="dqs_interval_timer_run_time" type="uint8_t" default="255" help="Specifies how long the DRAM oscillator runs once started in a calibration, In multiple-of-16 memory controller clock cycles. 0: 8192 cycles; 1: 16 cycles; ...; 254: 4064 cycles; 255: 4096 cycles. (0 ~ 255)" />
+    <Knob name="dqs_interval_timer_run_time" type="uint8_t" default="128" help="Specifies how long the DRAM oscillator runs once started in a calibration, In multiple-of-16 memory controller clock cycles. 0: 8192 cycles; 1: 16 cycles; ...; 254: 4064 cycles; 255: 4096 cycles. (0 ~ 255)" />
     <Knob name="pll_frac_en" type="uint8_t" default="1" help="DDRSS PLL fraction mode enable. 0 - Disable, 1 - Enable" />
     <Knob name="bitrot_TCM_delay" type="uint64_t" default="86400000" help="Delay after reading TCM memory types in ms." />
     <!-- Extra DDR internal knobs from silibs -->

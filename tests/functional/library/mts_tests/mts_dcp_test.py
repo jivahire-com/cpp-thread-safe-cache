@@ -566,7 +566,7 @@ import ctypes
 # In the SVP Design Hierarchy navigate to /KingsgateSVP/DIE_0/RMSS/SCP/SCP_UART,  right click, and select 'Connect Terminal to Uart'
 #
 # to run the main functionality below from a repo environment
-# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/pythia/pylibs/mts_tests/mts_dcp_test.py
+# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/mts_tests/mts_dcp_test.py
 #
 
 def main():

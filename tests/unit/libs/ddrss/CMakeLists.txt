@@ -44,6 +44,7 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
+    FpFwAssert
     atu_map
     atu_unmap
     cmn800_generate_ddr_mc_map_from_cached_config
@@ -57,6 +58,7 @@ mock_target(${TARGET}
     ddrss_get_config
     ddrss_get_phy_interrupt_status
     ddrss_get_phy_interrupt_status
+    ddrss_get_phy_training_failure
     ddrss_get_ras_agent
     ddrss_init
     ddrss_inject_media_ca_err
@@ -74,6 +76,7 @@ mock_target(${TARGET}
     nvic_irq_clear_pending
     nvic_irq_enable
     nvic_irq_set_isr_with_param
+    post_led_status
     ras_arm_agent_probe
     ras_print_record
     system_info_is_warm_start

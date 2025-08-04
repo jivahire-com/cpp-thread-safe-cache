@@ -13,6 +13,7 @@
 #include <FpFwCMocka.h> // IWYU pragma: keep
 #include <FpFwUtils.h>
 #include <atu_lib.h>
+#include <boot_status.h>
 #include <cmn800.h>
 #include <cmocka.h> // IWYU pragma: keep
 #include <ddrss.h>
@@ -324,4 +325,28 @@ int __wrap_ddrss_inject_media_ca_err(uint32_t mc, ddrss_media_ca_err_inj_info_t*
     }
 
     return __real_ddrss_inject_media_ca_err(mc, ca_err_inj);
+}
+
+void __wrap_FpFwAssert(int expression)
+{
+    if (!expression)
+    {
+        check_expected(expression);
+    }
+}
+
+void __wrap_post_led_status(boot_status_req_t* p_req_mem, led_status_codes_t status)
+{
+    assert_non_null(p_req_mem);
+    assert_in_range(status, LED_STATUS_CODE_SCP_E_DDR0_TRAINING, LED_STATUS_CODE_SCP_E_DDR5_TRAINING);
+
+    function_called();
+}
+
+int __wrap_ddrss_get_phy_training_failure(ddrss_phy_training_error_info_t* phy_err_info)
+{
+    assert_non_null(phy_err_info);
+    phy_err_info->mc = mock_type(uint8_t);
+
+    return mock_type(int);
 }

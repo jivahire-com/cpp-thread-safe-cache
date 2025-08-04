@@ -310,6 +310,199 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
     prod_ddrss_lib_init(test_die);
 }
 
+TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure, setup, teardown)
+{
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    int i = 0;
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 1;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
+    idsw_set_platform_sdv(PLATFORM_RVP_EVT_SILICON);
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
+
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_system_info_is_warm_start, false);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // Set expectations for ddrss_init() failure.Simulate a training failure
+    will_return(__wrap_ddrss_init, SILIBS_E_STATE);
+    uint8_t mc = 0;
+    will_return(__wrap_ddrss_get_phy_training_failure, mc);
+    will_return(__wrap_ddrss_get_phy_training_failure, SILIBS_SUCCESS);
+    expect_function_call(__wrap_post_led_status);
+    expect_value(__wrap_FpFwAssert, expression, false);
+
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+
+    prod_ddrss_lib_init(test_die);
+}
+
+TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure2, setup, teardown)
+{
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    int i = 0;
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 1;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
+    idsw_set_platform_sdv(PLATFORM_RVP_EVT_SILICON);
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
+
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_system_info_is_warm_start, false);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // Set expectations for ddrss_init() failure.
+    will_return(__wrap_ddrss_init, SILIBS_E_PARAM);
+    expect_function_call(__wrap_post_led_status);
+    expect_value(__wrap_FpFwAssert, expression, false);
+
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+
+    prod_ddrss_lib_init(test_die);
+}
+
+TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure_max_mc, setup, teardown)
+{
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    int i = 0;
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 1;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
+    idsw_set_platform_sdv(PLATFORM_RVP_EVT_SILICON);
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
+
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_system_info_is_warm_start, false);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // Set expectations for ddrss_init() failure.Simulate a training failure
+    will_return(__wrap_ddrss_init, SILIBS_E_STATE);
+    uint8_t mc = DDRSS_MAX_MC_NUM_PER_DIE;
+    will_return(__wrap_ddrss_get_phy_training_failure, mc);
+    will_return(__wrap_ddrss_get_phy_training_failure, SILIBS_SUCCESS);
+    expect_function_call(__wrap_post_led_status);
+    expect_value(__wrap_FpFwAssert, expression, false);
+
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+
+    prod_ddrss_lib_init(test_die);
+}
+
+TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
+{
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    int i = 0;
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 1;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
+    idsw_set_platform_sdv(PLATFORM_RVP_EVT_SILICON);
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
+
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_system_info_is_warm_start, false);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // Set expectations for ddrss_init() failure.Simulate a training failure
+    will_return(__wrap_ddrss_init, SILIBS_E_STATE);
+    uint8_t mc = 0;
+    will_return(__wrap_ddrss_get_phy_training_failure, mc);
+    will_return(__wrap_ddrss_get_phy_training_failure, SILIBS_E_SUPPORT);
+    expect_function_call(__wrap_post_led_status);
+    expect_value(__wrap_FpFwAssert, expression, false);
+
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+
+    prod_ddrss_lib_init(test_die);
+}
+
 TEST_FUNCTION(test_prod_ddrss_interrupt_handler_unexpected_interrupt, setup, teardown)
 {
     g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_HSP_INT); // This is unexpected

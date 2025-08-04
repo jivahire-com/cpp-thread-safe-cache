@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
     PRIVATE
     ms::lib::cortex_m7::nvic
     ms::lib::arm_intrinsic
+    ms::lib::boot_status
     ms::lib::scp_interrupts
     ms::lib::system_info
     ms::service::health_monitor

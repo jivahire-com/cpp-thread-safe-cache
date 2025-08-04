@@ -13,6 +13,7 @@
 #include <FPFwInterrupts.h>
 #include <FpFwAssert.h>
 #include <atu_lib.h>
+#include <boot_status.h>
 #include <cmn800.h>
 #include <cmsdk_wd.h> // for wdog_cmsdk_apb_disable
 #include <ddr_err_inj.h>
@@ -446,7 +447,38 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 
     // Run DDRSS init
     sts = ddrss_init(&ddrss_cfgs);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    if (sts != SILIBS_SUCCESS)
+    {
+        ddrss_phy_training_error_info_t phy_err_info;
+        led_status_codes_t bsc_status = LED_STATUS_CODE_SCP_E_DDR0_TRAINING;
+        boot_status_req_t bsc_req_mem = {0};
+
+        /**
+         * If ddrss_init returns SILIBS_E_STATE erros it indicates that
+         * the DDRSS init failed due to PHY training failure.
+         */
+        if (sts == SILIBS_E_STATE && (ddrss_get_phy_training_failure(&phy_err_info) == SILIBS_SUCCESS))
+        {
+            bsc_status += DDRSS_GET_LOCAL_DDRSS(phy_err_info.mc);
+        }
+
+        /**
+         * If we cannot get the PHY training error info, we still need to send
+         * boot status code to HSP to indicate that DDRSS init failed.
+         * Send DDR0 SS (Dies' perspective) as default.
+         * TODO: Add a new boot status code for DDRSS init failure which
+         * indicates a failure other than PHY training.
+         */
+
+        /**
+         * This will be a sync call as we are running in runtime init phase
+         * and BSC module makes sure that BSC is sent to HSP synchronously
+         * during runtime init phase.
+         */
+        post_led_status(&bsc_req_mem, bsc_status);
+
+        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    }
 
     // Unmap previous ATU mapping for other DIE
     if (die_num == DIE_0)

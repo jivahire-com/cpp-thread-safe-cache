@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+# serial_utils.py - Utility class for managing serial communication with SCP and MCP channels.
+# Provides methods for sending commands, reading responses, and waiting for heartbeat signals.
 from typing import Union, List, Optional
 import time
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
@@ -26,8 +30,13 @@ class SerialUtility:
 
     def run_command_on_mcp(self, command: str, read_until_key: str, pass_logs: Union[List[str], str] = None) -> Optional[str]:
         """
-        Executes a command on the MCP channel, reads the response until a specified key,
-        and optionally validates the response against expected log entries.
+        Execute a command on the MCP channel and read the response until a key is found.
+        Optionally check for expected log entries in the response.
+
+        Args:
+            command (str): Command to send to MCP.
+            read_until_key (str): Key to wait for in the response.
+            pass_logs (Union[List[str], str], optional): Expected log entries to validate.
 
         Returns:
             Optional[str]: The command response if successful; None otherwise.
@@ -65,7 +74,11 @@ class SerialUtility:
 
     def run_command_on_scp(self, command: str, read_until_key: str) -> Optional[str]:
         """
-        Executes a command on the SCP and validates the response.
+        Execute a command on the SCP channel and read the response until a key is found.
+
+        Args:
+            command (str): Command to send to SCP.
+            read_until_key (str): Key to wait for in the response.
 
         Returns:
             Optional[str]: The command response if successful; None otherwise.
@@ -98,16 +111,48 @@ class SerialUtility:
             self.scp_channel.close()
 
     def read_scp_serial_until(self, read_until_key: str, timeout_seconds: int = 60) -> Optional[str]:
-        """Read from the SCP serial channel until a specific key is found or timeout occurs."""
+        """
+        Read from the SCP serial channel until a specific key is found or timeout occurs.
+
+        Args:
+            read_until_key (str): Key to wait for in the response.
+            timeout_seconds (int): Timeout in seconds.
+
+        Returns:
+            Optional[str]: The response if successful; None otherwise.
+        """
         return self._read_serial_until(self.scp_channel, read_until_key, timeout_seconds)
 
     def read_mcp_serial_until(self, read_until_key: str, timeout_seconds: int = 60) -> Optional[str]:
-        """Read from the MCP serial channel until a specific key is found or timeout occurs."""
+        """
+        Read from the MCP serial channel until a specific key is found or timeout occurs.
+
+        Args:
+            read_until_key (str): Key to wait for in the response.
+            timeout_seconds (int): Timeout in seconds.
+
+        Returns:
+            Optional[str]: The response if successful; None otherwise.
+        """
         return self._read_serial_until(self.mcp_channel, read_until_key, timeout_seconds)
 
     def _read_serial_until(self, channel, read_until_key: str, timeout_seconds: int) -> Optional[str]:
-        """Private method to handle the actual serial reading logic."""
+        """
+        Private method to handle the actual serial reading logic.
+
+        Args:
+            channel: Serial channel to read from.
+            read_until_key (str): Key to wait for in the response.
+            timeout_seconds (int): Timeout in seconds.
+
+        Returns:
+            Optional[str]: The response if successful; None otherwise.
+        """
         try:
+            channel.open()
+            if not channel.is_open():
+                self.log.error("Failed to open communication channel")
+                return None
             command_response = channel.read_until(key=read_until_key, timeout_seconds=timeout_seconds)
             self.log.debug("Received Response Successfully from UART . . .")
             self.log.debug(command_response)

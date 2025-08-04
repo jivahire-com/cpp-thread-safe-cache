@@ -5,7 +5,6 @@ Tests that check for sensor fifo cli command helper output.
 """
 import time
 import sys, os
-import time
 from pathlib import Path
 from typing import Union, List, Dict, Optional
 
@@ -44,7 +43,7 @@ class SensorFifoCliTest(EchoFallsBaseTest):
         default_log_home: str = None,
         fw_payload_path: str = None,
         host_config: Path | str = None,
-        name: str = None,
+        name: str = "SensorFifoCliTest",
         number: str = "NaN",
         dut_platform: str = "KingsgateSVP",
         host_name: str | None = None,
@@ -239,48 +238,48 @@ class SensorFifoCliTest(EchoFallsBaseTest):
             return None
 
     # This method is not used but kept it for reference and to quickly check parsing logic for future changes.
-    # def parse_fifo_entry(self, lines: List[str], fifo_data: dict) -> None:
-    #     """Helper method to parse a single FIFO entry"""
-    #     try:
-    #         # Parse first line for ID and name
-    #         first_line = lines[0]
-    #         id_part = first_line.split('Fifo ID =')[1].split(':')[0].strip()
-    #         name_part = first_line.split('Fifo Name =')[1].strip()
+    def parse_fifo_entry(self, lines: List[str], fifo_data: dict) -> None:
+        """Helper method to parse a single FIFO entry"""
+        try:
+            # Parse first line for ID and name
+            first_line = lines[0]
+            id_part = first_line.split('Fifo ID =')[1].split(':')[0].strip()
+            name_part = first_line.split('Fifo Name =')[1].strip()
             
-    #         current_id = int(id_part)
-    #         fifo_name = name_part
+            current_id = int(id_part)
+            fifo_name = name_part
             
-    #         # Parse second line for sizes
-    #         size_line = lines[1].strip()
-    #         entry_size = int(size_line.split('entry size =')[1].split(':')[0].strip())
-    #         stride_size = int(size_line.split('stride size =')[1].split(':')[0].strip())
-    #         num_entries = int(size_line.split('num entries or strides =')[1].strip())
+            # Parse second line for sizes
+            size_line = lines[1].strip()
+            entry_size = int(size_line.split('entry size =')[1].split(':')[0].strip())
+            stride_size = int(size_line.split('stride size =')[1].split(':')[0].strip())
+            num_entries = int(size_line.split('num entries or strides =')[1].strip())
             
-    #         # Parse third line for addresses
-    #         addr_line = lines[2].strip()
-    #         start_addr = addr_line.split('start addr =')[1].split(':')[0].strip()
-    #         end_addr = addr_line.split('end addr =')[1].strip()
+            # Parse third line for addresses
+            addr_line = lines[2].strip()
+            start_addr = addr_line.split('start addr =')[1].split(':')[0].strip()
+            end_addr = addr_line.split('end addr =')[1].strip()
             
-    #         # Parse fourth line for status
-    #         status_line = lines[3].strip()
-    #         enabled = status_line.split('enabled =')[1].split(':')[0].strip().lower() == 'true'
-    #         is_empty = status_line.split('empty =')[1].strip().lower() == 'yes'
+            # Parse fourth line for status
+            status_line = lines[3].strip()
+            enabled = status_line.split('enabled =')[1].split(':')[0].strip().lower() == 'true'
+            is_empty = status_line.split('empty =')[1].strip().lower() == 'yes'
             
-    #         fifo_data[current_id] = {
-    #             'fifo_id': current_id,
-    #             'name': fifo_name,
-    #             'entry_size': entry_size,
-    #             'stride_size': stride_size,
-    #             'num_entries': num_entries,
-    #             'start_addr': start_addr,
-    #             'end_addr': end_addr,
-    #             'enabled': enabled,
-    #             'is_empty': is_empty
-    #         }
-    #         self.log.info(f"Successfully parsed FIFO {current_id}")
+            fifo_data[current_id] = {
+                'fifo_id': current_id,
+                'name': fifo_name,
+                'entry_size': entry_size,
+                'stride_size': stride_size,
+                'num_entries': num_entries,
+                'start_addr': start_addr,
+                'end_addr': end_addr,
+                'enabled': enabled,
+                'is_empty': is_empty
+            }
+            self.log.info(f"Successfully parsed FIFO {current_id}")
             
-    #     except Exception as e:
-    #         self.log.warning(f"Error parsing FIFO entry: {str(e)}\nLines:\n{lines}")
+        except Exception as e:
+            self.log.warning(f"Error parsing FIFO entry: {str(e)}\nLines:\n{lines}")
 
     def parse_fifo_entry(self, lines: List[str], fifo_data: dict) -> None:
         """Helper method to parse a single FIFO entry

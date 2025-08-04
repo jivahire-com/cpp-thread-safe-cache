@@ -63,6 +63,9 @@
 #./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_svp_report_test.robot
 #./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
+## ICC Mhu Tests
+./../../../tests/functional/test_suites/icc_mhu/icc_cli_mscp_mhu.robot
+
 ## Warm Start Tests
 ./../../../tests/functional/test_suites/warm_start_tests/warm_start_test.robot
 

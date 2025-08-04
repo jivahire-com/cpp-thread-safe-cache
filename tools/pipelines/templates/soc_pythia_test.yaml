@@ -198,6 +198,6 @@ jobs:
       condition: always()
       inputs:
         targetPath: $(Build.ArtifactStagingDirectory)\pythia_clean
-        artifact: 'drop_${{ parameters.ArtifactName }}_FPGA_Pythia_Tests$(System.JobAttempt)'
+        artifact: 'drop_${{ parameters.ArtifactName }}_SOC_Pythia_Tests$(System.JobAttempt)'
         publishLocation: 'pipeline'
         parallel: true

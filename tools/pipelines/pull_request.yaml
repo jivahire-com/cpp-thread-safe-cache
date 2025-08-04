@@ -91,6 +91,16 @@ extends:
           ArtifactName: SVP_Pythia_Tests_DualDie
           TestPlan: .\tests\functional\test_plan\svp_dual_die_test_plan.args
 
+    - stage: MSCP_SOC_Pythia_Singledie_Tests
+      dependsOn: [Build_Arm_EABI_AARCH_Debug]
+      jobs:
+      - template: tools/pipelines/templates/soc_pythia_test.yaml@self
+        parameters:
+          ArtifactName: MSCP_SOC_Pythia_Singledie_Tests
+          TestPlan: .\tests\functional\test_plan\soc_single_die_test_plan.args
+          TestVehicleCapability: 'SocSingleDie'
+          Pool: '1pfw-kingsgate-soc'
+
     - stage: Build_Unit_Test_x86
       dependsOn: []
       jobs:

@@ -120,7 +120,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM7",
+                                    "serial_port": "COM8",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
                                     "file_name":"apns0_logs",
@@ -164,7 +164,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM10",
+                                    "serial_port": "COM11",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
                                     "file_name":"scp1_logs",
@@ -185,7 +185,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM11",
+                                    "serial_port": "COM10",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
                                     "file_name":"mcp1_logs",

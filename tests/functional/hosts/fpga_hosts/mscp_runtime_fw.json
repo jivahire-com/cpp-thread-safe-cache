@@ -115,7 +115,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM7",
+                                    "serial_port": "COM8",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
                                     "file_name":"apns0_logs"

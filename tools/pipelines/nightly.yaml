@@ -75,6 +75,7 @@ stages:
       ArtifactName: MSCP_DualDie
       TestPlan: .\tests\functional\test_plan\fpga_dual_die_test_plan.args
       #TestVehicleCapability: 'DualDieFPGA'
+      #Pool: '1pfw-kingsgate-bigfpga-pipelines'
       TestAgent: 'RDU-120015-DF14'
       Pool: '1pfw-kingsgate-big-fpga'
 

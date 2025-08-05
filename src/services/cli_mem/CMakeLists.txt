@@ -10,9 +10,12 @@ add_library(${TARGET} STATIC ${SOURCES})
 
 # Link dependencies
 target_link_libraries(${TARGET}
+    PUBLIC
+        ms::lib::cortex_m7::nvic
     PRIVATE
         fwlib.lib.interface.platform.dbgprint
         fwlib.service.cli
+        ms::lib::error_domain::scp
         silibs::atu
         silibs::kng_silibs_platform
         silibs_platform
@@ -24,6 +27,7 @@ target_include_directories(${TARGET}
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        $<TARGET_PROPERTY:ms::lib::error_domain::scp,INCLUDE_DIRECTORIES>
 )
 
 # Add an alias for the library

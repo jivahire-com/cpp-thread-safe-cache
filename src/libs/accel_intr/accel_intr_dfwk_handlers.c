@@ -203,6 +203,8 @@ static void accel_intr_handle_sdm_msg_recv_timeout(void* ctx, fpfw_dur_t latency
         FPFW_ET_LOG(AccelIntremCPUReset, accel_type);
         if (is_cd_complete)
         {
+            crash_dump_transfer_accel_cd_to_BMC(accel_type);
+
             /**
              * CD collection is completed by accel core
              * Request Accel emCPU reset

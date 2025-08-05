@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DfwkClient.h>              // for DfwkClientInterfaceOpen
 #include <DfwkThreadXHost.h>         // for DFWK_THREADX_HOST
 #include <FpFwAssert.h>              // for FPFW_RUNTIME_ASSERT
 #include <addressblock0_regs.h>      // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
@@ -127,6 +128,8 @@ FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk"))
 
     crash_dump_device_initialize(&crash_dump_device, &(dfwk_host->Schedule));
     crash_dump_interface_initialize(&crash_dump_interface, &crash_dump_device);
+
+    DfwkClientInterfaceOpen(&crash_dump_interface.Header);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &crash_dump_interface};
 }

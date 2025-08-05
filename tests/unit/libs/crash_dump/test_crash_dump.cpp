@@ -13,6 +13,7 @@
 #include <CMockaWrapper.h> // for check_expected_ptr, expect_fun...
 #include <cstdint>         // for uint32_t, uint64_t
 #include <icc_platform_defines.h>
+#include <map>
 #include <modules/CdDumpDescriptor.h> // for _FPFwCdDumpPriority
 #include <silibs_common.h>
 #include <stddef.h> // for NULL
@@ -56,8 +57,8 @@ extern TX_THREAD* _tx_thread_created_ptr;
 extern ULONG _tx_thread_created_count;
 extern ULONG _tx_thread_system_state;
 
-extern icc_base_recv_complete_notify fw_load_cb;
-extern void* cb_ctx;
+extern std::map<uint32_t, icc_base_recv_complete_notify> s_icc_recv_cb;
+extern std::map<uint32_t, void*> s_cb_ctx;
 extern bool memcpy_mock;
 extern jmp_buf cd_test_setjmp_context;
 
@@ -515,7 +516,7 @@ TEST_FUNCTION(test_crash_dump_register_mini_dump, nullptr, nullptr)
 TEST_FUNCTION(test_crash_dump_config_icc_mhu_local, NULL, NULL)
 {
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
-    will_return(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_crash_dump_context, &context);
 
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
     expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 512);
@@ -524,22 +525,40 @@ TEST_FUNCTION(test_crash_dump_config_icc_mhu_local, NULL, NULL)
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_recv);
 
-    will_return_always(__wrap_nvic_get_current_irq, NVIC_STATUS_SUCCESS);
-    expect_function_call_any(NVIC_SetPriority);
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 16);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, ICC_SIGNAL_CRASH_DUMP_TRANSFER);
+
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
 
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_LOCAL, (fpfw_icc_base_ctx_t*)0x12345678);
     assert_true(context.icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL] == (fpfw_icc_base_ctx_t*)0x12345678);
 
     if (!setjmp(cd_test_setjmp_context))
     {
-        fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+        // SCP0 sends a transfer request to the MCP0
+        expect_value(__wrap_fpfw_icc_base_send, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+        will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+        expect_function_call(__wrap_fpfw_icc_base_send);
+
+        // Register receive request callback again.
+        expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+        expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 16);
+        expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, ICC_SIGNAL_CRASH_DUMP_TRANSFER);
+
+        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        expect_function_call(__wrap_fpfw_icc_base_recv);
+
+        // LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_TRANSFER callback
+        s_icc_recv_cb[ICC_SIGNAL_CRASH_DUMP_TRANSFER](s_cb_ctx[ICC_SIGNAL_CRASH_DUMP_TRANSFER], 0, FPFW_STATUS_SUCCESS);
     }
 }
 
 TEST_FUNCTION(test_crash_dump_config_icc_mhu_remote, NULL, NULL)
 {
-    crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
-    will_return(__wrap_crash_dump_context, &context);
+    crash_dump_context_t context = {.die_index = 1, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    will_return_always(__wrap_crash_dump_context, &context);
 
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
     expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 512);
@@ -548,7 +567,12 @@ TEST_FUNCTION(test_crash_dump_config_icc_mhu_remote, NULL, NULL)
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_recv);
 
-    will_return_always(__wrap_nvic_get_current_irq, NVIC_STATUS_ERROR);
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 16);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, ICC_SIGNAL_CRASH_DUMP_TRANSFER);
+
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
 
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_REMOTE, (fpfw_icc_base_ctx_t*)0x12345678);
 
@@ -556,14 +580,28 @@ TEST_FUNCTION(test_crash_dump_config_icc_mhu_remote, NULL, NULL)
 
     if (!setjmp(cd_test_setjmp_context))
     {
-        fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+        // SCP1 sends a transfer request to the SCP0
+        expect_value(__wrap_fpfw_icc_base_send, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+        will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+        expect_function_call(__wrap_fpfw_icc_base_send);
+
+        // Register receive request callback again.
+        expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+        expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 16);
+        expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, ICC_SIGNAL_CRASH_DUMP_TRANSFER);
+
+        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        expect_function_call(__wrap_fpfw_icc_base_recv);
+
+        // LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_TRANSFER callback
+        s_icc_recv_cb[ICC_SIGNAL_CRASH_DUMP_TRANSFER](s_cb_ctx[ICC_SIGNAL_CRASH_DUMP_TRANSFER], 0, FPFW_STATUS_SUCCESS);
     }
 }
 
 TEST_FUNCTION(test_crash_dump_config_icc_spi_remote, NULL, NULL)
 {
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
-    will_return(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_crash_dump_context, &context);
 
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
     expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, sizeof(rmss_d2d_mailbox_msg));
@@ -580,7 +618,7 @@ TEST_FUNCTION(test_crash_dump_config_icc_spi_remote, NULL, NULL)
 TEST_FUNCTION(test_crash_dump_config_icc_hsp, NULL, NULL)
 {
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
-    will_return(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_crash_dump_context, &context);
 
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_HSP, (fpfw_icc_base_ctx_t*)0x12345678);
 
@@ -599,11 +637,18 @@ TEST_FUNCTION(test_crash_dump_config_icc_sdm, NULL, NULL)
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_recv);
 
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 16);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_TRANSFER);
+
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+
     // Recv ICC CB
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_SDM, (fpfw_icc_base_ctx_t*)0x12345678);
 
     assert_true(context.icc_ctx[CRASH_DUMP_ICC_CONFIG_SDM] == (fpfw_icc_base_ctx_t*)0x12345678);
-    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+    s_icc_recv_cb[LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ](s_cb_ctx[LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ], 0, FPFW_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_crash_dump_config_icc_sdm_recv_fail, NULL, NULL)
@@ -635,11 +680,18 @@ TEST_FUNCTION(test_crash_dump_config_icc_cded, NULL, NULL)
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_recv);
 
+    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 16);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_TRANSFER);
+
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+
     // Recv ICC CB
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_CDED, (fpfw_icc_base_ctx_t*)0x12345678);
 
     assert_true(context.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED] == (fpfw_icc_base_ctx_t*)0x12345678);
-    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+    s_icc_recv_cb[LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ](s_cb_ctx[LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_ADDR_REQ], 0, FPFW_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_crash_dump_config_icc_cded_recv_fail, NULL, NULL)
@@ -880,10 +932,20 @@ TEST_FUNCTION(test_crash_dump_handler, nullptr, nullptr)
     expect_function_call(__wrap_wait_for_semaphore);
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
 
     expect_value(__wrap_fpfw_icc_base_send_sync, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_CDED]);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send_sync);
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
     expect_any(__wrap_wait_for_semaphore, id);
     expect_any(__wrap_wait_for_semaphore, key);
     expect_function_call(__wrap_wait_for_semaphore);
@@ -1700,8 +1762,6 @@ TEST_FUNCTION(test_crash_dump_tx_full_dump_to_bm, nullptr, nullptr)
     expect_function_call(__wrap_DfwkAsyncRequestInitialize);
     expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, NULL);
     expect_function_call(__wrap_DfwkAsyncRequestSetCompletionRoutine);
-    will_return(__wrap_DfwkClientInterfaceOpen, 0);
-    expect_function_call(__wrap_DfwkClientInterfaceOpen);
     expect_function_call(__wrap_DfwkInterfaceSendAsync);
 
     uint32_t result = crash_dump_transfer_full_dump_to_bmc();
@@ -1959,5 +2019,40 @@ TEST_FUNCTION(test_cd_gpio_is_cd_available, nullptr, nullptr)
     // Call API under test
     bool is_available = cd_gpio_is_cd_available();
     assert_false(is_available);
+}
+
+TEST_FUNCTION(test_crash_dump_state, nullptr, nullptr)
+{
+    crash_dump_header_t header = {.status = CRASH_DUMP_IN_USE,
+                                  .cores = {CRASH_DUMP_STATE_NOT_AVAILABLE,
+                                            CRASH_DUMP_STATE_READY,
+                                            CRASH_DUMP_STATE_IN_PROGRESS,
+                                            CRASH_DUMP_STATE_COMPLETED,
+                                            CRASH_DUMP_STATE_NOT_AVAILABLE,
+                                            CRASH_DUMP_STATE_READY,
+                                            CRASH_DUMP_STATE_NOT_AVAILABLE,
+                                            CRASH_DUMP_STATE_READY,
+                                            CRASH_DUMP_STATE_IN_PROGRESS,
+                                            CRASH_DUMP_STATE_COMPLETED,
+                                            CRASH_DUMP_STATE_NOT_AVAILABLE,
+                                            CRASH_DUMP_STATE_READY}};
+
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
+                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
+                                              .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                              .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 1},
+                                              .header = &header};
+
+    crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .die_index = 0, .core_index = CRASH_DUMP_CORE_SCP};
+
+    will_return_always(__wrap_crash_dump_context, &context);
+
+    expect_value(__wrap_wait_for_semaphore, id, SEM_ID_DIE0_IOSS_0);
+    expect_value(__wrap_wait_for_semaphore, key, 1);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_value(__wrap_release_semaphore, id, SEM_ID_DIE0_IOSS_0);
+    expect_function_call(__wrap_release_semaphore);
+    crash_dump_state_t state = crash_dump_state(CRASH_DUMP_TYPE_FULL);
+    assert_int_equal(state, CRASH_DUMP_IN_USE);
 }
 }

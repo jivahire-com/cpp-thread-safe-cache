@@ -116,7 +116,6 @@ uint32_t crash_dump_start_transfer_async(pcrash_dump_interface_t iface,
     DfwkAsyncRequestSetCompletionRoutine(&request->Header, callback, context);
 
     // Send the request to Crash dump driver.
-    DfwkClientInterfaceOpen(&iface->Header);
     DfwkInterfaceSendAsync(&iface->Header, &request->Header);
 
     return KNG_SUCCESS;

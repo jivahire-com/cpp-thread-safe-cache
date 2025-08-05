@@ -226,6 +226,9 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream)
         return false;
     }
 
+    // Reset the stream state
+    memset(stream, 0, sizeof(crash_dump_stream_t));
+
     // Map the die1 crash dump region
     if (!map_die1_crash_dump_region(&stream->die1_map_entry))
     {

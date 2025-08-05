@@ -90,6 +90,7 @@ mock_target(${TARGET}
     atu_svc_accel_atu_addr
     fpfw_icc_base_recv
     fpfw_icc_base_recv_sync
+    fpfw_icc_base_send
     fpfw_icc_base_send_sync
     fpfw_init_get_handle
     _txe_mutex_create

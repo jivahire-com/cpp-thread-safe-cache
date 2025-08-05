@@ -12,6 +12,7 @@
 #include <cstdint>         // for uint32_t, uint64_t
 
 extern "C" {
+#include <../src/crash_dump_icc.h>
 #include <../src/crash_dump_pldm.h>
 #include <../src/crash_dump_stream.h>
 #include <crash_dump.h>
@@ -328,9 +329,4 @@ TEST_FUNCTION(test_get_crash_dump_region_address, nullptr, nullptr)
     address = __real_get_crash_dump_region_address(NULL, DIE_0, CRASH_DUMP_CORE_MCP);
     assert_null(address); // Expect null when die1_map_entry is NULL
 }
-
-// TEST_FUNCTION(test_crash_dump_start_transfer_async, nullptr, nullptr)
-// {
-//     crash_dump_start_transfer_async(&iface, &request)
-// }
 }

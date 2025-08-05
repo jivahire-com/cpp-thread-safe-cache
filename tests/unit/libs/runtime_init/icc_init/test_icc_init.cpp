@@ -200,6 +200,18 @@ fpfw_status_t __wrap_fpfw_icc_dispatcher_start(fpfw_icc_dispatch_ctx* p_dispatch
     return mock_type(fpfw_status_t);
 }
 
+fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_req_t* params)
+{
+    assert_non_null(icc_ctx);
+    assert_non_null(params);
+    assert_non_null(params->payload_buffer);
+    assert_true(params->buffer_size > 0);
+    assert_non_null(params->cb);
+
+    function_called();
+    return mock_type(fpfw_status_t);
+}
+
 uint32_t __wrap_accel_intr_init(ACCEL_ID accel_type)
 {
     FPFW_UNUSED(accel_type);
@@ -338,6 +350,11 @@ TEST_FUNCTION(test_icc_sdm_mbx_init, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
+
+    // Send SCP ready message if SCP.
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_sdm_mbx.init_fn();
@@ -507,6 +524,10 @@ TEST_FUNCTION(test_icc_cded_mbx_init, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_cded_mbx.init_fn();

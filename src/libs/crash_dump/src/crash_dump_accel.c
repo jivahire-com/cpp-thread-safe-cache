@@ -10,6 +10,7 @@
 /*--------------- Includes ---------------*/
 #include "crash_dump_accel.h"
 
+#include "crash_dump_icc.h"
 #include "crash_dump_memory.h"
 #include "crash_dump_status.h" // for crash_dump_update_accel_state
 
@@ -497,6 +498,13 @@ void crash_dump_copy_accel_cd_file(void* ctx)
 
     /* Copy accel crashdump file from accel DTCM to DDR */
     copy_cd_file_dtcm_to_ddr(cd_ctx, accel_type);
+}
+
+uint32_t crash_dump_transfer_accel_cd_to_BMC(ACCEL_ID accel_type)
+{
+    crash_dump_copy_accel_cd_file((void*)accel_type);
+
+    return crash_dump_request_transfer_dump();
 }
 
 bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type)

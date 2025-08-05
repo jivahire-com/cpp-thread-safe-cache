@@ -78,6 +78,7 @@ mock_target(${TARGET}
     crash_dump_bug_check
     crash_dump_bug_check_external
     crash_dump_is_accel_cd_complete
+    crash_dump_transfer_accel_cd_to_BMC
     fpfw_timer_create
     fpfw_timer_enable
     fpfw_timer_reset

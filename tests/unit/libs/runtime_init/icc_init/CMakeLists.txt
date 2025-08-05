@@ -90,6 +90,7 @@ mock_target(${TARGET}
     fpfw_mbox_icc_transport_dfwk_device_init
     fpfw_mbox_icc_transport_dfwk_interface_init
     fpfw_icc_base_init
+    fpfw_icc_base_send
     fpfw_icc_dispatcher_start
     idhw_get_die_id
     idhw_is_single_die_boot_en

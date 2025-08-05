@@ -33,17 +33,62 @@
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+static fpfw_status_t icc_mhu_send_cd_async(fpfw_icc_base_ctx_t* icc_ctx, uint32_t command);
+static void crash_dump_register_transfer_callback(crash_dump_icc_config_t type);
 
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-static void icc_base_recv_complete_notify_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+static void icc_transfer_send_complete_cb(void* ctx, fpfw_status_t status)
+{
+    FPFW_UNUSED(ctx);
+    FPFwCDPrintf("%s: status = 0x%08lx\n", __FUNCTION__, status);
+}
+
+static fpfw_status_t icc_mhu_send_cd_async(fpfw_icc_base_ctx_t* icc_ctx, uint32_t command)
+{
+    static icc_mhu_header_t transfer_msg = {};
+    transfer_msg.msg_header.command = command;
+
+    static fpfw_icc_base_send_req_t icc_msg_ready_msg_req = {.payload_buffer = &transfer_msg,
+                                                             .buffer_size = sizeof(transfer_msg),
+                                                             .cb = icc_transfer_send_complete_cb,
+                                                             .cb_ctx = NULL};
+
+    return fpfw_icc_base_send(icc_ctx, &icc_msg_ready_msg_req);
+}
+
+static fpfw_status_t icc_mhu_send_cd_sync(fpfw_icc_base_ctx_t* icc_ctx, uint32_t command)
+{
+    static uint8_t s_icc_mhu_send_payload[sizeof(icc_mhu_header_t) + 1] = {0};
+    icc_mhu_packet_t* p_send_req = (icc_mhu_packet_t*)s_icc_mhu_send_payload;
+
+    p_send_req->header.msg_header.command = command;
+    p_send_req->header.msg_header.payload_size = 1;
+
+    return fpfw_icc_base_send_sync(icc_ctx, &s_icc_mhu_send_payload, sizeof(s_icc_mhu_send_payload));
+}
+
+/*----------------------------------------*/
+static void icc_recv_crashdump_collection_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
     FPFW_UNUSED(status);
 
     BUG_CHECK_EXTERNAL();
+}
+
+static void icc_recv_transfer_dump_req_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(output_size_bytes);
+    FPFW_UNUSED(status);
+    crash_dump_icc_config_t icc_type = (crash_dump_icc_config_t)context;
+
+    crash_dump_request_transfer_dump();
+
+    // Register transfer callback for this ICC context again.
+    crash_dump_register_transfer_callback(icc_type);
 }
 
 static void cd_accel_recv_addr_notify_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -60,17 +105,57 @@ static void cd_accel_recv_addr_notify_cb(void* context, size_t output_size_bytes
     ctx->accel_cd_ctx[accel_type].cd_file_size = msg->cd_file_size;
     ctx->accel_cd_ctx[accel_type].cd_magic_nr_offset = msg->magic_nr_offset;
     crash_dump_register_post_dump_callback(crash_dump_copy_accel_cd_file, (void*)accel_type, CRASH_DUMP_TYPE_FULL);
+    crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_READY);
     FPFwCDPrintf("[CD][Accel %u]: CD file offset 0x%lx size 0x%lx\n", accel_type, msg->cd_file_offset, msg->cd_file_size);
 }
 
-static bool icc_register_mhu_remote_callback(fpfw_icc_base_ctx_t* icc_ctx)
+static void crash_dump_transfer_req_cb(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
+{
+    FPFW_UNUSED(CompletionContext);
+
+    crash_dump_request_t* cd_request = (crash_dump_request_t*)Request;
+
+    if (cd_request->status == FPFW_STATUS_SUCCESS)
+    {
+        FPFwCDPrintf("Crash dump transfer started successfully.\n");
+    }
+    else
+    {
+        FPFwCDPrintf("Crash dump transfer failed to start: status = 0x%08lx\n", cd_request->status);
+    }
+}
+
+/*----------------------------------------*/
+static void crash_dump_send_hsp_command(uint32_t command, uint32_t flags)
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] != NULL)
+    {
+        kng_hsp_mailbox_msg hsp_crash_dump_msg;
+
+        hsp_crash_dump_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(command, 0, flags);
+
+        fpfw_status_t status =
+            fpfw_icc_base_send_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP], &hsp_crash_dump_msg, sizeof(hsp_crash_dump_msg));
+
+        if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
+        {
+            FPFwCDPrintf("Failed to send 0x%08lx command to HSP: status = 0x%08lx\n", command, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
+        }
+    }
+}
+
+/*----------------------------------------*/
+static bool icc_register_mhu_remote_cd_collection_callback(fpfw_icc_base_ctx_t* icc_ctx)
 {
     static uint8_t rem_byte_payload[512];
     static fpfw_icc_base_recv_req_t crashdump_rem_mhu_recv_req = {
         .payload_buffer = rem_byte_payload,
         .buffer_size = FPFW_ARRAY_SIZE(rem_byte_payload),
         .recv_cmd_code = ICC_SIGNAL_CRASH_DUMP_COLLECT,
-        .cb = icc_base_recv_complete_notify_cb,
+        .cb = icc_recv_crashdump_collection_cb,
         .cb_ctx = NULL,
     };
 
@@ -79,14 +164,14 @@ static bool icc_register_mhu_remote_callback(fpfw_icc_base_ctx_t* icc_ctx)
     return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
 }
 
-static bool icc_register_mhu_local_callback(fpfw_icc_base_ctx_t* icc_ctx)
+static bool icc_register_mhu_local_cd_collection_callback(fpfw_icc_base_ctx_t* icc_ctx)
 {
     static uint8_t loc_byte_payload[512];
     static fpfw_icc_base_recv_req_t crashdump_loc_mhu_recv_req = {
         .payload_buffer = loc_byte_payload,
         .buffer_size = FPFW_ARRAY_SIZE(loc_byte_payload),
         .recv_cmd_code = ICC_SIGNAL_CRASH_DUMP_COLLECT,
-        .cb = icc_base_recv_complete_notify_cb,
+        .cb = icc_recv_crashdump_collection_cb,
         .cb_ctx = NULL,
     };
 
@@ -95,14 +180,14 @@ static bool icc_register_mhu_local_callback(fpfw_icc_base_ctx_t* icc_ctx)
     return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
 }
 
-static bool icc_register_spi_callback(fpfw_icc_base_ctx_t* icc_ctx)
+static bool icc_register_spi_cd_collection_callback(fpfw_icc_base_ctx_t* icc_ctx)
 {
     static rmss_d2d_mailbox_msg d2d_msg = {0};
     static fpfw_icc_base_recv_req_t crashdump_remote_noti_recv_req = {
         .payload_buffer = &d2d_msg,
         .buffer_size = sizeof(rmss_d2d_mailbox_msg),
         .recv_cmd_code = RMSS_D2D_MAILBOX_MSG_CRASHDUMP_SIGNAL_REQ,
-        .cb = icc_base_recv_complete_notify_cb,
+        .cb = icc_recv_crashdump_collection_cb,
         .cb_ctx = NULL,
     };
 
@@ -128,6 +213,80 @@ static bool icc_register_accel_addr_callback(fpfw_icc_base_ctx_t* icc_ctx, ACCEL
     return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
 }
 
+static bool icc_register_mhu_local_transfer_callback(fpfw_icc_base_ctx_t* icc_ctx)
+{
+    static icc_mhu_header_t transfer_byte_payload;
+    static fpfw_icc_base_recv_req_t crashdump_transfer_recv_req = {
+        .recv_cmd_code = ICC_SIGNAL_CRASH_DUMP_TRANSFER,
+        .payload_buffer = &transfer_byte_payload,
+        .buffer_size = sizeof(transfer_byte_payload),
+        .cb = icc_recv_transfer_dump_req_cb,
+        .cb_ctx = (void*)CRASH_DUMP_ICC_CONFIG_MHU_LOCAL,
+    };
+
+    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &crashdump_transfer_recv_req);
+
+    return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
+}
+
+static bool icc_register_mhu_remote_transfer_callback(fpfw_icc_base_ctx_t* icc_ctx)
+{
+    static icc_mhu_header_t transfer_byte_payload;
+    static fpfw_icc_base_recv_req_t crashdump_transfer_recv_req = {
+        .recv_cmd_code = ICC_SIGNAL_CRASH_DUMP_TRANSFER,
+        .payload_buffer = &transfer_byte_payload,
+        .buffer_size = sizeof(transfer_byte_payload),
+        .cb = icc_recv_transfer_dump_req_cb,
+        .cb_ctx = (void*)CRASH_DUMP_ICC_CONFIG_MHU_REMOTE,
+    };
+
+    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &crashdump_transfer_recv_req);
+
+    return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
+}
+
+static bool icc_register_accel_transfer_callback(fpfw_icc_base_ctx_t* icc_ctx, ACCEL_ID accel_type)
+{
+    static accel_cd_params accel_params[NUM_VALID_ACCEL_ID];
+    static accel_cd_addr_msg msg[NUM_VALID_ACCEL_ID];
+
+    accel_params[accel_type].accel_type = accel_type;
+    accel_params[accel_type].params.payload_buffer = &msg[accel_type];
+    accel_params[accel_type].params.buffer_size = sizeof(msg[accel_type]);
+    accel_params[accel_type].params.recv_cmd_code = LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_TRANSFER;
+    accel_params[accel_type].params.cb = icc_recv_transfer_dump_req_cb;
+    accel_params[accel_type].params.cb_ctx =
+        (void*)(accel_type == ACCEL_ID_SDM ? CRASH_DUMP_ICC_CONFIG_SDM : CRASH_DUMP_ICC_CONFIG_CDED);
+
+    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &accel_params[accel_type].params);
+
+    return status == FPFW_ICC_BASE_STATUS_SUCCESS ? true : false;
+}
+
+static void crash_dump_register_transfer_callback(crash_dump_icc_config_t type)
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    switch (type)
+    {
+    case CRASH_DUMP_ICC_CONFIG_MHU_LOCAL:
+        icc_register_mhu_local_transfer_callback(ctx->icc_ctx[type]);
+        break;
+    case CRASH_DUMP_ICC_CONFIG_MHU_REMOTE:
+        icc_register_mhu_remote_transfer_callback(ctx->icc_ctx[type]);
+        break;
+    case CRASH_DUMP_ICC_CONFIG_SDM:
+        icc_register_accel_transfer_callback(ctx->icc_ctx[type], ACCEL_ID_SDM);
+        break;
+    case CRASH_DUMP_ICC_CONFIG_CDED:
+        icc_register_accel_transfer_callback(ctx->icc_ctx[type], ACCEL_ID_CDED);
+        break;
+    default:
+        break;
+    }
+}
+
+/*----------------------------------------*/
 void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* icc_ctx)
 {
     crash_dump_context_t* ctx = crash_dump_context();
@@ -146,13 +305,13 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
         switch (type)
         {
         case CRASH_DUMP_ICC_CONFIG_MHU_LOCAL:
-            callback_registered = icc_register_mhu_local_callback(icc_ctx);
+            callback_registered = icc_register_mhu_local_cd_collection_callback(icc_ctx);
             break;
         case CRASH_DUMP_ICC_CONFIG_MHU_REMOTE:
-            callback_registered = icc_register_mhu_remote_callback(icc_ctx);
+            callback_registered = icc_register_mhu_remote_cd_collection_callback(icc_ctx);
             break;
         case CRASH_DUMP_ICC_CONFIG_SPI_REMOTE:
-            callback_registered = icc_register_spi_callback(icc_ctx);
+            callback_registered = icc_register_spi_cd_collection_callback(icc_ctx);
             break;
         case CRASH_DUMP_ICC_CONFIG_HSP:
             // No need to register HSP context for receiving crash dump notification
@@ -171,32 +330,14 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
         if (callback_registered)
         {
             ctx->icc_ctx[type] = icc_ctx;
+
+            // Register transfer callback for this ICC context
+            crash_dump_register_transfer_callback(type);
         }
     }
     else
     {
         FPFwCDPrintf("ICC context is NULL for %d ICC or ICC context is already set %p\n", type, ctx->icc_ctx[type]);
-    }
-}
-
-static void crash_dump_send_hsp_command(uint32_t command)
-{
-    crash_dump_context_t* ctx = crash_dump_context();
-
-    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] != NULL)
-    {
-        kng_hsp_mailbox_msg hsp_crash_dump_msg;
-
-        hsp_crash_dump_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(command, 0, 0);
-
-        fpfw_status_t status =
-            fpfw_icc_base_send_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP], &hsp_crash_dump_msg, sizeof(hsp_crash_dump_msg));
-
-        if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
-        {
-            FPFwCDPrintf("Failed to send 0x%08lx command to HSP: status = 0x%08lx\n", command, status);
-            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
-        }
     }
 }
 
@@ -216,14 +357,16 @@ void crash_dump_notify_hsp()
 
     if (ctx->core_index == CRASH_DUMP_CORE_SCP)
     {
-        crash_dump_send_hsp_command(HSP_MAILBOX_CMD_CRASHDUMP_REQ);
+        uint32_t flags = config_get_crash_dump_warm_reset() ? 0 : 1; // HSP_MAILBOX_FLAGS_CRASHDUMP_SKIP_WARM_RESET
+
+        crash_dump_send_hsp_command(HSP_MAILBOX_CMD_CRASHDUMP_REQ, flags);
     }
 }
 
 /**
  * Notify Accel devices that this core has crashed by using Largefifo mailbox sync send.
  */
-void crash_dump_notify_accelerators()
+void crash_dump_notify_accelerators(bool is_ue)
 {
     crash_dump_context_t* ctx = crash_dump_context();
 
@@ -237,13 +380,16 @@ void crash_dump_notify_accelerators()
     for (ACCEL_ID accel_type = ACCEL_ID_SDM; accel_type < NUM_VALID_ACCEL_ID; accel_type++)
     {
         crash_dump_icc_config_t icc_config_type;
+        uint32_t accel_core_id = 0;
         if (accel_type == ACCEL_ID_SDM)
         {
             icc_config_type = CRASH_DUMP_ICC_CONFIG_SDM;
+            accel_core_id = CRASH_DUMP_CORE_SDM;
         }
         else
         {
             icc_config_type = CRASH_DUMP_ICC_CONFIG_CDED;
+            accel_core_id = CRASH_DUMP_CORE_CDED;
         }
 
         fpfw_icc_base_ctx_t* icc_ctx = ctx->icc_ctx[icc_config_type];
@@ -256,13 +402,15 @@ void crash_dump_notify_accelerators()
         }
 
         largefifo_crash_dump_msg.as_uint32[0] =
-            SET_LARGE_FIFO_MAILBOX_HEADER_ASUNIT32(LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_REQ, 0, 0);
+            SET_LARGE_FIFO_MAILBOX_HEADER_ASUNIT32(LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_REQ, is_ue ? CRASH_DUMP_UE_FLAG : 0, 0);
 
         fpfw_status_t status =
             fpfw_icc_base_send_sync(icc_ctx, &largefifo_crash_dump_msg, sizeof(largefifo_crash_dump_msg));
 
-        if (status == FPFW_ICC_BASE_STATUS_SUCCESS)
+        if (status == FPFW_ICC_BASE_STATUS_SUCCESS &&
+            crash_dump_core_state(CRASH_DUMP_TYPE_FULL, ctx->die_index, accel_core_id) == CRASH_DUMP_STATE_READY)
         {
+            // Set accel crash dump state to in progress if the core is ready to collect crash dump.
             crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_IN_PROGRESS);
         }
         else
@@ -273,17 +421,6 @@ void crash_dump_notify_accelerators()
             crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
         }
     }
-}
-
-static fpfw_status_t icc_mhu_send_cd_sync(fpfw_icc_base_ctx_t* icc_ctx)
-{
-    static uint8_t s_icc_mhu_send_payload[sizeof(icc_mhu_header_t) + 1] = {0};
-    icc_mhu_packet_t* p_send_req = (icc_mhu_packet_t*)s_icc_mhu_send_payload;
-
-    p_send_req->header.msg_header.command = ICC_SIGNAL_CRASH_DUMP_COLLECT;
-    p_send_req->header.msg_header.payload_size = 1;
-
-    return fpfw_icc_base_send_sync(icc_ctx, &s_icc_mhu_send_payload, sizeof(s_icc_mhu_send_payload));
 }
 
 /**
@@ -304,7 +441,7 @@ void crash_dump_notify_cores()
 
     if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL] != NULL)
     {
-        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL]);
+        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL], ICC_SIGNAL_CRASH_DUMP_COLLECT);
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to local core : status = 0x%08lx\n", status);
@@ -314,7 +451,7 @@ void crash_dump_notify_cores()
 
     if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE] != NULL)
     {
-        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE]);
+        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE], ICC_SIGNAL_CRASH_DUMP_COLLECT);
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to remote core : status = 0x%08lx\n", status);
@@ -343,7 +480,7 @@ void crash_dump_notify_cores()
     }
 }
 
-void crash_dump_remote_trigger()
+void crash_dump_remote_trigger(bool is_ue)
 {
     if (!crash_dump_context()->single_core_mode)
     {
@@ -351,28 +488,14 @@ void crash_dump_remote_trigger()
         crash_dump_notify_cores();
 
         // Notify Accel devices SDM and CDED
-        crash_dump_notify_accelerators();
+        crash_dump_notify_accelerators(is_ue);
     }
 
     // Notify to HSP
     crash_dump_notify_hsp();
 }
 
-static void crash_dump_started_cb(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
-{
-    FPFW_UNUSED(CompletionContext);
-
-    crash_dump_request_t* cd_request = (crash_dump_request_t*)Request;
-
-    if (cd_request->status == FPFW_STATUS_SUCCESS)
-    {
-        FPFwCDPrintf("Crash dump transfer started successfully.\n");
-    }
-    else
-    {
-        FPFwCDPrintf("Crash dump transfer failed to start: status = 0x%08lx\n", cd_request->status);
-    }
-}
+/*----------------------------------------*/
 uint32_t crash_dump_transfer_full_dump_to_bmc()
 {
     crash_dump_context_t* ctx = crash_dump_context();
@@ -386,5 +509,52 @@ uint32_t crash_dump_transfer_full_dump_to_bmc()
     pcrash_dump_interface_t cd_iface = fpfw_init_get_handle("cd_drv");
     static crash_dump_request_t cd_request = {};
 
-    return crash_dump_start_transfer_async(cd_iface, &cd_request, crash_dump_started_cb, NULL);
+    return crash_dump_start_transfer_async(cd_iface, &cd_request, crash_dump_transfer_req_cb, NULL);
+}
+
+uint32_t crash_dump_request_transfer_dump()
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+    fpfw_icc_base_ctx_t* icc_ctx = NULL;
+    uint32_t status = KNG_SUCCESS;
+
+    if (ctx->die_index == 0) // DIE 0
+    {
+        if (ctx->core_index == CRASH_DUMP_CORE_MCP)
+        {
+            // Transfer dump to the BMC
+            FPFwCDPrintf("%s: MCP0 starts transfer\n", __FUNCTION__);
+            status = crash_dump_transfer_full_dump_to_bmc();
+        }
+        else
+        {
+            // SCP0 need to relay this request to the MCP0
+            FPFwCDPrintf("%s: SCP0 request to MCP0\n", __FUNCTION__);
+            icc_ctx = ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL];
+        }
+    }
+    else // DIE 1
+    {
+        if (ctx->core_index == CRASH_DUMP_CORE_MCP)
+        {
+            // MCP1 need to relay this request to the SCP1
+            FPFwCDPrintf("%s: MCP1 request to SCP1\n", __FUNCTION__);
+            icc_ctx = ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL];
+        }
+        else
+        {
+            // SCP1 need to relay this request to the SCP0
+            FPFwCDPrintf("%s: SCP1 request to SCP0\n", __FUNCTION__);
+            icc_ctx = ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE] != NULL
+                          ? ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE]
+                          : ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_SPI_REMOTE];
+        }
+    }
+
+    if (icc_ctx != NULL)
+    {
+        status = icc_mhu_send_cd_async(icc_ctx, ICC_SIGNAL_CRASH_DUMP_TRANSFER);
+    }
+
+    return status;
 }

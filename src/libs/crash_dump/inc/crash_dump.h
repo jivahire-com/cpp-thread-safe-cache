@@ -159,6 +159,9 @@ typedef struct {
     uint32_t core_index;                                        // Core index
     bool is_primary;
     bool single_core_mode;
+    //
+    // ICC contexts
+    //
     fpfw_icc_base_ctx_t *icc_ctx[CRASH_DUMP_ICC_CONFIG_MAX];    // ICC context
 
     // Core dependent descriptor registrations
@@ -353,11 +356,34 @@ void crash_dump_register_accel_ext_mmio(ACCEL_ID accel_type);
 bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type);
 
 /**
+ * @brief Copies accel core crash dump file from DTCM to DDR and transfer to BMC
+ * 
+ * @param[in] accel_type SDM or CDED accel type
+ * 
+ * @return uint32_t Status of the operation.
+ */
+uint32_t crash_dump_transfer_accel_cd_to_BMC(ACCEL_ID accel_type);
+
+/**
  * @brief Transfers full crash dump to BMC.
  * 
  * @return uint32_t Status of the operation.
  */
 uint32_t crash_dump_transfer_full_dump_to_bmc();
+
+/**
+ * @brief Set Uncorrectable Error (UE) flag
+ * 
+ * @param is_ue true if UE is set, false otherwise
+ */
+void crash_dump_set_UE(bool is_ue);
+
+/**
+ * @brief Check if Uncorrectable Error (UE) flag is set
+ * 
+ * @return true if UE is set, false otherwise
+ */
+bool crash_dump_is_UE(void);
 
 #ifdef __cplusplus
 }

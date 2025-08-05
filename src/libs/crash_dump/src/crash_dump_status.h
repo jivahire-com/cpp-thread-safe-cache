@@ -35,6 +35,14 @@ void initialize_crash_dump_header(crash_dump_type_context_t *type_context);
 void crash_dump_update_state(crash_dump_type_context_t *type_context, crash_dump_state_t state);
 
 /**
+ * @brief Get crash dump state.
+ * 
+ * @param type Crash dump type.
+ * @return crash_dump_state_t
+ */
+crash_dump_state_t crash_dump_state(crash_dump_type_t type);
+
+/**
  * @brief Update crash dump state of core.
  *
  * @param type_context Crash dump type context.
@@ -42,6 +50,16 @@ void crash_dump_update_state(crash_dump_type_context_t *type_context, crash_dump
  * 
  */
 void crash_dump_update_core_state(crash_dump_type_context_t *type_context, crash_dump_core_state_t state);
+
+/**
+ * @brief Get crash dump state of core.
+ * 
+ * @param type Crash dump type.
+ * @param die_index die index
+ * @param core_index core index
+ * @return crash_dump_core_state_t
+ */
+crash_dump_core_state_t crash_dump_core_state(crash_dump_type_t type, uint32_t die_index, uint32_t core_index);
 
 /**
  * @brief Dump crash dump status.

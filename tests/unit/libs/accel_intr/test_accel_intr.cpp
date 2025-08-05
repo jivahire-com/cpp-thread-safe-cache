@@ -105,6 +105,14 @@ void __wrap_crash_dump_bug_check_external()
     function_called();
 }
 
+uint32_t __wrap_crash_dump_transfer_accel_cd_to_BMC(ACCEL_ID accel_type)
+{
+    check_expected(accel_type);
+    function_called();
+
+    return 0; // Return success for the mock
+}
+
 uint32_t __wrap_atu_svc_accel_atu_addr(ACCEL_ID accel_id)
 {
     FPFW_UNUSED(accel_id);
@@ -639,6 +647,8 @@ TEST_FUNCTION(test_accel_intr_handle_fatal_intr_recvd_pass_accel_emcpu_reset, NU
      * completes CD collection
      */
     will_return(__wrap_crash_dump_is_accel_cd_complete, true);
+    expect_value(__wrap_crash_dump_transfer_accel_cd_to_BMC, accel_type, accel_type);
+    expect_function_call(__wrap_crash_dump_transfer_accel_cd_to_BMC);
     expect_value(__wrap_accel_core_warm_reset, accel_type, accel_type);
     expect_function_call(__wrap_accel_core_warm_reset);
     timer_cb(timer_ctx, 0);

@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for check_expected_ptr, expect_fun...
+#include <map>
 
 extern "C" {
 #include <CrashDump.h>                // for FPFW_CD_DUMP_CALLBACK
@@ -39,8 +40,8 @@ void* __real_memcpy(void* __a, const void* __b, size_t __c);
 /*-- Declarations (Statics and globals) --*/
 jmp_buf cd_test_setjmp_context;
 
-icc_base_recv_complete_notify fw_load_cb = NULL;
-void* cb_ctx = NULL;
+std::map<uint32_t, icc_base_recv_complete_notify> s_icc_recv_cb;
+std::map<uint32_t, void*> s_cb_ctx;
 bool memcpy_mock = false;
 
 DFWK_ASYNC_REQUEST_DISPATCH static_dispatch_routine = NULL;
@@ -522,8 +523,22 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     check_expected(params->buffer_size);
     check_expected(params->recv_cmd_code);
     assert_non_null(params->cb);
-    fw_load_cb = params->cb;
-    cb_ctx = params->cb_ctx;
+    s_icc_recv_cb[params->recv_cmd_code] = params->cb;
+    s_cb_ctx[params->recv_cmd_code] = params->cb_ctx;
+
+    function_called();
+
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_req_t* params)
+{
+    check_expected(icc_ctx);
+    assert_non_null(params);
+    assert_non_null(params->payload_buffer);
+    assert_true(params->buffer_size > 0);
+    assert_non_null(params->cb);
+    assert_null(params->cb_ctx);
 
     function_called();
 

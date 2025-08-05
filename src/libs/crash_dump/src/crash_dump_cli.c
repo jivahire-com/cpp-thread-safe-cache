@@ -7,6 +7,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "crash_dump_icc.h"
 #include "crash_dump_status.h"
 
 #include <FpFwCli.h>           // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
@@ -33,6 +34,7 @@ static FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS cd_get_status(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS cd_set_status(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS cd_set_core_status(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS cd_transfer_dump(int argc, const char** pp_argv);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND s_cd_cmd_list[] = {
@@ -45,6 +47,7 @@ static FPFW_CLI_COMMAND s_cd_cmd_list[] = {
     {NULL_LIST_ENTRY, "crashdump", "get_status", cd_get_status, "Get crash dump header status", "Usage: get_status"},
     {NULL_LIST_ENTRY, "crashdump", "set_status", cd_set_status, "Update crash dump header status", "Usage: set_status <type: 0: mini, 1: full> <0: Not in use, 1: In use, 2: in transfer>"},
     {NULL_LIST_ENTRY, "crashdump", "set_core_status", cd_set_core_status, "Update crash dump core status", "Usage: set_core_status <type: 0: mini, 1: full> <core index> <core status: 0: NA, 1:RD, 2:IP, 3:CP>"},
+    {NULL_LIST_ENTRY, "crashdump", "transfer", cd_transfer_dump, "Transfer dump to BMC", "Usage: transfer"},
 };
 
 static uint32_t dead_beef = 0xDEADBEEF;
@@ -261,6 +264,16 @@ static FPFW_CLI_STATUS cd_set_core_status(int argc, const char** pp_argv)
         FpFwCliPrint("Invalid usage!\n");
         return CLI_ERROR;
     }
+
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS cd_transfer_dump(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+
+    crash_dump_request_transfer_dump();
 
     return CLI_SUCCESS;
 }

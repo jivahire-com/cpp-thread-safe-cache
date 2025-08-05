@@ -93,6 +93,8 @@ void hm_submit_cper(uint16_t error_domain_idx,
             (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL))
         {
             hm_report_error_event(HM_ERROR_REPORT_VARSVC, true);
+
+            crash_dump_set_UE(true);
         }
     }
     else

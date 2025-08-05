@@ -29,6 +29,7 @@
 /*-- Declarations (Statics and globals) --*/
 core_crash_context_t g_core_crash_context;
 static volatile bool s_bug_check_initiated_crash = false;
+static volatile bool s_is_ue = false;
 
 /*------------- Functions ----------------*/
 void crash_dump_svp_probe(uint32_t die_index, uint32_t core_index, bool is_full, uint64_t dump_address, uint64_t dump_size)
@@ -43,6 +44,16 @@ void crash_dump_svp_probe(uint32_t die_index, uint32_t core_index, bool is_full,
                  (uint32_t)(dump_address & 0xFFFFFFFF),
                  (uint32_t)(dump_size >> 32),
                  (uint32_t)(dump_size & 0xFFFFFFFF));
+}
+
+void crash_dump_set_UE(bool is_ue)
+{
+    s_is_ue = is_ue;
+}
+
+bool crash_dump_is_UE(void)
+{
+    return s_is_ue;
 }
 
 bool crash_dump_bug_check_initiated_dump()
@@ -150,7 +161,7 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
         cd_gpio_assert_cd_in_progress(true);
 
         // Trigger remote entities to indicate this core has crashed if needed
-        crash_dump_remote_trigger();
+        crash_dump_remote_trigger(s_is_ue);
 
         // Generate dumps
         FPFwCdBugCheckInfo bug_check_info = {};

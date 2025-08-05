@@ -20,7 +20,9 @@
 #include <fpfw_mbox_icc_transport.h> // for ICC_MAX_ASYNC_REQ_TYPE
 #include <fpfw_timer.h>              // for fpfw_timer_t
 #include <fpfw_timer_port.h>         // for _fpfw_timer_t
+#include <icc_mhu.h>                 // for icc_mhu_header_t
 #include <icc_platform_defines.h>    // for large_fifo_mailbox_msg_header
+#include <idsw_kng.h>                // for idsw_get_cpu_type, CPU_SCP
 #include <interrupts.h>              // for HW_INT_SDM_INTR1_MCP_COMB_INT
 #include <sdm_ext_cfg_regs.h>        // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS
 #include <stddef.h>                  // for NULL
@@ -29,8 +31,13 @@
 /*-------------- Macros ------------------*/
 
 /*------------- Typedefs -----------------*/
-
-#define ACCEL_MBOX_OFFSET (SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + ACCEL_MBOX_OFFSET_AFTER_0X100000)
+// ICC Base doesn't have an actual timeout on sync messages, and instead
+// it loops until the sync retry count is reached. We use a large retry
+// count here to avoid sync send failures as much as possible without
+// looping forever in ICC Base. Failures can still occur and ICC Base
+// returns an error code on such failures.
+#define MAX_SYNC_RETRY_COUNT (50)
+#define ACCEL_MBOX_OFFSET    (SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS + ACCEL_MBOX_OFFSET_AFTER_0X100000)
 
 /*-------- Function Prototypes -----------*/
 
@@ -99,6 +106,7 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
     s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.match_strategy_cb = NULL;
     s_accel_mbx_icc_cfg[accel_type].dispatch_cfg.match_strategy_ctx = NULL;
     s_accel_mbx_icc_cfg[accel_type].ctx = NULL;
+    s_accel_mbx_icc_cfg[accel_type].sync_loop_count = MAX_SYNC_RETRY_COUNT;
 
     //! Initialize large fifo mailbox transport driver
     fpfw_status_t status =
@@ -142,8 +150,35 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
     return FPFW_INIT_STATUS_SUCCESS;
 }
 
-/*------------- Functions ----------------*/
+static void accel_scp_ready_send_complete_cb(void* ctx, fpfw_status_t status)
+{
+    FPFW_UNUSED(ctx);
+    FPFW_DBGPRINT("status = 0x%08lx\n", status);
+}
 
+static fpfw_status_t accel_scp_ready_send_req(ACCEL_ID accel_type)
+{
+    fpfw_status_t status = FPFW_STATUS_SUCCESS;
+    // Send SCP ready message to the ACCEL if this is the SCP core
+    if (idsw_get_cpu_type() == CPU_SCP)
+    {
+        static icc_mhu_header_t scp_ready_msg[NUM_VALID_ACCEL_ID] = {};
+        static fpfw_icc_base_send_req_t icc_msg_ready_msg_req[NUM_VALID_ACCEL_ID] = {};
+
+        scp_ready_msg[accel_type].msg_header.command = LARGE_FIFO_MAILBOX_MSG_SCP_READY;
+
+        icc_msg_ready_msg_req[accel_type].payload_buffer = &scp_ready_msg[accel_type];
+        icc_msg_ready_msg_req[accel_type].buffer_size = sizeof(scp_ready_msg[accel_type]);
+        icc_msg_ready_msg_req[accel_type].cb = accel_scp_ready_send_complete_cb;
+        icc_msg_ready_msg_req[accel_type].cb_ctx = NULL;
+
+        status = fpfw_icc_base_send(&s_accel_mbx_icc_base_ctx[accel_type], &icc_msg_ready_msg_req[accel_type]);
+    }
+
+    return status;
+}
+
+/*------------- Functions ----------------*/
 FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel", "debug_print", "virt_irq", "cfg_mgr"))
 {
     ACCEL_ID accel_type = ACCEL_ID_SDM;
@@ -155,6 +190,12 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
 
     fpfw_status_t status = accel_mbox_init(accel_type);
     if (status != FPFW_INIT_STATUS_SUCCESS)
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    status = accel_scp_ready_send_req(accel_type);
+    if (status != FPFW_STATUS_SUCCESS)
     {
         return (fpfw_init_result_t){status, NULL};
     }
@@ -174,6 +215,12 @@ FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "acce
 
     fpfw_status_t status = accel_mbox_init(accel_type);
     if (status != FPFW_INIT_STATUS_SUCCESS)
+    {
+        return (fpfw_init_result_t){status, NULL};
+    }
+
+    status = accel_scp_ready_send_req(accel_type);
+    if (status != FPFW_STATUS_SUCCESS)
     {
         return (fpfw_init_result_t){status, NULL};
     }

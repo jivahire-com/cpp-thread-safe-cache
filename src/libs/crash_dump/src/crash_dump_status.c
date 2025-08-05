@@ -186,6 +186,21 @@ void crash_dump_update_state(crash_dump_type_context_t* type_context, crash_dump
     }
 }
 
+crash_dump_state_t crash_dump_state(crash_dump_type_t type)
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+    crash_dump_state_t state = CRASH_DUMP_NOT_IN_USE;
+
+    if (ctx != NULL && ctx->type_ctx[type] != NULL && ctx->type_ctx[type]->header != NULL)
+    {
+        wait_for_semaphore(ctx->type_ctx[type]->semaphore.id, ctx->type_ctx[type]->semaphore.key);
+        state = (crash_dump_state_t)ctx->type_ctx[type]->header->status;
+        release_semaphore(ctx->type_ctx[type]->semaphore.id);
+    }
+
+    return state;
+}
+
 void crash_dump_update_core_state(crash_dump_type_context_t* type_context, crash_dump_core_state_t state)
 {
     crash_dump_context_t* ctx = crash_dump_context();
@@ -196,6 +211,21 @@ void crash_dump_update_core_state(crash_dump_type_context_t* type_context, crash
         type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + ctx->core_index] = (uint8_t)state;
         release_semaphore(type_context->semaphore.id);
     }
+}
+
+crash_dump_core_state_t crash_dump_core_state(crash_dump_type_t type, uint32_t die_index, uint32_t core_index)
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+    crash_dump_core_state_t state = CRASH_DUMP_STATE_NOT_AVAILABLE;
+
+    if (ctx != NULL && ctx->type_ctx[type] != NULL && ctx->type_ctx[type]->header != NULL)
+    {
+        wait_for_semaphore(ctx->type_ctx[type]->semaphore.id, ctx->type_ctx[type]->semaphore.key);
+        state = (crash_dump_core_state_t)ctx->type_ctx[type]->header->cores[die_index * CRASH_DUMP_CORE_NUM + core_index];
+        release_semaphore(ctx->type_ctx[type]->semaphore.id);
+    }
+
+    return state;
 }
 
 static const char* crash_dump_core_state_to_string(crash_dump_core_state_t state)

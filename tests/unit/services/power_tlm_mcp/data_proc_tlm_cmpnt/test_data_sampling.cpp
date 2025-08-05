@@ -24,6 +24,7 @@ extern "C" {
 #include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
+#include <telemetry_package_defs.h>
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -49,6 +50,12 @@ static int test_setup(void** pContext)
     {
         test_snsr_fifo_is_empty[i] = false;
     }
+
+    will_return(__wrap_core_info_get_enable_cores_result, 0xffffffff);
+    will_return(__wrap_core_info_get_enable_cores_result, 0xffffffff);
+    will_return(__wrap_core_info_get_enable_cores_result, 0xffffffff);
+
+    comp_metrics_init_active_cores();
 
     return 0;
 }
@@ -96,7 +103,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data, test_setup, test_tear
     will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, &status_expected);
 
-    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
 
@@ -132,7 +138,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_tile_voltage_entry_tru
     will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, &status_expected);
 
-    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
 
@@ -156,12 +161,10 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_current_entry_true, te
     will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, &status_expected_current);
 
-    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
 
     will_return(__wrap_sensor_fifo_svc_poll_vr_temperature, &status_expected);
-    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &status_expected);
@@ -206,6 +209,62 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_test, tes
     data_proc_tlm_cmpnt_process_input_data();
 }
 
+TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo, test_setup, test_teardown)
+{
+    uint8_t core_id = 2;
+    core_rt[core_id].status_flags.pkt_pstate_is_valid = true;
+    core_rt[core_id].pstate_pwr_res_timestamp_uS = 0;
+    core_rt[core_id].latest_pstate = 4;
+    comp_metrics_reset_2_mins_metrics();
+
+    pstate_telem_t mock_pstate_data = {0};
+    mock_pstate_data.timestamp = 1000;
+    mock_pstate_data.data.pstate = 10;
+    mock_pstate_data.data.plimit = 5;
+    mock_pstate_data.data.core = core_id;
+    mock_pstate_data.data.throttle_status = 0;
+
+    will_return(__wrap_sensor_fifo_svc_poll_core_pstate, true);
+    will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
+    will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &mock_pstate_data);
+    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
+
+    data_smpl_process_pstate_sensor_fifo();
+
+    assert_int_equal(core_rt[core_id].pstate_res_timestamp_uS, 1000);
+    assert_int_equal(core_rt[core_id].latest_pstate, 10);
+    assert_true(core_rt[core_id].status_flags.pkt_pstate_is_valid);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[mock_pstate_data.data.pstate].entry_count, 1);
+}
+
+TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo_to_throttle, test_setup, test_teardown)
+{
+    uint8_t core_id = 2;
+    core_rt[core_id].status_flags.pkt_pstate_is_valid = true;
+    core_rt[core_id].pstate_pwr_res_timestamp_uS = 0;
+    core_rt[core_id].latest_pstate = 4;
+    comp_metrics_reset_2_mins_metrics();
+
+    pstate_telem_t mock_pstate_data = {0};
+    mock_pstate_data.timestamp = 1000;
+    mock_pstate_data.data.pstate = 10;
+    mock_pstate_data.data.plimit = 5;
+    mock_pstate_data.data.core = core_id;
+    mock_pstate_data.data.throttle_status = TEMP_THROTTLING_START;
+
+    will_return(__wrap_sensor_fifo_svc_poll_core_pstate, true);
+    will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
+    will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &mock_pstate_data);
+    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
+
+    data_smpl_process_pstate_sensor_fifo();
+
+    assert_int_equal(core_rt[core_id].pstate_res_timestamp_uS, 1000);
+    assert_int_equal(core_rt[core_id].latest_pstate, 10);
+    assert_false(core_rt[core_id].status_flags.pkt_pstate_is_valid);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[mock_pstate_data.data.pstate].entry_count, 1);
+}
+
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_with_rack_throttling, test_setup, test_teardown)
 {
     pstate_telem_t mock_pstate_data = {0};
@@ -234,8 +293,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_with_rack
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, &status_expected_current);
-    // will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
-    //  will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &status_expected);
 
     will_return(__wrap_sensor_fifo_svc_poll_vr_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
@@ -275,8 +332,6 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_pstate_entry_with_over
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, &status_expected_current);
-    // will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
-    //  will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &status_expected);
 
     will_return(__wrap_sensor_fifo_svc_poll_vr_temperature, &status_expected);
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &status_expected);
@@ -345,7 +400,6 @@ TEST_FUNCTION(test_max_dimm_temp, test_setup, test_teardown)
     will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, &status_expected);
 
-    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, false);
 
@@ -489,17 +543,18 @@ TEST_FUNCTION(test_data_smpl_parse_core_current_entry, test_setup, test_teardown
     };
     core_rt[0].throttling_status = TEMP_THROTTLING_START;
     uint8_t index = 0;
-    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
-    data_smpl_parse_core_current_entry(&current_data, index);
+    uint32_t time_diff_uS = 0; // time of this packet since last timestamp
+    bool valid_entry = data_smpl_parse_core_current_entry(&current_data, index, &time_diff_uS);
+    assert_false(valid_entry); // timestamp of zero fails
 
     current_data.timestamp = 100;
     current_data.data.pstate = 13;
     current_data.data.change = 0;
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
-    data_smpl_parse_core_current_entry(&current_data, index);
-
+    valid_entry = data_smpl_parse_core_current_entry(&current_data, index, &time_diff_uS);
+    assert_true(valid_entry);
     // Check core 0 current
-    assert_int_equal(core_rt[index].current_pkt_timestamp_uS, (current_data.timestamp));
+    assert_int_equal(core_rt[index].pstate_pwr_res_timestamp_uS, (current_data.timestamp));
     assert_int_equal(core_rt[index].latest_current_mA, (uint16_t)(current_data.data.avg * CORE_CURRENT_CONVERSION_FACTOR));
     assert_int_equal(core_rt[index].pstate_from_current_pkt, (current_data.data.pstate));
     assert_int_equal(core_rt[index].active_sample_mpam_id, (current_data.data.mpam_id_low));
@@ -509,8 +564,8 @@ TEST_FUNCTION(test_data_smpl_parse_core_current_entry, test_setup, test_teardown
 
     // test index out of range
     index = NUMBER_OF_CORES_PER_DIE;
-    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
-    data_smpl_parse_core_current_entry(&current_data, index);
+    valid_entry = data_smpl_parse_core_current_entry(&current_data, index, &time_diff_uS);
+    assert_false(valid_entry);
 }
 
 // Test for data_smpl_parse_pstate_no_throttling
@@ -536,6 +591,7 @@ TEST_FUNCTION(test_data_smpl_parse_pstate_no_throttling, test_setup, test_teardo
     };
 
     uint64_t timestamp_uS = 0;
+    core_rt[0].pstate_res_timestamp_uS = 0;
 
     // Baseline log
 
@@ -565,10 +621,11 @@ TEST_FUNCTION(test_data_smpl_parse_pstate_no_throttling, test_setup, test_teardo
 }
 
 // Test for data_smpl_parse_pstate_no_throttling
-TEST_FUNCTION(test_data_smpl_parse_cstate_no_throttling, test_setup, test_teardown)
+TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
 {
     core_state_entry_data_t core_entry_data = {0};
-    core_rt[0].cstate_timestamp_uS = 0;
+    core_rt[0].cstate_res_timestamp_uS = 0;
+    core_rt[0].status_flags.pkt_cstate_is_valid = true;
     // pstate telemetry packet provide both p state/c state
     pstate_telem_t pstate_data = {
         .timestamp = 10,
@@ -588,36 +645,36 @@ TEST_FUNCTION(test_data_smpl_parse_cstate_no_throttling, test_setup, test_teardo
     };
 
     memset(&core_entry_data, 0, sizeof(core_entry_data));
-    data_smpl_parse_cstate_no_throttling(&pstate_data, pstate_data.timestamp, &core_entry_data);
+    data_smpl_parse_cstate(&pstate_data, pstate_data.timestamp, &core_entry_data);
     assert_int_equal(core_rt[0].latest_cstate, 1);
 
     pstate_data.timestamp = 20;
     pstate_data.data.cstate = 2;
 
     memset(&core_entry_data, 0, sizeof(core_entry_data));
-    data_smpl_parse_cstate_no_throttling(&pstate_data, pstate_data.timestamp, &core_entry_data);
-    assert_int_equal(core_rt[0].latest_cstate, 2);
+    data_smpl_parse_cstate(&pstate_data, pstate_data.timestamp, &core_entry_data);
+    assert_int_equal(core_rt[0].latest_cstate, 1); // can go from cstate 1 to cstate 2 without going to cstate 0
 
     pstate_data.data.cstate = 1;
     pstate_data.timestamp = 60;
 
     memset(&core_entry_data, 0, sizeof(core_entry_data));
-    data_smpl_parse_cstate_no_throttling(&pstate_data, pstate_data.timestamp, &core_entry_data);
+    data_smpl_parse_cstate(&pstate_data, pstate_data.timestamp, &core_entry_data);
     assert_int_equal(core_rt[0].latest_cstate, 1);
     // test :invalid cstate change.
     pstate_data.timestamp = 70;
     pstate_data.data.cstate = 4;
 
     memset(&core_entry_data, 0, sizeof(core_entry_data));
-    data_smpl_parse_cstate_no_throttling(&pstate_data, pstate_data.timestamp, &core_entry_data);
+    data_smpl_parse_cstate(&pstate_data, pstate_data.timestamp, &core_entry_data);
 }
 
 // Test for data_smpl_parse_pstate_no_throttling
-TEST_FUNCTION(test_data_smpl_parse_cstate_no_throttling_invalid_timestamp, test_setup, test_teardown)
+TEST_FUNCTION(test_data_smpl_parse_cstate_invalid_timestamp, test_setup, test_teardown)
 {
     core_state_entry_data_t core_entry_data = {0};
 
-    core_rt[1].cstate_timestamp_uS = 20;
+    core_rt[1].cstate_res_timestamp_uS = 20;
     core_rt[1].latest_cstate = 1;
 
     // pstate telemetry packet provide both p state/c state
@@ -640,7 +697,7 @@ TEST_FUNCTION(test_data_smpl_parse_cstate_no_throttling_invalid_timestamp, test_
     // test : first time core timestamp is 0 .
 
     memset(&core_entry_data, 0, sizeof(core_entry_data));
-    data_smpl_parse_cstate_no_throttling(&pstate_data, pstate_data.timestamp, &core_entry_data);
+    data_smpl_parse_cstate(&pstate_data, pstate_data.timestamp, &core_entry_data);
     // will not upfate the change bit
     assert_int_equal(core_entry_data.cstate_change, false);
 }
@@ -664,7 +721,7 @@ TEST_FUNCTION(test_data_smpl_parse_throttling_state_change_get_index_from_status
 TEST_FUNCTION(test_data_smpl_parse_core_states_entry_no_throttling_invalid_core_id, test_setup, test_teardown)
 {
     core_state_entry_data_t core_entry_data = {0};
-    core_rt[0].pstate_timestamp_uS = 5;
+    core_rt[0].pstate_res_timestamp_uS = 5;
     // Invalid id's bound check for core id ,
     // pstate and cstate will get compile time error if exceed limit
     pstate_telem_t pstate_data = {
@@ -684,18 +741,50 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_no_throttling_invalid_core_
             },
     };
 
-    // Baseline log
-    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
-
     data_smpl_parse_core_states_entry(&pstate_data, &core_entry_data);
     assert_int_not_equal(core_entry_data.pstate_time_diff_uS, 5); // because we return early on bound check
+}
+
+TEST_FUNCTION(test_data_smpl_parse_core_states_entry_low_cstate_end_res, test_setup, test_teardown)
+{
+    uint8_t core_id = 5;
+    core_state_entry_data_t core_entry_data = {0};
+    core_rt[core_id].pstate_res_timestamp_uS = 100;
+    core_rt[core_id].status_flags.pkt_pstate_is_valid = true;
+    core_rt[core_id].latest_pstate = 31;
+    core_rt[core_id].throttling_status = NO_THROTTLING;
+
+    pstate_telem_t pstate_data = {
+        .timestamp = 1000,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = NO_THROTTLING,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 2,
+                .plimit = 5,
+                .core = core_id,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+
+    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
+    data_smpl_parse_core_states_entry(&pstate_data, &core_entry_data);
+    assert_int_equal(core_entry_data.valid_entry_pstate, true);
+    assert_int_equal(core_entry_data.pstate_time_diff_uS, 900);
+    assert_int_equal(core_rt[core_id].status_flags.pkt_pstate_is_valid, true);
+    assert_int_equal(core_rt[core_id].status_flags.pkt_pstate_is_pending_invalid, true);
 }
 
 TEST_FUNCTION(test_data_smpl_parse_core_states_entry_no_throttling_cstate_update, test_setup, test_teardown)
 {
     core_state_entry_data_t core_entry_data = {0};
-    core_rt[0].pstate_timestamp_uS = 5;
-    core_rt[0].cstate_timestamp_uS = 5;
+    core_rt[0].pstate_res_timestamp_uS = 5;
+    core_rt[0].cstate_res_timestamp_uS = 5;
+    core_rt[0].latest_cstate = 0;
     // Invalid id's bound check for core id ,
     // pstate and cstate will get compile time error if exceed limit
     pstate_telem_t pstate_data = {
@@ -706,7 +795,7 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_no_throttling_cstate_update
                 .throttle_status = NO_THROTTLING,
                 .vm_throttle_pri = 0,
                 .max_pstate = 0,
-                .cstate = 2,
+                .cstate = 1,
                 .plimit = 5,
                 .core = 0, // Invalid value
                 .mpam_low = 0,
@@ -736,7 +825,7 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_no_throttling, test_setup, 
                 .throttle_status = NO_THROTTLING,
                 .vm_throttle_pri = 0,
                 .max_pstate = 0,
-                .cstate = 2,
+                .cstate = 0,
                 .plimit = 5,
                 .core = 0,
                 .mpam_low = 0,
@@ -745,7 +834,8 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_no_throttling, test_setup, 
             },
     };
 
-    core_rt[0].pstate_timestamp_uS = 5;
+    core_rt[0].status_flags.pkt_pstate_is_valid = true;
+    core_rt[0].pstate_res_timestamp_uS = 5;
     core_rt[0].throttling_status = CURRENT_THROTTLE_START;
     // Baseline log
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
@@ -759,6 +849,7 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_in_throttle_start, test_set
 {
     core_state_entry_data_t core_entry_data = {0};
     core_rt[0].throttling_status = 0; // NO_THROTTLING;
+    core_rt[0].latest_cstate = 0;
 
     pstate_telem_t pstate_data = {
         .timestamp = 10,
@@ -768,7 +859,7 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_in_throttle_start, test_set
                 .throttle_status = CURRENT_THROTTLING_START,
                 .vm_throttle_pri = 0,
                 .max_pstate = 0,
-                .cstate = 2,
+                .cstate = 0,
                 .plimit = 5,
                 .core = 0,
                 .mpam_low = 0,
@@ -778,7 +869,7 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_in_throttle_start, test_set
     };
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
     data_smpl_parse_core_states_entry(&pstate_data, &core_entry_data);
-    assert_int_equal(core_entry_data.valid_entry_pstate, false);
+    assert_int_equal(core_entry_data.valid_entry_pstate, true);
     assert_int_equal(core_entry_data.throttling_state_change, true);
 }
 
@@ -796,7 +887,7 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_for_overrun_count, test_set
                 .throttle_status = CURRENT_THROTTLING_OVERRUN,
                 .vm_throttle_pri = 0,
                 .max_pstate = 0,
-                .cstate = 2,
+                .cstate = 1,
                 .plimit = 5,
                 .core = 0,
                 .mpam_low = 0,
@@ -828,7 +919,7 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_in_throttle_end, test_setup
 {
     core_state_entry_data_t core_entry_data = {0};
     core_rt[0].throttling_status = CURRENT_THROTTLING_START;
-    core_rt[0].pstate_timestamp_uS = 5;
+    core_rt[0].pstate_res_timestamp_uS = 5;
     pstate_telem_t pstate_data = {
         .timestamp = 10,
         .data =
@@ -837,7 +928,7 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_in_throttle_end, test_setup
                 .throttle_status = CURRENT_THROTTLING_END,
                 .vm_throttle_pri = 0,
                 .max_pstate = 0,
-                .cstate = 2,
+                .cstate = 0,
                 .plimit = 5,
                 .core = 0,
                 .mpam_low = 0,
@@ -868,7 +959,7 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_in_rack_throttle, test_setu
                 .throttle_status = RACK_THROTTLE_START,
                 .vm_throttle_pri = 0,
                 .max_pstate = 0,
-                .cstate = 2,
+                .cstate = 0,
                 .plimit = 5,
                 .core = 0,
                 .mpam_low = 0,
@@ -885,6 +976,32 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry_in_rack_throttle, test_setu
     data_smpl_parse_core_states_entry(&pstate_data, &core_entry_data);
     assert_int_equal(core_entry_data.rack_throttling_state_change, true);
     assert_int_equal(core_entry_data.rack_priority_start, true);
+}
+
+TEST_FUNCTION(test_data_smpl_parse_core_states_entry_neg, test_setup, test_teardown)
+{
+    core_state_entry_data_t core_entry_data = {0};
+    core_rt[0].throttling_status = 0; // NO_THROTTLING;
+
+    pstate_telem_t pstate_data = {
+        .timestamp = 10,
+        .data =
+            {
+                .pstate = 31,
+                .throttle_status = NO_THROTTLE,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = NUMBER_OF_CSTATES,
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+
+    data_smpl_parse_core_states_entry(&pstate_data, &core_entry_data);
+    assert_int_equal(core_entry_data.valid_entry_pstate, false);
 }
 
 // Test for data_smpl_update_metrics_for_single_core_during_rack_throttling
@@ -1186,15 +1303,14 @@ TEST_FUNCTION(test_data_smpl_update_max_die_temp, test_setup, test_teardown)
     data_smpl_update_max_die_temp();
 }
 
-TEST_FUNCTION(test_data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry, test_setup, test_teardown)
+TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown)
 {
-    soc_rt.latest_core_states_proc_timestamp_uS = 2;
     // Initialize core data for testing
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {
         core_rt[core_id].time_counter_uS = 0;
         core_rt[core_id].latest_pstate = 2;
-        core_rt[core_id].current_pkt_timestamp_uS = 1000; // Non-zero to trigger updates
+        core_rt[core_id].pstate_pwr_res_timestamp_uS = 1000; // Non-zero to trigger updates
         core_rt[core_id].throttling_status = NO_THROTTLING;
     }
 
@@ -1202,15 +1318,13 @@ TEST_FUNCTION(test_data_smpl_update_comp_metrics_cores_states_for_no_pstate_entr
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5);
 
     // Call the function to be tested
-    data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry();
+    data_smpl_finalize_pwr_pkg_metrics();
 
     // Add assertions to verify the expected behavior
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {
         assert_int_equal(core_rt[core_id].time_counter_uS, 0);
     }
-
-    assert_int_equal(soc_rt.latest_core_states_proc_timestamp_uS, 5);
 
     // test throttling path.
 
@@ -1219,15 +1333,13 @@ TEST_FUNCTION(test_data_smpl_update_comp_metrics_cores_states_for_no_pstate_entr
     {
         core_rt[core_id].time_counter_uS = 0;
         core_rt[core_id].latest_pstate = 3;
-        core_rt[core_id].current_pkt_timestamp_uS = 1000; // Non-zero to trigger updates
+        core_rt[core_id].pstate_pwr_res_timestamp_uS = 1000; // Non-zero to trigger updates
         core_rt[core_id].throttling_status = TEMP_THROTTLING_START;
     }
 
     // Set up mock return values for tlm_get_timestamp_microseconds
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
-    data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry();
-
-    assert_int_equal(soc_rt.latest_core_states_proc_timestamp_uS, 10);
+    data_smpl_finalize_pwr_pkg_metrics();
 }
 
 // Unit test function
@@ -1276,7 +1388,6 @@ TEST_FUNCTION(test_data_smpl_get_active_throttling_for_single_core, test_setup, 
 
 TEST_FUNCTION(test_data_smpl_process_tile_temperature_sensor_fifo, test_setup, test_teardown)
 {
-
     will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
     comp_metrics_init();
     //  runtime information manager test
@@ -1301,7 +1412,6 @@ TEST_FUNCTION(test_data_smpl_process_tile_temperature_sensor_fifo, test_setup, t
 
 TEST_FUNCTION(test_data_smpl_process_vr_temp_sensor_fifo, test_setup, test_teardown)
 {
-
     will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
     comp_metrics_init();
     //  runtime information manager test
@@ -1321,7 +1431,6 @@ TEST_FUNCTION(test_data_smpl_process_vr_temp_sensor_fifo, test_setup, test_teard
 
 TEST_FUNCTION(test_data_smpl_process_vr_current_sensor_fifo, test_setup, test_teardown)
 {
-
     will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
     comp_metrics_init();
     //  runtime information manager test

@@ -302,12 +302,6 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
 
             printf("\nPackaged Temperature Values:\n");
             printf("Core 0:\n");
-            printf("  Latest: %d C %s\n",
-                   temperature_record.temperature_collection[0].temperature_element.latest_value_dC,
-                   temperature_record.temperature_collection[0].temperature_element.latest_value_dC ==
-                           ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_latest_cel)
-                       ? "PASS"
-                       : "FAIL");
 
             printf("  Min   : %d C %s\n",
                    temperature_record.temperature_collection[0].temperature_element.min_dC,
@@ -330,13 +324,6 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
                        : "FAIL");
 
             printf("\nCore 1:\n");
-
-            printf("  Latest: %d C %s\n",
-                   temperature_record.temperature_collection[1].temperature_element.latest_value_dC,
-                   temperature_record.temperature_collection[1].temperature_element.latest_value_dC ==
-                           ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core1_latest_cel)
-                       ? "PASS"
-                       : "FAIL");
 
             printf("  Min   : %d C %s\n",
                    temperature_record.temperature_collection[1].temperature_element.min_dC,

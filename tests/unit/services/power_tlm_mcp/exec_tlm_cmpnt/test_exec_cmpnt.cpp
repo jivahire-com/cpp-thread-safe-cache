@@ -51,6 +51,7 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_change_telemetry_mode_disable, test_setup, tes
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
 
     expect_function_call(in_band_tlm_cmpnt_tlm_mode_exit_actions);
+    expect_function_call(data_proc_tlm_cmpnt_tlm_mode_enter_actions);
     expect_function_call(in_band_tlm_cmpnt_tlm_mode_enter_actions);
 
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
@@ -72,6 +73,7 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_change_telemetry_mode_enable_with_inst, test_s
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
 
     expect_function_call(in_band_tlm_cmpnt_tlm_mode_exit_actions);
+    expect_function_call(data_proc_tlm_cmpnt_tlm_mode_enter_actions);
     expect_function_call(in_band_tlm_cmpnt_tlm_mode_enter_actions);
 
     will_return(in_band_tlm_cmpnt_is_any_instantaneous_enabled, true);
@@ -93,6 +95,7 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_change_telemetry_mode_enable_without_inst, tes
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
 
     expect_function_call(in_band_tlm_cmpnt_tlm_mode_exit_actions);
+    expect_function_call(data_proc_tlm_cmpnt_tlm_mode_enter_actions);
     expect_function_call(in_band_tlm_cmpnt_tlm_mode_enter_actions);
 
     will_return(in_band_tlm_cmpnt_is_any_instantaneous_enabled, false);

@@ -49,8 +49,8 @@ void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_ele
         for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
         {
             (*pstate_array)[pstate_index].pstate_id = pstate_index;
-            (*pstate_array)[pstate_index].avg_power_mW =
-                computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average;
+            (*pstate_array)[pstate_index].avg_power_mW = data_util_running_avg_dur_get(
+                &computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg_dur);
             (*pstate_array)[pstate_index].min_power_mW =
                 computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min;
             (*pstate_array)[pstate_index].max_power_mW =
@@ -157,7 +157,6 @@ void data_proc_tlm_cmpnt_get_pwr_core_current_data(uint16_t core_id, p_pwr_core_
     }
     else
     {
-        current_data->latest_value_mA = core_rt[core_id].latest_current_mA;
         current_data->average_mA = computed_metrics_2_mins.cores[core_id].current_mA.running_avg.average;
         current_data->max_mA = computed_metrics_2_mins.cores[core_id].current_mA.max;
         current_data->min_mA = computed_metrics_2_mins.cores[core_id].current_mA.min;

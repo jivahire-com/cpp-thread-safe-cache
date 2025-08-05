@@ -10,6 +10,7 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <exec_tlm_cmpnt.h>
 #include <telemetry_package_defs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -27,13 +28,13 @@
 void data_proc_tlm_cmpnt_init(uint8_t die_id);
 
 /**
- * @brief Notification on telemetry collection transitioning to disabled or enabled.
+ * @brief Notification on telemetry mode transition.
  *
- * @param[in] enable true if enabled, false if disabled.
+ * @param[in] entering_mode The mode that the component is entering.
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_enable_disable_transition(bool enable);
+void data_proc_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode);
 
 /**
  * @brief Primary power data collection entry point.  Read raw data from sensor fifo and update telemetry aggregation structures.
@@ -50,11 +51,18 @@ void data_proc_tlm_cmpnt_process_input_data(void);
 void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void);
 
 /**
- * @brief Call prior to generating a power telemetry package.
+ * @brief Called ~100mS before generating a power telemetry package. This is used to gather data from other sources.
  *
  * @return None
  */
 void data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg(void);
+
+/**
+ * @brief Called immediately prior to generating a power telemetry package. This is used to finalize the data for the package.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg(void);
 
 /**
  * @brief Call prior to generating a 24 hour telemetry package.

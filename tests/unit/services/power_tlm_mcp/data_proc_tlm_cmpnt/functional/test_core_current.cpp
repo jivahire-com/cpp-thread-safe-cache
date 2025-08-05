@@ -123,12 +123,6 @@ const test_config_t test_configs[] = {{.avg = 5, .min = 5, .max = 5, .volt = 100
                                       {.avg = 7, .min = 7, .max = 7, .volt = 120, .pwr = 70, .pstate = 15},
                                       {.avg = 8, .min = 8, .max = 8, .volt = 115, .pwr = 65, .pstate = 14}};
 
-// Calculate expected latest value (average current is used as latest value)
-static int32_t calculate_expected_latest(int32_t avg_value)
-{
-    return avg_value * CORE_CURRENT_CONVERSION_FACTOR;
-}
-
 // Calculate expected min value based on iteration logic
 static int32_t calculate_expected_min(int32_t min_value, int32_t prev_min, int32_t iteration)
 {
@@ -194,7 +188,6 @@ TEST_FUNCTION(test_core_current_collection_functional, test_setup, test_teardown
         mock_current_data.data.change = 0; // No change bit set in our test cases
 
         // Calculate expected values using helper functions
-        int32_t expected_latest_mA = calculate_expected_latest(mock_current_data.data.avg);
         int32_t expected_min_mA = calculate_expected_min(mock_current_data.data.min, prev_min, iteration);
         int32_t expected_max_mA = calculate_expected_max(mock_current_data.data.max, prev_max, iteration);
         int32_t expected_average_mA = calculate_expected_avg(mock_current_data.data.avg, prev_avg, iteration);
@@ -260,13 +253,9 @@ TEST_FUNCTION(test_core_current_collection_functional, test_setup, test_teardown
             printf("Average_mA:      %d        %d\n",
                    expected_average_mA,
                    current_record.current_collection->current_element.average_mA);
-            printf("Latest_value_mA: %d        %d\n",
-                   expected_latest_mA,
-                   current_record.current_collection->current_element.latest_value_mA);
             printf("------------------------------------\n");
         }
 
-        assert_int_equal(current_record.current_collection->current_element.latest_value_mA, expected_latest_mA);
         assert_int_equal(current_record.current_collection->current_element.min_mA, expected_min_mA);
         assert_int_equal(current_record.current_collection->current_element.max_mA, expected_max_mA);
         assert_int_equal(current_record.current_collection->current_element.average_mA, expected_average_mA);

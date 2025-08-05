@@ -26,6 +26,8 @@
 #define DIMM_MOVING_AVG_NUM_SAMPLES (2)
 #define VR_TEMP_MOVING_AVG_NUM_SAMPLES (10)
 
+#define INVALID_PSTATE (0xFF)
+
 /*-------------- Typedefs ----------------*/
 
 //
@@ -38,7 +40,7 @@ typedef struct
 {
     uint32_t  residency_uS;
     uint32_t  entry_count;
-    mma_u16_t  power_mW;//This is per pstate power metrics within a core.
+    mma_u16_dur_t  power_mW;//This is per pstate power metrics within a core.
 } pstate_metrics_t;
 
 typedef struct
@@ -330,7 +332,7 @@ void comp_metrics_for_single_core_single_throttle_update(uint8_t core_id, uint8_
  *
  * @param[in] core_id
  * @param[in] priority_id  Rack priority id
- * @param[in] time_diff_uS    time diff between current timestamp and previous time stamp
+ * @param[in] time_diff_uS  time diff between current timestamp and previous time stamp
  * @param[in] rack_throttle_priority_start - a new rack throttling priority started..
  */
 void comp_metrics_for_single_core_single_rack_throttle_update(uint8_t core_id, uint8_t priority_id, uint64_t timestamp_diff_uS, bool rack_throttle_priority_start);
@@ -338,20 +340,21 @@ void comp_metrics_for_single_core_single_rack_throttle_update(uint8_t core_id, u
 /**
  * @brief helper function to update the pstate runtime timestamp
  *
- * @param[in] core_id - core that is referenced to that owns this timestamp
- * @param[in] pstate - pstate that is reference to where it needs to be updated
- * @param[in] timestamp_diff_uS diff of timestamp from previous and new .
- * @param[in] update_pstate_entry new entry in this state  .
+ * @param[in] core_id  core that is referenced to that owns this timestamp
+ * @param[in] current_pstate  current pstate of the core
+ * @param[in] timestamp_diff_uS diff of timestamp from previous and new
+ * @param[in] new_pstate  only valid when update_pstate_entry is true
+ * @param[in] update_pstate_entry new entry in this state
  *
  * @return none
  */
-void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, bool update_pstate_entry);
+void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t current_pstate, uint64_t timestamp_diff_uS, uint8_t new_pstate, bool update_pstate_entry);
 
 
 /**
  * @brief helper function to update the average pstate for the soc, used by out of band telemetry
  *
- * @param[in] pstate  Array of latest core pstates.
+ * @param[in] pstate  Array of latest core pstates. Invalid pstates are set to INVALID_PSTATE.
  *
  * @return none
  */
@@ -360,20 +363,22 @@ void comp_metrics_for_soc_avg_pstate(uint8_t (*pstate)[NUMBER_OF_CORES_PER_DIE])
 /**
  * @brief helper function to update the cstate compute metrics
  * @param[in] core_id  core that is referenced to that owns this timestamp
- * @param[in] cstate  -cstate that is reference to where it needs to be updated
- * @param[in] timestamp_diff_uS diff of timestamp from previous and new 
+ * @param[in] current_cstate  current cstate of the core
+ * @param[in] timestamp_diff_uS diff of timestamp from previous packet
+ * @param[in] new_cstate  only valid when update_cstate_entry is true
  * @param[in] update_cstate_entry new entry in this state
  */
-void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, bool update_cstate_entry);
+void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t current_cstate, uint64_t timestamp_diff_uS, uint8_t new_cstate, bool update_cstate_entry);
 
 /**
  * @brief function is intended to update the core power state (PState) based on the provided core ID and PState index.
  *
- * @param[in] core_id - The identifier of the core for which the PState is being updated.
- * @param[in] pstate_index - The index of the PState to be updated.
- * @param[in] latest_power_mW
+ * @param[in] core_id  The identifier of the core for which the PState is being updated.
+ * @param[in] current_pstate  current pstate of the core
+ * @param[in] latest_power_mW  The latest power value in mW
+ * @param[in] duration_uS - The duration in microseconds for which the power value was valid
  */
-void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t pstate_index,  uint16_t latest_power_mW);
+void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t current_pstate,  uint16_t latest_power_mW, uint32_t duration_uS);
 
 /**
  * @brief function is intended to update the MPAM residency for a specified core and MPAM ID.

@@ -14,6 +14,7 @@
 
 /*----------- Nested includes ------------*/
 
+#include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <fpfw_status.h>
 #include <pvt_struct.h>
@@ -44,6 +45,11 @@
 
 #define ROUND_USEC_TO_MSEC(usec) ((usec + 500) / 1000)
 
+#define CSTATE_C0 (0)
+#define CSTATE_C1 (1)
+#define CSTATE_C2 (2)
+#define CSTATE_C3 (3)
+#define CSTATE_C4 (4)
 
 /*-------------- Typedefs ----------------*/
 typedef enum
@@ -69,14 +75,15 @@ typedef enum
  */
 
 typedef struct {
-    uint8_t pstate_residency_updated : 1;
-    uint8_t cstate_residency_updated : 1;
-} core_poll_flags_t;
+    uint8_t pkt_pstate_is_valid : 1; // true if pstate is valid in the current packet
+    uint8_t pkt_pstate_is_pending_invalid : 1; // set on the transition of pstate from valid to invalid, wrap up metrics
+    uint8_t pkt_cstate_is_valid : 1; // true if cstate is valid in the current packet
+} core_status_flags_t;
 
 typedef struct {
-    uint64_t cstate_timestamp_uS; //for cstate residency update.
-    uint64_t pstate_timestamp_uS;
-    uint64_t current_pkt_timestamp_uS;
+    uint64_t cstate_res_timestamp_uS; // timestamp of last cstate residency metrics update
+    uint64_t pstate_res_timestamp_uS; // timestamp of last pstate residency metrics update
+    uint64_t pstate_pwr_res_timestamp_uS; // timestamp of last pstate power residency metrics update
     uint64_t latest_throttle_type_previous_timestamp_uS[NUMBER_OF_THROTTLE_TYPES];
     uint64_t latest_rack_priority_previous_timestamp_uS[NUMBER_OF_RACK_PRIORITIES];
     uint32_t time_counter_uS; // for general residency calculation for the core in uS
@@ -96,7 +103,7 @@ typedef struct {
     uint8_t pstate_from_current_pkt; /* pstate from current packet, during throttling */
     uint8_t latest_pstate; //either pstate_from_pstate_pkt or pstate_from_current_pkt
     bool core_throttling_tracker[NUMBER_OF_THROTTLE_TYPES];
-    core_poll_flags_t poll_flags;//reset for every poll period
+    core_status_flags_t status_flags;//reset for every poll period
 } core_runtime_info_t;
 
 typedef struct {
@@ -107,7 +114,6 @@ typedef struct {
 } tile_runtime_info_t;
 
 typedef struct {
-    uint64_t latest_core_states_proc_timestamp_uS; //a timestamp used for all core states processing ,when no pstate packet occurred.
     uint32_t soc_pc3_residency_mS;
     uint32_t soc_pc4_residency_mS;
     uint16_t latest_rail_temperature_dC[MAX_NUM_OF_VR_RAILS];
@@ -204,7 +210,7 @@ void data_smpl_process_tile_voltage_sensor_fifo(void);
  *
  * @return none
  */
-bool data_smpl_process_pstate_sensor_fifo(void);
+void data_smpl_process_pstate_sensor_fifo(void);
 
 /**
  * @brief Process the core current sensor FIFO.
@@ -275,10 +281,11 @@ bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* tile_voltage_entry, uint
  *
  * @param[in] core_current_entry - SCF RAM formatted resource for core current packets
  * @param[in] core_index - index to the core id being referenced by the entry
+ * @param[out] time_diff_uS - time difference in microseconds since the last entry for the core
  *
  * @return bool   - true if a valid current entry
  */
-bool data_smpl_parse_core_current_entry(core_current_t* core_current_entry, uint8_t core_index);
+bool data_smpl_parse_core_current_entry(core_current_t* core_current_entry, uint8_t core_index, uint32_t* time_diff_uS);
 
 /**
  * @brief Internal API to log voltage regulator (VR) temperatures
@@ -337,7 +344,7 @@ void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_entry, uint64_t
  * @param[out] entry_data - update the cstate entry data
  * @return none
  */
-void  data_smpl_parse_cstate_no_throttling(pstate_telem_t* cstate_telemetry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
+void  data_smpl_parse_cstate(pstate_telem_t* cstate_telemetry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
 
 /**
  * @brief update rack throttling
@@ -387,15 +394,31 @@ void data_smpl_parse_throttling_state_change(pstate_telem_t* pstate_entry, uint6
 void data_smpl_parse_throttling_state_change_exit_transition(uint8_t core_id, uint64_t timestamp_uS);
 
 /**
- * @brief This API update the core pstate compute for a sampling period,
- *         when SCF does not report a pstate telemetry packet.
+ * @brief This API updates the average pstate for the polling period.
+ *
  * @param  none
  */
-void data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry(void);
+void data_smpl_update_soc_avg_pstate(void);
 
 /**
- * @brief This API update throttling for signgle core when there is no pstate packet,
- *         when SCF does not report a pstate telemetry packet.
+ * @brief When a power package is about to be generated, this function is called to finalize
+ *  any residencies to align with the timestamp of the new power package.
+ *
+ * @param  none
+ */
+void data_smpl_finalize_pwr_pkg_metrics(void);
+
+/**
+ * @brief This API resets the residency timestamps for all cores.
+ * It is called when telemetry package publishing is enabled to ensure that the timestamps are
+ * aligned with the new power package. Existing timestamps are valid but no updates may have occurred for some time,
+ * yet, latest state is active so residency should accumulate from this point.
+ * @param
+ */
+void data_smpl_reset_residency_timestamps(void);
+
+/**
+ * @brief This API update throttling for single core when there is no pstate packet,
  * @param[in] core_id  current core
  * @param[in] timestamp_uS system timestamp
  */
@@ -403,7 +426,7 @@ void data_smpl_update_metrics_for_single_core_during_throttling(uint8_t core_id,
 
 /**
  * @brief  This api is Rack throttling specific , when we dont get a pstate packet and we are in rack
- *          throttling already so this api update the compute matrics .
+ *          throttling already so this api update the compute metrics
  * @param core_id
  * @param time_stamp_uS  this is latest system timestamp.
  */

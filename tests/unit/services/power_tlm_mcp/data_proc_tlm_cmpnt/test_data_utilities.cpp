@@ -50,6 +50,80 @@ static int test_teardown(void** pContext)
     return 0;
 }
 
+TEST_FUNCTION(test_data_util_calc_time_diff_and_update, test_setup, test_teardown)
+{
+    uint64_t last_timestamp_uS, current_timestamp_uS, difference_uS;
+
+    // Test case: Normal time progression
+    last_timestamp_uS = 1000;
+    current_timestamp_uS = 2500;
+    difference_uS = 0;
+
+    data_util_calc_time_diff_and_update(&last_timestamp_uS, &current_timestamp_uS, &difference_uS);
+
+    assert_int_equal(difference_uS, 1500);
+    assert_int_equal(last_timestamp_uS, 2500); // Should be updated to current
+
+    // Test case: Continuous time progression
+    current_timestamp_uS = 3000;
+    data_util_calc_time_diff_and_update(&last_timestamp_uS, &current_timestamp_uS, &difference_uS);
+
+    assert_int_equal(difference_uS, 500);
+    assert_int_equal(last_timestamp_uS, 3000);
+
+    // Test case: Same timestamp (no time progression)
+    current_timestamp_uS = 3000;
+    data_util_calc_time_diff_and_update(&last_timestamp_uS, &current_timestamp_uS, &difference_uS);
+
+    assert_int_equal(difference_uS, 0);
+    assert_int_equal(last_timestamp_uS, 3000);
+
+    // Test case: Time going backwards (wraparound or reset)
+    current_timestamp_uS = 2000;
+    data_util_calc_time_diff_and_update(&last_timestamp_uS, &current_timestamp_uS, &difference_uS);
+
+    assert_int_equal(difference_uS, 0);        // Should be 0 when time goes backwards
+    assert_int_equal(last_timestamp_uS, 2000); // Should still update last timestamp
+
+    // Test case: Maximum values
+    last_timestamp_uS = UINT64_MAX - 1000;
+    current_timestamp_uS = UINT64_MAX;
+    data_util_calc_time_diff_and_update(&last_timestamp_uS, &current_timestamp_uS, &difference_uS);
+
+    assert_int_equal(difference_uS, 1000);
+    assert_int_equal(last_timestamp_uS, UINT64_MAX);
+
+    // Test case: Zero timestamps
+    last_timestamp_uS = 0;
+    current_timestamp_uS = 0;
+    data_util_calc_time_diff_and_update(&last_timestamp_uS, &current_timestamp_uS, &difference_uS);
+
+    assert_int_equal(difference_uS, 0);
+    assert_int_equal(last_timestamp_uS, 0);
+
+    // Test case: Starting from zero
+    last_timestamp_uS = 0;
+    current_timestamp_uS = 5000;
+    data_util_calc_time_diff_and_update(&last_timestamp_uS, &current_timestamp_uS, &difference_uS);
+
+    assert_int_equal(difference_uS, 5000);
+    assert_int_equal(last_timestamp_uS, 5000);
+}
+
+TEST_FUNCTION(test_data_util_calc_time_diff_and_update_null, test_setup, test_teardown)
+{
+    uint64_t last_timestamp_uS, current_timestamp_uS, difference_uS;
+
+    // Test case: Normal time progression
+    last_timestamp_uS = 1000;
+    current_timestamp_uS = 2500;
+    difference_uS = 0;
+
+    data_util_calc_time_diff_and_update(nullptr, &current_timestamp_uS, &difference_uS);
+    data_util_calc_time_diff_and_update(&last_timestamp_uS, nullptr, &difference_uS);
+    data_util_calc_time_diff_and_update(&last_timestamp_uS, &current_timestamp_uS, nullptr);
+}
+
 // Unit test for data_util_calc_mma_res
 TEST_FUNCTION(test_data_util_calc_mma_res, test_setup, test_teardown)
 {
@@ -156,6 +230,113 @@ TEST_FUNCTION(test_data_util_running_avg_reset, test_setup, test_teardown)
     data_util_running_avg_reset(nullptr);
 }
 
+TEST_FUNCTION(test_data_util_running_avg_dur_reset, test_setup, test_teardown)
+{
+    running_avg_dur_t ra;
+    ra.sum_weighted = 12345;
+    ra.total_time_uS = 67890;
+
+    data_util_running_avg_dur_reset(&ra);
+
+    assert_int_equal(ra.sum_weighted, 0);
+    assert_int_equal(ra.total_time_uS, 0);
+
+    data_util_running_avg_dur_reset(nullptr);
+}
+
+TEST_FUNCTION(test_data_util_running_avg_dur_update, test_setup, test_teardown)
+{
+    running_avg_dur_t ra;
+    data_util_running_avg_dur_reset(&ra);
+
+    // Test normal case
+    data_util_running_avg_dur_update(&ra, 100, 1000);
+    assert_int_equal(ra.sum_weighted, 100000);
+    assert_int_equal(ra.total_time_uS, 1000);
+
+    // Test accumulation
+    data_util_running_avg_dur_update(&ra, 200, 2000);
+    assert_int_equal(ra.sum_weighted, 500000);
+    assert_int_equal(ra.total_time_uS, 3000);
+
+    // Test zero duration (should not update)
+    data_util_running_avg_dur_update(&ra, 300, 0);
+    assert_int_equal(ra.sum_weighted, 500000);
+    assert_int_equal(ra.total_time_uS, 3000);
+
+    // Test maximum uint16_t value
+    data_util_running_avg_dur_reset(&ra);
+    data_util_running_avg_dur_update(&ra, UINT16_MAX, 1000);
+    assert_int_equal(ra.sum_weighted, (uint64_t)UINT16_MAX * 1000);
+    assert_int_equal(ra.total_time_uS, 1000);
+
+    // Test maximum uint32_t duration
+    data_util_running_avg_dur_reset(&ra);
+    data_util_running_avg_dur_update(&ra, 1000, UINT32_MAX);
+    assert_int_equal(ra.sum_weighted, (uint64_t)1000 * UINT32_MAX);
+    assert_int_equal(ra.total_time_uS, UINT32_MAX);
+
+    // Test maximum values for both parameters
+    data_util_running_avg_dur_reset(&ra);
+    data_util_running_avg_dur_update(&ra, UINT16_MAX, UINT32_MAX);
+    assert_int_equal(ra.sum_weighted, (uint64_t)UINT16_MAX * UINT32_MAX);
+    assert_int_equal(ra.total_time_uS, UINT32_MAX);
+
+    data_util_running_avg_dur_update(nullptr, UINT16_MAX, UINT32_MAX);
+}
+
+TEST_FUNCTION(test_data_util_running_avg_dur_get, test_setup, test_teardown)
+{
+    running_avg_dur_t ra;
+
+    // Test zero time case (should return 0)
+    data_util_running_avg_dur_reset(&ra);
+    assert_int_equal(data_util_running_avg_dur_get(&ra), 0);
+
+    // Test simple case: 100 value for 1000 microseconds = average of 100
+    data_util_running_avg_dur_reset(&ra);
+    data_util_running_avg_dur_update(&ra, 100, 1000);
+    assert_int_equal(data_util_running_avg_dur_get(&ra), 100);
+
+    // Test rounding: 100 value for 3 microseconds = 33333/3 = 11111 (rounded)
+    data_util_running_avg_dur_reset(&ra);
+    data_util_running_avg_dur_update(&ra, 100, 3);
+    uint16_t result = data_util_running_avg_dur_get(&ra);
+    // Expected: (100*3 + 3/2) / 3 = (300 + 1) / 3 = 301/3 = 100 (rounded)
+    assert_int_equal(result, 100);
+
+    // Test rounding down: 100 value for 7 microseconds
+    data_util_running_avg_dur_reset(&ra);
+    data_util_running_avg_dur_update(&ra, 100, 7);
+    result = data_util_running_avg_dur_get(&ra);
+    // Expected: (100*7 + 7/2) / 7 = (700 + 3) / 7 = 703/7 = 100 (rounded)
+    assert_int_equal(result, 100);
+
+    // Test accumulated values: weighted average
+    data_util_running_avg_dur_reset(&ra);
+    data_util_running_avg_dur_update(&ra, 200, 1000); // 200 for 1000us
+    data_util_running_avg_dur_update(&ra, 100, 2000); // 100 for 2000us
+    result = data_util_running_avg_dur_get(&ra);
+    // Expected: ((200*1000) + (100*2000) + 3000/2) / 3000 = (200000 + 200000 + 1500) / 3000 = 401500/3000 = 133 (rounded)
+    assert_int_equal(result, 133);
+
+    // Test maximum value input
+    data_util_running_avg_dur_reset(&ra);
+    data_util_running_avg_dur_update(&ra, UINT16_MAX, 1);
+    result = data_util_running_avg_dur_get(&ra);
+    assert_int_equal(result, UINT16_MAX);
+
+    // Test large values that should clamp to UINT16_MAX
+    data_util_running_avg_dur_reset(&ra);
+    data_util_running_avg_dur_update(&ra, UINT16_MAX, UINT16_MAX);
+    result = data_util_running_avg_dur_get(&ra);
+    // This should result in a very large value that gets truncated to uint16_t
+    // (UINT16_MAX * UINT16_MAX + UINT16_MAX/2) / UINT16_MAX = UINT16_MAX + 0.5 = UINT16_MAX (truncated)
+    assert_int_equal(result, UINT16_MAX);
+
+    result = data_util_running_avg_dur_get(nullptr);
+}
+
 TEST_FUNCTION(test_data_util_mean_of_means, test_setup, test_teardown)
 {
     uint16_t mean = data_util_mean_of_means(1000, 10, 2000, 5);
@@ -221,6 +402,69 @@ TEST_FUNCTION(test_data_util_calc_mma_u16, test_setup, test_teardown)
     assert_int_equal(mma.max, 150);
 
     data_util_calc_mma_u16(nullptr, 150);
+}
+
+TEST_FUNCTION(test_data_util_calc_mma_dur_u16, test_setup, test_teardown)
+{
+    mma_u16_dur_t mma_dur = {{0}};
+
+    // Test initial state
+    assert_int_equal(mma_dur.min, 0);
+    assert_int_equal(mma_dur.max, 0);
+    assert_int_equal(mma_dur.running_avg_dur.sum_weighted, 0);
+    assert_int_equal(mma_dur.running_avg_dur.total_time_uS, 0);
+
+    // Test first value
+    data_util_calc_mma_dur_u16(&mma_dur, 100, 1000);
+    assert_int_equal(mma_dur.min, 100);
+    assert_int_equal(mma_dur.max, 100);
+    assert_int_equal(mma_dur.running_avg_dur.sum_weighted, 100000);
+    assert_int_equal(mma_dur.running_avg_dur.total_time_uS, 1000);
+
+    // Test lower value (new minimum)
+    data_util_calc_mma_dur_u16(&mma_dur, 50, 2000);
+    assert_int_equal(mma_dur.min, 50);
+    assert_int_equal(mma_dur.max, 100);
+    assert_int_equal(mma_dur.running_avg_dur.sum_weighted, 200000);
+    assert_int_equal(mma_dur.running_avg_dur.total_time_uS, 3000);
+
+    // Test higher value (new maximum)
+    data_util_calc_mma_dur_u16(&mma_dur, 150, 1500);
+    assert_int_equal(mma_dur.min, 50);
+    assert_int_equal(mma_dur.max, 150);
+    assert_int_equal(mma_dur.running_avg_dur.sum_weighted, 425000);
+    assert_int_equal(mma_dur.running_avg_dur.total_time_uS, 4500);
+
+    // Test zero duration (should not update running average)
+    uint64_t prev_sum_weighted = mma_dur.running_avg_dur.sum_weighted;
+    uint32_t prev_total_time = mma_dur.running_avg_dur.total_time_uS;
+    data_util_calc_mma_dur_u16(&mma_dur, 200, 0);
+    assert_int_equal(mma_dur.min, 50);
+    assert_int_equal(mma_dur.max, 200);                                        // Min/max should still update
+    assert_int_equal(mma_dur.running_avg_dur.sum_weighted, prev_sum_weighted); // But duration average should not
+    assert_int_equal(mma_dur.running_avg_dur.total_time_uS, prev_total_time);
+
+    // Test maximum values
+    mma_u16_dur_t mma_dur_max = {{0}};
+    data_util_calc_mma_dur_u16(&mma_dur_max, UINT16_MAX, UINT32_MAX);
+    assert_int_equal(mma_dur_max.min, UINT16_MAX);
+    assert_int_equal(mma_dur_max.max, UINT16_MAX);
+    assert_int_equal(mma_dur_max.running_avg_dur.sum_weighted, (uint64_t)UINT16_MAX * UINT32_MAX);
+    assert_int_equal(mma_dur_max.running_avg_dur.total_time_uS, UINT32_MAX);
+
+    // Test null pointer (should not crash)
+    data_util_calc_mma_dur_u16(nullptr, 100, 1000);
+
+    // Test min update when min is initially 0
+    mma_u16_dur_t mma_dur_zero = {{0}};
+    data_util_calc_mma_dur_u16(&mma_dur_zero, 0, 1000);
+    assert_int_equal(mma_dur_zero.min, 0);
+    assert_int_equal(mma_dur_zero.max, 0);
+
+    // Test that non-zero value updates min from 0
+    data_util_calc_mma_dur_u16(&mma_dur_zero, 25, 1000);
+    assert_int_equal(mma_dur_zero.min, 25);
+    assert_int_equal(mma_dur_zero.max, 25);
 }
 
 TEST_FUNCTION(test_data_util_mov_avg_u16_init, test_setup, test_teardown)

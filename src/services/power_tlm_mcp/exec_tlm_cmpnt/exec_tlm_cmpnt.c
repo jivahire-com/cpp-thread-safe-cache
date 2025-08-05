@@ -235,6 +235,7 @@ void tlm_svc_thread(ULONG thread_input)
 
             if (_pwr_pkg_pending && (_pwr_pkg_gen_count == 0))
             {
+                data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg();
                 in_band_tlm_cmpnt_generate_pwr_pkg();
                 _pwr_pkg_pending = false;
             }
@@ -432,6 +433,7 @@ void exec_tlm_cmpnt_change_telemetry_mode(tlm_operating_mode_t new_mode)
 
     tlm_executive_status.op_mode = new_mode;
 
+    data_proc_tlm_cmpnt_tlm_mode_enter_actions(new_mode);
     in_band_tlm_cmpnt_tlm_mode_enter_actions(new_mode);
     run_timer_enter_actions(new_mode);
 

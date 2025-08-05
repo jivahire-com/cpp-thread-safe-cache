@@ -304,9 +304,7 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
             printf("----------------------------------------\n");
             printf("                     Expected    Actual\n");
             printf("Core 0 Voltage:\n");
-            printf("  Latest (mV):      %8d   %8d\n",
-                   expected_core0_voltage,
-                   voltage_record.voltage_collection[0].voltage_element.latest_value_mV);
+
             printf("  Min (mV):         %8d   %8d\n",
                    expected_core0_min,
                    voltage_record.voltage_collection[0].voltage_element.min_mV);
@@ -318,9 +316,7 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
                    voltage_record.voltage_collection[0].voltage_element.average_mV);
 
             printf("\nCore 1 Voltage:\n");
-            printf("  Latest (mV):      %8d   %8d\n",
-                   expected_core1_voltage,
-                   voltage_record.voltage_collection[1].voltage_element.latest_value_mV);
+
             printf("  Min (mV):         %8d   %8d\n",
                    expected_core1_min,
                    voltage_record.voltage_collection[1].voltage_element.min_mV);

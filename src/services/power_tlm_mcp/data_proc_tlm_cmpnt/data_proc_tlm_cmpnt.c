@@ -42,9 +42,14 @@ void data_proc_tlm_cmpnt_init(uint8_t die_id)
     oob_inf_init();
 }
 
-void data_proc_tlm_cmpnt_enable_disable_transition(bool enable)
+void data_proc_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode)
 {
-    FPFW_UNUSED(enable);
+    if (entering_mode == TLM_OP_MODE_PUBLISHING)
+    {
+        data_smpl_reset_residency_timestamps(); // reset residency timestamps for all cores
+        comp_metrics_reset_2_mins_metrics();
+        comp_metrics_reset_24_hrs_metrics();
+    }
 }
 
 void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void)
@@ -57,6 +62,12 @@ void data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg(void)
     {
         in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg();
     }
+}
+
+void data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg(void)
+{
+    data_proc_tlm_cmpnt_process_input_data(); // process any sensor fifo entries since last poll period
+    data_smpl_finalize_pwr_pkg_metrics();     // update residencies
 }
 
 void data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg(void)

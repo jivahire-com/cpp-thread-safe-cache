@@ -31,6 +31,18 @@ typedef struct {
 } mma_u16_t, *p_mma_u16_t;
 
 typedef struct {
+    uint64_t sum_weighted;   // Accumulated value × duration_ms
+    uint32_t total_time_uS;  // Accumulated time in milliseconds
+} running_avg_dur_t;
+
+typedef struct {
+    running_avg_dur_t running_avg_dur;
+    uint16_t min;
+    uint16_t max;
+} mma_u16_dur_t, *p_mma_u16_dur_t;
+
+
+typedef struct {
     uint16_t* samples;         // Pointer to circular sample array
     uint32_t  total_sum;       // Running sum of all values
     uint16_t   sample_capacity; // Total capacity of the sample array
@@ -63,15 +75,16 @@ typedef struct {
 int16_t data_util_get_max_val(int16_t val0, int16_t val1, int16_t val2);
 
 /**
- * @brief data_util_calc_time_diff function calculates the time difference between the current timestamp
- *        and the previous timestamp. It updates the previous timestamp with the current timestamp.
+ * @brief data_util_calc_time_diff_and_update function calculates the time difference between the current timestamp
+ *        and the last recorded timestamp, updating the last timestamp in the process.
  *
- * @param[in,out] previous_timestamp_uS - Pointer to the variable that stores the previous timestamp in microseconds.
- * @param[in,out] time_stamp_uS - Pointer to the variable that stores the current timestamp in microseconds.
+ * @param[in,out] last_timestamp_uS - Pointer to the last recorded timestamp in microseconds.
+ * @param[in,out] current_time_stamp_uS - Pointer to the current timestamp in microseconds.
+ * @param[in,out] difference_uS - Difference in uS between timestamps.
  *
- * @return The calculated time difference in microseconds.
+ * @return None
  */
-uint64_t data_util_calc_time_diff(uint64_t* previous_timestamp_uS, uint64_t* time_stamp_uS);
+void data_util_calc_time_diff_and_update(uint64_t* last_timestamp_uS, uint64_t* current_time_stamp_uS, uint64_t* difference_uS);
 
 /**
  * @brief data_util_calc_mma_res function calculates the minimum, maximum, and average values of a
@@ -99,6 +112,17 @@ void data_util_calc_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_
 void data_util_calc_mma_u16(mma_u16_t* mma, uint16_t mma_latest_value);
 
 /**
+ * @brief Update the min, max, and average using the latest value. Only supports uint16_t values.
+ *
+ * @param[in,out] mma_dur - Pointer to the mma_u16_dur_t structure containing min, max, and average values.
+ * @param[in] mma_latest_value - The latest value to be used for updating the min, max, and average.
+ * @param[in] duration_uS - The duration in microseconds for which the value is valid.
+ *
+ * @return None
+ */
+void data_util_calc_mma_dur_u16(mma_u16_dur_t* mma_dur, uint16_t mma_latest_value, uint32_t duration_uS);
+
+/**
  * @brief data_util_convert_systick_to_microseconds function converts a given tick count to microseconds.
  *
  * @param[in] tick_count - The tick count to be converted.
@@ -121,6 +145,31 @@ void data_util_running_avg_update(running_avg_t *running_avg, uint16_t new_value
  * @param[in,out] running_avg - Pointer to the running average structure to be reset.
  */
 void data_util_running_avg_reset(running_avg_t *running_avg);
+
+/**
+ * @brief data_util_running_avg_dur_reset function resets the running average duration structure to its initial state.
+ *
+ * @param[in,out] ra - Pointer to the running average duration structure to be reset.
+ */
+void data_util_running_avg_dur_reset(running_avg_dur_t *ra);
+
+/**
+ * @brief data_util_running_avg_dur_update function updates the running average duration with a new value and its duration.
+ *
+ * @param[in,out] ra - Pointer to the running average duration structure to be updated.
+ * @param[in] value - The new value to be added to the running average duration.
+ * @param[in] duration_uS - The duration in microseconds for which the value is valid.
+ */
+void data_util_running_avg_dur_update(running_avg_dur_t *ra, uint16_t value, uint32_t duration_uS);
+
+/**
+ * @brief data_util_running_avg_dur_get function retrieves the average value from the running average duration structure.
+ *
+ * @param[in] ra - Pointer to the running average duration structure.
+ *
+ * @return The average value calculated from the running average duration.
+ */
+uint16_t data_util_running_avg_dur_get(const running_avg_dur_t *ra);
 
 /**
  * @brief data_util_mean_of_means function calculates the mean of two means, taking into account their respective counts.

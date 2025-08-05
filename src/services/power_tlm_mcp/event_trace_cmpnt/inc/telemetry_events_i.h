@@ -454,5 +454,26 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, active_sensor),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, active_handler))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    78,
+                    DataUtilCalcError,
+                    FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    79,
+                    RunningAvgDurResetNullPointer,
+                    FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    80,
+                    RunningAvgDurUpdateNullPointer,
+                    FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    81,
+                    RunningAvgDurGetNullPointer,
+                    FPFW_ET_LEVEL_ERROR)
+
 /*--------- Function Prototypes ----------*/
 

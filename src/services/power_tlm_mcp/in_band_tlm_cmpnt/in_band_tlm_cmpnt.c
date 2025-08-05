@@ -47,7 +47,7 @@ void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
 
     // since the telemetry schema events are not called within code, the linker will optimize out
     // a single call is enough to anchor them
-    FPFW_ET_LOG(pwr_core_element_voltage, 1, 2, 3, 4);
+    FPFW_ET_LOG(pwr_core_element_voltage, 1, 2, 3);
 }
 
 void in_band_tlm_cmpnt_add_inst_sample(void)

@@ -390,29 +390,35 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, te
     uint16_t test_values_mW[5] = {100, 200, 300, 400, 500};
 
     int pstate_index = 0;
+    uint32_t duration_uS = 1000;
 
     for (uint8_t i = 0; i < 5; i++)
     {
-        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i]);
+        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i], duration_uS);
     }
 
     // Check the results
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min, 0);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.max, 0);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average, 0);
+
+    assert_int_equal(data_util_running_avg_dur_get(
+                         &computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg_dur),
+                     0);
 
     pstate_index = 0;
     core_is_active[core_id] = true;
 
     for (uint8_t i = 0; i < 5; i++)
     {
-        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i]);
+        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i], (i + 1) * duration_uS);
     }
 
     // Check the results
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min, 100);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.max, 500);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average, 300);
+    assert_int_equal(data_util_running_avg_dur_get(
+                         &computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg_dur),
+                     367);
 }
 
 // comp_metrics_for_single_core_throttling_pstate(core_id, i, time_diff_uS, core_rt[core_id].throttle_info[i].residency_mS);
@@ -559,19 +565,20 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_single_pstate, test_setup, test_
     uint8_t core_id = TEST_CORE_ID;
     core_is_active[core_id] = false;
 
-    uint8_t pstate_id = 0;
+    uint8_t current_pstate = 3;
+    uint8_t new_pstate = 6;
     uint64_t timestamp_diff_uS = 1000;
     bool update_pstate_entry = true;
-    comp_metrics_for_single_core_single_pstate(core_id, pstate_id, timestamp_diff_uS, update_pstate_entry);
+    comp_metrics_for_single_core_single_pstate(core_id, current_pstate, timestamp_diff_uS, new_pstate, update_pstate_entry);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].residency_uS, 0);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].entry_count, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[current_pstate].residency_uS, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[new_pstate].entry_count, 0);
 
     core_is_active[core_id] = true;
-    comp_metrics_for_single_core_single_pstate(core_id, pstate_id, timestamp_diff_uS, update_pstate_entry);
+    comp_metrics_for_single_core_single_pstate(core_id, current_pstate, timestamp_diff_uS, new_pstate, update_pstate_entry);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].residency_uS, 1000);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_id].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[current_pstate].residency_uS, 1000);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[new_pstate].entry_count, 1);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_soc_avg_pstate, test_setup, test_teardown)
@@ -623,19 +630,20 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_single_cstate, test_setup, test_
     uint8_t core_id = TEST_CORE_ID;
     core_is_active[core_id] = false;
 
-    uint8_t cstate_id = 0;
+    uint8_t current_cstate = 7;
+    uint8_t new_cstate = 11;
     uint64_t timestamp_diff_uS = 1000;
     uint8_t update_cstate_entry = 1;
-    comp_metrics_for_single_core_single_cstate(core_id, cstate_id, timestamp_diff_uS, update_cstate_entry);
+    comp_metrics_for_single_core_single_cstate(core_id, current_cstate, timestamp_diff_uS, new_cstate, update_cstate_entry);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[cstate_id].residency_uS, 0);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[cstate_id].entry_count, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[current_cstate].residency_uS, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[new_cstate].entry_count, 0);
 
     core_is_active[core_id] = true;
-    comp_metrics_for_single_core_single_cstate(core_id, cstate_id, timestamp_diff_uS, update_cstate_entry);
+    comp_metrics_for_single_core_single_cstate(core_id, current_cstate, timestamp_diff_uS, new_cstate, update_cstate_entry);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[cstate_id].residency_uS, 1000);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[cstate_id].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[current_cstate].residency_uS, 1000);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].cstate[new_cstate].entry_count, 1);
 }
 
 TEST_FUNCTION(test_comp_metrics_reset_2_mins_metrics, test_setup, test_teardown)

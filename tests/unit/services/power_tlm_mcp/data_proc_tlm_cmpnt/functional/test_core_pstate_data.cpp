@@ -63,7 +63,8 @@ extern int g_enable_mock_pstate; // Declare the external variable for PSTATE moc
 #define NUMBER_OF_CORES_TO_TEST (4) // Testing only 4 cores instead of all 68
 #define MAX_PSTATE_VALUE        (32) // 2^5 possible values (0-31) as per telemetry_data_struct.h pstate is 5 bits
 #define RESIDENCY_TOLERANCE_MS  100
-
+#define MICROSECONDS_PER_SECOND (1000000)
+#define FINAL_PACKAGE_TIME_US   (100000)
 // Global variable to control debug printing
 static bool g_print_logs = true;
 
@@ -102,7 +103,6 @@ typedef struct
     uint16_t max_power_mW;
     uint16_t avg_power_mW;
     uint16_t frequency_Mhz;
-    uint32_t residency_mS;
 } expected_pstate_values_t;
 
 static int32_t test_setup(void** state)
@@ -116,18 +116,11 @@ static int32_t test_setup(void** state)
         // Initialize core state
         core_rt[core_id].pstate_from_pstate_pkt = 0x00; // Set to valid PSTATE 0
         core_rt[core_id].active_sample_plimit = 0;
-        core_rt[core_id].pstate_timestamp_uS = 0;
-
-        // Initialize PSTATE data for each core in computed_metrics_2_mins
-        for (uint8_t pstate = 0; pstate < MAX_PSTATE_VALUE; pstate++)
-        {
-            computed_metrics_2_mins.cores[core_id].pstate[pstate].entry_count = 0;
-            computed_metrics_2_mins.cores[core_id].pstate[pstate].power_mW.min = 0;
-            computed_metrics_2_mins.cores[core_id].pstate[pstate].power_mW.max = 0;
-            computed_metrics_2_mins.cores[core_id].pstate[pstate].power_mW.running_avg.average = 0;
-            computed_metrics_2_mins.cores[core_id].pstate[pstate].residency_uS = 0;
-        }
+        core_rt[core_id].pstate_res_timestamp_uS = 0;
+        core_rt[core_id].status_flags.pkt_pstate_is_valid = false;
+        core_rt[core_id].status_flags.pkt_cstate_is_valid = true;
     }
+    comp_metrics_reset_2_mins_metrics();
 
     // Reset mock timestamp to initial value
     time_t0 = 100;
@@ -165,9 +158,9 @@ static expected_pstate_values_t calculate_expected_values(const test_pstate_conf
     expected.pstate = test_data.pstate;
     expected.plimit = test_data.plimit;
     // Entry count is only incremented when PSTATE actually changes AND there's a valid previous timestamp
-    // Since core_rt[core_id].pstate_timestamp_uS is initialized to 0, the first iteration won't increment entry
-    // count Subsequent iterations will have entry_count = 0 (same PSTATE value, entry count is incremented only when PSTATE changes)
-    expected.entry_count = 0; // Entry count is 0 for all iterations in this test
+    // Since core_rt[core_id].status_flags.pkt_pstate_is_valid is initialized to false, the first iteration
+    // will increment entry count
+    expected.entry_count = 1; // Entry count is 1 for the first iteration, pstate stays the same for the rest so remains 1
 
     // Timestamp and frequency - ignore for now, just print actual values
     expected.timestamp = 0;     // Will be printed but not compared
@@ -221,106 +214,23 @@ static expected_pstate_values_t calculate_expected_values(const test_pstate_conf
         break;
     }
 
-    // Each iteration has a mock time increment, so residency should accumulate
-    // First iteration: 0 (no previous timestamp)
-    // Subsequent iterations: accumulate time differences from mock timestamps
-    if (iteration == 0)
-    {
-        expected.residency_mS = 0; // First iteration has no previous timestamp
-    }
-    else
-    {
-        // For iterations 1, 2, 3: residency should accumulate based on mock time differences
-        // Since we're now calling the update function between iterations, residency should accumulate
-        // properly Each iteration adds ~100ms (100000 microseconds / 1000 = 100ms)
-        expected.residency_mS = iteration * 100; // Will be printed but not compared due to mock timing complexity
-    }
-
     return expected;
 }
 
 // Function to calculate expected residency based on actual implementation logic
 // Used by: test_core_pstate_collection_functional only
-static uint32_t calculate_expected_residency_with_polling(uint8_t iteration)
+static uint32_t calculate_expected_residency(uint8_t iteration)
 {
     if (iteration == 0)
     {
-        return 0; // First iteration has no previous timestamp
+        return 0; // First iteration is transition to valid pstate, no residency yet
     }
-
-    // Step 1: Calculate packet-based residency from timestamps
-    // Example for iteration 1:
-    // - Initial timestamp: 1000μs
-    // - Current timestamp: 2000μs
-    // - Packet residency = (2000 - 1000) / 1000 = 1ms
-    uint32_t packet_residency_mS = iteration * 100; // 100ms per iteration
-
-    // Step 2: Calculate polling-based residency from time_t0 increments
-    // Example for iteration 1:
-    // - Initial time_t0 = 100μs
-    // - Manual increment: time_t0 += 100000μs = 100100μs
-    // - Polling call: exec_tlm_cmpnt_get_timestamp_microseconds() returns 100100μs
-    // - Time difference = 100100 - 100 = 100000μs = 100ms
-    // - Residency accumulates: 100ms
-
-    uint32_t polling_residency_mS = 0;
-
-    // Simulate the actual polling calls and time accumulation
-    // The polling function is called BETWEEN iterations, not during iterations
-    uint64_t time_t0_sim = 100;  // Initial value
-    uint64_t prev_timestamp = 0; // Initial previous timestamp
-
-    // For iteration N, we need to simulate N polling calls (one between each iteration)
-    for (uint8_t i = 0; i < iteration; i++)
+    uint32_t residency_mS = (iteration * 1);
+    if (iteration == (NO_OF_ITERATIONS))
     {
-        // Manual increment between iterations (time_t0 += 100000)
-        if (i > 0)
-        {
-            time_t0_sim += 100000; // 100ms increment
-        }
-
-        // Simulate the polling function call
-        // data_util_calc_time_diff() logic:
-        uint64_t current_timestamp = time_t0_sim;
-        uint64_t time_diff_uS = 0;
-
-        if (prev_timestamp != 0 && current_timestamp > prev_timestamp)
-        {
-            time_diff_uS = current_timestamp - prev_timestamp;
-        }
-
-        prev_timestamp = current_timestamp;
-
-        // Convert microseconds to milliseconds and accumulate
-        polling_residency_mS += (uint32_t)(time_diff_uS / 1000);
-
-        // Mock function increments time_t0 by 1000μs each call
-        time_t0_sim += 1000;
+        residency_mS = FINAL_PACKAGE_TIME_US / 1000; // Add final package time in milliseconds
     }
-
-    // Step 3: Account for additional timestamp calls during data processing
-    // Mock function exec_tlm_cmpnt_get_timestamp_microseconds() is called multiple times during data
-    // processing Each call adds 1ms to time_t0, affecting residency calculations
-    uint32_t additional_timestamp_calls_mS = 0;
-    switch (iteration)
-    {
-    case 1:
-        additional_timestamp_calls_mS = 5;
-        break;
-    case 2:
-        additional_timestamp_calls_mS = 14;
-        break;
-    case 3:
-        additional_timestamp_calls_mS = 127;
-        break;
-    default:
-        additional_timestamp_calls_mS = 0;
-        break;
-    }
-
-    uint32_t total_residency = packet_residency_mS + polling_residency_mS + additional_timestamp_calls_mS;
-
-    return total_residency;
+    return (residency_mS); // Each iteration adds 1000 uS or 1 mS of residency
 }
 
 // Helper function to set up mock sensor polling calls
@@ -356,8 +266,8 @@ static void setup_mock_sensor_polling_no_data(void)
     will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, false); // more_entries
 
     // Mock gtimer frequency - return a standard frequency value
-    will_return(__wrap_gtimer_prodfw_get_frequency, 2400000); // 2.4 GHz
-    will_return(__wrap_gtimer_prodfw_get_frequency, 2400000); // 2.4 GHz (additional call)
+    will_return(__wrap_gtimer_prodfw_get_frequency, MICROSECONDS_PER_SECOND); // make ticks == uS for ease of testing
+    will_return(__wrap_gtimer_prodfw_get_frequency, MICROSECONDS_PER_SECOND); // make ticks == uS for ease of testing
 }
 
 // Helper function to set up mock PSTATE data
@@ -546,7 +456,21 @@ TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
                                                                           iteration);
 
             // Calculate expected residency including polling time
-            uint32_t expected_residency_with_polling = calculate_expected_residency_with_polling(iteration);
+            uint32_t expected_residency_mS = calculate_expected_residency(iteration);
+
+            // Print residency values for debugging
+            if (g_print_logs)
+            {
+                printf("Iteration %d, Core %d, PSTATE %d: Actual residency=%d ms, Expected residency=%d ms, "
+                       "actual plimit=%d, expected plimit=%d\n",
+                       iteration,
+                       core_index,
+                       current_pstate,
+                       pstate_array[current_pstate].residency_mS,
+                       expected_residency_mS,
+                       core_rt[core_index].active_sample_plimit,
+                       expected.plimit);
+            }
 
             // Verify PSTATE values
             assert_int_equal(expected.pstate, core_rt[core_index].pstate_from_pstate_pkt);
@@ -556,19 +480,8 @@ TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
             assert_int_equal(expected.max_power_mW, pstate_array[current_pstate].max_power_mW);
             assert_int_equal(expected.avg_power_mW, pstate_array[current_pstate].avg_power_mW);
 
-            // Print residency values for debugging
-            if (g_print_logs)
-            {
-                printf("Iteration %d, Core %d, PSTATE %d: Actual residency=%d ms, Expected residency=%d ms\n",
-                       iteration,
-                       core_index,
-                       current_pstate,
-                       pstate_array[current_pstate].residency_mS,
-                       expected_residency_with_polling);
-            }
-
             // Verify residency with exact precision - now accounting for additional timestamp calls during data processing
-            assert_int_equal(expected_residency_with_polling, pstate_array[current_pstate].residency_mS);
+            assert_int_equal(expected_residency_mS, pstate_array[current_pstate].residency_mS);
 
             // To update expected entry count only if PSTATE changes
             if (current_pstate != prev_pstate[core_index])
@@ -577,32 +490,44 @@ TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
                 prev_pstate[core_index] = current_pstate;
             }
         }
+    }
 
-        // Update residency between iterations using polling
-        if (iteration < NO_OF_ITERATIONS - 1)
-        {
-            time_t0 += 100000; // Advance mock time for polling-based residency
-            data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry();
-        }
+    // finalize power package metrics
+    time_t0 = FINAL_PACKAGE_TIME_US;
+    data_smpl_finalize_pwr_pkg_metrics();
+
+    uint8_t current_pstate = 10;
+
+    for (uint8_t core_index = 0; core_index < NUMBER_OF_CORES_TO_TEST; core_index++)
+    {
+
+        pwr_core_record_pstate_t pstate_record = {{0}};
+        package_create_pwr_core_pstate_record(&pstate_record);
+        pwr_core_element_pstate_t* pstate_array = &pstate_record.pstate_collection[core_index].pstate_element[0];
+
+        // duration-weighted avg: (2200×1 + 3300×1 + 4400×1 + 1100×1 + 1100×97) / 101ms = 1165mW
+        uint16_t expected_pwr_mW = 1165; // Final expected power value after all iterations
+
+        assert_int_equal(expected_pwr_mW, pstate_array[current_pstate].avg_power_mW);
+        assert_int_equal(FINAL_PACKAGE_TIME_US / 1000, pstate_array[current_pstate].residency_mS);
+
+        current_pstate++;
     }
 }
 
-// Test timestamp-based PSTATE residency calculation using packet timestamps only and no polling
+// Test timestamp-based PSTATE residency calculation using packet timestamps only
 TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_teardown)
 {
     // Test timestamps: T1=PSTATE10 entry, T2=T3=same PSTATE10, T4=PSTATE11 entry, T5=PSTATE12 entry
     uint64_t T1_microseconds = 1000000, T2_microseconds = 2000000, T3_microseconds = 3000000,
              T4_microseconds = 4000000, T5_microseconds = 5000000;
-    uint64_t T1_ticks = (T1_microseconds * 2400000) / 1000000, T2_ticks = (T2_microseconds * 2400000) / 1000000;
-    uint64_t T3_ticks = (T3_microseconds * 2400000) / 1000000,
-             T4_ticks = (T4_microseconds * 2400000) / 1000000, T5_ticks = (T5_microseconds * 2400000) / 1000000;
     uint8_t core_index = 0;
 
     // Step 1: PSTATE 10 enters at T1
     pstate_telem_t mock_pstate_data_entry = {0};
     core_current_t mock_current_data = {0};
-    setup_mock_pstate_data(&mock_pstate_data_entry, core_index, 10, 20, T1_ticks);
-    setup_mock_current_data(&mock_current_data, core_index, T1_ticks, 100, 80, 120, 100, 100, 10);
+    setup_mock_pstate_data(&mock_pstate_data_entry, core_index, 10, 20, T1_microseconds);
+    setup_mock_current_data(&mock_current_data, core_index, T1_microseconds, 100, 80, 120, 100, 100, 10);
     setup_mock_sensor_polling_no_data();
 
     // Process the data
@@ -615,12 +540,12 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
         &pstate_record_initial.pstate_collection[core_index].pstate_element[0];
 
     assert_int_equal(10, core_rt[core_index].pstate_from_pstate_pkt);
-    assert_int_equal(0, pstate_array_initial[10].entry_count);
+    assert_int_equal(1, pstate_array_initial[10].entry_count);
 
     // Step 2: Same PSTATE 10 at T2
     pstate_telem_t mock_pstate_data_update = {0};
-    setup_mock_pstate_data(&mock_pstate_data_update, core_index, 10, 20, T2_ticks);
-    setup_mock_current_data(&mock_current_data, core_index, T2_ticks, 100, 80, 120, 100, 120, 10);
+    setup_mock_pstate_data(&mock_pstate_data_update, core_index, 10, 20, T2_microseconds);
+    setup_mock_current_data(&mock_current_data, core_index, T2_microseconds, 100, 80, 120, 100, 120, 10);
     setup_mock_sensor_polling_no_data();
 
     // Process the data
@@ -634,13 +559,13 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
 
     uint32_t expected_residency_T1_to_T2_mS = (T2_microseconds - T1_microseconds) / 1000;
     assert_int_equal(10, core_rt[core_index].pstate_from_pstate_pkt);
-    assert_int_equal(0, pstate_array_update[10].entry_count);
+    assert_int_equal(1, pstate_array_update[10].entry_count);
     assert_int_equal(expected_residency_T1_to_T2_mS, pstate_array_update[10].residency_mS);
 
     // Step 3: Same PSTATE 10 at T3
     pstate_telem_t mock_pstate_data_t3 = {0};
-    setup_mock_pstate_data(&mock_pstate_data_t3, core_index, 10, 20, T3_ticks);
-    setup_mock_current_data(&mock_current_data, core_index, T3_ticks, 100, 80, 120, 100, 130, 10);
+    setup_mock_pstate_data(&mock_pstate_data_t3, core_index, 10, 20, T3_microseconds);
+    setup_mock_current_data(&mock_current_data, core_index, T3_microseconds, 100, 80, 120, 100, 130, 10);
     setup_mock_sensor_polling_no_data();
 
     // Process the data
@@ -653,13 +578,13 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
 
     uint32_t expected_residency_T1_to_T3_mS = (T3_microseconds - T1_microseconds) / 1000;
     assert_int_equal(10, core_rt[core_index].pstate_from_pstate_pkt);
-    assert_int_equal(0, pstate_array_t3[10].entry_count);
+    assert_int_equal(1, pstate_array_t3[10].entry_count);
     assert_int_equal(expected_residency_T1_to_T3_mS, pstate_array_t3[10].residency_mS);
 
     // Step 4: PSTATE 11 enters at T4
     pstate_telem_t mock_pstate_data_exit = {0};
-    setup_mock_pstate_data(&mock_pstate_data_exit, core_index, 11, 25, T4_ticks);
-    setup_mock_current_data(&mock_current_data, core_index, T4_ticks, 100, 80, 120, 100, 150, 11);
+    setup_mock_pstate_data(&mock_pstate_data_exit, core_index, 11, 25, T4_microseconds);
+    setup_mock_current_data(&mock_current_data, core_index, T4_microseconds, 100, 80, 120, 100, 150, 11);
     setup_mock_sensor_polling_no_data();
 
     // Process the data
@@ -673,7 +598,7 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
     pwr_core_element_pstate_t* pstate_array_exit = &pstate_record_exit.pstate_collection[core_index].pstate_element[0];
 
     // PSTATE 10 gets residency from T3 to T4 when PSTATE 11 packet arrives
-    // (core_rt[core_id].poll_flags.pstate_change == true) PSTATE 10 total residency = (T2-T1) + (T3-T2) + (T4-T3) = (T4-T1) = 3000ms
+    // (core_rt[core_id].status_flags.pstate_change == true) PSTATE 10 total residency = (T2-T1) + (T3-T2) + (T4-T3) = (T4-T1) = 3000ms
     uint32_t expected_pstate10_final_residency_mS = (T4_microseconds - T1_microseconds) / 1000;
 
     // Debug prints to see actual vs expected values
@@ -688,17 +613,16 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
     }
 
     assert_int_equal(11, core_rt[core_index].pstate_from_pstate_pkt);
-    assert_int_equal(0, pstate_array_exit[11].entry_count); // PSTATE 11 just started, hasn't completed cycle
+    assert_int_equal(1, pstate_array_exit[11].entry_count); // PSTATE 11 just started
     assert_int_equal(1, pstate_array_exit[10].entry_count); // PSTATE 10 completed one cycle
     assert_int_equal(expected_pstate10_final_residency_mS, pstate_array_exit[10].residency_mS);
     assert_int_equal(0, pstate_array_exit[11].residency_mS);
 
     // Step 5: PSTATE 12 enters at T5, added this to check the entry count logic is working fine when PSTATE 12 arrives with new changes in data_sampling.c
     pstate_telem_t mock_pstate_data_t5 = {0};
-    setup_mock_pstate_data(&mock_pstate_data_t5, core_index, 12, 30, T5_ticks);
-    setup_mock_current_data(&mock_current_data, core_index, T5_ticks, 100, 80, 120, 100, 200, 12);
+    setup_mock_pstate_data(&mock_pstate_data_t5, core_index, 12, 30, T5_microseconds);
+    setup_mock_current_data(&mock_current_data, core_index, T5_microseconds, 100, 80, 120, 100, 200, 12);
     setup_mock_sensor_polling_no_data();
-
     // Process the data
     data_proc_tlm_cmpnt_process_input_data();
 
@@ -731,95 +655,6 @@ TEST_FUNCTION(test_core_pstate_timestamp_residency_functional, test_setup, test_
     assert_int_equal(12, core_rt[core_index].pstate_from_pstate_pkt);
     assert_int_equal(1, pstate_array_t5[10].entry_count); // PSTATE 10 completed one cycle
     assert_int_equal(1, pstate_array_t5[11].entry_count); // PSTATE 11 completed one cycle when PSTATE 12 arrived
-    assert_int_equal(0, pstate_array_t5[12].entry_count);  // PSTATE 12 just started, hasn't completed cycle
+    assert_int_equal(1, pstate_array_t5[12].entry_count);  // PSTATE 12 just started, hasn't completed cycle
     assert_int_equal(0, pstate_array_t5[12].residency_mS); // PSTATE 12 starts with 0 residency
-}
-
-// Test realistic residency accumulation with multiple polling calls between PSTATE entries
-TEST_FUNCTION(test_core_pstate_realistic_residency_functional, test_setup, test_teardown)
-{
-    // Test timestamps: T1=PSTATE10 entry, T2=T3=polling without packets, T4=PSTATE11 entry
-    uint64_t T1_microseconds = 1000000, T2_microseconds = 1500000, T3_microseconds = 2000000, T4_microseconds = 2500000;
-    uint64_t T1_ticks = (T1_microseconds * 2400000) / 1000000, T2_ticks = (T2_microseconds * 2400000) / 1000000;
-    uint64_t T3_ticks = (T3_microseconds * 2400000) / 1000000, T4_ticks = (T4_microseconds * 2400000) / 1000000;
-    uint8_t core_index = 0;
-
-    if (g_print_logs)
-    {
-        printf("\n=== Realistic Residency Test ===\n");
-    }
-
-    // Step 1: PSTATE 10 enters at T1 (1000ms)
-    if (g_print_logs)
-    {
-        printf("Step 1: PSTATE 10 enters at T1 (1000ms)\n");
-    }
-    pstate_telem_t mock_pstate_data_entry = {0};
-    core_current_t mock_current_data = {0};
-    setup_mock_pstate_data(&mock_pstate_data_entry, core_index, 10, 20, T1_ticks);
-    setup_mock_current_data(&mock_current_data, core_index, T1_ticks, 100, 80, 120, 100, 100, 10);
-    setup_mock_sensor_polling_no_data();
-    data_proc_tlm_cmpnt_process_input_data();
-
-    // Step 2: Poll at T2 (1500ms) - should add 500ms to PSTATE 10
-    if (g_print_logs)
-    {
-        printf("Step 2: Poll at T2 (1500ms) - should add 500ms to PSTATE 10\n");
-    }
-    time_t0 += (T2_ticks - T1_ticks);
-    data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry(); // it calls exec_tlm_cmpnt_get_timestamp_microseconds
-
-    // Step 3: Poll at T3 (2000ms) - should add 500ms to PSTATE 10
-    if (g_print_logs)
-    {
-        printf("Step 3: Poll at T3 (2000ms) - should add 500ms to PSTATE 10\n");
-    }
-    time_t0 += (T3_ticks - T2_ticks);
-    data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry();
-
-    // Step 4: PSTATE 11 enters at T4 (2500ms) - PSTATE 10 should get final 500ms, PSTATE 11 starts at 0ms
-    if (g_print_logs)
-    {
-        printf("Step 4: PSTATE 11 enters at T4 (2500ms)\n");
-    }
-    pstate_telem_t mock_pstate_data_exit = {0};
-    setup_mock_pstate_data(&mock_pstate_data_exit, core_index, 11, 25, T4_ticks);
-    setup_mock_current_data(&mock_current_data, core_index, T4_ticks, 100, 80, 120, 100, 150, 11);
-    setup_mock_sensor_polling_no_data();
-    data_proc_tlm_cmpnt_process_input_data();
-    // data_smpl_update_comp_metrics_cores_states_for_no_pstate_entry();
-
-    // Get final results
-    pwr_core_record_pstate_t pstate_record_exit = {{0}};
-    package_create_pwr_core_pstate_record(&pstate_record_exit);
-    pwr_core_element_pstate_t* pstate_array_exit = &pstate_record_exit.pstate_collection[core_index].pstate_element[0];
-
-    // Expected values:
-    // PSTATE 10: Should get residency from T1 to T4 = 1500ms
-    // PSTATE 11: Should start with 0ms residency
-    uint32_t expected_pstate10_residency_mS = (uint32_t)((T4_microseconds - T1_microseconds) / 1000); // 1500ms
-    uint32_t expected_pstate11_residency_mS = 0; // PSTATE 11 starts fresh
-
-    // Print all actual and expected values
-    if (g_print_logs)
-    {
-        printf("\n=== Results ===\n");
-        printf("PSTATE 10: residency=%d ms (expected=%d ms), entry_count=%d (expected=1)\n",
-               pstate_array_exit[10].residency_mS,
-               expected_pstate10_residency_mS,
-               pstate_array_exit[10].entry_count);
-        printf("PSTATE 11: residency=%d ms (expected=%d ms), entry_count=%d (expected=0)\n",
-               pstate_array_exit[11].residency_mS,
-               expected_pstate11_residency_mS,
-               pstate_array_exit[11].entry_count);
-        printf("Current PSTATE: %d (expected=11)\n", core_rt[core_index].pstate_from_pstate_pkt);
-    }
-
-    // Updated assertions based on correct entry count logic
-    assert_int_equal(11, core_rt[core_index].pstate_from_pstate_pkt);
-    assert_int_equal(0, pstate_array_exit[11].entry_count); // PSTATE 11 just started, hasn't completed cycle
-    assert_int_equal(1, pstate_array_exit[10].entry_count); // PSTATE 10 completed one cycle when PSTATE 11 arrived
-    assert_int_equal(expected_pstate11_residency_mS, pstate_array_exit[11].residency_mS);
-    // Note: Residency is higher than expected due to polling time accumulation
-    assert_true(pstate_array_exit[10].residency_mS >= expected_pstate10_residency_mS);
 }

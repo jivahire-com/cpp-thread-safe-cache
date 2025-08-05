@@ -55,6 +55,22 @@ void data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg(void)
     function_called();
 }
 
+void data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg(void)
+{
+    function_called();
+}
+
+void data_proc_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode)
+{
+    FPFW_UNUSED(entering_mode);
+    function_called();
+}
+
+void data_smpl_reset_residency_timestamps(void)
+{
+    function_called();
+}
+
 void in_band_tlm_cmpnt_add_inst_sample(void)
 {
     function_called();

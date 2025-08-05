@@ -64,9 +64,7 @@ extern "C" {
 
 // Declare external variables
 extern int g_enable_mock_pstate; // Declare the external variable for PSTATE mock control
-}
-
-#define NO_OF_ITERATIONS 8 // Increased from 5 to 8 to add more C-state transitions
+#define NO_OF_ITERATIONS 8       // Increased from 5 to 8 to add more C-state transitions
 
 // Define the test info structure
 struct cstate_test_info
@@ -75,6 +73,35 @@ struct cstate_test_info
     uint8_t cstate_value;
     uint8_t pstate_value; // P-state also added as part of pstate_telem_t packet
 };
+
+// Set up test data - C-state changes with corresponding P-states
+// Added more iterations instead of just 4 to test entry_count > 1 scenarios
+struct cstate_test_info cstate_info[NO_OF_ITERATIONS] = {
+    {0, 0, 10}, // T0 Core 0, C-state 0, P-state 10
+    {0, 1, 10}, // T1 Core 0, C-state 1, P-state 10
+    {0, 1, 10}, // T2 Core 0, C-state 1 (same C-state, different timestamp) - for accumulation test
+    {0, 0, 10}, // T3 Core 0, C-state 0, P-state 10
+    {0, 3, 10}, // T4 Core 0, C-state 3, P-state 10
+    {0, 0, 10}, // T5 Core 0, C-state 0 (third entry) - entry_count should be 3
+    {0, 1, 10}, // T6 Core 0, C-state 1 (second entry) - entry_count should be 1
+    {0, 1, 10}  // T7 Core 0, C-state 1 (same) - entry_count should be 1
+};
+
+// Define timestamps in microseconds
+// Using standard 500ms intervals for predictable calculations for testing
+uint64_t timestamps_microseconds[NO_OF_ITERATIONS] = {
+    1000000, // T0: 1000ms
+    1500000, // T1: 1500ms
+    2000000, // T2: 2000ms
+    2500000, // T3: 2500ms
+    3000000, // T4: 3000ms
+    3500000, // T5: 3500ms
+    4000000, // T6: 4000ms
+    4500000  // T7: 4500ms
+};
+
+uint32_t expected_residency_mS[NUMBER_OF_CSTATES] = {0};
+}
 
 static int32_t test_setup(void** state)
 {
@@ -90,9 +117,11 @@ static int32_t test_setup(void** state)
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {
         core_rt[core_id].latest_cstate = 0;
-        core_rt[core_id].cstate_timestamp_uS = 0;
+        core_rt[core_id].cstate_res_timestamp_uS = 0;
         core_rt[core_id].latest_pstate = 0;
-        core_rt[core_id].pstate_timestamp_uS = 0;
+        core_rt[core_id].pstate_res_timestamp_uS = 0;
+        core_rt[core_id].status_flags.pkt_cstate_is_valid = false;
+        core_rt[core_id].status_flags.pkt_pstate_is_valid = false;
     }
     setup_snsr_fifo_is_empty();
 
@@ -150,86 +179,59 @@ static void setup_mock_sensor_polling_no_data(void)
 }
 
 // Helper function to calculate expected residency based on iteration
-static uint32_t calculate_expected_cstate_residency(const uint64_t* timestamps_microseconds, int current_iteration)
+static void calculate_expected_cstate_residency(int current_iteration)
 {
-    uint32_t expected_residency = 0;
+
+    uint32_t c0_residency_at_T1_mS = (timestamps_microseconds[1] - timestamps_microseconds[0]) / 1000;
+    uint32_t c1_residency_at_T2_mS = (timestamps_microseconds[2] - timestamps_microseconds[1]) / 1000;
+    uint32_t c1_residency_at_T3_mS =
+        c1_residency_at_T2_mS + ((timestamps_microseconds[3] - timestamps_microseconds[2]) / 1000);
+    uint32_t c0_residency_at_T4_mS =
+        c0_residency_at_T1_mS + ((timestamps_microseconds[4] - timestamps_microseconds[3]) / 1000);
+    uint32_t c3_residency_at_T5_mS = (timestamps_microseconds[5] - timestamps_microseconds[4]) / 1000;
+    uint32_t c0_residency_at_T6_mS =
+        c0_residency_at_T4_mS + ((timestamps_microseconds[6] - timestamps_microseconds[5]) / 1000);
+    uint32_t c1_residency_at_T7_mS =
+        c1_residency_at_T3_mS + ((timestamps_microseconds[7] - timestamps_microseconds[6]) / 1000);
 
     switch (current_iteration)
     {
-    case 0: // C-state 0: first entry
-        expected_residency = 0;
+    case 0:
         break;
-    case 1: // C-state 1: first entry (new C-state)
-        expected_residency = (timestamps_microseconds[1] - timestamps_microseconds[0]) / 1000; // 500ms
+    case 1:
+        expected_residency_mS[CSTATE_C0] = c0_residency_at_T1_mS;
         break;
-    case 2: // C-state 1: same C-state (cumulative residency from first occurrence)
-        expected_residency = (timestamps_microseconds[1] - timestamps_microseconds[0]) +
-                             (timestamps_microseconds[2] - timestamps_microseconds[1]); // 500 + 500 = 1000ms
-        expected_residency = expected_residency / 1000; // Convert to milliseconds
+    case 2:
+        expected_residency_mS[CSTATE_C1] = c1_residency_at_T2_mS;
         break;
-    case 3: // C-state 2: first entry (new C-state)
-        expected_residency = (timestamps_microseconds[3] - timestamps_microseconds[2]) / 1000; // 500ms
+    case 3:
+        expected_residency_mS[CSTATE_C1] = c1_residency_at_T3_mS;
         break;
-    case 4: // C-state 3: first entry (new C-state)
-        expected_residency = (timestamps_microseconds[4] - timestamps_microseconds[3]) / 1000; // 500ms
+    case 4:
+        expected_residency_mS[CSTATE_C0] = c0_residency_at_T4_mS;
         break;
-    case 5: // C-state 1: second entry (return to C-state 1) - entry_count should be 2
-        expected_residency = (timestamps_microseconds[1] - timestamps_microseconds[0]) +
-                             (timestamps_microseconds[2] - timestamps_microseconds[1]) +
-                             (timestamps_microseconds[5] - timestamps_microseconds[4]); // 500 + 500 + 500 = 1500ms
-        expected_residency = expected_residency / 1000; // Convert to milliseconds
+    case 5:
+        expected_residency_mS[CSTATE_C3] = c3_residency_at_T5_mS;
         break;
-    case 6: // C-state 0: second entry (return to C-state 0) - entry_count should be 1
-        expected_residency = (timestamps_microseconds[6] - timestamps_microseconds[5]) / 1000; // 500ms
+    case 6:
+        expected_residency_mS[CSTATE_C0] = c0_residency_at_T6_mS;
         break;
-    case 7: // C-state 1: third entry (return to C-state 1 again) - entry_count should be 3
-        expected_residency = (timestamps_microseconds[1] - timestamps_microseconds[0]) +
-                             (timestamps_microseconds[2] - timestamps_microseconds[1]) +
-                             (timestamps_microseconds[5] - timestamps_microseconds[4]) +
-                             (timestamps_microseconds[7] - timestamps_microseconds[6]); // 500 + 500 + 500 + 500 = 2000ms
-        expected_residency = expected_residency / 1000; // Convert to milliseconds
+    case 7:
+        expected_residency_mS[CSTATE_C1] = c1_residency_at_T7_mS;
         break;
     default:
-        expected_residency = 0;
         break;
     }
-
-    return expected_residency;
 }
 
 TEST_FUNCTION(test_tlm_logger_log_cstate_information, test_setup, test_teardown)
 {
     bool print_logs = true;
+    uint8_t current_cstate = 0;
     if (print_logs)
     {
         printf("\nTEST START: test_tlm_logger_log_cstate_information\n");
     }
-
-    // Set up test data - C-state changes with corresponding P-states
-    // Added more iterations instead of just 4 to test entry_count > 1 scenarios
-    struct cstate_test_info cstate_info[NO_OF_ITERATIONS] = {
-        {0, 0, 10}, // Core 0, C-state 0, P-state 10
-        {0, 1, 10}, // Core 0, C-state 1, P-state 10
-        {0, 1, 10}, // Core 0, C-state 1 (same C-state, different timestamp) - for accumulation test
-        {0, 2, 10}, // Core 0, C-state 2, P-state 10
-        {0, 3, 10}, // Core 0, C-state 3, P-state 10
-        {0, 1, 10}, // Core 0, C-state 1 (second entry) - entry_count should be 2
-        {0, 0, 10}, // Core 0, C-state 0 (second entry) - entry_count should be 1
-        {0, 1, 10}  // Core 0, C-state 1 (third entry) - entry_count should be 3
-    };
-
-    // Define timestamps in microseconds
-    // Using standard 500ms intervals for predictable calculations for testing
-    uint64_t timestamps_microseconds[NO_OF_ITERATIONS] = {
-        1000000, // T0: 1000ms - C-state 0 enters
-        1500000, // T1: 1500ms - C-state 1 enters (500ms later)
-        2000000, // T2: 2000ms - Same C-state 1 (500ms later)
-        2500000, // T3: 2500ms - C-state 2 enters (500ms later)
-        3000000, // T4: 3000ms - C-state 3 enters (500ms later)
-        3500000, // T5: 3500ms - C-state 1 enters again (500ms later)
-        4000000, // T6: 4000ms - C-state 0 enters again (500ms later)
-        4500000  // T7: 4500ms - C-state 1 enters again (500ms later)
-    };
 
     // Convert to ticks
     uint64_t timestamps_ticks[NO_OF_ITERATIONS];
@@ -243,7 +245,7 @@ TEST_FUNCTION(test_tlm_logger_log_cstate_information, test_setup, test_teardown)
 
     // Initialize core state for proper C-state transitions
     core_rt[core_id].latest_cstate = 0; // Start with C-state 0
-    core_rt[core_id].cstate_timestamp_uS = 0;
+    core_rt[core_id].cstate_res_timestamp_uS = 0;
 
     for (int iteration = 0; iteration < NO_OF_ITERATIONS; iteration++)
     {
@@ -281,17 +283,17 @@ TEST_FUNCTION(test_tlm_logger_log_cstate_information, test_setup, test_teardown)
         pwr_core_element_cstate_t* cstate_array = &cstate_record.cstate_collection[core_id].cstate_element[0];
 
         // Get current C-state for this iteration
-        uint8_t current_cstate = cstate_info[iteration].cstate_value;
+        current_cstate = cstate_info[iteration].cstate_value;
 
         // Calculate expected residency using helper function
-        uint32_t expected_residency = calculate_expected_cstate_residency(timestamps_microseconds, iteration);
+        calculate_expected_cstate_residency(iteration);
 
         // Calculate expected entry count based on iteration
         uint32_t expected_entry_count = 0;
         switch (iteration)
         {
         case 0: // C-state 0: first entry
-            expected_entry_count = 0;
+            expected_entry_count = 1;
             break;
         case 1: // C-state 1: first entry (new C-state)
             expected_entry_count = 1;
@@ -299,38 +301,48 @@ TEST_FUNCTION(test_tlm_logger_log_cstate_information, test_setup, test_teardown)
         case 2: // C-state 1: same C-state (no change)
             expected_entry_count = 1;
             break;
-        case 3: // C-state 2: first entry (new C-state)
-            expected_entry_count = 1;
+        case 3: // C-state 0:
+            expected_entry_count = 2;
             break;
         case 4: // C-state 3: first entry (new C-state)
             expected_entry_count = 1;
             break;
-        case 5: // C-state 1: second entry (return to C-state 1)
+        case 5: // C-state 0: third entry
+            expected_entry_count = 3;
+            break;
+        case 6: // C-state 1: second entry
             expected_entry_count = 2;
             break;
-        case 6: // C-state 0: second entry (return to C-state 0)
-            expected_entry_count = 1;
-            break;
-        case 7: // C-state 1: third entry (return to C-state 1 again)
-            expected_entry_count = 3;
+        case 7: // C-state 1: continue in Cstate 1
+            expected_entry_count = 2;
             break;
         }
 
         if (print_logs)
         {
-            printf("Current C-state: %d (expected=%d), residency=%d ms (expected=%d ms), entry_count=%d "
+            printf("Current C-state: %d (expected=%d) "
+                   "Current C-State entry_count=%d "
                    "(expected=%d)\n",
                    current_cstate,
                    cstate_info[iteration].cstate_value,
-                   cstate_array[current_cstate].residency_mS,
-                   expected_residency,
                    cstate_array[current_cstate].entry_count,
                    expected_entry_count);
+            for (int cstate_val = 0; cstate_val < NUMBER_OF_CSTATES; cstate_val++)
+            {
+                printf("cstate = %d, expected = %d, actual = %d \n",
+                       cstate_val,
+                       expected_residency_mS[cstate_val],
+                       cstate_array[cstate_val].residency_mS);
+            }
         }
 
         // Verify C-state, residency and entry count for current C-state
         assert_int_equal(current_cstate, cstate_info[iteration].cstate_value);
-        assert_int_equal(expected_residency, cstate_array[current_cstate].residency_mS);
         assert_int_equal(expected_entry_count, cstate_array[current_cstate].entry_count);
+
+        for (int cstate_val = 0; cstate_val < NUMBER_OF_CSTATES; cstate_val++)
+        {
+            assert_int_equal(expected_residency_mS[cstate_val], cstate_array[cstate_val].residency_mS);
+        }
     }
 }

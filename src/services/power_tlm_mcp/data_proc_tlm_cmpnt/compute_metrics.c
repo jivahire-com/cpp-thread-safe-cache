@@ -121,36 +121,46 @@ void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_m
     }
 }
 
-void comp_metrics_for_single_core_single_pstate(uint8_t core_id, uint8_t pstate, uint64_t timestamp_diff_uS, bool update_pstate_entry)
+void comp_metrics_for_single_core_single_pstate(uint8_t core_id,
+                                                uint8_t current_pstate,
+                                                uint64_t timestamp_diff_uS,
+                                                uint8_t new_pstate,
+                                                bool update_pstate_entry)
 {
     if (core_is_active[core_id])
     {
-        computed_metrics_2_mins.cores[core_id].pstate[pstate].residency_uS += timestamp_diff_uS;
+        computed_metrics_2_mins.cores[core_id].pstate[current_pstate].residency_uS += timestamp_diff_uS;
         if (update_pstate_entry)
         {
-            computed_metrics_2_mins.cores[core_id].pstate[pstate].entry_count += 1;
+            computed_metrics_2_mins.cores[core_id].pstate[new_pstate].entry_count += 1;
         }
     }
 }
 
-void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t cstate, uint64_t timestamp_diff_uS, bool update_cstate_entry)
+void comp_metrics_for_single_core_single_cstate(uint8_t core_id,
+                                                uint8_t current_cstate,
+                                                uint64_t timestamp_diff_uS,
+                                                uint8_t new_cstate,
+                                                bool update_cstate_entry)
 {
     if (core_is_active[core_id])
     {
-        computed_metrics_2_mins.cores[core_id].cstate[cstate].residency_uS += timestamp_diff_uS;
-        // update entry count on compute matrics.
+        computed_metrics_2_mins.cores[core_id].cstate[current_cstate].residency_uS += timestamp_diff_uS;
+        // update entry count on compute metrics.
         if (update_cstate_entry)
         {
-            computed_metrics_2_mins.cores[core_id].cstate[cstate].entry_count += 1;
+            computed_metrics_2_mins.cores[core_id].cstate[new_cstate].entry_count += 1;
         }
     }
 }
 
-void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t pstate_index, uint16_t latest_power_mW)
+void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t current_pstate, uint16_t latest_power_mW, uint32_t duration_uS)
 {
     if (core_is_active[core_id])
     {
-        data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW, latest_power_mW);
+        data_util_calc_mma_dur_u16(&computed_metrics_2_mins.cores[core_id].pstate[current_pstate].power_mW,
+                                   latest_power_mW,
+                                   duration_uS);
     }
 }
 
@@ -359,7 +369,7 @@ void comp_metrics_for_soc_avg_pstate(uint8_t (*pstate)[NUMBER_OF_CORES_PER_DIE])
 
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {
-        if (core_is_active[core_id])
+        if ((core_is_active[core_id]) & ((*pstate)[core_id] != INVALID_PSTATE))
         {
             total_pstate += (*pstate)[core_id];
             num_active_cores++;

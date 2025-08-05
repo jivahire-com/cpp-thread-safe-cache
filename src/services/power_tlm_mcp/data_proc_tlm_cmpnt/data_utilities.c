@@ -33,20 +33,23 @@ int16_t data_util_get_max_val(int16_t val0, int16_t val1, int16_t val2)
     return ret_val;
 }
 
-uint64_t data_util_calc_time_diff(uint64_t* previous_timestamp_uS, uint64_t* time_stamp_uS)
+void data_util_calc_time_diff_and_update(uint64_t* last_timestamp_uS, uint64_t* current_time_stamp_uS, uint64_t* difference_uS)
 {
-    uint64_t temp_stamp_uS = exec_tlm_cmpnt_get_timestamp_microseconds();
-    uint64_t time_diff_uS = 0;
-
-    if (*previous_timestamp_uS != 0 && (temp_stamp_uS > *previous_timestamp_uS))
+    if (last_timestamp_uS == NULL || current_time_stamp_uS == NULL || difference_uS == NULL)
     {
-        time_diff_uS = temp_stamp_uS - *previous_timestamp_uS;
+        FPFW_ET_LOG(DataUtilCalcError);
+        return;
     }
 
-    *previous_timestamp_uS = temp_stamp_uS;
-    *time_stamp_uS = temp_stamp_uS;
-
-    return time_diff_uS;
+    if (*current_time_stamp_uS > *last_timestamp_uS)
+    {
+        *difference_uS = (*current_time_stamp_uS - *last_timestamp_uS);
+    }
+    else
+    {
+        *difference_uS = 0;
+    }
+    *last_timestamp_uS = *current_time_stamp_uS;
 }
 
 void data_util_calc_mma_res(uint16_t* mma_min,
@@ -97,7 +100,6 @@ void data_util_calc_mma_res(uint16_t* mma_min,
 
 void data_util_calc_mma_u16(mma_u16_t* mma, uint16_t mma_latest_value)
 {
-
     if (mma == NULL)
     {
         FPFW_ET_LOG(MMAU16NullPointer);
@@ -112,6 +114,26 @@ void data_util_calc_mma_u16(mma_u16_t* mma, uint16_t mma_latest_value)
         mma->min = mma_latest_value;
     }
     data_util_running_avg_update(&mma->running_avg, mma_latest_value);
+}
+
+void data_util_calc_mma_dur_u16(mma_u16_dur_t* mma_dur, uint16_t mma_latest_value, uint32_t duration_uS)
+{
+    if (mma_dur == NULL)
+    {
+        FPFW_ET_LOG(MMAU16NullPointer);
+        return;
+    }
+
+    if (mma_latest_value > mma_dur->max)
+    {
+        mma_dur->max = mma_latest_value;
+    }
+
+    if ((mma_latest_value < mma_dur->min) || (mma_dur->min == 0))
+    {
+        mma_dur->min = mma_latest_value;
+    }
+    data_util_running_avg_dur_update(&mma_dur->running_avg_dur, mma_latest_value, duration_uS);
 }
 
 uint64_t data_util_convert_systick_to_microseconds(uint64_t tick_count)
@@ -169,6 +191,48 @@ void data_util_running_avg_reset(running_avg_t* running_avg)
     }
     running_avg->average = 0;
     running_avg->num_samples = 0;
+}
+
+void data_util_running_avg_dur_reset(running_avg_dur_t* ra)
+{
+    if (ra == NULL)
+    {
+        FPFW_ET_LOG(RunningAvgDurResetNullPointer);
+        return;
+    }
+    ra->sum_weighted = 0;
+    ra->total_time_uS = 0;
+}
+
+void data_util_running_avg_dur_update(running_avg_dur_t* ra, uint16_t value, uint32_t duration_uS)
+{
+    if (ra == NULL)
+    {
+        FPFW_ET_LOG(RunningAvgDurUpdateNullPointer);
+        return;
+    }
+    if (duration_uS == 0)
+    {
+        return;
+    }
+
+    ra->sum_weighted += (uint64_t)value * duration_uS;
+    ra->total_time_uS += duration_uS;
+}
+
+uint16_t data_util_running_avg_dur_get(const running_avg_dur_t* ra)
+{
+    if (ra == NULL)
+    {
+        FPFW_ET_LOG(RunningAvgDurGetNullPointer);
+        return 0;
+    }
+    if (ra->total_time_uS == 0)
+    {
+        return 0;
+    }
+
+    return (uint16_t)((ra->sum_weighted + ra->total_time_uS / 2) / ra->total_time_uS); // Rounded
 }
 
 uint16_t data_util_mean_of_means(uint16_t mean1, uint16_t count1, uint16_t mean2, uint16_t count2)

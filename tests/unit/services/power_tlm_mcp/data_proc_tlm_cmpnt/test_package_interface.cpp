@@ -43,6 +43,8 @@ extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 #define TEST_MPAM_ID_4      (4)
 #define TEST_CORE_ID_5      (5)
 
+#define AVG_DURATION_USEC (100000)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -69,7 +71,10 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 
     for (uint16_t pstate_id = 0; pstate_id < NUMBER_OF_PSTATES; pstate_id++)
     {
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg.average = 100;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg_dur.sum_weighted =
+            100 * AVG_DURATION_USEC;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg_dur.total_time_uS =
+            AVG_DURATION_USEC;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.min = 50;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.max = 150;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].entry_count = 1;
@@ -82,9 +87,9 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
     for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
     {
 
-        assert_int_equal(
-            pstate_array[pstate_index].avg_power_mW,
-            computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.running_avg.average);
+        assert_int_equal(pstate_array[pstate_index].avg_power_mW,
+                         data_util_running_avg_dur_get(
+                             &computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.running_avg_dur));
         assert_int_equal(pstate_array[pstate_index].min_power_mW,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.min);
         assert_int_equal(pstate_array[pstate_index].max_power_mW,
@@ -97,7 +102,8 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
     }
     // setup for failure case, change pstate 0 element data.
     uint8_t index = 0;
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg.average = 105;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg_dur.sum_weighted = 105 * AVG_DURATION_USEC;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg_dur.total_time_uS = AVG_DURATION_USEC;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.min = 55;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.max = 155;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].entry_count = 2;
@@ -107,7 +113,8 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 
     // verify for pstate 0
     assert_int_not_equal(pstate_array[index].avg_power_mW,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg.average);
+                         data_util_running_avg_dur_get(
+                             &computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg_dur));
     assert_int_not_equal(pstate_array[index].min_power_mW,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.min);
     assert_int_not_equal(pstate_array[index].max_power_mW,

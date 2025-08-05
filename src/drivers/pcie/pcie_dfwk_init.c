@@ -67,6 +67,10 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
         FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Begin link training!\n", r->rpss_index, r->rp_index);
         begin_link_training(incoming);
         break;
+    case (POST_RP_LINK_UP_INIT):
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Begin post link-up programming!\n", r->rpss_index, r->rp_index);
+        sts = begin_rp_post_link_up_init(incoming);
+        break;
     case (GET_RPSS_ENTITY_REQUEST):
         r->status = SILIBS_E_PARAM;
         if (r->p_requested_data != NULL)

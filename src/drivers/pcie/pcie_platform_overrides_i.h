@@ -42,3 +42,13 @@ void plat_overrides_pre_pciess_config_ss_for_bifur(pcie_ss_entity_t* rpss);
  * @return Boolean value to enable/disable phy programming using silibs.
  */
 bool plat_get_phy_programming_support();
+
+/**
+ * @brief Check if post link-up init is needed. We skip this step on emulation,
+ *        big fpga and svp.
+ *
+ */
+static inline bool plat_post_link_up_init_needed()
+{
+    return (idsw_get_platform_sdv() >= PLATFORM_RVP_EVT_SILICON);
+}

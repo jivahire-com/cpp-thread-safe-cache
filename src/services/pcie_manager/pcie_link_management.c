@@ -14,6 +14,7 @@
 #include <DbgPrint.h>
 #include <DfwkClient.h>
 #include <bug_check.h>
+#include <fpfw_cfg_mgr.h>
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
 #include <pcie_manager_i.h>
@@ -24,6 +25,7 @@
 #include <silibs_status.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <system_info.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -33,6 +35,8 @@
 #define GET_RP_INDEX_FROM_TIMER_CALLBACK(cb_val)   ((cb_val >> 8) & 0xFF)
 #define RP_LINK_TRAINING_TIMEOUT_TICKS             (1000)
 #define RP_TIMER_ONE_SHOT                          (0)
+#define OVL_LT_RETRIES_MAX                         (3)
+#define WAIT_SBR_MS                                (FPFW_MAX((TX_TIMER_TICKS_PER_SECOND / (200UL)), (1UL))) // 5ms
 
 /*------------- Typedefs -----------------*/
 
@@ -55,7 +59,14 @@ static void pcie_rp_timer_expiry_callback(unsigned long cb_val)
     pcie_manager_context_t* ctx = scp_pcie_get_manager_context(rpss_idx);
 
     FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Link training timer expired!\n", rpss_idx, rp_idx);
+
+    /*
+     * Even if the link training timer expires, we still need to check and log
+     * the link status. Also initialize any capabilities that are required to
+     * be initialized after link-up.
+     */
     send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)(ctx->iface), rpss_idx, rp_idx);
+    send_sync_rp_post_link_up_init((PDFWK_INTERFACE_HEADER)(ctx->iface), rpss_idx, rp_idx);
 }
 
 static void start_link_training_timer_for_rp(pcie_manager_context_t* ctx, uint8_t rp_idx)
@@ -85,6 +96,23 @@ static void initiate_link_training_for_rp(pcie_manager_context_t* ctx, uint8_t r
 
     /* Initiate link training on the RP */
     send_sync_rp_initiate_link_training((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, rp_index);
+}
+
+static bool rp_is_overlake(uint8_t rpss_idx, uint8_t rp_idx)
+{
+    if (rp_idx != 0)
+    {
+        return false;
+    }
+
+    /* Check for mirrored config for 2S */
+    uint8_t soc_position = system_info_get_soc_position();
+    if (soc_position == 0x01)
+    {
+        return (config_get_overlake_rpss_index_secondary_soc() == rpss_idx);
+    }
+
+    return (config_get_overlake_rpss_index_primary_soc() == rpss_idx);
 }
 
 void initiate_link_training_on_rpss(pcie_manager_context_t* ctx)
@@ -124,4 +152,39 @@ void handle_pcie_link_down_event(pcie_manager_context_t* ctx, pciess_completion_
 
     /* The root port is ready, initiate link re-training and return */
     initiate_link_training_for_rp(ctx, rp_index);
+}
+
+void handle_pcie_link_up_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl)
+{
+    uint8_t rpss_idx = ctx->rpss_idx;
+    uint8_t rp_idx = cmpl->rp_index;
+    static uint8_t ovl_lt_retries = 0;
+    silibs_status_t status = SILIBS_SUCCESS;
+
+    status = send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+
+    /* Deal with overlake re-training if this is an overlake root port */
+    if (rp_is_overlake(rpss_idx, rp_idx) && config_get_enable_overlake_sbr_workaround())
+    {
+        if (status == SILIBS_E_OVERWRITTEN && ovl_lt_retries < OVL_LT_RETRIES_MAX)
+        {
+            /* Send the SBR, this will result in link-down flow being triggered */
+            FPFW_DBGPRINT_INFO("RPSS[%d] OVL2: Link training failed, issue SBR\n", rpss_idx);
+            send_sync_rp_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+            tx_thread_sleep(WAIT_SBR_MS);
+            send_sync_rp_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+            ovl_lt_retries++;
+        }
+        else if (status == SILIBS_SUCCESS)
+        {
+            /*
+             * We should only retry on cold reset so set it to the max
+             * to ensure any future link down events don't trigger SBR
+             * flow
+             */
+            ovl_lt_retries = OVL_LT_RETRIES_MAX;
+        }
+    }
+
+    send_sync_rp_post_link_up_init((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
 }

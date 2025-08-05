@@ -627,6 +627,10 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, POST_RP_LINK_UP_INIT);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
     will_return(__wrap_system_info_get_soc_position, 0);
     will_return(__wrap_config_get_overlake_rpss_index_primary_soc, 1); // not this RPSS
     expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
@@ -636,6 +640,10 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
     ctx.rpss_idx = (RPSS_INSTANCE)0;
     cmpl_req.rp_index = 1; // wrong rp index
     expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_LINK_STATUS);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, POST_RP_LINK_UP_INIT);
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
@@ -673,6 +681,11 @@ TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
 
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, POST_RP_LINK_UP_INIT);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
     process_wait_for_event_data(&ctx, &cmpl_req);
 
     /* Secondary SoC case*/
@@ -693,6 +706,11 @@ TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
     expect_value(__wrap__tx_thread_sleep, timer_ticks, 1);
 
     expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, CLEAR_SECONDARY_BUS_RESET_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, POST_RP_LINK_UP_INIT);
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
@@ -1097,7 +1115,7 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     ras_error_record_t mock_record;
     ras_einj_info_t mock_einj_params;
 
-    expect_function_calls(__wrap_crash_dump_bug_check, 21);
+    expect_function_calls(__wrap_crash_dump_bug_check, 23);
     should_return = false;
 
     if (!bugcheck_mock_return())
@@ -1143,6 +1161,16 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     if (!bugcheck_mock_return())
     {
         send_sync_rp_initiate_link_training((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_rp_post_link_up_init((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        send_sync_rp_post_link_up_init((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
     }
 
     if (!bugcheck_mock_return())

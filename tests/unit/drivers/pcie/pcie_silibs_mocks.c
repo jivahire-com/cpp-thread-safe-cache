@@ -164,6 +164,12 @@ silibs_status_t __wrap_pciess_rp_initiate_link_training(pcie_rp_entity_t* rp)
     return mock_type(silibs_status_t);
 }
 
+silibs_status_t __wrap_pciess_rp_post_link_up_init(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
+    return mock_type(silibs_status_t);
+}
+
 silibs_status_t __wrap_pciess_rp_get_link_train_done(pcie_rp_entity_t* rp)
 {
     assert_non_null(rp);

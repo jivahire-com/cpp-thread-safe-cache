@@ -77,9 +77,7 @@ silibs_status_t send_sync_rpss_post_rp_init_request(PDFWK_INTERFACE_HEADER iface
  * @retval SILIBS_SUCCESS: Error injection request sent successfully.
  * @retval Other:          Error occurred while sending error injection request.
  */
-silibs_status_t send_sync_rpss_inject_pcie_error(PDFWK_INTERFACE_HEADER iface,
-                                                 RPSS_INSTANCE rpss_idx,
-                                                 ras_einj_info_t* einj_payload);
+silibs_status_t send_sync_rpss_inject_pcie_error(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx, ras_einj_info_t* einj_payload);
 
 /*--------------- Root port (RP) level synchronous requests -----------------*/
 /**
@@ -116,6 +114,18 @@ silibs_status_t send_sync_rp_initiate_link_training(PDFWK_INTERFACE_HEADER iface
  * @retval Other:          Error occurred while obtaining link status.
  */
 silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
+
+/**
+ * @brief Send a synchronous request to carry out any initialization required on the RP after link-up.
+ *
+ * @param[in] iface     - Pointer to the driver interface header for this RPSS.
+ * @param[in] rpss_idx  - The RPSS instance index.
+ * @param[in] rp_index  - The root port index.
+ *
+ * @retval SILIBS_SUCCESS: Initialization after link-up sent successfully.
+ * @retval Other:          Error occurred while sending initialization after link-up.
+ */
+silibs_status_t send_sync_rp_post_link_up_init(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
 
 /**
  * @brief Send a synchronous request to set the secondary bus reset for the specified RP.

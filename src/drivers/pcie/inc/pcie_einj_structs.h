@@ -58,6 +58,7 @@ typedef union
     PCIE_RASDES_INJ_FC_TYPE fc;
     PCIE_RASDES_INJ_RETRY_TLP_TYPE retry_tlp;
     PCIE_PHY_SRAM_ERROR phy_sram;
+    uint8_t max_size[12];
 } PCIE_ERROR_DATA;
 
 typedef struct

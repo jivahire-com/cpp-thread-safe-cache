@@ -488,6 +488,32 @@ TEST_FUNCTION(test_get_rp_ready_success, test_setup, test_teardown)
     assert_int_equal(r.status, SILIBS_SUCCESS);
 }
 
+TEST_FUNCTION(test_begin_rp_post_link_up_init, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = POST_RP_LINK_UP_INIT;
+    r.req_type = POST_RP_LINK_UP_INIT;
+    r.rpss_index = RPSS3;
+    r.rp_index = 0;
+
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_pciess_rp_post_link_up_init, SILIBS_SUCCESS);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+
+    /* Ensure that on SVP it doesn't call into the silibs APIs */
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
 TEST_FUNCTION(test_get_rp_link_status, test_setup, test_teardown)
 {
     /* Setup the request for an rpss */

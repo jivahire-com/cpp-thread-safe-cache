@@ -41,3 +41,13 @@ void handle_pcie_link_down_event(pcie_manager_context_t* ctx, pciess_completion_
  * @retval None - An asynchronous event is returned once link training is complete.
  */
 void initiate_link_training_on_rpss(pcie_manager_context_t* ctx);
+
+/*
+ * @brief Handles the PCIe link up event for a given RPSS (and RP).
+ *        Even called in case the link training timer expires, as we still need
+ *        to check and log the link status.
+ *
+ * @param ctx[in]  Pointer to the PCIe manager context associated with this RPSS + RP
+ * @param cmpl[in] Pointer to the completion request containing the event data.
+ */
+void handle_pcie_link_up_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl);

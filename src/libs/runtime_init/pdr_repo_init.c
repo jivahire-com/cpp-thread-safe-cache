@@ -352,6 +352,19 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .fatal_low = 0,       // Not set        .fatal_high = 0,      // Not set
     };
 
+    static fpfw_pldm_pdr_sensor_auxiliary_name_t s_dummy2_name = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_SENSOR_AUXILIARY_NAMES_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_sensor_auxiliary_name_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+
+        .sensor_id = PLDM_SENSOR_ID_MCP_DUMMY_2,
+        .sensor_count = 1,
+        .name_string_count = 0x01,
+        .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
+        .sensor_name = u"Dummy_State_Sensor" // Sensor name in UTF-16 format
+    };
+
     static fpfw_pldm_pdr_state_sensor_COMPOSITE_1_STATES_1_t s_dummy2 = {
         .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
         .hdr.type = PLDM_STATE_SENSOR_PDR,
@@ -363,7 +376,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .entity_instance = 0,
         .container_id = 0,
         .sensor_init = PLDM_NO_INIT,
-        .auxiliar_init_pdr = false,
+        .auxiliar_init_pdr = true,
         .composite_sensor_count = 1,
         .possible_states = {
             {.state_set_id = PLDM_STATE_SET_AVAILABILITY,
@@ -373,6 +386,19 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
                 }
             }
         }
+    };
+
+    static fpfw_pldm_pdr_sensor_auxiliary_name_t s_dummy3_name = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_SENSOR_AUXILIARY_NAMES_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_sensor_auxiliary_name_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+
+        .sensor_id = PLDM_SENSOR_ID_MCP_DUMMY_3,
+        .sensor_count = 1,
+        .name_string_count = 0x01,
+        .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
+        .sensor_name = u"Dummy_Numeric_Sensor_3" // Sensor name in UTF-16 format
     };
 
     static fpfw_pldm_pdr_numeric_sensor_UINT32_UINT32_t s_dummy3 = {
@@ -386,7 +412,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .entity_instance = 0,
         .container_id = 0,
         .sensor_init = PLDM_NO_INIT,
-        .auxiliar_init_pdr = false,
+        .auxiliar_init_pdr = true,
 
         .base_unit = PLDM_BASE_UNIT_NONE,
         .unit_modifier = 0,
@@ -424,6 +450,19 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .fatal_high = 0,
     };
 
+    static fpfw_pldm_pdr_sensor_auxiliary_name_t s_dummy4_name = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_SENSOR_AUXILIARY_NAMES_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_sensor_auxiliary_name_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+
+        .sensor_id = PLDM_SENSOR_ID_MCP_DUMMY_4,
+        .sensor_count = 1,
+        .name_string_count = 0x01,
+        .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
+        .sensor_name = u"Dummy_Numeric_Sensor_4" // Sensor name in UTF-16 format
+    };
+
     static fpfw_pldm_pdr_numeric_sensor_SINT32_SINT32_t s_dummy4 = {
         .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
         .hdr.type = PLDM_NUMERIC_SENSOR_PDR,
@@ -435,7 +474,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .entity_instance = 0,
         .container_id = 0,
         .sensor_init = PLDM_NO_INIT,
-        .auxiliar_init_pdr = false,
+        .auxiliar_init_pdr = true,
 
         .base_unit = PLDM_BASE_UNIT_CELCIUS,
         .unit_modifier = 0,
@@ -473,6 +512,19 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .fatal_high = 110,
     };
 
+    static fpfw_pldm_pdr_sensor_auxiliary_name_t s_dummy5_name = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_SENSOR_AUXILIARY_NAMES_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_sensor_auxiliary_name_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+
+        .sensor_id = PLDM_SENSOR_ID_MCP_DUMMY_5,
+        .sensor_count = 1,
+        .name_string_count = 0x01,
+        .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
+        .sensor_name = u"Dummy_State_Sensor_5" // Sensor name in UTF-16 format
+    };
+
     static fpfw_pldm_pdr_state_sensor_COMPOSITE_1_STATES_2_t s_dummy5 = {
         .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
         .hdr.type = PLDM_STATE_SENSOR_PDR,
@@ -484,7 +536,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .entity_instance = 0,
         .container_id = 0,
         .sensor_init = PLDM_NO_INIT,
-        .auxiliar_init_pdr = false,
+        .auxiliar_init_pdr = true,
         .composite_sensor_count = 1,
         .possible_states = {
             {.state_set_id = PLDM_STATE_SET_OPERATIONAL_STATUS,
@@ -497,9 +549,18 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         }
     };
 
+    static fpfw_pldm_pdr_sensor_auxiliary_name_t s_dummy6_name = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_SENSOR_AUXILIARY_NAMES_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_sensor_auxiliary_name_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
 
-
-
+        .sensor_id = PLDM_SENSOR_ID_MCP_DUMMY_6,
+        .sensor_count = 1,
+        .name_string_count = 0x01,
+        .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
+        .sensor_name = u"Dummy_Numeric_Sensor_6" // Sensor name in UTF-16 format
+    };
 
     static fpfw_pldm_pdr_numeric_sensor_UINT32_UINT32_t s_dummy6 = {
         .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
@@ -512,7 +573,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .entity_instance = 0,
         .container_id = 0,
         .sensor_init = PLDM_NO_INIT,
-        .auxiliar_init_pdr = false,
+        .auxiliar_init_pdr = true,
 
         .base_unit = PLDM_BASE_UNIT_NONE,
         .unit_modifier = 0,
@@ -647,15 +708,20 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         &s_VR_TMP_MAX_pdr_aux_name,
         &s_SOC_AVG_FREQ_pdr,
         &s_SOC_AVG_FREQ_pdr_aux_name,
-        &s_dummy0_name,
         &s_dummy0,
-        &s_dummy1_name,
+        &s_dummy0_name,
         &s_dummy1,
+        &s_dummy1_name,
         &s_dummy2,
+        &s_dummy2_name,
         &s_dummy3,
+        &s_dummy3_name,
         &s_dummy4,
+        &s_dummy4_name,
         &s_dummy5,
+        &s_dummy5_name,
         &s_dummy6,
+        &s_dummy6_name,
         &s_dummy_effecter0_name,
         &s_dummy_effecter0,
         &s_dummy_effecter1_name,

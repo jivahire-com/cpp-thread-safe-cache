@@ -773,8 +773,8 @@ void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx)
     else
     {
         die1_core_disable_config_knob_31_0 = config_get_die1_core_disable_value_31_0();
-        die1_core_disable_config_knob_31_0 = config_get_die1_core_disable_value_63_32();
-        die1_core_disable_config_knob_31_0 = config_get_die1_core_disable_value_95_64();
+        die1_core_disable_config_knob_63_32 = config_get_die1_core_disable_value_63_32();
+        die1_core_disable_config_knob_95_64 = config_get_die1_core_disable_value_95_64();
         // core‐spare‐enable masks
         die1_config_spare_core_en_31_0 = config_get_die1_core_spare_en_31_0();
         die1_config_spare_core_en_63_32 = config_get_die1_core_spare_en_63_32();

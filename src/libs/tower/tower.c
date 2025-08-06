@@ -221,6 +221,9 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     tower_sequence_params.tower_cfg = &tower_cfg;
 
+    // Always set up MSI attributes for VAB SMMUs (so that they are delivered to cores correctly)
+    tower_sequence_params.vab_configure_msi_attr = true;
+
     // Fabric Tower
     tower_sequence_params.tower_configure_fabric_apu = true;
     tower_sequence_params.tower_configure_fabric_fmu = true;

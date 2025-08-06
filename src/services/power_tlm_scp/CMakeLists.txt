@@ -1,13 +1,12 @@
-set(TARGET kng.service.pwr_tlm_mcp.cmpnt.in_band_tlm)
+#
+#  Copyright (c) Microsoft Corporation. All rights reserved.
+#
+set(TARGET kng.service.pwr_tlm_scp)
 
 add_library(${TARGET}
     STATIC
-        mts_manager.c
-        ddr_manager.c
-        element_schema.c
-        in_band_tlm_cmpnt.c
-        package_creation.c
-        snsr_fifo_debug.c
+        pwr_tlm_service_scp_events.c
+        pwr_tlm_service_scp.c
 )
 
 target_include_directories(${TARGET}
@@ -15,26 +14,25 @@ target_include_directories(${TARGET}
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-
 )
 
 target_link_libraries(${TARGET}
     PUBLIC
-
+        IFPFW.EventTracing
     PRIVATE
-        pwr_tlm_mcp.service.cmpnt.interfaces
         fwlib.lib.assert
         fwlib.lib.status
         fwlib.lib.utils
+        fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.threadx
-        ms::lib::error_codes
+        kng_silibs_platform
         ms::lib::event_trace::trace
-        ms::lib::interface::in_band_telemetry_ddr
         ms::lib::pwr_tlm_core_ex
         ms::service::mts
 
-
 )
+
+add_library(ms::service::pwr_tlm_scp ALIAS ${TARGET})
 
 lint_target(${TARGET})
 format_target(${TARGET})

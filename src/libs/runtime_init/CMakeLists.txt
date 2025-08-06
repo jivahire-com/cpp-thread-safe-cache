@@ -54,6 +54,7 @@ add_library(${TARGET}
         pcie_init.c
         pex_rng_init.c
         power_fuse_init.c
+        pwr_tlm_svc_scp_init.c
         power_init.c
         pwr_tlm_core_ex_init.c
         scmi_init.c
@@ -170,6 +171,7 @@ target_link_libraries(
         ms::service::pcie_manager
         ms::service::pcie_manager::cli
         ms::service::power
+        ms::service::pwr_tlm_scp
         ms::service::scp_startup_shutdown
         ms::service::sds_service
         ms::service::sensor_fifo

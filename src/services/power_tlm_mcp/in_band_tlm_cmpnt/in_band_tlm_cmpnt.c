@@ -197,3 +197,8 @@ void in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg(void)
 {
     mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps();
 }
+
+void in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg(void)
+{
+    mts_manager_send_prep_pwr_pkg_notification_to_scp();
+}

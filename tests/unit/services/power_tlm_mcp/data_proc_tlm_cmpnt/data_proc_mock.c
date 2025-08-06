@@ -165,6 +165,11 @@ void __wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg(void)
     function_called();
 }
 
+void __wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg(void)
+{
+    function_called();
+}
+
 void __wrap_wait_for_semaphore(SEMAPHORE_ID id, uint32_t key)
 {
     FPFW_UNUSED(id);

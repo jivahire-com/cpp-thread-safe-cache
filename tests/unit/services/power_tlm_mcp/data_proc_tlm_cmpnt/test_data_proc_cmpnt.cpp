@@ -66,9 +66,11 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg, test_setup, tes
 
     die_2_die_exch_init(0);
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg);
+    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
     data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg();
 
     die_2_die_exch_init(1);
+    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
     data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg();
 }
 

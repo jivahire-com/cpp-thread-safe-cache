@@ -26,19 +26,6 @@
 #define MEMBER_SIZE(type, member) (sizeof( ((type *)0)->member ))
 
 /*-------------- Typedefs ----------------*/
-typedef enum
-{
-   TLM_CLIENT_CMD_SET_MODE_PUSH = 1,
-   TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH = 2,
-   TLM_CLIENT_CMD_GEN_PWR_PACKAGE_PRIM_MCP_2_SEC_MCP_PUSH = 4,
-} tlm_client_cmd_t;
-
-typedef struct __attribute__((packed)) tlm_client_msg_t{
-    uint16_t cmd;                                                   // tlm_client_cmd_t
-    union __attribute__((packed)) {
-        uint16_t                       mode;                        // tlm_operating_mode_t
-    } payload;
-} tlm_client_msg_t, *p_tlm_client_msg_t;
 
 typedef struct
 {
@@ -201,3 +188,12 @@ void mts_manager_send_mode_to_sec_cores(tlm_operating_mode_t new_mode);
  * @return None
  */
 void mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps(void);
+
+/**
+ * @brief Notify the SCP to prepare for a power package.
+ *
+ *
+ * @return None
+ */
+void mts_manager_send_prep_pwr_pkg_notification_to_scp(void);
+

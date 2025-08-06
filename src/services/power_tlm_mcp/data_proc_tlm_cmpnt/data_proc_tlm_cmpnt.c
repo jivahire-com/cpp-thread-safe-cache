@@ -62,6 +62,8 @@ void data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg(void)
     {
         in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg();
     }
+
+    in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg();
 }
 
 void data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg(void)

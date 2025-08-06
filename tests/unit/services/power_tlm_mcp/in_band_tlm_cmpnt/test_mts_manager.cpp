@@ -22,6 +22,7 @@ extern "C" {
 #include <in_band_tlm_cmpnt_i.h>
 #include <mts_manager_i.h>
 #include <package_creation_i.h>
+#include <pwr_tlm_core_exchange.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
 }
 /*-- Symbolic Constant Macros (defines) --*/
@@ -839,4 +840,11 @@ TEST_FUNCTION(test_mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps, test_
     will_return(__wrap_mts_is_primary_instance, true);
     expect_function_call(__wrap_mts_client_forward_trp_msg);
     mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps();
+}
+
+TEST_FUNCTION(test_mts_manager_send_prep_pwr_pkg_notification_to_scp, test_setup, test_teardown)
+{
+    will_return(__wrap_mts_is_primary_instance, true);
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    mts_manager_send_prep_pwr_pkg_notification_to_scp();
 }

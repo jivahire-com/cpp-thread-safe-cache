@@ -54,6 +54,7 @@ mock_target(${TARGET}
     gtimer_prodfw_get_frequency
     in_band_tlm_cmpnt_is_inst_record_enabled
     in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg
+    in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg
     wait_for_semaphore
     release_semaphore
     core_info_get_enable_cores_result

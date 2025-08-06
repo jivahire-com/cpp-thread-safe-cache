@@ -18,6 +18,7 @@
 #include <exec_tlm_cmpnt.h>
 #include <in_band_tlm_cmpnt.h>
 #include <message_transfer_service.h>
+#include <pwr_tlm_core_exchange.h>
 #include <telemetry_events_i.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -55,7 +56,6 @@ static mts_client_t s_pwr_tlm_mts_client = {
 };
 
 /*------------- Functions ----------------*/
-
 void mts_manager_init(void)
 {
     // create a list of free packages
@@ -714,5 +714,23 @@ void mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps(void)
 
         // api copies message, ok to use stack memory
         mts_client_forward_trp_msg(&trp_msg, TRP_BROADCAST_PRIM_TO_SEC_PEER_ONLY);
+    }
+}
+
+void mts_manager_send_prep_pwr_pkg_notification_to_scp(void)
+{
+    if (mts_is_primary_instance() == true)
+    {
+        trp_msg_t trp_msg = {0};
+        mts_manager_init_trp_header_for_broadcast(&trp_msg, MEMBER_SIZE(tlm_client_msg_t, cmd));
+        trp_msg.hdr.dest_node.die_id = mts_get_this_die_id();
+        trp_msg.hdr.dest_node.core_id = CPU_SCP;
+        trp_msg.hdr.broadcast_type = TRP_BROADCAST_NONE;
+
+        p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+        tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH;
+
+        // api copies message, ok to use stack memory
+        mts_client_send_new_trp_msg(&trp_msg);
     }
 }

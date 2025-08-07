@@ -185,17 +185,17 @@ void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_el
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_channel, p_pwr_soc_element_dimm_temp_t dimm_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_idx, p_pwr_soc_element_dimm_temp_t dimm_data)
 {
-    FPFW_UNUSED(dimm_channel);
+    FPFW_UNUSED(dimm_idx);
     memset(dimm_data, 0xFF, sizeof(pwr_soc_element_dimm_temp_t));
 
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(uint16_t dimm_module, p_pwr_soc_element_dimm_power_t dimm_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(uint16_t dimm_idx, p_pwr_soc_element_dimm_power_t dimm_data)
 {
-    FPFW_UNUSED(dimm_module);
+    FPFW_UNUSED(dimm_idx);
     memset(dimm_data, 0xFF, sizeof(pwr_soc_element_dimm_power_t));
 
     function_called();
@@ -242,9 +242,9 @@ void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_ele
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_inst_soc_element_dimm_runtime_t dimm_data)
+void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_idx, p_inst_soc_element_dimm_runtime_t dimm_data)
 {
-    FPFW_UNUSED(dimm_module);
+    FPFW_UNUSED(dimm_idx);
     memset(dimm_data, 0xFF, sizeof(inst_soc_element_dimm_runtime_t));
 
     function_called();

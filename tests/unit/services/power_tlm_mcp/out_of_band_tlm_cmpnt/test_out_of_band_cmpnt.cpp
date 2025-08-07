@@ -244,6 +244,72 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_soc_avg_freq_negative, test_setup, test_teard
     pwr_tlm_oob_get_soc_avg_freq(PLDM_SENSOR_ID_POWER_TLM_LAST, &sensor_value);
 }
 
+TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_avg_temp, test_setup, test_teardown)
+{
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC, 750);
+    pwr_tlm_oob_get_dimm_avg_temp(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_00_NUM_SENS, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u16, 750);
+}
+
+TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_avg_temp_negative, test_setup, test_teardown)
+{
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+
+    // Test with sensor ID greater than valid range
+    pwr_tlm_oob_get_dimm_avg_temp(PLDM_SENSOR_ID_POWER_TLM_LAST, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u16, 0);
+
+    // Reset sensor_value and test with sensor ID less than valid range to cover the lower bound check
+    sensor_value = {{{0}}};
+    pwr_tlm_oob_get_dimm_avg_temp(PLDM_SENSOR_ID_POWER_TLM_SOC_TMP_MAX_NUM_SENS, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u16, 0);
+}
+
+TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_max_temp, test_setup, test_teardown)
+{
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC, 850);
+    pwr_tlm_oob_get_dimm_max_temp(PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_00_NUM_SENS, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u16, 850);
+}
+
+TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_max_temp_negative, test_setup, test_teardown)
+{
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+
+    // Test with sensor ID greater than valid range
+    pwr_tlm_oob_get_dimm_max_temp(PLDM_SENSOR_ID_POWER_TLM_LAST, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u16, 0);
+
+    // Reset sensor_value and test with sensor ID less than valid range to cover the lower bound check
+    sensor_value = {{{0}}};
+    pwr_tlm_oob_get_dimm_max_temp(PLDM_SENSOR_ID_POWER_TLM_SOC_TMP_MAX_NUM_SENS, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u16, 0);
+}
+
+TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_avg_pwr, test_setup, test_teardown)
+{
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW, 0x5678);
+    pwr_tlm_oob_get_dimm_avg_pwr(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_00_NUM_SENS, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u32, 0x5678);
+}
+
+TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_avg_pwr_negative, test_setup, test_teardown)
+{
+    fpfw_pldm_composite_value_t sensor_value = {{{0}}};
+
+    // Test with sensor ID greater than valid range
+    pwr_tlm_oob_get_dimm_avg_pwr(PLDM_SENSOR_ID_POWER_TLM_LAST, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u32, 0);
+
+    // Reset sensor_value and test with sensor ID less than valid range to cover the lower bound check
+    sensor_value = {{{0}}};
+    pwr_tlm_oob_get_dimm_avg_pwr(PLDM_SENSOR_ID_POWER_TLM_SOC_TMP_MAX_NUM_SENS, &sensor_value);
+    assert_int_equal(sensor_value.numeric.u32, 0);
+}
+
 TEST_FUNCTION(test_out_of_band_tlm_cmpnt_print_sensors, test_setup, test_teardown)
 {
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC, 800);

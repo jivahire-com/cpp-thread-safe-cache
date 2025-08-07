@@ -283,3 +283,122 @@ TEST_FUNCTION(test_die_2_die_exch_oob_read_write_window_avg_pstate_negative, tes
     assert_int_equal(read_window.sum, 0);
     assert_int_equal(read_window.num_samples, 0);
 }
+
+TEST_FUNCTION(test_die_2_die_exch_oob_write_read_dimm_info, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+    die_2_die_exch_oob_write_dimm_info(0, 1000, 20, 25);
+    die_2_die_exch_oob_write_dimm_info(0, 1000, 20, 30);
+
+    die_2_die_exch_oob_write_dimm_info(1, 2000, 25, 30);
+    die_2_die_exch_oob_write_dimm_info(1, 2000, 25, 35);
+
+    die_2_die_exch_oob_write_dimm_info(2, 3000, 30, 35);
+    die_2_die_exch_oob_write_dimm_info(2, 3000, 30, 40);
+
+    die_2_die_exch_oob_write_dimm_info(3, 4000, 35, 40);
+    die_2_die_exch_oob_write_dimm_info(3, 4000, 35, 45);
+
+    die_2_die_exch_oob_write_dimm_info(4, 5000, 40, 45);
+    die_2_die_exch_oob_write_dimm_info(4, 5000, 40, 50);
+
+    die_2_die_exch_oob_write_dimm_info(5, 6000, 45, 50);
+    die_2_die_exch_oob_write_dimm_info(5, 6000, 45, 55);
+
+    uint16_t avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, 0);
+    assert_int_equal(avg_temp_dC, 20);
+
+    uint16_t max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, 0);
+    assert_int_equal(max_temp_dC, 30);
+
+    uint16_t avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, 0);
+    assert_int_equal(avg_pwr_mW, 1000);
+
+    avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, 1);
+    assert_int_equal(avg_temp_dC, 25);
+
+    max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, 1);
+    assert_int_equal(max_temp_dC, 35);
+
+    avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, 1);
+    assert_int_equal(avg_pwr_mW, 2000);
+
+    avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, 2);
+    assert_int_equal(avg_temp_dC, 30);
+
+    max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, 2);
+    assert_int_equal(max_temp_dC, 40);
+
+    avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, 2);
+    assert_int_equal(avg_pwr_mW, 3000);
+
+    avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, 3);
+    assert_int_equal(avg_temp_dC, 35);
+
+    max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, 3);
+    assert_int_equal(max_temp_dC, 45);
+
+    avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, 3);
+    assert_int_equal(avg_pwr_mW, 4000);
+
+    avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, 4);
+    assert_int_equal(avg_temp_dC, 40);
+
+    max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, 4);
+    assert_int_equal(max_temp_dC, 50);
+
+    avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, 4);
+    assert_int_equal(avg_pwr_mW, 5000);
+
+    avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, 5);
+    assert_int_equal(avg_temp_dC, 45);
+
+    max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, 5);
+    assert_int_equal(max_temp_dC, 55);
+
+    avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, 5);
+    assert_int_equal(avg_pwr_mW, 6000);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_oob_read_dimm_avg_temp_dC_negative, test_setup, test_teardown)
+{
+    die_2_die_exch_oob_write_dimm_info(7, 1000, 20, 30);
+    uint16_t avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(7, 0);
+    assert_int_equal(avg_temp_dC, 0);
+
+    avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, NUMBER_OF_DIMMS);
+    assert_int_equal(avg_temp_dC, 0);
+
+    die_2_die_exch_init(6);
+    die_2_die_exch_oob_write_dimm_info(1, 1000, 20, 30);
+    avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, 0);
+    assert_int_equal(avg_temp_dC, 0);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_oob_read_dimm_max_temp_dC_negative, test_setup, test_teardown)
+{
+    die_2_die_exch_oob_write_dimm_info(7, 1000, 20, 30);
+    uint16_t max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(7, 0);
+    assert_int_equal(max_temp_dC, 0);
+    max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, NUMBER_OF_DIMMS);
+    assert_int_equal(max_temp_dC, 0);
+
+    die_2_die_exch_init(6);
+    die_2_die_exch_oob_write_dimm_info(1, 1000, 20, 30);
+    max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, 0);
+    assert_int_equal(max_temp_dC, 0);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_oob_read_dimm_avg_pwr_mW_negative, test_setup, test_teardown)
+{
+    die_2_die_exch_oob_write_dimm_info(7, 1000, 20, 30);
+    uint16_t avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(7, 0);
+    assert_int_equal(avg_pwr_mW, 0);
+    avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, NUMBER_OF_DIMMS);
+    assert_int_equal(avg_pwr_mW, 0);
+
+    die_2_die_exch_init(6);
+    die_2_die_exch_oob_write_dimm_info(1, 1000, 20, 30);
+    avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, 0);
+    assert_int_equal(avg_pwr_mW, 0);
+}

@@ -418,10 +418,10 @@ bool data_smpl_process_dimm_sensor_fifo(void)
             if (valid_current_entry)
             {
                 valid_entry = true;
-                comp_metrics_for_single_soc_dimm_temp(dimm_info_entry->dimm_id,
-                                                      dimm_info_entry->dimm_temp_s0_dC,
-                                                      dimm_info_entry->dimm_temp_s1_dC);
-                comp_metrics_for_single_soc_dimm_power(dimm_info_entry->dimm_id, dimm_info_entry->dimm_power_mW);
+                comp_metrics_for_single_soc_dimm(dimm_info_entry->dimm_id,
+                                                 dimm_info_entry->dimm_temp_s0_dC,
+                                                 dimm_info_entry->dimm_temp_s1_dC,
+                                                 dimm_info_entry->dimm_power_mW);
             }
         }
     } while (status.more_entries == true);
@@ -894,7 +894,7 @@ void data_smpl_parse_pvt_temperature_entry(soc_pvt_temp_t* pvt_temp_entry)
 
 bool data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info_entry)
 {
-    if (dimm_info_entry->dimm_id < NUMBER_OF_DIMM_MODULES_PER_DIE)
+    if (dimm_info_entry->dimm_id < NUMBER_OF_DIMMS_PER_DIE)
     {
         dimm_rt.latest_dimm[dimm_info_entry->dimm_id].temperature_dC =
             (dimm_info_entry->dimm_temp_s0_dC > dimm_info_entry->dimm_temp_s1_dC) ? dimm_info_entry->dimm_temp_s0_dC

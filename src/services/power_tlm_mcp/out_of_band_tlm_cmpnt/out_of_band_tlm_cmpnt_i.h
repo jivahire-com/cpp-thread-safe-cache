@@ -38,4 +38,7 @@ void pwr_tlm_oob_get_max_dimm_temp(uint16_t sensor_id, fpfw_pldm_composite_value
 void pwr_tlm_oob_get_dimm_total_pwr(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value);
 void pwr_tlm_oob_get_max_vr_temp(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value);
 void pwr_tlm_oob_get_soc_avg_freq(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value);
+void pwr_tlm_oob_get_dimm_avg_temp(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value);
+void pwr_tlm_oob_get_dimm_max_temp(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value);
+void pwr_tlm_oob_get_dimm_avg_pwr(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value);
 void on_pwr_tlm_numeric_sensor_get_ext_entry(pldm_numeric_sensor_context_t* p_sensor, void* p_context);

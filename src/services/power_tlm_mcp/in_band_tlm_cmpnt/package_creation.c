@@ -70,7 +70,7 @@ void package_creation_init()
     voltage_rail_id_offset_per_die = die_id * MAX_NUM_OF_VR_RAILS;
     hnf_id_offset_per_die = die_id * NUMBER_OF_HNF_CHANNELS_PER_DIE;
     temp_id_offset_per_die = die_id * NUMBER_OF_SOC_TEMP_SENSORS;
-    dimm_id_offset_per_die = die_id * NUMBER_OF_DIMM_MODULES_PER_DIE;
+    dimm_id_offset_per_die = die_id * NUMBER_OF_DIMMS_PER_DIE;
 }
 
 bool in_band_tlm_cmpnt_is_any_instantaneous_enabled(void)
@@ -660,21 +660,20 @@ uint32_t package_create_pwr_soc_dimm_temp_record(p_pwr_soc_record_dimm_temp_t di
 {
     populate_record_hdr(&dimm_temp_record->record_header,
                         ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE],
-                        NUMBER_OF_DIMM_MODULES_PER_DIE,
+                        NUMBER_OF_DIMMS_PER_DIE,
                         sizeof(pwr_soc_record_dimm_temp_t));
 
-    for (uint16_t dimm_module = 0; dimm_module < NUMBER_OF_DIMM_MODULES_PER_DIE; dimm_module++)
+    for (uint16_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_DIE; dimm_idx++)
     {
-        populate_pwr_collection_hdr(&dimm_temp_record->dimm_collection[dimm_module].collection_header,
+        populate_pwr_collection_hdr(&dimm_temp_record->dimm_collection[dimm_idx].collection_header,
                                     POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE,
-                                    DIMM_ID_WITH_DIE_OFFSET(dimm_module),
+                                    DIMM_ID_WITH_DIE_OFFSET(dimm_idx),
                                     1,
                                     sizeof(pwr_soc_collection_dimm_temp_t));
 
-        dimm_temp_record->dimm_collection[dimm_module].dimm_element.dimm_id = DIMM_ID_WITH_DIE_OFFSET(dimm_module);
+        dimm_temp_record->dimm_collection[dimm_idx].dimm_element.dimm_id = DIMM_ID_WITH_DIE_OFFSET(dimm_idx);
 
-        data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(dimm_module,
-                                                       &dimm_temp_record->dimm_collection[dimm_module].dimm_element);
+        data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(dimm_idx, &dimm_temp_record->dimm_collection[dimm_idx].dimm_element);
     }
     return sizeof(pwr_soc_record_dimm_temp_t);
 }
@@ -683,21 +682,21 @@ uint32_t package_create_pwr_soc_dimm_power_record(p_pwr_soc_record_dimm_power_t 
 {
     populate_record_hdr(&dimm_power_record->record_header,
                         ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER],
-                        NUMBER_OF_DIMM_MODULES_PER_DIE,
+                        NUMBER_OF_DIMMS_PER_DIE,
                         sizeof(pwr_soc_record_dimm_power_t));
 
-    for (uint16_t dimm_module = 0; dimm_module < NUMBER_OF_DIMM_MODULES_PER_DIE; dimm_module++)
+    for (uint16_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_DIE; dimm_idx++)
     {
-        populate_pwr_collection_hdr(&dimm_power_record->dimm_collection[dimm_module].collection_header,
+        populate_pwr_collection_hdr(&dimm_power_record->dimm_collection[dimm_idx].collection_header,
                                     POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER,
-                                    DIMM_ID_WITH_DIE_OFFSET(dimm_module),
+                                    DIMM_ID_WITH_DIE_OFFSET(dimm_idx),
                                     1,
                                     sizeof(pwr_soc_collection_dimm_power_t));
 
-        dimm_power_record->dimm_collection[dimm_module].dimm_element.dimm_id = DIMM_ID_WITH_DIE_OFFSET(dimm_module);
+        dimm_power_record->dimm_collection[dimm_idx].dimm_element.dimm_id = DIMM_ID_WITH_DIE_OFFSET(dimm_idx);
 
-        data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(dimm_module,
-                                                        &dimm_power_record->dimm_collection[dimm_module].dimm_element);
+        data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(dimm_idx,
+                                                        &dimm_power_record->dimm_collection[dimm_idx].dimm_element);
     }
     return sizeof(pwr_soc_record_dimm_power_t);
 }
@@ -829,10 +828,10 @@ uint32_t package_create_inst_soc_dimm_runtime_record(p_inst_soc_record_dimm_runt
 {
     populate_record_hdr(&dimm_temp_record->record_header,
                         ++inst_pkg_record_number[INST_TELEMETRY_ELEMENT_SOC_DIMM_RT],
-                        NUMBER_OF_DIMM_MODULES_PER_DIE,
+                        NUMBER_OF_DIMMS_PER_DIE,
                         sizeof(inst_soc_record_dimm_runtime_t));
 
-    for (uint16_t module_id = 0; module_id < NUMBER_OF_DIMM_MODULES_PER_DIE; module_id++)
+    for (uint16_t module_id = 0; module_id < NUMBER_OF_DIMMS_PER_DIE; module_id++)
     {
         populate_inst_collection_hdr(&dimm_temp_record->dimm_collection[module_id].collection_header,
                                      INST_TELEMETRY_ELEMENT_SOC_DIMM_RT,

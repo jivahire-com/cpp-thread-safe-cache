@@ -23,7 +23,10 @@
 #define MOVING_AVG_DURATION_MS (250)
 #define TEMPERATURE_MOVING_AVG_NUM_SAMPLES (MOVING_AVG_DURATION_MS / DATA_AGGR_PKG_PERIOD_MS)
 #define PSTATE_MOVING_AVG_NUM_SAMPLES (MOVING_AVG_DURATION_MS / DATA_AGGR_PKG_PERIOD_MS)
-#define DIMM_MOVING_AVG_NUM_SAMPLES (2)
+#define DIMM_MAX_TEMP_MOVING_AVG_NUM_SAMPLES (2)
+#define DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES (2)
+#define DIMM_TEMP_MOVING_AVG_NUM_SAMPLES (3)
+#define DIMM_PWR_MOVING_AVG_NUM_SAMPLES (3)
 #define VR_TEMP_MOVING_AVG_NUM_SAMPLES (10)
 
 #define INVALID_PSTATE (0xFF)
@@ -88,7 +91,7 @@ typedef struct
 typedef struct
 {
     computed_per_rail_metrics_t vr_rail[MAX_NUM_OF_VR_RAILS];
-    computed_per_dimm_metrics_t dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
+    computed_per_dimm_metrics_t dimm[NUMBER_OF_DIMMS_PER_DIE];
     mma_u16_t top_sensor_temp_dC[NUMBER_OF_SOC_TEMP_SENSORS];
     mma_u16_t hnf_temperature_dC[NUMBER_OF_HNF_CHANNELS_PER_DIE];
 } computed_per_soc_metrics_t;
@@ -118,10 +121,10 @@ typedef struct
     uint32_t soc_total_pwr_samples_mW[TEMPERATURE_MOVING_AVG_NUM_SAMPLES];
     moving_avg_u32_t soc_total_pwr_mov_avg_mW;
 
-    uint16_t max_dimm_temp_samples_dC[DIMM_MOVING_AVG_NUM_SAMPLES];
+    uint16_t max_dimm_temp_samples_dC[DIMM_MAX_TEMP_MOVING_AVG_NUM_SAMPLES];
     moving_avg_u16_t max_dimm_temp_mov_avg_dC;
 
-    uint32_t dimm_total_pwr_samples_mW[DIMM_MOVING_AVG_NUM_SAMPLES];
+    uint32_t dimm_total_pwr_samples_mW[DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES];
     moving_avg_u32_t dimm_total_pwr_mov_avg_mW;
 
     uint16_t max_vr_temp_samples_dC[VR_TEMP_MOVING_AVG_NUM_SAMPLES];
@@ -129,6 +132,14 @@ typedef struct
 
     uint16_t pstate_samples[PSTATE_MOVING_AVG_NUM_SAMPLES];
     moving_avg_u16_t pstate_mov_avg;
+
+    uint16_t dimm_chan_temp_samples[NUMBER_OF_DIMMS_PER_DIE][DIMM_TEMP_MOVING_AVG_NUM_SAMPLES];
+    moving_avg_u16_t dimm_chan_temp_mov_avg[NUMBER_OF_DIMMS_PER_DIE];
+
+    uint16_t dimm_chan_pwr_samples[NUMBER_OF_DIMMS_PER_DIE][DIMM_PWR_MOVING_AVG_NUM_SAMPLES];
+    moving_avg_u16_t dimm_chan_pwr_mov_avg[NUMBER_OF_DIMMS_PER_DIE];
+
+    uint16_t dimm_chan_max_temp_dC[NUMBER_OF_DIMMS_PER_DIE];
 
 } computed_metrics_oob_t;
 
@@ -272,19 +283,12 @@ void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC);
  * It updates the temperature data for both S0 and S1 sensors of the DIMM module. It utilizes
  * the data_util_calc_mma_res function to perform the calculations.
  *
- * @param[in] dimm_id - dimm_id from SCF RAM
+ * @param[in] dimm_idx - dimm_idx from SCF RAM
  * @param[in] latest_dimm_temp_s0_dC - latest temp for S0 in dC
  * @param[in] latest_dimm_temp_s1_dC - latest temp for S1 in dC
- */
-void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC );
-
-/**
- * @brief  function updates the minimum, maximum, and average power values for a specified
- *         DIMM module.
- * @param[in] dimm_id - dimm_id from SCF RAM
  * @param[in] latest_dimm_power_mW - latest dimm power in mW
  */
-void comp_metrics_for_single_soc_dimm_power(uint8_t dimm_id, uint16_t latest_dimm_power_mW);
+void comp_metrics_for_single_soc_dimm(uint8_t dimm_idx, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC, uint16_t latest_dimm_power_mW);
 
 /**
  * @brief  This API used to update the maximum DIMM temperature in dC.

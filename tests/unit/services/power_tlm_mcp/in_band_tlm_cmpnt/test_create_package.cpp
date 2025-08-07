@@ -464,30 +464,30 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_data, test_setup, test_teardown)
 {
     pwr_soc_record_dimm_temp_t record = {{0}};
 
-    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data, NUMBER_OF_DIMM_MODULES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data, NUMBER_OF_DIMMS_PER_DIE);
     uint32_t record_size = package_create_pwr_soc_dimm_temp_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_soc_record_dimm_temp_t));
     assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
-    assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_DIMM_MODULES_PER_DIE);
+    assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_DIMMS_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
                      (sizeof(pwr_soc_record_dimm_temp_t) - sizeof(telemetry_record_hdr_t)));
 
-    for (uint16_t dimm_module = 0; dimm_module < NUMBER_OF_DIMM_MODULES_PER_DIE; dimm_module++)
+    for (uint16_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_DIE; dimm_idx++)
     {
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.provider_id,
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.provider_id,
                          EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA);
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.element_id,
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.element_id,
                          POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE);
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.collection_id, dimm_module);
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.number_of_elements, 1);
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.collection_payload_size,
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.collection_id, dimm_idx);
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.number_of_elements, 1);
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.collection_payload_size,
                          sizeof(pwr_soc_collection_dimm_temp_t) - sizeof(telemetry_collection_hdr_t));
 
         // event data ranges are initialized to 0, the mock Get Api sets them to 0xFF
         // This verifies that the correct data ranges are passed to the data processing component get data api's
-        assert_memset_to_ff((uint8_t*)&record.dimm_collection[dimm_module].dimm_element.s0,
+        assert_memset_to_ff((uint8_t*)&record.dimm_collection[dimm_idx].dimm_element.s0,
                             sizeof(pwr_soc_element_dimm_temp_t));
     }
 }
@@ -496,30 +496,29 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_power_data, test_setup, test_teardown)
 {
     pwr_soc_record_dimm_power_t record = {{0}};
 
-    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data, NUMBER_OF_DIMM_MODULES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data, NUMBER_OF_DIMMS_PER_DIE);
     uint32_t record_size = package_create_pwr_soc_dimm_power_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_soc_record_dimm_power_t));
     assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
-    assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_DIMM_MODULES_PER_DIE);
+    assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_DIMMS_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
                      (sizeof(pwr_soc_record_dimm_power_t) - sizeof(telemetry_record_hdr_t)));
 
-    for (uint16_t dimm_module = 0; dimm_module < NUMBER_OF_DIMM_MODULES_PER_DIE; dimm_module++)
+    for (uint16_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_DIE; dimm_idx++)
     {
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.provider_id,
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.provider_id,
                          EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA);
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.element_id,
-                         POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER);
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.collection_id, dimm_module);
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.number_of_elements, 1);
-        assert_int_equal(record.dimm_collection[dimm_module].collection_header.collection_payload_size,
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.element_id, POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER);
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.collection_id, dimm_idx);
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.number_of_elements, 1);
+        assert_int_equal(record.dimm_collection[dimm_idx].collection_header.collection_payload_size,
                          sizeof(pwr_soc_collection_dimm_power_t) - sizeof(telemetry_collection_hdr_t));
 
         // event data ranges are initialized to 0, the mock Get Api sets them to 0xFF
         // This verifies that the correct data ranges are passed to the data processing component get data api's
-        assert_memset_to_ff((uint8_t*)&record.dimm_collection[dimm_module].dimm_element.power_mW,
+        assert_memset_to_ff((uint8_t*)&record.dimm_collection[dimm_idx].dimm_element.power_mW,
                             sizeof(pwr_soc_element_dimm_power_t));
     }
 }
@@ -685,17 +684,17 @@ TEST_FUNCTION(test_get_inst_soc_dimm_runtime_data, test_setup, test_teardown)
 {
     inst_soc_record_dimm_runtime_t record = {{0}};
 
-    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data, NUMBER_OF_DIMM_MODULES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data, NUMBER_OF_DIMMS_PER_DIE);
     uint32_t record_size = package_create_inst_soc_dimm_runtime_record(&record);
 
     assert_int_equal(record_size, sizeof(inst_soc_record_dimm_runtime_t));
     assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
-    assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_DIMM_MODULES_PER_DIE);
+    assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_DIMMS_PER_DIE);
     assert_int_equal(record.record_header.record_payload_size,
                      (sizeof(inst_soc_record_dimm_runtime_t) - sizeof(telemetry_record_hdr_t)));
 
-    for (uint16_t module_id = 0; module_id < NUMBER_OF_DIMM_MODULES_PER_DIE; module_id++)
+    for (uint16_t module_id = 0; module_id < NUMBER_OF_DIMMS_PER_DIE; module_id++)
     {
         assert_int_equal(record.dimm_collection[module_id].collection_header.provider_id,
                          EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA);
@@ -798,8 +797,8 @@ TEST_FUNCTION(test_package_create_power_pkg_all_enabled, test_setup, test_teardo
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_temperature_data, NUMBER_OF_CORES_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_power_data, NUMBER_OF_CORES_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data, MAX_NUM_OF_VR_RAILS);
-    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data, NUMBER_OF_DIMM_MODULES_PER_DIE);
-    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data, NUMBER_OF_DIMM_MODULES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data, NUMBER_OF_DIMMS_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data, NUMBER_OF_DIMMS_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_hnf_data, NUMBER_OF_HNF_CHANNELS_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, 1);
@@ -915,7 +914,7 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_all_enabled, test_setup, te
     }
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_core_summary_data, NUMBER_OF_CORES_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_rail_data, MAX_NUM_OF_VR_RAILS);
-    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data, NUMBER_OF_DIMM_MODULES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data, NUMBER_OF_DIMMS_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_max_temp_data, 1);
 
@@ -939,7 +938,7 @@ TEST_FUNCTION(test_package_create_append_to_inst_pkg_all_enabled, test_setup, te
     }
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_core_summary_data, NUMBER_OF_CORES_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_rail_data, MAX_NUM_OF_VR_RAILS);
-    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data, NUMBER_OF_DIMM_MODULES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data, NUMBER_OF_DIMMS_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
 
     pkg_size = package_create_append_to_inst_pkg((uintptr_t)cr_max_package_mem, INST_PKG_MAX_SIZE, &pkg_header);

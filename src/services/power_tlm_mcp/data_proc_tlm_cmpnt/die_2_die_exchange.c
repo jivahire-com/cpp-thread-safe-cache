@@ -36,6 +36,7 @@ typedef struct __attribute__((packed))
     sliding_window_data_t oob_window_dimm_pwr_mW;      // sliding window dimm power
     sliding_window_data_t oob_window_max_vr_temp_dC;   // sliding window for max voltage rail temperature
     sliding_window_data_t oob_window_avg_pstate;       // sliding window for average pstate
+    dimm_data_t oob_dimm_info[NUMBER_OF_DIMMS];        // dimm channel information
 
 } secondary_mcp_to_die0_mcp_t;
 
@@ -167,9 +168,10 @@ uint16_t die_2_die_exch_ib_read_inst_max_die_temp_dC(uint8_t die_id)
     if (die_id_is_valid(die_id))
     {
         // only secondary dies values can be read from the exchange
+        uint16_t* temp_ptr_dC = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_max_inst_die_temperature_dC;
         d2d_exch_wait_for_sem();
-        ib_max_inst_die_temperature_dC = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_max_inst_die_temperature_dC;
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_max_inst_die_temperature_dC = 0; // clear the value after reading
+        ib_max_inst_die_temperature_dC = *temp_ptr_dC;
+        *temp_ptr_dC = 0; // clear the value after reading
         d2d_exch_release_sem();
     }
     return ib_max_inst_die_temperature_dC;
@@ -193,11 +195,10 @@ void die_2_die_exch_ib_read_pwr_pkg_max_die_temp_dC(uint8_t die_id, p_max_die_te
     if (die_id_is_valid(die_id) && max_die_temperature != NULL)
     {
         // only secondary dies values can be read from the exchange
+        max_die_temps_t* in_band_temp_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_max_pwr_pkg_die_temp;
         d2d_exch_wait_for_sem();
-        *max_die_temperature = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_max_pwr_pkg_die_temp;
-        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_max_pwr_pkg_die_temp,
-               0,
-               sizeof(max_die_temps_t)); // clear the value after reading
+        *max_die_temperature = *in_band_temp_ptr;
+        memset(in_band_temp_ptr, 0, sizeof(max_die_temps_t)); // clear the value after reading
         d2d_exch_release_sem();
     }
 }
@@ -207,9 +208,10 @@ void die_2_die_exch_oob_write_window_max_die_temp(uint32_t summation_dC, uint16_
     if (die_id_is_valid(this_die_id))
     {
         // only secondary dies can write to the exchange
+        sliding_window_data_t* window_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_max_die_temp_dC;
         d2d_exch_wait_for_sem();
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_max_die_temp_dC.sum = summation_dC;
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_max_die_temp_dC.num_samples = num_samples;
+        window_ptr->sum = summation_dC;
+        window_ptr->num_samples = num_samples;
         d2d_exch_release_sem();
     }
 }
@@ -219,12 +221,10 @@ void die_2_die_exch_oob_read_window_max_die_temp(uint8_t die_id, p_sliding_windo
     if (die_id_is_valid(die_id) && max_die_temp_window != NULL)
     {
         // only secondary dies values can be read from the exchange
+        sliding_window_data_t* window_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_die_temp_dC;
         d2d_exch_wait_for_sem();
-        *max_die_temp_window = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_die_temp_dC;
-
-        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_die_temp_dC,
-               0,
-               sizeof(sliding_window_data_t)); // clear the value after reading
+        *max_die_temp_window = *window_ptr;
+        memset(window_ptr, 0, sizeof(sliding_window_data_t)); // clear the value after reading
         d2d_exch_release_sem();
     }
 }
@@ -234,9 +234,12 @@ void die_2_die_exch_oob_write_window_soc_pwr(uint32_t summation_mW, uint16_t num
     if (die_id_is_valid(this_die_id))
     {
         // only secondary dies can write to the exchange
+        sliding_window_data_t* soc_pwr_window_ptr =
+            &s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_soc_pwr_mW;
+
         d2d_exch_wait_for_sem();
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_soc_pwr_mW.sum = summation_mW;
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_soc_pwr_mW.num_samples = num_samples;
+        soc_pwr_window_ptr->sum = summation_mW;
+        soc_pwr_window_ptr->num_samples = num_samples;
         d2d_exch_release_sem();
     }
 }
@@ -246,12 +249,11 @@ void die_2_die_exch_oob_read_window_soc_pwr(uint8_t die_id, p_sliding_window_dat
     if (die_id_is_valid(die_id) && die_soc_pwr_window != NULL)
     {
         // only secondary dies values can be read from the exchange
-        d2d_exch_wait_for_sem();
-        *die_soc_pwr_window = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_soc_pwr_mW;
+        sliding_window_data_t* soc_pwr_window_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_soc_pwr_mW;
 
-        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_soc_pwr_mW,
-               0,
-               sizeof(sliding_window_data_t)); // clear the value after reading
+        d2d_exch_wait_for_sem();
+        *die_soc_pwr_window = *soc_pwr_window_ptr;
+        memset(soc_pwr_window_ptr, 0, sizeof(sliding_window_data_t)); // clear the value after reading
         d2d_exch_release_sem();
     }
 }
@@ -261,9 +263,12 @@ void die_2_die_exch_oob_write_window_max_dimm_temp(uint32_t summation_dC, uint16
     if (die_id_is_valid(this_die_id))
     {
         // only secondary dies can write to the exchange
+        sliding_window_data_t* max_dimm_temp_window_ptr =
+            &s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_max_dimm_temp_dC;
+
         d2d_exch_wait_for_sem();
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_max_dimm_temp_dC.sum = summation_dC;
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_max_dimm_temp_dC.num_samples = num_samples;
+        max_dimm_temp_window_ptr->sum = summation_dC;
+        max_dimm_temp_window_ptr->num_samples = num_samples;
         d2d_exch_release_sem();
     }
 }
@@ -273,12 +278,12 @@ void die_2_die_exch_oob_read_window_max_dimm_temp(uint8_t die_id, p_sliding_wind
     if (die_id_is_valid(die_id) && max_dimm_temp_window != NULL)
     {
         // only secondary dies values can be read from the exchange
-        d2d_exch_wait_for_sem();
-        *max_dimm_temp_window = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_dimm_temp_dC;
+        sliding_window_data_t* max_dimm_temp_window_ptr =
+            &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_dimm_temp_dC;
 
-        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_dimm_temp_dC,
-               0,
-               sizeof(sliding_window_data_t)); // clear the value after reading
+        d2d_exch_wait_for_sem();
+        *max_dimm_temp_window = *max_dimm_temp_window_ptr;
+        memset(max_dimm_temp_window_ptr, 0, sizeof(sliding_window_data_t));
         d2d_exch_release_sem();
     }
 }
@@ -288,9 +293,12 @@ void die_2_die_exch_oob_write_window_dimm_pwr(uint32_t summation_mW, uint16_t nu
     if (die_id_is_valid(this_die_id))
     {
         // only secondary dies can write to the exchange
+        sliding_window_data_t* dimm_pwr_window_ptr =
+            &s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_dimm_pwr_mW;
+
         d2d_exch_wait_for_sem();
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_dimm_pwr_mW.sum = summation_mW;
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_dimm_pwr_mW.num_samples = num_samples;
+        dimm_pwr_window_ptr->sum = summation_mW;
+        dimm_pwr_window_ptr->num_samples = num_samples;
         d2d_exch_release_sem();
     }
 }
@@ -300,12 +308,11 @@ void die_2_die_exch_oob_read_window_dimm_pwr(uint8_t die_id, p_sliding_window_da
     if (die_id_is_valid(die_id) && die_dimm_pwr_window != NULL)
     {
         // only secondary dies values can be read from the exchange
-        d2d_exch_wait_for_sem();
-        *die_dimm_pwr_window = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_dimm_pwr_mW;
+        sliding_window_data_t* dimm_pwr_window_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_dimm_pwr_mW;
 
-        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_dimm_pwr_mW,
-               0,
-               sizeof(sliding_window_data_t)); // clear the value after reading
+        d2d_exch_wait_for_sem();
+        *die_dimm_pwr_window = *dimm_pwr_window_ptr;
+        memset(dimm_pwr_window_ptr, 0, sizeof(sliding_window_data_t));
         d2d_exch_release_sem();
     }
 }
@@ -315,9 +322,12 @@ void die_2_die_exch_oob_write_window_max_vr_temp(uint32_t summation_dC, uint16_t
     if (die_id_is_valid(this_die_id))
     {
         // only secondary dies can write to the exchange
+        sliding_window_data_t* max_vr_temp_window_ptr =
+            &s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_max_vr_temp_dC;
+
         d2d_exch_wait_for_sem();
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_max_vr_temp_dC.sum = summation_dC;
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_max_vr_temp_dC.num_samples = num_samples;
+        max_vr_temp_window_ptr->sum = summation_dC;
+        max_vr_temp_window_ptr->num_samples = num_samples;
         d2d_exch_release_sem();
     }
 }
@@ -327,12 +337,12 @@ void die_2_die_exch_oob_read_window_max_vr_temp(uint8_t die_id, p_sliding_window
     if (die_id_is_valid(die_id) && max_die_temp_window != NULL)
     {
         // only secondary dies values can be read from the exchange
-        d2d_exch_wait_for_sem();
-        *max_die_temp_window = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_vr_temp_dC;
+        sliding_window_data_t* max_vr_temp_window_ptr =
+            &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_vr_temp_dC;
 
-        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_max_vr_temp_dC,
-               0,
-               sizeof(sliding_window_data_t)); // clear the value after reading
+        d2d_exch_wait_for_sem();
+        *max_die_temp_window = *max_vr_temp_window_ptr;
+        memset(max_vr_temp_window_ptr, 0, sizeof(sliding_window_data_t));
         d2d_exch_release_sem();
     }
 }
@@ -342,9 +352,12 @@ void die_2_die_exch_oob_write_window_avg_pstate(uint32_t summation, uint16_t num
     if (die_id_is_valid(this_die_id))
     {
         // only secondary dies can write to the exchange
+        sliding_window_data_t* avg_pstate_window_ptr =
+            &s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_avg_pstate;
+
         d2d_exch_wait_for_sem();
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_avg_pstate.sum = summation;
-        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_window_avg_pstate.num_samples = num_samples;
+        avg_pstate_window_ptr->sum = summation;
+        avg_pstate_window_ptr->num_samples = num_samples;
         d2d_exch_release_sem();
     }
 }
@@ -354,12 +367,77 @@ void die_2_die_exch_oob_read_avg_pstate(uint8_t die_id, p_sliding_window_data_t 
     if (die_id_is_valid(die_id) && avg_pstate_window != NULL)
     {
         // only secondary dies values can be read from the exchange
-        d2d_exch_wait_for_sem();
-        *avg_pstate_window = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_avg_pstate;
+        sliding_window_data_t* avg_pstate_window_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_avg_pstate;
 
-        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_window_avg_pstate,
-               0,
-               sizeof(sliding_window_data_t)); // clear the value after reading
+        d2d_exch_wait_for_sem();
+        *avg_pstate_window = *avg_pstate_window_ptr;
+        memset(avg_pstate_window_ptr, 0, sizeof(sliding_window_data_t)); // clear the value after reading
         d2d_exch_release_sem();
     }
+}
+
+void die_2_die_exch_oob_write_dimm_info(uint8_t channel, uint16_t average_pwr_mW, uint16_t average_temp_dC, uint16_t latest_temp_dC)
+{
+    if (die_id_is_valid(this_die_id) && (channel < NUMBER_OF_DIMMS))
+    {
+        // only secondary dies can write to the exchange
+        dimm_data_t* dimm_info_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].oob_dimm_info[channel];
+
+        d2d_exch_wait_for_sem();
+        dimm_info_ptr->average_pwr_mW = average_pwr_mW;
+        dimm_info_ptr->average_temp_dC = average_temp_dC;
+        if (latest_temp_dC > dimm_info_ptr->max_temp_dC)
+        {
+            dimm_info_ptr->max_temp_dC = latest_temp_dC;
+        }
+        d2d_exch_release_sem();
+    }
+}
+
+uint16_t die_2_die_exch_oob_read_dimm_avg_temp_dC(uint8_t die_id, uint8_t channel)
+{
+    uint16_t avg_temp_dC = 0;
+    if (die_id_is_valid(die_id) && (channel < NUMBER_OF_DIMMS))
+    {
+        // only secondary dies values can be read from the exchange
+        dimm_data_t* dimm_info_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_dimm_info[channel];
+
+        d2d_exch_wait_for_sem();
+        avg_temp_dC = dimm_info_ptr->average_temp_dC;
+        dimm_info_ptr->average_temp_dC = 0;
+        d2d_exch_release_sem();
+    }
+    return avg_temp_dC;
+}
+
+uint16_t die_2_die_exch_oob_read_dimm_max_temp_dC(uint8_t die_id, uint8_t channel)
+{
+    uint16_t max_temp_dC = 0;
+    if (die_id_is_valid(die_id) && (channel < NUMBER_OF_DIMMS))
+    {
+        // only secondary dies values can be read from the exchange
+        dimm_data_t* dimm_info_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_dimm_info[channel];
+
+        d2d_exch_wait_for_sem();
+        max_temp_dC = dimm_info_ptr->max_temp_dC;
+        dimm_info_ptr->max_temp_dC = 0;
+        d2d_exch_release_sem();
+    }
+    return max_temp_dC;
+}
+
+uint16_t die_2_die_exch_oob_read_dimm_avg_pwr_mW(uint8_t die_id, uint8_t channel)
+{
+    uint16_t avg_pwr_mW = 0;
+    if (die_id_is_valid(die_id) && (channel < NUMBER_OF_DIMMS))
+    {
+        // only secondary dies values can be read from the exchange
+        dimm_data_t* dimm_info_ptr = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].oob_dimm_info[channel];
+
+        d2d_exch_wait_for_sem();
+        avg_pwr_mW = dimm_info_ptr->average_pwr_mW;
+        dimm_info_ptr->average_pwr_mW = 0;
+        d2d_exch_release_sem();
+    }
+    return avg_pwr_mW;
 }

@@ -127,7 +127,7 @@ typedef struct {
 } soc_runtime_info_t;
 
 typedef struct {
-    inst_soc_element_dimm_runtime_t  latest_dimm[NUMBER_OF_DIMM_MODULES_PER_DIE];
+    inst_soc_element_dimm_runtime_t  latest_dimm[NUMBER_OF_DIMMS_PER_DIE];
     uint32_t latest_dimm_total_pwr_mW;
     uint16_t latest_max_dimm_temp_dC;
 } dimm_runtime_info_t;

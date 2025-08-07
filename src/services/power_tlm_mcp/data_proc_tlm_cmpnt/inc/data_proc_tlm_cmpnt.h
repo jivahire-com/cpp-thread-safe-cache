@@ -193,21 +193,21 @@ void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_el
 /**
  * @brief Get the soc dimm temperature data for the specified dimm module.
  *
- * @param[in] dimm_module - The dimm module to get the dimm data for. 0 .. NUMBER_OF_DIMM_MODULES_PER_DIE-1
+ * @param[in] dimm_idx - The dimm module to get the dimm data for. 0 .. NUMBER_OF_DIMMS_PER_DIE-1
  * @param[out] dimm_data - Pointer to the structure to store the dimm temperature data in.
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_module, p_pwr_soc_element_dimm_temp_t dimm_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_idx, p_pwr_soc_element_dimm_temp_t dimm_data);
 
 /**
  * @brief Get the soc dimm power data for the specified dimm module.
  *
  *
- * @param[in] dimm_module - The dimm module to get the dimm data for. 0 .. NUMBER_OF_DIMM_MODULES_PER_DIE-1
+ * @param[in] dimm_idx - The dimm module to get the dimm data for. 0 .. NUMBER_OF_DIMMS_PER_DIE-1
  * @param[out] dimm_data - Pointer to the structure to store the dimm power data in.
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(uint16_t dimm_module, p_pwr_soc_element_dimm_power_t dimm_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(uint16_t dimm_idx, p_pwr_soc_element_dimm_power_t dimm_data);
 
 /**
  * @brief Get the soc sensor temperature data for the specified sensor.
@@ -271,12 +271,12 @@ void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_ele
 /**
  * @brief Get the soc instantaneous dimm data for the specified dimm module.
  *
- * @param[in] dimm_module - The dimm module to get the data for. 0 .. NUMBER_OF_DIMM_MODULES_PER_DIE-1
+ * @param[in] dimm_idx - The dimm module to get the data for. 0 .. NUMBER_OF_DIMMS_PER_DIE-1
  * @param[out] dimm_data - Pointer to the location to store the dimm data in.
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_module, p_inst_soc_element_dimm_runtime_t dimm_data);
+void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_idx, p_inst_soc_element_dimm_runtime_t dimm_data);
 
 /**
  * @brief Get the soc instantaneous sensor temperature data for the specified sensor.
@@ -366,3 +366,26 @@ uint16_t data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC(void);
  */
 uint16_t data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz(void);
 
+/**
+ * @brief Get the out-of-band average DIMM temperature for a specific DIMM channel.
+ *
+ * @param dimm_idx The DIMM channel to get the average temperature for.
+ * @return The average temperature in degrees deci-Celsius.
+ */
+uint16_t data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC(uint8_t dimm_idx);
+
+/**
+ * @brief Get the out-of-band maximum DIMM temperature for a specific DIMM channel.
+ *
+ * @param dimm_idx The DIMM channel to get the maximum temperature for.
+ * @return The maximum temperature in degrees deci-Celsius.
+ */
+uint16_t data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC(uint8_t dimm_idx);
+
+/**
+ * @brief Get the out-of-band average power for a specific DIMM channel.
+ *
+ * @param dimm_idx The DIMM channel to get the average power for.
+ * @return The average power in milliwatts.
+ */
+uint16_t data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(uint8_t dimm_idx);

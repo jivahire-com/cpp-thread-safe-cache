@@ -112,3 +112,56 @@ uint16_t data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz(void)
     uint16_t freq_Mhz = dvfs_get_freq_from_plimit(avg_pstate); // api range checks
     return freq_Mhz;
 }
+
+uint16_t data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC(uint8_t dimm_idx)
+{
+    uint16_t average_temp_dC = 0;
+    if (dimm_idx < NUMBER_OF_DIMMS_PER_DIE)
+    {
+        // on die 0
+        average_temp_dC = data_util_mov_avg_u16_get(&computed_metrics_oob.dimm_chan_temp_mov_avg[dimm_idx]);
+    }
+    else if (dimm_idx < (NUMBER_OF_DIMMS_PER_DIE * 2))
+    {
+        // on die 1
+        average_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, dimm_idx - NUMBER_OF_DIMMS_PER_DIE);
+    }
+
+    return average_temp_dC;
+}
+
+uint16_t data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC(uint8_t dimm_idx)
+{
+    uint16_t max_temp_dC = 0;
+    if (dimm_idx < NUMBER_OF_DIMMS_PER_DIE)
+    {
+        // on die 0
+        max_temp_dC = computed_metrics_oob.dimm_chan_max_temp_dC[dimm_idx];
+        computed_metrics_oob.dimm_chan_max_temp_dC[dimm_idx] = 0; // reset for next read
+    }
+    else if (dimm_idx < (NUMBER_OF_DIMMS_PER_DIE * 2))
+    {
+        // on die 1
+        // api resets max temp for next read
+        max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, dimm_idx - NUMBER_OF_DIMMS_PER_DIE);
+    }
+
+    return max_temp_dC;
+}
+
+uint16_t data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(uint8_t dimm_idx)
+{
+    uint16_t avg_pwr_mW = 0;
+    if (dimm_idx < NUMBER_OF_DIMMS_PER_DIE)
+    {
+        // on die 0
+        avg_pwr_mW = data_util_mov_avg_u16_get(&computed_metrics_oob.dimm_chan_pwr_mov_avg[dimm_idx]);
+    }
+    else if (dimm_idx < (NUMBER_OF_DIMMS_PER_DIE * 2))
+    {
+        // on die 1
+        avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, dimm_idx - NUMBER_OF_DIMMS_PER_DIE);
+    }
+
+    return avg_pwr_mW;
+}

@@ -98,6 +98,42 @@ void out_of_band_tlm_cmpnt_init(uint8_t die_id)
         &pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_AVG_FREQ_NUM_SENS)],
         &config);
     FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
+
+    //-------------------------------------------------------------------------------------------
+    for (uint16_t sensor_id = PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_00_NUM_SENS;
+         sensor_id <= PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_11_NUM_SENS;
+         sensor_id++)
+    {
+        config.sensor_id = sensor_id;
+        config.notifications.context = pwr_tlm_oob_get_dimm_avg_temp;
+        status = fpfw_pldm_service_register_numeric_sensor(&pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(sensor_id)],
+                                                           &config);
+        FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
+    }
+
+    //-------------------------------------------------------------------------------------------
+    for (uint16_t sensor_id = PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_00_NUM_SENS;
+         sensor_id <= PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_11_NUM_SENS;
+         sensor_id++)
+    {
+        config.sensor_id = sensor_id;
+        config.notifications.context = pwr_tlm_oob_get_dimm_max_temp;
+        status = fpfw_pldm_service_register_numeric_sensor(&pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(sensor_id)],
+                                                           &config);
+        FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
+    }
+
+    //-------------------------------------------------------------------------------------------
+    for (uint16_t sensor_id = PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_00_NUM_SENS;
+         sensor_id <= PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_11_NUM_SENS;
+         sensor_id++)
+    {
+        config.sensor_id = sensor_id;
+        config.notifications.context = pwr_tlm_oob_get_dimm_avg_pwr;
+        status = fpfw_pldm_service_register_numeric_sensor(&pwr_tlm_numeric_sensor_ctxts[PWR_TLM_PDR_SENSOR_INDEX(sensor_id)],
+                                                           &config);
+        FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
+    }
 }
 
 void on_pwr_tlm_numeric_sensor_get_ext_entry(pldm_numeric_sensor_context_t* p_sensor, void* p_context)
@@ -225,6 +261,48 @@ void pwr_tlm_oob_get_soc_avg_freq(uint16_t sensor_id, fpfw_pldm_composite_value_
     else
     {
         FPFW_ET_LOG(UnexpectedSensorId, PLDM_SENSOR_ID_POWER_TLM_SOC_AVG_FREQ_NUM_SENS, sensor_id);
+    }
+}
+
+void pwr_tlm_oob_get_dimm_avg_temp(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value)
+{
+    if ((sensor_id >= PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_00_NUM_SENS) &&
+        (sensor_id <= PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_11_NUM_SENS))
+    {
+        uint8_t dimm_idx = sensor_id - PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_00_NUM_SENS;
+        sensor_value->numeric.u16 = data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC(dimm_idx);
+    }
+    else
+    {
+        FPFW_ET_LOG(UnexpectedSensorId, PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_00_NUM_SENS, sensor_id);
+    }
+}
+
+void pwr_tlm_oob_get_dimm_max_temp(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value)
+{
+    if ((sensor_id >= PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_00_NUM_SENS) &&
+        (sensor_id <= PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_11_NUM_SENS))
+    {
+        uint8_t dimm_idx = sensor_id - PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_00_NUM_SENS;
+        sensor_value->numeric.u16 = data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC(dimm_idx);
+    }
+    else
+    {
+        FPFW_ET_LOG(UnexpectedSensorId, PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_00_NUM_SENS, sensor_id);
+    }
+}
+
+void pwr_tlm_oob_get_dimm_avg_pwr(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value)
+{
+    if ((sensor_id >= PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_00_NUM_SENS) &&
+        (sensor_id <= PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_11_NUM_SENS))
+    {
+        uint8_t dimm_idx = sensor_id - PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_00_NUM_SENS;
+        sensor_value->numeric.u32 = data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(dimm_idx);
+    }
+    else
+    {
+        FPFW_ET_LOG(UnexpectedSensorId, PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_00_NUM_SENS, sensor_id);
     }
 }
 

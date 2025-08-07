@@ -430,7 +430,7 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_temp_data, test_setup, test_teardown)
 
     // Invalid case
     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.min = 400;
-    data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(NUMBER_OF_DIMM_MODULES_PER_DIE, &dimm_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(NUMBER_OF_DIMMS_PER_DIE, &dimm_data);
     assert_int_not_equal(dimm_data.s0.min_dC,
                          computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.min);
 }
@@ -457,7 +457,7 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_power_data, test_setup, test_teardown)
 
     // Invalid case
     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.min = 300;
-    data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(NUMBER_OF_DIMM_MODULES_PER_DIE, &dimm_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(NUMBER_OF_DIMMS_PER_DIE, &dimm_data);
     assert_int_not_equal(dimm_data.power_mW.min_mW,
                          computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.min);
 }
@@ -585,7 +585,7 @@ TEST_FUNCTION(test_get_inst_soc_dimm_runtime_data, test_setup, test_teardown)
     // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     inst_soc_element_dimm_runtime_t dimm_runtime_data = {0};
     data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(TEST_DIMM_MOD_ID_3, &dimm_runtime_data);
-    data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(NUMBER_OF_DIMM_MODULES_PER_DIE, &dimm_runtime_data);
+    data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(NUMBER_OF_DIMMS_PER_DIE, &dimm_runtime_data);
 }
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_inst_soc_snsr_temp_data, test_setup, test_teardown)

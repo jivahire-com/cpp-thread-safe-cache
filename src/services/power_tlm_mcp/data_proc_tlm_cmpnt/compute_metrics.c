@@ -60,17 +60,28 @@ void comp_metrics_init(void)
 
     data_util_mov_avg_u16_init(&computed_metrics_oob.max_dimm_temp_mov_avg_dC,
                                computed_metrics_oob.max_dimm_temp_samples_dC,
-                               DIMM_MOVING_AVG_NUM_SAMPLES);
+                               DIMM_MAX_TEMP_MOVING_AVG_NUM_SAMPLES);
 
     data_util_mov_avg_u32_init(&computed_metrics_oob.dimm_total_pwr_mov_avg_mW,
                                computed_metrics_oob.dimm_total_pwr_samples_mW,
-                               DIMM_MOVING_AVG_NUM_SAMPLES);
+                               DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES);
 
     data_util_mov_avg_u16_init(&computed_metrics_oob.max_vr_temp_mov_avg_dC,
                                computed_metrics_oob.max_vr_temp_samples_dC,
                                VR_TEMP_MOVING_AVG_NUM_SAMPLES);
 
     data_util_mov_avg_u16_init(&computed_metrics_oob.pstate_mov_avg, computed_metrics_oob.pstate_samples, PSTATE_MOVING_AVG_NUM_SAMPLES);
+
+    for (uint8_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_DIE; dimm_idx++)
+    {
+        data_util_mov_avg_u16_init(&computed_metrics_oob.dimm_chan_temp_mov_avg[dimm_idx],
+                                   computed_metrics_oob.dimm_chan_temp_samples[dimm_idx],
+                                   DIMM_TEMP_MOVING_AVG_NUM_SAMPLES);
+
+        data_util_mov_avg_u16_init(&computed_metrics_oob.dimm_chan_pwr_mov_avg[dimm_idx],
+                                   computed_metrics_oob.dimm_chan_pwr_samples[dimm_idx],
+                                   DIMM_PWR_MOVING_AVG_NUM_SAMPLES);
+    }
 
     comp_metrics_init_active_cores();
 }
@@ -326,18 +337,39 @@ void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC)
     }
 }
 
-void comp_metrics_for_single_soc_dimm_temp(uint8_t dimm_id, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC)
+void comp_metrics_for_single_soc_dimm(uint8_t dimm_idx, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC, uint16_t latest_dimm_power_mW)
 {
-    // Update min, max average S0
-    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s0_dC, latest_dimm_temp_s0_dC);
-    // Update each temperature data for S1
-    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s1_dC, latest_dimm_temp_s1_dC);
-}
+    // update in-band metrics
+    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s0_dC, latest_dimm_temp_s0_dC);
+    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s1_dC, latest_dimm_temp_s1_dC);
+    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_idx].power_mW, latest_dimm_power_mW);
 
-void comp_metrics_for_single_soc_dimm_power(uint8_t dimm_id, uint16_t latest_dimm_power_mW)
-{
-    // Update  min, max average dimm power
-    data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_id].power_mW, latest_dimm_power_mW);
+    // update out-of-band metrics
+    uint16_t latest_dimm_temp_dC =
+        (latest_dimm_temp_s0_dC > latest_dimm_temp_s1_dC) ? latest_dimm_temp_s0_dC : latest_dimm_temp_s1_dC;
+    data_util_mov_avg_u16_add_sample(&computed_metrics_oob.dimm_chan_temp_mov_avg[dimm_idx], latest_dimm_temp_dC);
+
+    if (latest_dimm_temp_dC > computed_metrics_oob.dimm_chan_max_temp_dC[dimm_idx])
+    {
+        // NOTE: max dimm temp is pertinent since the last read of the data via out-of-band,
+        //  the following value is used on the PRIMARY Die, and cleared when read from out of band.
+        computed_metrics_oob.dimm_chan_max_temp_dC[dimm_idx] = latest_dimm_temp_dC;
+    }
+    uint16_t average_temp_dC = data_util_mov_avg_u16_get(&computed_metrics_oob.dimm_chan_temp_mov_avg[dimm_idx]);
+
+    data_util_mov_avg_u16_add_sample(&computed_metrics_oob.dimm_chan_pwr_mov_avg[dimm_idx], latest_dimm_power_mW);
+    uint16_t average_pwr_mW = data_util_mov_avg_u16_get(&computed_metrics_oob.dimm_chan_pwr_mov_avg[dimm_idx]);
+
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        // there is no light computational way for the secondary die to know when die 0 out of band has read the
+        // dimm channel data, which it would need to reset the max temp value for the next interval.
+        // instead, the latest dimm temp value is written to the exchange, and internally the exchange keeps track of
+        // the max temp value. when read by out of band, it is cleared, resetting the max temp value for the next interval.
+        // therefore, computed_metrics_oob.dimm_chan_max_temp_dC[] is unused on the secondary die.
+
+        die_2_die_exch_oob_write_dimm_info(dimm_idx, average_pwr_mW, average_temp_dC, latest_dimm_temp_dC);
+    }
 }
 
 void comp_metrics_for_max_dimm_temp(uint16_t latest_max_dimm_temp_dC)

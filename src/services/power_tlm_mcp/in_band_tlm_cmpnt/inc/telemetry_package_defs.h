@@ -35,7 +35,7 @@
 
 // TODO: These values are placeholders and need to be verified
 /*Note : total DIMM in SoC is 12, per Die 6 module*/
-#define NUMBER_OF_DIMM_MODULES_PER_DIE      (6)
+#define NUMBER_OF_DIMMS_PER_DIE      (6)
 #define NUMBER_OF_MPAMS             (128)
 
 
@@ -376,7 +376,7 @@ typedef struct {
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    pwr_soc_collection_dimm_temp_t dimm_collection[NUMBER_OF_DIMM_MODULES_PER_DIE];
+    pwr_soc_collection_dimm_temp_t dimm_collection[NUMBER_OF_DIMMS_PER_DIE];
 } pwr_soc_record_dimm_temp_t, *p_pwr_soc_record_dimm_temp_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER----------------
@@ -393,7 +393,7 @@ typedef struct {
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    pwr_soc_collection_dimm_power_t dimm_collection[NUMBER_OF_DIMM_MODULES_PER_DIE];
+    pwr_soc_collection_dimm_power_t dimm_collection[NUMBER_OF_DIMMS_PER_DIE];
 } pwr_soc_record_dimm_power_t, *p_pwr_soc_record_dimm_power_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_SOC_HNF_TEMP----------------
@@ -637,7 +637,7 @@ typedef struct {
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    inst_soc_collection_dimm_runtime_t dimm_collection[NUMBER_OF_DIMM_MODULES_PER_DIE];
+    inst_soc_collection_dimm_runtime_t dimm_collection[NUMBER_OF_DIMMS_PER_DIE];
 } inst_soc_record_dimm_runtime_t, *p_inst_soc_record_dimm_runtime_t;
 
 //----------------INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP----------------

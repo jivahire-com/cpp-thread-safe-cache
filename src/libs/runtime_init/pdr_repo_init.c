@@ -47,7 +47,7 @@
 #define UTF16_STRINGIFY(x)  U16_PASTE(STRINGIFY(x))
 
 
-#define DEFINE_POWER_TLM_TEMPERATURE_SENSOR(NAME)                                                       \
+#define DEFINE_POWER_TLM_TEMPERATURE_SENSOR(NAME, UPDATE_RATE)                                          \
 static fpfw_pldm_pdr_numeric_sensor_UINT16_UINT16_t s_##NAME##_pdr    =                                 \
 {                                                                                                       \
     .hdr.record_handle = 0,                                                                             \
@@ -82,7 +82,7 @@ static fpfw_pldm_pdr_numeric_sensor_UINT16_UINT16_t s_##NAME##_pdr    =         
     .supported_thresholds                 = 0,                                                          \
     .thresholds_and_hysteresis_volatility = 0x1F,                                                       \
     .state_transition_interval            = 1,                                                          \
-    .update_interval                      = 0.5,                                                        \
+    .update_interval                      = UPDATE_RATE,                                                \
     .max_readable                         = 1000,                                                       \
     .min_readable                         = 0,                                                          \
     .range_field_format                   = PLDM_SENSOR_DATA_SIZE_UINT16,                               \
@@ -110,7 +110,7 @@ static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =          
     .sensor_name = UTF16_STRINGIFY(NAME)                                                                \
 };                                                                                                      \
 
-#define DEFINE_POWER_TLM_POWER_SENSOR(NAME)                                                             \
+#define DEFINE_POWER_TLM_POWER_SENSOR(NAME, UPDATE_RATE)                                                \
 static fpfw_pldm_pdr_numeric_sensor_UINT32_UINT32_t s_##NAME##_pdr    =                                 \
 {                                                                                                       \
     .hdr.record_handle = 0,                                                                             \
@@ -145,7 +145,7 @@ static fpfw_pldm_pdr_numeric_sensor_UINT32_UINT32_t s_##NAME##_pdr    =         
     .supported_thresholds                 = 0,                                                          \
     .thresholds_and_hysteresis_volatility = 0x1F,                                                       \
     .state_transition_interval            = 1,                                                          \
-    .update_interval                      = 0.25,                                                       \
+    .update_interval                      = UPDATE_RATE,                                                \
     .max_readable                         = 4294967295U,                                                \
     .min_readable                         = 0,                                                          \
     .range_field_format                   = PLDM_SENSOR_DATA_SIZE_UINT32,                               \
@@ -247,12 +247,52 @@ static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =          
 
 FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
 {
-    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(SOC_TMP_MAX);
-    DEFINE_POWER_TLM_POWER_SENSOR(SOC_PWR);
-    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_TMP_MAX);
-    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_TOTAL_PWR);
-    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(VR_TMP_MAX);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(SOC_TMP_MAX, 0.5);
+    DEFINE_POWER_TLM_POWER_SENSOR(SOC_PWR, 0.5);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_TMP_MAX, 0.5);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_TOTAL_PWR, 0.5);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(VR_TMP_MAX, 0.5);
     DEFINE_POWER_TLM_FREQUENCY_SENSOR(SOC_AVG_FREQ);
+
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_00, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_01, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_02, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_03, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_04, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_05, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_06, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_07, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_08, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_09, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_10, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_11, 15.0);
+
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_00, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_01, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_02, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_03, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_04, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_05, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_06, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_07, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_08, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_09, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_10, 15.0);
+    DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_MAX_TMP_11, 15.0);
+
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_00, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_01, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_02, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_03, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_04, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_05, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_06, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_07, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_08, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_09, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_10, 15.0);
+    DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_11, 15.0);
+
 
     static fpfw_pldm_pdr_sensor_auxiliary_name_t s_dummy0_name = {
         .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
@@ -708,6 +748,78 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         &s_VR_TMP_MAX_pdr_aux_name,
         &s_SOC_AVG_FREQ_pdr,
         &s_SOC_AVG_FREQ_pdr_aux_name,
+        &s_DIMM_AVG_TMP_00_pdr,
+        &s_DIMM_AVG_TMP_00_pdr_aux_name,
+        &s_DIMM_AVG_TMP_01_pdr,
+        &s_DIMM_AVG_TMP_01_pdr_aux_name,
+        &s_DIMM_AVG_TMP_02_pdr,
+        &s_DIMM_AVG_TMP_02_pdr_aux_name,
+        &s_DIMM_AVG_TMP_03_pdr,
+        &s_DIMM_AVG_TMP_03_pdr_aux_name,
+        &s_DIMM_AVG_TMP_04_pdr,
+        &s_DIMM_AVG_TMP_04_pdr_aux_name,
+        &s_DIMM_AVG_TMP_05_pdr,
+        &s_DIMM_AVG_TMP_05_pdr_aux_name,
+        &s_DIMM_AVG_TMP_06_pdr,
+        &s_DIMM_AVG_TMP_06_pdr_aux_name,
+        &s_DIMM_AVG_TMP_07_pdr,
+        &s_DIMM_AVG_TMP_07_pdr_aux_name,
+        &s_DIMM_AVG_TMP_08_pdr,
+        &s_DIMM_AVG_TMP_08_pdr_aux_name,
+        &s_DIMM_AVG_TMP_09_pdr,
+        &s_DIMM_AVG_TMP_09_pdr_aux_name,
+        &s_DIMM_AVG_TMP_10_pdr,
+        &s_DIMM_AVG_TMP_10_pdr_aux_name,
+        &s_DIMM_AVG_TMP_11_pdr,
+        &s_DIMM_AVG_TMP_11_pdr_aux_name,
+        &s_DIMM_MAX_TMP_00_pdr,
+        &s_DIMM_MAX_TMP_00_pdr_aux_name,
+        &s_DIMM_MAX_TMP_01_pdr,
+        &s_DIMM_MAX_TMP_01_pdr_aux_name,
+        &s_DIMM_MAX_TMP_02_pdr,
+        &s_DIMM_MAX_TMP_02_pdr_aux_name,
+        &s_DIMM_MAX_TMP_03_pdr,
+        &s_DIMM_MAX_TMP_03_pdr_aux_name,
+        &s_DIMM_MAX_TMP_04_pdr,
+        &s_DIMM_MAX_TMP_04_pdr_aux_name,
+        &s_DIMM_MAX_TMP_05_pdr,
+        &s_DIMM_MAX_TMP_05_pdr_aux_name,
+        &s_DIMM_MAX_TMP_06_pdr,
+        &s_DIMM_MAX_TMP_06_pdr_aux_name,
+        &s_DIMM_MAX_TMP_07_pdr,
+        &s_DIMM_MAX_TMP_07_pdr_aux_name,
+        &s_DIMM_MAX_TMP_08_pdr,
+        &s_DIMM_MAX_TMP_08_pdr_aux_name,
+        &s_DIMM_MAX_TMP_09_pdr,
+        &s_DIMM_MAX_TMP_09_pdr_aux_name,
+        &s_DIMM_MAX_TMP_10_pdr,
+        &s_DIMM_MAX_TMP_10_pdr_aux_name,
+        &s_DIMM_MAX_TMP_11_pdr,
+        &s_DIMM_MAX_TMP_11_pdr_aux_name,
+        &s_DIMM_AVG_PWR_00_pdr,
+        &s_DIMM_AVG_PWR_00_pdr_aux_name,
+        &s_DIMM_AVG_PWR_01_pdr,
+        &s_DIMM_AVG_PWR_01_pdr_aux_name,
+        &s_DIMM_AVG_PWR_02_pdr,
+        &s_DIMM_AVG_PWR_02_pdr_aux_name,
+        &s_DIMM_AVG_PWR_03_pdr,
+        &s_DIMM_AVG_PWR_03_pdr_aux_name,
+        &s_DIMM_AVG_PWR_04_pdr,
+        &s_DIMM_AVG_PWR_04_pdr_aux_name,
+        &s_DIMM_AVG_PWR_05_pdr,
+        &s_DIMM_AVG_PWR_05_pdr_aux_name,
+        &s_DIMM_AVG_PWR_06_pdr,
+        &s_DIMM_AVG_PWR_06_pdr_aux_name,
+        &s_DIMM_AVG_PWR_07_pdr,
+        &s_DIMM_AVG_PWR_07_pdr_aux_name,
+        &s_DIMM_AVG_PWR_08_pdr,
+        &s_DIMM_AVG_PWR_08_pdr_aux_name,
+        &s_DIMM_AVG_PWR_09_pdr,
+        &s_DIMM_AVG_PWR_09_pdr_aux_name,
+        &s_DIMM_AVG_PWR_10_pdr,
+        &s_DIMM_AVG_PWR_10_pdr_aux_name,
+        &s_DIMM_AVG_PWR_11_pdr,
+        &s_DIMM_AVG_PWR_11_pdr_aux_name,
         &s_dummy0,
         &s_dummy0_name,
         &s_dummy1,

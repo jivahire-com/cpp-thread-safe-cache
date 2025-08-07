@@ -136,3 +136,44 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz, test_setup, tes
     uint16_t exp_freq_Mhz = dvfs_get_freq_from_plimit(avg_pstate);
     assert_int_equal(calc_freq_Mhz, exp_freq_Mhz);
 }
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC, test_setup, test_teardown)
+{
+    // test dimms from die 1
+    die_2_die_exch_oob_write_dimm_info(5, 3400, 600, 50);
+
+    uint16_t avg_temp_dC = data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC(11);
+    assert_int_equal(avg_temp_dC, 600);
+
+    uint16_t max_temp_dC = data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC(11);
+    assert_int_equal(max_temp_dC, 50);
+
+    uint16_t avg_pwr_mW = data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(11);
+    assert_int_equal(avg_pwr_mW, 3400);
+
+    // test dimms from die 0
+    computed_metrics_oob.dimm_chan_temp_mov_avg[0].total_sum = 600;
+    computed_metrics_oob.dimm_chan_temp_mov_avg[0].sample_count = 1;
+    computed_metrics_oob.dimm_chan_pwr_mov_avg[0].total_sum = 3400;
+    computed_metrics_oob.dimm_chan_pwr_mov_avg[0].sample_count = 1;
+    computed_metrics_oob.dimm_chan_max_temp_dC[0] = 50;
+
+    avg_temp_dC = data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC(0);
+    assert_int_equal(avg_temp_dC, 600); // from computed metrics
+
+    max_temp_dC = data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC(0);
+    assert_int_equal(max_temp_dC, 50); // from computed metrics
+
+    avg_pwr_mW = data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(0);
+    assert_int_equal(avg_pwr_mW, 3400); // from computed metrics
+
+    // test invalid channel
+    avg_temp_dC = data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC(12);
+    assert_int_equal(avg_temp_dC, 0); // from computed metrics
+
+    max_temp_dC = data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC(12);
+    assert_int_equal(max_temp_dC, 0); // from computed metrics
+
+    avg_pwr_mW = data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(12);
+    assert_int_equal(avg_pwr_mW, 0); // from computed metrics
+}

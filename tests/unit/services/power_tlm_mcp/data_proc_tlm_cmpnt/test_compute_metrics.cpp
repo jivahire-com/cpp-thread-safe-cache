@@ -339,21 +339,21 @@ TEST_FUNCTION(test_comp_metrics_for_soc_top_temp_sensor, test_setup, test_teardo
     }
 }
 
-TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm_temp, test_setup, test_teardown)
+TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm, test_setup, test_teardown)
 {
 
     uint8_t dimm_id = 0;
-    uint16_t test_values_dC[5][2] = {
-        {180, 300},
-        {190, 310},
-        {200, 320},
-        {210, 330},
-        {220, 340},
+    uint16_t test_values_dC[5][3] = {
+        {180, 300, 400},
+        {220, 340, 500},
+        {200, 320, 420},
+        {210, 330, 440},
+        {190, 310, 490},
     };
 
     for (uint8_t i = 0; i < 5; i++)
     {
-        comp_metrics_for_single_soc_dimm_temp(dimm_id, test_values_dC[i][0], test_values_dC[i][1]);
+        comp_metrics_for_single_soc_dimm(dimm_id, test_values_dC[i][0], test_values_dC[i][1], test_values_dC[i][2]);
     }
 
     // Check the results
@@ -361,24 +361,14 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm_temp, test_setup, test_teard
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.min, 180);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.max, 220);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.running_avg.average, 200);
-}
 
-TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm_power, test_setup, test_teardown)
-{
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.min, 300);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.max, 340);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.running_avg.average, 320);
 
-    uint8_t dimm_id = 0;
-    uint16_t test_values_mW[5] = {180, 190, 200, 210, 220};
-
-    for (uint8_t i = 0; i < 5; i++)
-    {
-        comp_metrics_for_single_soc_dimm_power(dimm_id, test_values_mW[i]);
-    }
-
-    // Check the results
-
-    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.min, 180);
-    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.max, 220);
-    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.running_avg.average, 200);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.min, 400);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.max, 500);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.running_avg.average, 450);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, test_teardown)
@@ -678,10 +668,10 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core, tes
 
 TEST_FUNCTION(test_comp_metrics_for_max_dimm_temp, test_setup, test_teardown)
 {
-    uint16_t test_values_dC[DIMM_MOVING_AVG_NUM_SAMPLES] = {200, 220};
+    uint16_t test_values_dC[DIMM_MAX_TEMP_MOVING_AVG_NUM_SAMPLES] = {200, 220};
     die_2_die_exch_init(0);
 
-    for (uint8_t i = 0; i < DIMM_MOVING_AVG_NUM_SAMPLES; i++)
+    for (uint8_t i = 0; i < DIMM_MAX_TEMP_MOVING_AVG_NUM_SAMPLES; i++)
     {
         comp_metrics_for_max_dimm_temp(test_values_dC[i]);
     }
@@ -692,7 +682,7 @@ TEST_FUNCTION(test_comp_metrics_for_max_dimm_temp, test_setup, test_teardown)
 
     die_2_die_exch_init(1);
 
-    for (uint8_t i = 0; i < DIMM_MOVING_AVG_NUM_SAMPLES; i++)
+    for (uint8_t i = 0; i < DIMM_MAX_TEMP_MOVING_AVG_NUM_SAMPLES; i++)
     {
         comp_metrics_for_max_dimm_temp(test_values_dC[i]);
     }
@@ -706,9 +696,9 @@ TEST_FUNCTION(test_comp_metrics_for_total_dimm_pwr, test_setup, test_teardown)
 {
     die_2_die_exch_init(0);
 
-    uint16_t test_values_mW[DIMM_MOVING_AVG_NUM_SAMPLES] = {190, 210};
+    uint16_t test_values_mW[DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES] = {190, 210};
 
-    for (uint8_t i = 0; i < DIMM_MOVING_AVG_NUM_SAMPLES; i++)
+    for (uint8_t i = 0; i < DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES; i++)
     {
         comp_metrics_for_total_dimm_pwr(test_values_mW[i]);
     }
@@ -719,7 +709,7 @@ TEST_FUNCTION(test_comp_metrics_for_total_dimm_pwr, test_setup, test_teardown)
 
     die_2_die_exch_init(1);
 
-    for (uint8_t i = 0; i < DIMM_MOVING_AVG_NUM_SAMPLES; i++)
+    for (uint8_t i = 0; i < DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES; i++)
     {
         comp_metrics_for_total_dimm_pwr(test_values_mW[i]);
     }

@@ -48,4 +48,7 @@ mock_target(${TARGET}
     data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW
     data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC
     data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz
+    data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC
+    data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC
+    data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW
 )

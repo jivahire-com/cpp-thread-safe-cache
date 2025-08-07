@@ -17,6 +17,8 @@
 #define NUMBER_OF_SECONDARY_DIES (1)
 #define FIRST_SECONDARY_DIE_ID   (1)
 
+#define NUMBER_OF_DIMMS (6 )
+
 /*-------------- Typedefs ----------------*/
 typedef struct
 {
@@ -30,6 +32,14 @@ typedef struct
     uint32_t sum;
     uint16_t num_samples;
 } sliding_window_data_t, *p_sliding_window_data_t;
+
+typedef struct
+{
+    uint16_t average_pwr_mW;
+    uint16_t average_temp_dC;
+    uint16_t max_temp_dC;
+} dimm_data_t, *p_dimm_data_t;
+
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -200,3 +210,39 @@ void die_2_die_exch_oob_write_window_avg_pstate(uint32_t summation, uint16_t num
  * @param[out] avg_pstate_window Pointer to a structure to store the average P-state data.
  */
 void die_2_die_exch_oob_read_avg_pstate(uint8_t die_id, p_sliding_window_data_t avg_pstate_window);
+
+/**
+ * @brief Write the DIMM channel information to the die to die exchange.
+ * This function writes the average power, average temperature, and maximum temperature for a specific DIMM channel.
+ * Note: the data is written per channel, as that is how the data is collected, but all channels are read at the same time.
+ *
+ * @param[in] channel The DIMM channel to write the information for (0 to NUMBER_OF_DIMMS-1).
+ * @param[in] average_pwr_mW The average power in milliwatts.
+ * @param[in] average_temp_dC The average temperature in deci-Celsius.
+ * @param[in] latest_temp_dC The current temperature in deci-Celsius.
+ */
+void die_2_die_exch_oob_write_dimm_info(uint8_t channel, uint16_t average_pwr_mW, uint16_t average_temp_dC, uint16_t latest_temp_dC);
+
+/**
+ * @brief Read the DIMM channel average temperature from the die to die exchange.
+ * @param[in] die_id The ID of the die to read the information from.
+ * @param[in] channel The DIMM channel to read the information for (0 to NUMBER_OF_DIMMS-1).
+ * @return The average temperature in deci-Celsius for the specified channel.
+ */
+uint16_t die_2_die_exch_oob_read_dimm_avg_temp_dC(uint8_t die_id, uint8_t channel);
+
+/**
+ * @brief Read the DIMM channel maximum temperature from the die to die exchange.
+ * @param[in] die_id The ID of the die to read the information from.
+ * @param[in] channel The DIMM channel to read the information for (0 to NUMBER_OF_DIMMS-1).
+ * @return The maximum temperature in deci-Celsius for the specified channel.
+ */
+uint16_t die_2_die_exch_oob_read_dimm_max_temp_dC(uint8_t die_id, uint8_t channel);
+
+/**
+ * @brief Read the DIMM channel average power from the die to die exchange.
+ * @param[in] die_id The ID of the die to read the information from.
+ * @param[in] channel The DIMM channel to read the information for (0 to NUMBER_OF_DIMMS-1).
+ * @return The average power in milliwatts for the specified channel.
+ */
+uint16_t die_2_die_exch_oob_read_dimm_avg_pwr_mW(uint8_t die_id, uint8_t channel);

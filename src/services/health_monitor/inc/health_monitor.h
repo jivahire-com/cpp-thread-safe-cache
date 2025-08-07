@@ -10,16 +10,13 @@
 
 /*------------- Includes -----------------*/
 #include <cper.h>
+#include <einj.h>
 #include <fpfw_icc_base.h>
 #include <icc_mhu.h>
 #include <kng_error.h>
 #include <semaphore_lib.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define ERROR_INJECTION_PAYLOAD_VERSION ((1 << 24) /* Major version */ | \
-                                         (0 << 16) /* Minor version */ | \
-                                         (0 << 8)  /* Patch version */ | \
-                                         (0))      /* Build number */
 #define HM_GHES_VERSION_V2 10
 #define HM_ERROR_RECORD_COUNT 1
 #define HM_ERROR_SECTION_COUNT 2
@@ -29,9 +26,9 @@ typedef acpi_einj_cmd_status_t (*hm_error_injection_cb_t)(ras_einj_info_t *p_inf
 
 typedef enum
 {
-    HM_INTERCORE_SCP,
+    HM_INTERCORE_LOCAL,
     HM_INTERCORE_APCORE,
-    HM_INTERCORE_MCP,
+    HM_INTERCORE_REMOTE,
     HM_INTERCORE_HSP,
     HM_INTERCORE_SDM,
     HM_INTERCORE_CDED,
@@ -64,6 +61,8 @@ typedef struct {
     uint32_t semaphore_key;
     // Multi-die related
     bool is_primary;
+    // Curent CPU type
+    bool is_mcp;
 } hm_config_t;
 
 typedef struct {

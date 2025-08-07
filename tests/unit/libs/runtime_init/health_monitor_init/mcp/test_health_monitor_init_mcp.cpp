@@ -28,6 +28,7 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_hm_svc;
+extern fpfw_init_component_t _fpfw_component_hm_cli_init;
 
 /*------------- Functions ----------------*/
 //
@@ -52,6 +53,28 @@ void __wrap_hm_pre_ddr_init(hm_config_t* hm_config)
     assert_non_null(hm_config->mscp_ghes_error_record_addr_base);
     function_called();
 }
+
+void __wrap_hm_post_ddr_init()
+{
+    function_called();
+}
+
+void __wrap_hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ctx_t* icc_ctx)
+{
+    check_expected(intercore_type);
+    assert_non_null(icc_ctx);
+    function_called();
+}
+
+void __wrap_hm_cli_init()
+{
+    function_called();
+}
+
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    return mock_type(bool);
+}
 }
 
 //
@@ -59,8 +82,15 @@ void __wrap_hm_pre_ddr_init(hm_config_t* hm_config)
 //
 TEST_FUNCTION(hm_svc, nullptr, nullptr)
 {
+    will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
     will_return_always(__wrap_idsw_get_die_id, (KNG_DIE_ID)1);
-    expect_function_call_any(__wrap_hm_pre_ddr_init);
+    expect_function_call(__wrap_hm_pre_ddr_init);
+    expect_function_call(__wrap_hm_post_ddr_init);
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_REMOTE);
+    expect_function_call(__wrap_hm_post_intercore_init);
+    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_LOCAL);
+    expect_function_call(__wrap_hm_post_intercore_init);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_hm_svc.init_fn();
@@ -68,4 +98,15 @@ TEST_FUNCTION(hm_svc, nullptr, nullptr)
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
+}
+
+TEST_FUNCTION(hm_cli_init, nullptr, nullptr)
+{
+    expect_function_call_any(__wrap_hm_cli_init);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_hm_cli_init.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
 }

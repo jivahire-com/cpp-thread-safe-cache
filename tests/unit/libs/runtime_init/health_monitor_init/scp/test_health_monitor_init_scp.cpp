@@ -85,6 +85,11 @@ bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
 
     return mock_type(bool);
 }
+
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    return mock_type(bool);
+}
 }
 
 //
@@ -116,8 +121,9 @@ TEST_FUNCTION(hm_post_init, nullptr, nullptr)
 
 TEST_FUNCTION(hm_scp, nullptr, nullptr)
 {
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
-    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_SCP);
+    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_LOCAL);
     expect_function_call_any(__wrap_hm_post_intercore_init);
 
     // Call the function under test
@@ -130,7 +136,7 @@ TEST_FUNCTION(hm_scp, nullptr, nullptr)
 TEST_FUNCTION(hm_mcp, nullptr, nullptr)
 {
     will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
-    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_MCP);
+    expect_value(__wrap_hm_post_intercore_init, intercore_type, HM_INTERCORE_REMOTE);
     expect_function_call_any(__wrap_hm_post_intercore_init);
 
     // Call the function under test

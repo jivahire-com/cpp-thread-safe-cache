@@ -22,7 +22,8 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::accelerator_ip
         ms::service::atu_service
-        ms::service::health_monitor::mcp
+        ms::service::health_monitor
+        ms::service::health_monitor::cli
 )
 
 # Generic ports implmented within this project
@@ -43,4 +44,5 @@ mock_target(${TARGET}
     hm_post_ddr_init
     hm_post_intercore_init
     hm_cli_init
+    idhw_is_single_die_boot_en
 )

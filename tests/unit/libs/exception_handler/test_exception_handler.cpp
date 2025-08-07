@@ -315,9 +315,6 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_function_call(__wrap_crash_dump_bug_check_initiated_dump);
     will_return(__wrap_crash_dump_bug_check_initiated_dump, false);
 
-    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
-    expect_function_call(__wrap_hm_submit_cper);
-
     expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_CD_EXTERNAL_REQUEST);
     expect_value(__wrap_crash_dump_handler, p1, 0);
     expect_value(__wrap_crash_dump_handler, p2, 0);

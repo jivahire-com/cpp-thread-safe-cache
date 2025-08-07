@@ -51,6 +51,9 @@ void hm_hsp_error_domain_register_listener(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_hsp_error_record_submit_listener(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_apcore_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx);
 const char* get_error_domain_name(acpi_error_domain_t domain);
+void hm_transfer_cper_to_bmc();
+void hm_cper_transfer_listener_from_scp(fpfw_icc_base_ctx_t* icc_ctx);
+void hm_cper_transfer_listener_from_secondary_mcp(fpfw_icc_base_ctx_t* icc_ctx);
 void create_full_mscp_cper_record(acpi_error_domain_t err_domain_idx,
     acpi_error_severity_t severity,
     acpi_cper_section_t* err_record_section,

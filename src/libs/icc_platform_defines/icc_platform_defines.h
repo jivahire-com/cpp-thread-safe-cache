@@ -149,6 +149,7 @@ typedef enum _rmss_d2d_mailbox_msg_command_code {
 	RMSS_D2D_MAILBOX_DIE_CONFIG_RSP,
 	RMSS_D2D_MAILBOX_PWR_CLI_REQ,
 	RMSS_D2D_MAILBOX_PWR_CLI_RSP,
+	RMSS_D2D_MAILBOX_MSG_CPER_TRANSFER_REQ,
     RMSS_D2D_MAILBOX_MSG_MAX
 }rmss_d2d_mailbox_msg_command_code;
 

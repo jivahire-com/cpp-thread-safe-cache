@@ -51,7 +51,8 @@ static acpi_einj_cmd_status_t hm_mcp_error_injection_cb(ras_einj_info_t* einj_pa
     hm_icc_mcp_err_injection_req.cb = hm_mcp_error_injection_req_cb;
     hm_icc_mcp_err_injection_req.cb_ctx = NULL;
 
-    fpfw_status_t status = fpfw_icc_base_send(get_hm_config()->icc_ctx[HM_INTERCORE_MCP], &hm_icc_mcp_err_injection_req);
+    fpfw_status_t status =
+        fpfw_icc_base_send(get_hm_config()->icc_ctx[HM_INTERCORE_REMOTE], &hm_icc_mcp_err_injection_req);
 
     if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
@@ -120,7 +121,7 @@ static void hm_mcp_error_record_submit_listener_cb(void* context, size_t output_
                    hm_err_submit_payload->error_record.section_size);
 
     hm_config_t* hm_config = get_hm_config();
-    hm_mcp_error_record_submit_listener(hm_config->icc_ctx[HM_INTERCORE_MCP]);
+    hm_mcp_error_record_submit_listener(hm_config->icc_ctx[HM_INTERCORE_REMOTE]);
 }
 
 bool hm_mcp_error_domain_register_listener(fpfw_icc_base_ctx_t* icc_ctx)

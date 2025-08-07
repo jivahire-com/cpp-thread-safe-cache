@@ -12,6 +12,7 @@
 #include <FpFwCli.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
+#include <einj.h>
 #include <health_monitor.h>
 #include <hm_cli.h>
 #include <string.h>
@@ -53,7 +54,7 @@ static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
     {NULL_LIST_ENTRY, "hm", "hm_dump_einj", hm_dump_einj_cli, "dump einj payload", ""},
     {NULL_LIST_ENTRY, "hm", "hm_inject_err", hm_inject_err_cli, "inject err {err_idx}", ""},
     {NULL_LIST_ENTRY, "hm", "hm_activate_sample_domain", hm_activate_sample_err_domain_cli, "active sample err domain", ""},
-    {NULL_LIST_ENTRY, "hm", "hm_submit_sample_cper", hm_submit_sample_cper_cli, "submit cper {sev}", ""}};
+    {NULL_LIST_ENTRY, "hm", "hm_submit_sample_cper", hm_submit_sample_cper_cli, "submit ce cper {err_idx}", ""}};
 
 static const guid_name_map_t guid_map[] = {
     {ACPI_ERROR_TYPE_VENDOR_DDR, "ddr mem"},
@@ -227,19 +228,19 @@ static FPFW_CLI_STATUS hm_activate_sample_err_domain_cli(int argc, const char** 
 
 static FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const char** argv)
 {
-    acpi_error_severity_t sev = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+    acpi_error_domain_t err_domain_idx = ACPI_ERROR_DOMAIN_INVALID;
 
     if (argc == 2)
     {
-        int input_sev = atoi(argv[1]);
+        int err_idx = atoi(argv[1]);
 
-        if (input_sev < ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL || input_sev > ACPI_ERROR_SEVERITY_INFORMATIONAL)
+        if (err_idx < ACPI_ERROR_DOMAIN_DDR || err_idx > ACPI_ERROR_DOMAIN_COUNT - 1)
         {
-            FpFwCliPrint("ERR:Check Args(%d)\n", __LINE__);
+            FpFwCliPrint("ERR:Invalid Error Domain(%d)\n", __LINE__);
             return CLI_ERROR;
         }
 
-        sev = (acpi_error_severity_t)input_sev;
+        err_domain_idx = (acpi_error_domain_t)err_idx;
     }
     else
     {
@@ -247,16 +248,9 @@ static FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const char** argv)
         return CLI_ERROR;
     }
 
-    acpi_err_sec_generic_t general_cper_section = {0};
-    general_cper_section.err_misc0 = 0x12;
-    general_cper_section.err_misc1 = 0x34;
-    general_cper_section.err_misc2 = 0x56;
-    general_cper_section.err_misc3 = 0x78;
+    acpi_cper_section_t general_cper_section = {0};
 
-    acpi_cper_section_t cper_section;
-    cper_section.sec_mesh = general_cper_section;
-
-    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, sev, &cper_section, sizeof(general_cper_section));
+    hm_submit_cper(err_domain_idx, ACPI_ERROR_SEVERITY_INFORMATIONAL, &general_cper_section, sizeof(acpi_cper_section_t));
     return CLI_SUCCESS;
 }
 

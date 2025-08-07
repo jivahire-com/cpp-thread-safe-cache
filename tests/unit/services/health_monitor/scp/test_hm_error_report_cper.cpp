@@ -46,6 +46,11 @@ void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
     function_called();
 }
 
+int __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(int);
+}
+
 //
 // Mocks
 //
@@ -56,8 +61,9 @@ void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
 //
 TEST_FUNCTION(test_hm_submit_cper_ce, post_ddr_setup, nullptr)
 {
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_function_call(__wrap_release_semaphore);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
     expect_value(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS);
     expect_value(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT);
     expect_function_call(__wrap_mmio_write32);
@@ -90,6 +96,7 @@ TEST_FUNCTION(test_hm_submit_cper_ce, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_submit_cper_ce_multi, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
     expect_value_count(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, -1);
@@ -125,8 +132,9 @@ TEST_FUNCTION(test_hm_submit_cper_ce_multi, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_submit_cper_ue, post_ddr_setup, nullptr)
 {
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_function_call(__wrap_release_semaphore);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
     expect_value(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS);
     expect_value(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT);
     expect_function_call(__wrap_mmio_write32);
@@ -160,6 +168,7 @@ TEST_FUNCTION(test_hm_submit_cper_ue, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_submit_cper_ue_multi, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
     expect_value_count(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, -1);
@@ -196,8 +205,8 @@ TEST_FUNCTION(test_hm_submit_cper_ue_multi, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_submit_cper_rmss, post_ddr_setup, nullptr)
 {
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_function_call(__wrap_release_semaphore);
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
 
     acpi_err_sec_firmware_t general_cper_section = {};
 

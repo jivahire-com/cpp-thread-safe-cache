@@ -44,4 +44,5 @@ mock_target(${TARGET}
     hm_post_ddr_init
     hm_post_intercore_init
     hm_cli_init
+    idhw_is_single_die_boot_en
 )

@@ -55,6 +55,7 @@ int pre_ddr_setup(void** state)
     hm_config_test.semaphore_id = SEM_ID_MSCP_EXP_1;
     hm_config_test.semaphore_key = 0;
     hm_config_test.is_primary = 1;
+    hm_config_test.is_mcp = 0;
 
     hm_pre_ddr_init(&hm_config_test);
 
@@ -65,6 +66,15 @@ int pre_ddr_setup(void** state)
     assert_true(hm_config->mscp_ghes_ack_addr_table_base == hm_config_test.mscp_ghes_ack_addr_table_base);
     assert_true(hm_config->mscp_ghes_error_record_addr_base == hm_config_test.mscp_ghes_error_record_addr_base);
     assert_true(hm_config->mscp_ghes_base_apcore_offset == hm_config_test.mscp_ghes_base_apcore_offset);
+
+    return 0;
+}
+
+int pre_ddr_setup_on_mcp(void** state)
+{
+    pre_ddr_setup(state);
+    hm_config_t* hm_config = get_hm_config();
+    hm_config->is_mcp = true;
 
     return 0;
 }

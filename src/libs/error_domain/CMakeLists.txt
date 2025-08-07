@@ -92,7 +92,7 @@ target_link_libraries(
             ms::lib::crash_dump
             ms::lib::error_codes
             ms::lib::icc_platform_defines
-            ms::service::health_monitor::mcp
+            ms::service::health_monitor
             silibs::atu
             silibs::icc_mhu
             silibs::cmsdk_wd

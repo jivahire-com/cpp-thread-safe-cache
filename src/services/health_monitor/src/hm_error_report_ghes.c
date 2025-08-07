@@ -264,19 +264,24 @@ void update_error_record_section(uint16_t error_domain_idx,
         volatile acpi_ghes_error_record_dual_die_t* current_domain_error_record_base =
             (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
 
-        // locate error record section
-        uint32_t current_section_idx = current_domain_error_record_base->block_status_entry_count;
-        if (current_section_idx > 1)
-        {
-            current_section_idx = 1;
-        }
-
         // lock before updating error record information
         wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
 
+        if (current_domain_error_record_base->block_status_entry_count != 0)
+        {
+            // move the first section to the next one
+            volatile uint8_t* dst = (volatile uint8_t*)&current_domain_error_record_base->data[1].section;
+            volatile uint8_t* src = (volatile uint8_t*)&current_domain_error_record_base->data[0].section;
+            for (size_t i = 0; i < sizeof(acpi_cper_section_t); ++i)
+            {
+                dst[i] = src[i];
+            }
+        }
+
+        // copy current section to the first section
         for (size_t i = 0; i < err_record_section_size; ++i)
         {
-            ((volatile uint8_t*)&current_domain_error_record_base->data[current_section_idx].section)[i] =
+            ((volatile uint8_t*)&current_domain_error_record_base->data[0].section)[i] =
                 ((const uint8_t*)err_record_section)[i];
         }
 

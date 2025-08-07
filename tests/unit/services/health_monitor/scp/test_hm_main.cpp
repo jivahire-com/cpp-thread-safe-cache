@@ -120,23 +120,43 @@ TEST_FUNCTION(test_hm_post_ddr_init_single_die, pre_ddr_setup, nullptr)
     }
 }
 
+TEST_FUNCTION(test_hm_post_ddr_init_on_mcp, pre_ddr_setup_on_mcp, nullptr)
+{
+    hm_post_ddr_init();
+    assert_true(ddr_subsystem_enabled());
+}
+
 TEST_FUNCTION(test_get_hm_config, pre_ddr_setup, nullptr)
 {
     assert_true(get_hm_config() == &hm_config_test);
 }
 
-TEST_FUNCTION(test_hm_post_intercore_init_scp, pre_ddr_setup, nullptr)
+TEST_FUNCTION(test_hm_post_intercore_init_local, pre_ddr_setup, nullptr)
 {
     expect_function_call(__wrap_fpfw_icc_base_recv);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    hm_post_intercore_init(HM_INTERCORE_SCP, (fpfw_icc_base_ctx_t*)1234);
+    hm_post_intercore_init(HM_INTERCORE_LOCAL, (fpfw_icc_base_ctx_t*)1234);
 }
 
-TEST_FUNCTION(test_hm_post_intercore_init_mcp, pre_ddr_setup, nullptr)
+TEST_FUNCTION(test_hm_post_intercore_init_remote, pre_ddr_setup, nullptr)
 {
     expect_function_calls(__wrap_fpfw_icc_base_recv, 2);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    hm_post_intercore_init(HM_INTERCORE_MCP, (fpfw_icc_base_ctx_t*)1234);
+    hm_post_intercore_init(HM_INTERCORE_REMOTE, (fpfw_icc_base_ctx_t*)1234);
+}
+
+TEST_FUNCTION(test_hm_post_intercore_init_local_mcp, pre_ddr_setup_on_mcp, nullptr)
+{
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    hm_post_intercore_init(HM_INTERCORE_LOCAL, (fpfw_icc_base_ctx_t*)1234);
+}
+
+TEST_FUNCTION(test_hm_post_intercore_init_remote_mcp, pre_ddr_setup_on_mcp, nullptr)
+{
+    expect_function_call(__wrap_fpfw_icc_base_recv);
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    hm_post_intercore_init(HM_INTERCORE_REMOTE, (fpfw_icc_base_ctx_t*)1234);
 }
 
 TEST_FUNCTION(test_hm_post_intercore_init_sdm, pre_ddr_setup, nullptr)

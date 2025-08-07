@@ -11,13 +11,14 @@ set(SOURCES
     test_hm_error_domain_accel.cpp
     test_hm_error_domain_hsp.cpp
     test_hm_error_domain_apcore.cpp
-    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/scp/hm_main.c
-    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/scp/hm_error_domain_register.c
-    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/scp/hm_error_report_ghes.c
-    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/scp/hm_error_domain_accel.c
-    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/scp/hm_error_domain_hsp.c
-    # ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/scp/hm_error_domain_cded.c
-    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/scp/hm_error_domain_apcore.c
+    test_hm_error_report_pldm.cpp
+    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_main.c
+    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_register.c
+    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_report_ghes.c
+    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_accel.c
+    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_hsp.c
+    # ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_cded.c
+    ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_apcore.c
 )
 
 # Compile test
@@ -70,4 +71,6 @@ mock_target(${TARGET}
     mmio_write32
     AP_GHES_ADDR
     MSCP_GHES_ADDR
+    idsw_get_platform_sdv
+    fpfw_pldm_service_raise_platform_event
 )

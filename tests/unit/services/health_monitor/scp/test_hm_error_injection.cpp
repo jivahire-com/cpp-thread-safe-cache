@@ -145,6 +145,14 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
         apcore_listener_tested = true;
         params->cb(NULL, 0, FPFW_STATUS_SUCCESS);
     }
+    else if (icc_ctx == (fpfw_icc_base_ctx_t*)ICC_HM_CPER_TRANSFER_REQ_MCP)
+    {
+        params->cb(NULL, 0, FPFW_STATUS_SUCCESS);
+    }
+    else if (icc_ctx == (fpfw_icc_base_ctx_t*)ICC_HM_CPER_TRANSFER_PLDM_REQ_MCP)
+    {
+        params->cb(NULL, 0, FPFW_STATUS_SUCCESS);
+    }
     else
     {
         uint32_t cmd_code = (uint32_t)icc_ctx;

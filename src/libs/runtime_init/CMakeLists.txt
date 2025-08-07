@@ -368,7 +368,8 @@ target_link_libraries(
         ms::service::pwr_tlm_mcp
         ms::service::pwr_tlm_mcp::cli
         ms::service::wdog
-        ms::service::health_monitor::mcp
+        ms::service::health_monitor
+        ms::service::health_monitor::cli
         silibs::atu
         silibs::common::lib_uart_pl011
         silibs::fuse

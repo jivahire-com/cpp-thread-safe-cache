@@ -52,6 +52,7 @@
 
 /*--------- Function Prototypes ----------*/
 int pre_ddr_setup(void** state);
+int pre_ddr_setup_on_mcp(void** state);
 int post_ddr_setup(void** state);
 acpi_einj_cmd_status_t hm_error_injection_cb(ras_einj_info_t* payload, void* ctx);
 void custom_fpfw_recv(fpfw_icc_base_recv_req_t* req);

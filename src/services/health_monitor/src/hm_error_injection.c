@@ -40,7 +40,7 @@ void hm_inject_error_recv_cb(void* context, size_t output_size_bytes, fpfw_statu
 
     hm_config_t* hm_config = get_hm_config();
 
-    hm_prepare_error_injection_listener(hm_config->icc_ctx[HM_INTERCORE_SCP]);
+    hm_prepare_error_injection_listener(hm_config->icc_ctx[HM_INTERCORE_LOCAL]);
     hm_inject_error_local();
 }
 
@@ -94,7 +94,7 @@ acpi_einj_cmd_status_t hm_inject_error(void)
                 .cb_ctx = NULL,
             };
 
-            fpfw_status_t icc_status = fpfw_icc_base_send(hm_config->icc_ctx[HM_INTERCORE_SCP], &scp_send_params);
+            fpfw_status_t icc_status = fpfw_icc_base_send(hm_config->icc_ctx[HM_INTERCORE_LOCAL], &scp_send_params);
             if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
             {
                 HM_LOG_CRIT("failed to send injection request to remote");

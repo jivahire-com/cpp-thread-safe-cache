@@ -295,16 +295,19 @@ void exception_handler(exception_stack_frame_t* stack_frame)
     // Provide printout for debugging
     print_context_info(&g_core_crash_context);
 
-    // Send CPER
-    acpi_err_sec_firmware_t sec_fw_cper_section = {
-        .severity = ACPI_ERROR_SEVERITY_CORRECTED,
-        .record_id = record_id,
-        .param = {errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2]}};
+    if (errorCode != KNG_CD_EXTERNAL_REQUEST)
+    {
+        // Send CPER
+        acpi_err_sec_firmware_t sec_fw_cper_section = {
+            .severity = ACPI_ERROR_SEVERITY_CORRECTED,
+            .record_id = record_id,
+            .param = {errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2]}};
 
-    acpi_cper_section_t cper_section;
-    cper_section.sec_fw = sec_fw_cper_section;
+        acpi_cper_section_t cper_section;
+        cper_section.sec_fw = sec_fw_cper_section;
 
-    hm_submit_cper(err_domain, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(cper_section));
+        hm_submit_cper(err_domain, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(cper_section));
+    }
 
     // Call the crash dump handler
     crash_dump_handler(errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2], bugCheckParams[3]);

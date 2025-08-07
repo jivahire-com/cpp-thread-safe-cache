@@ -11,6 +11,7 @@
 #include <accelerator_ip.h>
 #include <accelip_id.h>
 #include <atu_api.h>
+#include <einj.h>
 #include <fpfw_init.h>
 #include <health_monitor.h>
 #include <hm_cli.h>
@@ -27,11 +28,6 @@
 
 FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
 {
-// Once https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs/pullrequest/285315 merged, we can remove this
-#ifndef RAS_EINJ_VENDOR_DEFINED_STRUCT_OFFSET
-    #define RAS_EINJ_VENDOR_DEFINED_STRUCT_OFFSET (0xB0)
-#endif
-
     uintptr_t mscp_ghes_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_TABLE_BLOCK_BASE);
     uintptr_t mscp_ghes_error_record_addr_table_base =
         MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_ERROR_RECORD_ADDRESS_TABLE_BASE);
@@ -56,6 +52,7 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
     hm_config.semaphore_id = IS_PLATFORM_SVP() ? SEM_ID_MSCP_EXP_1 : SEM_ID_DIE0_IOSS_1;
     hm_config.semaphore_key = HM_SEMAPHORE_KEY(idsw_get_die_id());
     hm_config.is_primary = (idsw_get_die_id() == DIE_0);
+    hm_config.is_mcp = false;
 
     hm_pre_ddr_init(&hm_config);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &hm_config};
@@ -69,13 +66,17 @@ FPFW_INIT_COMPONENT(hm_post_init, FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "m
 
 FPFW_INIT_COMPONENT(hm_scp, FPFW_INIT_DEPENDENCIES("hm_svc", "icc_d2dmbx"))
 {
-    hm_post_intercore_init(HM_INTERCORE_SCP, fpfw_init_get_handle("icc_d2dmbx"));
+    if (!idhw_is_single_die_boot_en())
+    {
+        hm_post_intercore_init(HM_INTERCORE_LOCAL, fpfw_init_get_handle("icc_d2dmbx"));
+    }
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
 FPFW_INIT_COMPONENT(hm_mcp, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_mscp2mscp"))
 {
-    hm_post_intercore_init(HM_INTERCORE_MCP, fpfw_init_get_handle("icc_mscp2mscp"));
+    hm_post_intercore_init(HM_INTERCORE_REMOTE, fpfw_init_get_handle("icc_mscp2mscp"));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 

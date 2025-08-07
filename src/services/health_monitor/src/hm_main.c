@@ -29,10 +29,20 @@ void setup_intercore_error_handling(hm_intercore_type_t intercore_type, fpfw_icc
 void wait_for_ghes_construction();
 
 /*-- Declarations (Statics and globals) --*/
+static hm_config_t* health_monitor_config = NULL;
 static bool ddr_subsystem_up = false;
-extern hm_config_t* health_monitor_config;
 
 /*------------- Functions ----------------*/
+hm_config_t* get_hm_config()
+{
+    return health_monitor_config;
+}
+
+void hm_pre_ddr_init(hm_config_t* hm_config)
+{
+    health_monitor_config = hm_config;
+}
+
 void hm_post_ddr_init()
 {
     ddr_subsystem_up = true;
@@ -40,6 +50,13 @@ void hm_post_ddr_init()
     hm_config_t* hm_config = get_hm_config();
     HM_ET_INFO(HM_ET_TYPE_MAIN_GET_CONFIG);
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
+
+    if (hm_config->is_mcp)
+    {
+        ddr_subsystem_up = true;
+        set_ghes_table_ready();
+        return;
+    }
 
     // De-assert FATAL_ERROR GPIO
     hm_report_error_event(HM_ERROR_REPORT_GPIO, false);
@@ -83,11 +100,32 @@ void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ct
 
     switch (intercore_type)
     {
-    case HM_INTERCORE_SCP:
-        hm_prepare_error_injection_listener(icc_ctx);
+    case HM_INTERCORE_LOCAL:
+        if (hm_config->is_mcp)
+        {
+            // ICC set up for PLDM CPER transfer on MCPs
+            if (hm_config->is_primary == true)
+            {
+                hm_cper_transfer_listener_from_secondary_mcp(icc_ctx);
+            }
+        }
+        else
+        {
+            // ICC set up for error injection routing on SCPs
+            hm_prepare_error_injection_listener(icc_ctx);
+        }
         break;
-    case HM_INTERCORE_MCP:
-        hm_prepare_mscp_listener(icc_ctx);
+    case HM_INTERCORE_REMOTE:
+        if (hm_config->is_mcp)
+        {
+            // listener for PLDM CPER transfer request from SCP
+            hm_cper_transfer_listener_from_scp(icc_ctx);
+        }
+        else
+        {
+            // listener for MCP error domain and readiness
+            hm_prepare_mscp_listener(icc_ctx);
+        }
         break;
     case HM_INTERCORE_SDM:
         hm_prepare_sdm_listener(icc_ctx);

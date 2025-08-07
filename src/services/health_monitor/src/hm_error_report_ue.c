@@ -14,6 +14,8 @@
 #include <gpio_lib.h>
 #include <health_monitor_events.h>
 #include <health_monitor_i.h>
+#include <idhw.h>
+#include <idsw.h>
 #include <ras.h>
 #include <silibs_platform.h>
 
@@ -45,7 +47,10 @@ void hm_report_error_interrupt(bool trigger)
     // inform to AP
     if (trigger)
     {
-        MMIO_WRITE32(MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, OS_CPER_ERROR_DEVICE_EVT);
+        if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)
+        {
+            MMIO_WRITE32(MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, OS_CPER_ERROR_DEVICE_EVT);
+        }
     }
 }
 

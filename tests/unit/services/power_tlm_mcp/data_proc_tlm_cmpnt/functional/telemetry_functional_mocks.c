@@ -91,21 +91,17 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_tile_voltage(tile_voltage_t
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_core_current(core_current_t* current_data, uint16_t* core_index)
 {
     *core_index = (uint16_t)mock();
-
     sensor_ram_poll_status_t status;
     status.curr_data_is_valid = mock_type(bool);
     status.more_entries = mock_type(bool);
-
     if (status.curr_data_is_valid)
     {
         core_current_t* mock_data = mock_ptr_type(core_current_t*);
         assert_non_null(mock_data);
         assert_non_null(current_data);
-
         memcpy(current_data, mock_data, sizeof(core_current_t));
         assert_in_range(*core_index, 0, NUMBER_OF_TILES_PER_DIE - 1);
     }
-
     return status;
 }
 
@@ -247,7 +243,6 @@ void setup_snsr_fifo_is_empty(void)
 // Modifing the timestamp function to return larger intervals
 uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
 {
-    // time_t0 += (int)mock();
     time_t0 += 1000; // Increment by 1000μs or 1ms  each time
     return time_t0;
 }

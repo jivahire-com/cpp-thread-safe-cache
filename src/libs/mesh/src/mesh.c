@@ -80,6 +80,10 @@ static void hsp_send_recv_progress_msg(uint16_t req_msg, uint16_t rsp_msg)
 
 void print_mesh_d2d_knob_values(void)
 {
+
+    // TODO: Commented out this function as it is large and prints knobs
+    // ADO: #2832606
+    /*
     // Print the Mesh SAM Knobs
     cmn800_sam_cfg_t* temp_cmn800_sam_cfg = cmn800_get_mesh_sam_cfg_knob();
     UNUSED(temp_cmn800_sam_cfg);
@@ -219,6 +223,7 @@ void print_mesh_d2d_knob_values(void)
     MESH_INFO("d2d_sleep_cfg = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg);
     MESH_INFO("d2d_sleep_cfg_entry = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg_entry);
     MESH_INFO("d2d_rxcal_find_goodlanes_skip = 0x%x\n", temp_d2d_cfg->d2d_rxcal_find_goodlanes_skip);
+    */
 }
 
 void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_param)

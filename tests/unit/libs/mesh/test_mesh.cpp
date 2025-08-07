@@ -1572,10 +1572,10 @@ TEST_FUNCTION(test_mesh_config_knobs_single_die, setup_soc_platform_dual_die, se
     expect_function_call(__wrap_get_default_d2d_cfg);
 
     // Print Function is calling this
-    expect_function_call(__wrap_cmn800_get_mesh_sam_cfg_knob);
-    expect_function_call(__wrap_cmn800_get_mesh_ras_cfg_knob);
-    expect_function_call(__wrap_get_ccg_knob_defaults);
-    expect_function_call(__wrap_get_default_d2d_cfg);
+    // expect_function_call(__wrap_cmn800_get_mesh_sam_cfg_knob);
+    // expect_function_call(__wrap_cmn800_get_mesh_ras_cfg_knob);
+    // expect_function_call(__wrap_get_ccg_knob_defaults);
+    // expect_function_call(__wrap_get_default_d2d_cfg);
 
     // Call API under test
     mesh_read_cfg_knobs_from_spi(&cmn800_sequence_param);

@@ -50,6 +50,8 @@ static FPFW_CLI_STATUS d2d_pseudo_error_inj(int argc, const char** argv);
 
 static FPFW_CLI_STATUS print_mesh_numa_config(int argc, const char** argv);
 
+static FPFW_CLI_STATUS d2d_ecc_ce_counter_cli(int argc, const char** argv);
+
 /*-- Declarations (Statics and globals) --*/
 
 static FPFW_CLI_COMMAND mesh_cli_list[] = {
@@ -67,6 +69,7 @@ static FPFW_CLI_COMMAND mesh_cli_list[] = {
     {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_test_suite", mesh_pseudo_error_inj_test_suite, "mesh pseudo fault injection test suite", "Usage: mesh_pseudo_error_test_suite <secure/non_secure> <node_type> <node_id_start> <node_id_end> <node_control_reg> <err_inj> <err_cnt_down>"},
     {NULL_LIST_ENTRY, "mesh", "d2d_pseudo_error_inj", d2d_pseudo_error_inj, "d2d pseudo fault injection", "Usage: d2d_pseudo_error_inj <node_id> <err_inj> <err_cnt_down>"},
     {NULL_LIST_ENTRY, "mesh", "print_mesh_numa_config", print_mesh_numa_config, "Print the Mesh NUMA config", "Usage: print_mesh_numa_config"},
+    {NULL_LIST_ENTRY, "mesh", "d2d_ecc_ce_counter_update", d2d_ecc_ce_counter_cli, "d2d ecc ce counter update", "Usage: d2d_ecc_ce_counter_update <d2d_subsystem> <cecr>"},
 
 };
 
@@ -534,6 +537,42 @@ static FPFW_CLI_STATUS print_mesh_numa_config(int argc, const char** argv)
         return CLI_ERROR;
     }
     return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS d2d_ecc_ce_counter_cli(int argc, const char** argv)
+{
+    FpFwCliPrint("d2d_ecc_ce_counter_update func. call\n\n");
+    uint8_t current_arg = 0x0;
+    if (argc == 3)
+    {
+        char* endptr;
+        uint8_t d2d_subsystem = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        uint16_t cecr = strtoul(argv[++current_arg], &endptr, 16);
+        if (*endptr != '\0')
+        {
+            goto exit_error1;
+        }
+        FpFwCliPrint("d2d_ecc_ce_counter_update Start\n");
+        FpFwCliPrint("d2d_subsystem 0x%x, die_num: %d, cecr 0x%x\n", d2d_subsystem, (uint8_t)idhw_get_die_id(), cecr);
+        d2d_ecc_ce_counter_update(d2d_subsystem, cecr);
+        FpFwCliPrint("d2d_ecc_ce_counter_update End\n");
+    }
+    else
+    {
+        goto exit_error;
+    }
+    return CLI_SUCCESS;
+exit_error1:
+    FpFwCliPrint("Arg %s is Invalid Hex value\n", argv[current_arg]);
+exit_error:
+    FpFwCliPrint("Mesh RAS D2D CE Counter Update CLI Help\n");
+    FpFwCliPrint("Cmds: 2, <d2d_subsystem> <cecr>\n");
+    FpFwCliPrint("Ex: d2d_ecc_ce_counter_update 0x0 0x7ffe\n");
+    return CLI_ERROR;
 }
 
 void mesh_cli_initialize(void)

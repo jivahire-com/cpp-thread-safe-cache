@@ -444,7 +444,7 @@ silibs_status_t __wrap_ras_arm_agent_set_record_counter_thresholds_by_index(ras_
     check_expected(cec);
     check_expected(ceco);
     function_called();
-    return SILIBS_SUCCESS;
+    return mock_type(int);
 }
 
 silibs_status_t __wrap_ras_arm_agent_enable_logging(ras_agent_entity_t* agent)
@@ -1334,6 +1334,7 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_Die_0, setup_svp_platform, se
                      cec,
                      (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
         expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_SUCCESS);
         expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
         expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
         expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 1);
@@ -1341,6 +1342,7 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_Die_0, setup_svp_platform, se
                      cec,
                      (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
         expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_SUCCESS);
         expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
     }
 
@@ -1379,6 +1381,7 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_warm_reset_Die_0, setup_svp_p
                      cec,
                      (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
         expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_SUCCESS);
         expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
         expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
         expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 1);
@@ -1386,11 +1389,120 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_init_warm_reset_Die_0, setup_svp_p
                      cec,
                      (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
         expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_SUCCESS);
         expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
     }
 
     // Call API under test
     d2d_ras_init();
+}
+
+// D2D RAS Set the CE Counter via CLI
+TEST_FUNCTION(test_mesh_error_handler_d2d_ecc_ce_counter_update_Die_0, setup_svp_platform, setup_undefined_platform)
+{
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+
+    // Override the g_test_d2d_ecc_ce_counter to test the D2D RAS init
+    g_test_d2d_ecc_ce_counter = 0x30;
+
+    // d2d_ras_init
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_set_base);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 0);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_SUCCESS);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 1);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_SUCCESS);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
+        // Call API under test
+        d2d_ecc_ce_counter_update(d2d_subsystem, g_test_d2d_ecc_ce_counter);
+    }
+}
+
+// D2D RAS Set the CE Counter via CLI
+TEST_FUNCTION(test_mesh_error_handler_d2d_ecc_ce_counter_update_Die_1, setup_svp_platform, setup_undefined_platform)
+{
+    const auto test_die = (KNG_DIE_ID)1;
+    g_test_die = test_die;
+
+    // Override the g_test_d2d_ecc_ce_counter to test the D2D RAS init
+    g_test_d2d_ecc_ce_counter = 0x31;
+
+    // d2d_ras_init
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_set_base);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 0);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_SUCCESS);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 1);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_SUCCESS);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
+        // Call API under test
+        d2d_ecc_ce_counter_update(d2d_subsystem, g_test_d2d_ecc_ce_counter);
+    }
+
+    // Go out of bounds
+    d2d_ecc_ce_counter_update(NUM_OF_CCG_WITH_D2D, g_test_d2d_ecc_ce_counter);
+}
+
+// D2D RAS Set the CE Counter via CLI Test Failure Paths
+TEST_FUNCTION(test_mesh_error_handler_d2d_ecc_ce_counter_update_Die_1_Failed_Path, setup_svp_platform, setup_undefined_platform)
+{
+    const auto test_die = (KNG_DIE_ID)1;
+    g_test_die = test_die;
+
+    // Override the g_test_d2d_ecc_ce_counter to test the D2D RAS init
+    g_test_d2d_ecc_ce_counter = 0x32;
+
+    // d2d_ras_init
+    for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
+    {
+        expect_value(__wrap_ras_arm_agent_set_base, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_function_call(__wrap_ras_arm_agent_set_base);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 0);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_E_PARAM);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, agent, &d2dss2_agent[d2d_subsystem]);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, index, 1);
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index,
+                     cec,
+                     (g_test_d2d_ecc_ce_counter | RAS_ARM_COUNTER_SET_REQUEST));
+        expect_value(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, ceco, 0);
+        will_return(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index, SILIBS_E_PARAM);
+        expect_function_call(__wrap_ras_arm_agent_set_record_counter_thresholds_by_index);
+        // Call API under test
+        d2d_ecc_ce_counter_update(d2d_subsystem, g_test_d2d_ecc_ce_counter);
+    }
 }
 
 void verify_mesh_config_knobs(void)

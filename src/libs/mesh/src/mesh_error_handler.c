@@ -45,35 +45,35 @@ static ras_error_record_t record = {0x0};
 atu_map_entry_t atu_d2d2_map[NUM_OF_CCG_WITH_D2D] = {
     {.ap_base_address = AP_TOP_D0_D2DSS_0_ADDRESS + D2DSS_CXS_D2D_RAS_ADDRESS,
      .mscp_start_address = 0,
-     .mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1,
+     .mscp_end_address = ATU_D2D_MAP_END_ADDRESS,
      .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT}},
     {.ap_base_address = AP_TOP_D0_D2DSS_1_ADDRESS + D2DSS_CXS_D2D_RAS_ADDRESS,
      .mscp_start_address = 0,
-     .mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1,
+     .mscp_end_address = ATU_D2D_MAP_END_ADDRESS,
      .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT}},
     {.ap_base_address = AP_TOP_D0_D2DSS_2_ADDRESS + D2DSS_CXS_D2D_RAS_ADDRESS,
      .mscp_start_address = 0,
-     .mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1,
+     .mscp_end_address = ATU_D2D_MAP_END_ADDRESS,
      .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT}},
     {.ap_base_address = AP_TOP_D0_D2DSS_3_ADDRESS + D2DSS_CXS_D2D_RAS_ADDRESS,
      .mscp_start_address = 0,
-     .mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1,
+     .mscp_end_address = ATU_D2D_MAP_END_ADDRESS,
      .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT}},
     {.ap_base_address = AP_TOP_D0_D2DSS_4_ADDRESS + D2DSS_CXS_D2D_RAS_ADDRESS,
      .mscp_start_address = 0,
-     .mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1,
+     .mscp_end_address = ATU_D2D_MAP_END_ADDRESS,
      .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT}},
     {.ap_base_address = AP_TOP_D0_D2DSS_5_ADDRESS + D2DSS_CXS_D2D_RAS_ADDRESS,
      .mscp_start_address = 0,
-     .mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1,
+     .mscp_end_address = ATU_D2D_MAP_END_ADDRESS,
      .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT}},
     {.ap_base_address = AP_TOP_D0_D2DSS_6_ADDRESS + D2DSS_CXS_D2D_RAS_ADDRESS,
      .mscp_start_address = 0,
-     .mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1,
+     .mscp_end_address = ATU_D2D_MAP_END_ADDRESS,
      .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT}},
     {.ap_base_address = AP_TOP_D0_D2DSS_7_ADDRESS + D2DSS_CXS_D2D_RAS_ADDRESS,
      .mscp_start_address = 0,
-     .mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1,
+     .mscp_end_address = ATU_D2D_MAP_END_ADDRESS,
      .attribute = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT}}};
 /*------------- Functions ----------------*/
 
@@ -319,31 +319,51 @@ void mesh_ns_error_isr(void* context)
     hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
 }
 
-uint32_t d2d_set_atu_map(uint8_t d2d_subsystem)
+uint32_t d2d_set_atu_map(uint8_t d2d_subsystem, bool* d2d_atu_unmap_required)
 {
     uint32_t translated_addr_ras2 = 0x0;
     MESH_CRIT("D2D2:: Setting ATU Map for D2D Subsystem %d\n", d2d_subsystem);
 
-    FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_d2d2_map[d2d_subsystem]));
+    // Create a temp entry for the ATU Map
+    atu_map_entry_t temp_atu_map_entry = {.ap_base_address = atu_d2d2_map[d2d_subsystem].ap_base_address,
+                                          .mscp_start_address = atu_d2d2_map[d2d_subsystem].mscp_start_address,
+                                          .mscp_end_address = atu_d2d2_map[d2d_subsystem].mscp_end_address,
+                                          .attribute = atu_d2d2_map[d2d_subsystem].attribute};
 
-    FPFW_RUNTIME_ASSERT(!atu_translate_address(ATU_ID_MSCP, atu_d2d2_map[d2d_subsystem].ap_base_address, &translated_addr_ras2));
+    if ((atu_find_map(ATU_ID_MSCP, &temp_atu_map_entry) == SILIBS_SUCCESS))
+    {
+        MESH_CRIT("D2D2:: ATU Map already exists for D2D Subsystem %d\n", d2d_subsystem);
+        *d2d_atu_unmap_required = false;
+    }
+    else
+    {
+        FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &temp_atu_map_entry));
+        *d2d_atu_unmap_required = true;
+    }
+
+    FPFW_RUNTIME_ASSERT(!atu_translate_address(ATU_ID_MSCP, temp_atu_map_entry.ap_base_address, &translated_addr_ras2));
 
     MESH_CRIT("D2D2:: d2d2_ras_address 0x%08x_%08x, translated_addr_ras2 = 0x%x \n",
-              (uint32_t)(atu_d2d2_map[d2d_subsystem].ap_base_address >> 32),
-              (uint32_t)(atu_d2d2_map[d2d_subsystem].ap_base_address & 0xFFFFFFFF),
+              (uint32_t)(temp_atu_map_entry.ap_base_address >> 32),
+              (uint32_t)(temp_atu_map_entry.ap_base_address & 0xFFFFFFFF),
               translated_addr_ras2);
 
     return translated_addr_ras2;
 }
 
-void d2d_clear_atu_map(uint8_t d2d_subsystem)
+void d2d_clear_atu_map(uint8_t d2d_subsystem, uint32_t translated_addr_ras2)
 {
-    MESH_CRIT("D2D2:: Clearing ATU Map for D2D Subsystem %d\n", d2d_subsystem);
-    FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_d2d2_map[d2d_subsystem]));
+    MESH_CRIT("D2D2:: Clearing ATU Map for D2D Subsystem %d Start\n", d2d_subsystem);
+    // Create a temp entry for the ATU Map
+    atu_map_entry_t temp_atu_map_entry = {.ap_base_address = UINT64_MAX,
+                                          .mscp_start_address = translated_addr_ras2,
+                                          .mscp_end_address = (translated_addr_ras2 + ATU_D2D_MAP_END_ADDRESS),
+                                          .attribute = atu_d2d2_map[d2d_subsystem].attribute};
 
-    // Clear the MSCP base address after unmap
-    atu_d2d2_map[d2d_subsystem].mscp_start_address = 0;
-    atu_d2d2_map[d2d_subsystem].mscp_end_address = ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1;
+    // Call ATU Unmap
+    FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &temp_atu_map_entry));
+
+    MESH_CRIT("D2D2:: Clearing ATU Map for D2D Subsystem %d End\n", d2d_subsystem);
 }
 
 int mesh_error_handler_convert_d2d_ras_record_to_cper(ras_error_record_t* record, acpi_err_sec_generic_t* mesh_cper, uint8_t d2d_subsystem)
@@ -384,17 +404,16 @@ int mesh_error_handler_convert_d2d_ras_record_to_cper(ras_error_record_t* record
 void d2d_error_isr(void* context)
 {
     UNUSED(context);
-
     MESH_CRIT("D2D Error ISR\n");
     uint32_t translated_addr_ras2 = 0x0;
     uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+    bool d2d_atu_unmap_required = true;
 
     // Clear the d2d ras error record
     record = (ras_error_record_t){0};
     for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
     {
-
-        translated_addr_ras2 = d2d_set_atu_map(d2d_subsystem);
+        translated_addr_ras2 = d2d_set_atu_map(d2d_subsystem, &d2d_atu_unmap_required);
 
         // Update the Base
         int status = ras_arm_agent_set_base(&d2dss2_agent[d2d_subsystem], translated_addr_ras2);
@@ -439,7 +458,10 @@ void d2d_error_isr(void* context)
             else
             {
                 MESH_CRIT("Invalid Record, No Further Action\n");
-                d2d_clear_atu_map(d2d_subsystem); // Clear the ATU Map since error was found and we will check next D2D Subsystem
+                if (d2d_atu_unmap_required)
+                {
+                    d2d_clear_atu_map(d2d_subsystem, translated_addr_ras2); // Clear the ATU Map since error was found and we will check next D2D Subsystem
+                }
                 continue;
             }
             if ((record.ce_count_overflow) && (record.ce_count_valid))
@@ -447,9 +469,10 @@ void d2d_error_isr(void* context)
                 uint16_t ce_counter = config_get_d2d_ecc_ce_counter() | RAS_ARM_COUNTER_SET_REQUEST;
                 ras_arm_agent_set_record_counter_thresholds_by_record(&record, ce_counter, 0);
             }
-            // ADO 1513835 The combined INT is cleared outside this module
-
-            d2d_clear_atu_map(d2d_subsystem); // Clear the ATU Map since error was found and we are jumping out of the loop
+            if (d2d_atu_unmap_required)
+            {
+                d2d_clear_atu_map(d2d_subsystem, translated_addr_ras2); // Clear the ATU Map since error was found and we are jumping out of the loop
+            }
             if (acpi_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
             {
                 // If the severity is fatal, we need to bug check
@@ -459,7 +482,10 @@ void d2d_error_isr(void* context)
             break; // Break out of the loop
         }
     d2d_ras_error_isr_exit:
-        d2d_clear_atu_map(d2d_subsystem);
+        if (d2d_atu_unmap_required)
+        {
+            d2d_clear_atu_map(d2d_subsystem, translated_addr_ras2);
+        }
     }
 }
 
@@ -472,6 +498,7 @@ void d2d_error_isr(void* context)
 void d2d_ras_init(void)
 {
     uint32_t translated_addr_ras2 = 0x0;
+    bool d2d_atu_unmap_required = true;
 
     MESH_CRIT("D2D2 RAS Start\n");
     for (uint8_t d2d_subsystem = 0; d2d_subsystem < NUM_OF_CCG_WITH_D2D; d2d_subsystem++)
@@ -480,7 +507,7 @@ void d2d_ras_init(void)
         {
             atu_d2d2_map[d2d_subsystem].ap_base_address += 0x1000000000;
         }
-        translated_addr_ras2 = d2d_set_atu_map(d2d_subsystem);
+        translated_addr_ras2 = d2d_set_atu_map(d2d_subsystem, &d2d_atu_unmap_required);
 
         // Create ARM RAS Agents
         ras_arm_agent_setup_entity(&d2dss2_agent[d2d_subsystem]);
@@ -526,9 +553,67 @@ void d2d_ras_init(void)
                           config_get_d2d_ecc_ce_counter());
             }
         }
-        d2d_clear_atu_map(d2d_subsystem);
+        if (d2d_atu_unmap_required)
+        {
+            d2d_clear_atu_map(d2d_subsystem, translated_addr_ras2);
+        }
     }
     MESH_CRIT("D2D2 RAS End\n");
+}
+
+/**
+ * D2D RAS Set the CE Counter
+ * This function sets the CE Counter for the D2D RAS Agents
+ * @param d2d_subsystem
+ * @param cec_cli
+ * @return void
+ **/
+void d2d_ecc_ce_counter_update(uint8_t d2d_subsystem, uint16_t cec_cli)
+{
+    uint32_t translated_addr_ras2 = 0x0;
+    bool d2d_atu_unmap_required = true;
+
+    MESH_CRIT("d2d_ecc_ce_counter_update Start\n");
+    if (d2d_subsystem >= NUM_OF_CCG_WITH_D2D)
+    {
+        MESH_CRIT("Invalid D2D Subsystem 0x%x\n", d2d_subsystem);
+        return;
+    }
+    if ((uint8_t)idhw_get_die_id() == SOC_D1)
+    {
+        atu_d2d2_map[d2d_subsystem].ap_base_address += 0x1000000000;
+    }
+    translated_addr_ras2 = d2d_set_atu_map(d2d_subsystem, &d2d_atu_unmap_required);
+    ras_arm_agent_set_base(&d2dss2_agent[d2d_subsystem], translated_addr_ras2);
+    // Program the CE Counter Register based on CLI input
+    if (cec_cli != 0x0)
+    {
+        uint16_t cec = cec_cli | RAS_ARM_COUNTER_SET_REQUEST;
+        int status = 0x0;
+        status = ras_arm_agent_set_record_counter_thresholds_by_index(&d2dss2_agent[d2d_subsystem], 0, cec, 0);
+        if (status != SILIBS_SUCCESS)
+        {
+            MESH_CRIT("Failed to set CE Counter Thresholds for D2DSS2_AGENT%d, index 0, status: %d, ce "
+                      "counter %d\n",
+                      d2d_subsystem,
+                      status,
+                      cec_cli);
+        }
+        status = ras_arm_agent_set_record_counter_thresholds_by_index(&d2dss2_agent[d2d_subsystem], 1, cec, 0);
+        if (status != SILIBS_SUCCESS)
+        {
+            MESH_CRIT("Failed to set CE Counter Thresholds for D2DSS2_AGENT%d, index 1, status: %d, ce "
+                      "counter %d\n",
+                      d2d_subsystem,
+                      status,
+                      cec_cli);
+        }
+    }
+    if (d2d_atu_unmap_required)
+    {
+        d2d_clear_atu_map(d2d_subsystem, translated_addr_ras2);
+    }
+    MESH_CRIT("d2d_ecc_ce_counter_update End\n");
 }
 
 /**
@@ -547,7 +632,8 @@ void d2d_ras_error_inj(uint8_t d2d_subsystem, uint32_t err_inj, uint32_t err_cnt
         MESH_CRIT("Invalid D2D Subsystem 0x%x\n", d2d_subsystem);
         return;
     }
-    translated_addr_ras2 = d2d_set_atu_map(d2d_subsystem);
+    bool d2d_atu_unmap_required = true;
+    translated_addr_ras2 = d2d_set_atu_map(d2d_subsystem, &d2d_atu_unmap_required);
 
     // Update the Base
     int status = ras_arm_agent_set_base(&d2dss2_agent[d2d_subsystem], translated_addr_ras2);
@@ -564,7 +650,10 @@ void d2d_ras_error_inj(uint8_t d2d_subsystem, uint32_t err_inj, uint32_t err_cnt
     FPFW_RUNTIME_ASSERT(!ras_arm_agent_trigger_by_type(&d2dss2_agent[d2d_subsystem], (uint64_t)err_inj));
 
 d2d_ras_error_inj_exit:
-    d2d_clear_atu_map(d2d_subsystem);
+    if (d2d_atu_unmap_required)
+    {
+        d2d_clear_atu_map(d2d_subsystem, translated_addr_ras2);
+    }
 }
 
 /**

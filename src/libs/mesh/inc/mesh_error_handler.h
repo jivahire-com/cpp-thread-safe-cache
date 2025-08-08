@@ -69,6 +69,7 @@ MSB of Mesh Node ID
 #define D2DSS_CE_COUNTER_MAX                    (0x7FFFULL)
 #define D2DSS_ERR0MISC0_HI                      (0x24)
 
+#define ATU_D2D_MAP_END_ADDRESS                 (ALIGN_UP(D2DSS_CXS_D2D_RAS_SIZE, _8KB) - 1)
 typedef enum
 {
     COMPONENT_TYPE_MESH = 0x0,
@@ -149,3 +150,12 @@ void d2d_ras_error_inj(uint8_t d2d_subsystem, uint32_t err_inj, uint32_t err_cnt
  * @return acpi_einj_cmd_status_t
  **/
 acpi_einj_cmd_status_t mesh_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx);
+
+/**
+ * D2D RAS Set the CE Counter
+ * This function sets the CE Counter for the D2D RAS Agents
+ * @param d2d_subsystem
+ * @param cec_cli
+ * @return void
+ **/
+void d2d_ecc_ce_counter_update(uint8_t d2d_subsystem, uint16_t cec_cli);

@@ -319,12 +319,12 @@ static bool platform_requires_fuse_distribution()
     switch (plat_id)
     {
     case PLATFORM_RVP_EVT_SILICON:
-        status = true; // Always distribute fuses regardless of security state
-        break;
-    case PLATFORM_RTL_SIM:
     case PLATFORM_FPGA:
     case PLATFORM_FPGA_LARGE:
     case PLATFORM_FPGA_LARGE_RVP:
+        status = true; // Always distribute fuses regardless of security state
+        break;
+    case PLATFORM_RTL_SIM:
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
     case PLATFORM_EMU_2D:
@@ -650,24 +650,24 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
     uint32_t exclude_list_count = 0;
     KNG_PLAT_ID plat_id = idsw_get_platform_sdv();
     DIE_INSTANCE die_id = (DIE_INSTANCE)idsw_get_die_id();
-
+    bool is_secure_state = (system_info_get_security_state() == HSP_SECURITY_STATE_SECURE);
     switch (plat_id)
     {
     case PLATFORM_FPGA:
         printf(FUSE_NAME " Platform is FPGA\n");
-        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_FPGA_LARGE:
         printf(FUSE_NAME "Platform is FPGA_Large\n");
-        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_FPGA_LARGE_RVP:
         printf(FUSE_NAME "Platform is FPGA_Large_RVP\n");
-        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_RVP_EVT_SILICON:
         printf(FUSE_NAME "Platform is PLATFORM_RVP_EVT_SILICON\n");
-        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
@@ -675,11 +675,11 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
     case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D_8C:
         printf(FUSE_NAME "Platform is EMU\n");
-        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_SVP_SIM:
         printf(FUSE_NAME "Platform is PLATFORM_SVP_SIM\n");
-        status = fuse_dist_get_exclusion_list(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count);
+        status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     default:
         status = SILIBS_E_SUPPORT;

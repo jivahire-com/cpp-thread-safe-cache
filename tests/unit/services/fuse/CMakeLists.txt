@@ -58,7 +58,7 @@ mock_target(${TARGET}
     fuse_distribution
     trigger_debugger_for_manual_overrides
     fuse_override_ignoring_valids
-    fuse_dist_get_exclusion_list
+    fuse_dist_get_exclusion_list_secure
     fuse_get_exclude_list_fpga
     fpfw_init_get_handle
     fpfw_icc_base_send_recv_sync

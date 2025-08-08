@@ -227,15 +227,17 @@ silibs_status_t __wrap_fuse_get_exclude_list_soc_nano(const fuse_dist_exclude_ra
     return SILIBS_SUCCESS;
 }
 
-silibs_status_t __wrap_fuse_dist_get_exclusion_list(KNG_DIE_ID die_id,
-                                                    KNG_PLAT_ID plat_id,
-                                                    const fuse_dist_exclude_range_t** IP_exclude_list,
-                                                    uint32_t* IP_exclude_count)
+silibs_status_t __wrap_fuse_dist_get_exclusion_list_secure(KNG_DIE_ID die_id,
+                                                           KNG_PLAT_ID plat_id,
+                                                           const fuse_dist_exclude_range_t** IP_exclude_list,
+                                                           uint32_t* IP_exclude_count,
+                                                           bool is_secure)
 {
     check_expected(die_id);
     check_expected(plat_id);
     check_expected_ptr(IP_exclude_list);
     check_expected_ptr(IP_exclude_count);
+    check_expected(is_secure);
     *IP_exclude_list = (const fuse_dist_exclude_range_t*)mock_ptr_type(const fuse_dist_exclude_range_t*);
     *IP_exclude_count = mock_type(uint32_t);
     function_called();
@@ -381,6 +383,7 @@ TEST_FUNCTION(test_fuse_distribute_SIM_RTL, NULL, NULL)
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RTL_SIM);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
     int status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP);
     assert_int_equal(status, SILIBS_E_SUPPORT);
     // Debug prints
@@ -403,14 +406,15 @@ TEST_FUNCTION(test_fuse_distribution_SVP_PRE_MESH, NULL, NULL)
     will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
-    // Setup expectations for __wrap_fuse_dist_get_exclusion_list
-    expect_any(__wrap_fuse_dist_get_exclusion_list, die_id);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, plat_id);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_list);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_count);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    expect_function_call(__wrap_fuse_dist_get_exclusion_list);
+    // Setup expectations for __wrap_fuse_dist_get_exclusion_list_secure
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, die_id);
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, plat_id);
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_list);
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_count);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    expect_function_call(__wrap_fuse_dist_get_exclusion_list_secure);
 
     // Verify exclusion list before setting expectations
     for (uint32_t i = 0; i < exclude_list_count1; ++i)
@@ -458,18 +462,21 @@ TEST_FUNCTION(test_fuse_distribution_SVP_POST_MESH, NULL, NULL)
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
 
-    // Setup expectations for __wrap_fuse_dist_get_exclusion_list
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, die_id);
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, plat_id);
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, IP_exclude_list);
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, IP_exclude_count);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    expect_function_call_any(__wrap_fuse_dist_get_exclusion_list);
+    // Setup expectations for __wrap_fuse_dist_get_exclusion_list_secure
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, die_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, plat_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_list);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_count);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    expect_function_call_any(__wrap_fuse_dist_get_exclusion_list_secure);
 
     // Verify exclusion list before setting expectations
     for (uint32_t i = 0; i < exclude_list_count1; ++i)
@@ -545,14 +552,15 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_0, NULL, NULL)
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
 
-    // Setup expectations for __wrap_fuse_dist_get_exclusion_list
-    expect_any(__wrap_fuse_dist_get_exclusion_list, die_id);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, plat_id);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_list);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_count);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    expect_function_call(__wrap_fuse_dist_get_exclusion_list);
+    // Setup expectations for __wrap_fuse_dist_get_exclusion_list_secure
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, die_id);
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, plat_id);
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_list);
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_count);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    expect_function_call(__wrap_fuse_dist_get_exclusion_list_secure);
     // Debug prints
     printf("Setup expectations for __wrap_fuse_get_exclude_list_soc_nano\n");
 
@@ -604,18 +612,21 @@ TEST_FUNCTION(test_fuse_distribute_FPGA_LARGE_1, NULL, NULL)
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
 
-    // Setup expectations for __wrap_fuse_dist_get_exclusion_list
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, die_id);
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, plat_id);
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, IP_exclude_list);
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, IP_exclude_count);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    expect_function_call_any(__wrap_fuse_dist_get_exclusion_list);
+    // Setup expectations for __wrap_fuse_dist_get_exclusion_list_secure
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, die_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, plat_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_list);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_count);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    expect_function_call_any(__wrap_fuse_dist_get_exclusion_list_secure);
     // Debug prints
     printf("Setup expectations for __wrap_fuse_get_exclude_list_soc_nano\n");
 
@@ -693,14 +704,15 @@ TEST_FUNCTION(test_fuse_distribution_emulation_PRE_MESH, NULL, NULL)
     will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
-    // Setup expectations for __wrap_fuse_dist_get_exclusion_list
-    expect_any(__wrap_fuse_dist_get_exclusion_list, die_id);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, plat_id);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_list);
-    expect_any(__wrap_fuse_dist_get_exclusion_list, IP_exclude_count);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    expect_function_call(__wrap_fuse_dist_get_exclusion_list);
+    // Setup expectations for __wrap_fuse_dist_get_exclusion_list_secure
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, die_id);
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, plat_id);
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_list);
+    expect_any(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_count);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    expect_function_call(__wrap_fuse_dist_get_exclusion_list_secure);
 
     // Verify exclusion list before setting expectations
     for (uint32_t i = 0; i < exclude_list_count1; ++i)
@@ -748,18 +760,203 @@ TEST_FUNCTION(test_fuse_distribution_emulation_POST_MESH, NULL, NULL)
     // Debug prints
     printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
 
-    // Setup expectations for __wrap_fuse_dist_get_exclusion_list
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, die_id);
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, plat_id);
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, IP_exclude_list);
-    expect_any_always(__wrap_fuse_dist_get_exclusion_list, IP_exclude_count);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, fuse_dist_exclude_list1);
-    will_return(__wrap_fuse_dist_get_exclusion_list, exclude_list_count1);
-    expect_function_call_any(__wrap_fuse_dist_get_exclusion_list);
+    // Setup expectations for __wrap_fuse_dist_get_exclusion_list_secure
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, die_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, plat_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_list);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_count);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    expect_function_call_any(__wrap_fuse_dist_get_exclusion_list_secure);
+
+    // Verify exclusion list before setting expectations
+    for (uint32_t i = 0; i < exclude_list_count1; ++i)
+    {
+        printf("Exclusion list [%u]: start_addr=%llu, end_addr=%llu\n",
+               i,
+               fuse_dist_exclude_list1[i].start_addr,
+               fuse_dist_exclude_list1[i].end_addr);
+    }
+
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_HSP_DIST_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, MESH_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
+
+    printf(
+        "Before fuse_distribution: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, phase_min=MESH_INIT_MINOR, "
+        "exclude_list=%p, exclude_list_count=%u\n",
+        (void*)fuse_dist_exclude_list1,
+        exclude_list_count1);
+
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_MESH_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
+
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+           "phase_min=POST_MESH_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
+           (void*)fuse_dist_exclude_list1,
+           exclude_list_count1);
+
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_BRIDGE_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
+
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+           "phase_min=POST_BRIDGE_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
+           (void*)fuse_dist_exclude_list1,
+           exclude_list_count1);
+
+    unsigned int status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT);
+    assert_int_equal(status, 0);
+    status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);
+    assert_int_equal(status, 0);
+    status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT);
+    assert_int_equal(status, 0);
+    // Debug prints
+    printf("Freed memory for fuse_dist_exclude_list1\n");
+}
+
+TEST_FUNCTION(test_fuse_distribution_soc_POST_MESH, NULL, NULL)
+{
+    fuse_dist_exclude_range_t fuse_dist_exclude_list1[10] = {}; // Allocate memory
+    uint32_t exclude_list_count1 = 10;                          // Match the size of fuse_dist_exclude_list1
+
+    // Initialize the exclusion list with valid data
+    for (uint32_t i = 0; i < exclude_list_count1; ++i)
+    {
+        fuse_dist_exclude_list1[i].start_addr = i * 10;
+        fuse_dist_exclude_list1[i].end_addr = i * 10 + 5;
+    }
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_TEST);
+
+    // Debug prints
+    printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
+
+    // Setup expectations for __wrap_fuse_dist_get_exclusion_list_secure
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, die_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, plat_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_list);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_count);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, false);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    expect_function_call_any(__wrap_fuse_dist_get_exclusion_list_secure);
+
+    // Verify exclusion list before setting expectations
+    for (uint32_t i = 0; i < exclude_list_count1; ++i)
+    {
+        printf("Exclusion list [%u]: start_addr=%llu, end_addr=%llu\n",
+               i,
+               fuse_dist_exclude_list1[i].start_addr,
+               fuse_dist_exclude_list1[i].end_addr);
+    }
+
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_HSP_DIST_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, MESH_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
+
+    printf(
+        "Before fuse_distribution: die_id=DIE_0, phase_maj=POST_HSP_DIST_MAJOR, phase_min=MESH_INIT_MINOR, "
+        "exclude_list=%p, exclude_list_count=%u\n",
+        (void*)fuse_dist_exclude_list1,
+        exclude_list_count1);
+
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_MESH_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
+
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+           "phase_min=POST_MESH_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
+           (void*)fuse_dist_exclude_list1,
+           exclude_list_count1);
+
+    expect_value(__wrap_fuse_distribution, die_id, DIE_0);
+    expect_value(__wrap_fuse_distribution, phase_maj, POST_MESH_INIT_MAJOR);
+    expect_value(__wrap_fuse_distribution, phase_min, POST_BRIDGE_INIT_MINOR);
+    expect_memory(__wrap_fuse_distribution, exclude_list, fuse_dist_exclude_list1, sizeof(fuse_dist_exclude_range_t) * exclude_list_count1);
+    expect_value(__wrap_fuse_distribution, exclude_list_count, exclude_list_count1);
+    expect_function_call(__wrap_fuse_distribution);
+
+    printf("Before fuse_distribution: die_id=DIE_0, phase_maj=POST_MESH_INIT_MAJOR, "
+           "phase_min=POST_BRIDGE_INIT_MINOR, exclude_list=%p, exclude_list_count=%u\n",
+           (void*)fuse_dist_exclude_list1,
+           exclude_list_count1);
+
+    unsigned int status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT);
+    assert_int_equal(status, 0);
+    status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);
+    assert_int_equal(status, 0);
+    status = platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT);
+    assert_int_equal(status, 0);
+    // Debug prints
+    printf("Freed memory for fuse_dist_exclude_list1\n");
+}
+
+TEST_FUNCTION(test_fuse_distribution_soc_POST_MESH_secure, NULL, NULL)
+{
+    fuse_dist_exclude_range_t fuse_dist_exclude_list1[10] = {}; // Allocate memory
+    uint32_t exclude_list_count1 = 10;                          // Match the size of fuse_dist_exclude_list1
+
+    // Initialize the exclusion list with valid data
+    for (uint32_t i = 0; i < exclude_list_count1; ++i)
+    {
+        fuse_dist_exclude_list1[i].start_addr = i * 10;
+        fuse_dist_exclude_list1[i].end_addr = i * 10 + 5;
+    }
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_get_security_state, HSP_SECURITY_STATE_SECURE);
+
+    // Debug prints
+    printf("Allocated memory for fuse_dist_exclude_list1 at %p\n", (void*)fuse_dist_exclude_list1);
+
+    // Setup expectations for __wrap_fuse_dist_get_exclusion_list_secure
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, die_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, plat_id);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_list);
+    expect_any_always(__wrap_fuse_dist_get_exclusion_list_secure, IP_exclude_count);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, true);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, true);
+    expect_value(__wrap_fuse_dist_get_exclusion_list_secure, is_secure, true);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, fuse_dist_exclude_list1);
+    will_return(__wrap_fuse_dist_get_exclusion_list_secure, exclude_list_count1);
+    expect_function_call_any(__wrap_fuse_dist_get_exclusion_list_secure);
 
     // Verify exclusion list before setting expectations
     for (uint32_t i = 0; i < exclude_list_count1; ++i)

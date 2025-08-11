@@ -1,0 +1,29 @@
+--variable KEEP_SVP_ALIVE:TRUE
+--variable HOST_JSON:hsp_scp_bl_embed_fw.json
+
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_all_fifo_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Single Die ddrboot Tests
+./../../../tests/functional/test_suites/ddrboot_tests/mscp_ddrboot_hsp_boot.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Crash Dump Tests
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_stack_overflow_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+# Disable crash dump svp report test until HSP crash issue fixed.
+#./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_svp_report_test.robot
+#./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## ICC Mhu Tests
+./../../../tests/functional/test_suites/icc_mhu/icc_cli_mscp_mhu.robot
+
+## Warm Start Tests
+./../../../tests/functional/test_suites/warm_start_tests/warm_start_test.robot
+
+## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

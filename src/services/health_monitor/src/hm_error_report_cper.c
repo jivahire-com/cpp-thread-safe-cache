@@ -277,5 +277,10 @@ void create_full_mscp_cper_record(acpi_error_domain_t err_domain_idx,
     }
 
     // CPER section
-    memcpy(&cper_record->section_data[0], err_record_section, err_record_section_size);
+    uint8_t* target = (uint8_t*)&cper_record->section_data[0];
+    uint8_t* source = (uint8_t*)err_record_section;
+    for (uint32_t i = 0; i < err_record_section_size; i++)
+    {
+        target[i] = source[i];
+    }
 }

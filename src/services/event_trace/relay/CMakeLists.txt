@@ -2,6 +2,7 @@ set(TARGET kng.service.event_trace.relay)
 
 add_library(${TARGET}
     STATIC
+        etr_hsp_manager.c
         event_trace_relay.c
 )
 
@@ -9,13 +10,16 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         fwlib.lib.assert
-    PUBLIC
-        fwlib.lib.interface.platform.errorhandler
-        fwlib.lib.interface.platform.lock
-        fwlib.lib.interface.platform.threadx
-        fwlib.service.iccBase
-        IFPFW.EventTracing
+        fwlib.lib.interface.platform.dbgprint
         ms::lib::hsp_firmware_headers
+        ms::service::atu_service
+        ms::service::mts
+        silibs::idsw_kng
+        IFPFW.EventTracing
+        fwlib.service.iccBase
+        fwlib.lib.interface.platform.errorhandler
+    PUBLIC
+        fwlib.lib.interface.platform.threadx
         ms::lib::interface::in_band_telemetry_ddr
 )
 

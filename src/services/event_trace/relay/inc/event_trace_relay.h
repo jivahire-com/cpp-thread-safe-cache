@@ -9,20 +9,14 @@
 
 #pragma once
 
-/*--------------- Includes ---------------*/
-
-#include <ErrorHandler.h>
-#include <FpFwLock.h>
+/*----------------------------- Nested includes -----------------------------*/
 #include <FpFwUtils.h>
-#include <IFpFwEventTracingBuffers.h>
 #include <diag_decoder.h>
-#include <fpfw_icc_base.h>
 #include <in_band_telemetry_ddr.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <transfer_relay_protocol.h>
 #include <tx_api.h>
 
-/*-- Symbolic Constant Macros (defines) --*/
+/*------------------- Symbolic Constant Macros (defines) --------------------*/
 
 /**
  * The Trace DDR Buffers in DDR are split into two types: ASIC and HSP. Each type contains the same
@@ -47,16 +41,17 @@
 #define HSP_BUFFER_PAYLOAD_SIZE (16 * FPFW_KB)
 #define HSP_BUFFER_DDR_CAPACITY_MAX (IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE / HSP_BUFFER_PAYLOAD_SIZE)
 
+/**
+ * Sizing and capacity for DDR Buffers
+ * - How big, including the Diag Header and any HSP Headers, the DDR Buffer Payload is.
+ * - How many DDR Buffers we can fit into DDR.
+*/
 #define ETR_CORE_BUFFERS_CAPACITY (8)
 #define ETR_DDR_BUFFERS_CAPACITY_MAX (ASIC_BUFFER_DDR_CAPACITY_MAX + HSP_BUFFER_DDR_CAPACITY_MAX)
 
 #define ETR_WORK_QUEUE_CAPACITY (ETR_CORE_BUFFERS_CAPACITY + ETR_DDR_BUFFERS_CAPACITY_MAX)
 
-#define ETR_WORKER_THREAD_NAME ("etr-worker_thread")
-#define ETR_WORK_POOL_NAME ("etr-work_pool")
-#define ETR_WORK_QUEUE_NAME ("etr-work_queue")
-
-/*-------------- Typedefs ----------------*/
+/*-------------------------------- Typedefs ---------------------------------*/
 
 typedef struct
 {
@@ -64,10 +59,7 @@ typedef struct
     uint32_t die_id;
 } soc_info_t;
 
-//
-// Structures for managing DDR buffers
-//
-
+/* States for managing DDR buffers */
 typedef enum {
     ETR_DDR_BUFFER_STATE_FREE,
     ETR_DDR_BUFFER_STATE_ACTIVE,
@@ -75,6 +67,7 @@ typedef enum {
     ETR_DDR_BUFFER_STATE_INVALID
 } etr_ddr_buffer_state_t;
 
+/* Payload data for managing DDR buffers */
 typedef struct {
     uintptr_t base_addr;
     uint64_t size_bytes;
@@ -101,10 +94,7 @@ typedef struct {
     } buffer;
 } ddr_buffer_info_t, *p_ddr_buffer_info_t;
 
-//
-// Types of requests the ETR Worker Thread Processes
-//
-
+/* Types of requests the ETR Worker Thread Processes */
 typedef enum
 {
     ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
@@ -113,28 +103,12 @@ typedef enum
 } ETR_SERVICE_REQUEST_TYPE;
 
 typedef struct {
-    uint32_t core_id;
+    p_trp_msg_t p_trp_msg; // Pointer to the TRP message to process
     uintptr_t buffer_addr;
-    FPFW_ET_CORE_BUFFER_HEADER buffer_header;
-} etr_service_copy_buffer_request_t, *p_etr_service_copy_buffer_request_t;
-
-typedef struct {
-    uint32_t die_id;
-    payload_management_t payload_management;
-} etr_service_host_read_request_t, *p_etr_service_host_read_request_t;
-
-typedef struct {
-    ETR_SERVICE_REQUEST_TYPE type;
-    union {
-        etr_service_copy_buffer_request_t copy_buffer;
-        etr_service_host_read_request_t host_read;
-    } request;
+    uint32_t buffer_size_bytes; // Size of the buffer to copy
 } etr_service_request_t, *p_etr_service_request_t;
 
-//
-// ETR Service Context and Configuration
-//
-
+/* ETR Service Context Structures */
 typedef struct
 {
     soc_info_t soc_info;
@@ -144,17 +118,6 @@ typedef struct
      * We keep track of all buffers in DDR
     */
     ddr_buffer_info_t ddr_buffers[ETR_DDR_BUFFERS_CAPACITY_MAX];
-    /**
-     * To utilize the threadx queue for thread processing we need a
-     * block pool to allocate requests from, to then queue them. Due
-     * to threadx queues having a limit on the queue entry size.
-    */
-    struct {
-        TX_BLOCK_POOL pool;
-        etr_service_request_t pool_memory[ETR_WORK_QUEUE_CAPACITY];
-        TX_QUEUE queue;
-        void* queue_memory[ETR_WORK_QUEUE_CAPACITY];
-    } request_queue;
     TX_THREAD worker_thread;
     /**
      * Keep track of ICC Contexts not managed by MTS
@@ -171,6 +134,7 @@ typedef struct
     } health_stats;
 } etr_service_context_t, *p_etr_service_context_t;
 
+/* ETR Service Configuration Structure */
 typedef struct
 {
     soc_info_t soc_info;
@@ -195,12 +159,14 @@ typedef struct
     } icc_config;
 } etr_service_config_t;
 
-/*--------- Function Prototypes ----------*/
+/*------------------- Declarations (Statics and globals) --------------------*/
+
+/*--------------------------- Function Prototypes ---------------------------*/
 
 /**
  *  @brief  Initializes the Event Trace Relay service. Enabling core traces buffers to be copied to DDR.
  *
- *  @param[in]  p_service    This is the service context where the internal state will be stored for the module
+ *  @param[in]  p_context    This is the service context where the internal state will be stored for the module
  *                           NOTE! The provided memory is used only for lifetime of the program
  *
  *  @param[in]  p_config     This is the user configuration. Parameters are described in the documentation of the struct.
@@ -208,4 +174,4 @@ typedef struct
  *
  *  @retval     None. This will attempt to create the threadx resources, the module will raise an error if any of these fail.
 */
-void etr_initialize(etr_service_context_t* p_service, const etr_service_config_t* p_config);
+void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t* p_config);

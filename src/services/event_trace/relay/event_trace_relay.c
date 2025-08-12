@@ -7,99 +7,78 @@
  *  This modules initializes and configures event trace relay for a die.
  */
 
-/*------------- Includes -----------------*/
-
+/*-------------------------------- Includes ---------------------------------*/
+#include "etr_init_config_i.h"
 #include "event_trace_relay_i.h"
 
 #include <ErrorHandler.h>
 #include <FpFwAssert.h>
 #include <FpFwLock.h>
-#include <FpFwUtils.h>
-#include <IFpFwEventTracingBuffers.h>
 #include <IFpFwEventTracingStatus.h>
-#include <event_trace_relay.h>
+#include <atu_init.h>
 #include <hsp_firmware_headers.h>
-#include <in_band_telemetry_ddr.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <tx_api.h>
-#include <tx_thread.h>
+#include <idsw_kng.h>
+#include <sdm_ext_cfg_regs.h>
 
-/*------------- Typedefs -----------------*/
+/*------------------- Symbolic Constant Macros (defines) --------------------*/
 
-/*-------- Function Prototypes -----------*/
+/*-------------------------------- Typedefs ---------------------------------*/
+typedef struct
+{
+    p_etr_service_context_t p_etr_context; // Pointer to the ETR service context
+    mts_client_t mts_client;               // MTS client for Event Trace Relay
+} event_trace_relay_mts_client_t;
 
-// Initialize etr components
-static void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const etr_service_config_t* p_config);
-static void etr_initialize_hsp_communication(etr_service_context_t* p_service, const etr_service_config_t* p_config);
-static void etr_initialize_worker_thread(etr_service_context_t* p_service, const etr_service_config_t* p_config);
+/*--------------------------- Function Prototypes ---------------------------*/
+static void etr_mts_rx_msg_handler(void);
 
-// Thread and request processing
-static void etr_worker_thread_func(ULONG thread_input);
-static void etr_handle_copy_buffer_request(etr_service_context_t* p_service, etr_service_request_t* p_request);
-static void etr_handle_host_read_request(etr_service_context_t* p_service, etr_service_request_t* p_request);
+/*------------------- Declarations (Statics and globals) --------------------*/
 
-// ICC
-static void etr_notify_etdcc(ddr_buffer_info_t* p_buffer);
-static void etr_notify_etc(etr_service_request_t* p_request);
-static void etr_notify_hsp(etr_service_context_t* p_service, struct kng_hsp_mailbox_cmd_send_log_req* p_req);
-static void etr_receive_hsp(etr_service_context_t* p_service);
+TX_EVENT_FLAGS_GROUP s_etr_mts_flags; // Event flags for synchronization
 
-// ASIC Buffer Management
-static void etr_get_new_asic_buffer(etr_service_context_t* p_service);
-static void etr_complete_asic_buffer(etr_service_context_t* p_service);
+/* MTS Client Definition for Event Trace */
+static event_trace_relay_mts_client_t s_event_trace_relay_mts_client = {
+    .mts_client =
+        {
+            .notify_from_drv_frmwk = etr_mts_rx_msg_handler, // Callback for receiving MTS messages
+        },
+};
 
-/*-- Declarations (Statics and globals) --*/
+/* Message Queue Memory for the ET MTS Client */
+static p_trp_msg_t g_etr_mts_client_queue_mem[ETR_MAX_MTS_CLIENT_MESSAGES];
 
-//
-// Setup the HSP mailbox payloads and requests
-//
-static kng_hsp_mailbox_msg hsp_recv_msg;
-static kng_hsp_mailbox_msg hsp_send_msg;
+/* Memory for the ET MTS Client Block Pool (used by the thread) */
+static uint8_t g_etr_mts_client_pool_mem[ET_MTS_CLIENT_BLOCK_POOL_SIZE];
 
-static fpfw_icc_base_recv_req_t hsp_recv_params;
+/*--------------------------------- Externs ---------------------------------*/
 
-/*------------- Functions ----------------*/
+/*----------------------------- Static Functions ----------------------------*/
+
+// TODO (ADO2686478): Revisit which failures are hard failures and which are soft failures
+// At the moment, all failures are treated as soft failures in the ETR MTS Processing Path
+
+// TODO (ADO2686478): Evaluate if and where we need Spinlocks in accessing/managing buffers
+// The current implementation retains the old for DDR buffer handling with whatever spinlocks were used before.
+
+/************************************************************************
+ * Static Helper Functions to manage DDR ASIC buffers for the ETR service.
+ ************************************************************************/
 
 /**
- * Public Functions
+ * @brief Initialize the DDR buffers for the ETR service.
+ *
+ * @param p_context -> Pointer to the ETR service context
+ * @param p_config -> Pointer to the ETR service configuration
+ * @return None
  */
-void etr_initialize(etr_service_context_t* p_service, const etr_service_config_t* p_config)
-{
-    if (NULL == p_service || NULL == p_config)
-    {
-        FPFwErrorRaise(FPFW_ET_E_INVALIDARG, 0, 0, 0, 0);
-    }
-
-    // Initialize the queue lock
-    FpFwLockInitialize(&p_service->lock);
-
-    // Initialize the ddr buffer management
-    etr_initialize_ddr_buffers(p_service, p_config);
-
-    // Initialize the hsp communication
-    etr_initialize_hsp_communication(p_service, p_config);
-
-    // Initialize the worker thread
-    etr_initialize_worker_thread(p_service, p_config);
-}
-
-/**
- * Private Helper Functions
- */
-
-//
-// Helper Function: Initialize the DDR buffer management
-//
-static void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const etr_service_config_t* p_config)
+static void etr_initialize_ddr_buffers(etr_service_context_t* p_context, const etr_service_config_t* p_config)
 {
 
-    // Validate the base addresses are set
+    /* Validate the base addresses are set */
     FPFW_RUNTIME_ASSERT(p_config->asic_ddr_config.base_addr != 0);
     FPFW_RUNTIME_ASSERT(p_config->hsp_ddr_config.base_addr != 0);
 
-    // Validate we can fit at least one buffer of each
+    /* Validate we can fit at least one buffer of each */
     FPFW_RUNTIME_ASSERT(p_config->asic_ddr_config.size_bytes <= IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE &&
                         p_config->asic_ddr_config.size_bytes >= ASIC_BUFFER_PAYLOAD_SIZE);
     FPFW_RUNTIME_ASSERT(p_config->hsp_ddr_config.size_bytes <= IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE &&
@@ -108,13 +87,14 @@ static void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const e
     uint64_t asic_count = p_config->asic_ddr_config.size_bytes / ASIC_BUFFER_PAYLOAD_SIZE;
     uint64_t hsp_count = p_config->hsp_ddr_config.size_bytes / HSP_BUFFER_PAYLOAD_SIZE;
 
-    FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&p_service->lock);
-    // populate the buffers array with the pointers to the pool memory
+    FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&p_context->lock);
+
+    /* Populate the buffers array with the pointers to the pool memory */
     for (uint32_t i = 0; i < asic_count; i++)
     {
 
-        // Update the buffer context
-        p_service->ddr_buffers[i] = (ddr_buffer_info_t){
+        /* Update the buffer context */
+        p_context->ddr_buffers[i] = (ddr_buffer_info_t){
             .state = ETR_DDR_BUFFER_STATE_FREE,
             .type = DIAG_PAYLOAD_PARSER_TRACE_DEVICE,
             .payload_management =
@@ -140,14 +120,14 @@ static void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const e
         };
     }
 
-    p_service->p_active_asic_buffer = &p_service->ddr_buffers[0];
+    p_context->p_active_asic_buffer = &p_context->ddr_buffers[0];
 
     for (uint32_t i = 0; i < hsp_count; i++)
     {
         uint32_t buffer_index = i + ASIC_BUFFER_DDR_CAPACITY_MAX;
 
-        // Update the buffer context
-        p_service->ddr_buffers[buffer_index] = (ddr_buffer_info_t){
+        /* Update the buffer context */
+        p_context->ddr_buffers[buffer_index] = (ddr_buffer_info_t){
             .type = DIAG_PAYLOAD_PARSER_HSP_TRACE,
             .state = ETR_DDR_BUFFER_STATE_FREE,
             .payload_management =
@@ -165,170 +145,215 @@ static void etr_initialize_ddr_buffers(etr_service_context_t* p_service, const e
                 },
         };
     }
-    FpFwLockRelease(&p_service->lock, lock_state);
+    FpFwLockRelease(&p_context->lock, lock_state);
 }
 
-//
-// Helper Function: Initialize the HSP communication
-//
-static void etr_initialize_hsp_communication(etr_service_context_t* p_service, const etr_service_config_t* p_config)
+/**
+ * @brief Get a new ASIC buffer from the DDR buffer pool.
+ *
+ * @param p_context -> Pointer to the ETR service context
+ * @return None
+ */
+static void etr_get_new_asic_buffer(etr_service_context_t* p_context)
 {
+    bool free_buffer_found = false;
 
-    //
-    // The ETR communicates with the HSP by:
-    //     1. Receiving a request from the HSP, containing it's buffer information it whats us to offload
-    //     2. Sending a response back to the HSP, once the buffer has been copied / read elsewhere
-    //
-
-    FPFW_RUNTIME_ASSERT_EXT(p_config->icc_config.p_hsp_icc_ctx != NULL, FPFW_ET_E_INVALIDARG, 0, 0, 0);
-
-    p_service->icc.p_hsp_icc_ctx = p_config->icc_config.p_hsp_icc_ctx;
-
-    etr_receive_hsp(p_service);
-}
-
-//
-// Helper Function: Initialize the worker thread and its dependencies
-//
-static void etr_initialize_worker_thread(etr_service_context_t* p_service, const etr_service_config_t* p_config)
-{
-    // Initialize the worker thread and it's dependencies
-    UINT status = tx_block_pool_create(&p_service->request_queue.pool,
-                                       ETR_WORK_POOL_NAME,
-                                       sizeof(p_service->request_queue.pool_memory[0]),
-                                       p_service->request_queue.pool_memory,
-                                       sizeof(p_service->request_queue.pool_memory));
-    ETR_CHECK_TX_STATUS(status);
-
-    status = tx_queue_create(&p_service->request_queue.queue,
-                             ETR_WORK_QUEUE_NAME,
-                             sizeof(p_service->request_queue.queue_memory[0]) / sizeof(uint32_t),
-                             p_service->request_queue.queue_memory,
-                             sizeof(p_service->request_queue.queue_memory));
-    ETR_CHECK_TX_STATUS(status);
-
-    status = tx_thread_create(&p_service->worker_thread,
-                              ETR_WORKER_THREAD_NAME,
-                              etr_worker_thread_func,
-                              (ULONG)p_service,
-                              p_config->thread_config.p_stack,
-                              p_config->thread_config.stack_size,
-                              p_config->thread_config.priority,
-                              p_config->thread_config.priority,
-                              p_config->thread_config.time_slice_option,
-                              TX_AUTO_START);
-    ETR_CHECK_TX_STATUS(status);
-}
-
-//
-// Helper Function: The worker thread function that processes requests from the queue
-//
-static void etr_worker_thread_func(ULONG thread_input)
-{
-    etr_service_context_t* p_service = (etr_service_context_t*)thread_input;
-
-    // Infinite loop that will decode and recycle buffers marked as completed
-    while (true)
+    FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&p_context->lock);
+    /* Walk the buffer array to find the next free buffer */
+    for (uint32_t i = 0; i < ASIC_BUFFER_DDR_CAPACITY_MAX; i++)
     {
-        etr_service_request_t* p_request;
-        (void)tx_queue_receive(&p_service->request_queue.queue, &p_request, TX_WAIT_FOREVER);
-        etr_process_request(p_service, p_request);
+        if (p_context->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_FREE &&
+            p_context->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_TRACE_DEVICE)
+        {
+            free_buffer_found = true;
+            p_context->p_active_asic_buffer = &p_context->ddr_buffers[i];
+            break;
+        }
     }
+
+    /* If we didn't find a free buffer then we need to re-use one that is pending */
+    if (!free_buffer_found)
+    {
+        for (uint32_t i = 0; i < ASIC_BUFFER_DDR_CAPACITY_MAX; i++)
+        {
+            if (p_context->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_PENDING &&
+                p_context->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_TRACE_DEVICE)
+            {
+                p_context->p_active_asic_buffer = &p_context->ddr_buffers[i];
+                p_context->health_stats.asic_buffers_reused++;
+                break;
+            }
+        }
+    }
+
+    p_context->p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_ACTIVE;
+    p_context->p_active_asic_buffer->payload_management.size_bytes = sizeof(asic_buffer_info_t);
+    p_context->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes = sizeof(FPFW_ET_ASIC_BUFFER_HEADER);
+    FpFwLockRelease(&p_context->lock, lock_state);
 }
 
-//
-// Helper function: Handles copying a buffer from the core to the ASIC buffer
-//
-static void etr_handle_copy_buffer_request(etr_service_context_t* p_service, etr_service_request_t* p_request)
+/**
+ * @brief Notify the specified core that the ASIC buffer is complete.
+ *
+ * @param p_buffer -> Pointer to the buffer that is complete
+ * @param dest_core -> The core to notify (MCP or AP)
+ * @return None
+ */
+static void etr_notify_asic_buffer_complete(ddr_buffer_info_t* p_buffer, KNG_CPU_TYPE dest_core)
 {
+    /* Create a TRP message to notify the MCP that the buffer is ready to be read */
+    FPFW_DBGPRINT_VERBOSE("[ETR] Notifying %s on Die 0 for ETR Processing Complete", (dest_core == CPU_MCP) ? "MCP" : "AP");
 
-    /**
-     * When handling a copy buffer request we need to do a few things:
-     *
-     * 1. Check if the buffer will fit in the current asic buffer
-     * 2. If it fits, copy the buffer into the asic buffer and notify the owner
-     * 3. If it doesn't fit, complete the current asic buffer and start a new one, and requeue the request
-     *
+    uint32_t crc = fpfw_crc32(0, (void*)(p_buffer->payload_management.base_addr), p_buffer->payload_management.size_bytes);
+
+    trp_msg_t send_msg = {
+        .hdr =
+            {
+                .src_node = {.core_id = CPU_MCP, .die_id = idsw_get_die_id()},
+                .dest_node = {.core_id = dest_core, .die_id = DIE_0},
+                .trp_msg_status = TRP_STATUS_SUCCESS,
+                .broadcast_type = TRP_BROADCAST_NONE,
+                .mts_client_id = MTS_CLIENT_ID_EVENT_TRACE,
+                .trp_msg_id = TRP_MSG_ID_PACKAGE_NOTIFICATION,
+                .payload_size = sizeof(trp_msg_read_pkg_rsp_t),
+            },
+        .payload =
+            {
+                .package_notification = {.source_die_id = idsw_get_die_id(),
+                                         .source_core_id = CPU_MCP,
+                                         .local_mmap_addr = p_buffer->payload_management.base_addr,
+                                         .pkg_size = p_buffer->payload_management.size_bytes,
+                                         .crc = crc},
+            },
+    };
+
+    mts_client_send_new_trp_msg(&send_msg);
+}
+
+/**
+ * @brief Complete the current ASIC buffer and prepare for the next one.
+ *
+ * @param p_context -> Pointer to the ETR service context
+ * @return None
+ */
+static void etr_complete_asic_buffer(etr_service_context_t* p_context)
+{
+    /* Update the current buffers state */
+    FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&p_context->lock);
+    p_context->p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
+    FpFwLockRelease(&p_context->lock, lock_state);
+
+    p_ddr_buffer_info_t buf_to_send = p_context->p_active_asic_buffer;
+
+    /* Copy the diag header and asic header into ddr */
+    void* src = (void*)&buf_to_send->buffer.asic;
+    void* dst = (void*)(buf_to_send->payload_management.base_addr);
+    size_t size = sizeof(buf_to_send->buffer.asic);
+    memcpy(dst, src, size);
+
+    /* Get a new buffer */
+    etr_get_new_asic_buffer(p_context);
+
+    /*
+     * If Die 0, notify host that the buffer is ready to be read
+     * If Die 1, then notify Die 0 MCP that the buffer is ready to be read
      */
+    KNG_CPU_TYPE dest_core = (idsw_get_die_id() == DIE_0) ? CPU_AP : CPU_MCP;
+    etr_notify_asic_buffer_complete(buf_to_send, dest_core);
+}
 
-    bool requeue = true;
+/************************************************************************
+ * Static Helper Functions to manage MTS requests to the ETR service.
+ ************************************************************************/
+/**
+ * @brief Notify the Event Trace Collector that a buffer has been processed.
+ *
+ * @param p_request Pointer to the service request containing the buffer information.
+ * @return None
+ */
+static void etr_notify_etc(etr_service_request_t* p_request)
+{
+    FPFW_DBGPRINT_VERBOSE("[ETR] Notifying Event Trace Collector for ETR Processing Complete");
+    mts_client_send_trp_response(p_request->p_trp_msg);
+}
 
-    uint64_t size_left = p_service->p_active_asic_buffer->buffer.asic.asic_header.BufferSize -
-                         p_service->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes;
+/**
+ * @brief Handle a copy buffer request from any core via MTS.
+ *
+ * @param p_context -> Pointer to the ETR service context
+ * @param p_request -> Pointer to the copy buffer request
+ * @return None
+ */
+static void etr_handle_copy_buffer_request(etr_service_context_t* p_context, etr_service_request_t* p_request)
+{
+    /* Check if the buffer will fit in the current asic buffer */
+    uint64_t size_left = p_context->p_active_asic_buffer->buffer.asic.asic_header.BufferSize -
+                         p_context->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes;
 
-    if (size_left >= p_request->request.copy_buffer.buffer_header.UsedBytes)
+    /* If it doesn't fit, complete the current asic buffer */
+    if (size_left <= p_request->buffer_size_bytes)
     {
-        requeue = false;
-
-        // Copy the buffer into the asic buffer
-        void* src = (void*)p_request->request.copy_buffer.buffer_addr;
-        void* dst = (void*)(p_service->p_active_asic_buffer->payload_management.base_addr) +
-                    p_service->p_active_asic_buffer->payload_management.size_bytes;
-        size_t size = p_request->request.copy_buffer.buffer_header.UsedBytes;
-        memcpy(dst, src, size);
-
-        // Update the asic buffer header and payload management
-        p_service->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes += size;
-        p_service->p_active_asic_buffer->payload_management.size_bytes += size;
-
-        // Notify the owner of the core buffer that is has been copied
-        etr_notify_etc(p_request);
+        FPFW_DBGPRINT_VERBOSE(
+            "[ETR] Not enough space in current ASIC buffer, completing it and using a new one");
+        etr_complete_asic_buffer(p_context);
     }
     else
     {
-        // We don't have enough space in the current asic buffer, complete it.
-        etr_complete_asic_buffer(p_service);
+        FPFW_DBGPRINT_VERBOSE("[ETR] Buffer fits in current ASIC buffer. Size left: %zu", size_left);
     }
 
-    if (requeue)
-    {
-        UINT status = tx_queue_front_send(&p_service->request_queue.queue, p_request, TX_WAIT_FOREVER);
-        ETR_CHECK_TX_STATUS(status);
-    }
-    else
-    {
-        // Return the request to the pool
-        UINT status = tx_block_release(p_request);
-        ETR_CHECK_TX_STATUS(status);
-    }
+    /* Copy the buffer into the asic buffer */
+    void* src = (void*)p_request->buffer_addr;
+    void* dst = (void*)(p_context->p_active_asic_buffer->payload_management.base_addr) +
+                p_context->p_active_asic_buffer->payload_management.size_bytes;
+    size_t size = p_request->buffer_size_bytes;
+    memcpy(dst, src, size);
+
+    /* Update the asic buffer header and payload management */
+    p_context->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes += size;
+    p_context->p_active_asic_buffer->payload_management.size_bytes += size;
+
+    /* Notify the owner of the core buffer that is has been copied */
+    etr_notify_etc(p_request);
+
+    FPFW_DBGPRINT_VERBOSE("[ETR] Handle Copy Buffer Request Completed");
 }
 
-//
-// Helper function: Handles a host read request
-//
-static void etr_handle_host_read_request(etr_service_context_t* p_service, etr_service_request_t* p_request)
+/**
+ * @brief Processes a host read complete request from the host.
+ *
+ * @param p_context -> Pointer to the ETR service context
+ * @param p_request -> Pointer to the host read request
+ * @return None
+ */
+static void etr_handle_host_read_complete_request(etr_service_context_t* p_context, etr_service_request_t* p_request)
 {
-
-    /**
-     * When handling a host read request we need to do a few things:
-     *
-     * 1. Find which buffer was read by the host
-     * 2. Check if the buffer is still pending
-     * 3. If it is, set it's state to free now that we heard back from the host
-     * 4. If it isn't, it's been re-used at some point, so we don't need to do anything
-     */
-
     bool buffer_found = false;
 
-    FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&p_service->lock);
+    /* Find which buffer was read by the host */
+    FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&p_context->lock);
     for (uint32_t i = 0; i < ETR_DDR_BUFFERS_CAPACITY_MAX; i++)
     {
-        if (p_service->ddr_buffers[i].payload_management.base_addr ==
-            p_request->request.host_read.payload_management.base_addr)
+        if (p_context->ddr_buffers[i].payload_management.base_addr ==
+            p_request->p_trp_msg->payload.read_package_complete.phy_addr_offset)
         {
             buffer_found = true;
-            if (p_service->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_PENDING)
+
+            /* Check if the buffer is still pending */
+            if (p_context->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_PENDING)
             {
-                p_service->ddr_buffers[i].state = ETR_DDR_BUFFER_STATE_FREE;
+                /* If it is, set it's state to free now that we heard back from the host */
+                p_context->ddr_buffers[i].state = ETR_DDR_BUFFER_STATE_FREE;
             }
             else
             {
-                p_service->health_stats.delayed_host_reads++;
+                /* If it isn't, it's been re-used at some point, so we don't need to do anything */
+                p_context->health_stats.delayed_host_reads++;
             }
             break;
         }
     }
-    FpFwLockRelease(&p_service->lock, lock_state);
+    FpFwLockRelease(&p_context->lock, lock_state);
 
     if (!buffer_found)
     {
@@ -336,192 +361,269 @@ static void etr_handle_host_read_request(etr_service_context_t* p_service, etr_s
     }
 }
 
-//
-// Helper Function: Sends a request to the Event Trace Data Collection Client that a buffer
-//                  is ready to be read by the host.
-//
-static void etr_notify_etdcc(ddr_buffer_info_t* p_buffer)
+/************************************************************************
+ * Static Helper Functions for Event Trace relay Initialization and state management.
+ ************************************************************************/
+
+/**
+ * @brief Initialize the worker thread for the Event Trace relay service.
+ *
+ * @param p_context Pointer to the ETR service context
+ * @param p_config Pointer to the ETR service configuration
+ * @return None
+ */
+static void etr_initialize_worker_thread(etr_service_context_t* p_context, const etr_service_config_t* p_config)
 {
-    // @TODO: - Implement alongside the ETDCC. Requires D2D communication for ETR on DIE 1.
-    //          Needs loopback to MCP for the ETR on DIE 0.
-    //          https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1925374
-    FPFW_UNUSED(p_buffer);
-}
-
-//
-// Helper Function: Notify an Event Trace Collector that it's buffer has been copied
-//
-static void etr_notify_etc(etr_service_request_t* p_request)
-{
-    // @TODO: BPK - Implement once ICC to MCP/SCP/SDM/CDED is available with loopback to MCP
-    //              https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1743379
-    FPFW_UNUSED(p_request);
-}
-
-//
-// HSP Interface will need to be updated once we actually offload to the host via IB Telemetry.
-// ADO: https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1925381
-//
-
-//
-// Helper Function: Notify the HSP that the buffer has been copied
-//
-static void etr_notify_hsp(etr_service_context_t* p_service, struct kng_hsp_mailbox_cmd_send_log_req* p_req)
-{
-    FPFW_UNUSED(p_req);
-
-    hsp_send_msg.header.cmd = HSP_MAILBOX_CMD_SEND_LOG_RSP;
-
-    // The HSP ICC Base context does not setup a max sync attempt count, making this an infinite loop
-    // until the send is successful.
-    fpfw_status_t icc_base_status =
-        fpfw_icc_base_send_sync(p_service->icc.p_hsp_icc_ctx, &hsp_send_msg, sizeof(hsp_send_msg));
-
-    FPFW_RUNTIME_ASSERT_EXT(icc_base_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_base_status, 0, 0, 0);
-
-    // Setup the next receive request
-    etr_receive_hsp(p_service);
-}
-
-static void etr_receive_hsp(etr_service_context_t* p_service)
-{
-    //
-    // Setup the receive request. The send request is setup as needed before sending it to the hsp
-    //
-    memset(&hsp_recv_msg, 0, sizeof(hsp_recv_msg));
-    memset(&hsp_recv_params, 0, sizeof(hsp_recv_params));
-    hsp_recv_params.payload_buffer = &hsp_recv_msg;
-    hsp_recv_params.buffer_size = sizeof(hsp_recv_msg);
-    hsp_recv_params.recv_cmd_code = HSP_MAILBOX_CMD_SEND_LOG_REQ;
-    hsp_recv_params.cb = etr_icc_handle_hsp;
-    hsp_recv_params.cb_ctx = p_service;
-
-    fpfw_status_t icc_base_status = fpfw_icc_base_recv(p_service->icc.p_hsp_icc_ctx, &hsp_recv_params);
-    FPFW_RUNTIME_ASSERT_EXT(icc_base_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_base_status, 0, 0, 0);
-}
-
-//
-// Helper Function: Get a new ASIC buffer from the DDR buffer pool
-//
-static void etr_get_new_asic_buffer(etr_service_context_t* p_service)
-{
-    // Get a new buffer
-    bool free_buffer_found = false;
-
-    FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&p_service->lock);
-    // walk the buffer array to find the next free buffer
-    for (uint32_t i = 0; i < ASIC_BUFFER_DDR_CAPACITY_MAX; i++)
-    {
-        if (p_service->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_FREE &&
-            p_service->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_TRACE_DEVICE)
-        {
-            free_buffer_found = true;
-            p_service->p_active_asic_buffer = &p_service->ddr_buffers[i];
-            break;
-        }
-    }
-
-    // If we didn't find a free buffer then we need to re-use one that is pending
-    if (!free_buffer_found)
-    {
-        for (uint32_t i = 0; i < ASIC_BUFFER_DDR_CAPACITY_MAX; i++)
-        {
-            if (p_service->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_PENDING &&
-                p_service->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_TRACE_DEVICE)
-            {
-                p_service->p_active_asic_buffer = &p_service->ddr_buffers[i];
-                p_service->health_stats.asic_buffers_reused++;
-                break;
-            }
-        }
-    }
-
-    p_service->p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_ACTIVE;
-    p_service->p_active_asic_buffer->payload_management.size_bytes = sizeof(asic_buffer_info_t);
-    p_service->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes = sizeof(FPFW_ET_ASIC_BUFFER_HEADER);
-    FpFwLockRelease(&p_service->lock, lock_state);
-}
-
-//
-// Helper function: Fill in any missing header information and notify the ETDCC that the buffer
-//                  is ready to be read by the host.
-//
-static void etr_complete_asic_buffer(etr_service_context_t* p_service)
-{
-
-    /**
-     * When completing an ASIC buffer we need to do a few things:
-     *
-     * 1. Update the current buffers state
-     * 2. Update the header information in DDR
-     * 3. Grab a new asic buffer
-     * 4. Notify the ETDCC that the finalized buffer is ready to be read
-     */
-
-    FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&p_service->lock);
-    p_service->p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
-    FpFwLockRelease(&p_service->lock, lock_state);
-
-    p_ddr_buffer_info_t buf_to_send = p_service->p_active_asic_buffer;
-
-    // Copy the diag header and asic header into ddr
-    void* src = (void*)&buf_to_send->buffer.asic;
-    void* dst = (void*)(buf_to_send->payload_management.base_addr);
-    size_t size = sizeof(buf_to_send->buffer.asic);
-    memcpy(dst, src, size);
-
-    // Get a new buffer
-    etr_get_new_asic_buffer(p_service);
-
-    // Notify the ETDCC
-    etr_notify_etdcc(buf_to_send);
+    ETR_CHECK_TX_STATUS(tx_thread_create(&p_context->worker_thread,
+                                         ETR_WORKER_THREAD_NAME,
+                                         etr_worker_thread_func,
+                                         (ULONG)p_context,
+                                         p_config->thread_config.p_stack,
+                                         p_config->thread_config.stack_size,
+                                         p_config->thread_config.priority,
+                                         p_config->thread_config.priority,
+                                         p_config->thread_config.time_slice_option,
+                                         TX_AUTO_START));
 }
 
 /**
- * Private Header Functions
+ * @brief Decode and validate the buffer metadata from the service request.
+ *
+ * This function reads the buffer address from the request, validates it, and extracts the buffer size.
+ * It also checks the core ID and timestamps to ensure the buffer is valid.
+ *
+ * @param p_request Pointer to the service request
+ * @return fpfw_status_t Returns FPFW_STATUS_SUCCESS if the buffer metadata is valid, otherwise returns FPFW_STATUS_FAIL.
  */
-
-void etr_process_request(etr_service_context_t* p_service, etr_service_request_t* p_request)
+fpfw_status_t decode_validate_buffer_metadata(etr_service_request_t* p_request)
 {
-    switch (p_request->type)
+    /* Read the MTS buffer address from the TRP message */
+    p_request->buffer_addr = p_request->p_trp_msg->payload.intercore_block_notification.addr_offset;
+
+    switch (p_request->p_trp_msg->hdr.src_node.core_id)
     {
-    case ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER:
-        etr_handle_copy_buffer_request(p_service, p_request);
+    /* For accelerators, the addr_offset is relative to DTCM Base.
+    Hence add ATU Base Address for the accelerator as well as DTCM Offset from ATU Base Address */
+    case CPU_SDM:
+        p_request->buffer_addr += atu_svc_accel_atu_addr(ACCEL_ID_SDM) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
         break;
-    case ETR_SERVICE_REQUEST_TYPE_HOST_READ:
-        etr_handle_host_read_request(p_service, p_request);
+
+    case CPU_CDED_SDM:
+        p_request->buffer_addr += atu_svc_accel_atu_addr(ACCEL_ID_CDED) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
         break;
+
+    case CPU_SCP:
+        // TODO (ADO2686478): For SCP address off set is relative to the MSCP Expansion RAM Base Address
+        break;
+
+    /* For MCP, the addr_offset is a local address, use as it is */
+    case CPU_MCP:
+        break;
+
     default:
-        FPFwErrorRaise(FPFW_ET_E_INVALIDARG, 0, 0, 0, 0);
-        break;
+        FPFW_DBGPRINT_ERROR("[ETR] Invalid Core ID: %d", p_request->p_trp_msg->hdr.src_node.core_id);
+        return FPFW_STATUS_FAIL;
     }
+
+    /* Extract Buffer Address and Size from the Core Buffer Header */
+    PFPFW_ET_CORE_BUFFER_HEADER p_etc_header = (PFPFW_ET_CORE_BUFFER_HEADER)p_request->buffer_addr;
+    p_request->buffer_size_bytes = p_etc_header->BufferSize;
+
+    /* Print the Event Trace Buffer Header metadata */
+    FPFW_DBGPRINT_WARNING("[ETR] Event Trace Buffer Header Metadata:\n \
+        - Core ID: %d\n    \
+        - Buffer ID: %d, \n    \
+        - Buffer Size: %zu",
+                          p_etc_header->CoreId,
+                          p_etc_header->BufferId,
+                          p_etc_header->BufferSize);
+
+    /* Sanity Check the Buffer Header */
+    if ((p_etc_header->CoreId != CPU_SCP && p_etc_header->CoreId != CPU_MCP &&
+         p_etc_header->CoreId != CPU_SDM && p_etc_header->CoreId != CPU_CDED_SDM) ||
+        (p_etc_header->BufferSize == 0))
+    {
+        FPFW_DBGPRINT_ERROR("[ETR] Invalid ET Buffer. Dropping request.");
+        return FPFW_STATUS_FAIL;
+    }
+
+    return FPFW_STATUS_SUCCESS;
 }
 
-void etr_icc_handle_etc()
+/**
+ * @brief Driver Framework Callback to handle incoming MTS messages.
+ *
+ * @param None
+ * @return None
+ */
+static void etr_mts_rx_msg_handler(void)
 {
-    // @TODO: Implement once ICC to MCP/SCP/SDM/CDED is available (with loopback to MCP)
-    //        https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1743379
-    __asm__("nop");
+    /* Set the event flag to indicate a new MTS message is available */
+    UINT txStatus = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_NEW_MTS_MSG, TX_OR);
+    FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
-void etr_icc_handle_etdcc()
+/**
+ * @brief Initialize the MTS client for the Event Trace Relay.
+ *
+ * @param p_context Pointer to the ETR service context
+ * @return None
+ */
+static void etr_mts_client_init(p_etr_service_context_t p_context, const etr_service_config_t* p_config)
 {
-    // @TODO: Implement once ICC to MCP (and die-to-die MCP) is available (with loopback to MCP)
-    //        https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1925374
-    __asm__("nop");
+    FPFW_UNUSED(p_config);
+    s_event_trace_relay_mts_client.p_etr_context = p_context;
+
+    /* Create a block pool for the MTS client to use for receiving messages */
+    UINT tx_status = tx_block_pool_create(&s_event_trace_relay_mts_client.mts_client.rx_pool, // pool_ptr
+                                          ETR_BLOCK_POOL_NAME,                                // name_ptr
+                                          MAX_TRP_MSG_BLOCK_SIZE,                             // block_size
+                                          g_etr_mts_client_pool_mem,                          // pool_start
+                                          sizeof(g_etr_mts_client_pool_mem));                 // pool_size
+
+    FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS,
+                            tx_status,
+                            (uintptr_t)&s_event_trace_relay_mts_client.mts_client.rx_pool,
+                            0,
+                            0);
+
+    /* Create a queue for receiving Event Trace MTS client messages */
+    tx_status = tx_queue_create(&s_event_trace_relay_mts_client.mts_client.rx_queue, // queue_ptr
+                                ETR_WORK_QUEUE_NAME,                                 // name_ptr
+                                sizeof(p_trp_msg_t) / sizeof(uint32_t),              // queue_message_size
+                                g_etr_mts_client_queue_mem,                          // queue_start
+                                sizeof(g_etr_mts_client_queue_mem));                 // queue_size
+
+    FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS,
+                            tx_status,
+                            (uintptr_t)&s_event_trace_relay_mts_client.mts_client.rx_queue,
+                            0,
+                            0);
+
+    /* Create a flag group for synchronization between MTS and the ETR worker thread */
+    tx_status = tx_event_flags_create(&s_etr_mts_flags, "ETR MTS flags");
+    FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_etr_mts_flags, 0, 0);
+
+    /* Register the MTS client */
+    mts_client_register(MTS_CLIENT_ID_EVENT_TRACE, &s_event_trace_relay_mts_client.mts_client);
 }
 
-void etr_icc_handle_hsp(void* context, size_t output_size_bytes, fpfw_status_t status)
+/*----------------------------- Global Functions ----------------------------*/
+void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t* p_config)
 {
-    FPFW_UNUSED(output_size_bytes);
+    FPFW_DBGPRINT_INFO("[ETR] Initializing Event Trace Relay Service and the MTS Client");
 
-    etr_service_context_t* p_service = (etr_service_context_t*)context;
-    FPFW_RUNTIME_ASSERT_EXT(status == FPFW_STATUS_SUCCESS, (uintptr_t)p_service, status, 0, 0);
+    if (NULL == p_context || NULL == p_config)
+    {
+        FPFwErrorRaise(FPFW_ET_E_INVALIDARG, 0, 0, 0, 0);
+    }
 
-    struct kng_hsp_mailbox_cmd_send_log_req* p_req = (struct kng_hsp_mailbox_cmd_send_log_req*)hsp_recv_params.payload_buffer;
+    /* Initialize the queue lock */
+    FpFwLockInitialize(&p_context->lock);
 
-    //
-    // For now send the HSP a response back to let it know we are done with the buffer from the request
-    //
-    etr_notify_hsp(p_service, p_req);
+    /* Initialize the ddr buffer management */
+    etr_initialize_ddr_buffers(p_context, p_config);
+
+    /* Initialize the hsp communication */
+    etr_initialize_hsp_communication(p_context, p_config);
+
+    /* Initialize the worker thread */
+    etr_initialize_worker_thread(p_context, p_config);
+
+    /* Initialize the MTS client for the Event Trace Relay */
+    etr_mts_client_init(p_context, p_config);
+
+    FPFW_DBGPRINT_INFO("[ETR] Event Trace Relay Service and MTS Client Initialized");
+}
+
+/**
+ * @brief Worker thread function for processing Event Trace requests.
+ * This function is a public function for unit testing purposes.
+ *
+ * @param thread_input Pointer to the ETR service context.
+ * @return None -> This function runs in an infinite loop, so should never return
+ */
+void etr_worker_thread_func(ULONG thread_input)
+{
+    etr_service_context_t* p_context = (etr_service_context_t*)thread_input;
+
+    etr_service_request_t etr_request = {0};
+
+    /* Infinite loop that will decode and recycle buffers marked as completed */
+    while (true)
+    {
+        ULONG event_flags = 0;
+
+        /* Wait for a new message to be available. This will block until a new message is available from MTS */
+        UINT status = tx_event_flags_get(&s_etr_mts_flags, ETR_EVENT_FLAG_ANY_VALID, TX_OR_CLEAR, &event_flags, TX_WAIT_FOREVER);
+        FPFW_RUNTIME_ASSERT_EXT(status == TX_SUCCESS, status, 0, 0, 0);
+
+        /* Loop until all messages are processed and queue is empty */
+        /** Error Handling for tx_queue_receive
+         * 1. TX_DELETED - Should not happen in this context as the queue is created and used by the worker thread. TODO (ADO2686478): Evaluate if we need to handle this failure
+         * 2. TX_QUEUE_EMPTY - This is expected when there are no messages in the queue, so we will exit the loop gracefully.
+         * 3. TX_WAIT_ABORTED - This should not happen in this context as we are not using any wait options that can be aborted.
+         * 4. TX_QUEUE_ERROR - This shouldn't happen since we are passing a valid queue pointer. This is caught statically in the unit tests.etr_request
+         * 5. TX_PTR_ERROR - This should not happen since we are passing a valid pointer to the request structure. This is caught statically in the unit tests.
+         * 6. TX_WAIT_ERROR - This should not happen since we are not using any wait options that can fail. This is caught statically in the unit tests.
+         */
+        while (tx_queue_receive(&s_event_trace_relay_mts_client.mts_client.rx_queue, &etr_request.p_trp_msg, TX_NO_WAIT) == TX_SUCCESS)
+        {
+            FPFW_DBGPRINT_INFO("[ETR-MTS] Processing new ET MTS msg with ID: %d, from core %d",
+                               etr_request.p_trp_msg->hdr.trp_msg_id,
+                               etr_request.p_trp_msg->hdr.src_node.core_id);
+
+            switch (etr_request.p_trp_msg->hdr.trp_msg_id)
+            {
+            case TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION:
+            case TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE:
+                /* Update p_trp_msg and respond with a TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE request */
+                etr_request.p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
+
+                if (decode_validate_buffer_metadata(&etr_request) != FPFW_STATUS_SUCCESS)
+                {
+                    FPFW_DBGPRINT_ERROR("[ETR] Buffer Metadata Invalid. Dropping request.");
+                    etr_notify_etc(&etr_request);
+                    break;
+                }
+
+                /* Handle the copy buffer request */
+                etr_handle_copy_buffer_request(p_context, &etr_request);
+                break;
+
+            /* Handle the case where the host signals the MCP that ASIC buffer read is complete */
+            case TRP_MSG_ID_READ_PACKAGE_COMPLETE:
+                // TODO (ADO2686478): This flow is not fully complete - will be done in a future PR
+                etr_handle_host_read_complete_request(p_context, &etr_request);
+                break;
+
+            // TODO (ADO2686478): Handle these messages when implementing D2D and MCP0 to Host interactions
+            case TRP_MSG_ID_PACKAGE_NOTIFICATION: // Used by MCP Die 1 to indicate to MSCP Die 0 that a new ET Package is ready for forwarding (Push)
+            case TRP_MSG_ID_READ_PACKAGE_RESPONSE: // Used by MCP Die 1 to indicate that the package is ready for
+                                                   // reading (Pull) Update the destination core to be AP Die 0 p_trp_msg->hdr.dest_node.core_id
+                                                   // = CPU_AP; p_trp_msg->hdr.dest_node.die_id = DIE_0;
+
+            case TRP_MSG_ID_READ_PACKAGE: // Used by MCP Die 0 to indicate to MCP Die 1 that the read package operation is complete. Also used by the host to indicate to MCP Die 0 that the package has been read completely
+
+            default:
+                /* Soft failure. Report and move on */
+                FPFW_DBGPRINT_ERROR("[ETR-MTS] Unsupported ET MTS ID: %d", etr_request.p_trp_msg->hdr.trp_msg_id);
+                break;
+            }
+
+            /* Release the block back to the pool */
+            status = tx_block_release(etr_request.p_trp_msg);
+            FPFW_RUNTIME_ASSERT_EXT(status == TX_SUCCESS, status, 0, 0, 0);
+
+#ifdef _WIN32
+            /* For unit tests, break out of the loop after processing one message */
+            break;
+#endif
+        }
+
+/* For unit tests - break out of the loop */
+#ifdef _WIN32
+        break;
+#endif
+    }
 }

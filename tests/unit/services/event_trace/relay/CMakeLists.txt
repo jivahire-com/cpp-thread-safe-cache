@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
     ms::lib::threadx
     ms::mocks::threadx
     ms::service::event_trace::relay
+    silibs::idsw_kng
 )
 
 # Get private includes for module under test
@@ -35,13 +36,25 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     FpFwLockAcquire
     FpFwLockRelease
+    
     _txe_block_pool_create
     _txe_block_release
     _txe_queue_create
-    _txe_queue_front_send
     _txe_thread_create
     _txe_queue_send
     _txe_queue_receive
+    _txe_event_flags_create
+    _txe_event_flags_get
+    _txe_queue_info_get
+    
     fpfw_icc_base_recv
     fpfw_icc_base_send_sync
+    
+    atu_svc_accel_atu_addr
+    
+    mts_client_register
+    mts_client_send_trp_response
+    mts_client_send_new_trp_msg
+
+    idsw_get_die_id
 )

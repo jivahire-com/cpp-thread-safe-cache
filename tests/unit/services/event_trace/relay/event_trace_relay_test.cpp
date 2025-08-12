@@ -18,10 +18,13 @@ extern "C" {
 #include <IFpFwEventTracingStatus.h>
 #include <diag_decoder.h>
 #include <error_handler.h>
+#include <etr_init_config_i.h>
 #include <event_trace_relay.h>
 #include <event_trace_relay_i.h>
 #include <fpfw_icc_base.h>
+#include <idsw_kng.h>
 #include <in_band_telemetry_ddr.h>
+#include <thread_x_mocks.h>
 #include <tx_api.h>
 #include <tx_initialize.h>
 
@@ -42,6 +45,11 @@ int test_teardown(void** ppContext);
 /*-- Declarations (Statics and globals) --*/
 
 extern "C" {
+
+uint8_t _ProviderMetadata_et_msdata_start; // Pointer to the start of the .ProviderMetadata section
+uint8_t _ProviderMetadata_et_msdata_end;   // Pointer to the end   of the .ProviderMetadata section
+uint8_t _EventMetadata_et_msdata_start;    // Pointer to the start of the .EventMetadata section
+uint8_t _EventMetadata_et_msdata_end;      // Pointer to the end   of the .EventMetadata memory section
 
 uint8_t s_asic_ddr_memory[ASIC_BUFFER_PAYLOAD_SIZE * TEST_ASIC_COUNT] = {0};
 uint8_t s_hsp_ddr_memory[HSP_BUFFER_PAYLOAD_SIZE * TEST_HSP_COUNT] = {0};
@@ -84,6 +92,35 @@ static etr_service_config_t s_test_config = {
 
 /*------------- Functions ----------------*/
 
+void set_tx_queue_receive_value(VOID* destination_ptr)
+{
+    // Copy the parameter to the destination
+    *(uint32_t*)destination_ptr = mock_type(int);
+}
+
+uint8_t __wrap_idsw_get_die_id(void)
+{
+    return DIE_0; // Mocked to return DIE_0 for testing purposes
+}
+
+uint32_t __wrap_atu_svc_accel_atu_addr(uint8_t accel_id)
+{
+    FPFW_UNUSED(accel_id);
+    return 0;
+}
+
+void __wrap_mts_client_send_trp_response(p_trp_msg_t trp_msg)
+{
+    FPFW_UNUSED(trp_msg);
+    // This function is mocked in the test
+}
+
+void __wrap_mts_client_send_new_trp_msg(p_trp_msg_t trp_msg)
+{
+    FPFW_UNUSED(trp_msg);
+    // This function is mocked in the test
+}
+
 FPFW_LOCK_STATE __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
 {
     FPFW_UNUSED(Lock);
@@ -115,14 +152,6 @@ UINT __wrap__txe_block_release(VOID* block_ptr)
     ;
 }
 
-UINT __wrap__txe_queue_front_send(TX_QUEUE* queue_ptr, VOID* source_ptr, ULONG wait_option)
-{
-    check_expected_ptr(queue_ptr);
-    check_expected_ptr(source_ptr);
-    check_expected(wait_option);
-    return mock_type(UINT);
-}
-
 fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_recv_req_t* params)
 {
     FPFW_UNUSED(icc_ctx);
@@ -140,6 +169,13 @@ fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void*
     return mock_type(fpfw_status_t);
 }
 
+void __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t client)
+{
+    FPFW_UNUSED(id);
+    FPFW_UNUSED(client);
+    // This function is mocked in the test
+}
+
 } // extern "C"
 
 int test_setup(void** ppContext)
@@ -151,19 +187,19 @@ int test_setup(void** ppContext)
     memset(&s_hsp_ddr_memory, 0, sizeof(s_hsp_ddr_memory));
 
     // Setup the threadx expectations
-    expect_value(__wrap__txe_block_pool_create, pool_ptr, &s_test_context.request_queue.pool);
-    expect_value(__wrap__txe_block_pool_create, name_ptr, ETR_WORK_POOL_NAME);
-    expect_value(__wrap__txe_block_pool_create, block_size, sizeof(etr_service_request_t));
-    expect_value(__wrap__txe_block_pool_create, pool_start, &s_test_context.request_queue.pool_memory[0]);
-    expect_value(__wrap__txe_block_pool_create, pool_size, sizeof(s_test_context.request_queue.pool_memory));
+    expect_any(__wrap__txe_block_pool_create, pool_ptr);
+    expect_value(__wrap__txe_block_pool_create, name_ptr, ETR_BLOCK_POOL_NAME);
+    expect_value(__wrap__txe_block_pool_create, block_size, MAX_TRP_MSG_BLOCK_SIZE);
+    expect_any(__wrap__txe_block_pool_create, pool_start);
+    expect_any(__wrap__txe_block_pool_create, pool_size);
     expect_any(__wrap__txe_block_pool_create, pool_control_block_size);
     will_return(__wrap__txe_block_pool_create, TX_SUCCESS);
 
-    expect_value(__wrap__txe_queue_create, queue_ptr, &s_test_context.request_queue.queue);
-    expect_value(__wrap__txe_queue_create, name_ptr, ETR_WORK_QUEUE_NAME);
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
     expect_any(__wrap__txe_queue_create, message_size);
-    expect_value(__wrap__txe_queue_create, queue_start, &s_test_context.request_queue.queue_memory[0]);
-    expect_value(__wrap__txe_queue_create, queue_size, sizeof(s_test_context.request_queue.queue_memory));
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
     expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
 
@@ -179,6 +215,11 @@ int test_setup(void** ppContext)
     expect_any(__wrap__txe_thread_create, auto_start);
     expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
+
+    expect_any(__wrap__txe_event_flags_create, group_ptr);
+    expect_any(__wrap__txe_event_flags_create, name_ptr);
+    expect_any(__wrap__txe_event_flags_create, event_control_block_size);
+    will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
 
     // Setup ICC expectations
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -289,32 +330,77 @@ TEST_FUNCTION(test_etr_init_nominal, test_setup, test_teardown)
 
 // TEST PRIVATE HEADER ETR FUNCTIONS
 
+// Mock Structures to pass on to the ETR functions
+FPFW_ET_CORE_BUFFER_HEADER fake_core_buffer = {
+    .ManifestId = {0},
+    .StartAsicTimeStamp = 0,
+    .EndAsicTimeStamp = 100,
+    .StartUTCTimeStamp = 0,
+    .EndUTCTimeStamp = 100,
+    .ETVersion = 0,
+    // .CoreId = CPU_SDM,
+    .ControllerId = 0,
+    .BufferId = 0,
+    .BufferSize = 1024,
+    .UsedBytes = 0,
+    .LostEvents = 0,
+};
+
+trp_msg_t trp_msg = {
+    .hdr =
+        {
+
+            .src_node =
+                {
+                    // .core_id = CPU_SDM,
+                    .die_id = 0,
+                },
+            .dest_node =
+                {
+                    .core_id = CPU_MCP,
+                    .die_id = 0,
+                },
+            .trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION,
+            .payload_size = sizeof(fake_core_buffer),
+        },
+    .payload = {.intercore_block_notification =
+                    {
+                        .addr_offset = (uintptr_t)&fake_core_buffer - 0x80000, // Adjust for DTCM Offset for SDM
+                        .block_size = sizeof(fake_core_buffer),
+                    }},
+};
+
 TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup, test_teardown)
 {
+    // Test with DM Core
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
 
     etr_ddr_buffer_state_t pre_request_state = s_test_context.p_active_asic_buffer->state;
     uint64_t pre_request_size = s_test_context.p_active_asic_buffer->payload_management.size_bytes;
 
-    uint8_t fake_core_buffer[1024];
-    memset(&fake_core_buffer[0], 0xAB, sizeof(fake_core_buffer));
-    etr_service_request_t request = {
-        .type = ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-        .request = {.copy_buffer =
-                        {
-                            .core_id = 0,
-                            .buffer_addr = (uintptr_t)&fake_core_buffer[0],
-                            .buffer_header =
-                                {
-                                    .UsedBytes = sizeof(fake_core_buffer),
-                                },
-                        }},
-    };
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
 
-    // Setup the expectations for the block pool
-    expect_value(__wrap__txe_block_release, block_ptr, &request);
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    etr_process_request(&s_test_context, &request);
+    etr_worker_thread_func((ULONG)&s_test_context);
 
     etr_ddr_buffer_state_t post_request_state = s_test_context.p_active_asic_buffer->state;
     uint64_t post_request_size = s_test_context.p_active_asic_buffer->payload_management.size_bytes;
@@ -323,39 +409,47 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup, 
     assert_true(pre_request_size < post_request_size);
     void* asic_buffer_addr =
         (void*)(s_test_context.p_active_asic_buffer->payload_management.base_addr + sizeof(asic_buffer_info_t));
-    assert_memory_equal(&fake_core_buffer[0], asic_buffer_addr, sizeof(fake_core_buffer));
+    assert_memory_equal(&fake_core_buffer, asic_buffer_addr, sizeof(fake_core_buffer));
 }
 
 TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed, test_setup, test_teardown)
 {
 
+    // Run test case with CDED Core.
+    trp_msg.hdr.src_node.core_id = CPU_CDED_SDM;
+    fake_core_buffer.CoreId = CPU_CDED_SDM;
+
+    // Reset the message type to intercore block notification
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
+
     // Fake out the active buffer to be full
     ddr_buffer_info_t* p_old_asic_buffer = s_test_context.p_active_asic_buffer;
     p_old_asic_buffer->buffer.asic.asic_header.UsedBytes = ASIC_BUFFER_PAYLOAD_SIZE - sizeof(asic_buffer_info_t);
 
-    uint8_t fake_core_buffer[1024];
-    memset(&fake_core_buffer[0], 0xAB, sizeof(fake_core_buffer));
+    fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
 
-    etr_service_request_t request = {
-        .type = ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-        .request = {.copy_buffer =
-                        {
-                            .core_id = 0,
-                            .buffer_addr = (uintptr_t)&fake_core_buffer[0],
-                            .buffer_header =
-                                {
-                                    .UsedBytes = sizeof(fake_core_buffer),
-                                },
-                        }},
-    };
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
 
-    // Setup the expectations for the queue
-    expect_value(__wrap__txe_queue_front_send, queue_ptr, &s_test_context.request_queue.queue);
-    expect_value(__wrap__txe_queue_front_send, source_ptr, &request);
-    expect_value(__wrap__txe_queue_front_send, wait_option, TX_WAIT_FOREVER);
-    will_return(__wrap__txe_queue_front_send, TX_SUCCESS);
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
-    etr_process_request(&s_test_context, &request);
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 
     ddr_buffer_info_t* p_new_asic_buffer = s_test_context.p_active_asic_buffer;
 
@@ -369,9 +463,17 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed, test_setup, test
 
 TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, test_teardown)
 {
+    // Run test case with SCP Core
+    trp_msg.hdr.src_node.core_id = CPU_SCP;
+    trp_msg.payload.intercore_block_notification.addr_offset = (uintptr_t)&fake_core_buffer;
+    fake_core_buffer.CoreId = CPU_SCP;
+
+    // Reset the message type to intercore block notification
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
+
     assert_int_equal(s_test_context.health_stats.asic_buffers_reused, 0);
 
-    // Fake out the active buffer to be full
+    // Fake out all asic buffers to be full
     for (uint32_t i = 0; i < ASIC_BUFFER_DDR_CAPACITY_MAX; i++)
     {
         s_test_context.ddr_buffers[i].state = ETR_DDR_BUFFER_STATE_PENDING;
@@ -383,59 +485,87 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
     s_test_context.p_active_asic_buffer = &s_test_context.ddr_buffers[1];
     s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_ACTIVE;
 
-    // Send a request to copy a buffer, which won't fit, causing a new asic buffer to be used
-    // all of which are pending. Forcing a pending buffer to be re-used
-    uint8_t fake_core_buffer[1024];
-    memset(&fake_core_buffer[0], 0xAB, sizeof(fake_core_buffer));
+    fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
 
-    etr_service_request_t request = {
-        .type = ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-        .request = {.copy_buffer =
-                        {
-                            .core_id = 0,
-                            .buffer_addr = (uintptr_t)&fake_core_buffer[0],
-                            .buffer_header =
-                                {
-                                    .UsedBytes = sizeof(fake_core_buffer),
-                                },
-                        }},
-    };
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
 
-    // Setup the expectations for the queue
-    expect_value(__wrap__txe_queue_front_send, queue_ptr, &s_test_context.request_queue.queue);
-    expect_value(__wrap__txe_queue_front_send, source_ptr, &request);
-    expect_value(__wrap__txe_queue_front_send, wait_option, TX_WAIT_FOREVER);
-    will_return(__wrap__txe_queue_front_send, TX_SUCCESS);
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
-    etr_process_request(&s_test_context, &request);
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 
     // validate that the old buffer is now pending and that first pending buffer is now active
     assert_int_equal(s_test_context.ddr_buffers[1].state, ETR_DDR_BUFFER_STATE_PENDING);
     assert_int_equal(s_test_context.ddr_buffers[0].state, ETR_DDR_BUFFER_STATE_ACTIVE);
-    assert_int_equal(s_test_context.ddr_buffers[0].payload_management.size_bytes, sizeof(asic_buffer_info_t));
-    assert_int_equal(s_test_context.ddr_buffers[0].buffer.asic.asic_header.UsedBytes, sizeof(FPFW_ET_ASIC_BUFFER_HEADER));
-
     assert_int_equal(s_test_context.health_stats.asic_buffers_reused, 1);
 }
 
+trp_msg_t trp_msg_host = {
+    .hdr =
+        {
+
+            .src_node =
+                {
+                    .core_id = CPU_AP,
+                    .die_id = 0,
+                },
+            .dest_node =
+                {
+                    .core_id = CPU_MCP,
+                    .die_id = 0,
+                },
+            .trp_msg_id = TRP_MSG_ID_READ_PACKAGE_COMPLETE,
+            .payload_size = sizeof(fake_core_buffer),
+        },
+    .payload = {.intercore_block_notification =
+                    {
+                        .addr_offset = (uintptr_t)&fake_core_buffer,
+                        .block_size = sizeof(fake_core_buffer),
+                    }},
+};
+
 TEST_FUNCTION(test_etr_process_request_host_read_bad_addr, test_setup, test_teardown)
 {
-    etr_service_request_t request = {
-        .type = ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-        .request = {.host_read =
-                        {
-                            .die_id = 0,
-                            .payload_management =
-                                {
-                                    .base_addr = 0xDEADBEEF,
-                                },
-                        }},
-    };
+    // Set an invalid/bad address for the host read request
+    trp_msg_host.payload.intercore_block_notification.addr_offset = 0xDEADBEEF;
 
     expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ET_E_INVALIDARG);
     if (!set_error_handler_return())
     {
-        etr_process_request(&s_test_context, &request);
+        // Set Expectations for successful tx_event_flags_get
+        expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+        expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+        expect_any_always(__wrap__txe_event_flags_get, get_option);
+        expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+        expect_any_always(__wrap__txe_event_flags_get, wait_option);
+        will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+        // Set up expectations for a successful tx_queue_receive
+        expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+        expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+        expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+        will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+        will_return(set_tx_queue_receive_value, &trp_msg_host);
+        set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+        etr_worker_thread_func((ULONG)&s_test_context);
     }
 }
 
@@ -443,19 +573,32 @@ TEST_FUNCTION(test_etr_process_request_host_read_good_addr, test_setup, test_tea
 {
     s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
 
-    etr_service_request_t request = {
-        .type = ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-        .request = {.host_read =
-                        {
-                            .die_id = 0,
-                            .payload_management =
-                                {
-                                    .base_addr = s_test_context.p_active_asic_buffer->payload_management.base_addr,
-                                },
-                        }},
-    };
+    // Set a good address for the host read request
+    trp_msg_host.payload.intercore_block_notification.addr_offset =
+        s_test_context.p_active_asic_buffer->payload_management.base_addr;
 
-    etr_process_request(&s_test_context, &request);
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg_host);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 
     assert_int_equal(s_test_context.p_active_asic_buffer->state, ETR_DDR_BUFFER_STATE_FREE);
 }
@@ -464,36 +607,33 @@ TEST_FUNCTION(test_etr_process_request_host_read_good_addr_bad_state, test_setup
 {
     assert_int_equal(s_test_context.health_stats.delayed_host_reads, 0);
 
+    // Set Buffer active state to pending
     s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_ACTIVE;
 
-    etr_service_request_t request = {
-        .type = ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-        .request = {.host_read =
-                        {
-                            .die_id = 0,
-                            .payload_management =
-                                {
-                                    .base_addr = s_test_context.p_active_asic_buffer->payload_management.base_addr,
-                                },
-                        }},
-    };
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
 
-    etr_process_request(&s_test_context, &request);
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg_host);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 
     assert_int_equal(s_test_context.health_stats.delayed_host_reads, 1);
-}
-
-TEST_FUNCTION(test_etr_process_request_bad_type, test_setup, test_teardown)
-{
-    etr_service_request_t request = {
-        .type = ETR_SERVICE_REQUEST_TYPE_INVALID,
-    };
-
-    expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ET_E_INVALIDARG);
-    if (!set_error_handler_return())
-    {
-        etr_process_request(&s_test_context, &request);
-    }
 }
 
 TEST_FUNCTION(test_etr_icc_handle_hsp, test_setup, test_teardown)

@@ -26,7 +26,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::error_handler
-    ms::lib::power_fuse
+    ms::lib::telemetry::fuses
     ms::service::sensor_fifo
     ms::lib::interrupts
     ms::lib::atomics

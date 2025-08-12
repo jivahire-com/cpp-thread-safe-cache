@@ -3,15 +3,14 @@
 //
 
 /**
- * @file telemetry_cli_service.h
+ * @file pwr_tlm_cli_service.h
  *
- * Telemetry Service CLI
+ * Power Telemetry Service CLI
  */
 
 #pragma once
 
 /*----------- Nested includes ------------*/
-
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -25,4 +24,4 @@
  * @brief Initialize the CLI service.
  *
  */
-void telemetry_cli_svc_initialize(void);
+void pwr_tlm_cli_svc_init(void);

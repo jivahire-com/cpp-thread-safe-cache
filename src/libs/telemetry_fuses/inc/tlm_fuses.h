@@ -3,10 +3,10 @@
 //
 
 /**
- *  @file power_tlm_fuse.h
- *  This library provide apis to read the power fuses for telemetry.
+ *  @file tlm_fuses.h
+ *  This library provide apis to read the fuses for telemetry.
  *
- *  Note: This library can be used on both the processor MCP and SCP,
+ *  Note: This library can be used on both the MCP and SCP,
  *        see the runtime init component for dependency details.
  */
 
@@ -19,9 +19,12 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-// Helpers for DTS Coefficient values taken from fuses:
-#define PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k) (-1.0F * (float)fused_k)
-#define PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y) ((float)fused_y)
+/**
+ *  Helpers for handling the DTS coefficients.
+ */
+
+#define TLM_DTS_K_COEFF_FUSED_TEMP(fused_k) (-1.0F * (float)fused_k)
+#define TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y) ((float)fused_y)
 
 //
 // Default values from the datasheet for the sensors, section 3.1 "Coefficients  for Deep N-Well".
@@ -38,23 +41,30 @@
  * Reference : Synopsys Cores Sensors  Distributed Thermal Sensor (Series 2) section 6.2
  */
 
-#ifndef PWR_TLM_FUSE_DOUT_TO_TEMP_DC
-    #define PWR_TLM_FUSE_DOUT_TO_TEMP_DC(dout, fused_k, fused_y) \
-    ((uint16_t)(((((dout) / 16384.0F) * PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y) + PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) * 10.0F) + 0.5F))
+#ifndef TLM_FUSE_DOUT_TO_TEMP_DC
+    #define TLM_FUSE_DOUT_TO_TEMP_DC(dout, fused_k, fused_y) \
+    ((uint16_t)(((((dout) / 16384.0F) * TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y) + TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) * 10.0F) + 0.5F))
 #endif
 
-#ifndef PWR_TLM_FUSE_TEMP_DC_TO_DOUT
-    #define PWR_TLM_FUSE_TEMP_DC_TO_DOUT(temp, fused_k, fused_y) \
-    ((uint16_t)(16384.0F * ((((double)(temp) - 0.5F) / 10.0F - PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) / PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y)) + 0.5F))
+#ifndef TLM_FUSE_TEMP_DC_TO_DOUT
+    #define TLM_FUSE_TEMP_DC_TO_DOUT(temp, fused_k, fused_y) \
+    ((uint16_t)(16384.0F * ((((double)(temp) - 0.5F) / 10.0F - TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) / TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y)) + 0.5F))
 #endif
 
-#ifndef PWR_TLM_FUSE_TEMP_CEL_2_DOUT
-    #define PWR_TLM_FUSE_TEMP_CEL_2_DOUT(temp, fused_k, fused_y) \
-    ((uint16_t)((16384.0F) * (((temp) - PWR_TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) / PWR_TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y))))
+#ifndef TLM_FUSE_TEMP_CEL_2_DOUT
+    #define TLM_FUSE_TEMP_CEL_2_DOUT(temp, fused_k, fused_y) \
+    ((uint16_t)((16384.0F) * (((temp) - TLM_DTS_K_COEFF_FUSED_TEMP(fused_k)) / TLM_DTS_Y_COEFF_FUSED_TEMP(fused_y))))
 #endif
 
 /* DTS coeff spacing */
 #define TILE_PVT_NUM_CHANNELS_DTS 8
+
+
+/**
+ *  Helpers for handling ECID.
+ */
+
+ #define ECID_WAFER_LOT_NUMBER_CHAR_SIZE (9)
 
 /*--------------- Typedefs ---------------*/
 
@@ -72,7 +82,7 @@ typedef struct _dts_tlm_coeff_t
  *
  * @return None
  */
-void power_fuse_init(void);
+void tlm_fuses_init(void);
 
 /**
  * @brief Get the DTS coefficients for all TILE_THERMALS_SENSOR in soc die.
@@ -80,9 +90,9 @@ void power_fuse_init(void);
  * @param[out] dts_coeff - Pointer to memory to store the fuse data in.
  * @param[in] count Number of elements that can fit in dts_coeff.
  *
- * @return fpfw_status_t
+ * @return FPFW_STATUS_SUCCESS on success, error code otherwise.
  */
-fpfw_status_t platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t count);
+fpfw_status_t tlm_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t count);
 
 /**
  * @brief Get the DTS coefficients for all TOP_THERMALS_SENSOR on soc die.
@@ -90,6 +100,6 @@ fpfw_status_t platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff
  * @param[out] dts_coeff - Pointer to memory to store the fuse data in.
  * @param[in] count Number of elements that can fit in dts_coeff.
  *
- * @return fpfw_status_t
+ * @return FPFW_STATUS_SUCCESS on success, error code otherwise.
  */
-fpfw_status_t platform_power_fuses_get_dts_coeff_soctop(dts_tlm_coeff_t* dts_coeff, uint32_t count);
+fpfw_status_t tlm_fuses_get_dts_coeff_soctop(dts_tlm_coeff_t* dts_coeff, uint32_t count);

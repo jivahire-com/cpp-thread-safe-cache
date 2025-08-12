@@ -1,8 +1,12 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
 set(TARGET kng.service.pwr_tlm_mcp.cli)
 
 add_library(${TARGET}
     STATIC
-        telemetry_cli_service.c
+        pwr_tlm_cli_service.c
 )
 
 target_link_libraries(
@@ -10,7 +14,7 @@ target_link_libraries(
         PRIVATE
         fwlib.service.cli
         ms::lib::error_codes
-        ms::lib::power_fuse
+        ms::lib::telemetry::fuses
         ms::service::pwr_tlm_mcp
         pwr_tlm_mcp.service.cmpnt.interfaces #give cli access to internal component headers
 )

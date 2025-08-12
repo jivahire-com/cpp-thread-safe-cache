@@ -3,8 +3,8 @@
 //
 
 /**
- * @file power_fuse_events_i.h
- * Event traces for the power_fuse library
+ * @file tlm_fuses_events_i.h
+ * Event traces for the telemetry fuse library
  */
 
 #pragma once
@@ -13,7 +13,6 @@
 
 #include <event_trace_providers.h>
 #include <event_trace.h>
-#include <stdint.h>                // for UINT8_MAX
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -21,68 +20,67 @@
 
 /*-- Declarations (Statics and globals) --*/
 
-FPFW_ET_DEFINE_PROVIDER_EX(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
-                           PowerFuseLib,
+FPFW_ET_DEFINE_PROVIDER_EX(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
+                           TlmFusesLib,
                            FPFW_ET_LEVEL_MASK_INFO | FPFW_ET_LEVEL_MASK_WARNING | FPFW_ET_LEVEL_MASK_ERROR |
                                FPFW_ET_LEVEL_MASK_FATAL | FPFW_ET_LEVEL_MASK_ALWAYS);
 
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      10,
-                     PowerFuseReadFailedY_offset,
+                     TlmFusesReadFailedY_offset,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
 
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      11,
-                     PowerFuseReadFailedK_offset,
+                     TlmFusesReadFailedK_offset,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
 
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      12,
-                     DTScoeffyValIsZeroAt,
+                     TlmFusesDTScoeffyValIsZeroAt,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, y_offset))
 
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      13,
-                     DTScoeffkValIsZeroAt,
+                     TlmFusesDTScoeffkValIsZeroAt,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, k_offset))
 
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                     14,
-                    RequestedFuseBitReadSizeInValid,
+                    TlmFusesRequestedFuseBitReadSizeInValid,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_INT32, fuse_bit_size))
 
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      15,
-                     PlatformPowrFuseNotSupported,
+                     TlmFusesNotSupported,
                      FPFW_ET_LEVEL_ERROR)
 
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      16,
-                     PowerFuseReadTileCoeffDeafultValues,
+                     TlmFusesReadTileCoeffDefaultValues,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
 
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      17,
-                     PowerFuseReadSoCTopCoeffDefaultValues,
+                     TlmFusesReadSoCTopCoeffDefaultValues,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
 
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      18,
-                     PowerFuseReadFailedtileCoeff,
+                     TlmFusesReadFailedtileCoeff,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
 
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_FUSE_LIB,
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      19,
-                     PowerFuseReadFailedSocTopCoeff,
+                     TlmFusesReadFailedSocTopCoeff,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status))
 

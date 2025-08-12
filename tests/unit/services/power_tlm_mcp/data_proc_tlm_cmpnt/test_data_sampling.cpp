@@ -21,10 +21,10 @@ extern "C" {
 #include <data_sampling_i.h>
 #include <die_2_die_exchange_i.h>
 #include <dvfs.h>
-#include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
 #include <telemetry_package_defs.h>
+#include <tlm_fuses.h>
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -422,23 +422,19 @@ TEST_FUNCTION(test_max_dimm_temp, test_setup, test_teardown)
 // Test for data sampling to init dts coefficient structures
 TEST_FUNCTION(test_data_smpl_init_dts_coefficients, test_setup, test_teardown)
 {
-    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile, dts_coeff, tileDtsCoefficients);
-    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile,
-                 count,
-                 sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
+    expect_value(__wrap_tlm_fuses_get_dts_coeff_tile, dts_coeff, tileDtsCoefficients);
+    expect_value(__wrap_tlm_fuses_get_dts_coeff_tile, count, sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
 
-    will_return(__wrap_platform_power_fuses_get_dts_coeff_tile, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_tlm_fuses_get_dts_coeff_tile, FPFW_STATUS_SUCCESS);
     data_smpl_init_dts_coefficients();
 }
 
 TEST_FUNCTION(test_data_smpl_init_dts_coefficients_fail, test_setup, test_teardown)
 {
-    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile, dts_coeff, tileDtsCoefficients);
-    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile,
-                 count,
-                 sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
+    expect_value(__wrap_tlm_fuses_get_dts_coeff_tile, dts_coeff, tileDtsCoefficients);
+    expect_value(__wrap_tlm_fuses_get_dts_coeff_tile, count, sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
 
-    will_return(__wrap_platform_power_fuses_get_dts_coeff_tile, FPFW_STATUS_UNEXPECTED);
+    will_return(__wrap_tlm_fuses_get_dts_coeff_tile, FPFW_STATUS_UNEXPECTED);
     data_smpl_init_dts_coefficients();
 }
 

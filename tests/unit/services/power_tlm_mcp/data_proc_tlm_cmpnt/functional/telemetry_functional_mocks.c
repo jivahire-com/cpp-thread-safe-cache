@@ -13,7 +13,6 @@
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h>
 #include <data_proc_tlm_cmpnt.h>
-#include <power_tlm_fuse.h>
 #include <semaphore_lib.h>
 #include <sensor_fifo_service.h>
 #include <stdint.h>

@@ -3,7 +3,7 @@
 //
 
 /**
- * @file power_fuse_events.c
+ * @file tlm_fuses_events.c
  * Instantiates the actual event trace functions for the service.
  */
 
@@ -13,7 +13,7 @@
 #define FPFW_ET_IMPLEMENTATION
 #define FPFW_ET_METADATA
 
-#include <power_fuse_events_i.h> // IWYU pragma: keep
+#include <tlm_fuses_events_i.h> // IWYU pragma: keep
 
 /*-- Symbolic Constant Macros (defines) --*/
 

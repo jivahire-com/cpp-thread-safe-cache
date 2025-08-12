@@ -31,7 +31,7 @@ target_link_libraries(${TARGET}
         ms::lib::core_info
         ms::lib::error_codes
         ms::lib::arm_intrinsic
-        ms::lib::power_fuse
+        ms::lib::telemetry::fuses
         ms::lib::gtimer
         ms::lib::pwr_tlm_core_ex
         silibs::dvfs

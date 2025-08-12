@@ -20,12 +20,13 @@
 #include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCEEDED, fpf...
 #include <in_band_tlm_cmpnt.h>
-#include <power_tlm_fuse.h>      //for power fuse
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdbool.h>             // for false, true
 #include <stddef.h>              // for size_t
 #include <stdint.h>              // for uint8_t, uint16_t
 #include <string.h>              // for memset
+#include <tlm_fuses.h>
+
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -74,8 +75,7 @@ void data_smpl_init(void)
 void data_smpl_init_dts_coefficients(void)
 {
     fpfw_status_t status =
-        platform_power_fuses_get_dts_coeff_tile(tileDtsCoefficients,
-                                                sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
+        tlm_fuses_get_dts_coeff_tile(tileDtsCoefficients, sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
     if (FPFW_STATUS_FAILED(status))
     {
         FPFW_ET_LOG(DTSCoefficientReadFailedInit, status);
@@ -604,46 +604,45 @@ bool data_smpl_parse_tile_temperature_entry(tile_temp_t* tile_temp_entry, uint8_
     if (tile_temp_entry->temp0.temp_valid == 1)
     {
         // Check between which is bigger to log for tile core0
-        uint16_t inst_temp_0_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp1.temp0,
-                                                               tileDtsCoefficients[tile_index].k_val,
-                                                               tileDtsCoefficients[tile_index].y_val);
-        uint16_t inst_temp_1_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp1.temp1,
-                                                               tileDtsCoefficients[tile_index].k_val,
-                                                               tileDtsCoefficients[tile_index].y_val);
-        uint16_t inst_temp_2_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp1.temp2,
-                                                               tileDtsCoefficients[tile_index].k_val,
-                                                               tileDtsCoefficients[tile_index].y_val);
+        uint16_t inst_temp_0_dC = TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp1.temp0,
+                                                           tileDtsCoefficients[tile_index].k_val,
+                                                           tileDtsCoefficients[tile_index].y_val);
+        uint16_t inst_temp_1_dC = TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp1.temp1,
+                                                           tileDtsCoefficients[tile_index].k_val,
+                                                           tileDtsCoefficients[tile_index].y_val);
+        uint16_t inst_temp_2_dC = TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp1.temp2,
+                                                           tileDtsCoefficients[tile_index].k_val,
+                                                           tileDtsCoefficients[tile_index].y_val);
 
         core_rt[core_id].latest_max_value_dC = data_util_get_max_val(inst_temp_0_dC, inst_temp_1_dC, inst_temp_2_dC);
 
         // Check between which is bigger to log for tile core1
-        inst_temp_0_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp1.temp3,
-                                                      tileDtsCoefficients[tile_index].k_val,
-                                                      tileDtsCoefficients[tile_index].y_val);
-        inst_temp_1_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp2.temp4,
-                                                      tileDtsCoefficients[tile_index].k_val,
-                                                      tileDtsCoefficients[tile_index].y_val);
-        inst_temp_2_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp2.temp5,
-                                                      tileDtsCoefficients[tile_index].k_val,
-                                                      tileDtsCoefficients[tile_index].y_val);
+        inst_temp_0_dC = TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp1.temp3,
+                                                  tileDtsCoefficients[tile_index].k_val,
+                                                  tileDtsCoefficients[tile_index].y_val);
+        inst_temp_1_dC = TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp2.temp4,
+                                                  tileDtsCoefficients[tile_index].k_val,
+                                                  tileDtsCoefficients[tile_index].y_val);
+        inst_temp_2_dC = TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp2.temp5,
+                                                  tileDtsCoefficients[tile_index].k_val,
+                                                  tileDtsCoefficients[tile_index].y_val);
 
         core_rt[core_id + 1].latest_max_value_dC = data_util_get_max_val(inst_temp_0_dC, inst_temp_1_dC, inst_temp_2_dC);
 
         // HNF channel is calculated the same as core_id so can re-use the same index
-        soc_rt.latest_hnf_max_temp_dC[core_id] = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp2.temp6,
+        soc_rt.latest_hnf_max_temp_dC[core_id] = TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp2.temp6,
+                                                                          tileDtsCoefficients[tile_index].k_val,
+                                                                          tileDtsCoefficients[tile_index].y_val);
+
+        soc_rt.latest_hnf_max_temp_dC[core_id + 1] = TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp2.temp7,
                                                                               tileDtsCoefficients[tile_index].k_val,
                                                                               tileDtsCoefficients[tile_index].y_val);
-
-        soc_rt.latest_hnf_max_temp_dC[core_id + 1] =
-            PWR_TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp2.temp7,
-                                         tileDtsCoefficients[tile_index].k_val,
-                                         tileDtsCoefficients[tile_index].y_val);
     }
 
     // Also store the Max tile temperatures and its ID
-    tile_rt[tile_index].latest_max_temp_dC = PWR_TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp0.max_temp,
-                                                                          tileDtsCoefficients[tile_index].k_val,
-                                                                          tileDtsCoefficients[tile_index].y_val);
+    tile_rt[tile_index].latest_max_temp_dC = TLM_FUSE_DOUT_TO_TEMP_DC(tile_temp_entry->temp0.max_temp,
+                                                                      tileDtsCoefficients[tile_index].k_val,
+                                                                      tileDtsCoefficients[tile_index].y_val);
 
     if (tile_rt[tile_index].latest_max_temp_dC > soc_rt.latest_max_tile_temp_dC)
     {

@@ -6,6 +6,7 @@ add_executable(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
+        fwlib.lib.utils
         ms::cmocka::mocks
         ms::cmocka::testrunner
         ms::lib::pwr_tlm_core_ex
@@ -19,8 +20,6 @@ target_link_libraries(${TARGET}
  )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
-# Get private includes for module under test
-target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:kng.lib.power_fuse,INCLUDE_DIRECTORIES>)
 
 lint_target(${TARGET})
 format_target(${TARGET})

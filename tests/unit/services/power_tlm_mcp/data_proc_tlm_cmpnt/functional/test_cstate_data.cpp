@@ -57,7 +57,6 @@ extern "C" {
 #include <fpfw_status.h>
 #include <libs/event_trace/trace/inc/event_trace_providers.h>
 #include <package_creation_i.h>
-#include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h>
 #include <telemetry_data_struct.h>
 #include <telemetry_package_defs.h>

@@ -20,7 +20,7 @@ extern "C" {
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
-#include <telemetry_cli_service.h>
+#include <pwr_tlm_cli_service.h>
 #include <telemetry_service.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -65,7 +65,7 @@ void __wrap_telemetry_service_init(uint8_t die_id,
     check_expected(_24_hr_pkg_sample_period_ms);
 }
 
-void __wrap_telemetry_cli_svc_initialize(void)
+void __wrap_pwr_tlm_cli_svc_init(void)
 {
     function_called();
 }
@@ -90,7 +90,7 @@ TEST_FUNCTION(test_tlm_svc_init, nullptr, nullptr)
     expect_value(__wrap_telemetry_service_init, inst_samples_per_pkg, 10);
     expect_value(__wrap_telemetry_service_init, _24_hr_pkg_sample_period_ms, 3600000); // 1 hour in ms
 
-    expect_function_call(__wrap_telemetry_cli_svc_initialize);
+    expect_function_call(__wrap_pwr_tlm_cli_svc_init);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_tlm_svc_mcp.init_fn();
@@ -117,7 +117,7 @@ TEST_FUNCTION(test_tlm_svc_init_other_branches, nullptr, nullptr)
     expect_value(__wrap_telemetry_service_init, inst_samples_per_pkg, 20);
     expect_value(__wrap_telemetry_service_init, _24_hr_pkg_sample_period_ms, 86400000); // default value
 
-    expect_function_call(__wrap_telemetry_cli_svc_initialize);
+    expect_function_call(__wrap_pwr_tlm_cli_svc_init);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_tlm_svc_mcp.init_fn();
@@ -144,7 +144,7 @@ TEST_FUNCTION(test_tlm_svc_init_range_limit, nullptr, nullptr)
     expect_value(__wrap_telemetry_service_init, inst_samples_per_pkg, 10);
     expect_value(__wrap_telemetry_service_init, _24_hr_pkg_sample_period_ms, 1800000); // 30 minutes in ms
 
-    expect_function_call(__wrap_telemetry_cli_svc_initialize);
+    expect_function_call(__wrap_pwr_tlm_cli_svc_init);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_tlm_svc_mcp.init_fn();

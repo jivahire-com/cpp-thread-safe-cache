@@ -38,5 +38,5 @@ mock_target(${TARGET}
     config_get_pwr_tlm_knobs
     idsw_get_die_id
     telemetry_service_init
-    telemetry_cli_svc_initialize
+    pwr_tlm_cli_svc_init
 )

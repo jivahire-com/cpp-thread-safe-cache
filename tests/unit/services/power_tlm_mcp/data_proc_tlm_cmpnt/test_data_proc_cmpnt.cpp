@@ -19,8 +19,8 @@ extern "C" {
 #include <data_proc_tlm_cmpnt.h>
 #include <data_sampling_i.h>
 #include <die_2_die_exchange_i.h>
-#include <power_tlm_fuse.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
+#include <tlm_fuses.h>
 
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 bool data_proc_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
@@ -49,12 +49,10 @@ static int test_teardown(void** pContext)
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_init, test_setup, test_teardown)
 {
-    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile, dts_coeff, tileDtsCoefficients);
-    expect_value(__wrap_platform_power_fuses_get_dts_coeff_tile,
-                 count,
-                 sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
+    expect_value(__wrap_tlm_fuses_get_dts_coeff_tile, dts_coeff, tileDtsCoefficients);
+    expect_value(__wrap_tlm_fuses_get_dts_coeff_tile, count, sizeof(tileDtsCoefficients) / sizeof(tileDtsCoefficients[0]));
 
-    will_return(__wrap_platform_power_fuses_get_dts_coeff_tile, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_tlm_fuses_get_dts_coeff_tile, FPFW_STATUS_SUCCESS);
 
     will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
 

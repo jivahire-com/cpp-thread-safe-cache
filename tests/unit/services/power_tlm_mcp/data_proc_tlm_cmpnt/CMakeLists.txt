@@ -21,7 +21,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::error_handler
-    ms::lib::power_fuse
+    ms::lib::telemetry::fuses
     ms::service::sensor_fifo
     silibs::dvfs
 )
@@ -49,7 +49,7 @@ mock_target(${TARGET}
     sensor_fifo_svc_poll_vr_current
     sensor_fifo_svc_poll_soc_pvt_temperature
     sensor_fifo_svc_poll_dimm_info
-    platform_power_fuses_get_dts_coeff_tile
+    tlm_fuses_get_dts_coeff_tile
     exec_tlm_cmpnt_get_timestamp_microseconds
     gtimer_prodfw_get_frequency
     in_band_tlm_cmpnt_is_inst_record_enabled

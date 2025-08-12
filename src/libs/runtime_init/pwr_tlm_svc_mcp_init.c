@@ -12,7 +12,7 @@
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
-#include <telemetry_cli_service.h>
+#include <pwr_tlm_cli_service.h>
 #include <telemetry_service.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -40,7 +40,7 @@
 /*------------- Functions ----------------*/
 
 FPFW_INIT_COMPONENT(pwr_tlm_svc_mcp,
-                    FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc", "gtimer", "hw_sem", "core_info"))
+                    FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc", "gtimer", "hw_sem", "core_info", "tlm_fuses"))
 {
     power_tlm_knobs_t pwr_tlm_knobs = config_get_pwr_tlm_knobs();
 
@@ -74,7 +74,7 @@ FPFW_INIT_COMPONENT(pwr_tlm_svc_mcp,
 
     telemetry_service_init(idsw_get_die_id(), pwr_pkg_period_ms, inst_pkg_sample_period_ms, inst_samples_per_pkg, _24_hr_pkg_sample_period_ms);
 
-    telemetry_cli_svc_initialize();
+    pwr_tlm_cli_svc_init();
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

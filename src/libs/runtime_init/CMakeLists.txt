@@ -53,7 +53,7 @@ add_library(${TARGET}
         nvic_init.c
         pcie_init.c
         pex_rng_init.c
-        power_fuse_init.c
+        tlm_fuses_init.c
         pwr_tlm_svc_scp_init.c
         power_init.c
         pwr_tlm_core_ex_init.c
@@ -139,7 +139,7 @@ target_link_libraries(
         ms::lib::mesh
         ms::lib::mesh::cli
         ms::lib::pex_rng
-        ms::lib::power_fuse
+        ms::lib::telemetry::fuses
         ms::lib::power::cli
         ms::lib::pwr_tlm_core_ex
         ms::lib::register_headers
@@ -253,6 +253,7 @@ add_library(${TARGET}
         core_info_init.c
         cli_crash_dump_init.c
         cli_init.c
+        cli_tlm_fuses_init.c
         debug_init.c
         dfwk_init.c
         dma_init.c
@@ -279,7 +280,7 @@ add_library(${TARGET}
         nvic_init.c
         pdr_repo_init.c
         pdr_dummy_init.c
-        power_fuse_init.c
+        tlm_fuses_init.c
         pwr_tlm_svc_mcp_init.c
         sensor_fifo_init.c
         spi_bridge_init.c
@@ -347,7 +348,7 @@ target_link_libraries(
         ms::lib::interface::mhu_icc_payloads
         ms::lib::mcp_interrupts
         ms::lib::pldm_pdr
-        ms::lib::power_fuse
+        ms::lib::telemetry::fuses
         ms::lib::register_headers
         ms::service::mcp_startup_shutdown
         ms::lib::stdio_textio
@@ -365,6 +366,7 @@ target_link_libraries(
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli
+        ms::service::telemetry::fuses::cli
         ms::service::pwr_tlm_mcp
         ms::service::pwr_tlm_mcp::cli
         ms::service::wdog

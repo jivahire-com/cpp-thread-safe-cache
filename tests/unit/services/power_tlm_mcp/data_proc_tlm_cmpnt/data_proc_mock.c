@@ -14,11 +14,11 @@
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <corebits.h>
 #include <data_sampling_i.h>
-#include <power_tlm_fuse.h>
 #include <semaphore_lib.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
 #include <string.h>
+#include <tlm_fuses.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -137,7 +137,7 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_dimm_info(sensor_ram_dimm_i
     return status;
 }
 
-fpfw_status_t __wrap_platform_power_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t count)
+fpfw_status_t __wrap_tlm_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t count)
 {
     check_expected(count);
     check_expected_ptr(dts_coeff);

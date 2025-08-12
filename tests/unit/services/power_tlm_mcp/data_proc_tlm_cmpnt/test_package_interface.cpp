@@ -21,7 +21,6 @@ extern "C" {
 #include <data_sampling_i.h>
 #include <die_2_die_exchange_i.h>
 #include <dvfs.h>
-#include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
 #include <string.h>              // for memcmp
@@ -32,7 +31,6 @@ extern "C" {
 extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_rt;
-extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 }
 
 /*-- Symbolic Constant Macros (defines) --*/

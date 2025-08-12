@@ -45,13 +45,13 @@ extern "C" {
 #include <fpfw_status.h>
 #include <libs/event_trace/trace/inc/event_trace_providers.h>
 #include <package_creation_i.h>
-#include <power_tlm_fuse.h>
 #include <sensor_fifo_service.h>
 #include <telemetry_package_defs.h>
+#include <tlm_fuses.h>
 }
 
 #define TEST_TEMP_CEL_2_DOUT(temp) \
-    (PWR_TLM_FUSE_TEMP_CEL_2_DOUT((temp), DEFAULT_DTS_FUSED_K_VAL, DEFAULT_DTS_FUSED_Y_VAL))
+    (TLM_FUSE_TEMP_CEL_2_DOUT((temp), DEFAULT_DTS_FUSED_K_VAL, DEFAULT_DTS_FUSED_Y_VAL))
 
 #define CELSIUS_TO_DECI_CELSIUS(temp) ((temp) * 10) // Convert Celsius to deciCelsius
 

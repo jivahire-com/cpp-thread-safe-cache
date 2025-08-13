@@ -16,8 +16,9 @@ target_link_libraries(
     fwlib.lib.init
     ms::driver::pcie
     ms::lib::error_codes
-    ms::lib::threadx
     ms::lib::hsp_firmware_headers
+    ms::lib::utils
+    ms::lib::threadx
     ms::lib::variable_services
     ms::service::atu_service
     silibs::kng_silibs_platform

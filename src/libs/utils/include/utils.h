@@ -18,6 +18,7 @@
 #define KB                  (1024)
 #define MB                  (KB * 1024)
 #define UNUSED(x)           (void)(x)
+#define PLACED_CODE           __attribute__((section(".placed.code")))
 
 /*-------------- Typedefs ----------------*/
 

@@ -9,13 +9,14 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
     fwlib.dfwk
-    fwlib.service.cli
     fwlib.lib.status
-    silibs_platform
-    ms::service::health_monitor
-    silibs::semaphore
-    silibs::icc_mhu
+    fwlib.service.cli
     ms::lib::crash_dump
+    ms::lib::utils
+    ms::service::health_monitor
+    silibs::icc_mhu
+    silibs_platform
+    silibs::semaphore
 )
 
 target_include_directories(${TARGET}

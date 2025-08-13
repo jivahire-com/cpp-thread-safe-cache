@@ -16,6 +16,7 @@
 #include <health_monitor.h>
 #include <hm_cli.h>
 #include <string.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -68,7 +69,7 @@ static const guid_name_map_t guid_map[] = {
 };
 
 /*------------- Functions ----------------*/
-static FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
 {
     int ghes_idx = -1;
 
@@ -148,7 +149,7 @@ static FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
 {
     if (argc < 9)
     {
@@ -193,7 +194,7 @@ static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS hm_dump_einj_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS hm_dump_einj_cli(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);
@@ -207,7 +208,7 @@ static FPFW_CLI_STATUS hm_dump_einj_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS hm_activate_sample_err_domain_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS hm_activate_sample_err_domain_cli(int argc, const char** argv)
 {
     const char* err_domain_name = NULL;
     uint32_t err_domain_idx = ACPI_ERROR_DOMAIN_MESH;
@@ -226,7 +227,7 @@ static FPFW_CLI_STATUS hm_activate_sample_err_domain_cli(int argc, const char** 
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const char** argv)
 {
     acpi_error_domain_t err_domain_idx = ACPI_ERROR_DOMAIN_INVALID;
 

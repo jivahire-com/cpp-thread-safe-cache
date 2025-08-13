@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MAX_KNOB_SIZE 512
@@ -41,7 +42,7 @@ static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
     {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_reset", cfg_mgr_reset_knob_cli, "reset specified knob value", "Usage: cfg_mgr_reset <name or idx>"}};
 
 /*------------- Functions ----------------*/
-void print_primitive_data(const void* data, uint32_t size)
+PLACED_CODE void print_primitive_data(const void* data, uint32_t size)
 {
     FpFwCliPrint("\nKnob Value : [Primitive Data]");
     switch (size)
@@ -60,7 +61,7 @@ void print_primitive_data(const void* data, uint32_t size)
     }
 }
 
-void print_byte_view(const char* data, uint32_t size)
+PLACED_CODE void print_byte_view(const char* data, uint32_t size)
 {
     for (uint32_t dataIdx = 0; dataIdx < size; dataIdx++)
     {
@@ -76,7 +77,7 @@ void print_byte_view(const char* data, uint32_t size)
     }
 }
 
-static cached_knob_data_t* get_knob_data_by(const char* argument, uint32_t* knob_idx)
+static PLACED_CODE cached_knob_data_t* get_knob_data_by(const char* argument, uint32_t* knob_idx)
 {
     cached_knob_data_t* current_entry = NULL;
 
@@ -111,7 +112,7 @@ static cached_knob_data_t* get_knob_data_by(const char* argument, uint32_t* knob
     return current_entry;
 }
 
-static void dump_knob_data(cached_knob_data_t* current_entry, uint32_t idx)
+static PLACED_CODE void dump_knob_data(cached_knob_data_t* current_entry, uint32_t idx)
 {
     if (current_entry->overridden)
     {
@@ -155,7 +156,7 @@ static void dump_knob_data(cached_knob_data_t* current_entry, uint32_t idx)
     }
 }
 
-static void update_knob_cb(cached_knob_data_t* updated_knob, uint8_t* updated_data, size_t data_size)
+static PLACED_CODE void update_knob_cb(cached_knob_data_t* updated_knob, uint8_t* updated_data, size_t data_size)
 {
     FPFW_UNUSED(updated_data);
     FPFW_UNUSED(data_size);
@@ -165,7 +166,7 @@ static void update_knob_cb(cached_knob_data_t* updated_knob, uint8_t* updated_da
     FpFwCliPrint("\n--Knob configuration update completed--\n");
 }
 
-static void reset_knob_cb(cached_knob_data_t* updated_knob, uint8_t* updated_data, size_t data_size)
+static PLACED_CODE void reset_knob_cb(cached_knob_data_t* updated_knob, uint8_t* updated_data, size_t data_size)
 {
     FPFW_UNUSED(updated_data);
     FPFW_UNUSED(data_size);
@@ -174,7 +175,7 @@ static void reset_knob_cb(cached_knob_data_t* updated_knob, uint8_t* updated_dat
     dump_knob_data(updated_knob, updated_knob->index);
 }
 
-static FPFW_CLI_STATUS cfg_mgr_knob_list_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cfg_mgr_knob_list_cli(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);
@@ -200,7 +201,7 @@ static FPFW_CLI_STATUS cfg_mgr_knob_list_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cfg_mgr_knob_data_dump_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cfg_mgr_knob_data_dump_cli(int argc, const char** argv)
 {
     cached_knob_data_t* current_entry = NULL;
 
@@ -236,7 +237,7 @@ static FPFW_CLI_STATUS cfg_mgr_knob_data_dump_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cfg_mgr_check_var_store_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cfg_mgr_check_var_store_cli(int argc, const char** argv)
 {
     cached_knob_data_t* current_entry = NULL;
 
@@ -261,7 +262,7 @@ static FPFW_CLI_STATUS cfg_mgr_check_var_store_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv)
 {
     uint32_t knob_idx = 0;
     cached_knob_data_t* current_entry = NULL;
@@ -315,7 +316,7 @@ static FPFW_CLI_STATUS cfg_mgr_set_knob_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cfg_mgr_reset_knob_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cfg_mgr_reset_knob_cli(int argc, const char** argv)
 {
     uint32_t knob_idx = 0;
     cached_knob_data_t* current_entry = NULL;

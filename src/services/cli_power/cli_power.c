@@ -29,6 +29,7 @@
 #include <stdio.h>           // for NULL
 #include <stdlib.h>
 #include <string.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -82,7 +83,7 @@ static power_if_cmd_t cli_power_get_cmd_id(e_cli_power_command_id_t command, cha
     }
 }
 
-static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power_command_id_t command, char* subcommand, _pwrset_subcommand_args* p_set_data, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine )
+static PLACED_CODE FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power_command_id_t command, char* subcommand, _pwrset_subcommand_args* p_set_data, DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine )
 {
 
         power_cli_cmd_context.request.die = die;
@@ -109,7 +110,7 @@ static FPFW_CLI_STATUS dispatch_power_cli_async_request(uint8_t die, e_cli_power
         return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv)
 {
     if (argc < 2) {
         FpFwCliPrint("Usage: pwr cfg <sub_cmd>\n");
@@ -157,7 +158,7 @@ static FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv)
     return dispatch_power_cli_async_request(0, CLI_COMMANDS_POWER_CONFIG, (char*)argv[1], NULL, cli_power_config_async_print);
 }
 
-static uint8_t cli_power_cmd_arg_count(int subcommand_id)
+static PLACED_CODE uint8_t cli_power_cmd_arg_count(int subcommand_id)
 {
     uint8_t expected_argc = 0;
 
@@ -205,7 +206,7 @@ static uint8_t cli_power_cmd_arg_count(int subcommand_id)
    return expected_argc;
 }
 
-static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args)
+static PLACED_CODE FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args)
 {
     char* pwr_strings[] = {
         "", // intentional empty string to align with enum
@@ -576,7 +577,7 @@ static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char**
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cli_power_log_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args)
+static PLACED_CODE FPFW_CLI_STATUS cli_power_log_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args)
 {
     if (argc == 2)
     {
@@ -631,7 +632,7 @@ static FPFW_CLI_STATUS cli_power_log_cmd_param_conversion(int argc, const char**
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)
 {
     if (argc < 2) {
         FpFwCliPrint("Usage: pwr set <sub_command>\n");
@@ -646,7 +647,7 @@ static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv)
 
 }
 
-static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
 {
     if (argc < 2) {
         FpFwCliPrint("Usage: pwr status <sub_cmd>\n");
@@ -716,7 +717,7 @@ static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv)
     return dispatch_power_cli_async_request((uint8_t)idsw_get_die_id(), CLI_COMMANDS_POWER_STATUS, (char*)argv[1], &pwrset_sub_command_args, cli_power_status_async_print);
 }
 
-static FPFW_CLI_STATUS cli_power_log_command(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cli_power_log_command(int argc, const char** argv)
 {
     if (argc < 2) {
         FpFwCliPrint("Usage: pwr log <sub_cmd>\nTo see available subcmds-> pwr log ??\n");
@@ -730,7 +731,7 @@ static FPFW_CLI_STATUS cli_power_log_command(int argc, const char** argv)
     return CLI_ERROR;
 }
 
-static void pwr_cli_d2d_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+static PLACED_CODE void pwr_cli_d2d_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_DBGPRINT_INFO("[PWR CLI] D2D recv callback invoked with status: %d, output size: %zu\n", status, output_size_bytes);
     if (context == NULL) {
@@ -780,7 +781,7 @@ static void pwr_cli_d2d_recv_cb(void* context, size_t output_size_bytes, fpfw_st
     }
 }
 
-static fpfw_status_t pwr_cli_d2d_mbox_recv_subscribe(void)
+static PLACED_CODE fpfw_status_t pwr_cli_d2d_mbox_recv_subscribe(void)
 {
     //! Prepare recv request
     memset(&d2d_cli_recv_msg, 0, sizeof(d2d_cli_recv_msg));
@@ -795,7 +796,7 @@ static fpfw_status_t pwr_cli_d2d_mbox_recv_subscribe(void)
     return status;
 }
 
-FPFW_CLI_STATUS cli_power_init(ppower_service_interface_t p_interface, fpfw_icc_base_ctx_t* p_icc_base_ctx)
+PLACED_CODE FPFW_CLI_STATUS cli_power_init(ppower_service_interface_t p_interface, fpfw_icc_base_ctx_t* p_icc_base_ctx)
 {
     if (p_interface == NULL || p_icc_base_ctx == NULL)
     {

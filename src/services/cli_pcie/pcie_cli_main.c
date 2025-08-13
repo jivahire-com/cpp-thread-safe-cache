@@ -27,6 +27,7 @@
 #include <silibs_status.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <utils.h>
 #include <variable_services.h>
 #include <variable_services_mem.h>
 
@@ -118,7 +119,7 @@ kingsgate_pcie_vab_config* get_vab_config;
 
 /*------------- Functions ----------------*/
 
-static void get_variable_cb(void* context, struct _variable_service_req_ctx* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
+static PLACED_CODE void get_variable_cb(void* context, struct _variable_service_req_ctx* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
 {
     //! cb is raised when recieve is complete
     //! check status & do work
@@ -177,11 +178,11 @@ static void get_variable_cb(void* context, struct _variable_service_req_ctx* var
     }
 }
 
-static FPFW_CLI_STATUS get_hsp_variable(guid_t* guid_ptr,
-                                        uint16_t* variable_name_ptr,
-                                        size_t variable_name_size,
-                                        size_t data_size,
-                                        uint32_t* cb_ctx)
+static PLACED_CODE FPFW_CLI_STATUS get_hsp_variable(guid_t* guid_ptr,
+                                                    uint16_t* variable_name_ptr,
+                                                    size_t variable_name_size,
+                                                    size_t data_size,
+                                                    uint32_t* cb_ctx)
 {
 
     var_service_req_params_t req_params = {};
@@ -202,7 +203,7 @@ static FPFW_CLI_STATUS get_hsp_variable(guid_t* guid_ptr,
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS dump_pci_hsp_variables(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS dump_pci_hsp_variables(int argc, const char** argv)
 {
     if (argc != 2)
     {
@@ -245,7 +246,7 @@ static FPFW_CLI_STATUS dump_pci_hsp_variables(int argc, const char** argv)
 
     return FPFW_STATUS_SUCCESS;
 }
-static FPFW_CLI_STATUS dump_rpss_entity(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS dump_rpss_entity(int argc, const char** argv)
 {
     if (argc != 2)
     {
@@ -278,7 +279,7 @@ static FPFW_CLI_STATUS dump_rpss_entity(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS dump_rp_entity(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS dump_rp_entity(int argc, const char** argv)
 {
     if (argc != 3)
     {
@@ -315,7 +316,7 @@ static FPFW_CLI_STATUS dump_rp_entity(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS dump_rp_link_info(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS dump_rp_link_info(int argc, const char** argv)
 {
     if (argc != 3)
     {
@@ -357,7 +358,7 @@ static FPFW_CLI_STATUS dump_rp_link_info(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS dump_rp_dbi_cfg_hdr(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS dump_rp_dbi_cfg_hdr(int argc, const char** argv)
 {
     if (argc != 3)
     {
@@ -399,7 +400,7 @@ static FPFW_CLI_STATUS dump_rp_dbi_cfg_hdr(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-void pcie_cli_init(pciess_device_t* pcie_dev_handles)
+PLACED_CODE void pcie_cli_init(pciess_device_t* pcie_dev_handles)
 {
     if (pcie_dev_handles == NULL)
     {

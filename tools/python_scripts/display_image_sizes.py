@@ -18,7 +18,8 @@ READELF_FORMAT = "\.{}[\s]+[a-zA-Z]+[\s]+[0-9a-f]+[\s]+[0-9a-f]+[\s]+([0-9a-f]+)
 READELF_PATH = f"{os.environ['REPO_APP_PATH_gcc.arm.eabi.aarch-win64']}/bin/arm-none-eabi-readelf.exe"
 FW_PATH_FORMAT = os.environ['REPO_APP_TARGET_BUILD_DIR'] + "/bin/{core}/"
 FW_CORES = ["scp", "mcp"]
-ELF_SECTIONS = ["text", "rodata.itcm", "rodata.rmss", "data", "bss", "stack", "heap"]
+ELF_SECTIONS = ["text", "rodata.itcm", "rodata.rmss", "placed.code", "data", "bss", "stack", "heap"]
+LINKER_VARS = ["RMSS_DATA_size", "RMSS_DATA_used", "RMSS_DATA_code"]
 
 comment_string = ""
 for core in FW_CORES:
@@ -71,6 +72,19 @@ for core in FW_CORES:
         section_size = int(section_size, 16)
         section_sizes[section] = section_size
 
+    variable_values = {}
+    for vairable in LINKER_VARS:
+        print ({READELF_PATH}, "-s", {elf_path}, "| Select-String", {vairable})
+        command = f'powershell "{READELF_PATH} -s {elf_path} | Select-String {vairable}"'
+        readelf_var_string = subprocess.run(command, capture_output=True, text=True, shell=True)
+
+        if not readelf_var_string.stdout.strip():
+            continue
+
+        hex_value = readelf_var_string.stdout.strip().split()[1]
+        decimal_value = int(hex_value, 16)
+        variable_values[vairable] = decimal_value
+
     # Define the widths for the columns
     image_column_width = 25
     size_column_width = 10
@@ -89,7 +103,15 @@ for core in FW_CORES:
 |{'-' * (image_column_width+2)}|{'-' * (size_column_width+2)}|
 """
     for section in section_sizes.keys():
-        comment_string += f"| {section.ljust(image_column_width)} | {str(section_sizes[section]).rjust(size_column_width)} |\n"
+        comment_string += f"| {section.ljust(image_column_width)} | {str(section_sizes[section]).rjust(size_column_width)} |\n" 
+
+#display linker variables
+    comment_string += f"""
+| {'Variables'.ljust(image_column_width)} | {'Value'.rjust(size_column_width)} |
+|{'-' * (image_column_width+2)}|{'-' * (size_column_width+2)}|
+"""
+    for var in variable_values.keys():
+        comment_string += f"| {var.ljust(image_column_width)} | {str(variable_values[var]).rjust(size_column_width)} |\n"
 
 print(comment_string)
 

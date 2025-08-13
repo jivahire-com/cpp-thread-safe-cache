@@ -22,6 +22,7 @@
 #include <inttypes.h>
 #include <power_runconfig.h>
 #include <stdio.h> // for printf
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -44,7 +45,7 @@ const power_cli_sub_command_dictionary_element_t power_cli_log_sub_command_dicti
 const uint32_t length_log_commands_dictionary =
     sizeof(power_cli_log_sub_command_dictionary) / sizeof(power_cli_sub_command_dictionary_element_t);
 /*-------------- Functions ---------------*/
-power_if_cmd_t cli_power_log_get_cmd_id(const char* sub_command)
+PLACED_CODE power_if_cmd_t cli_power_log_get_cmd_id(const char* sub_command)
 {
     if (sub_command == NULL)
     {
@@ -64,7 +65,7 @@ power_if_cmd_t cli_power_log_get_cmd_id(const char* sub_command)
     return POWER_IF_CMD_UNKNOWN;
 }
 typedef void (*print_power_entry_t)(unsigned entry_idx, power_log_entry_t *entry);
-static void print_power_entry(unsigned entry_idx, power_log_entry_t *entry)
+static PLACED_CODE void print_power_entry(unsigned entry_idx, power_log_entry_t *entry)
 {
     printf(" %03d [0x%08" PRIx32 "%08" PRIx32 "] ", 
        entry_idx, 
@@ -78,7 +79,7 @@ static void print_power_entry(unsigned entry_idx, power_log_entry_t *entry)
     printf(" - %s\n", power_log_string(entry->type, &entry->payload));
 }
 
-static void print_log_entry(unsigned entry_idx, print_power_entry_t print_func)
+static PLACED_CODE void print_log_entry(unsigned entry_idx, print_power_entry_t print_func)
 {
     power_log_entry_t *entry = NULL;
     power_log_data_t *log = get_instance();
@@ -89,7 +90,7 @@ static void print_log_entry(unsigned entry_idx, print_power_entry_t print_func)
     print_func(entry_idx, entry);
 }
 
-static void power_log_base(print_power_entry_t print_func)
+static PLACED_CODE void power_log_base(print_power_entry_t print_func)
 {
     power_log_data_t *log = get_instance();
 
@@ -105,7 +106,7 @@ static void power_log_base(print_power_entry_t print_func)
 }
 
 // "pwr log list" command
-static void power_log_list(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void power_log_list(ppower_service_cli_request_t p_cli_request)
 {
     UNUSED(p_cli_request);
     power_log_base(print_power_entry);
@@ -131,7 +132,7 @@ void power_log_ddr(ppower_service_cli_request_t p_cli_request)
 }
 
 // "pwr log mask" command
-void power_log_mask(ppower_service_cli_request_t p_cli_request)
+void PLACED_CODE power_log_mask(ppower_service_cli_request_t p_cli_request)
 {
     power_log_data_t *log = get_instance();
     printf("    Current Log Mask: %08" PRIx32 "\n", log->mask);
@@ -142,7 +143,7 @@ void power_log_mask(ppower_service_cli_request_t p_cli_request)
     }
 }
 
-void cli_power_log_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* completion_context)
+void PLACED_CODE cli_power_log_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* completion_context)
 {
     FPFW_UNUSED(p_request);
     FPFW_UNUSED(completion_context);

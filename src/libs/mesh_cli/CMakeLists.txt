@@ -30,6 +30,7 @@ target_link_libraries(
             fwlib.lib.utils
             ms::lib::hsp_firmware_headers
             ms::lib::mesh
+            ms::lib::utils
             fwlib.lib.interface.platform.dbgprint
 )
 

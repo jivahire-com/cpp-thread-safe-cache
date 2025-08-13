@@ -18,6 +18,7 @@
 #include <idsw_kng.h> // for idsw_get_die_id
 #include <stdio.h>    // for printf
 #include <stdlib.h>
+#include <utils.h>
 
 #ifdef UNIT_TEST
     #define STATIC
@@ -79,7 +80,7 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
 };
 
 // ecc_ce_err (mc) (phy_add) {error bit}
-STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
 {
     KNG_DIE_ID die_id = idsw_get_die_id();
     uint32_t mc = 0;
@@ -136,7 +137,7 @@ STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
 {
     KNG_DIE_ID die_id = idsw_get_die_id();
     uint32_t mc = 0;
@@ -183,7 +184,7 @@ STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     DDRSS_MEDIA_CA_INJ_CMD cmd = DDRSS_MEDIA_CA_INJ_CMD_RD;
@@ -230,7 +231,7 @@ STATIC FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Ar
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -243,7 +244,7 @@ STATIC FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const char** Argv)
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS media_patrol_scrub_ce_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS media_patrol_scrub_ce_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
 
@@ -255,7 +256,7 @@ STATIC FPFW_CLI_STATUS media_patrol_scrub_ce_error_injection(int Argc, const cha
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS fedb_merge_data_ce_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS fedb_merge_data_ce_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_params(Argc, Argv, &mc))
@@ -266,7 +267,7 @@ STATIC FPFW_CLI_STATUS fedb_merge_data_ce_error_injection(int Argc, const char**
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS media_patrol_scrub_ue_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS media_patrol_scrub_ue_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_params(Argc, Argv, &mc))
@@ -277,7 +278,7 @@ STATIC FPFW_CLI_STATUS media_patrol_scrub_ue_error_injection(int Argc, const cha
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS mainline_traffic_ce_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS mainline_traffic_ce_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_params(Argc, Argv, &mc))
@@ -288,7 +289,7 @@ STATIC FPFW_CLI_STATUS mainline_traffic_ce_error_injection(int Argc, const char*
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS mainline_traffic_ue_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS mainline_traffic_ue_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_params(Argc, Argv, &mc))
@@ -299,7 +300,7 @@ STATIC FPFW_CLI_STATUS mainline_traffic_ue_error_injection(int Argc, const char*
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS mrdp_parity_ue_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS mrdp_parity_ue_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_params(Argc, Argv, &mc))
@@ -310,7 +311,7 @@ STATIC FPFW_CLI_STATUS mrdp_parity_ue_error_injection(int Argc, const char** Arg
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS ca_parity_persistent_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS ca_parity_persistent_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_params(Argc, Argv, &mc))
@@ -321,7 +322,7 @@ STATIC FPFW_CLI_STATUS ca_parity_persistent_error_injection(int Argc, const char
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS ca_parity_transient_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS ca_parity_transient_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_params(Argc, Argv, &mc))
@@ -332,7 +333,7 @@ STATIC FPFW_CLI_STATUS ca_parity_transient_error_injection(int Argc, const char*
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS rh_counters_sram_parity_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS rh_counters_sram_parity_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_params(Argc, Argv, &mc))
@@ -343,7 +344,7 @@ STATIC FPFW_CLI_STATUS rh_counters_sram_parity_error_injection(int Argc, const c
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS rh_drfm_sram_parity_error_injection(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS rh_drfm_sram_parity_error_injection(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_params(Argc, Argv, &mc))
@@ -354,7 +355,7 @@ STATIC FPFW_CLI_STATUS rh_drfm_sram_parity_error_injection(int Argc, const char*
     return CLI_SUCCESS;
 }
 
-static bool check_params(int Argc, const char** Argv, uint32_t* mc)
+static PLACED_CODE bool check_params(int Argc, const char** Argv, uint32_t* mc)
 {
     if (Argc == 1) // no argument passed
     {
@@ -385,7 +386,7 @@ static bool check_params(int Argc, const char** Argv, uint32_t* mc)
     return true;
 }
 
-STATIC FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** Argv)
 {
     uint8_t ddrss_index = 0;
     uint16_t power_mw = 0;
@@ -414,7 +415,7 @@ STATIC FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** Argv)
     return CLI_SUCCESS;
 }
 
-STATIC FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** Argv)
+STATIC PLACED_CODE FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** Argv)
 {
     uint8_t ddrss_index = 0;
     uint8_t channel_idx = 0;

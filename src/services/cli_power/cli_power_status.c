@@ -32,6 +32,7 @@
 #include <stdint.h> // for uint32_t
 #include <stdio.h>  // for printf, NULL
 #include <string.h> // for strcmp
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CLI_SUCCESS 0
@@ -129,7 +130,7 @@ const uint32_t length_status_commands_dictionary =
 
 /*-------------- Functions ---------------*/
 
-power_if_cmd_t cli_power_status_get_cmd_id(const char* sub_command)
+PLACED_CODE power_if_cmd_t cli_power_status_get_cmd_id(const char* sub_command)
 {
     if (sub_command == NULL)
     {
@@ -149,7 +150,7 @@ power_if_cmd_t cli_power_status_get_cmd_id(const char* sub_command)
     return POWER_IF_CMD_UNKNOWN;
 }
 
-void cli_power_status_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* completion_context)
+PLACED_CODE void cli_power_status_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* completion_context)
 {
 
     FPFW_UNUSED(completion_context);
@@ -235,7 +236,7 @@ void cli_power_status_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* co
     printf("pwr_cli_comp\n");
 }
 
-static void print_power_status_clinfo(ppower_service_cli_request_t p_cli_request) 
+static PLACED_CODE void print_power_status_clinfo(ppower_service_cli_request_t p_cli_request) 
 {
 
     power_loop_context_t* power_context = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop_context;
@@ -253,7 +254,7 @@ static void print_power_status_clinfo(ppower_service_cli_request_t p_cli_request
     }
 }
 
-static void print_cl_detail(power_ctrl_loop_detail_t* s_ctrl_loop, power_knobs_t* p_knobs)
+static PLACED_CODE void print_cl_detail(power_ctrl_loop_detail_t* s_ctrl_loop, power_knobs_t* p_knobs)
 {
     printf("\nFlags: ");
     printf("%s%s%s%s%s%s\n",
@@ -285,7 +286,7 @@ static void print_cl_detail(power_ctrl_loop_detail_t* s_ctrl_loop, power_knobs_t
 }
 
 // "pwr status vcpu" command
-static int32_t power_status_vcpu(power_ctrl_loop_detail_t* s_ctrl_loop, power_knobs_t* p_knobs)
+static PLACED_CODE int32_t power_status_vcpu(power_ctrl_loop_detail_t* s_ctrl_loop, power_knobs_t* p_knobs)
 {
 
     printf(   "\nVcpu required: %dmV   Vcpu currently: %dmV %s\n\n",
@@ -296,7 +297,7 @@ static int32_t power_status_vcpu(power_ctrl_loop_detail_t* s_ctrl_loop, power_kn
     return CLI_SUCCESS;
 }
 
-static void print_power_status_prio_core(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_prio_core(ppower_service_cli_request_t p_cli_request)
 {
     power_ctrl_loop_detail_t* s_ctrl_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop;
     power_runconfig_t* s_runconfig = power_runconfig_get();
@@ -329,7 +330,7 @@ static void print_power_status_prio_core(ppower_service_cli_request_t p_cli_requ
     }
 }
 
-static void print_power_status_prio_cnt(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_prio_cnt(ppower_service_cli_request_t p_cli_request)
 {
     power_ctrl_loop_detail_t* s_ctrl_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop;
     
@@ -443,7 +444,7 @@ static void print_power_status_prio_cnt(ppower_service_cli_request_t p_cli_reque
     }
 }
 
-static int32_t power_loops_info(power_loop_residency_t *residency,
+static PLACED_CODE int32_t power_loops_info(power_loop_residency_t *residency,
                                 unsigned max_state,
                                 unsigned error_state,
                                 bool loop_disabled,
@@ -503,7 +504,7 @@ static int32_t power_loops_info(power_loop_residency_t *residency,
     return 0; 
 }
 
-static void print_power_status_vrtlinfo(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_vrtlinfo(ppower_service_cli_request_t p_cli_request)
 {
 
     power_loop_context_t* power_context = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_vr_telem_loop_context;
@@ -517,7 +518,7 @@ static void print_power_status_vrtlinfo(ppower_service_cli_request_t p_cli_reque
        
 }
 
-static void print_power_status_pvttlinfo(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_pvttlinfo(ppower_service_cli_request_t p_cli_request)
 {
 
     power_knobs_t* p_knobs = p_cli_request->fetch_data.pwr_intparams.p_knobs; 
@@ -534,7 +535,7 @@ static void print_power_status_pvttlinfo(ppower_service_cli_request_t p_cli_requ
 }
 
 
-static void print_pvt_detail(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_pvt_detail(ppower_service_cli_request_t p_cli_request)
 {
 
     power_telem_loop_detail_t* p_telem_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_telem_loop;
@@ -557,7 +558,7 @@ static void print_pvt_detail(ppower_service_cli_request_t p_cli_request)
 }
 
 
-static void print_pvt_entry(unsigned index, power_telemetry_pvt_state_t *state_data, bool voltage)
+static PLACED_CODE void print_pvt_entry(unsigned index, power_telemetry_pvt_state_t *state_data, bool voltage)
 {
     void (*sample_print)(uint16_t) = NULL;
     printf("%02d: ", index);
@@ -575,7 +576,7 @@ static void print_pvt_entry(unsigned index, power_telemetry_pvt_state_t *state_d
 }
 
 
-static void print_padding(uint32_t decimal, unsigned places)
+static PLACED_CODE void print_padding(uint32_t decimal, unsigned places)
 {
     uint32_t value = 1;
     for (unsigned i = 0; i < places; ++i) {
@@ -585,7 +586,7 @@ static void print_padding(uint32_t decimal, unsigned places)
         }
     }
 }
-static void print_voltage(uint16_t voltage)
+static PLACED_CODE void print_voltage(uint16_t voltage)
 {
     print_padding(voltage, 4);
     printf("%dmV", voltage);
@@ -598,7 +599,7 @@ static void print_temp(uint16_t temp)
     printf("%d.%dC", temp, tenths);
 }
 
-static void print_power_status_capinfo(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_capinfo(ppower_service_cli_request_t p_cli_request)
 {
     power_knobs_t* p_knobs = p_cli_request->fetch_data.pwr_intparams.p_knobs;
     printf("\nSOC Power Cap : ");
@@ -615,7 +616,7 @@ static void print_power_status_capinfo(ppower_service_cli_request_t p_cli_reques
     printf("Soc Max Electrical Current Limit: (Vcpu0: %dA Vcpu1: %dA)\n", p_knobs->soc_maximum_electrical_current_limit_vcpu0, p_knobs->soc_maximum_electrical_current_limit_vcpu1);
 }
 
-static void print_power_status_droopcount_info(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_droopcount_info(ppower_service_cli_request_t p_cli_request)
 {
     power_runconfig_t* s_runconfig = power_runconfig_get();
     unsigned int core                                      = p_cli_request->pwrset_sub_command_args.minupdate_val;
@@ -629,7 +630,7 @@ static void print_power_status_droopcount_info(ppower_service_cli_request_t p_cl
     }
 }
 
-static void print_power_status_maxtemp_info(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_maxtemp_info(ppower_service_cli_request_t p_cli_request)
 {
     power_ctrl_loop_detail_t* s_ctrl_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop;
     power_telem_loop_detail_t* p_telem_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_telem_loop;
@@ -645,7 +646,7 @@ static void print_power_status_maxtemp_info(ppower_service_cli_request_t p_cli_r
     printf("\n\n");
 }
 
-static uint32_t power_vrs_get_recent_vcpu_power_mw()
+static PLACED_CODE uint32_t power_vrs_get_recent_vcpu_power_mw()
 {
     power_vrs_context_t* s_vrs_context = get_power_vrs_context();
     float total = 0.0F;
@@ -655,7 +656,7 @@ static uint32_t power_vrs_get_recent_vcpu_power_mw()
     return (uint32_t)((total / SOC_POWER_AVG_COUNT) * 1000);
 }
 
-static uint32_t power_vrs_get_recent_vcpu_curr_ma()
+static PLACED_CODE uint32_t power_vrs_get_recent_vcpu_curr_ma()
 {
     power_vrs_context_t* s_vrs_context = get_power_vrs_context();
     float total = 0.0F;
@@ -665,7 +666,7 @@ static uint32_t power_vrs_get_recent_vcpu_curr_ma()
     return (uint32_t)((total / SOC_POWER_AVG_COUNT) * 1000);
 }
 
-static void print_power_status_power_info(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_power_info(ppower_service_cli_request_t p_cli_request)
 {
     FPFW_UNUSED(p_cli_request);
     power_vrs_context_t* s_vrs_context = get_power_vrs_context();
@@ -698,7 +699,7 @@ static void print_power_status_power_info(ppower_service_cli_request_t p_cli_req
     printf("  VCPU AVS Current: %u mA\n", s_vrs_context->latest_power.vcpu_avs_current);
 }
 
-static void print_power_status_vr_inst(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_vr_inst(ppower_service_cli_request_t p_cli_request)
 {
     FPFW_UNUSED(p_cli_request);
     power_runconfig_t* s_runconfig = power_runconfig_get();
@@ -731,7 +732,7 @@ static void print_power_status_vr_inst(ppower_service_cli_request_t p_cli_reques
     printf("\n");
 }
 
-static void print_power_status_plimit_info(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_plimit_info(ppower_service_cli_request_t p_cli_request)
 {
     power_ctrl_loop_detail_t* s_ctrl_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop;
     printf("\nCurrent/selected plimits\n\n");
@@ -784,7 +785,7 @@ static void print_power_status_plimit_info(ppower_service_cli_request_t p_cli_re
     printf("\n");
 }
 
-static void print_power_status_primary_core_info(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_primary_core_info(ppower_service_cli_request_t p_cli_request)
 {
     FPFW_UNUSED(p_cli_request);
     unsigned boot_core = 0xFF;
@@ -811,7 +812,7 @@ static void print_power_status_primary_core_info(ppower_service_cli_request_t p_
     printf("\nBoot Core: %u\n", boot_core);
 }
 
-void print_perc_bar(uint64_t max, uint64_t current, unsigned tick_count)
+void PLACED_CODE print_perc_bar(uint64_t max, uint64_t current, unsigned tick_count)
 {
     printf("[");
     // avoid div 0
@@ -823,7 +824,7 @@ void print_perc_bar(uint64_t max, uint64_t current, unsigned tick_count)
     printf("]");
 }
 
-static void print_power_status_selections_info(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_selections_info(ppower_service_cli_request_t p_cli_request)
 {
     power_ctrl_loop_detail_t* s_ctrl_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop;
     power_runconfig_t* s_runconfig = power_runconfig_get();
@@ -866,14 +867,14 @@ static void print_power_status_selections_info(ppower_service_cli_request_t p_cl
     printf("\n");
 }
 
-static void print_power_status_vcpu_info(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_vcpu_info(ppower_service_cli_request_t p_cli_request)
 {
     power_ctrl_loop_detail_t* s_ctrl_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop;
     power_knobs_t* p_knobs = p_cli_request->fetch_data.pwr_intparams.p_knobs;
     power_status_vcpu(s_ctrl_loop, p_knobs);
 }   
 
-static void print_power_status_force_pmin(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_force_pmin(ppower_service_cli_request_t p_cli_request)
 {
     FPFW_UNUSED(p_cli_request);
     power_runconfig_t* runconfig = power_runconfig_get();
@@ -881,13 +882,13 @@ static void print_power_status_force_pmin(ppower_service_cli_request_t p_cli_req
     printf("\nForce Pmin Reg addr:0x%x  fw_pmin_control = %d lockup_ue_rr = %d\n", (uintptr_t)&scp_exp_csr_regs_base->force_pmin_reg, scp_exp_csr_regs_base->force_pmin_reg.fw_pmin_control, scp_exp_csr_regs_base->force_pmin_reg.lockup_ue_rr);
 }
 
-static void print_power_status_warmstart_info(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_warmstart_info(ppower_service_cli_request_t p_cli_request)
 {
     FPFW_UNUSED(p_cli_request);
     printf("Not Implemented!!\n");
 }
 
-static void print_power_status_core_info(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_core_info(ppower_service_cli_request_t p_cli_request)
 {
     power_ctrl_loop_detail_t* s_ctrl_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop;
     printf("\nCore Info:\n");
@@ -932,7 +933,7 @@ static void print_power_status_core_info(ppower_service_cli_request_t p_cli_requ
     
 }
 
-static void print_power_status_pstate2cppc(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_pstate2cppc(ppower_service_cli_request_t p_cli_request)
 {
     FPFW_UNUSED(p_cli_request);
     printf("\nPstate/CPPC/Freq Conversion Table:\n");
@@ -945,7 +946,7 @@ static void print_power_status_pstate2cppc(ppower_service_cli_request_t p_cli_re
     }
 }
 
-static void print_power_status_dvfs_cppc(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_dvfs_cppc(ppower_service_cli_request_t p_cli_request)
 {
     FPFW_UNUSED(p_cli_request);
     power_runconfig_t* s_runconfig = power_runconfig_get();
@@ -1009,7 +1010,7 @@ static void print_power_status_dvfs_cppc(ppower_service_cli_request_t p_cli_requ
     printf("+------------+------------+--------------+-----------+--------------+-----------+---------------+---------------------+---------------+---------------+---------------+---------------+---------------+---------------+\n");
 }
 
-static void print_power_status_dvfs_plimit(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_dvfs_plimit(ppower_service_cli_request_t p_cli_request)
 {
     FPFW_UNUSED(p_cli_request);
     power_runconfig_t* s_runconfig = power_runconfig_get();
@@ -1044,7 +1045,7 @@ static void print_power_status_dvfs_plimit(ppower_service_cli_request_t p_cli_re
     printf("|------------|-------------|----------|-----------|-------------|-------------|-------------|\n");
 }
 
-static void print_power_status_dvfs_fsm(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_dvfs_fsm(ppower_service_cli_request_t p_cli_request)
 {
     FPFW_UNUSED(p_cli_request);
     power_runconfig_t* s_runconfig = power_runconfig_get();
@@ -1087,7 +1088,7 @@ static void print_power_status_dvfs_fsm(ppower_service_cli_request_t p_cli_reque
     printf("|------------|-------------|--------------|--------|---------------------|\n");
 }
 
-static void print_power_status_dvfs_throt_sr(ppower_service_cli_request_t p_cli_request)
+static PLACED_CODE void print_power_status_dvfs_throt_sr(ppower_service_cli_request_t p_cli_request)
 {
     unsigned int core  = p_cli_request->pwrset_sub_command_args.minupdate_val;
     power_runconfig_t* s_runconfig = power_runconfig_get();

@@ -27,6 +27,7 @@ target_link_libraries(
             ms::lib::error_codes
             ms::lib::crash_dump
             ms::lib::variable_services
+            ms::lib::utils
             fwlib.lib.interface.platform.dbgprint
 )
 

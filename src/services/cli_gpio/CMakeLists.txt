@@ -12,6 +12,7 @@ target_link_libraries(
     fwlib.lib.cfg_mgr
     fwlib.service.cli
     ms::driver::gpio
+    ms::lib::utils
     silibs::idsw_kng
 )
 

@@ -17,6 +17,7 @@
 #include <idsw_kng.h>
 #include <stdio.h>
 #include <system_info.h>
+#include <utils.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -31,7 +32,7 @@ static FPFW_CLI_COMMAND s_build_info_commands = {NULL_LIST_ENTRY, "build_info", 
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
-static FPFW_CLI_STATUS whoami(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS whoami(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);

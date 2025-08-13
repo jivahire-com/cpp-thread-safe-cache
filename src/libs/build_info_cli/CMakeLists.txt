@@ -22,6 +22,7 @@ target_link_libraries(
         ms::lib::system_info
         PRIVATE
         fwlib.service.cli
+        ms::lib::utils
         silibs::idhw
         silibs::idsw
         silibs::idsw_kng

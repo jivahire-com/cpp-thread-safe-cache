@@ -16,6 +16,7 @@
 #include <mscp_error_domain.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <utils.h>
 
 // clang-format off
 #include <cmsis_m7.h>
@@ -45,7 +46,7 @@ static FPFW_CLI_COMMAND s_mem_cmd_list[] = {
 
 /*------------- Functions ----------------*/
 // Command to read memory
-static FPFW_CLI_STATUS ap_mem_read(int argc, const char* argv[])
+static PLACED_CODE FPFW_CLI_STATUS ap_mem_read(int argc, const char* argv[])
 {
     if (argc != 3)
     {
@@ -103,7 +104,7 @@ static FPFW_CLI_STATUS ap_mem_read(int argc, const char* argv[])
 }
 
 // Command to write memory
-static FPFW_CLI_STATUS ap_mem_write(int argc, const char* argv[])
+static PLACED_CODE FPFW_CLI_STATUS ap_mem_write(int argc, const char* argv[])
 {
     if (argc != 3)
     {

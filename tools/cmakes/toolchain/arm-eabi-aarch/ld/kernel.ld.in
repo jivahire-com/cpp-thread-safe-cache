@@ -221,6 +221,14 @@ SECTIONS
 
     @RODATA_SECTION@ :
     {
-         *(.rodata*)
-    } > @RODATA_REGION@
+        __placed_rodata_start__ = ALIGN(4);
+        *(.rodata*)
+        __placed_code_start__ = ALIGN(4);
+        KEEP(*(.placed.code))
+        __placed_code_end__ = ALIGN(4);
+    } > @RODATA_REGION@   
+
+    @RODATA_REGION@_code =  __placed_code_end__ - __placed_code_start__;
+    @RODATA_REGION@_used = SIZEOF(@RODATA_SECTION@);
+    @RODATA_REGION@_size = LENGTH(@RODATA_REGION@) - (__placed_rodata_start__ - ORIGIN(@RODATA_REGION@));
 }

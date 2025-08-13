@@ -19,6 +19,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define NUM_RP 4
@@ -76,7 +77,7 @@ static char* pcie_ltssm_state_str[PCIE_LTSSM_STATE_RECOVERY_EQUALIZATION_3 + 2] 
     "PCIE_UNKNOWN_LTSSM_STATE"};
 
 /*------------- Functions ----------------*/
-static char* get_link_width_str(PCIE_PORT_WIDTH width)
+static PLACED_CODE char* get_link_width_str(PCIE_PORT_WIDTH width)
 {
     char* ret;
 
@@ -104,7 +105,7 @@ static char* get_link_width_str(PCIE_PORT_WIDTH width)
     return ret;
 }
 
-void print_rpss_entity(pcie_ss_entity_t* ss)
+void PLACED_CODE print_rpss_entity(pcie_ss_entity_t* ss)
 {
     FpFwCliPrint("======= PCIe RPSS [%d] entity dump start ========\n", (uint8_t)ss->id);
     FpFwCliPrint("type:        %s\n", (ss->ss_type == PCIE_SS_X16) ? "PCIE_SS_X16" : "PCIE_SS_X8");
@@ -127,7 +128,7 @@ void print_rpss_entity(pcie_ss_entity_t* ss)
     FpFwCliPrint("================= End ===========================\n");
 }
 
-void print_rp_entity(pcie_rp_entity_t* rp)
+void PLACED_CODE print_rp_entity(pcie_rp_entity_t* rp)
 {
     FpFwCliPrint("======= PCIe RPSS [%d] RP [%d] entity dump start ========\n",
                  (uint8_t)rp->ss_id,
@@ -172,7 +173,7 @@ void print_rp_entity(pcie_rp_entity_t* rp)
     FpFwCliPrint("================= End ===================================\n");
 }
 
-void print_link_state(RPSS_INSTANCE rpss_idx, uint8_t rp_idx, PCIE_LTSSM_STATE ltssm_state, pcie_link_state_t* link_state)
+void PLACED_CODE print_link_state(RPSS_INSTANCE rpss_idx, uint8_t rp_idx, PCIE_LTSSM_STATE ltssm_state, pcie_link_state_t* link_state)
 {
     if (link_state == NULL)
     {
@@ -197,7 +198,7 @@ void print_link_state(RPSS_INSTANCE rpss_idx, uint8_t rp_idx, PCIE_LTSSM_STATE l
     FpFwCliPrint("================== End ============================\n");
 }
 
-void print_type1_rp_header(RPSS_INSTANCE rpss_idx, uint8_t rp_idx, rc4sx16_pf0_type1_hdr_reg* rp_t1_hdr)
+void PLACED_CODE print_type1_rp_header(RPSS_INSTANCE rpss_idx, uint8_t rp_idx, rc4sx16_pf0_type1_hdr_reg* rp_t1_hdr)
 {
     if (rp_t1_hdr == NULL)
     {

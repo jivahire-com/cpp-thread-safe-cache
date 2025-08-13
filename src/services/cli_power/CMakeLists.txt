@@ -25,9 +25,10 @@ target_link_libraries(
         PRIVATE
             ms::build_data
             ms::lib::corebits
-            ms::lib::threadx
             ms::lib::error_codes
             ms::lib::icc_platform_defines
+            ms::lib::threadx
+            ms::lib::utils
             ms::service::power
             fwlib.dfwk
             fwlib.service.cli

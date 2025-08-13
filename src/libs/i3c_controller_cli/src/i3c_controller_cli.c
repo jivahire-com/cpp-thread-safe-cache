@@ -20,6 +20,7 @@
 #include <i3c_controller_cli.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -49,7 +50,7 @@ static FPFW_CLI_COMMAND i3c_controller_cli_list[] = {
 };
 
 /*------------- Functions ----------------*/
-static FPFW_CLI_STATUS i3c_rstdaa(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS i3c_rstdaa(int argc, const char** argv)
 {
     if (argc == 2)
     {
@@ -80,7 +81,7 @@ static FPFW_CLI_STATUS i3c_rstdaa(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS i3c_setaasa(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS i3c_setaasa(int argc, const char** argv)
 {
     if (argc == 2)
     {
@@ -117,7 +118,7 @@ static FPFW_CLI_STATUS i3c_setaasa(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS i3c_read_temp_sensor(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS i3c_read_temp_sensor(int argc, const char** argv)
 {
     if (argc == 3)
     {
@@ -190,7 +191,7 @@ static FPFW_CLI_STATUS i3c_read_temp_sensor(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS i3c_read_pmic_power(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS i3c_read_pmic_power(int argc, const char** argv)
 {
     if (argc == 3)
     {
@@ -256,7 +257,7 @@ static FPFW_CLI_STATUS i3c_read_pmic_power(int argc, const char** argv)
  *  @return
  *      FWK_SUCCESS (always)
  */
-static FPFW_CLI_STATUS i3c_writeread(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS i3c_writeread(int argc, const char** argv)
 {
     char* endptr;
 
@@ -327,7 +328,7 @@ static FPFW_CLI_STATUS i3c_writeread(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS i3c_controller_echo_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS i3c_controller_echo_cli(int argc, const char** argv)
 {
     if (argc == 3)
     {

@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <tx_api.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 extern NUMA_CFG numa_cfg;
@@ -75,7 +76,7 @@ static FPFW_CLI_COMMAND mesh_cli_list[] = {
 
 /*------------- Functions ----------------*/
 
-static FPFW_CLI_STATUS mesh_echo_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS mesh_echo_cli(int argc, const char** argv)
 {
     FpFwCliPrint("mesh_echo_cli func. call\n");
 
@@ -107,7 +108,7 @@ static FPFW_CLI_STATUS mesh_echo_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS mesh_isr_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS mesh_isr_cli(int argc, const char** argv)
 {
     FpFwCliPrint("mesh_isr func. call\n\n");
 
@@ -141,7 +142,7 @@ exit_error:
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS mesh_error_inj(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS mesh_error_inj(int argc, const char** argv)
 {
     FpFwCliPrint("mesh_error_inj func. call\n\n");
 
@@ -201,7 +202,7 @@ exit_error:
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS mesh_pseudo_error_inj(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS mesh_pseudo_error_inj(int argc, const char** argv)
 {
     FpFwCliPrint("mesh_pseudo_error_inj func. call\n\n");
 
@@ -276,7 +277,7 @@ exit_error:
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS mesh_ras_error_dump(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS mesh_ras_error_dump(int argc, const char** argv)
 {
     FpFwCliPrint("mesh_ras_error_dump func. call\n\n");
     uint8_t current_arg = 0x0;
@@ -321,7 +322,7 @@ exit_error:
     FpFwCliPrint("HNI Ex: mesh_ras_error_dump 0x1 0x3 0x0\n");
     return CLI_ERROR;
 }
-static FPFW_CLI_STATUS mesh_ras_hns_ce_counter_update(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS mesh_ras_hns_ce_counter_update(int argc, const char** argv)
 {
     FpFwCliPrint("mesh_ras_hns_ce_counter_update func. call\n\n");
     uint8_t current_arg = 0x0;
@@ -378,7 +379,7 @@ exit_error:
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS mesh_pseudo_error_inj_test_suite(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS mesh_pseudo_error_inj_test_suite(int argc, const char** argv)
 {
     FpFwCliPrint("mesh_pseudo_error_inj_test_suite func. call\n\n");
 
@@ -467,7 +468,7 @@ exit_error:
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS d2d_pseudo_error_inj(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS d2d_pseudo_error_inj(int argc, const char** argv)
 {
     FpFwCliPrint("d2d_pseudo_error_inj func. call\n\n");
 
@@ -518,7 +519,7 @@ exit_error:
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS print_mesh_numa_config(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS print_mesh_numa_config(int argc, const char** argv)
 {
     FPFW_UNUSED(argv);
     FpFwCliPrint("print_mesh_numa_config func. call\n");

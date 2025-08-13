@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <tx_api.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -57,7 +58,7 @@ const uint32_t length_set_commands_dictionary =
 
 /*-------------- Functions ---------------*/
 
-power_if_cmd_t cli_power_set_get_cmd_id(char* sub_command)
+PLACED_CODE power_if_cmd_t cli_power_set_get_cmd_id(char* sub_command)
 {
     if (sub_command == NULL)
     {
@@ -77,7 +78,7 @@ power_if_cmd_t cli_power_set_get_cmd_id(char* sub_command)
     return POWER_IF_CMD_UNKNOWN;
 }
 
-void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* completion_context)
+PLACED_CODE void cli_power_set_async_print(PDFWK_ASYNC_REQUEST_HEADER p_request, void* completion_context)
 {
 
     FPFW_UNUSED(completion_context);

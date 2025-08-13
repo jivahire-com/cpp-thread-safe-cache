@@ -17,6 +17,7 @@
 #include <idsw_kng.h>
 #include <kng_error.h> // for KNG_FAILED, KNG_SUCCESS
 #include <stdlib.h>    // for atoi
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -78,7 +79,7 @@ void gpio_cli_init(pgpio_interface_t gpio_iface)
     FpFwCliRegisterTable(s_gpio_cmd_list, FPFW_ARRAY_SIZE(s_gpio_cmd_list));
 }
 
-static FPFW_CLI_STATUS gpio_cli_restore(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_restore(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -98,7 +99,7 @@ static FPFW_CLI_STATUS gpio_cli_restore(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS gpio_cli_set_int_enable(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_set_int_enable(int argc, const char** pp_argv)
 {
     uint32_t gpio_ctrl_id = 0;
     uint32_t gpio_pin_id = 0;
@@ -130,7 +131,7 @@ static FPFW_CLI_STATUS gpio_cli_set_int_enable(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS gpio_cli_get_int_enable(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_get_int_enable(int argc, const char** pp_argv)
 {
     uint32_t gpio_ctrl_id = 0;
     uint32_t gpio_pin_id = 0;
@@ -161,7 +162,7 @@ static FPFW_CLI_STATUS gpio_cli_get_int_enable(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS gpio_cli_set_dir(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_set_dir(int argc, const char** pp_argv)
 {
     uint32_t gpio_ctrl_id = 0;
     uint32_t gpio_pin_id = 0;
@@ -206,7 +207,7 @@ static FPFW_CLI_STATUS gpio_cli_set_dir(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS gpio_cli_get_dir(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_get_dir(int argc, const char** pp_argv)
 {
     uint32_t gpio_ctrl_id = 0;
     uint32_t gpio_pin_id = 0;
@@ -237,7 +238,7 @@ static FPFW_CLI_STATUS gpio_cli_get_dir(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS gpio_cli_set_pin(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_set_pin(int argc, const char** pp_argv)
 {
     uint32_t gpio_ctrl_id = 0;
     uint32_t gpio_pin_id = 0;
@@ -269,7 +270,7 @@ static FPFW_CLI_STATUS gpio_cli_set_pin(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS gpio_cli_get_pin(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_get_pin(int argc, const char** pp_argv)
 {
     uint32_t gpio_ctrl_id = 0;
     uint32_t gpio_pin_id = 0;
@@ -316,7 +317,7 @@ static void gpio_cli_isr_callback(PDFWK_ASYNC_REQUEST_HEADER request, void* comp
                  gpio_request->level);
 }
 
-static FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** pp_argv)
 {
     static gpio_cli_isr_context_t isr_context = {.isr_registered = false};
     uint32_t gpio_ctrl_id = 0;
@@ -413,7 +414,7 @@ static FPFW_CLI_STATUS print_uart_afm_mux_table(int argc, const char** pp_argv)
 }
 
 /* This command retrieves the current UART AFM settings for the particular Die */
-static FPFW_CLI_STATUS gpio_cli_get_uart_afm(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_get_uart_afm(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -441,7 +442,7 @@ static FPFW_CLI_STATUS gpio_cli_get_uart_afm(int argc, const char** pp_argv)
  * Meanwhile, the command uart_afm 1 0 1 0 will set UART0 to 1, UART1 to 0, UART2 to 1, and UART3 to 0.
  * Can be run from both MCP and SCP, takes into account any overrides performed via by T32)
  */
-static FPFW_CLI_STATUS gpio_cli_set_uart_afm(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_set_uart_afm(int argc, const char** pp_argv)
 {
     uart_afm_cfg_t afm_knobs = {0};
     uint8_t die_id = idsw_get_die_id();
@@ -491,7 +492,7 @@ static FPFW_CLI_STATUS gpio_cli_set_uart_afm(int argc, const char** pp_argv)
  * This command returns the UART die ownership for the current die.
  * It will indicate whether UART1 and UART2 are owned by this die.
  */
-static FPFW_CLI_STATUS gpio_cli_get_uart_ownership(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_get_uart_ownership(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -522,7 +523,7 @@ static FPFW_CLI_STATUS gpio_cli_get_uart_ownership(int argc, const char** pp_arg
  * This command also supports partial configuration. For example, the command
  * uart_die 0 x will set the Die ID for UART1 to 0 and leave the Die ID for UART2 unchanged.
  */
-static FPFW_CLI_STATUS gpio_cli_set_uart_die_config(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_set_uart_die_config(int argc, const char** pp_argv)
 {
     uint8_t this_die_id = idsw_get_die_id();
     uint8_t other_die_id = (this_die_id == 0) ? 1 : 0;

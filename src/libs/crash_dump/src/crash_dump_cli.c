@@ -19,6 +19,7 @@
 #include <string.h>            // for strlen
 #include <tx_api.h>            // for tx_thread_sleep
 #include <tx_thread.h>         // for _tx_thread_current_ptr
+#include <utils.h>             // for PLACED_CODE
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -57,13 +58,13 @@ extern uint8_t __stack_start__;
 extern uint8_t __stack_end__;
 
 /*------------- Functions ----------------*/
-void crash_dump_cli_init(void)
+PLACED_CODE void crash_dump_cli_init(void)
 {
     //! register the crash dump commands
     FpFwCliRegisterTable(s_cd_cmd_list, FPFW_ARRAY_SIZE(s_cd_cmd_list));
 }
 
-static FPFW_CLI_STATUS cd_register_beef(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_register_beef(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -73,7 +74,7 @@ static FPFW_CLI_STATUS cd_register_beef(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cd_register_string(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_register_string(int argc, const char** pp_argv)
 {
     if (argc == 2)
     {
@@ -91,7 +92,7 @@ static FPFW_CLI_STATUS cd_register_string(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cd_bug_check(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_bug_check(int argc, const char** pp_argv)
 {
     uint32_t crashCode = KNG_E_FAIL;
 
@@ -113,7 +114,7 @@ static FPFW_CLI_STATUS cd_bug_check(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cd_trigger_exception(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_trigger_exception(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -126,7 +127,7 @@ static FPFW_CLI_STATUS cd_trigger_exception(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cd_set_single_core_mode(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_set_single_core_mode(int argc, const char** pp_argv)
 {
     if (argc == 2)
     {
@@ -147,7 +148,7 @@ static FPFW_CLI_STATUS cd_set_single_core_mode(int argc, const char** pp_argv)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Winfinite-recursion"
-static void overflow_recurse(uint32_t sleep_tick) // NOLINT
+static PLACED_CODE void overflow_recurse(uint32_t sleep_tick) // NOLINT
 {
 #ifndef _WIN32
     char buffer[512] = "overflow_recurse"; // Eat up stack space
@@ -169,7 +170,7 @@ static void overflow_recurse(uint32_t sleep_tick) // NOLINT
 }
 #pragma GCC diagnostic pop
 
-static FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_argv)
 {
     uint32_t suspend_time = 1;
 
@@ -193,7 +194,7 @@ static FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cd_get_status(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_get_status(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -203,7 +204,7 @@ static FPFW_CLI_STATUS cd_get_status(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cd_set_status(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_set_status(int argc, const char** pp_argv)
 {
     if (argc == 3)
     {
@@ -236,7 +237,7 @@ static FPFW_CLI_STATUS cd_set_status(int argc, const char** pp_argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cd_set_core_status(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_set_core_status(int argc, const char** pp_argv)
 {
     if (argc == 4)
     {

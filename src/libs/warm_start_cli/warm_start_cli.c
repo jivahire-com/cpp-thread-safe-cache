@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdlib.h> // for atoi
 #include <string.h> // for strcmp
+#include <utils.h>
 #include <warm_start.h>
 #include <warm_start_cli.h> // for avs_client_init_completion_routine, pavs...
 #include <warm_start_i.h>
@@ -67,7 +68,7 @@ static sos_interface_t sos_interface;
  *  @return
  *      CLI_SUCCESS (always)
  */
-static FPFW_CLI_STATUS ws_write_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS ws_write_cli(int argc, const char** argv)
 {
     uint32_t id;
     uint8_t data[MAX_DATA_COUNT];
@@ -117,7 +118,7 @@ static FPFW_CLI_STATUS ws_write_cli(int argc, const char** argv)
  *  @return
  *      CLI_SUCCESS (always)
  */
-static FPFW_CLI_STATUS ws_read_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS ws_read_cli(int argc, const char** argv)
 {
     uint32_t count;
     uint32_t id;
@@ -179,7 +180,7 @@ static FPFW_CLI_STATUS ws_read_cli(int argc, const char** argv)
  *  @return
  *      CLI_SUCCESS (always)
  */
-static FPFW_CLI_STATUS ws_disp_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS ws_disp_cli(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);
@@ -277,7 +278,7 @@ void shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_
  *  @return
  *      If reset is available on platform, this will never return
  */
-static FPFW_CLI_STATUS ws_reset(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS ws_reset(int argc, const char** argv)
 {
     // send synchronous and asynchronous startup stage start requests
     static startup_shutdown_request_t shutdown_request;

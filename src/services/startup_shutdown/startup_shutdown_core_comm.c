@@ -32,7 +32,9 @@
 
 #define ICC_MODULE_STARTUP_SHUTDOWN (0x0009)
 
-#define ICC_D2D_SHUTDOWN_REQUEST ICC_GEN_CMD(ICC_MODULE_STARTUP_SHUTDOWN, 0x1) // 0x0009_0001
+#ifndef ICC_D2D_SHUTDOWN_REQUEST
+    #define ICC_D2D_SHUTDOWN_REQUEST ICC_GEN_CMD(ICC_MODULE_STARTUP_SHUTDOWN, 0x1) // 0x0009_0001
+#endif                                                                             // ICC_D2D_SHUTDOWN_REQUEST
 
 /*------------- Typedefs -----------------*/
 

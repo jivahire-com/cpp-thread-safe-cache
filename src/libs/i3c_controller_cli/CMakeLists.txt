@@ -26,6 +26,7 @@ target_link_libraries(
             ms::lib::ddr_manager
             ms::lib::hsp_firmware_headers
             ms::lib::i3c_controller
+            ms::lib::utils
             silibs::lib_i3c
             silibs::ddr_i3c
             fwlib.lib.interface.platform.dbgprint

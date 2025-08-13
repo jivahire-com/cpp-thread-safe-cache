@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.dbgprint
         fwlib.service.cli
         ms::lib::error_domain::scp
+        ms::lib::utils
         silibs::atu
         silibs::kng_silibs_platform
         silibs_platform

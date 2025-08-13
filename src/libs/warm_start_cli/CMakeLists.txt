@@ -21,6 +21,7 @@ target_link_libraries(
             ms::lib::warm_start
             ms::lib::crash_dump
             ms::lib::error_codes
+            ms::lib::utils
             ms::service::scp_startup_shutdown
             kng.lib.hsp_firmware_headers
         PUBLIC

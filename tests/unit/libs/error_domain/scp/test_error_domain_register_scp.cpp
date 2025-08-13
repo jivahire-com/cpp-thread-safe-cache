@@ -622,7 +622,7 @@ TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
         expect_function_call(__wrap_atu_unmap);
     }
 
-    register_scp_error_domain();
+    register_scp_error_domain((fpfw_icc_base_ctx_t*)1234);
 }
 
 // Temporary disable PEX interrupts to avoid spurious interrupts on Silicon

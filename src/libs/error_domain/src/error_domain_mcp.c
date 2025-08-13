@@ -57,11 +57,14 @@ typedef struct
 } mcp_ecc_isr_params_t;
 
 /*-- Declarations (Statics and globals) --*/
-static fpfw_icc_base_ctx_t* mhu_handle = NULL;
 static vptr_mscp_ras_and_init_ctrl_registers_reg mcp_ras_and_init_ctrl_registers_reg =
     (vptr_mscp_ras_and_init_ctrl_registers_reg)(MCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS);
+
 static vptr_systemcontrol_reg mcp_system_control_reg =
     (vptr_systemcontrol_reg)(MCP_TOP_CORTEX_M7_ADDRESS + CORTEXM7INTEGRATIONCS_MCP_SYSTEMCONTROL_ADDRESS);
+
+static vptr_mcp_exp_csr_reg mcp_exp_csr_regs =
+    (vptr_mcp_exp_csr_reg)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_MCP_EXP_CSR_ADDRESS);
 
 /*-------------- Functions ---------------*/
 static void register_mcp_error_domain_complete_cb(void* context, fpfw_status_t status)
@@ -173,6 +176,93 @@ static void tcm_ue_isr()
                                    .err_status_addr = (uint32_t*)&mcp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
                                    .err_address_addr = (uint32_t*)&mcp_ras_and_init_ctrl_registers_reg->tcmecc_erraddr,
                                    .err_status_mask = MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRSTATUS_UE_MASK};
+
+    mcp_ram_ecc_isr(&params);
+}
+
+static void rmss_scfram_ecc_of_isr()
+{
+    mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_SCF_RAM,
+                                   .err_source_irq = HW_INT_MCP_SCFRAM_ECCOF_INT,
+                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_code = KNG_HM_SCF_OF,
+                                   .bugcheck_required = true,
+                                   .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->scfram_mcp_errstatus_reg,
+                                   .err_address_addr = (uint32_t*)&mcp_exp_csr_regs->scfram_mcp_erraddr_reg,
+                                   .err_status_mask = MCP_EXP_CSR_SCFRAM_MCP_ERRSTATUS_REG_OF_MASK};
+
+    mcp_ram_ecc_isr(&params);
+}
+
+static void rmss_scfram_ecc_ce_isr()
+{
+    // TO DO : update err_source_id to MCP specific ID once the silib is updated
+    // https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs/pullrequest/302473
+
+    mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_SCF_RAM,
+                                   .err_source_irq = HW_INT_MCP_SCFRAM_ECCCE_INT,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                                   .err_code = KNG_HM_SCF_CE,
+                                   .bugcheck_required = false,
+                                   .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->scfram_mcp_errstatus_reg,
+                                   .err_address_addr = (uint32_t*)&mcp_exp_csr_regs->scfram_mcp_erraddr_reg,
+                                   .err_status_mask = MCP_EXP_CSR_SCFRAM_MCP_ERRSTATUS_REG_CE_MASK};
+
+    mcp_ram_ecc_isr(&params);
+}
+
+static void rmss_ram0_ecc_of_isr()
+{
+    mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM0,
+                                   .err_source_irq = HW_INT_MCP_RAM0_ECCOF_INT,
+                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_code = KNG_HM_RMSS_RAM0_OF,
+                                   .bugcheck_required = true,
+                                   .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram0_mcp_errstatus_reg,
+                                   .err_address_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram0_mcp_erraddr_reg,
+                                   .err_status_mask = MCP_EXP_CSR_RMSS_RAM0_MCP_ERRSTATUS_REG_OF_MASK};
+
+    mcp_ram_ecc_isr(&params);
+}
+
+static void rmss_ram0_ecc_ce_isr()
+{
+    mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM0,
+                                   .err_source_irq = HW_INT_MCP_RAM0_ECCCE_INT,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                                   .err_code = KNG_HM_RMSS_RAM0_CE,
+                                   .bugcheck_required = false,
+                                   .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram0_mcp_errstatus_reg,
+                                   .err_address_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram0_mcp_erraddr_reg,
+                                   .err_status_mask = MCP_EXP_CSR_RMSS_RAM0_MCP_ERRSTATUS_REG_CE_MASK};
+
+    mcp_ram_ecc_isr(&params);
+}
+
+static void rmss_ram1_ecc_ce_isr()
+{
+    mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM1,
+                                   .err_source_irq = HW_INT_MCP_RAM1_ECCCE_INT,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                                   .err_code = KNG_HM_RMSS_RAM1_CE,
+                                   .bugcheck_required = false,
+                                   .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram1_mcp_errstatus_reg,
+                                   .err_address_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram1_mcp_erraddr_reg,
+                                   .err_status_mask = MCP_EXP_CSR_RMSS_RAM1_MCP_ERRSTATUS_REG_CE_MASK};
+
+    mcp_ram_ecc_isr(&params);
+}
+
+static void rmss_ram1_ecc_of_isr()
+{
+    mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM1,
+                                   .err_source_irq = HW_INT_MCP_RAM1_ECCOF_INT,
+                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_code = KNG_HM_RMSS_RAM1_OF,
+                                   .bugcheck_required = true,
+                                   .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram1_mcp_errstatus_reg,
+                                   .err_address_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram1_mcp_erraddr_reg,
+                                   .err_status_mask = MCP_EXP_CSR_RMSS_RAM1_MCP_ERRSTATUS_REG_OF_MASK};
 
     mcp_ram_ecc_isr(&params);
 }
@@ -362,6 +452,16 @@ void register_mcp_ecc_isr_with_param(uint32_t irq_num, isr_callback_fn_with_para
 
 static void enable_mcp_ecc_interrupts()
 {
+    register_mcp_ecc_isr(HW_INT_MCP_SCFRAM_ECCOF_INT, rmss_scfram_ecc_of_isr); // SCF RAM overflow
+    register_mcp_ecc_isr(HW_INT_MCP_SCFRAM_ECCCE_INT, rmss_scfram_ecc_ce_isr); // SCF RAM CE
+
+    // Boot RAM ECC
+    register_mcp_ecc_isr(HW_INT_MCP_RAM0_ECCOF_INT, rmss_ram0_ecc_of_isr); // RMSS RAM0 overflow
+    register_mcp_ecc_isr(HW_INT_MCP_RAM0_ECCCE_INT, rmss_ram0_ecc_ce_isr); // RMSS RAM0 CE
+
+    register_mcp_ecc_isr(HW_INT_MCP_RAM1_ECCOF_INT, rmss_ram1_ecc_of_isr); // RMSS RAM1 overflow
+    register_mcp_ecc_isr(HW_INT_MCP_RAM1_ECCCE_INT, rmss_ram1_ecc_ce_isr); // RMSS RAM1 CE
+
     // // TCM ECC
     register_mcp_ecc_isr(HW_INT_TCM_ECCCE_INT, tcm_ce_isr);       // TCM CE
     register_mcp_ecc_isr(HW_INT_TCM_ECCUE_INT, tcm_ue_isr);       // TCM UE
@@ -401,7 +501,7 @@ static void enable_mcp_ecc_interrupts()
 void register_mcp_error_domain(fpfw_icc_base_ctx_t* icc_ctx)
 {
     BUG_ASSERT_PARAM(icc_ctx != NULL, icc_ctx, 0);
-    mhu_handle = icc_ctx;
+    set_mhu_handle(icc_ctx);
 
     static hm_mhu_error_domain_register_payload_t mcp_err_domain_register_payload = {0};
     mcp_err_domain_register_payload.header.msg_header.command = ICC_HM_ERROR_DOMAIN_REGISTER_MCP;
@@ -424,9 +524,4 @@ void register_mcp_error_domain(fpfw_icc_base_ctx_t* icc_ctx)
     BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, icc_ctx);
     enable_mcp_ecc_interrupts();
     enable_mcp_ecc_error();
-}
-
-fpfw_icc_base_ctx_t* get_mhu_handle(void)
-{
-    return (mhu_handle);
 }

@@ -13,8 +13,16 @@
 #include <cper.h>
 #include <fpfw_icc_base.h>
 #include <kng_atu_mappings.h>
+#include <icc_mhu.h> // for icc_mhu_packet_t
+#include <icc_platform_defines.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+// TO DO : remove below once the silib is updated
+// https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs/pullrequest/302473
+#ifndef ICC_HM_ERROR_INJECTION_SETUP_REQ
+#define ICC_HM_ERROR_INJECTION_SETUP_REQ 0x00070007
+#endif
 
 /*-------------- Typedefs ----------------*/
 typedef enum
@@ -32,6 +40,12 @@ typedef enum
     MSCP_NS_RSM_RAM,
     MSCP_RSM_RAM_COUNT
 } mscp_rsm_ram_type_t;
+
+typedef struct
+{
+    icc_mhu_header_t header;
+    uint32_t mcp_error_type;
+} icc_mhu_mscp_err_injection_setup_packet_t;
 
 /*--------- Function Prototypes ----------*/
 /**
@@ -52,11 +66,25 @@ void get_rsm_ecc_atu_entry(mscp_rsm_ram_type_t type, atu_map_entry_t* atu_entry)
  */
 bool is_cached_space(uint32_t addr);
 
+/**
+ * @brief Get MHU handle
+ *  
+ * @return
+ *      pointer to handle.
+ */
+fpfw_icc_base_ctx_t* get_mhu_handle(void);
+
+/**
+ * @brief Set MHU handle
+ *  
+ */
+void set_mhu_handle(fpfw_icc_base_ctx_t* icc_ctx);
+
 #if defined (SCP_RUNTIME_INIT)
 /**
  * @brief Register the SCP error domain.
  */
-void register_scp_error_domain();
+void register_scp_error_domain(fpfw_icc_base_ctx_t* icc_ctx);
 /**
  * @brief Register the SCP error domain.
  */
@@ -72,6 +100,11 @@ void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entr
  */
 uint32_t get_irq_num_for_scp_ecc_isr(mscp_arsm_ram_type_t type);
 
+/**
+ * @brief start ICC listener for MCP error injection setup request
+ */
+void mcp_error_injection_setup_listener(fpfw_icc_base_ctx_t* icc_ctx);
+
 #elif defined (MCP_RUNTIME_INIT)
 /**
  * @brief Register the MCP error domain.
@@ -83,11 +116,4 @@ void register_mcp_error_domain(fpfw_icc_base_ctx_t* icc_ctx);
  */
 void start_mcp_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx);
 
-/**
- * @brief Get MHU handle
- *  
- * @return
- *      pointer to handle.
- */
-fpfw_icc_base_ctx_t* get_mhu_handle(void);
 #endif

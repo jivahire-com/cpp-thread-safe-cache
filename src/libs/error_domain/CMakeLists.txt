@@ -21,6 +21,8 @@ target_link_libraries(
     ${TARGET}
         PUBLIC
             fwlib.lib.status
+            silibs::icc_mhu
+            ms::lib::icc_platform_defines
         PRIVATE
             fwlib.lib.assert
             fwlib.lib.interface.platform.dbgprint
@@ -85,13 +87,14 @@ target_link_libraries(
             ms::lib::cortex_m7::nvic
             ms::lib::mcp_interrupts
             fwlib.lib.status
+            silibs::icc_mhu
+            ms::lib::icc_platform_defines
         PRIVATE
             fwlib.lib.assert
             fwlib.service.iccBase
             ms::lib::arm_intrinsic
             ms::lib::crash_dump
             ms::lib::error_codes
-            ms::lib::icc_platform_defines
             ms::service::health_monitor
             silibs::atu
             silibs::icc_mhu

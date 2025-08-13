@@ -62,6 +62,12 @@ void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offs
 
 /*-- Declarations (Statics and globals) --*/
 hm_error_injection_cb_t g_err_inject_cb = NULL;
+isr_callback_fn_sans_params_t g_scfram_of_isr = NULL;
+isr_callback_fn_sans_params_t g_scfram_ce_isr = NULL;
+isr_callback_fn_sans_params_t g_ram0_of_isr = NULL;
+isr_callback_fn_sans_params_t g_ram0_ce_isr = NULL;
+isr_callback_fn_sans_params_t g_ram1_of_isr = NULL;
+isr_callback_fn_sans_params_t g_ram1_ce_isr = NULL;
 isr_callback_fn_sans_params_t g_tcm_ce_isr = NULL;
 isr_callback_fn_sans_params_t g_tcm_ue_isr = NULL;
 isr_callback_fn_sans_params_t g_tcm_of_isr = NULL;
@@ -147,6 +153,25 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
 
     switch (irq_num)
     {
+    case HW_INT_MCP_SCFRAM_ECCOF_INT:
+        g_scfram_of_isr = isr;
+        break;
+    case HW_INT_MCP_SCFRAM_ECCCE_INT:
+        g_scfram_ce_isr = isr;
+        break;
+    case HW_INT_MCP_RAM0_ECCOF_INT:
+        g_ram0_of_isr = isr;
+        break;
+    case HW_INT_MCP_RAM0_ECCCE_INT:
+        g_ram0_ce_isr = isr;
+        break;
+    case HW_INT_MCP_RAM1_ECCOF_INT:
+        g_ram1_of_isr = isr;
+        break;
+    case HW_INT_MCP_RAM1_ECCCE_INT:
+        g_ram1_ce_isr = isr;
+        break;
+
     case HW_INT_TCM_ECCCE_INT:
         g_tcm_ce_isr = isr;
         break;
@@ -325,6 +350,40 @@ TEST_FUNCTION(test_register_mcp_error_domain, nullptr, nullptr)
     expect_function_call(__wrap_fpfw_icc_base_send);
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
 
+    // SCF RAM ECC
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_MCP_SCFRAM_ECCOF_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_MCP_SCFRAM_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_MCP_SCFRAM_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_MCP_SCFRAM_ECCCE_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_MCP_SCFRAM_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_MCP_SCFRAM_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
+    // Boot RAM ECC
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_MCP_RAM0_ECCOF_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_MCP_RAM0_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_MCP_RAM0_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_MCP_RAM0_ECCCE_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_MCP_RAM0_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_MCP_RAM0_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_MCP_RAM1_ECCOF_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_MCP_RAM1_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_MCP_RAM1_ECCOF_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+    expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_MCP_RAM1_ECCCE_INT
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_MCP_RAM1_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+    expect_value(__wrap_nvic_irq_enable, irq_num, HW_INT_MCP_RAM1_ECCCE_INT);
+    expect_function_call(__wrap_nvic_irq_enable);
+
     // TCM ECC
     expect_function_call(__wrap_nvic_irq_set_isr); // HW_INT_TCM_ECCCE_INT
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_TCM_ECCCE_INT);
@@ -486,8 +545,10 @@ static int test_setup(void** ctx)
 {
     FPFW_UNUSED(ctx);
 
-    if (g_err_inject_cb == NULL || g_tcm_ce_isr == NULL || g_tcm_ue_isr == NULL || g_tcm_of_isr == NULL ||
-        g_s_arsm_ecc_isr == NULL || g_s_rsm_ecc_isr == NULL || g_dcache_ue_isr == NULL || g_dcache_ce_isr == NULL ||
+    if (g_err_inject_cb == NULL || g_scfram_of_isr == NULL || g_scfram_ce_isr == NULL ||
+        g_ram0_of_isr == NULL || g_ram0_ce_isr == NULL || g_ram1_of_isr == NULL || g_ram1_ce_isr == NULL ||
+        g_tcm_ce_isr == NULL || g_tcm_ue_isr == NULL || g_tcm_of_isr == NULL || g_s_arsm_ecc_isr == NULL ||
+        g_s_rsm_ecc_isr == NULL || g_dcache_ue_isr == NULL || g_dcache_ce_isr == NULL ||
         g_dcache_tag_ue_isr == NULL || g_dcache_tag_ce_isr == NULL || g_icache_ue_isr == NULL ||
         g_icache_ce_isr == NULL || g_icache_tag_ue_isr == NULL || g_icache_tag_ce_isr == NULL)
     {

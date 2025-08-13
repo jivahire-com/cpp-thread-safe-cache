@@ -271,3 +271,67 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
     // Placeholder for SCP error injection handling
     return ACPI_EINJ_SUCCESS;
 }
+
+static void mcp_error_injection_setup_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(output_size_bytes);
+    FPFW_UNUSED(status);
+
+    icc_mhu_mscp_err_injection_setup_packet_t* req_params = (icc_mhu_mscp_err_injection_setup_packet_t*)context;
+
+    switch (req_params->mcp_error_type)
+    {
+    case MCP_ERROR_TYPE_SCF_RAM_CE:
+        MMIO_UPDATE32(&scp_exp_csr_regs->scfram_errctrl_reg, SCP_EXP_CSR_SCFRAM_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
+        break;
+
+    case MCP_ERROR_TYPE_SCF_RAM_UE:
+        MMIO_UPDATE32(&scp_exp_csr_regs->scfram_errctrl_reg, SCP_EXP_CSR_SCFRAM_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_UE);
+        break;
+
+    case MCP_ERROR_TYPE_SCF_RAM_OVERFLOW:
+        MMIO_UPDATE32(&scp_exp_csr_regs->scfram_errctrl_reg, SCP_EXP_CSR_SCFRAM_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
+        break;
+
+    case MCP_ERROR_TYPE_RMSS_RAM0_CE:
+        MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram0_errctrl_reg, SCP_EXP_CSR_RMSS_RAM0_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
+        break;
+
+    case MCP_ERROR_TYPE_RMSS_RAM0_UE:
+        MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram0_errctrl_reg, SCP_EXP_CSR_RMSS_RAM0_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_UE);
+        break;
+
+    case MCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW:
+        MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram0_errctrl_reg, SCP_EXP_CSR_RMSS_RAM0_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
+        break;
+
+    case MCP_ERROR_TYPE_RMSS_RAM1_CE:
+        MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram1_errctrl_reg, SCP_EXP_CSR_RMSS_RAM1_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
+        break;
+
+    case MCP_ERROR_TYPE_RMSS_RAM1_UE:
+        MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram1_errctrl_reg, SCP_EXP_CSR_RMSS_RAM1_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_UE);
+        break;
+
+    case SCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW:
+        MMIO_UPDATE32(&scp_exp_csr_regs->rmss_ram1_errctrl_reg, SCP_EXP_CSR_RMSS_RAM1_ERRCTRL_REG_INJECT_ERROR_MASK, MASK_CE);
+        break;
+    }
+    mcp_error_injection_setup_listener(get_mhu_handle());
+}
+
+void mcp_error_injection_setup_listener(fpfw_icc_base_ctx_t* icc_ctx)
+{
+    // Static buffer to hold the received message
+    static uint8_t mcp_einj_recv_payload[32] = {0};
+
+    static fpfw_icc_base_recv_req_t mcp_einj_recv_params;
+    mcp_einj_recv_params.recv_cmd_code = ICC_HM_ERROR_INJECTION_SETUP_REQ; // Command code to listen for
+    mcp_einj_recv_params.payload_buffer = mcp_einj_recv_payload;           // Buffer to receive the message
+    mcp_einj_recv_params.buffer_size = sizeof(mcp_einj_recv_payload);      // Size of the buffer
+    mcp_einj_recv_params.cb = mcp_error_injection_setup_cb; // Callback function for handling the received message
+    mcp_einj_recv_params.cb_ctx = mcp_einj_recv_payload; // Context for the callback
+
+    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &mcp_einj_recv_params);
+    BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, icc_ctx);
+}

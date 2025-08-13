@@ -16,6 +16,7 @@
 #include <bug_check.h>
 #include <cper.h>
 #include <error_domain_i.h>
+#include <fpfw_icc_base.h>
 #include <health_monitor.h>
 #include <idsw_kng.h>
 #include <mscp_error_domain.h>
@@ -91,6 +92,7 @@ static const atu_map_entry_t s_hm_rsm_atu_entries[2][MSCP_RSM_RAM_COUNT] = {
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
+static fpfw_icc_base_ctx_t* mhu_handle = NULL;
 
 /*-------------- Functions ---------------*/
 
@@ -369,4 +371,14 @@ void enable_shared_sram_errors(ecc_entry_getter_fn get_entry, int count)
         status = atu_unmap(ATU_ID_MSCP, &atu_entry);
         BUG_ASSERT(status == SILIBS_SUCCESS);
     }
+}
+
+fpfw_icc_base_ctx_t* get_mhu_handle(void)
+{
+    return (mhu_handle);
+}
+
+void set_mhu_handle(fpfw_icc_base_ctx_t* icc_ctx)
+{
+    mhu_handle = icc_ctx;
 }

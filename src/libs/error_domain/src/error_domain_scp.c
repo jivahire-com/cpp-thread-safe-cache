@@ -500,8 +500,11 @@ static void enable_scp_ecc_interrupts()
     register_scp_ecc_isr(HW_INT_SCP_RSM_RAM_FHI_INT, shared_sram_ecc_isr_ext); // SCP Secure&Non-Secure RSM RAM ECC
 }
 
-void register_scp_error_domain()
+void register_scp_error_domain(fpfw_icc_base_ctx_t* icc_ctx)
 {
+    BUG_ASSERT_PARAM(icc_ctx != NULL, icc_ctx, 0);
+    set_mhu_handle(icc_ctx);
+
     // Register the error domain
     hm_register_error_domain(ACPI_ERROR_DOMAIN_SCP_PROC, &SCP_ERROR_DOMAIN_GUID, SCP_PROC_FRU, mscp_error_injection_handler, NULL);
 

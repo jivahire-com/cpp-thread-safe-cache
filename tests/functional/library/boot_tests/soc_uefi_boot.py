@@ -62,16 +62,19 @@ class soc_uefi_boot(EchoFallsBaseTest):
         """
         self.log.info("Running SOC UEFI boot test")
 
+        scp_connection=self.dut.mb.node_0.soc.primary_die.scp.channel_manager
         apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
 
         # Ensure the host config file used alongside this test has these connections defined.
+        assert scp_connection is not None
         assert apns_connection is not None
 
         self.dut.setup()
         self.log.warning("Device type is SOC. Performing SOC reset ...")
         bmc_helper = BmcHelperLibrary(hostname="M1120-SCM-392.svceng.com")  # Fill in real host if available
         bmc_helper.soc_reset()
-            
+
+        scp_connection.get_current_channel().open()            
         apns_connection.get_current_channel().open()
         # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
         if not apns_connection.get_current_channel().is_open():
@@ -79,10 +82,20 @@ class soc_uefi_boot(EchoFallsBaseTest):
             time.sleep(30)
             return False
 
+        bmc_helper.set_profile("General")
+        bmc_helper.set_boot_option("ConfApp")
+
         self.log.info("Reading APNS UART for UEFI Interactive Shell")
 
         try:
-            apns_connection.get_current_channel().read_until(key="UEFI Interactive Shell", timeout_seconds=1500)
+            scp_connection.get_current_channel().read_until(key="Primary AP core power on", timeout_seconds=1200)
+            apns_connection.get_current_channel().read_until(key="Exit this menu", timeout_seconds=500)
+            command = "2"
+            apns_connection.get_current_channel().write_line(write_string=command)
+            apns_connection.get_current_channel().read_until(key="Select Index to boot to the corresponding option", timeout_seconds=500)
+            command = "3"
+            apns_connection.get_current_channel().write_line(write_string=command)
+            apns_connection.get_current_channel().read_until(key="UEFI Interactive Shell", timeout_seconds=500)
         except Exception as e:
             self.log.error(f"Error reading APNS UART: {e}")
             apns_connection.get_current_channel().close()

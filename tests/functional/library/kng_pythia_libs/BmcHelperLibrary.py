@@ -103,6 +103,14 @@ class BmcHelperLibrary:
         else:
             print(f"Boot option set to {option} successfully.")
 
+        command = "devmem 0xf0800270 32 0x48AF8142"
+        stdout, stderr = self.execute_command(command)
+        if stderr:
+            print(f"Error setting TX enable APNS serial: {stderr}")
+            raise AssertionError
+        else:
+            print(f"Boot option set to {option} successfully.")
+
     def __del__(self):
         """Ensure the connection is closed when the object is deleted."""
         self.disconnect()

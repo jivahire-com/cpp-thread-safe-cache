@@ -1,0 +1,6 @@
+# CodeQL.yml
+# Ignore the specific test file
+path_classifiers:
+  library:
+    - "Kingsgate.MSCP/tests/functional/library/kng_pythia_libs/BmcHelperLibrary.py"
+

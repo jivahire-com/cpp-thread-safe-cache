@@ -52,7 +52,6 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agen
         ras_arm_agent_probe(*ras_agent, &record);
         ras_print_record(&record);
         sub_sts = ddrss_convert_ras_rec_to_cper(mc, &record, &ddr_ras_cper, &ddr_vendor_cper);
-        // TODO: Uncomment below API when silibs PR is merged
         ddrss_print_cper(&ddr_ras_cper, &ddr_vendor_cper);
         if (sub_sts == SILIBS_SUCCESS)
         {

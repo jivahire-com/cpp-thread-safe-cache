@@ -266,7 +266,6 @@ TEST_FUNCTION(test_ddr_ca_parity_error_injection_bad_cmd, NULL, NULL)
 
 TEST_FUNCTION(test_ras_inj_syndrome_list, NULL, NULL)
 {
-    // const ras_inj_syndrome_t ras_syndrome_test[] = {DDR_ERR_INJ_SYNDROME_LIST(SYNDROME_STRUCT_INIT)};
     const ddr_err_inj_syndrome_t named_syndrome[] = {DDR_ERR_INJ_SYNDROME_LIST(NAMED_SYNDROME_STRUCT_INIT)};
 
     for (int i = 0; i < 2; i++)
@@ -289,18 +288,20 @@ TEST_FUNCTION(test_ras_inj_syndrome_list, NULL, NULL)
     assert_int_equal(get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_PARITY_UE"), 7);
     assert_int_equal(get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_MERGE_STROBE_UE"), 8);
     assert_int_equal(get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_MERGE_STROBE_PARITY_UE"), 9);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_STROBE_ARRAY_UE"), 10);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_HKE_PERSISTENT_CA_PARITY_UE"), 11);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_HKE_TRANSIENT_CA_PARITY_UE"), 12);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_RH_COUNTERS_SRAM_PARITY"), 13);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_RH_DRFM_SRAM_PARITY"), 14);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_XTS_AES_KEYSTORE_CE"), 15);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_XTS_AES_KEYSTORE_UE"), 16);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_READ_ADDR_NOT_IN_DDR"), 17);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_READ_BLOCKED_BY_PAS"), 18);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_WRITE_ADDR_NOT_IN_DDR"), 19);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_WRITE_BLOCKED_BY_PAS"), 20);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_CHI_UNSUPPORTED_OPCODE"), 21);
-    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_MRDP_PARITY_ERROR"), 22);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_STROBE_ARRAY_UE"), 0xA);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_HKE_PERSISTENT_CA_PARITY_UE"), 0xB);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_HKE_TRANSIENT_CA_PARITY_UE"), 0xC);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_RH_COUNTERS_SRAM_PARITY"), 0xD);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_RH_DRFM_SRAM_PARITY"), 0xE);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_XTS_AES_KEYSTORE_CE"), 0xF);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_XTS_AES_KEYSTORE_UE"), 0x10);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_READ_ADDR_NOT_IN_DDR"), 0x11);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_READ_BLOCKED_BY_PAS"), 0x12);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_WRITE_ADDR_NOT_IN_DDR"), 0x13);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_WRITE_BLOCKED_BY_PAS"), 0x14);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_BCP_CHI_UNSUPPORTED_OPCODE"), 0x15);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_MRDP_PARITY_ERROR"), 0x16);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_ECC_CE"), 0x17);
+    assert_int_equal(get_syndrome_index("DDR_ERR_INJ_ECC_UE"), 0x18);
 }
 }

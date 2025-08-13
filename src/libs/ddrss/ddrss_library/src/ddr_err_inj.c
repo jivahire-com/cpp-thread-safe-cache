@@ -54,6 +54,16 @@ bool ddr_ecc_err_inj_validation(uint32_t mc, uint16_t BIT)
     return ret;
 }
 
+void ddr_err_inj_ecc_ce(uint32_t mc)
+{
+    ddr_ecc_error_injection(0, mc, 0x0, BIT1);
+}
+
+void ddr_err_inj_ecc_ue(uint32_t mc)
+{
+    ddr_ecc_error_injection(0, mc, 0x0, BIT0);
+}
+
 void ddr_ecc_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit)
 {
     silibs_status_t sts;
@@ -209,44 +219,44 @@ acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, voi
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
-    if ((einj_payload->component_group != ACPI_ERROR_DOMAIN_DDR) &&
-        (einj_payload->component_group != ACPI_ERROR_DOMAIN_STD_MEMORY))
+    if (einj_payload->component_group == ACPI_ERROR_DOMAIN_STD_MEMORY)
+    {
+        printf("Please see the WIKI for ECC error injection details.\n");
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
+    if (einj_payload->component_group != ACPI_ERROR_DOMAIN_DDR)
     {
         // Only support DDR and standard memory error domains for now
-        printf("Error: Unsupported component group (0X%x)for DDR error injection\n", einj_payload->component_group);
+        printf("Error: Unsupported component group (0x%X)for DDR error injection\n", einj_payload->component_group);
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
-    switch (einj_payload->param_type.error_type)
+    // Check for potentially invalid array indexes
+    if (einj_payload->param_type.error_type >= DDR_ERR_INJ_SYNDROME_COUNT)
     {
-    case ACPI_ERR_SEC_MEM_VENDOR_PHY_FATAL:
-        // This will need some experimentation to map the error parameters to the correct error type
-        printf("param_type.error_type = ACPI_ERR_SEC_MEM_VENDOR_PHY_FATAL\n");
-        printf("error_parameters[0] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[0]);
-        printf("error_parameters[1] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[1]);
-
-        // Handle PHY fatal errors
-        break;
-    case ACPI_ERR_SEC_MEM_VENDOR_MISC:
-        // This will need some experimentation to map the error parameters to the correct error type
-        printf("param_type.error_type = ACPI_ERR_SEC_MEM_VENDOR_MISC\n");
-        printf("error_parameters[0] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[0]);
-        printf("error_parameters[1] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[1]);
-
-        // Handle miscellaneous vendor errors
-        break;
-    case ACPI_ERR_SEC_MEM_VENDOR_MC_ERRORS:
-        // This will need some experimentation to map the error parameters to the correct error type
-        printf("param_type.error_type = ACPI_ERR_SEC_MEM_VENDOR_MC_ERRORS\n");
-        printf("error_parameters[0] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[0]);
-        printf("error_parameters[1] = 0x%X\n", (unsigned int)einj_payload->param_type.error_parameters[1]);
-
-        // Handle vendor-specific memory controller errors
-        break;
-    default:
-        printf("Invalid/Unsupported DDR error type(%d)\n", einj_payload->param_type.error_type);
+        printf("Error: Invalid error type (%d) in EINJ payload\n", einj_payload->param_type.error_type);
         return ACPI_EINJ_INVALID_ACCESS;
     }
+
+    // Check that health manager routed the correct die's error injection callback to us
+    if (einj_payload->component_instance != idsw_get_die_id())
+    {
+        printf("Error: Component instance (%d) does not match current die ID (%d)\n",
+               einj_payload->component_instance,
+               idsw_get_die_id());
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
+    // Check for valid mc value
+    if (einj_payload->status_operation.value >= DDRSS_MAX_MC_NUM_PER_DIE)
+    {
+        printf("Error: Invalid memory controller index (%d) in EINJ payload\n", einj_payload->status_operation.value);
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
+    // Call appropriate error injection function based on the error type with its function pointer
+    named_syndrome[einj_payload->param_type.error_type].inj_func(einj_payload->status_operation.value);
 
     return ACPI_EINJ_SUCCESS;
 }

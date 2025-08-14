@@ -19,6 +19,7 @@ extern "C" {
 #include <CMockaWrapper.h>    // for expect_value, check_expected_ptr, Cmo...
 #include <DfwkAsyncRequest.h> // for PDFWK_ASYNC_REQUEST_HEADER
 #include <DfwkCommon.h>       // for PDFWK_DEVICE_HEADER, DFWK_ASYNC_REQUE...
+#include <idsw_kng.h>
 #include <modules/CdDumpDescriptor.h>
 #include <odcm_struct.h> // for odcm_telem_config_t
 #include <power_dfwk.h>  // for power_service_t, power_service_interf...
@@ -286,6 +287,11 @@ void __wrap_power_loops_warmstart_entry()
     function_called();
 }
 
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
+{
+    return mock_type(KNG_PLAT_ID);
+}
+
 } // extern "C"
 
 //
@@ -420,7 +426,7 @@ POWER_TEST(init_ap_soc_ws, NULL, NULL)
     expect_function_call(__wrap_tile_pvt_dma_config);
     expect_value(__wrap_power_vcpu_precalculate_vf_currents, p_runconfig, &test_runconfig);
     expect_function_call(__wrap_power_loops_control_post_core_init);
-
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     power_ap_soc_init();
 }
 

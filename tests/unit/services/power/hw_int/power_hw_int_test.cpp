@@ -619,7 +619,7 @@ void init_core_base_expect()
     will_return_count(__wrap_dvfs_init, DVFS_SUCCESS, TEST_CORE_COUNT);
     will_return_count(__wrap_odcm_init, ODCM_SUCCESS, TEST_CORE_COUNT);
     will_return_count(__wrap_tile_pvt_init, PVT_SUCCESS, (TEST_CORE_COUNT + 1) / 2);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 }
 
 void init_ws_core_base_expect(unsigned core_count, uint8_t pstate)
@@ -637,6 +637,30 @@ void init_ws_core_base_expect(unsigned core_count, uint8_t pstate)
     expect_any_count(__wrap_dvfs_set_plimit, cluster_pex_base_addr, core_count);
     expect_value_count(__wrap_dvfs_set_plimit, plimit_index, pstate, core_count);
     expect_value_count(__wrap_dvfs_set_plimit, rack_power_cap, false, core_count);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+}
+
+void init_core_base_fused_expect()
+{
+    expect_any_count(__wrap_wait_for_FLLCalDone, cluster_pex_base_addr, TEST_CORE_COUNT + 1);
+    will_return_always(__wrap_wait_for_FLLCalDone, DVFS_SUCCESS);
+
+    expect_any_count(__wrap_dvfs_ns_set_cppc_desired_perf, cluster_pex_base_addr, TEST_CORE_COUNT + 1);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf,
+                       cppc_desired,
+                       dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
+                       TEST_CORE_COUNT + 1);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf,
+                       cppc_base_perf,
+                       dvfs_get_cppc_from_pstate(DVFS_DEF_PLIMIT_INDEX_NOMINAL),
+                       TEST_CORE_COUNT + 1);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf, throttle_pri, 0, TEST_CORE_COUNT + 1);
+    expect_value_count(__wrap_dvfs_ns_set_cppc_desired_perf, boost_pri, 0, TEST_CORE_COUNT + 1);
+
+    will_return_count(__wrap_dvfs_init, DVFS_SUCCESS, TEST_CORE_COUNT + 2);
+    will_return_count(__wrap_odcm_init, ODCM_SUCCESS, TEST_CORE_COUNT + 1);
+    will_return_count(__wrap_tile_pvt_init, PVT_SUCCESS, 2);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 }
 
 #define ODCM_knob_CFG_SET(c1, value)  s_runconfig.knobs.current_throt.c1 = value;
@@ -939,7 +963,7 @@ POWER_TEST(hwi_init_core__forced_pstate, setup, teardown)
     will_return_count(__wrap_dvfs_init, DVFS_SUCCESS, 1);
     will_return_count(__wrap_odcm_init, ODCM_SUCCESS, 1);
     will_return_count(__wrap_tile_pvt_init, PVT_SUCCESS, 1);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     fgpll_reg fake_regs = {};
 
@@ -1090,14 +1114,14 @@ POWER_TEST(hwi_init_core__core_disabled, setup, teardown)
 {
 
     // disable core 1
-    static const corebits_t disabled_core = (const corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFD, 0xFFFFFFFF, 0xF);
+    static const corebits_t disabled_core = (const corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFB, 0xFFFFFFFF, 0xF);
 
-    s_config.platform_cores_in_die = &disabled_core;
+    s_runconfig.fuses.valid_cores = disabled_core;
     // increase core count, still expect same result because core 1 is disabled
-    s_config.platform_die_core_count = TEST_CORE_COUNT + 1;
+    s_config.platform_die_core_count = TEST_CORE_COUNT + 2;
 
     // this is the default expectation setup for running init_core
-    init_core_base_expect();
+    init_core_base_fused_expect();
     // run core init
     power_init_core(&s_runconfig, &s_telcfg);
 }

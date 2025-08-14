@@ -16,10 +16,11 @@ extern "C" {
 #include "corebits.h"   // for corebits_t
 #include "power_test.h" // for POWER_TEST, UNUSED
 
-#include <CMockaWrapper.h>     // for expect_any_always, CmockaWrapperTest
-#include <assert.h>            // for assert
-#include <cstddef>             // for NULL, size_t
-#include <fpfw_status.h>       // for FPFW_STATUS_NULL_POINTER, FPFW_STATUS...
+#include <CMockaWrapper.h> // for expect_any_always, CmockaWrapperTest
+#include <assert.h>        // for assert
+#include <cstddef>         // for NULL, size_t
+#include <fpfw_status.h>   // for FPFW_STATUS_NULL_POINTER, FPFW_STATUS...
+#include <idsw_kng.h>
 #include <mock_bug_check.h>    // for __wrap_crash_dump_bug_check
 #include <power_i.h>           // for power_fuses_get_dts_coeff, power_fuse...
 #include <power_runconfig.h>   // for power_fuse_data_t, dts_coeff_t, power...
@@ -141,6 +142,9 @@ POWER_TEST(read_fuse_power_hw_supported, set_fuse_data_to_default, NULL)
 {
     power_fuse_data_t test_fuses = {};
 
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
+
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
@@ -159,7 +163,8 @@ POWER_TEST(read_fuse_power_hw_supported, set_fuse_data_to_default, NULL)
 POWER_TEST(read_fuse_power_hw_supported_core_enabled, set_run_config_core_enabled, reset_run_config_to_empty)
 {
     power_fuse_data_t test_fuses = {};
-
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
@@ -173,7 +178,8 @@ POWER_TEST(read_fuse_power_hw_supported_core_enabled, set_run_config_core_enable
 POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_config_to_empty)
 {
     power_fuse_data_t test_fuses = {};
-
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
@@ -401,6 +407,9 @@ POWER_TEST(get_dts_coeff_y_fuse_read_zero, set_fuse_data_to_zero, set_fuse_data_
     unsigned coeff_spacing = 0x2;
     dts_coeff_t dts_coeff = {};
 
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
+
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
@@ -424,6 +433,9 @@ POWER_TEST(get_dts_coeff_k_fuse_read_fail, set_fuse_data_to_one, set_fuse_data_t
     unsigned coeff_count = 0x1;
     unsigned coeff_spacing = 0x2;
     dts_coeff_t dts_coeff = {};
+
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
@@ -482,6 +494,9 @@ POWER_TEST(loadac_to_volage_zero_fuse_data, set_fuse_data_to_zero, set_fuse_data
 {
     dvfs_vf_slope_t slope_offset = {};
 
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
+
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
@@ -498,6 +513,9 @@ POWER_TEST(loadac_to_volage_zero_fuse_data, set_fuse_data_to_zero, set_fuse_data
 POWER_TEST(loadac_to_volage_fuse_read_fail, NULL, NULL)
 {
     dvfs_vf_slope_t slope_offset = {};
+
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
@@ -517,6 +535,9 @@ POWER_TEST(loadac_to_volage_second_fuse_read_fail, NULL, NULL)
 {
     dvfs_vf_slope_t slope_offset = {};
 
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
+
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
@@ -530,6 +551,9 @@ POWER_TEST(loadac_to_volage_second_fuse_read_fail, NULL, NULL)
 POWER_TEST(loadac_to_volage_valid_fuse_data, set_fuse_data_to_default, NULL)
 {
     dvfs_vf_slope_t slope_offset = {};
+
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
@@ -686,8 +710,10 @@ POWER_TEST(get_tdp_config_first_fuse_read_fail, set_fuse_data_to_zero, set_fuse_
 {
     power_fuse_tdp_t tdp_config;
 
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
 
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
@@ -703,6 +729,9 @@ POWER_TEST(get_tdp_config_first_fuse_read_fail, set_fuse_data_to_zero, set_fuse_
 POWER_TEST(get_tdp_config_first_fuse_read_fail_success, set_fuse_data_to_zero, set_fuse_data_to_default)
 {
     power_fuse_tdp_t tdp_config;
+
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
 
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
@@ -722,6 +751,8 @@ POWER_TEST(get_tdp_config_first_fuse_read_fail_success, set_fuse_data_to_zero, s
 POWER_TEST(get_tdp_config_second_fuse_read_fail, set_fuse_data_to_default, NULL)
 {
     power_fuse_tdp_t tdp_config;
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
@@ -737,6 +768,9 @@ POWER_TEST(get_tdp_config_third_fuse_read_fail, set_fuse_data_to_default, NULL)
 {
     power_fuse_tdp_t tdp_config;
 
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
+
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
@@ -751,6 +785,9 @@ POWER_TEST(get_tdp_config_fuse_read_success, set_fuse_data_to_one, set_fuse_data
 {
     power_fuse_tdp_t tdp_config;
 
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
+
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
@@ -763,6 +800,9 @@ POWER_TEST(get_tdp_config_fuse_read_success, set_fuse_data_to_one, set_fuse_data
 POWER_TEST(get_tdp_config_fuse_success, NULL, NULL)
 {
     power_fuse_tdp_t tdp_config;
+
+    will_return_always(__wrap_idsw_get_platform_sdv,
+                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);

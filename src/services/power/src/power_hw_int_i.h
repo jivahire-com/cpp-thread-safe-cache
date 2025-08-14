@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <dvfs.h>
+#include <corebits.h>  // for corebits_t..
 #include <power_loops_i.h>
 #include <power_runconfig.h>
 #include <power_runconfig_i.h>
@@ -20,6 +21,11 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CORES_PER_TILE (NUM_AP_CORES_PER_DIE / NUM_CPU_TILES)
+#define FPGA_PLATFORM_CORES ((corebits_t)COREBITS_INIT_UINT32(0x000c0300, 0x00c03000, 0))
+#define ZEBU_CORES_8C ((corebits_t)COREBITS_INIT_UINT32(0x000000ff, 0x00000000, 0))
+#define SVP_CORES ((corebits_t)COREBITS_INIT_UINT32(0xFF, 0x0, 0x0))
+#define SVP_MIN_CORES (corebits_t)COREBITS_INIT_UINT32(0x01, 0x0, 0x0)
+#define PLATFORM_CORES (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF)
 
 /*-------------- Typedefs ----------------*/
 /**

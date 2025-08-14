@@ -627,9 +627,36 @@ void power_warm_init_core_reset_pvt(const power_runconfig_t* p_runconfig)
 
     FPFW_RUNTIME_ASSERT(p_config != NULL);
 
+    // PVT needs to be initialized for all present core,even if not enabled
+    corebits_t platform_cores = {0};
+    switch (idsw_get_platform_sdv())
+    {
+    case PLATFORM_SVP_SIM:
+        platform_cores = SVP_CORES;
+        break;
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        platform_cores = SVP_MIN_CORES;
+        break;
+    case PLATFORM_FPGA:
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+        platform_cores = FPGA_PLATFORM_CORES;
+        break;
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D_8C:
+        platform_cores = ZEBU_CORES_8C;
+        break;
+    case PLATFORM_RVP_EVT_SILICON:
+        platform_cores = PLATFORM_CORES;
+        break;
+    default:
+        POWER_LOG_INFO("Unknown Platform, PVT not initialized for this platform");
+        break;
+    }
+
     for (unsigned int core = 0; core < core_count; ++core)
     {
-        if (!corebits_is_bit_set(p_config->platform_cores_in_die, core))
+        if (!corebits_is_bit_set(&platform_cores, core))
         {
             // skip cores not present in platform
             continue;
@@ -675,17 +702,57 @@ void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg
     POWER_ET_STATUS(POWER_ET_TYPE_DVFS_REINIT);
     POWER_LOG_INFO("Reinitializing DVFS telemetry");
 
+    // PVT needs to be initialized for all present core,even if not enabled
+    corebits_t platform_cores = {0};
+    switch (idsw_get_platform_sdv())
+    {
+    case PLATFORM_SVP_SIM:
+        platform_cores = SVP_CORES;
+        break;
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        platform_cores = SVP_MIN_CORES;
+        break;
+    case PLATFORM_FPGA:
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+        platform_cores = FPGA_PLATFORM_CORES;
+        break;
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D_8C:
+        platform_cores = ZEBU_CORES_8C;
+        break;
+    case PLATFORM_RVP_EVT_SILICON:
+        platform_cores = PLATFORM_CORES;
+        break;
+    default:
+        POWER_LOG_INFO("Unknown Platform, PVT not initialized for this platform");
+        break;
+    }
+
     for (unsigned int core = 0; core < core_count; ++core)
     {
         const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
         const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
 
-        if (!corebits_is_bit_set(p_config->platform_cores_in_die, core))
+        if (!corebits_is_bit_set(&platform_cores, core))
         {
             // skip cores not present in platform
             continue;
         }
 
+        // PVT sensor needs to be initialized for all cores on platform, even if not enabled
+        /* One tile per two cores */
+        if (core % CORES_PER_TILE == 0)
+        {
+            const uint32_t tile_num = core / CORES_PER_TILE;
+            tile_pvt_telem_setting_config_t tile_pvt_telem_settings = PVT_TILE_TELEM_DEFAULT_CONFIG;
+
+            // update tile pvt telemetry addreses
+            power_init_update_tilepvt_telemetry_cfg(&tile_pvt_telem_settings, p_telemetry_config, tile_num);
+            tile_pvt_dma_config(cluster_pex_base_addr, &tile_pvt_telem_settings);
+        }
+
+        // Update ODCM and DVFS telemetry for present and enabled cores
         if (core_enabled)
         {
             odcm_telem_config_t odcm_telem_cfg = ODCM_TELEM_DEFAULT_CONFIG;
@@ -699,17 +766,6 @@ void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg
                                   p_telemetry_config->scp_msg_telem_wr_address);
 
             dvfs_set_plimit(cluster_pex_base_addr, MAX_PLIMIT, false);
-        }
-
-        /* One tile per two cores */
-        if (core % CORES_PER_TILE == 0)
-        {
-            const uint32_t tile_num = core / CORES_PER_TILE;
-            tile_pvt_telem_setting_config_t tile_pvt_telem_settings = PVT_TILE_TELEM_DEFAULT_CONFIG;
-
-            // update tile pvt telemetry addreses
-            power_init_update_tilepvt_telemetry_cfg(&tile_pvt_telem_settings, p_telemetry_config, tile_num);
-            tile_pvt_dma_config(cluster_pex_base_addr, &tile_pvt_telem_settings);
         }
     }
 }
@@ -751,21 +807,73 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
     POWER_ET_STATUS(POWER_ET_TYPE_DVFS_INIT);
     POWER_LOG_INFO("Initializing DVFS");
 
+    corebits_t platform_cores = {0};
+    switch (idsw_get_platform_sdv())
+    {
+    case PLATFORM_SVP_SIM:
+        platform_cores = SVP_CORES;
+        break;
+    case PLATFORM_SVP_MIN_CONFIG_SIM:
+        platform_cores = SVP_MIN_CORES;
+        break;
+    case PLATFORM_FPGA:
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+        platform_cores = FPGA_PLATFORM_CORES;
+        break;
+    case PLATFORM_EMU_1D_8C:
+    case PLATFORM_EMU_2D_8C:
+        platform_cores = ZEBU_CORES_8C;
+        break;
+    case PLATFORM_EMU:
+    case PLATFORM_EMU_1D:
+    case PLATFORM_EMU_2D:
+        platform_cores = PLATFORM_CORES;
+        break;
+    case PLATFORM_RVP_EVT_SILICON:
+        platform_cores = PLATFORM_CORES;
+        break;
+    default:
+        POWER_LOG_INFO("Unknown Platform, PVT not initialized for this platform");
+        break;
+    }
+
     for (unsigned int core = 0; core < core_count; ++core)
     {
         const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
         const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
 
-        if (!corebits_is_bit_set(p_config->platform_cores_in_die, core))
+        if (!corebits_is_bit_set(&platform_cores, core))
         {
             // skip cores not present in platform
             continue;
         }
 
-        core_pll_mask_error_sr(p_runconfig, core);
+        // PVT sensor needs to be initialized for all cores on platform, even if not enabled
+        /* One tile per two cores */
+        if (core % CORES_PER_TILE == 0)
+        {
+            const uint32_t tile_num = core / CORES_PER_TILE;
 
+            // update tile pvt DTS alarms
+            power_init_update_tilepvt_tile_cfg(p_runconfig, &tile_pvt_settings, tile_num);
+            // update tile pvt telemetry addreses
+            power_init_update_tilepvt_telemetry_cfg(&tile_pvt_telem_settings, p_telemetry_config, tile_num);
+
+            return_value = tile_pvt_init(tile_num, cluster_pex_base_addr, &tile_pvt_telem_settings, &tile_pvt_settings);
+            if (return_value != PVT_SUCCESS)
+            {
+                POWER_LOG_CRIT("tile_pvt_init for tile %d returned %d", (int)tile_num, return_value);
+                BUG_CHECK(KNG_SC_TILE_PVT_INIT, tile_num, return_value);
+            }
+        }
+
+        // Initialize ODCM and DVFS for present and enabled cores
         if (core_enabled)
         {
+
+            core_pll_mask_error_sr(p_runconfig, core);
+
             power_init_update_odcm_cfg_core(&odcm_cfg.telem_cfg, p_telemetry_config, core);
             return_value = odcm_init(cluster_pex_base_addr, &odcm_cfg);
             if (return_value != ODCM_SUCCESS)
@@ -812,24 +920,6 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
         {
             POWER_LOG_CRIT("dvfs_init for core %d returned %d", core, return_value);
             BUG_CHECK(KNG_SC_CORE_DVFS_INIT, core, return_value);
-        }
-
-        /* One tile per two cores */
-        if (core % CORES_PER_TILE == 0)
-        {
-            const uint32_t tile_num = core / CORES_PER_TILE;
-
-            // update tile pvt DTS alarms
-            power_init_update_tilepvt_tile_cfg(p_runconfig, &tile_pvt_settings, tile_num);
-            // update tile pvt telemetry addreses
-            power_init_update_tilepvt_telemetry_cfg(&tile_pvt_telem_settings, p_telemetry_config, tile_num);
-
-            return_value = tile_pvt_init(tile_num, cluster_pex_base_addr, &tile_pvt_telem_settings, &tile_pvt_settings);
-            if (return_value != PVT_SUCCESS)
-            {
-                POWER_LOG_CRIT("tile_pvt_init for tile %d returned %d", (int)tile_num, return_value);
-                BUG_CHECK(KNG_SC_TILE_PVT_INIT, tile_num, return_value);
-            }
         }
     }
     // split the end of init out from above to parallelize the FLL calibrations

@@ -98,6 +98,7 @@ mock_target(${TARGET}
     power_hw_force_pmin
     DfwkAsyncRequestComplete
     power_loops_warmstart_entry
+    idsw_get_platform_sdv
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

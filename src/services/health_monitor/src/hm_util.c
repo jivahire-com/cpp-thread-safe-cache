@@ -29,23 +29,10 @@
 
 const char* get_error_domain_name(acpi_error_domain_t domain)
 {
-    static const char* enum_names[] = {"DDR",
-                                       "MESH",
-                                       "SECURE_RAM",
-                                       "NON_SECURE_RAM",
-                                       "MCP_PROC",
-                                       "SCP_PROC",
-                                       "HSP_PROC",
-                                       "AP_PROC",
-                                       "SDM",
-                                       "CDED_SDM",
-                                       "SMMU",
-                                       "PCIE",
-                                       "GIC",
-                                       "STD_PROCESSOR",
-                                       "STD_MEMORY",
-                                       "STD_PCIE",
-                                       "STD_PLATFORM"};
+    static const char* enum_names[ACPI_ERROR_DOMAIN_COUNT] = {
+        "DDR",     "MESH",    "SECURE_RAM", "NON_SECURE_RAM", "MCP_PROC",   "SCP_PROC", "HSP_PROC",
+        "AP_PROC", "SDM",     "CDED_SDM",   "SMMU",           "PCIE",       "GIC",      "PEX",
+        "VAB",     "NITOWER", "RHTLM",      "STD_PROCESSOR",  "STD_MEMORY", "STD_PCIE", "STD_PLATFORM"};
 
     // Check if the domain is within the valid range
     if (domain < ACPI_ERROR_DOMAIN_COUNT)

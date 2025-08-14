@@ -172,36 +172,83 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
             sts = oi_pcie_rp_dbi_hide_dpc_cap(&(rpss->rps[i]));
             BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
         }
+        /* TODO: If mscp is going to have complete control over this register set by knobs,
+         *   the interface enums for this call must be passed up by silibs knobs headers
+         *   to mscp xml
+         */
 
         // Apply force read allocate
-        if (rpss_workarounds->prod_rp_cfgs[i].force_read_allocate == true)
+        pcie_laattr_ovrd_t overrides_r = {0};
+        // Default override values, matches POR values
+        overrides_r.tph_override = PCIE_LAATTR_WB_A_OS;
+        overrides_r.notph_override = PCIE_LAATTR_WB_A_OS;
+        overrides_r.nosnoop_override = PCIE_LAATTR_WB_A_OS;
+
+        // Read tph
+        if (rpss_workarounds->prod_rp_cfgs[i].lattr_tph_en_read == true)
         {
-            pcie_laattr_ovrd_t overrides = {0};
-            overrides.tph_override = PCIE_LAATTR_NC_NGRE;
-            overrides.tph_override_op = PCIE_LAATTR_OVERRIDE;
-            sts = oi_pcie_rp_dbi_set_read_cacheability(&(rpss->rps[i]),
-                                                       COHERENCY_READ_WRITE_DOMAIN_MODE,
-                                                       COHERENCY_READ_WRITE_DOMAIN_VALUE,
-                                                       COHERENCY_READ_WRITE_CACHE_MODE,
-                                                       COHERENCY_READ_WRITE_CACHE_VALUE);
-            sts |= oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides, false);
-            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+            overrides_r.tph_override_op = PCIE_LAATTR_OVERRIDE;
         }
+        else
+        {
+            overrides_r.tph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+        }
+        // Read notph
+        if (rpss_workarounds->prod_rp_cfgs[i].lattr_notph_en_read == true)
+        {
+            overrides_r.notph_override_op = PCIE_LAATTR_OVERRIDE;
+        }
+        else
+        {
+            overrides_r.notph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+        }
+        // Read no snoop
+        if (rpss_workarounds->prod_rp_cfgs[i].lattr_nosnoop_en_read == true)
+        {
+            overrides_r.nosnoop_override_op = PCIE_LAATTR_OVERRIDE;
+        }
+        else
+        {
+            overrides_r.nosnoop_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+        }
+        sts = oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides_r, false);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
 
         // Apply force write allocate
-        if (rpss_workarounds->prod_rp_cfgs[i].force_write_allocate == true)
+        pcie_laattr_ovrd_t overrides_w = {0};
+        overrides_w.tph_override = PCIE_LAATTR_WB_A_OS;
+        overrides_w.notph_override = PCIE_LAATTR_WB_A_OS;
+        overrides_w.nosnoop_override = PCIE_LAATTR_WB_A_OS;
+
+        // Read tph
+        if (rpss_workarounds->prod_rp_cfgs[i].lattr_tph_en_write == true)
         {
-            pcie_laattr_ovrd_t overrides = {0};
-            overrides.tph_override = PCIE_LAATTR_NC_NGRE;
-            overrides.tph_override_op = PCIE_LAATTR_OVERRIDE;
-            sts = oi_pcie_rp_dbi_set_write_cacheability(&(rpss->rps[i]),
-                                                        COHERENCY_READ_WRITE_DOMAIN_MODE,
-                                                        COHERENCY_READ_WRITE_DOMAIN_VALUE,
-                                                        COHERENCY_READ_WRITE_CACHE_MODE,
-                                                        COHERENCY_READ_WRITE_CACHE_VALUE);
-            sts |= oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides, true);
-            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+            overrides_w.tph_override_op = PCIE_LAATTR_OVERRIDE;
         }
+        else
+        {
+            overrides_w.tph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+        }
+        // Read notph
+        if (rpss_workarounds->prod_rp_cfgs[i].lattr_notph_en_write == true)
+        {
+            overrides_w.notph_override_op = PCIE_LAATTR_OVERRIDE;
+        }
+        else
+        {
+            overrides_w.notph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+        }
+        // Read no snoop
+        if (rpss_workarounds->prod_rp_cfgs[i].lattr_nosnoop_en_write == true)
+        {
+            overrides_w.nosnoop_override_op = PCIE_LAATTR_OVERRIDE;
+        }
+        else
+        {
+            overrides_w.nosnoop_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+        }
+        sts = oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides_w, true);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
     }
 
     return sts;

@@ -394,6 +394,7 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, test_setup, test_teardo
     will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
+    will_return_always(__wrap_oi_pcie_ss_set_laattr_rp_overrides, SILIBS_SUCCESS);
     expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << r.rpss_index));
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
@@ -422,6 +423,7 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_hide_dpc, test_setup, test_teard
     will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
+    will_return_always(__wrap_oi_pcie_ss_set_laattr_rp_overrides, SILIBS_SUCCESS);
     expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << r.rpss_index));
     will_return(__wrap_oi_pcie_rp_dbi_hide_dpc_cap, SILIBS_SUCCESS);
     int32_t ret = pcie_sched_sync_op(&(r.header));
@@ -447,8 +449,12 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_force_allocation, test_setup, te
     pcie_prod_cfg_workarounds_t* rpss_workarounds = get_workaround_for_rpss(r.rpss_index);
 
     /* Set the workaround to true*/
-    rpss_workarounds->prod_rp_cfgs[0].force_read_allocate = true;
-    rpss_workarounds->prod_rp_cfgs[0].force_write_allocate = true;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_nosnoop_en_read = true;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_tph_en_read = true;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_notph_en_read = true;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_nosnoop_en_write = true;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_tph_en_write = true;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_notph_en_write = true;
 
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
@@ -456,17 +462,18 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_force_allocation, test_setup, te
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
     expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << r.rpss_index));
-    will_return(__wrap_oi_pcie_rp_dbi_set_read_cacheability, SILIBS_SUCCESS);
-    will_return(__wrap_oi_pcie_rp_dbi_set_write_cacheability, SILIBS_SUCCESS);
-    will_return(__wrap_oi_pcie_ss_set_laattr_rp_overrides, SILIBS_SUCCESS);
-    will_return(__wrap_oi_pcie_ss_set_laattr_rp_overrides, SILIBS_SUCCESS);
+    will_return_always(__wrap_oi_pcie_ss_set_laattr_rp_overrides, SILIBS_SUCCESS);
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
 
     /* Restore default value*/
-    rpss_workarounds->prod_rp_cfgs[0].force_read_allocate = false;
-    rpss_workarounds->prod_rp_cfgs[0].force_read_allocate = false;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_nosnoop_en_read = false;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_tph_en_read = false;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_notph_en_read = false;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_nosnoop_en_write = false;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_tph_en_write = false;
+    rpss_workarounds->prod_rp_cfgs[0].lattr_notph_en_write = false;
 }
 
 TEST_FUNCTION(test_get_rp_ready_success, test_setup, test_teardown)

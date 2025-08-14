@@ -28,26 +28,42 @@
     {                                            \
         .prod_rp_cfgs = {                        \
             {.hide_dpc = false,                  \
-             .force_read_allocate = false,       \
-             .force_write_allocate = false,      \
+             .lattr_nosnoop_en_read = false,     \
+             .lattr_tph_en_read = false,         \
+             .lattr_notph_en_read = false,       \
+             .lattr_nosnoop_en_write = false,    \
+             .lattr_tph_en_write = false,        \
+             .lattr_notph_en_write = false,      \
              .hest_aer_ue_mask = 0x04400000,     \
              .hest_aer_ue_severity = 0x10462030, \
              .hest_aer_ce_mask = 0x0000E000},    \
             {.hide_dpc = false,                  \
-             .force_read_allocate = false,       \
-             .force_write_allocate = false,      \
+             .lattr_nosnoop_en_read = false,     \
+             .lattr_tph_en_read = false,         \
+             .lattr_notph_en_read = false,       \
+             .lattr_nosnoop_en_write = false,    \
+             .lattr_tph_en_write = false,        \
+             .lattr_notph_en_write = false,      \
              .hest_aer_ue_mask = 0x04400000,     \
              .hest_aer_ue_severity = 0x10462030, \
              .hest_aer_ce_mask = 0x0000E000},    \
             {.hide_dpc = false,                  \
-             .force_read_allocate = false,       \
-             .force_write_allocate = false,      \
+             .lattr_nosnoop_en_read = false,     \
+             .lattr_tph_en_read = false,         \
+             .lattr_notph_en_read = false,       \
+             .lattr_nosnoop_en_write = false,    \
+             .lattr_tph_en_write = false,        \
+             .lattr_notph_en_write = false,      \
              .hest_aer_ue_mask = 0x04400000,     \
              .hest_aer_ue_severity = 0x10462030, \
              .hest_aer_ce_mask = 0x0000E000},    \
             {.hide_dpc = false,                  \
-             .force_read_allocate = false,       \
-             .force_write_allocate = false,      \
+             .lattr_nosnoop_en_read = false,     \
+             .lattr_tph_en_read = false,         \
+             .lattr_notph_en_read = false,       \
+             .lattr_nosnoop_en_write = false,    \
+             .lattr_tph_en_write = false,        \
+             .lattr_notph_en_write = false,      \
              .hest_aer_ue_mask = 0x04400000,     \
              .hest_aer_ue_severity = 0x10462030, \
              .hest_aer_ce_mask = 0x0000E000},    \
@@ -63,12 +79,14 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
                                             pcie_prod_cfg_t* pcie_cfg_knob,
                                             pcie_prod_phy_cfg_t* phy_cfg_knob,
                                             pcie_prod_rp_slot_power_allocation_t* rp_slot_power_knob,
+                                            pcie_prod_rp_rx_credits_t* rx_credits_cfg_knob,
                                             pcie_prod_cfg_workarounds_t* pcie_cfg_workarounds);
 static void apply_mirrored_configurations(uint8_t rpss_id,
                                           pcie_cfg_t* pcie_cfg,
                                           pcie_prod_cfg_t* pcie_cfg_knob,
                                           pcie_prod_phy_cfg_t* phy_cfg_knob,
                                           pcie_prod_rp_slot_power_allocation_t* rp_slot_power_knob,
+                                          pcie_prod_rp_rx_credits_t* rx_credits_cfg_knob,
                                           pcie_prod_cfg_workarounds_t* pcie_cfg_workarounds);
 static void force_rpss2_resource_allocation_override(pcie_cfg_t* pcie_cfg); // In 1-1 Config Display Port is on RPSS2
 static void force_rpss1_resource_allocation_override(pcie_cfg_t* pcie_cfg); // In mirrored Config Display Port is on RPSS1
@@ -205,6 +223,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
                                             pcie_prod_cfg_t* pcie_cfg_knob,
                                             pcie_prod_phy_cfg_t* phy_cfg_knob,
                                             pcie_prod_rp_slot_power_allocation_t* rp_slot_power_knob,
+                                            pcie_prod_rp_rx_credits_t* rx_credits_cfg_knob,
                                             pcie_prod_cfg_workarounds_t* pcie_cfg_workarounds)
 {
     pcie_prod_rp_cfg_t rp_knobs[4];
@@ -214,6 +233,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss0_cfg();
         *phy_cfg_knob = config_get_pcie_rpss0_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss0_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss0_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss0_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss0_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss0_rp2_cfg();
@@ -223,6 +243,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss1_cfg();
         *phy_cfg_knob = config_get_pcie_rpss1_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss1_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss1_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss1_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss1_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss1_rp2_cfg();
@@ -232,6 +253,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss2_cfg();
         *phy_cfg_knob = config_get_pcie_rpss2_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss2_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss2_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss2_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss2_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss2_rp2_cfg();
@@ -248,6 +270,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss3_cfg();
         *phy_cfg_knob = config_get_pcie_rpss3_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss3_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss3_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss3_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss3_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss3_rp2_cfg();
@@ -257,6 +280,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss4_cfg();
         *phy_cfg_knob = config_get_pcie_rpss4_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss4_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss4_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss4_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss4_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss4_rp2_cfg();
@@ -266,6 +290,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss5_cfg();
         *phy_cfg_knob = config_get_pcie_rpss5_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss5_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss5_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss5_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss5_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss5_rp2_cfg();
@@ -275,6 +300,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss6_cfg();
         *phy_cfg_knob = config_get_pcie_rpss6_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss6_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss6_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss6_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss6_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss6_rp2_cfg();
@@ -284,6 +310,7 @@ static void apply_one_to_one_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss7_cfg();
         *phy_cfg_knob = config_get_pcie_rpss7_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss7_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss7_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss7_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss7_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss7_rp2_cfg();
@@ -311,6 +338,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
                                           pcie_prod_cfg_t* pcie_cfg_knob,
                                           pcie_prod_phy_cfg_t* phy_cfg_knob,
                                           pcie_prod_rp_slot_power_allocation_t* rp_slot_power_knob,
+                                          pcie_prod_rp_rx_credits_t* rx_credits_cfg_knob,
                                           pcie_prod_cfg_workarounds_t* pcie_cfg_workarounds)
 {
     /*
@@ -348,6 +376,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss3_cfg();
         *phy_cfg_knob = config_get_pcie_rpss3_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss3_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss3_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss3_rp0_cfg(); // RP0  maps to RPSS3 RP0
         rp_knobs[1] = config_get_pcie_rpss3_rp1_cfg(); // RP1  maps to RPSS3 RP1
         rp_knobs[2] = config_get_pcie_rpss3_rp2_cfg(); // RP2  maps to RPSS3 RP2
@@ -357,6 +386,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss2_cfg();
         *phy_cfg_knob = config_get_pcie_rpss2_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss2_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss2_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss2_rp1_cfg(); // RP0  maps to RPSS2 RP1
         rp_knobs[1] = config_get_pcie_rpss2_rp0_cfg(); // RP1  maps to RPSS2 RP0
         rp_knobs[2] = config_get_pcie_rpss2_rp3_cfg(); // RP2  maps to RPSS2 RP3
@@ -373,6 +403,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss1_cfg();
         *phy_cfg_knob = config_get_pcie_rpss1_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss1_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss1_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss1_rp0_cfg(); // RP0  maps to RPSS1 RP0
         rp_knobs[1] = config_get_pcie_rpss1_rp1_cfg(); // RP1  maps to RPSS1 RP1
         rp_knobs[2] = config_get_pcie_rpss1_rp2_cfg(); // RP2  maps to RPSS1 RP2
@@ -382,6 +413,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss0_cfg();
         *phy_cfg_knob = config_get_pcie_rpss0_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss0_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss0_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss0_rp2_cfg(); // RP0  maps to RPSS0 RP2
         rp_knobs[1] = config_get_pcie_rpss0_rp3_cfg(); // RP1  maps to RPSS0 RP3
         rp_knobs[2] = config_get_pcie_rpss0_rp0_cfg(); // RP2  maps to RPSS0 RP0
@@ -391,6 +423,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss7_cfg();
         *phy_cfg_knob = config_get_pcie_rpss7_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss7_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss7_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss7_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss7_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss7_rp2_cfg();
@@ -400,6 +433,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss6_cfg();
         *phy_cfg_knob = config_get_pcie_rpss6_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss6_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss6_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss6_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss6_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss6_rp2_cfg();
@@ -409,6 +443,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss5_cfg();
         *phy_cfg_knob = config_get_pcie_rpss5_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss5_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss5_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss5_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss5_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss5_rp2_cfg();
@@ -418,6 +453,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
         *pcie_cfg_knob = config_get_pcie_rpss4_cfg();
         *phy_cfg_knob = config_get_pcie_rpss4_phy_cfg();
         *rp_slot_power_knob = config_get_pcie_rpss4_rp_slot_power_cfg();
+        *rx_credits_cfg_knob = config_get_pcie_rpss4_rx_credit_cfg();
         rp_knobs[0] = config_get_pcie_rpss4_rp0_cfg();
         rp_knobs[1] = config_get_pcie_rpss4_rp1_cfg();
         rp_knobs[2] = config_get_pcie_rpss4_rp2_cfg();
@@ -446,15 +482,16 @@ void override_default_pcie_cfg(uint8_t rpss_id)
     pcie_prod_cfg_t pcie_cfg_knob;
     pcie_prod_phy_cfg_t phy_cfg_knob;
     pcie_prod_rp_slot_power_allocation_t rp_slot_power_knob;
+    pcie_prod_rp_rx_credits_t rx_credits_cfg_knob;
     pcie_prod_cfg_workarounds_t* pcie_cfg_workarounds = &pcie_cfg_workarounds_np[rpss_id];
 
     if (mirror_rpss_configurations() == true)
     {
-        apply_mirrored_configurations(rpss_id, pcie_cfg, &pcie_cfg_knob, &phy_cfg_knob, &rp_slot_power_knob, pcie_cfg_workarounds);
+        apply_mirrored_configurations(rpss_id, pcie_cfg, &pcie_cfg_knob, &phy_cfg_knob, &rp_slot_power_knob, &rx_credits_cfg_knob, pcie_cfg_workarounds);
     }
     else
     {
-        apply_one_to_one_configurations(rpss_id, pcie_cfg, &pcie_cfg_knob, &phy_cfg_knob, &rp_slot_power_knob, pcie_cfg_workarounds);
+        apply_one_to_one_configurations(rpss_id, pcie_cfg, &pcie_cfg_knob, &phy_cfg_knob, &rp_slot_power_knob, &rx_credits_cfg_knob, pcie_cfg_workarounds);
     }
 
     pcie_cfg->pcie_ss_override = false; /* Always disable so that individual RPSS settings are used */
@@ -479,6 +516,12 @@ void override_default_pcie_cfg(uint8_t rpss_id)
     for (uint8_t i = 0; i < PCIE_LANE_COUNT; i++)
     {
         pcie_cfg->phy_lane_cfgs[i] = phy_cfg_knob.phy_lane_cfgs[i];
+    }
+
+    /* Apply RX Credit knobs per RP*/
+    for (uint8_t i = 0; i < PCIESS_NUM_PORTS; i++)
+    {
+        pcie_cfg->rp_rx_credits[i] = rx_credits_cfg_knob.rp_rx_credit_cfgs[i];
     }
 
     /* Determine if CXL is supported on this RPSS */

@@ -52,6 +52,14 @@ jobs:
 
   steps: 
 
+    - task: PowerShell@2
+      displayName: 'Clean Temp Folder'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Get-ChildItem -Path $env:TEMP -Recurse -Force -ErrorAction Continue |
+            Remove-Item -Recurse -Force -ErrorAction Continue
+
     # Set up permissions for other repos
     - template: auth.yaml
 
@@ -201,11 +209,3 @@ jobs:
         artifact: 'drop_${{ parameters.ArtifactName }}_SOC_Pythia_Tests$(System.JobAttempt)'
         publishLocation: 'pipeline'
         parallel: true
-
-    - task: PowerShell@2
-      displayName: 'Clean Temp Folder'
-      inputs:
-        targetType: 'inline'
-        script: |
-          Get-ChildItem -Path $env:TEMP -Recurse -Force -ErrorAction SilentlyContinue |
-            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue

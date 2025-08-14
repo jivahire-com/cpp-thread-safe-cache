@@ -98,7 +98,7 @@ static int32_t calculate_expected_avg(int32_t latest_value, int32_t prev_avg, in
     }
 
     // For iteration 2:
-    // time_counter_uS / residency_uS: 8000, time_diff_uS: 4000
+    // residency_uS: 8000, time_diff_uS: 4000
     if (iteration == 2)
     {
         uint64_t time_diff_uS = 4000;
@@ -113,7 +113,7 @@ static int32_t calculate_expected_avg(int32_t latest_value, int32_t prev_avg, in
     }
 
     // For iteration 3:
-    // time_counter_uS / residency_uS: 12000, time_diff_uS: 4000
+    //residency_uS: 12000, time_diff_uS: 4000
     if (iteration == 3)
     {
         uint64_t prev_time = 8000;

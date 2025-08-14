@@ -39,18 +39,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                     12,
-                     PwrPkgGenerationFailed,
-                     FPFW_ET_LEVEL_WARNING,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                     13,
-                     InstPkgGenerationFailed,
-                     FPFW_ET_LEVEL_WARNING,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      14,
                      DeAllocateInvalidLocation,
                      FPFW_ET_LEVEL_ERROR,
@@ -73,16 +61,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      PkgCreateInstPkgNotEnoughSpace,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, pkg_available_size))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                     18,
-                     DataCollectionEnabled,
-                     FPFW_ET_LEVEL_INFO)
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                     19,
-                     DataCollectionDisabled,
-                     FPFW_ET_LEVEL_INFO)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      20,
@@ -154,14 +132,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, seq_num))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    31,
-                    TlmSvcDebugOutgoingDcpMsg,
-                    FPFW_ET_LEVEL_DEBUG,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, client_id),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, msg_id),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, seq_num))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     32,
                     TlmSvcDebugIncomingTrpMsg,
                     FPFW_ET_LEVEL_DEBUG,
@@ -201,16 +171,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     MtsMgrClientUnexpectedTrpMsg,
                     FPFW_ET_LEVEL_WARNING,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    36,
-                    MtsMgrUnexpectedCallOnPrimary,
-                    FPFW_ET_LEVEL_WARNING)
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    37,
-                    MtsMgrUnexpectedCallOnSecondary,
-                    FPFW_ET_LEVEL_WARNING)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     38,
@@ -253,22 +213,28 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     44,
-                    DataUpdateMMAvgOverflow,
-                    FPFW_ET_LEVEL_ERROR)
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    45,
-                    DataUpdateMMAWrongInValidTimeStamp,
-                    FPFW_ET_LEVEL_DEBUG)
+                    InvalidRackThrottlePriority,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, priority))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    46,
-                    PstatePWRUpdateMMAvgOverflow,
-                    FPFW_ET_LEVEL_ERROR)
+                    45,
+                    InvalidTerminateThrottleTimeStamp,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, new_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, prev_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, throttle_source))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     47,
                     LogCstateValidTimeStamp,
-                    FPFW_ET_LEVEL_ERROR)
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, new_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, prev_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, cstate))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     48,
@@ -321,23 +287,31 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     55,
-                    LogCoreInValidTimeStamp,
+                    LogInValidPstateTimeStamp,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, new_timestamp_uS),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, prev_timestamp_uS),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, pstate))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     56,
-                    LogCoreThrottleInValidStatus,
+                    ThrottleEndInvalidTimeStamp,
                     FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_INT8, status))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, new_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, prev_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, throttle_source))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     57,
-                    LogCoreThrottleInValidCoreId,
+                    RackThrottleEndInvalidTimeStamp,
                     FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status))
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, new_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, prev_timestamp_uS),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, priority))
+
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     58,
@@ -362,23 +336,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_LEVEL_ERROR)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    62,
-                    RunningAverageOverflow,
-                    FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, value))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    63,
-                    MeansBadDivisor,
-                    FPFW_ET_LEVEL_ERROR)
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    64,
-                    MeansOverflow,
-                    FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, value))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     65,
                     MeanofMeansHighCount,
                     FPFW_ET_LEVEL_WARNING,
@@ -388,11 +345,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     66,
                     MMAU16NullPointer,
                     FPFW_ET_LEVEL_ERROR)
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    67,
-                    DataHelperResidencyUpdateInValidTimeStamp,
-                    FPFW_ET_LEVEL_DEBUG)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     68,
@@ -405,25 +357,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     LogInValidCstateId,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, value))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    70,
-                    LogInValidPstateId,
-                    FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, value))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    71,
-                    LogCoreStateSameInValidEntry,
-                    FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status),
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, previous_status))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    72,
-                    LogCoreRackThrottleInValidPriority,
-                    FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, rack_priority_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     73,

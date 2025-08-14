@@ -114,7 +114,7 @@ static int32_t test_setup(void** state)
     {
         // Initialize core state
         core_rt[core_id].pstate_from_pstate_pkt = 0x00; // Set to valid PSTATE 0
-        core_rt[core_id].active_sample_plimit = 0;
+        core_rt[core_id].latest_plimit = 0;
         core_rt[core_id].pstate_res_timestamp_uS = 0;
         core_rt[core_id].status_flags.pkt_pstate_is_valid = false;
         core_rt[core_id].status_flags.pkt_cstate_is_valid = true;
@@ -265,7 +265,6 @@ static void setup_mock_sensor_polling_no_data(void)
     will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, false); // more_entries
 
     // Mock gtimer frequency - return a standard frequency value
-    will_return(__wrap_gtimer_prodfw_get_frequency, MICROSECONDS_PER_SECOND); // make ticks == uS for ease of testing
     will_return(__wrap_gtimer_prodfw_get_frequency, MICROSECONDS_PER_SECOND); // make ticks == uS for ease of testing
 }
 
@@ -467,13 +466,13 @@ TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
                        current_pstate,
                        pstate_array[current_pstate].residency_mS,
                        expected_residency_mS,
-                       core_rt[core_index].active_sample_plimit,
+                       core_rt[core_index].latest_plimit,
                        expected.plimit);
             }
 
             // Verify PSTATE values
             assert_int_equal(expected.pstate, core_rt[core_index].pstate_from_pstate_pkt);
-            assert_int_equal(expected.plimit, core_rt[core_index].active_sample_plimit);
+            assert_int_equal(expected.plimit, core_rt[core_index].latest_plimit);
             assert_int_equal(expected.entry_count, pstate_array[current_pstate].entry_count);
             assert_int_equal(expected.min_power_mW, pstate_array[current_pstate].min_power_mW);
             assert_int_equal(expected.max_power_mW, pstate_array[current_pstate].max_power_mW);
@@ -504,8 +503,8 @@ TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
         package_create_pwr_core_pstate_record(&pstate_record);
         pwr_core_element_pstate_t* pstate_array = &pstate_record.pstate_collection[core_index].pstate_element[0];
 
-        // duration-weighted avg: (2200×1 + 3300×1 + 4400×1 + 1100×1 + 1100×97) / 101ms = 1165mW
-        uint16_t expected_pwr_mW = 1165; // Final expected power value after all iterations
+        // avg: (2200 + 3300 + 4400 + 1100) / 4 = 2750
+        uint16_t expected_pwr_mW = 2750; // Final expected power value after all iterations
 
         assert_int_equal(expected_pwr_mW, pstate_array[current_pstate].avg_power_mW);
         assert_int_equal(FINAL_PACKAGE_TIME_US / 1000, pstate_array[current_pstate].residency_mS);

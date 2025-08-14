@@ -99,7 +99,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_ele
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id, pwr_core_element_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_TYPES]);
+void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id, pwr_core_element_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_SOURCES]);
 
 /**
  * @brief Get the core rack priority data for the specified core.
@@ -109,7 +109,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id, pwr_core_e
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id, pwr_core_element_rack_priorities_t (*rack_priority_array)[NUMBER_OF_RACK_PRIORITIES]);
+void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id, pwr_core_element_rack_priorities_t (*rack_priority_array)[NUMBER_OF_RACK_THROTTLE_PRIORITIES]);
 
 /**
  * @brief Get the core voltage data for the specified core.

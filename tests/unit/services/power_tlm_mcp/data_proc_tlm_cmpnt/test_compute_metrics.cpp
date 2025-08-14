@@ -348,8 +348,10 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm, test_setup, test_teardown)
         {220, 340, 500},
         {200, 320, 420},
         {210, 330, 440},
-        {190, 310, 490},
+        {190, 180, 490},
     };
+
+    die_2_die_exch_init(0);
 
     for (uint8_t i = 0; i < 5; i++)
     {
@@ -362,13 +364,19 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm, test_setup, test_teardown)
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.max, 220);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.running_avg.average, 200);
 
-    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.min, 300);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.min, 180);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.max, 340);
-    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.running_avg.average, 320);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.running_avg.average, 294);
 
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.min, 400);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.max, 500);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.running_avg.average, 450);
+
+    die_2_die_exch_init(1);
+    comp_metrics_for_single_soc_dimm(dimm_id, 20, 10, 30);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.min, 20);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.min, 10);
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.min, 30);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, test_teardown)
@@ -380,65 +388,65 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, te
     uint16_t test_values_mW[5] = {100, 200, 300, 400, 500};
 
     int pstate_index = 0;
-    uint32_t duration_uS = 1000;
 
     for (uint8_t i = 0; i < 5; i++)
     {
-        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i], duration_uS);
+        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i]);
     }
 
     // Check the results
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min, 0);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.max, 0);
 
-    assert_int_equal(data_util_running_avg_dur_get(
-                         &computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg_dur),
-                     0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average, 0);
 
     pstate_index = 0;
     core_is_active[core_id] = true;
 
     for (uint8_t i = 0; i < 5; i++)
     {
-        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i], (i + 1) * duration_uS);
+        comp_metrics_for_single_core_power_per_pstate(core_id, pstate_index, test_values_mW[i]);
     }
 
     // Check the results
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min, 100);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.max, 500);
-    assert_int_equal(data_util_running_avg_dur_get(
-                         &computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg_dur),
-                     367);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average, 300);
 }
 
-// comp_metrics_for_single_core_throttling_pstate(core_id, i, time_diff_uS, core_rt[core_id].throttle_info[i].residency_mS);
 TEST_FUNCTION(test_comp_metrics_for_single_core_throttling_pstate, test_setup, test_teardown)
 {
     uint8_t core_id = TEST_CORE_ID;
     core_is_active[core_id] = false;
 
-    uint8_t throttle_index = 1;
-    uint64_t time_stamp_uS = 5000;
+    uint8_t throttle_source = 1;
+    uint8_t test_pstates[5] = {10, 15, 20, 25, 30};
 
-    core_rt[core_id].core_throttling_tracker[throttle_index] = true;
-    core_rt[core_id].latest_throttle_type_previous_timestamp_uS[throttle_index] = 1000;
-    core_rt[core_id].latest_pstate = core_rt[core_id].pstate_from_current_pkt = 20;
+    // Test case: Core is inactive - should not update metrics
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_core_throttling_pstate(core_id, throttle_source, test_pstates[i]);
+    }
 
-    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS = 10;
-    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate = 10;
-    computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate = 5;
+    // Check the results - should be 0 since core is inactive
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.min, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.max, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.running_avg.average, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.running_avg.num_samples, 0);
 
-    uint32_t time_diff_uS = time_stamp_uS - core_rt[core_id].latest_throttle_type_previous_timestamp_uS[throttle_index];
-    comp_metrics_for_single_core_throttling_pstate(core_id, throttle_index, time_diff_uS, core_rt[core_id].latest_pstate);
-
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate, 5);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate, 10);
-
+    // Test case: Core is active - should update metrics
     core_is_active[core_id] = true;
-    comp_metrics_for_single_core_throttling_pstate(core_id, throttle_index, time_diff_uS, core_rt[core_id].latest_pstate);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate, 20);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate, 14);
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_single_core_throttling_pstate(core_id, throttle_source, test_pstates[i]);
+    }
+
+    // Check the results - should track min, max, and average
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.min, 10);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.max, 30);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.running_avg.average, 20);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.running_avg.num_samples, 5);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_power, test_setup, test_teardown)
@@ -474,80 +482,89 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_power, test_setup, test_teardown
     assert_int_equal(computed_metrics_2_mins.cores[core_id].power_mW.running_avg.num_samples, 5);
 }
 
-TEST_FUNCTION(test_comp_metrics_for_single_core_single_throttle_overrun_count_update, test_setup, test_teardown)
+TEST_FUNCTION(test_comp_metrics_for_single_core_throttle_overrun, test_setup, test_teardown)
 {
     uint8_t core_id = TEST_CORE_ID;
     core_is_active[core_id] = false;
 
-    uint8_t throttle_index = THROTTLE_SOURCE_CURRENT;
+    uint8_t throttle_source = THROTTLE_SOURCE_CURRENT;
 
-    comp_metrics_for_single_core_single_throttle_overrun_count_update(core_id, throttle_index);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count, 0);
+    comp_metrics_for_single_core_throttle_overrun(core_id, throttle_source);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].overrun_count, 0);
 
     core_is_active[core_id] = true;
 
-    comp_metrics_for_single_core_single_throttle_overrun_count_update(core_id, throttle_index);
+    comp_metrics_for_single_core_throttle_overrun(core_id, throttle_source);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count, 1);
-    throttle_index = THROTTLE_SOURCE_ADAPTIVE_CLK;
-    comp_metrics_for_single_core_single_throttle_overrun_count_update(core_id, throttle_index);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].overrun_count, 1);
+    throttle_source = THROTTLE_SOURCE_ADAPTIVE_CLK;
+    comp_metrics_for_single_core_throttle_overrun(core_id, throttle_source);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].overrun_count, 1);
 }
 
-TEST_FUNCTION(test_comp_metrics_for_single_core_single_throttle_update, test_setup, test_teardown)
+TEST_FUNCTION(test_comp_metrics_for_single_core_single_throttle_source, test_setup, test_teardown)
 {
     uint8_t core_id = TEST_CORE_ID;
     core_is_active[core_id] = false;
 
-    uint8_t throttle_index = THROTTLE_SOURCE_CURRENT;
+    uint8_t throttle_source = THROTTLE_SOURCE_CURRENT;
     uint64_t timestamp_diff_uS = 1000;
     bool throttle_start = true;
 
-    comp_metrics_for_single_core_single_throttle_update(core_id, throttle_index, timestamp_diff_uS, throttle_start);
+    comp_metrics_for_single_core_single_throttle_source(core_id, throttle_source, timestamp_diff_uS, throttle_start);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count, 0);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].entry_count, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].residency_uS, 0);
 
     core_is_active[core_id] = true;
-    comp_metrics_for_single_core_single_throttle_update(core_id, throttle_index, timestamp_diff_uS, throttle_start);
+    comp_metrics_for_single_core_single_throttle_source(core_id, throttle_source, timestamp_diff_uS, throttle_start);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count, 1);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].residency_uS, 0);
 
     throttle_start = false;
-    comp_metrics_for_single_core_single_throttle_update(core_id, throttle_index, timestamp_diff_uS, throttle_start);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count, 1);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS, 1);
+    comp_metrics_for_single_core_single_throttle_source(core_id, throttle_source, timestamp_diff_uS, throttle_start);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].residency_uS, 1000);
 }
 
-TEST_FUNCTION(test_comp_metrics_for_single_core_single_rack_throttle_update, test_setup, test_teardown)
+TEST_FUNCTION(test_comp_metrics_for_single_core_single_rack_priority, test_setup, test_teardown)
 {
     uint8_t core_id = TEST_CORE_ID;
     core_is_active[core_id] = false;
 
-    uint8_t priority_id = 0;
+    uint8_t current_priority = 0;
+    uint8_t new_priority = 6;
     uint64_t timestamp_diff_uS = 1000;
-    computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS = 10;
+    uint64_t timestamp_diff2_uS = 500;
     bool rack_throttle_priority_start = true;
 
-    comp_metrics_for_single_core_single_rack_throttle_update(core_id, priority_id, timestamp_diff_uS, rack_throttle_priority_start);
+    // Test case: Core is inactive - should not update metrics
+    comp_metrics_for_single_core_single_rack_priority(core_id, current_priority, timestamp_diff_uS, new_priority, rack_throttle_priority_start);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].entry_count, 0);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS, 10);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[new_priority].entry_count, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[current_priority].residency_uS, 0);
 
+    // Test case: Core is active, throttle priority start
     core_is_active[core_id] = true;
+    comp_metrics_for_single_core_single_rack_priority(core_id, current_priority, timestamp_diff_uS, new_priority, rack_throttle_priority_start);
 
-    comp_metrics_for_single_core_single_rack_throttle_update(core_id, priority_id, timestamp_diff_uS, rack_throttle_priority_start);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[new_priority].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[current_priority].residency_uS, 0);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].entry_count, 1);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS, 10);
-
+    // Test case: Core is active, throttle priority end (rack_throttle_priority_start = false)
     rack_throttle_priority_start = false;
-    comp_metrics_for_single_core_single_rack_throttle_update(core_id, priority_id, timestamp_diff_uS, rack_throttle_priority_start);
+    comp_metrics_for_single_core_single_rack_priority(core_id, current_priority, timestamp_diff_uS, new_priority, rack_throttle_priority_start);
 
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].entry_count, 1);
-    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[priority_id].residency_mS, 11);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[new_priority].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[current_priority].residency_uS, 1000);
+
+    // Test case: Multiple residency updates
+    comp_metrics_for_single_core_single_rack_priority(core_id, current_priority, timestamp_diff2_uS, new_priority, rack_throttle_priority_start);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[new_priority].entry_count, 1);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[current_priority].residency_uS, 1500);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_single_pstate, test_setup, test_teardown)

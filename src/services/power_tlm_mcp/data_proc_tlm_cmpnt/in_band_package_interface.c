@@ -49,15 +49,21 @@ void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_ele
         for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
         {
             (*pstate_array)[pstate_index].pstate_id = pstate_index;
-            (*pstate_array)[pstate_index].avg_power_mW = data_util_running_avg_dur_get(
-                &computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg_dur);
+
+            (*pstate_array)[pstate_index].avg_power_mW =
+                computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average;
+
             (*pstate_array)[pstate_index].min_power_mW =
                 computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min;
+
             (*pstate_array)[pstate_index].max_power_mW =
                 computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.max;
+
             (*pstate_array)[pstate_index].frequency_Mhz = dvfs_get_freq_from_plimit(pstate_index);
+
             (*pstate_array)[pstate_index].residency_mS =
                 ROUND_USEC_TO_MSEC(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].residency_uS);
+
             (*pstate_array)[pstate_index].entry_count =
                 computed_metrics_2_mins.cores[core_id].pstate[pstate_index].entry_count;
         }
@@ -85,7 +91,7 @@ void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_ele
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
-                                                    pwr_core_element_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_TYPES])
+                                                    pwr_core_element_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_SOURCES])
 {
     // parameter check: core_id, check if correct
     if (core_id >= NUMBER_OF_CORES_PER_DIE || throttle_array == NULL)
@@ -94,27 +100,31 @@ void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
     }
     else
     {
-        for (uint16_t throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
+        for (uint16_t throttle_source = 0; throttle_source < NUMBER_OF_THROTTLE_SOURCES; throttle_source++)
         {
-            (*throttle_array)[throttle_index].avg_pstate =
-                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].avg_pstate;
-            (*throttle_array)[throttle_index].entry_count =
-                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].entry_count;
-            (*throttle_array)[throttle_index].max_pstate =
-                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].max_pstate;
-            (*throttle_array)[throttle_index].residency_mS =
-                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].residency_mS;
-            (*throttle_array)[throttle_index].type_id = throttle_index;
-            (*throttle_array)[throttle_index].overrun_count =
-                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_index].overrun_count;
+            (*throttle_array)[throttle_source].avg_pstate =
+                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.running_avg.average;
+
+            (*throttle_array)[throttle_source].entry_count =
+                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].entry_count;
+
+            (*throttle_array)[throttle_source].max_pstate =
+                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.max;
+
+            (*throttle_array)[throttle_source].residency_mS =
+                ROUND_USEC_TO_MSEC(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].residency_uS);
+
+            (*throttle_array)[throttle_source].type_id = throttle_source;
+
+            (*throttle_array)[throttle_source].overrun_count =
+                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].overrun_count;
         }
     }
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id,
-                                                         pwr_core_element_rack_priorities_t (*rack_priority_array)[NUMBER_OF_RACK_PRIORITIES])
+                                                         pwr_core_element_rack_priorities_t (*rack_priority_array)[NUMBER_OF_RACK_THROTTLE_PRIORITIES])
 {
-
     // parameter check: core_id, check if correct
     if (core_id >= NUMBER_OF_CORES_PER_DIE || rack_priority_array == NULL)
     {
@@ -122,13 +132,16 @@ void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id,
     }
     else
     {
-        for (uint16_t rack_index = 0; rack_index < NUMBER_OF_RACK_PRIORITIES; rack_index++)
+        for (uint16_t rack_throttle_priority = 0; rack_throttle_priority < NUMBER_OF_RACK_THROTTLE_PRIORITIES;
+             rack_throttle_priority++)
         {
-            (*rack_priority_array)[rack_index].priority_id = rack_index;
-            (*rack_priority_array)[rack_index].entry_count =
-                computed_metrics_2_mins.cores[core_id].rack_priorities[rack_index].entry_count;
-            (*rack_priority_array)[rack_index].residency_mS =
-                computed_metrics_2_mins.cores[core_id].rack_priorities[rack_index].residency_mS;
+            (*rack_priority_array)[rack_throttle_priority].priority_id = rack_throttle_priority;
+
+            (*rack_priority_array)[rack_throttle_priority].entry_count =
+                computed_metrics_2_mins.cores[core_id].rack_priorities[rack_throttle_priority].entry_count;
+
+            (*rack_priority_array)[rack_throttle_priority].residency_mS = ROUND_USEC_TO_MSEC(
+                computed_metrics_2_mins.cores[core_id].rack_priorities[rack_throttle_priority].residency_uS);
         }
     }
 }
@@ -334,25 +347,14 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
     }
     else
     {
-        // Depending on the throttling status, we need to use a different source for what pstate id the
-        // core is currently in.
-        uint8_t current_pstate = core_rt[core_id].latest_pstate;
-        if (core_rt[core_id].throttling_status != NO_THROTTLE)
-        {
-            /* Note : DVFS engine can generate a lot of Pstate changes during throttling the
-            Pstate telemetry get suppressed and the only way to see Pstate samples is from
-            harvesting them from the periodic current telemetry packets */
-            current_pstate = core_rt[core_id].pstate_from_current_pkt;
-        }
-
-        core_summary_data->pstate = current_pstate;
+        core_summary_data->pstate = core_rt[core_id].latest_pstate;
         core_summary_data->cstate = core_rt[core_id].latest_cstate;
-        core_summary_data->frequency_Mhz = dvfs_get_freq_from_plimit(current_pstate);
+        core_summary_data->frequency_Mhz = dvfs_get_freq_from_plimit(core_rt[core_id].latest_pstate);
         core_summary_data->power_mW = core_rt[core_id].latest_power_mW;
         core_summary_data->voltage_mV = core_rt[core_id].latest_voltage_mV;
         core_summary_data->current_mA = core_rt[core_id].latest_current_mA;
         core_summary_data->temperature_dC = core_rt[core_id].latest_max_value_dC;
-        core_summary_data->plimit = core_rt[core_id].active_sample_plimit;
+        core_summary_data->plimit = core_rt[core_id].latest_plimit;
 
         // TODO :Below items need to be updated, when corresponding records will have implementation.
         // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584933
@@ -364,9 +366,9 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         core_summary_data->velocity_boost_priority = 0;
         /* Note : Every bit represt an active throttling*/
         // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2684261
-        core_summary_data->throttling_type = data_smpl_get_active_throttling_for_single_core(core_id);
+        core_summary_data->throttling_type = data_smpl_get_active_throttle_sources(core_id);
         /* Note:  latest rack priority id*/
-        core_summary_data->throttling_rack_priority = core_rt[core_id].latest_rack_throttling_priority_id;
+        core_summary_data->throttling_rack_priority = core_rt[core_id].latest_rack_throttle_priority;
     }
 }
 

@@ -352,7 +352,6 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
             printf("----------------------------------------\n");
             printf("Time and Average Values:\n");
             printf("Core 0:\n");
-            printf("  time_counter_uS: %llu\n", mock_temp_data.timestamp);
             printf("  previous_average: %d\n",
                    temperature_record.temperature_collection[0].temperature_element.average_dC);
             printf("  latest_value: %d\n", ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_max_cel));
@@ -374,7 +373,6 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
             }
 
             printf("\nCore 1:\n");
-            printf("  time_counter_uS: %llu\n", mock_temp_data.timestamp);
             printf("  previous_average: %d\n",
                    temperature_record.temperature_collection[1].temperature_element.average_dC);
             printf("  latest_value: %d\n", expected_core1_max_cel);
@@ -396,10 +394,9 @@ TEST_FUNCTION(test_tile_temperature_collection_functional, test_setup, test_tear
             }
         }
 
-        // min_dC: Updated in data_util_calc_mma_res only if latest_value < current min or min == 0
         assert_int_equal(temperature_record.temperature_collection[0].temperature_element.min_dC,
                          ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_min_cel));
-        // max_dC: Updated in data_util_calc_mma_res if latest_value > current max
+
         assert_int_equal(temperature_record.temperature_collection[0].temperature_element.max_dC,
                          ROUND_UP_CELSIUS_TO_DECI_CELSIUS(expected_core0_max_cel));
         // average_dC: Calculated using weighted average when conditions are met

@@ -69,10 +69,7 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 
     for (uint16_t pstate_id = 0; pstate_id < NUMBER_OF_PSTATES; pstate_id++)
     {
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg_dur.sum_weighted =
-            100 * AVG_DURATION_USEC;
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg_dur.total_time_uS =
-            AVG_DURATION_USEC;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg.average = 4000;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.min = 50;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.max = 150;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].entry_count = 1;
@@ -85,23 +82,25 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
     for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
     {
 
-        assert_int_equal(pstate_array[pstate_index].avg_power_mW,
-                         data_util_running_avg_dur_get(
-                             &computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.running_avg_dur));
+        assert_int_equal(
+            pstate_array[pstate_index].avg_power_mW,
+            computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.running_avg.average);
+
         assert_int_equal(pstate_array[pstate_index].min_power_mW,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.min);
+
         assert_int_equal(pstate_array[pstate_index].max_power_mW,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.max);
 
         assert_int_equal(pstate_array[pstate_index].residency_mS,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].residency_uS / 1000);
+
         assert_int_equal(pstate_array[pstate_index].entry_count,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].entry_count);
     }
     // setup for failure case, change pstate 0 element data.
     uint8_t index = 0;
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg_dur.sum_weighted = 105 * AVG_DURATION_USEC;
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg_dur.total_time_uS = AVG_DURATION_USEC;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg.average = 5000;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.min = 55;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.max = 155;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].entry_count = 2;
@@ -111,8 +110,7 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 
     // verify for pstate 0
     assert_int_not_equal(pstate_array[index].avg_power_mW,
-                         data_util_running_avg_dur_get(
-                             &computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg_dur));
+                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg.average);
     assert_int_not_equal(pstate_array[index].min_power_mW,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.min);
     assert_int_not_equal(pstate_array[index].max_power_mW,
@@ -159,91 +157,96 @@ TEST_FUNCTION(test_get_pwr_core_cstate_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
 {
-    pwr_core_element_throttle_t throttle_array[NUMBER_OF_THROTTLE_TYPES] = {{0}};
-    uint8_t throttle_index = 0;
+    pwr_core_element_throttle_t throttle_array[NUMBER_OF_THROTTLE_SOURCES] = {{0}};
+    uint8_t throttle_source = 0;
     uint8_t avg_pstate = 5;
     uint32_t entry_count = 10;
-    uint32_t residency_mS = 100;
+    uint32_t residency_uS = 5000;
     uint8_t max_pstate = 5;
 
-    for (throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
+    for (throttle_source = 0; throttle_source < NUMBER_OF_THROTTLE_SOURCES; throttle_source++)
     {
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate = avg_pstate;
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count = entry_count;
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate = max_pstate;
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS = residency_mS;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.running_avg.average = avg_pstate;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].entry_count = entry_count;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.max = max_pstate;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].residency_uS = residency_uS;
     }
     data_proc_tlm_cmpnt_get_pwr_core_throttle_data(TEST_CORE_ID_5, &throttle_array);
 
-    for (throttle_index = 0; throttle_index < NUMBER_OF_THROTTLE_TYPES; throttle_index++)
+    for (throttle_source = 0; throttle_source < NUMBER_OF_THROTTLE_SOURCES; throttle_source++)
     {
-        assert_int_equal(throttle_array[throttle_index].avg_pstate, avg_pstate);
-        assert_int_equal(throttle_array[throttle_index].entry_count, entry_count);
-        assert_int_equal(throttle_array[throttle_index].max_pstate, max_pstate);
-        assert_int_equal(throttle_array[throttle_index].residency_mS, residency_mS);
-        assert_int_equal(throttle_array[throttle_index].type_id, throttle_index);
+        assert_int_equal(throttle_array[throttle_source].avg_pstate, avg_pstate);
+        assert_int_equal(throttle_array[throttle_source].entry_count, entry_count);
+        assert_int_equal(throttle_array[throttle_source].max_pstate, max_pstate);
+        assert_int_equal(throttle_array[throttle_source].residency_mS, residency_uS / 1000);
+        assert_int_equal(throttle_array[throttle_source].type_id, throttle_source);
     }
 
     // setup for failure case.
     uint8_t index = 0; // test for one of the throttle type.
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].avg_pstate = 6;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].pstate.running_avg.average = 6;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].entry_count = 12;
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].max_pstate = 28;
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].residency_mS = 110;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].pstate.max = 28;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].residency_uS = 20000;
     data_proc_tlm_cmpnt_get_pwr_core_throttle_data(NUMBER_OF_CORES_PER_DIE, &throttle_array);
 
-    throttle_index = 0;
+    throttle_source = 0;
 
-    assert_int_not_equal(throttle_array[throttle_index].avg_pstate,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_index].avg_pstate);
-    assert_int_not_equal(throttle_array[throttle_index].entry_count,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_index].entry_count);
-    assert_int_not_equal(throttle_array[throttle_index].max_pstate,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_index].max_pstate);
-    assert_int_not_equal(throttle_array[throttle_index].residency_mS,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_index].residency_mS);
+    assert_int_not_equal(
+        throttle_array[throttle_source].avg_pstate,
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.running_avg.average);
+
+    assert_int_not_equal(throttle_array[throttle_source].entry_count,
+                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].entry_count);
+
+    assert_int_not_equal(throttle_array[throttle_source].max_pstate,
+                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.max);
+
+    assert_int_not_equal(throttle_array[throttle_source].residency_mS,
+                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].residency_uS / 1000);
 }
 
 TEST_FUNCTION(test_get_pwr_core_rack_priority_data, test_setup, test_teardown)
 {
-    pwr_core_element_rack_priorities_t rack_priority_array[NUMBER_OF_RACK_PRIORITIES] = {{0}};
-    uint8_t rack_index = 0;
+    pwr_core_element_rack_priorities_t rack_priority_array[NUMBER_OF_RACK_THROTTLE_PRIORITIES] = {{0}};
+    uint8_t rack_throttle_priority = 0;
     // test setup
     // Throttling Priorities are only for the Rack Throttling type and Rack Priorities are
     // only populated when the throttling type is the Rack Throttling.
-    for (rack_index = 0; rack_index < NUMBER_OF_RACK_PRIORITIES; rack_index++)
+    for (rack_throttle_priority = 0; rack_throttle_priority < NUMBER_OF_RACK_THROTTLE_PRIORITIES; rack_throttle_priority++)
     {
-        // ID representing the Priority, there are 8 Priority Levels (0 to 7)
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].priority_id = rack_index;
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].entry_count = 1;
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].residency_mS = 100;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_throttle_priority].entry_count = 1;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_throttle_priority].residency_uS = 7000;
     }
 
     data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(TEST_CORE_ID_5, &rack_priority_array);
 
-    for (rack_index = 0; rack_index < NUMBER_OF_RACK_PRIORITIES; rack_index++)
+    for (rack_throttle_priority = 0; rack_throttle_priority < NUMBER_OF_RACK_THROTTLE_PRIORITIES; rack_throttle_priority++)
     {
-        assert_int_equal(rack_priority_array[rack_index].priority_id,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].priority_id);
-        assert_int_equal(rack_priority_array[rack_index].entry_count,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].entry_count);
-        assert_int_equal(rack_priority_array[rack_index].residency_mS,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].residency_mS);
+        assert_int_equal(rack_priority_array[rack_throttle_priority].priority_id, rack_throttle_priority);
+
+        assert_int_equal(rack_priority_array[rack_throttle_priority].entry_count,
+                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_throttle_priority].entry_count);
+
+        assert_int_equal(rack_priority_array[rack_throttle_priority].residency_mS,
+                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_throttle_priority].residency_uS / 1000);
     }
-    rack_index = 0;
+    rack_throttle_priority = 0;
     // test for failure case .
     // change data in core data structure for rack priority 0 only.
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].entry_count = 2;
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].residency_mS = 110;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_throttle_priority].entry_count = 2;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_throttle_priority].residency_uS = 18000;
 
     data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(NUMBER_OF_CORES_PER_DIE, &rack_priority_array);
 
-    assert_int_equal(rack_priority_array[rack_index].priority_id,
-                     computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].priority_id);
-    assert_int_not_equal(rack_priority_array[rack_index].entry_count,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].entry_count);
-    assert_int_not_equal(rack_priority_array[rack_index].residency_mS,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_index].residency_mS);
+    assert_int_equal(rack_priority_array[rack_throttle_priority].priority_id, rack_throttle_priority);
+
+    assert_int_not_equal(rack_priority_array[rack_throttle_priority].entry_count,
+                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_throttle_priority].entry_count);
+
+    assert_int_not_equal(
+        rack_priority_array[rack_throttle_priority].residency_mS,
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].rack_priorities[rack_throttle_priority].residency_uS / 1000);
 }
 
 TEST_FUNCTION(test_get_pwr_core_voltage_data, test_setup, test_teardown)
@@ -531,7 +534,6 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
 {
     inst_core_element_summary_t core_summary_data = {0};
     // pstate
-    core_rt[TEST_CORE_ID_5].throttling_status = NO_THROTTLE;
     core_rt[TEST_CORE_ID_5].pstate_from_pstate_pkt = 10;
     uint8_t pstate_index = core_rt[TEST_CORE_ID_5].latest_pstate;
 
@@ -546,18 +548,18 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     core_rt[TEST_CORE_ID_5].latest_current_mA = 30;
     core_rt[TEST_CORE_ID_5].latest_max_value_dC = 400;
     // plimit
-    core_rt[TEST_CORE_ID_5].active_sample_plimit = 1;
+    core_rt[TEST_CORE_ID_5].latest_plimit = 1;
 
     uint8_t core_id = TEST_CORE_ID_5;
-    for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_TYPES; i++)
+    for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_SOURCES; i++)
     { // make all active
-        core_rt[core_id].core_throttling_tracker[i] = true;
+        core_rt[core_id].throttle_source_tracker[i] = true;
     }
     data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(TEST_CORE_ID_5, &core_summary_data);
     assert_int_equal(core_summary_data.pstate, pstate_index);
     assert_int_equal(core_summary_data.cstate, cstate_index);
 
-    assert_int_equal(core_summary_data.plimit, core_rt[TEST_CORE_ID_5].active_sample_plimit);
+    assert_int_equal(core_summary_data.plimit, core_rt[TEST_CORE_ID_5].latest_plimit);
     assert_int_equal(core_summary_data.power_mW, core_rt[TEST_CORE_ID_5].latest_power_mW);
     assert_int_equal(core_summary_data.frequency_Mhz, dvfs_get_freq_from_plimit(pstate_index));
 
@@ -565,7 +567,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     assert_int_equal(core_summary_data.current_mA, core_rt[TEST_CORE_ID_5].latest_current_mA);
     assert_int_equal(core_summary_data.temperature_dC, core_rt[TEST_CORE_ID_5].latest_max_value_dC);
     assert_int_equal(core_summary_data.throttling_type, 0x7f);
-    assert_int_equal(core_summary_data.throttling_rack_priority, core_rt[TEST_CORE_ID_5].latest_rack_throttling_priority_id);
+    assert_int_equal(core_summary_data.throttling_rack_priority, core_rt[TEST_CORE_ID_5].latest_rack_throttle_priority);
 }
 
 TEST_FUNCTION(test_get_inst_soc_rail_data, test_setup, test_teardown)

@@ -28,8 +28,8 @@
 #define NUMBER_OF_ACCEL_COUNTERS (100)
 
 //current, temperature, RACK, VR HOT, ADP_CLK, currnt overrun, adp_clk overrun
-#define NUMBER_OF_THROTTLE_TYPES    (7)  //(5+2)
-#define NUMBER_OF_RACK_PRIORITIES   (8)
+#define NUMBER_OF_THROTTLE_SOURCES    (7)  //(5+2)
+#define NUMBER_OF_RACK_THROTTLE_PRIORITIES   (8)
 #define NUMBER_OF_HS_VOLTAGE_SCALES (17)
 #define NUMBER_OF_HS_TEMP_SCALES    (7)
 
@@ -187,7 +187,7 @@ typedef struct {
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
-    pwr_core_element_throttle_t throttle_element[NUMBER_OF_THROTTLE_TYPES];
+    pwr_core_element_throttle_t throttle_element[NUMBER_OF_THROTTLE_SOURCES];
 } pwr_core_collection_throttle_t, *p_pwr_core_collection_throttle_t;
 
 typedef struct {
@@ -205,7 +205,7 @@ typedef struct {
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
-    pwr_core_element_rack_priorities_t rack_priority_element[NUMBER_OF_RACK_PRIORITIES];
+    pwr_core_element_rack_priorities_t rack_priority_element[NUMBER_OF_RACK_THROTTLE_PRIORITIES];
 } pwr_core_collection_rack_priorities_t, *p_pwr_core_collection_rack_priorities_t;
 
 typedef struct {

@@ -173,14 +173,14 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
         assert_int_equal(record.throttle_collection[core_id].collection_header.element_id,
                          POWER_TELEMETRY_ELEMENT_CORE_THROTTLE);
         assert_int_equal(record.throttle_collection[core_id].collection_header.collection_id, core_id);
-        assert_int_equal(record.throttle_collection[core_id].collection_header.number_of_elements, NUMBER_OF_THROTTLE_TYPES);
+        assert_int_equal(record.throttle_collection[core_id].collection_header.number_of_elements, NUMBER_OF_THROTTLE_SOURCES);
         assert_int_equal(record.throttle_collection[core_id].collection_header.collection_payload_size,
                          sizeof(pwr_core_collection_throttle_t) - sizeof(telemetry_collection_hdr_t));
 
         // event data ranges are initialized to 0, the mock Get Api sets them to 0xFF
         // This verifies that the correct data ranges are passed to the data processing component get data api's
         assert_memset_to_ff((uint8_t*)record.throttle_collection[core_id].throttle_element,
-                            sizeof(pwr_core_element_throttle_t) * NUMBER_OF_THROTTLE_TYPES);
+                            sizeof(pwr_core_element_throttle_t) * NUMBER_OF_THROTTLE_SOURCES);
     }
 }
 
@@ -206,14 +206,14 @@ TEST_FUNCTION(test_get_pwr_core_rack_priority_data, test_setup, test_teardown)
                          POWER_TELEMETRY_ELEMENT_CORE_RACK_PRIORITIES);
         assert_int_equal(record.rack_priority_collection[core_id].collection_header.collection_id, core_id);
         assert_int_equal(record.rack_priority_collection[core_id].collection_header.number_of_elements,
-                         NUMBER_OF_RACK_PRIORITIES);
+                         NUMBER_OF_RACK_THROTTLE_PRIORITIES);
         assert_int_equal(record.rack_priority_collection[core_id].collection_header.collection_payload_size,
                          sizeof(pwr_core_collection_rack_priorities_t) - sizeof(telemetry_collection_hdr_t));
 
         // event data ranges are initialized to 0, the mock Get Api sets them to 0xFF
         // This verifies that the correct data ranges are passed to the data processing component get data api's
         assert_memset_to_ff((uint8_t*)record.rack_priority_collection[core_id].rack_priority_element,
-                            sizeof(pwr_core_element_rack_priorities_t) * NUMBER_OF_RACK_PRIORITIES);
+                            sizeof(pwr_core_element_rack_priorities_t) * NUMBER_OF_RACK_THROTTLE_PRIORITIES);
     }
 }
 

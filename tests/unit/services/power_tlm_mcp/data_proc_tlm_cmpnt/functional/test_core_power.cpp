@@ -158,10 +158,6 @@ TEST_FUNCTION(test_multi_entry_multi_core_power, test_setup, test_teardown)
                                     timestamp,
                                     2); // 2 polling cycles per entry
 
-            // Mock gtimer frequency for this entry (2 calls typical)
-            will_return(__wrap_gtimer_prodfw_get_frequency, 2400000);
-            will_return(__wrap_gtimer_prodfw_get_frequency, 2400000);
-
             // Process the mocked data (simulate hardware polling)
             data_smpl_process_core_current_sensor_fifo();
 

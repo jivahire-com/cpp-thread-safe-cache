@@ -87,21 +87,6 @@ int16_t data_util_get_max_val(int16_t val0, int16_t val1, int16_t val2);
 void data_util_calc_time_diff_and_update(uint64_t* last_timestamp_uS, uint64_t* current_time_stamp_uS, uint64_t* difference_uS);
 
 /**
- * @brief data_util_calc_mma_res function calculates the minimum, maximum, and average values of a
- *          given metric over a specified time period. It updates the provided pointers with the
- *          calculated results based on the latest value and the time difference.
- *
- * @param[in,out] mma_min -Pointer to the variable that stores the minimum value of the metric.
- *                 This value will be updated based on the latest value and the time difference.
- * @param[in,out] mma_max -Pointer to the variable that stores the maximum value of the metric.
- * @param[in,out] mma_average -Pointer to the variable that stores the average value of the metric.
- * @param[in] mma_latest_value  -Pointer to the variable that stores the latest value of the metric
- * @param[in] time_diff_uS - The time difference in microseconds between the current and previous measurements
- * @param[in] residency_uS The total residency time in microseconds over which the average is calculated
- */
-void data_util_calc_mma_res(uint16_t* mma_min, uint16_t* mma_max, uint16_t* mma_average, uint16_t* mma_latest_value, uint32_t time_diff_uS, uint32_t residency_uS);
-
-/**
  * @brief Update the min, max, and average using the latest value. Only supports uint16_t values.
  *
  * @param[in,out] mma - Pointer to the mma_u16_t structure containing min, max, and average values.

@@ -465,7 +465,7 @@ uint32_t package_create_pwr_core_throttle_record(p_pwr_core_record_throttle_t th
         populate_pwr_collection_hdr(&throttle_record->throttle_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_THROTTLE,
                                     CORE_ID_WITH_DIE_OFFSET(core_id),
-                                    NUMBER_OF_THROTTLE_TYPES,
+                                    NUMBER_OF_THROTTLE_SOURCES,
                                     sizeof(pwr_core_collection_throttle_t));
 
         data_proc_tlm_cmpnt_get_pwr_core_throttle_data(core_id, &throttle_record->throttle_collection[core_id].throttle_element);
@@ -485,7 +485,7 @@ uint32_t package_create_pwr_core_rack_priority_record(p_pwr_core_record_rack_pri
         populate_pwr_collection_hdr(&rack_priority_record->rack_priority_collection[core_id].collection_header,
                                     POWER_TELEMETRY_ELEMENT_CORE_RACK_PRIORITIES,
                                     CORE_ID_WITH_DIE_OFFSET(core_id),
-                                    NUMBER_OF_RACK_PRIORITIES,
+                                    NUMBER_OF_RACK_THROTTLE_PRIORITIES,
                                     sizeof(pwr_core_collection_rack_priorities_t));
 
         data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(

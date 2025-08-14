@@ -106,21 +106,55 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg, test_setup, te
 
 TEST_FUNCTION(test_data_smpl_reset_residency_timestamps, test_setup, test_teardown)
 {
+    // Initialize all cores with non-zero timestamps
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {
         core_rt[core_id].cstate_res_timestamp_uS = 2000;
         core_rt[core_id].pstate_res_timestamp_uS = 3000;
+
+        // Initialize throttle timestamps
+        for (uint8_t throttle_source = 0; throttle_source < NUMBER_OF_THROTTLE_SOURCES; throttle_source++)
+        {
+            core_rt[core_id].throttle_res_timestamp_uS[throttle_source] = 4000;
+        }
+
+        // Initialize rack priority timestamps
+        for (uint8_t priority = 0; priority < NUMBER_OF_RACK_THROTTLE_PRIORITIES; priority++)
+        {
+            core_rt[core_id].rack_pri_res_timestamp_uS[priority] = 5000;
+        }
     }
 
+    // Test Case 1: CState and PState validity (original test case)
     core_rt[3].status_flags.pkt_cstate_is_valid = true;
     core_rt[4].status_flags.pkt_pstate_is_valid = true;
+
+    // Test Case 2: Throttle active with specific throttle sources
+    core_rt[1].status_flags.throttle_is_active = true;
+    core_rt[1].throttle_source_tracker[THROTTLE_SOURCE_TEMPERATURE] = true;
+    core_rt[1].throttle_source_tracker[THROTTLE_SOURCE_CURRENT] = true;
+    // Leave other throttle sources as false to test the inner loop condition
+
+    // Test Case 3: Rack throttle active
+    core_rt[2].status_flags.rack_throttle_is_active = true;
+    core_rt[2].latest_rack_throttle_priority = 3;
+
+    // Test Case 4: Core with multiple flags active
+    core_rt[5].status_flags.pkt_cstate_is_valid = true;
+    core_rt[5].status_flags.pkt_pstate_is_valid = true;
+    core_rt[5].status_flags.throttle_is_active = true;
+    core_rt[5].status_flags.rack_throttle_is_active = true;
+    core_rt[5].throttle_source_tracker[THROTTLE_SOURCE_ADAPTIVE_CLK] = true;
+    core_rt[5].latest_rack_throttle_priority = 1;
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10000);
     data_smpl_reset_residency_timestamps();
 
+    // Verify results for all cores
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {
-        if (core_id == 3)
+        // Test CState timestamp updates
+        if (core_id == 3 || core_id == 5) // Cores with pkt_cstate_is_valid = true
         {
             assert_int_equal(core_rt[core_id].cstate_res_timestamp_uS, 10000);
         }
@@ -129,7 +163,8 @@ TEST_FUNCTION(test_data_smpl_reset_residency_timestamps, test_setup, test_teardo
             assert_int_equal(core_rt[core_id].cstate_res_timestamp_uS, 2000);
         }
 
-        if (core_id == 4)
+        // Test PState timestamp updates
+        if (core_id == 4 || core_id == 5) // Cores with pkt_pstate_is_valid = true
         {
             assert_int_equal(core_rt[core_id].pstate_res_timestamp_uS, 10000);
         }
@@ -138,4 +173,32 @@ TEST_FUNCTION(test_data_smpl_reset_residency_timestamps, test_setup, test_teardo
             assert_int_equal(core_rt[core_id].pstate_res_timestamp_uS, 3000);
         }
     }
+
+    // Test throttle timestamp updates for core 1
+    assert_int_equal(core_rt[1].throttle_res_timestamp_uS[THROTTLE_SOURCE_TEMPERATURE], 10000);
+    assert_int_equal(core_rt[1].throttle_res_timestamp_uS[THROTTLE_SOURCE_CURRENT], 10000);
+    // Other throttle sources should remain unchanged
+    assert_int_equal(core_rt[1].throttle_res_timestamp_uS[THROTTLE_SOURCE_RACK_LIMIT], 4000);
+    assert_int_equal(core_rt[1].throttle_res_timestamp_uS[THROTTLE_SOURCE_VR_HOT], 4000);
+
+    // Test rack throttle timestamp updates for core 2
+    assert_int_equal(core_rt[2].rack_pri_res_timestamp_uS[3], 10000); // Priority 3 was set as latest
+    // Other priorities should remain unchanged
+    assert_int_equal(core_rt[2].rack_pri_res_timestamp_uS[0], 5000);
+    assert_int_equal(core_rt[2].rack_pri_res_timestamp_uS[1], 5000);
+    assert_int_equal(core_rt[2].rack_pri_res_timestamp_uS[2], 5000);
+
+    // Test core 5 with multiple flags (all should be updated)
+    assert_int_equal(core_rt[5].cstate_res_timestamp_uS, 10000);
+    assert_int_equal(core_rt[5].pstate_res_timestamp_uS, 10000);
+    assert_int_equal(core_rt[5].throttle_res_timestamp_uS[THROTTLE_SOURCE_ADAPTIVE_CLK], 10000);
+    assert_int_equal(core_rt[5].rack_pri_res_timestamp_uS[1], 10000);
+    // Other throttle sources for core 5 should remain unchanged
+    assert_int_equal(core_rt[5].throttle_res_timestamp_uS[THROTTLE_SOURCE_TEMPERATURE], 4000);
+
+    // Test a core with no flags set (core 0) - nothing should change
+    assert_int_equal(core_rt[0].cstate_res_timestamp_uS, 2000);
+    assert_int_equal(core_rt[0].pstate_res_timestamp_uS, 3000);
+    assert_int_equal(core_rt[0].throttle_res_timestamp_uS[THROTTLE_SOURCE_CURRENT], 4000);
+    assert_int_equal(core_rt[0].rack_pri_res_timestamp_uS[0], 5000);
 }

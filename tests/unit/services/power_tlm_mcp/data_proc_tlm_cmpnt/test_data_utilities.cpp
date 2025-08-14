@@ -122,53 +122,6 @@ TEST_FUNCTION(test_data_util_calc_time_diff_and_update_null, test_setup, test_te
     data_util_calc_time_diff_and_update(&last_timestamp_uS, &current_timestamp_uS, nullptr);
 }
 
-// Unit test for data_util_calc_mma_res
-TEST_FUNCTION(test_data_util_calc_mma_res, test_setup, test_teardown)
-{
-
-    uint16_t mma_min = 0;
-    uint16_t mma_max = 0;
-    uint16_t mma_average = 0;
-    uint16_t mma_latest_value = 50;
-    uint32_t time_diff_uS = 100;
-    uint32_t residency_uS = 200;
-
-    // Test case: Valid parameters
-    data_util_calc_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
-    assert_int_equal(mma_min, 50);
-    assert_int_equal(mma_max, 50);
-    assert_int_equal(mma_average, 50);
-
-    // Test case: Update with new latest value
-    mma_latest_value = 100;
-    data_util_calc_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
-    assert_int_equal(mma_min, 50);
-    assert_int_equal(mma_max, 100);
-    assert_int_equal(mma_average, 75); // Weighted average calculation
-
-    // Test case: Update with lower latest value
-    mma_latest_value = 30;
-    data_util_calc_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
-    assert_int_equal(mma_min, 30);
-    assert_int_equal(mma_max, 100);
-    assert_int_equal(mma_average, 52); // Weighted average calculation
-
-    // Test case: Zero latest value
-    mma_latest_value = 0;
-    data_util_calc_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
-    assert_int_equal(mma_min, 30);
-    assert_int_equal(mma_max, 100);
-    assert_int_equal(mma_average, 52); // No change in average
-
-    // Test case: Invalid parameters (time_diff_uS = 0)
-    time_diff_uS = 0;
-    data_util_calc_mma_res(&mma_min, &mma_max, &mma_average, &mma_latest_value, time_diff_uS, residency_uS);
-    // No change in values as the function should handle invalid parameters gracefully
-    assert_int_equal(mma_min, 30);
-    assert_int_equal(mma_max, 100);
-    assert_int_equal(mma_average, 52);
-}
-
 TEST_FUNCTION(test_data_util_convert_systick_to_microseconds, test_setup, test_teardown)
 {
     will_return(__wrap_gtimer_prodfw_get_frequency, 0);

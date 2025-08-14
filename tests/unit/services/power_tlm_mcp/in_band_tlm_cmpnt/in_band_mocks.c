@@ -103,19 +103,19 @@ void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_ele
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
-                                                    pwr_core_element_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_TYPES])
+                                                    pwr_core_element_throttle_t (*throttle_array)[NUMBER_OF_THROTTLE_SOURCES])
 {
     FPFW_UNUSED(core_id);
-    memset((*throttle_array), 0xFF, sizeof(pwr_core_element_throttle_t) * NUMBER_OF_THROTTLE_TYPES);
+    memset((*throttle_array), 0xFF, sizeof(pwr_core_element_throttle_t) * NUMBER_OF_THROTTLE_SOURCES);
 
     function_called();
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_rack_priority_data(uint16_t core_id,
-                                                         pwr_core_element_rack_priorities_t (*rack_priority_array)[NUMBER_OF_RACK_PRIORITIES])
+                                                         pwr_core_element_rack_priorities_t (*rack_priority_array)[NUMBER_OF_RACK_THROTTLE_PRIORITIES])
 {
     FPFW_UNUSED(core_id);
-    memset((*rack_priority_array), 0xFF, sizeof(pwr_core_element_rack_priorities_t) * NUMBER_OF_RACK_PRIORITIES);
+    memset((*rack_priority_array), 0xFF, sizeof(pwr_core_element_rack_priorities_t) * NUMBER_OF_RACK_THROTTLE_PRIORITIES);
 
     function_called();
 }

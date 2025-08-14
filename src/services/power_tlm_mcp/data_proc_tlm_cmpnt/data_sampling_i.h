@@ -73,37 +73,32 @@ typedef enum
 /**
  *  @brief Core related runtime resources
  */
-
 typedef struct {
     uint8_t pkt_pstate_is_valid : 1; // true if pstate is valid in the current packet
     uint8_t pkt_pstate_is_pending_invalid : 1; // set on the transition of pstate from valid to invalid, wrap up metrics
     uint8_t pkt_cstate_is_valid : 1; // true if cstate is valid in the current packet
+    uint8_t throttle_is_active : 1; // true if 1 or more throttling types are active, including rack throttling
+    uint8_t rack_throttle_is_active : 1; // only true if rack throttling is active
 } core_status_flags_t;
 
 typedef struct {
     uint64_t cstate_res_timestamp_uS; // timestamp of last cstate residency metrics update
     uint64_t pstate_res_timestamp_uS; // timestamp of last pstate residency metrics update
-    uint64_t pstate_pwr_res_timestamp_uS; // timestamp of last pstate power residency metrics update
-    uint64_t latest_throttle_type_previous_timestamp_uS[NUMBER_OF_THROTTLE_TYPES];
-    uint64_t latest_rack_priority_previous_timestamp_uS[NUMBER_OF_RACK_PRIORITIES];
-    uint32_t time_counter_uS; // for general residency calculation for the core in uS
-    uint16_t latest_throttle_type; /* This is throttle index or source, e.g throttle_source_t */
+    uint64_t throttle_res_timestamp_uS[NUMBER_OF_THROTTLE_SOURCES];
+    uint64_t rack_pri_res_timestamp_uS[NUMBER_OF_RACK_THROTTLE_PRIORITIES];
     uint16_t latest_voltage_mV;
     uint16_t latest_current_mA;
     uint16_t latest_power_mW;
     uint16_t latest_max_value_dC;
-    uint16_t active_sample_mpam_id;
-    uint8_t latest_cstate; /* cstate from pstate packet from sensor fifo*/
-    uint8_t active_sample_plimit;
-    uint8_t throttling_status;/* this is throttling status, e.g pstate_throttle_status_t */
-    uint8_t throttle_event;
-    uint8_t throttle_source;
-    uint8_t latest_rack_throttling_priority_id;
-    uint8_t pstate_from_pstate_pkt; /* pstate from pstate packet*/
-    uint8_t pstate_from_current_pkt; /* pstate from current packet, during throttling */
+    uint8_t latest_mpam_id;
+    uint8_t latest_cstate;  //cstate from pstate packet from sensor fifo
     uint8_t latest_pstate; //either pstate_from_pstate_pkt or pstate_from_current_pkt
-    bool core_throttling_tracker[NUMBER_OF_THROTTLE_TYPES];
-    core_status_flags_t status_flags;//reset for every poll period
+    uint8_t latest_rack_throttle_priority;
+    uint8_t latest_plimit;
+    uint8_t pstate_from_pstate_pkt; //pstate from pstate packet
+    uint8_t pstate_from_current_pkt; //pstate from current packet, during throttling
+    bool throttle_source_tracker[NUMBER_OF_THROTTLE_SOURCES];
+    core_status_flags_t status_flags;
 } core_runtime_info_t;
 
 typedef struct {
@@ -152,12 +147,20 @@ typedef enum _pstate_throttle_status_t
     ADPT_CLK_THROTTLING_OVERRUN
 } pstate_throttle_status_t;
 
+// NOTE: this is a temporary structure used to process pstate sensor fifo entries,
+// the fifo entry contains a great deal of information and multiple functions parse
+// specific parts of the entry. This structure is used to pass the parsed data
+// to the functions that process the pstate/cstate/throttle input data..
+// It is not used to store the data in the core_rt[] structure.
+// The data is used to determine which metrics to update and the data required to update them.
 typedef struct {
     uint64_t cstate_time_diff_uS;
     uint64_t pstate_time_diff_uS;
     uint64_t throttle_time_diff_uS;
     uint64_t rack_throttle_time_diff_uS;
+    uint64_t packet_timestamp_uS;
     uint8_t overrun_count_change;
+    throttle_source_t throttle_source;
 
     bool valid_entry_pstate;
     bool pstate_change;
@@ -280,12 +283,11 @@ bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* tile_voltage_entry, uint
  * @brief Internal API to log core currents and power
  *
  * @param[in] core_current_entry - SCF RAM formatted resource for core current packets
- * @param[in] core_index - index to the core id being referenced by the entry
- * @param[out] time_diff_uS - time difference in microseconds since the last entry for the core
+ * @param[in] core_id - index to the core id being referenced by the entry
  *
  * @return bool   - true if a valid current entry
  */
-bool data_smpl_parse_core_current_entry(core_current_t* core_current_entry, uint8_t core_index, uint32_t* time_diff_uS);
+bool data_smpl_parse_core_current_entry(core_current_t* core_current_entry, uint8_t core_id);
 
 /**
  * @brief Internal API to log voltage regulator (VR) temperatures
@@ -328,33 +330,21 @@ bool data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info_entry);
  *
  * @param[in] pstate_entry - SCF RAM formatted resource for pstate packets
  *        NOTE: The Pstate packet contains the core id reference internally.
- * @param[in] timestamp_uS - latest timestamp
  * @param[out] entry_data - update the core state entry data
  *
  * @return none
  */
-void data_smpl_parse_pstate_no_throttling(pstate_telem_t* pstate_entry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
+void data_smpl_parse_pstate(pstate_telem_t* pstate_entry, core_state_entry_data_t* entry_data);
 
 /**
  * @brief Internal API to log cstate telemetry.
  * @param[in] cstate_telemetry - SCF RAM formatted resource for pstate packets
  *        (IMPORTANT : pstate telemetry packet provide both p state/c state))
  *        NOTE: The Pstate packet contains the core id reference internally.
- * @param[in] timestamp_uS - latest timestamp
  * @param[out] entry_data - update the cstate entry data
  * @return none
  */
-void  data_smpl_parse_cstate(pstate_telem_t* cstate_telemetry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
-
-/**
- * @brief update rack throttling
- *
- * @param[in] pstate_entry  provide pstate tlm pkt.
- * @param[in] timestamp_uS - latest timestamp
- * @param[out] entry_data  update the core state entry data
- * @return  none
- */
-void data_smpl_parse_rack_throttling(pstate_telem_t* pstate_entry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
+void  data_smpl_parse_cstate(pstate_telem_t* cstate_telemetry, core_state_entry_data_t* entry_data);
 
 /**
  * @brief Internal API to log states-pstate,cstate and also log core throttling telemetry.
@@ -366,32 +356,12 @@ void data_smpl_parse_rack_throttling(pstate_telem_t* pstate_entry, uint64_t time
 void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_entry,  core_state_entry_data_t* entry_data);
 
 /**
- * @brief  calculate throttling index based on throttle status in telemetry pkt.
- *
- * @param[in] status  1-12 if success or -1 in case of a error.
- * @return int return index for throttle info array.
- */
-int8_t data_smpl_parse_throttling_state_change_get_index_from_status(pstate_throttle_status_t status);
-
-/**
- * @brief log the throttling states, based on pstate pkt and start/end event
- * from pkt.
- *
- * @param[in] pstate_entry - incoming packet
- * @param[in] timestamp_uS - latest timestamp
- * @param[out] entry_data - update the core state entry data
- * This function will update the core state entry data with the latest throttling state change.
- * @return none
- */
-void data_smpl_parse_throttling_state_change(pstate_telem_t* pstate_entry, uint64_t timestamp_uS, core_state_entry_data_t* entry_data);
-
-/**
  * @brief This api clear the throttling tracker.
  *
  * @param[in] core_id
  * @param[in] timestamp_uS
  */
-void data_smpl_parse_throttling_state_change_exit_transition(uint8_t core_id, uint64_t timestamp_uS);
+void data_smpl_terminate_non_rack_throttle_sources(uint8_t core_id, uint64_t* timestamp_uS);
 
 /**
  * @brief This API updates the average pstate for the polling period.
@@ -418,19 +388,12 @@ void data_smpl_finalize_pwr_pkg_metrics(void);
 void data_smpl_reset_residency_timestamps(void);
 
 /**
- * @brief This API update throttling for single core when there is no pstate packet,
+ * @brief This API completes the throttling metrics at the end of a packaging interval.
+ * Updates residencies for active throttling sources
  * @param[in] core_id  current core
- * @param[in] timestamp_uS system timestamp
+ * @param[in] this_pwr_pkg_timestamp_uS system timestamp of power package being generated to finalize package residency
  */
-void data_smpl_update_metrics_for_single_core_during_throttling(uint8_t core_id, uint64_t time_stamp_uS);
-
-/**
- * @brief  This api is Rack throttling specific , when we dont get a pstate packet and we are in rack
- *          throttling already so this api update the compute metrics
- * @param core_id
- * @param time_stamp_uS  this is latest system timestamp.
- */
-void data_smpl_update_metrics_for_single_core_during_rack_throttling(uint8_t core_id, uint64_t time_stamp_uS);
+void data_smpl_finalize_pwr_pkg_throttling_metrics(uint8_t core_id, uint64_t* this_pwr_pkg_timestamp_uS);
 
 /**
  * @brief get currently active throttling for a core.
@@ -438,5 +401,41 @@ void data_smpl_update_metrics_for_single_core_during_rack_throttling(uint8_t cor
  * @param[in] core_id
  * @return   currently active throttling for a core
  */
-uint8_t  data_smpl_get_active_throttling_for_single_core(uint8_t core_id);
+uint8_t  data_smpl_get_active_throttle_sources(uint8_t core_id);
 
+/**
+ * @brief Handle the start of a throttle event.
+ *
+ * @param[in] core_id - The ID of the core where the throttle event occurred.
+ * @param[in] throttle_source - The source of the throttle event.
+ * @param[out] entry_data - Update the core state entry data with the throttle start information.
+ */
+void data_smpl_handle_throttle_source_start(uint8_t core_id, throttle_source_t throttle_source, core_state_entry_data_t* entry_data);
+
+/**
+ * @brief Handle the end of a throttle event.
+ *
+ * @param[in] core_id - The ID of the core where the throttle event occurred.
+ * @param[in] throttle_source - The source of the throttle event.
+ * @param[out] entry_data - Update the core state entry data with the throttle end information.
+ */
+void data_smpl_handle_throttle_source_end(uint8_t core_id, throttle_source_t throttle_source, core_state_entry_data_t* entry_data);
+
+/**
+ * @brief Handle the start of a rack throttle event.
+ *
+ * @param[in] core_id - The ID of the core where the rack throttle event occurred.
+ * @param[in] new_priority - The new priority for the rack throttle event.
+ * @param[out] entry_data - Update the core state entry data with the rack throttle start information.
+ */
+void data_smpl_handle_rack_throttle_start(uint8_t core_id,
+                                              uint8_t new_priority,
+                                              core_state_entry_data_t* entry_data);
+
+/**
+ * @brief Handle the end of a rack throttle event.
+ *
+ * @param[in] core_id - The ID of the core where the rack throttle event occurred.
+ * @param[out] entry_data - Update the core state entry data with the rack throttle end information.
+ */
+void data_smpl_handle_rack_throttle_end(uint8_t core_id, core_state_entry_data_t* entry_data);

@@ -199,7 +199,6 @@ TEST_FUNCTION(test_core_current_collection_functional, test_setup, test_teardown
         will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
 
         // Current polling - with data
-        will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
         will_return(__wrap_sensor_fifo_svc_poll_core_current, 0);     // core_index
         will_return(__wrap_sensor_fifo_svc_poll_core_current, true);  // curr_data_is_valid
         will_return(__wrap_sensor_fifo_svc_poll_core_current, false); // more_entries

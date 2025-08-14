@@ -8,11 +8,14 @@
  */
 
 /*------------- Includes -----------------*/
+#include "accelerator_ip.h"
+#include "accelip_id.h"
 #include "startup_shutdown.h"
 #include "startup_shutdown_i.h"
 #include "startup_shutdown_init.h"
 #include "system_info.h"
 
+#include <FPFwInterrupts.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <cmsis_m7.h>
@@ -24,6 +27,7 @@
 #include <icc_platform_defines.h>
 #include <kng_error.h>
 #include <kng_icc_shared.h>
+#include <sdm_ext_interrupts.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -31,10 +35,24 @@
 // TODO: Add the below cmd code in silibs shared ICC header file
 
 #define ICC_MODULE_STARTUP_SHUTDOWN (0x0009)
+#define ICC_MODULE_SDM_QUIESCE      (0x000A)
+#define ICC_MODULE_CDED_SDM_QUIESCE (0x000B)
 
 #ifndef ICC_D2D_SHUTDOWN_REQUEST
     #define ICC_D2D_SHUTDOWN_REQUEST ICC_GEN_CMD(ICC_MODULE_STARTUP_SHUTDOWN, 0x1) // 0x0009_0001
 #endif                                                                             // ICC_D2D_SHUTDOWN_REQUEST
+
+#ifndef ICC_ACCEL_QUIESCE_REQUEST
+    #define ICC_ACCEL_QUIESCE_REQUEST() ((ICC_MODULE_SDM_QUIESCE << 8) + 0x1) // 0x0000_00A01
+#endif                                                                        // ICC_ACCEL_QUIESCE_REQUEST
+
+#ifndef ICC_ACCEL_QUIESCE_RESP
+    #define ICC_ACCEL_QUIESCE_RESP() ((ICC_MODULE_SDM_QUIESCE << 8) + 0x2) // 0x0000_00A02
+#endif                                                                     // ICC_ACCEL_QUIESCE_RESP
+
+#define ACCEL_GENERATE_CONTEXT(accel_id, sos_event_mask) ((sos_event_mask << 16) | (accel_id & 0xFFFF))
+#define ACCEL_EXTRACT_ACCEL_ID_FROM_CONTEXT(context)     ((ACCEL_ID)((context) & 0xFFFF))
+#define ACCEL_EXTRACT_EVENT_MASK_FROM_CONTEXT(context)   ((uint32_t)((context) >> 16))
 
 /*------------- Typedefs -----------------*/
 
@@ -43,9 +61,15 @@
 /*-- Declarations (Statics and globals) --*/
 static fpfw_icc_base_ctx_t* icc_hspmbx_ctx = NULL;
 static fpfw_icc_base_ctx_t* icc_die2die_ctx = NULL;
+static fpfw_icc_base_ctx_t* icc_accel_ctx[NUM_VALID_ACCEL_ID] = {NULL, NULL};
 
 static shutdown_icc_req_t shutdown_req = {0};
 static FPFW_LOCK icc_lock; //! lock for protecting req_mem
+
+static accel_quiesce_msg accel_quiesce_req[NUM_VALID_ACCEL_ID];
+static fpfw_icc_base_send_req_t accel_quiesce_send_req[NUM_VALID_ACCEL_ID];
+static accel_quiesce_msg_rsp accel_quiesce_rsp[NUM_VALID_ACCEL_ID];
+static fpfw_icc_base_recv_req_t accel_quiesce_recv_req[NUM_VALID_ACCEL_ID];
 
 /*------------- Functions ----------------*/
 
@@ -153,6 +177,121 @@ static ssi_shutdown_type_t convert_HSP_reset_reason_to_shutdown_type(uint32_t re
     return SHUTDOWN; // Default
 }
 
+void accel_quiesce_request_complete_notify(void* context, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    if (status != DFWK_SUCCESS)
+    {
+        SOS_LOG_CRIT("[%s] Accel:%d Quiesce Send Failed: 0x%08x\n", __func__, (ACCEL_ID)context, (int)status);
+    }
+    else
+    {
+        SOS_LOG_TRACE("[%s] Accel:%d Quiesce Send Success.\n", __func__, (ACCEL_ID)context);
+    }
+}
+
+// Callback function for the accel quiesce completion
+void accel_quiesce_response_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(output_size_bytes);
+    ACCEL_ID accel_id = ACCEL_EXTRACT_ACCEL_ID_FROM_CONTEXT((uint32_t)context);
+    uint32_t sos_event_flag = ACCEL_EXTRACT_EVENT_MASK_FROM_CONTEXT((uint32_t)context); // Upper 16-bits is sos_event_mask
+
+    if (status != DFWK_SUCCESS)
+    {
+        SOS_LOG_CRIT("[%s] Accel:%d Quiesce Resp Failed: 0x%08x\n", __func__, accel_id, (int)status);
+    }
+    else
+    {
+        SOS_LOG_TRACE("[%s] Accel:%d Quiesce Resp Success.\n", __func__, accel_id);
+        // Invoking accel quiesce complete only when ICC receive is successful
+        sos_accel_quiesce_complete((uint32_t)accel_id, sos_event_flag); // Lower 16-bits is accel_id and upper 16-bits is sos_event_mask
+        // TODO ADO: 2516167 Confirm it is enough to put emcpu in nsysreset
+        accel_core_suspend(accel_id);
+    }
+}
+
+void accel_quiesce_request_receive(ACCEL_ID accel_id, uint16_t sos_event_mask)
+{
+    accel_quiesce_msg_rsp* quiesce_rsp;
+    fpfw_icc_base_recv_req_t* recv_params;
+
+    recv_params = &accel_quiesce_recv_req[accel_id];
+    quiesce_rsp = &accel_quiesce_rsp[accel_id];
+
+    recv_params->payload_buffer = quiesce_rsp;                // Buffer to receive the message
+    recv_params->buffer_size = sizeof(accel_quiesce_msg_rsp); // Size of the buffer
+    recv_params->recv_cmd_code = ICC_ACCEL_QUIESCE_RESP();
+    recv_params->cb = accel_quiesce_response_cb; // Set the callback function for asynchronous receive
+    // Upper 16-bits is sos_event_mask and lower 16-bits is accel_id
+    recv_params->cb_ctx = (void*)ACCEL_GENERATE_CONTEXT(accel_id, sos_event_mask); // Pass the context to the callback function
+
+    fpfw_status_t recv_status = fpfw_icc_base_recv(icc_accel_ctx[accel_id], recv_params);
+    //! Print the status message
+    if (recv_status != FPFW_ICC_BASE_STATUS_SUCCESS)
+    {
+        SOS_LOG_CRIT("[%s] Accel:%d Quiesce Recv Reg Failed: [0x%x]\n", __func__, accel_id, (int)recv_status);
+    }
+    else
+    {
+        SOS_LOG_TRACE("[%s] Accel:%d Quiesce Recv Reg Success\n", __func__, accel_id);
+    }
+}
+
+// Callback function for the completion of the quiesce request
+void send_accel_quiesce_request(ACCEL_ID accel_id)
+{
+    accel_quiesce_msg* quiesce_req;
+    fpfw_icc_base_send_req_t* send_params;
+
+    BUG_ASSERT_PARAM((accel_id < NUM_VALID_ACCEL_ID), accel_id, "Invalid accel ID for quiesce request");
+
+    quiesce_req = &accel_quiesce_req[accel_id];
+    send_params = &accel_quiesce_send_req[accel_id];
+
+    // Forward quiesce request to accelerators
+    quiesce_req->hdr.cmd = ICC_ACCEL_QUIESCE_REQUEST();
+    send_params->payload_buffer = quiesce_req;            // Buffer containing the message to send
+    send_params->buffer_size = sizeof(accel_quiesce_msg); // Size of the buffer
+    send_params->cb = accel_quiesce_request_complete_notify;
+    send_params->cb_ctx = (void*)accel_id; // Pass the context to the callback function
+
+    fpfw_status_t send_status = fpfw_icc_base_send(icc_accel_ctx[accel_id], send_params);
+    if (send_status != FPFW_ICC_BASE_STATUS_SUCCESS)
+    {
+        SOS_LOG_CRIT("[%s] Accel:%d Quiesce Send Async Failed:0x%08x\n", __func__, accel_id, (int)send_status);
+    }
+    else
+    {
+        SOS_LOG_TRACE("[%s] Accel:%d Quiesce Send Async Success\n", __func__, accel_id);
+    }
+}
+
+// We need to account for isolation of accels here
+uint32_t execute_accel_quiesce_flow(uint32_t ssi_interface_reg_cnt)
+{
+    uint32_t accel_mask = 0x0;
+
+    for (ACCEL_ID accel_id = 0; accel_id < NUM_VALID_ACCEL_ID; accel_id++)
+    {
+        if (!accel_is_isolation_enabled(accel_id))
+        {
+            // TODO ADO: 2516167 Disable all accel interrupts except for mailbox at this point
+            accel_quiesce_request_receive(accel_id, (1 << ssi_interface_reg_cnt));
+            send_accel_quiesce_request(accel_id);
+            accel_mask |= (1 << ssi_interface_reg_cnt);
+            ssi_interface_reg_cnt += 1;
+        }
+        else
+        {
+            SOS_LOG_TRACE("Skipping accel quiesce for accel_id: %d as it is isolated.\n", (int)accel_id);
+        }
+    }
+
+    return accel_mask; // Return mask bits to be appended to the sos_event_mask
+}
+
 // Callback function for the asynchronous PrepareForCoreReset receive operation
 void prepare_reset_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
@@ -193,11 +332,16 @@ void shutdown_req_cb(void* context, fpfw_status_t status)
     FpFwLockRelease(&icc_lock, oldState);
 }
 
-void sos_icc_init(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_ctx_t* icc_d2dmbx_ctx)
+void sos_icc_init(fpfw_icc_base_ctx_t* icc_ctx,
+                  fpfw_icc_base_ctx_t* icc_d2dmbx_ctx,
+                  fpfw_icc_base_ctx_t* icc_sdm_mbx_ctx,
+                  fpfw_icc_base_ctx_t* icc_cded_mbx_ctx)
 {
     FpFwLockInitialize(&icc_lock);
     icc_hspmbx_ctx = icc_ctx;
     icc_die2die_ctx = icc_d2dmbx_ctx;
+    icc_accel_ctx[ACCEL_ID_SDM] = icc_sdm_mbx_ctx;
+    icc_accel_ctx[ACCEL_ID_CDED] = icc_cded_mbx_ctx;
     // Setup receive request and register to receive and handle PrepareForCoreReset command from HSP
     receive_prep_core_reset();
     recv_d2d_shutdown_request();

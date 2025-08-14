@@ -142,8 +142,10 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
     expect_any(__wrap_sos_register_ssi, p_ssi_interface);
     will_return(__wrap_sos_register_ssi, FPFW_INIT_STATUS_SUCCESS);
 
-    // intercore communication init
-    will_return(__wrap_fpfw_init_get_handle, 1234);
+    // intercore communication init (sos_icc_init)
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x1111); // icc_hspmbx
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x2222); // icc_die2die
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x3333); // icc_sdm_mbx
     expect_function_call(__wrap_FpFwLockInitialize);
 
     expect_any(__wrap_fpfw_icc_base_recv, icc_ctx);

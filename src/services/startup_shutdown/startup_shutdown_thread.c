@@ -19,6 +19,8 @@
 #include <bug_check.h>
 #include <debug.h>
 #include <fpfw_init.h>
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <tx_api.h>
@@ -65,6 +67,14 @@ int sos_queue_find_phase(ssi_startup_stage_t phase)
         }
     }
     return PHASE_INDEX_NOT_FOUND;
+}
+
+void sos_accel_quiesce_complete(uint32_t accel_id, uint32_t event_flag)
+{
+    FPFW_UNUSED(accel_id)
+    SOS_LOG_TRACE("Accel:%d Quiesce Complete, event flag: %x\n", accel_id, event_flag);
+    int status = tx_event_flags_set(&s_sos_thread_ctx.ssi_flags, event_flag, TX_OR);
+    FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
 }
 
 void sos_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
@@ -312,6 +322,15 @@ void sos_worker_thread_function(ULONG service_ctx)
 
             // notify all registered interfaces
             sos_notify_ssi_quiesce(p_sos_ctx, message.data.shutdown_type);
+
+            // Call accel mbox tx here
+            if (idsw_get_cpu_type() == CPU_SCP)
+            {
+                SOS_LOG_TRACE("Invoking Accel Quiesce Flow\n");
+                uint32_t accel_event_mask = execute_accel_quiesce_flow(p_sos_ctx->registration_count);
+                // Update the flags to include accel events
+                s_sos_thread_ctx.expected_complete_flags |= accel_event_mask;
+            }
 
             current_stage.stage_category = QUIESCE_STAGE;
             current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;

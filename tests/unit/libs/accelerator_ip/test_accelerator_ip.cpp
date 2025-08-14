@@ -1057,3 +1057,42 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_invalid_args, nullptr, nullptr)
         s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_NULL_POINTER);
     }
 }
+
+TEST_FUNCTION(accel_core_suspend_sdm_test, nullptr, nullptr)
+{
+    // Arrange
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
+    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
+
+    // Act
+    accel_core_suspend(ACCEL_ID_SDM);
+}
+
+TEST_FUNCTION(accel_core_suspend_cded_test, nullptr, nullptr)
+{
+    // Arrange
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
+    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
+
+    // Act
+    accel_core_suspend(ACCEL_ID_CDED);
+}
+
+TEST_FUNCTION(accel_core_suspend_invalid_accel_test, nullptr, nullptr)
+{
+    // Assert path: BUG_ASSERT should trigger crash_dump_bug_check
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+
+    // Arrange returns for downstream calls if bugcheck returns
+    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
+    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
+
+    // Configure bugcheck to return so function continues for test coverage
+    should_return = true;
+
+    // Act
+    accel_core_suspend(NUM_VALID_ACCEL_ID);
+}

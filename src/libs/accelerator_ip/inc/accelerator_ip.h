@@ -130,11 +130,11 @@ void accel_core_warm_reset(ACCEL_ID accel_type);
  * @brief Function to overwrite the default values of knobs provided by Silibs
  *
  * \b Description:
- * This function is invoked before initializing the accelerator 
+ * This function is invoked before initializing the accelerator
  *
  * @param[in] p_ss_ctxt - Pointer to the structure which holds the information required
- * to initialize the particular accelerator 
- * 
+ * to initialize the particular accelerator
+ *
  * @retval
  *  No return value
  */
@@ -155,7 +155,7 @@ ACCEL_ID get_accelip_type(ACCELIP_SS_INSTANCE accel_type);
 
 /**
  * @brief Populates ITCM low and high address in input arguments
- * 
+ *
  * @param[in] accel_type Accel instance
  * @param[out] low_addr Output low 32-bit ITCM address
  * @param[out] high_addr Output high 32-bit ITCM address
@@ -164,7 +164,7 @@ void accel_get_itcm_addr(ACCEL_ID accel_type, uint32_t *low_addr, uint32_t *high
 
 /**
  * @brief Populates DTCM low and high address in input arguments
- * 
+ *
  * @param[in] accel_type Accel instance
  * @param[out] low_addr Output low 32-bit DTCM address
  * @param[out] high_addr Output high 32-bit DTCM address
@@ -173,7 +173,7 @@ void accel_get_dtcm_addr(ACCEL_ID accel_type, uint32_t *low_addr, uint32_t *high
 
 /**
  * @brief Disables accel device CPU wait
- * 
+ *
  * @param accel_type Accel instance
  */
 void accel_disable_cpu_wait(ACCEL_ID accel_type);
@@ -189,18 +189,27 @@ void accel_disable_cpu_wait(ACCEL_ID accel_type);
 bool accel_is_isolation_enabled(ACCEL_ID accel_type);
 
 /**
- * @brief Setup SCP to receive boot status code from accel cores 
- * 
+ * @brief Setup SCP to receive boot status code from accel cores
+ *
  * @param[in] accel_type Accel instance
- * 
- * @return fpfw_status_t 
+ *
+ * @return fpfw_status_t
  */
 fpfw_status_t accel_setup_boot_status_code(ACCEL_ID accel_type);
 
 /**
  * @brief Start the timer which expects boot status code from accel cores
- * 
+ *
  * @param accel_type Accel instance
  * @return fpfw_status_t
  */
 fpfw_status_t accel_start_boot_status_timer(ACCEL_ID accel_type);
+
+/**
+ * @brief This function is used to suspend the accelerator core
+ *
+ * @param accel_type Accel instance
+ *
+ * @return No return value
+ */
+void accel_core_suspend(ACCEL_ID accel_type);

@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 
 # Guidelines
-# In robot files, all commands and parameters need to be separated by a minimum of 1 tab space. 
+# In robot files, all commands and parameters need to be separated by a minimum of 1 tab space.
 # Pythia returns an error if this is not followed
 
 *** Settings ***
@@ -39,7 +39,7 @@ Test Case - AP: Test PCIe Enumeration Test: [1423999]
     [Documentation]     Test the PCIe enumeration of SDM and CDED cores from AP core 0.
 
     Send Test Command    ap_bm pcie_test    apns0
-    ${test_result}    Parse Test Output    apns0    PCIe Test DONE     ${PCIE_PASS_RESPONSE} 
+    ${test_result}    Parse Test Output    apns0    PCIe Test DONE     ${PCIE_PASS_RESPONSE}
     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
     Should Be True      ${test_result}
 
@@ -51,35 +51,36 @@ Test Case - AP: SDM memcpy Test: FR [1423800]
     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${300}
     Should Be True      ${test_result}
 
-Test Case - AP: SDM E2I I2E Test: FR [1738499]
-    [Documentation]     Test the SDM E2I I2E of SDM from AP core 0.
+# Disabled as all user defined opcodes are now invalid
+# Test Case - AP: SDM E2I I2E Test: FR [1738499]
+#     [Documentation]     Test the SDM E2I I2E of SDM from AP core 0.
 
-    Send Test Command    ap_bm user_def_loopback_test 0 0 1    apns0
-    ${test_result}    Parse Test Output    apns0    User Defined Loopback Test on Die 1 End!     ${E2I_I2E_PASS_RESPONSE}   
-    ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
-    Should Be True      ${test_result}
+#     Send Test Command    ap_bm user_def_loopback_test 0 0 1    apns0
+#     ${test_result}    Parse Test Output    apns0    User Defined Loopback Test on Die 1 End!     ${E2I_I2E_PASS_RESPONSE}
+#     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
+#     Should Be True      ${test_result}
 
-# Running user_def_loopback_test and user_def_invalid_opcode_test again to check for qork queue being clearted after command submission
-Test Case - AP: SDM User Defined Invalid OpCode Test: FR [1738499]
-    [Documentation]     Test the SDM User Defined Invalid Opcode Command of SDM from AP core 0.
+# # Running user_def_loopback_test and user_def_invalid_opcode_test again to check for qork queue being clearted after command submission
+# Test Case - AP: SDM User Defined Invalid OpCode Test: FR [1738499]
+#     [Documentation]     Test the SDM User Defined Invalid Opcode Command of SDM from AP core 0.
 
-    Send Test Command    ap_bm user_def_invalid_opcode_test 0 0 1    apns0
-    ${test_result}    Parse Test Output    apns0     User Defined Invalid Opcode Test on Die 1 End!     ${INV_OPCODE_TEST_PASS_RESPONSE} 
-    ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
-    Should Be True      ${test_result}
+#     Send Test Command    ap_bm user_def_invalid_opcode_test 0 0 1    apns0
+#     ${test_result}    Parse Test Output    apns0     User Defined Invalid Opcode Test on Die 1 End!     ${INV_OPCODE_TEST_PASS_RESPONSE}
+#     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
+#     Should Be True      ${test_result}
 
-Test Case - AP: SDM E2I I2E Test: FR [1738499]
-    [Documentation]     Test the SDM E2I I2E of SDM from AP core 0.
+# Test Case - AP: SDM E2I I2E Test: FR [1738499]
+#     [Documentation]     Test the SDM E2I I2E of SDM from AP core 0.
 
-    Send Test Command    ap_bm user_def_loopback_test 0 0 1    apns0
-    ${test_result}    Parse Test Output    apns0    User Defined Loopback Test on Die 1 End!     ${E2I_I2E_PASS_RESPONSE}
-    ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
-    Should Be True      ${test_result}
+#     Send Test Command    ap_bm user_def_loopback_test 0 0 1    apns0
+#     ${test_result}    Parse Test Output    apns0    User Defined Loopback Test on Die 1 End!     ${E2I_I2E_PASS_RESPONSE}
+#     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
+#     Should Be True      ${test_result}
 
-Test Case - AP: SDM User Defined Invalid OpCode Test: FR [1738499]
-    [Documentation]     Test the SDM User Defined Invalid Opcode Command of SDM from AP core 0.
+# Test Case - AP: SDM User Defined Invalid OpCode Test: FR [1738499]
+#     [Documentation]     Test the SDM User Defined Invalid Opcode Command of SDM from AP core 0.
 
-    Send Test Command    ap_bm user_def_invalid_opcode_test 0 0 1    apns0
-    ${test_result}    Parse Test Output    apns0     User Defined Invalid Opcode Test on Die 1 End!     ${INV_OPCODE_TEST_PASS_RESPONSE} 
-    ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
-    Should Be True      ${test_result}
+#     Send Test Command    ap_bm user_def_invalid_opcode_test 0 0 1    apns0
+#     ${test_result}    Parse Test Output    apns0     User Defined Invalid Opcode Test on Die 1 End!     ${INV_OPCODE_TEST_PASS_RESPONSE}
+#     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
+#     Should Be True      ${test_result}

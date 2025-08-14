@@ -119,7 +119,7 @@ int32_t sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
                          PDFWK_INTERFACE_HEADER p_ssi_interface);
 
 /**
- *  Function to request reset of the current stage's timeout.   
+ *  Function to request reset of the current stage's timeout.
  *
  *  @param p_interface The interface to the startup service
  *  @param stage stage that caller want to override
@@ -177,3 +177,5 @@ void d2d_shutdown_req_complete_notify(DFWK_ASYNC_REQUEST_HEADER* request, void* 
 void d2d_shutdown_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status);
 void reset_complete_notify(void* context, fpfw_status_t status);
 void reset_complete_wait_forever();
+uint32_t execute_accel_quiesce_flow(uint32_t ssi_interface_reg_cnt);
+void sos_accel_quiesce_complete(uint32_t accel_id, uint32_t event_flag);

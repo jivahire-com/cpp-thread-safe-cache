@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
         kng.lib.hsp_firmware_headers
+        silibs::sdm_command_desc
 )
 
 target_include_directories(${TARGET}
@@ -46,8 +47,10 @@ set(STARTUP_COMMON_LIBS
     fwlib.dfwk
     fwlib.lib.cfg_mgr
     fwlib.lib.interface.platform.errorhandler
+    fwlib.lib.interface.platform.interrupts
     fwlib.lib.init
     ms::build_data
+    ms::lib::accelerator_ip
     ms::lib::arm_intrinsic
     ms::lib::threadx
     ms::lib::debug
@@ -62,6 +65,7 @@ set(STARTUP_COMMON_LIBS
     silibs::idsw
     silibs::idsw_kng
     silibs::kng_silibs_platform
+    silibs::sdm_em_ext_interrupts
     silibs::spi_bridge
     ms::lib::hw_semaphore
 )

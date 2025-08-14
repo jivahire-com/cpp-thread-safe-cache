@@ -45,10 +45,14 @@ static FPFW_CLI_COMMAND warm_start_cli_list[] = {
     {NULL_LIST_ENTRY, "warm_start", "wsrd", ws_read_cli, "Warm Start Read Data", "syntax: wsrd <id>\n"},
     {NULL_LIST_ENTRY, "warm_start", "wswr", ws_write_cli, "Warm Start Write Data", "syntax: wswr <id> <byte>..\n"},
     {NULL_LIST_ENTRY, "warm_start", "wsdisp", ws_disp_cli, "Warm Start Display Data", "syntax: wsdisp\n"},
-    {NULL_LIST_ENTRY, "warm_start", "wsreset", ws_reset, "Warm Start Cli to perform Reset", "syntax: wsreset [cold, subsys, shutdown]"},
+    {NULL_LIST_ENTRY, "warm_start", "wsreset", ws_reset, "Warm Start Cli to perform Reset", "syntax: wsreset [cold, subsys, shutdown, quiesce]"},
 };
 
-char* ws_reason_strings[] = {"Reset Reason unknown\n", "Power On Reset\n", "Pre AP core boot Warm Reset\n", "Post AP core boot Warm Reset\n"};
+char* ws_reason_strings[] = {"Reset Reason unknown\n",
+                             "Power On Reset\n",
+                             "Pre AP core boot Warm Reset\n",
+                             "Post AP core boot Warm Reset\n",
+                             "Fw Update\n"};
 
 char* id_strings[] = WARM_START_ID_STRINGS;
 
@@ -266,6 +270,13 @@ void shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_
     printf("Shutdown completion\n");
 }
 
+void quiesce_complete_notify_cli(DFWK_ASYNC_REQUEST_HEADER* request, void* p_completion_context)
+{
+    FPFW_UNUSED(p_completion_context);
+    FPFW_UNUSED(request);
+    printf("Quiesce complete notify\n");
+}
+
 /**
  *  CLI command for performing a warm reset
  *
@@ -305,6 +316,11 @@ static PLACED_CODE FPFW_CLI_STATUS ws_reset(int argc, const char** argv)
         else if (strcmp(argv[1], "shutdown") == 0)
         {
             sos_shutdown((void*)&sos_interface, &shutdown_request, SHUTDOWN_SCP_INITIATED, shutdown_completion, NULL);
+        }
+        else if (strcmp(argv[1], "quiesce") == 0)
+        {
+            shutdown_request.header.RequestType = STARTUP_REQUEST_QUIESCE_ASYNC;
+            sos_quiesce((void*)&sos_interface, &shutdown_request, quiesce_complete_notify_cli, NULL);
         }
         else
         {

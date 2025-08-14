@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 
 # Guidelines
-# In robot files, all commands and parameters need to be separated by a minimum of 1 tab space. 
+# In robot files, all commands and parameters need to be separated by a minimum of 1 tab space.
 # Pythia returns an error if this is not followed
 
 *** Settings ***
@@ -83,7 +83,7 @@ ${TIMEOUT}              ${900}
 
 *** Test Cases ***
 Test Case - AP: CDED Die1 PF GCM Encryption-Decryption test with Keys in DDR: [1836729]
-    [Documentation]     Test the CDED Die1 AES-GCM Encrypt/Decrypt functionality from AP (Core 0)  
+    [Documentation]     Test the CDED Die1 AES-GCM Encrypt/Decrypt functionality from AP (Core 0)
     Send Test Command    ap_bm cded_test -o ged -d 1    apns0
     ${test_result}    Parse Test Output    apns0    ${READ UNTIL}     ${PASS_RESPONSE_AES_GCM_ENCR_DECR}
     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
@@ -99,7 +99,7 @@ Test Case - AP: CDED Die1 PF XTS Encryption-Decryption test with PassThrough Ena
 Test Case - AP: CDED Die1 PF XTS Encryption-Decryption test with Keys in DDR: [1836729]
     [Documentation]     Test the CDED Die1 AES-XTS Encrypt/Decrypt functionality from AP (Core 0)
     Send Test Command    ap_bm cded_test -o xed -d 1    apns0
-    ${test_result}    Parse Test Output    apns0    ${READ UNTIL}     ${PASS_RESPONSE_AES_XTS_ENCR_DECR_NO_PASSTHROUGH}   
+    ${test_result}    Parse Test Output    apns0    ${READ UNTIL}     ${PASS_RESPONSE_AES_XTS_ENCR_DECR_NO_PASSTHROUGH}
     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
     Should Be True      ${test_result}
 
@@ -131,9 +131,10 @@ Test Case - AP: CDED Die1 PF Decompression Test: [1836729]
     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
     Should Be True      ${test_result}
 
-Test Case - AP: CDED Die1 User Define Opcode Test: [1931002]
-    [Documentation]     Test the CDED Die0 User define opcode functionality from AP (Core 0)
-    Send Test Command    ap_bm cded_test -o ud_op -d 1    apns0
-    ${test_result}    Parse Test Output    apns0    ${READ UNTIL}     ${PASS_RESPONSE_USER_DEF_OPCODE}
-    ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
-    Should Be True      ${test_result}
+# Disabled as all user defined opcodes are now invalid
+# Test Case - AP: CDED Die1 User Define Opcode Test: [1931002]
+#     [Documentation]     Test the CDED Die0 User define opcode functionality from AP (Core 0)
+#     Send Test Command    ap_bm cded_test -o ud_op -d 1    apns0
+#     ${test_result}    Parse Test Output    apns0    ${READ UNTIL}     ${PASS_RESPONSE_USER_DEF_OPCODE}
+#     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
+#     Should Be True      ${test_result}

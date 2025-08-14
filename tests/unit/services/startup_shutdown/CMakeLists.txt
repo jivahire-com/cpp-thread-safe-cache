@@ -94,6 +94,8 @@ mock_target(${TARGET}
     reset_complete_wait_forever
     wait_for_semaphore
     release_semaphore
+    accel_is_isolation_enabled
+    accel_core_suspend
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

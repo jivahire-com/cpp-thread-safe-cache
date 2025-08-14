@@ -46,7 +46,7 @@ void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_cont
 
 #ifdef SCP_RUNTIME_INIT
 
-FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "sysinfo"))
+FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "icc_sdm_mbx", "icc_cded_mbx", "sysinfo"))
 {
     static sos_interface_t sos_interface;
     sos_interface_init(fpfw_init_get_handle("sos_svc"), &sos_interface, true);
@@ -60,7 +60,10 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "ic
     FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
 
     // initialize the intercore communication
-    sos_icc_init(fpfw_init_get_handle("icc_hspmbx"), fpfw_init_get_handle("icc_die2die"));
+    sos_icc_init(fpfw_init_get_handle("icc_hspmbx"),
+                 fpfw_init_get_handle("icc_die2die"),
+                 fpfw_init_get_handle("icc_sdm_mbx"),
+                 fpfw_init_get_handle("icc_cded_mbx"));
 
     // send synchronous and asynchronous startup stage start requests
     static startup_start_phase_request_t startup_phase_request;

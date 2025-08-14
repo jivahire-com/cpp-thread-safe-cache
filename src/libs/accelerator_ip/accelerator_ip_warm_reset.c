@@ -167,3 +167,13 @@ void accel_core_warm_reset(ACCEL_ID accel_type)
 
     accel_warm_boot_sequence(accel_type, (ext_cfg_offset_addr + atu_svc_accel_atu_addr(accel_type)));
 }
+
+void accel_core_suspend(ACCEL_ID accel_type)
+{
+    BUG_ASSERT_PARAM(accel_type < NUM_VALID_ACCEL_ID, accel_type, 0);
+
+    uint32_t emcpu_addr = get_accel_ext_cfg_offset_addr(accel_type) + atu_svc_accel_atu_addr(accel_type);
+
+    sdm_init_enable_cpuwait(emcpu_addr);
+    sdm_init_assert_nsysreset(emcpu_addr);
+}

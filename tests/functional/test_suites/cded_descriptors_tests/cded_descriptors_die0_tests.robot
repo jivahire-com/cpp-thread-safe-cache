@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 
 # Guidelines
-# In robot files, all commands and parameters need to be separated by a minimum of 1 tab space. 
+# In robot files, all commands and parameters need to be separated by a minimum of 1 tab space.
 # Pythia returns an error if this is not followed
 
 *** Settings ***
@@ -131,9 +131,10 @@ Test Case - AP: CDED Die0 PF Decompression Test: [1836729]
     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
     Should Be True      ${test_result}
 
-Test Case - AP: CDED Die0 User Define Opcode Test: [1931002]
-    [Documentation]     Test the CDED Die0 User define opcode functionality from AP (Core 0)
-    Send Test Command    ap_bm cded_test -o ud_op    apns0
-    ${test_result}    Parse Test Output    apns0    ${READ UNTIL}     ${PASS_RESPONSE_USER_DEF_OPCODE}
-    ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
-    Should Be True      ${test_result}
+# Disabled as all user defined opcodes are now invalid
+# Test Case - AP: CDED Die0 User Define Opcode Test: [1931002]
+#     [Documentation]     Test the CDED Die0 User define opcode functionality from AP (Core 0)
+#     Send Test Command    ap_bm cded_test -o ud_op    apns0
+#     ${test_result}    Parse Test Output    apns0    ${READ UNTIL}     ${PASS_RESPONSE_USER_DEF_OPCODE}
+#     ...    ${FAIL_RESPONSE}     ${IGNORE_NUMBERS}    ${TIMEOUT}
+#     Should Be True      ${test_result}

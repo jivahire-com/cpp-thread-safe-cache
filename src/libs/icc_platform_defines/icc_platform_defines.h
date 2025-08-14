@@ -286,10 +286,18 @@ typedef struct _accel_cd_params {
 
 /**
  * @brief Boot status code Fifo Mailbox message
- * 
+ *
  */
 typedef struct _accel_boot_status_msg {
 	large_fifo_mailbox_msg_header hdr;
 		uint8_t boot_status;
 		uint8_t reserved[3];
 } accel_boot_status_msg;
+
+/**
+ * @brief Structure for Accel Quiesce request and response message
+ *
+ */
+typedef struct _accel_quiesce_msg {
+	large_fifo_mailbox_msg_header hdr;
+} accel_quiesce_msg, accel_quiesce_msg_rsp;

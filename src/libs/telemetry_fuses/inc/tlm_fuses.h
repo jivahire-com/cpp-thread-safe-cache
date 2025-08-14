@@ -61,7 +61,7 @@
 
 
 /**
- *  Helpers for handling ECID.
+ *  Helpers for handling Electronic Chip Identifier (ECID).
  */
 
  #define ECID_WAFER_LOT_NUMBER_CHAR_SIZE (9)
@@ -76,6 +76,21 @@ typedef struct _dts_tlm_coeff_t
     uint16_t k_val;
     uint16_t y_val;
 } dts_tlm_coeff_t;
+
+//
+// See https://dev.azure.com/smpe-peak/Fuse/_wiki/wikis/Fuse.wiki/42/-Design-Gen2-ECID-definition
+// for more information on the ECID structure.
+//
+typedef struct _ecid_t
+{
+    // Plus one for the null terminator
+    char wafer_lot_num[ECID_WAFER_LOT_NUMBER_CHAR_SIZE + 1];
+    uint8_t wafer_num;
+    uint8_t x_coord;
+    uint8_t y_coord;
+} ecid_t;
+
+/*------ Function Prototypes ------------*/
 
 /**
  * @brief Initialize the library. Captures status of dependencies being initialized.
@@ -103,3 +118,12 @@ fpfw_status_t tlm_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, uint32_t 
  * @return FPFW_STATUS_SUCCESS on success, error code otherwise.
  */
 fpfw_status_t tlm_fuses_get_dts_coeff_soctop(dts_tlm_coeff_t* dts_coeff, uint32_t count);
+
+/**
+ * @brief Get the Electronic Chip Identifier (ECID) from fuses.
+ *
+ * @param[out] ecid - Pointer to the ecid_t structure to store the ECID.
+ * 
+ * @return FPFW_STATUS_SUCCESS on success, error code otherwise.
+ */
+fpfw_status_t tlm_fuses_get_ecid(ecid_t* ecid);

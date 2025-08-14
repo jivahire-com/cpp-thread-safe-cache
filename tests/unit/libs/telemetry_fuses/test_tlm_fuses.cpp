@@ -336,3 +336,105 @@ TEST_FUNCTION(test_tlm_fuses_get_dts_coeff_failed_k_read, NULL, NULL)
 
     mock_tlm_fuses_read = false;
 }
+
+TEST_FUNCTION(test_tlm_fuses_get_ecid_fuse_svc_up, NULL, NULL)
+{
+    ecid_t ecid = {};
+
+    isFuseServiceUp = true;
+
+    // Setup expectations for wafer lot number
+    for (uint8_t i = 0; i < ECID_WAFER_LOT_NUMBER_CHAR_SIZE; i++)
+    {
+        expect_value(__wrap_fuse_read, fuse_bit_offset, ECID_WAFER_LOT_NUMBER_CHAR0_BIT_OFFSET + (i * 8));
+        expect_value(__wrap_fuse_read, fuse_bit_size, 8);
+        will_return(__wrap_fuse_read, 'A' + i); // Mocking with characters A to I
+    }
+
+    // Setup expectations for wafer number
+    expect_value(__wrap_fuse_read, fuse_bit_offset, ECID_WAFER_NUMBER_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, ECID_WAFER_NUMBER_WIDTH);
+    will_return(__wrap_fuse_read, 1);
+
+    // Setup expectations for x coordinate
+    expect_value(__wrap_fuse_read, fuse_bit_offset, ECID_X_COORDINATE_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, ECID_X_COORDINATE_WIDTH);
+    will_return(__wrap_fuse_read, 2);
+
+    // Setup expectations for y coordinate
+    expect_value(__wrap_fuse_read, fuse_bit_offset, ECID_Y_COORDINATE_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, ECID_Y_COORDINATE_WIDTH);
+    will_return(__wrap_fuse_read, 3);
+
+    fpfw_status_t status = tlm_fuses_get_ecid(&ecid);
+
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+    assert_string_equal(ecid.wafer_lot_num, "ABCDEFGHI");
+    assert_int_equal(ecid.wafer_num, 1);
+    assert_int_equal(ecid.x_coord, 2);
+    assert_int_equal(ecid.y_coord, 3);
+}
+
+TEST_FUNCTION(test_tlm_fuses_get_ecid_fuse_svc_down, NULL, NULL)
+{
+    ecid_t ecid = {};
+
+    isFuseServiceUp = false;
+
+    fpfw_status_t status = tlm_fuses_get_ecid(&ecid);
+
+    assert_int_equal(status, FPFW_STATUS_FAIL);
+    assert_memory_equal(&ecid, &(ecid_t){}, sizeof(ecid_t));
+}
+
+TEST_FUNCTION(test_tlm_fuses_get_ecid_fuse_failed_reads, NULL, NULL)
+{
+    ecid_t ecid = {};
+
+    isFuseServiceUp = true;
+    mock_tlm_fuses_read = true;
+
+    // Test Case 1: Failed wafer lot number read
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_FAIL);
+    fpfw_status_t status = tlm_fuses_get_ecid(&ecid);
+
+    assert_int_equal(status, FPFW_STATUS_FAIL);
+
+    // Test Case 2: Failed wafer num read
+    for (uint8_t i = 0; i < ECID_WAFER_LOT_NUMBER_CHAR_SIZE; i++)
+    {
+        will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    }
+
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_FAIL);
+    status = tlm_fuses_get_ecid(&ecid);
+
+    assert_int_equal(status, FPFW_STATUS_FAIL);
+
+    // Test Case 3: Failed x coord read
+    for (uint8_t i = 0; i < ECID_WAFER_LOT_NUMBER_CHAR_SIZE; i++)
+    {
+        will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    }
+
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_FAIL);
+    status = tlm_fuses_get_ecid(&ecid);
+
+    assert_int_equal(status, FPFW_STATUS_FAIL);
+
+    // Test Case 4: Failed y coord read
+    for (uint8_t i = 0; i < ECID_WAFER_LOT_NUMBER_CHAR_SIZE; i++)
+    {
+        will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    }
+
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_FAIL);
+    status = tlm_fuses_get_ecid(&ecid);
+
+    assert_int_equal(status, FPFW_STATUS_FAIL);
+
+    mock_tlm_fuses_read = false;
+}

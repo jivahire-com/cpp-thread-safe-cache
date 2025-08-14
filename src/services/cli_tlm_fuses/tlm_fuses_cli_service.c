@@ -25,11 +25,13 @@
 
 /*-------- Function Prototypes -----------*/
 
+static FPFW_CLI_STATUS read_ecid(int Argc, const char** Argv);
 static FPFW_CLI_STATUS read_tile_dts_coeff(int Argc, const char** Argv);
 static FPFW_CLI_STATUS read_soc_dts_coeff(int Argc, const char** Argv);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND cli_tlm_fuses_commands[] = {
+    {NULL_LIST_ENTRY, "tlmFuses", "ecid", read_ecid, "Read the Electronic Chip Identifier (ECID)", "Usage: ecid"},
     {NULL_LIST_ENTRY, "tlmFuses", "tileDtsCoeff", read_tile_dts_coeff, "Read tile dts coefficients", "Usage: tileDtsCoeff"},
     {NULL_LIST_ENTRY, "tlmFuses", "socDtsCoeff", read_soc_dts_coeff, "Read soc top dts coefficients", "Usage: socDtsCoeff"},
 };
@@ -39,6 +41,35 @@ static FPFW_CLI_COMMAND cli_tlm_fuses_commands[] = {
 void tlm_fuses_cli_svc_init(void)
 {
     FpFwCliRegisterTable(&cli_tlm_fuses_commands[0], FPFW_ARRAY_SIZE(cli_tlm_fuses_commands));
+}
+
+static FPFW_CLI_STATUS read_ecid(int Argc, const char** Argv)
+{
+    FPFW_UNUSED(Argc);
+    FPFW_UNUSED(Argv);
+
+    FPFW_CLI_STATUS cli_status = CLI_SUCCESS;
+
+    ecid_t fuses_ecid = {0};
+    if (tlm_fuses_get_ecid(&fuses_ecid) != FPFW_STATUS_SUCCESS)
+    {
+        FpFwCliPrint("\nFailed to read ECID.\n");
+        cli_status = CLI_ERROR;
+    }
+    else
+    {
+        FpFwCliPrint("\nECID:\n");
+        FpFwCliPrint("\tWafer Lot Number:\n");
+        for (uint8_t i = 0; i < ECID_WAFER_LOT_NUMBER_CHAR_SIZE; ++i)
+        {
+            FpFwCliPrint("\t\tChar[%u]: %c\n", i, fuses_ecid.wafer_lot_num[i]);
+        }
+        FpFwCliPrint("\tWafer Number: 0x%x\n", fuses_ecid.wafer_num);
+        FpFwCliPrint("\tX Coordinate: 0x%x\n", fuses_ecid.x_coord);
+        FpFwCliPrint("\tY Coordinate: 0x%x\n", fuses_ecid.y_coord);
+    }
+
+    return cli_status;
 }
 
 static FPFW_CLI_STATUS read_tile_dts_coeff(int Argc, const char** Argv)

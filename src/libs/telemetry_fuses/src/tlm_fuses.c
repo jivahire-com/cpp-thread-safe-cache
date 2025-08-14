@@ -212,3 +212,69 @@ fpfw_status_t tlm_fuses_get_dts_coeff_soctop(dts_tlm_coeff_t* dts_coeff, uint32_
 
     return status;
 }
+
+fpfw_status_t tlm_fuses_get_ecid(ecid_t* ecid)
+{
+    fpfw_status_t status = FPFW_STATUS_SUCCESS;
+
+    if (isFuseServiceUp)
+    {
+        // Read the wafer lot number
+        for (uint8_t i = 0; i < ECID_WAFER_LOT_NUMBER_CHAR_SIZE; i++)
+        {
+            status = tlm_fuses_read((uintptr_t)&ecid->wafer_lot_num[i],
+                                    ECID_WAFER_LOT_NUMBER_CHAR0_BIT_OFFSET + (i * ECID_WAFER_LOT_NUMBER_CHAR0_WIDTH),
+                                    ECID_WAFER_LOT_NUMBER_CHAR0_WIDTH);
+            if (FPFW_STATUS_FAILED(status))
+            {
+                FPFW_ET_LOG(TlmFusesReadEcidWaferLotNum, status, i);
+                return status;
+            }
+        }
+
+        // Read the wafer number
+        status = tlm_fuses_read((uintptr_t)&ecid->wafer_num, ECID_WAFER_NUMBER_BIT_OFFSET, ECID_WAFER_NUMBER_WIDTH);
+        if (FPFW_STATUS_FAILED(status))
+        {
+            FPFW_ET_LOG(TlmFusesReadEcidWaferNum, status);
+            return status;
+        }
+
+        // Read the x coordinate
+        status = tlm_fuses_read((uintptr_t)&ecid->x_coord, ECID_X_COORDINATE_BIT_OFFSET, ECID_X_COORDINATE_WIDTH);
+        if (FPFW_STATUS_FAILED(status))
+        {
+            FPFW_ET_LOG(TlmFusesReadEcidXCoord, status);
+            return status;
+        }
+
+        // Read the y coordinate
+        status = tlm_fuses_read((uintptr_t)&ecid->y_coord, ECID_Y_COORDINATE_BIT_OFFSET, ECID_Y_COORDINATE_WIDTH);
+        if (FPFW_STATUS_FAILED(status))
+        {
+            FPFW_ET_LOG(TlmFusesReadEcidYCoord, status);
+            return status;
+        }
+
+        FPFW_ET_LOG(TlmFusesReadEcid,
+                    ecid->wafer_lot_num[0],
+                    ecid->wafer_lot_num[1],
+                    ecid->wafer_lot_num[2],
+                    ecid->wafer_lot_num[3],
+                    ecid->wafer_lot_num[4],
+                    ecid->wafer_lot_num[5],
+                    ecid->wafer_lot_num[6],
+                    ecid->wafer_lot_num[7],
+                    ecid->wafer_lot_num[8],
+                    ecid->wafer_num,
+                    ecid->x_coord,
+                    ecid->y_coord);
+    }
+    else
+    {
+        status = FPFW_STATUS_FAIL;
+        FPFW_ET_LOG(TlmFusesReadEcidFuseServiceNotUp);
+    }
+
+    return status;
+}

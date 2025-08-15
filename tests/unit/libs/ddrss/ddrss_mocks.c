@@ -22,6 +22,7 @@
 #include <nvic.h>
 #include <silibs_status.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -31,6 +32,33 @@
 /*-------- Function Prototypes -----------*/
 int __real_ddrss_get_config(ddrss_cfg_knobs_t* ddrss_cfgs);
 int __real_ddrss_inject_media_ca_err(uint32_t mc, ddrss_media_ca_err_inj_info_t* ca_err_inj);
+
+// DDR error injection function prototypes
+void __real_ddr_err_inj_ecc_ce(uint32_t mc);
+void __real_ddr_err_inj_ecc_ue(uint32_t mc);
+void __real_ddr_err_inj_mainline_traffic_ce(uint32_t mc);
+void __real_ddr_err_inj_mainline_traffic_ue(uint32_t mc);
+void __real_ddr_err_inj_media_patrol_scrub_ce(uint32_t mc);
+void __real_ddr_err_inj_media_patrol_scrub_ue(uint32_t mc);
+void __real_ddr_err_inj_fecq_fedb_data_array_ue(uint32_t mc);
+void __real_ddr_err_inj_fedb_merge_data_ue(uint32_t mc);
+void __real_ddr_err_inj_fedb_merge_data_ce(uint32_t mc);
+void __real_ddr_err_inj_fedb_merge_data_parity_ue(uint32_t mc);
+void __real_ddr_err_inj_fedb_merge_strobe_ue(uint32_t mc);
+void __real_ddr_err_inj_fedb_merge_strobe_parity_ue(uint32_t mc);
+void __real_ddr_err_inj_fedb_strobe_array_ue(uint32_t mc);
+void __real_ddr_err_inj_ca_parity_persistent(uint32_t mc);
+void __real_ddr_err_inj_ca_parity_transient(uint32_t mc);
+void __real_ddr_err_rh_counters_sram_parity(uint32_t mc);
+void __real_ddr_err_rh_drfm_sram_parity(uint32_t mc);
+void __real_ddr_err_xts_aes_keystore_ce(uint32_t mc);
+void __real_ddr_err_xts_aes_keystore_ue(uint32_t mc);
+void __real_ddr_err_bcp_read_addr_not_in_ddr(uint32_t mc);
+void __real_ddr_err_bcp_read_blocked_by_pas(uint32_t mc);
+void __real_ddr_err_bcp_write_addr_not_in_ddr(uint32_t mc);
+void __real_ddr_err_bcp_write_blocked_by_pas(uint32_t mc);
+void __real_ddr_err_bcp_chi_unsupported_opcode(uint32_t mc);
+void __real_ddr_err_inj_mrdp_parity_ue(uint32_t mc);
 
 /*-- Declarations (Statics and globals) --*/
 uint32_t g_ddr_intu_sts;
@@ -44,6 +72,7 @@ bool g_should_check_cper_section = false;
 bool g_should_check_ras_agent_entity_id = false;
 bool g_should_wrap_ddrss_get_config = false;
 bool g_should_wrap_ddrss_inject_media_ca_err = false;
+bool g_should_check_ddrss_err_inj_function_ptrs = false;
 
 /*------------- Functions ----------------*/
 
@@ -349,4 +378,329 @@ int __wrap_ddrss_get_phy_training_failure(ddrss_phy_training_error_info_t* phy_e
     phy_err_info->mc = mock_type(uint8_t);
 
     return mock_type(int);
+}
+
+void __wrap_ddr_err_inj_ecc_ce(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_ecc_ce(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_ecc_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_ecc_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_mainline_traffic_ce(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_mainline_traffic_ce(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_mainline_traffic_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_mainline_traffic_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_media_patrol_scrub_ce(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_media_patrol_scrub_ce(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_media_patrol_scrub_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_media_patrol_scrub_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_fecq_fedb_data_array_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_fecq_fedb_data_array_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_fedb_merge_data_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_fedb_merge_data_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_fedb_merge_data_ce(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_fedb_merge_data_ce(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_fedb_merge_data_parity_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_fedb_merge_data_parity_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_fedb_merge_strobe_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_fedb_merge_strobe_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_fedb_merge_strobe_parity_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_fedb_merge_strobe_parity_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_fedb_strobe_array_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_fedb_strobe_array_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_ca_parity_persistent(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_ca_parity_persistent(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_ca_parity_transient(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_ca_parity_transient(mc);
+    }
+}
+
+void __wrap_ddr_err_rh_counters_sram_parity(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_rh_counters_sram_parity(mc);
+    }
+}
+
+void __wrap_ddr_err_rh_drfm_sram_parity(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_rh_drfm_sram_parity(mc);
+    }
+}
+
+void __wrap_ddr_err_xts_aes_keystore_ce(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_xts_aes_keystore_ce(mc);
+    }
+}
+
+void __wrap_ddr_err_xts_aes_keystore_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_xts_aes_keystore_ue(mc);
+    }
+}
+
+void __wrap_ddr_err_bcp_read_addr_not_in_ddr(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_bcp_read_addr_not_in_ddr(mc);
+    }
+}
+
+void __wrap_ddr_err_bcp_read_blocked_by_pas(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_bcp_read_blocked_by_pas(mc);
+    }
+}
+
+void __wrap_ddr_err_bcp_write_addr_not_in_ddr(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_bcp_write_addr_not_in_ddr(mc);
+    }
+}
+
+void __wrap_ddr_err_bcp_write_blocked_by_pas(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_bcp_write_blocked_by_pas(mc);
+    }
+}
+
+void __wrap_ddr_err_bcp_chi_unsupported_opcode(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_bcp_chi_unsupported_opcode(mc);
+    }
+}
+
+void __wrap_ddr_err_inj_mrdp_parity_ue(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    if (g_should_check_ddrss_err_inj_function_ptrs)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_err_inj_mrdp_parity_ue(mc);
+    }
 }

@@ -31,6 +31,7 @@ extern "C" {
 extern bool g_should_check_ras_agent_entity_id;
 extern bool g_should_wrap_ddrss_get_config;
 extern bool g_should_wrap_ddrss_inject_media_ca_err;
+extern bool g_should_check_ddrss_err_inj_function_ptrs;
 
 //
 // Mocks
@@ -303,5 +304,104 @@ TEST_FUNCTION(test_ras_inj_syndrome_list, NULL, NULL)
     assert_int_equal(get_syndrome_index("DDR_ERR_INJ_MRDP_PARITY_ERROR"), 0x16);
     assert_int_equal(get_syndrome_index("DDR_ERR_INJ_ECC_CE"), 0x17);
     assert_int_equal(get_syndrome_index("DDR_ERR_INJ_ECC_UE"), 0x18);
+}
+
+TEST_FUNCTION(test_function_pointers_happy_path, NULL, NULL)
+{
+    const ddr_err_inj_syndrome_t named_syndrome[] = {DDR_ERR_INJ_SYNDROME_LIST(NAMED_SYNDROME_STRUCT_INIT)};
+    g_should_check_ddrss_err_inj_function_ptrs = true;
+
+    // Check if the function pointers are set correctly
+    for (int i = 0; i < DDR_ERR_INJ_SYNDROME_COUNT; i++)
+    {
+        assert_non_null(named_syndrome[i].inj_func);
+
+        // Use literal function names for expect_function_call since CMocka requires them
+        switch (i)
+        {
+        case 0:
+            expect_function_call(__wrap_ddr_err_inj_mainline_traffic_ce);
+            break;
+        case 1:
+            expect_function_call(__wrap_ddr_err_inj_mainline_traffic_ue);
+            break;
+        case 2:
+            expect_function_call(__wrap_ddr_err_inj_media_patrol_scrub_ce);
+            break;
+        case 3:
+            expect_function_call(__wrap_ddr_err_inj_media_patrol_scrub_ue);
+            break;
+        case 4:
+            expect_function_call(__wrap_ddr_err_inj_fecq_fedb_data_array_ue);
+            break;
+        case 5:
+            expect_function_call(__wrap_ddr_err_inj_fedb_merge_data_ue);
+            break;
+        case 6:
+            expect_function_call(__wrap_ddr_err_inj_fedb_merge_data_ce);
+            break;
+        case 7:
+            expect_function_call(__wrap_ddr_err_inj_fedb_merge_data_parity_ue);
+            break;
+        case 8:
+            expect_function_call(__wrap_ddr_err_inj_fedb_merge_strobe_ue);
+            break;
+        case 9:
+            expect_function_call(__wrap_ddr_err_inj_fedb_merge_strobe_parity_ue);
+            break;
+        case 10:
+            expect_function_call(__wrap_ddr_err_inj_fedb_strobe_array_ue);
+            break;
+        case 11:
+            expect_function_call(__wrap_ddr_err_inj_ca_parity_persistent);
+            break;
+        case 12:
+            expect_function_call(__wrap_ddr_err_inj_ca_parity_transient);
+            break;
+        case 13:
+            expect_function_call(__wrap_ddr_err_rh_counters_sram_parity);
+            break;
+        case 14:
+            expect_function_call(__wrap_ddr_err_rh_drfm_sram_parity);
+            break;
+        case 15:
+            expect_function_call(__wrap_ddr_err_xts_aes_keystore_ce);
+            break;
+        case 16:
+            expect_function_call(__wrap_ddr_err_xts_aes_keystore_ue);
+            break;
+        case 17:
+            expect_function_call(__wrap_ddr_err_bcp_read_addr_not_in_ddr);
+            break;
+        case 18:
+            expect_function_call(__wrap_ddr_err_bcp_read_blocked_by_pas);
+            break;
+        case 19:
+            expect_function_call(__wrap_ddr_err_bcp_write_addr_not_in_ddr);
+            break;
+        case 20:
+            expect_function_call(__wrap_ddr_err_bcp_write_blocked_by_pas);
+            break;
+        case 21:
+            expect_function_call(__wrap_ddr_err_bcp_chi_unsupported_opcode);
+            break;
+        case 22:
+            expect_function_call(__wrap_ddr_err_inj_mrdp_parity_ue);
+            break;
+        case 23:
+            expect_function_call(__wrap_ddr_err_inj_ecc_ce);
+            break;
+        case 24:
+            expect_function_call(__wrap_ddr_err_inj_ecc_ue);
+            break;
+        default:
+            fail_msg("Unexpected syndrome index: %d", i);
+            break;
+        }
+
+        named_syndrome[i].inj_func(0); // Call the function with a dummy argument
+    }
+
+    g_should_check_ddrss_err_inj_function_ptrs = false;
 }
 }

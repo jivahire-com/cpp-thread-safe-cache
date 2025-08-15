@@ -80,4 +80,29 @@ mock_target(${TARGET}
     ras_arm_agent_probe
     ras_print_record
     system_info_is_warm_start
+    ddr_err_inj_ecc_ce
+    ddr_err_inj_ecc_ue
+    ddr_err_inj_mainline_traffic_ce
+    ddr_err_inj_mainline_traffic_ue
+    ddr_err_inj_media_patrol_scrub_ce
+    ddr_err_inj_media_patrol_scrub_ue
+    ddr_err_inj_fecq_fedb_data_array_ue
+    ddr_err_inj_fedb_merge_data_ue
+    ddr_err_inj_fedb_merge_data_ce
+    ddr_err_inj_fedb_merge_data_parity_ue
+    ddr_err_inj_fedb_merge_strobe_ue
+    ddr_err_inj_fedb_merge_strobe_parity_ue
+    ddr_err_inj_fedb_strobe_array_ue
+    ddr_err_inj_ca_parity_persistent
+    ddr_err_inj_ca_parity_transient
+    ddr_err_rh_counters_sram_parity
+    ddr_err_rh_drfm_sram_parity
+    ddr_err_xts_aes_keystore_ce
+    ddr_err_xts_aes_keystore_ue
+    ddr_err_bcp_read_addr_not_in_ddr
+    ddr_err_bcp_read_blocked_by_pas
+    ddr_err_bcp_write_addr_not_in_ddr
+    ddr_err_bcp_write_blocked_by_pas
+    ddr_err_bcp_chi_unsupported_opcode
+    ddr_err_inj_mrdp_parity_ue
 )

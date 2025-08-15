@@ -138,6 +138,11 @@ static void platform_event_ready_callback(uint16_t event_id, void* context)
     DEBUG_PRINT("PLDM platform event ready callback called with event ID: %u\n", event_id);
 }
 
+// Supported PLDM message types
+static uint32_t s_supported_msg_types[] = {FPFW_PLDM_TYPE_PLATFORM_MONITORING_CONTROL};
+// Number of supported PLDM message types
+static size_t s_supported_msg_types_count = sizeof(s_supported_msg_types) / sizeof(s_supported_msg_types[0]);
+
 #define SYS_THREAD_STACK_SIZE_PLDM_SERVICE ((TX_MINIMUM_STACK) + ((2) * (FPFW_KB)))
 #define SYS_THREAD_TIME_SLICE_PLDM_SERVICE (TX_NO_TIME_SLICE)
 // TODO: Modify priority later https://azurecsi.visualstudio.com/Dev/_workitems/edit/2743962
@@ -170,8 +175,7 @@ FPFW_INIT_COMPONENT(pldm, FPFW_INIT_DEPENDENCIES("mctp", "pdr_repo"))
 
                                                .outgoing_messages = (void*)pldm_tx_msgs,
                                                .outgoing_msg_payload_size = PLDM_OUTGOING_MSG_SIZE,
-                                               .num_outgoing_messages = PLDM_NUM_OUTGOING_MSGS,
-                                               .max_platform_event_size = PLDM_OUTGOING_MSG_SIZE};
+                                               .num_outgoing_messages = PLDM_NUM_OUTGOING_MSGS};
 
     pldmConfig.mctp_ctx = (fpfw_mctp*)fpfw_init_get_handle("mctp");
     pldmConfig.pdr_repo = (void*)fpfw_init_get_handle("pdr_repo");
@@ -181,6 +185,11 @@ FPFW_INIT_COMPONENT(pldm, FPFW_INIT_DEPENDENCIES("mctp", "pdr_repo"))
     pldmConfig.pdr_config.oam_timestamp = time.as_raw;
 
     pldmConfig.pdr_config.UUID = (fpfw_pldm_uuid_t){0};
+
+    pldmConfig.supported_msg_types = s_supported_msg_types; // Supported message types
+    pldmConfig.supported_msg_types_count = s_supported_msg_types_count;
+    pldmConfig.pldm_fru_registered_cb = NULL;
+    pldmConfig.auto_discovery_notify = false;
 
     fpfw_status_t status = fpfw_pldm_service_init(&pldmConfig);
     if (FPFW_STATUS_FAILED(status))

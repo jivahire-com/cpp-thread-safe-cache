@@ -1032,11 +1032,25 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
     const auto test_die = (KNG_DIE_ID)0;
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
-                                          .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED}};
-    size_t output_recv_bytes = 0;
 
     tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
+    kng_hsp_mailbox_msg msg = {};
+    msg.header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ;
+    msg.header.flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_apus_as_nonsecure =
+        tower_config_knobs.tower_mode_cfg.tower_configure_all_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_ddrss_apus_as_nonsecure =
+        tower_config_knobs.tower_mode_cfg.tower_configure_ddrss_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_pmus_as_nonsecure =
+        tower_config_knobs.tower_mode_cfg.tower_configure_all_pmus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_rpss_os_first_ras_err_handling = 0;
+    msg.tower_config_req.tower_unlock_flags.tower_vab_os_first_ras_err_handling = 0;
+
+    size_t output_recv_bytes = 0;
+
     will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
     expect_function_call(__wrap_config_get_tower_knobs);
 
@@ -1109,10 +1123,24 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp_isolation_enable, n
     const auto test_die = (KNG_DIE_ID)0;
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ, .flags = 0}};
     size_t output_recv_bytes = 0;
 
     tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
+    kng_hsp_mailbox_msg msg = {};
+    msg.header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ;
+    msg.header.flags = 0;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_apus_as_nonsecure =
+        tower_config_knobs.tower_mode_cfg.tower_configure_all_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_ddrss_apus_as_nonsecure =
+        tower_config_knobs.tower_mode_cfg.tower_configure_ddrss_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_pmus_as_nonsecure =
+        tower_config_knobs.tower_mode_cfg.tower_configure_all_pmus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_rpss_os_first_ras_err_handling = 0;
+    msg.tower_config_req.tower_unlock_flags.tower_vab_os_first_ras_err_handling = 0;
+
     will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
     expect_function_call(__wrap_config_get_tower_knobs);
 
@@ -1185,11 +1213,24 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
     const auto test_die = (KNG_DIE_ID)1;
     uint32_t dummy_icc_ctx = 0;
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)&dummy_icc_ctx;
-    kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ,
-                                          .flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED}};
     size_t output_recv_bytes = 0;
 
     tower_knobs_t tower_config_knobs = __real_config_get_tower_knobs();
+    will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
+    expect_function_call(__wrap_config_get_tower_knobs);
+
+    kng_hsp_mailbox_msg msg = {};
+    msg.header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ;
+    msg.header.flags = HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_apus_as_nonsecure =
+        tower_config_knobs.tower_mode_cfg.tower_configure_all_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_ddrss_apus_as_nonsecure =
+        tower_config_knobs.tower_mode_cfg.tower_configure_ddrss_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_pmus_as_nonsecure =
+        tower_config_knobs.tower_mode_cfg.tower_configure_all_pmus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_rpss_os_first_ras_err_handling = 0;
+    msg.tower_config_req.tower_unlock_flags.tower_vab_os_first_ras_err_handling = 0;
+
     will_return(__wrap_config_get_tower_knobs, &tower_config_knobs);
     expect_function_call(__wrap_config_get_tower_knobs);
 

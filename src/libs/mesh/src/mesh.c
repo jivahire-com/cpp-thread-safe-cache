@@ -57,6 +57,18 @@ static void hsp_send_recv_progress_msg(uint16_t req_msg, uint16_t rsp_msg)
         .header.cmd = req_msg,
     };
 
+    tower_sequence_knobs_t tower_cfg = config_get_tower_knobs().tower_mode_cfg;
+
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_apus_as_nonsecure =
+        tower_cfg.tower_configure_all_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_ddrss_apus_as_nonsecure =
+        tower_cfg.tower_configure_ddrss_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_pmus_as_nonsecure =
+        tower_cfg.tower_configure_all_pmus_as_nonsecure;
+    // HSP doesn't configure RPSS or VAB, no need to send those knobs
+    msg.tower_config_req.tower_unlock_flags.tower_rpss_os_first_ras_err_handling = 0;
+    msg.tower_config_req.tower_unlock_flags.tower_vab_os_first_ras_err_handling = 0;
+
     // if rsp_msg == HSP_MAILBOX_CMD_MAX, then we don't expect a return from HSP
     if (rsp_msg != HSP_MAILBOX_CMD_MAX)
     {

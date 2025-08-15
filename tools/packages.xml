@@ -13,8 +13,8 @@
 
     <nuget_packages>
         <package name="1pfw.tools.win64" version="1.0.153" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
-        <package name="kingsgate.hsp.headers.release" version="1.50.0.129" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
-        <package name="kingsgate.sprt.release" version="1.50.0.129" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
+        <package name="kingsgate.hsp.headers.release" version="1.80.0.32" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
+        <package name="kingsgate.sprt.release" version="1.80.0.32" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
         <package name="kingsgate.firmware.a0rom" version="1.0.0.40" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
         <package name="kingsgate.headers.a0rom" version="1.0.0.40" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
     </nuget_packages>

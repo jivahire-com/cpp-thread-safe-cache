@@ -193,10 +193,20 @@ static atu_map_entry_t atu_rpss_tower_maps[NUM_RPSS] = {
  */
 static void hsp_send_recv_post_scp_init_tower_config(fpfw_icc_base_ctx_t* icc_ctx, uint8_t isolation_flag)
 {
+    tower_sequence_knobs_t tower_cfg = config_get_tower_knobs().tower_mode_cfg;
     size_t recv_msg_size_bytes = 0;
     kng_hsp_mailbox_msg msg = {};
     msg.header.cmd = HSP_MAILBOX_CMD_POST_SCP_INIT_TOWER_CONFIG_REQ;
     msg.header.flags = isolation_flag;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_apus_as_nonsecure =
+        tower_cfg.tower_configure_all_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_ddrss_apus_as_nonsecure =
+        tower_cfg.tower_configure_ddrss_apus_as_nonsecure;
+    msg.tower_config_req.tower_unlock_flags.tower_configure_all_pmus_as_nonsecure =
+        tower_cfg.tower_configure_all_pmus_as_nonsecure;
+    // HSP doesn't configure RPSS or VAB, no need to send those knobs
+    msg.tower_config_req.tower_unlock_flags.tower_rpss_os_first_ras_err_handling = 0;
+    msg.tower_config_req.tower_unlock_flags.tower_vab_os_first_ras_err_handling = 0;
 
     printf("Prepare to send %x to HSP\n", msg.header.cmd);
     //! Send the message to HSP & get response, blocking call

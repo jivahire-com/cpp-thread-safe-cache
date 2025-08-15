@@ -54,7 +54,9 @@ typedef union _kng_hsp_mailbox_msg {
 	struct kng_hsp_mailbox_cmd_get_security_state_rsp policy_status_rsp; /**<Security status of the HSP. */
 	struct kng_hsp_mailbox_cmd_telemetry_ddr_addr_notify telm_ddr_addr_notify; /**< SCP will send a notification to HSP regarding the base address of the DDR region allocated to HSP. */
 	struct kng_hsp_mailbox_cmd_prepare_for_core_reset_req prepare_for_core_reset_req; /**< outgoing mailbox message to notify other cores to do quiscing */
-    uint32_t as_uint32[HSP_MBOX_FIFO_DEPTH];
+	struct kng_hsp_mailbox_msg_cmd_enable_smmu_access_req smmu_access_req;
+	struct kng_hsp_mailbox_msg_cmd_post_scp_init_tower_config_req tower_config_req;
+	uint32_t as_uint32[HSP_MBOX_FIFO_DEPTH];
 } kng_hsp_mailbox_msg;
 
 /*--------- Function Prototypes ----------*/

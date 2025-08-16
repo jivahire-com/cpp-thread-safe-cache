@@ -142,7 +142,7 @@ static void tcm_overflow_isr()
 {
     mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_MCP_TCM,
                                    .err_source_irq = HW_INT_TCM_ECCOF_INT,
-                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_TCM_OF,
                                    .bugcheck_required = true,
                                    .err_status_addr = (uint32_t*)&mcp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
@@ -170,7 +170,7 @@ static void tcm_ue_isr()
 {
     mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_MCP_TCM,
                                    .err_source_irq = HW_INT_TCM_ECCUE_INT,
-                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_TCM_UE,
                                    .bugcheck_required = true,
                                    .err_status_addr = (uint32_t*)&mcp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
@@ -184,7 +184,7 @@ static void rmss_scfram_ecc_of_isr()
 {
     mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_SCF_RAM,
                                    .err_source_irq = HW_INT_MCP_SCFRAM_ECCOF_INT,
-                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_SCF_OF,
                                    .bugcheck_required = true,
                                    .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->scfram_mcp_errstatus_reg,
@@ -215,7 +215,7 @@ static void rmss_ram0_ecc_of_isr()
 {
     mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM0,
                                    .err_source_irq = HW_INT_MCP_RAM0_ECCOF_INT,
-                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_RMSS_RAM0_OF,
                                    .bugcheck_required = true,
                                    .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram0_mcp_errstatus_reg,
@@ -257,7 +257,7 @@ static void rmss_ram1_ecc_of_isr()
 {
     mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_RMSS_RAM1,
                                    .err_source_irq = HW_INT_MCP_RAM1_ECCOF_INT,
-                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_RMSS_RAM1_OF,
                                    .bugcheck_required = true,
                                    .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram1_mcp_errstatus_reg,
@@ -284,7 +284,7 @@ void dcache_ue_isr()
 {
     mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_MCP_DCACHE,
                                    .err_source_irq = HW_INT_DCDET_DATA_UE,
-                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_DCACHE_UE,
                                    .bugcheck_required = true,
                                    .err_status_addr = (uint32_t*)&mcp_system_control_reg->debr0h,
@@ -297,7 +297,7 @@ void dcache_tag_ue_isr()
 {
     mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_MCP_DCACHE,
                                    .err_source_irq = HW_INT_DCDET_TAG_UE,
-                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_DCACHE_TAG_UE,
                                    .bugcheck_required = true,
                                    .err_status_addr = (uint32_t*)&mcp_system_control_reg->debr0h,

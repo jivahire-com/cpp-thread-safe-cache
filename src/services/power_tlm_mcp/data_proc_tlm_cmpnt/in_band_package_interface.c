@@ -12,6 +12,7 @@
 #include "compute_metrics_i.h"
 #include "data_proc_tlm_cmpnt.h"
 #include "data_sampling_i.h" // internal APIs
+#include "data_utilities_i.h"
 #include "die_2_die_exchange_i.h"
 #include "in_band_package_interface_i.h"
 #include "telemetry_events_i.h"
@@ -50,8 +51,8 @@ void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_ele
         {
             (*pstate_array)[pstate_index].pstate_id = pstate_index;
 
-            (*pstate_array)[pstate_index].avg_power_mW =
-                computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg.average;
+            (*pstate_array)[pstate_index].avg_power_mW = data_util_cumulative_avg_u16_get(
+                &computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.cumulative_avg);
 
             (*pstate_array)[pstate_index].min_power_mW =
                 computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.min;
@@ -102,8 +103,8 @@ void data_proc_tlm_cmpnt_get_pwr_core_throttle_data(uint16_t core_id,
     {
         for (uint16_t throttle_source = 0; throttle_source < NUMBER_OF_THROTTLE_SOURCES; throttle_source++)
         {
-            (*throttle_array)[throttle_source].avg_pstate =
-                computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.running_avg.average;
+            (*throttle_array)[throttle_source].avg_pstate = data_util_cumulative_avg_u16_get(
+                &computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.cumulative_avg);
 
             (*throttle_array)[throttle_source].entry_count =
                 computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].entry_count;
@@ -155,7 +156,8 @@ void data_proc_tlm_cmpnt_get_pwr_core_voltage_data(uint16_t core_id, p_pwr_core_
     }
     else
     {
-        voltage_data->average_mV = computed_metrics_2_mins.cores[core_id].voltage_mV.running_avg.average;
+        voltage_data->average_mV =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg);
         voltage_data->max_mV = computed_metrics_2_mins.cores[core_id].voltage_mV.max;
         voltage_data->min_mV = computed_metrics_2_mins.cores[core_id].voltage_mV.min;
     }
@@ -170,7 +172,8 @@ void data_proc_tlm_cmpnt_get_pwr_core_current_data(uint16_t core_id, p_pwr_core_
     }
     else
     {
-        current_data->average_mA = computed_metrics_2_mins.cores[core_id].current_mA.running_avg.average;
+        current_data->average_mA =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].current_mA.cumulative_avg);
         current_data->max_mA = computed_metrics_2_mins.cores[core_id].current_mA.max;
         current_data->min_mA = computed_metrics_2_mins.cores[core_id].current_mA.min;
     }
@@ -185,7 +188,8 @@ void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_c
     }
     else
     {
-        temperature_data->average_dC = computed_metrics_2_mins.cores[core_id].temperature_dC.running_avg.average;
+        temperature_data->average_dC =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].temperature_dC.cumulative_avg);
         temperature_data->max_dC = computed_metrics_2_mins.cores[core_id].temperature_dC.max;
         temperature_data->min_dC = computed_metrics_2_mins.cores[core_id].temperature_dC.min;
     }
@@ -203,7 +207,8 @@ void data_proc_tlm_cmpnt_get_pwr_core_power_data(uint16_t core_id, p_pwr_core_el
         // Going with assignment over memcpy for clarity due to different structs
         power_data->min_mW = computed_metrics_2_mins.cores[core_id].power_mW.min;
         power_data->max_mW = computed_metrics_2_mins.cores[core_id].power_mW.max;
-        power_data->average_mW = computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average;
+        power_data->average_mW =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].power_mW.cumulative_avg);
     }
 }
 
@@ -230,17 +235,19 @@ void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_el
     else
     {
         // get VR Current. voltage and temperature entry.
-        rail_data->current.average_mA = computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.running_avg.average;
+        rail_data->current.average_mA =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.cumulative_avg);
         rail_data->current.max_mA = computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.max;
         rail_data->current.min_mA = computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.min;
 
         // get VR Temperature
         rail_data->temperature.average_dC =
-            computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.running_avg.average;
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.cumulative_avg);
         rail_data->temperature.max_dC = computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.max;
         rail_data->temperature.min_dC = computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.min;
         // get VR voltage
-        rail_data->voltage.average_mV = computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.running_avg.average;
+        rail_data->voltage.average_mV =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.cumulative_avg);
         rail_data->voltage.max_mV = computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.max;
         rail_data->voltage.min_mV = computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.min;
     }
@@ -255,7 +262,8 @@ void data_proc_tlm_cmpnt_get_pwr_soc_hnf_data(uint16_t hnf_channel, p_pwr_soc_el
     }
     else
     {
-        hnf_data->average_dC = computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].running_avg.average;
+        hnf_data->average_dC =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].cumulative_avg);
         hnf_data->max_dC = computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].max;
         hnf_data->min_dC = computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].min;
     }
@@ -273,11 +281,13 @@ void data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(uint16_t dimm_idx, p_pwr_soc
         // DIMM temperature s0
         dimm_data->s0.max_dC = computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s0_dC.max;
         dimm_data->s0.min_dC = computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s0_dC.min;
-        dimm_data->s0.average_dC = computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s0_dC.running_avg.average;
+        dimm_data->s0.average_dC =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s0_dC.cumulative_avg);
         // DIMM temperature s1
         dimm_data->s1.max_dC = computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s1_dC.max;
         dimm_data->s1.min_dC = computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s1_dC.min;
-        dimm_data->s1.average_dC = computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s1_dC.running_avg.average;
+        dimm_data->s1.average_dC =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s1_dC.cumulative_avg);
     }
 }
 
@@ -292,7 +302,8 @@ void data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(uint16_t dimm_idx, p_pwr_so
     {
         dimm_data->power_mW.min_mW = computed_metrics_2_mins.soc.dimm[dimm_idx].power_mW.min;
         dimm_data->power_mW.max_mW = computed_metrics_2_mins.soc.dimm[dimm_idx].power_mW.max;
-        dimm_data->power_mW.average_mW = computed_metrics_2_mins.soc.dimm[dimm_idx].power_mW.running_avg.average;
+        dimm_data->power_mW.average_mW =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.soc.dimm[dimm_idx].power_mW.cumulative_avg);
     }
 }
 
@@ -305,7 +316,8 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
     }
     else
     {
-        sensor_temp_data->average_dC = computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].running_avg.average;
+        sensor_temp_data->average_dC =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].cumulative_avg);
         sensor_temp_data->max_dC = computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].max;
         sensor_temp_data->min_dC = computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].min;
     }
@@ -317,9 +329,12 @@ void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_tem
     max_die_temps_t die1_max_temp = {0};
     die_2_die_exch_ib_read_pwr_pkg_max_die_temp_dC(1, &die1_max_temp);
 
+    uint16_t primary_die_max_soc_temp_avg_dC =
+        data_util_cumulative_avg_u16_get(&computed_metrics_d2d_2mins.max_soc_temp_dC.cumulative_avg);
+
     max_temp_data->average_max_dC =
-        data_util_mean_of_means(computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average,
-                                computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
+        data_util_mean_of_means(primary_die_max_soc_temp_avg_dC,
+                                computed_metrics_d2d_2mins.max_soc_temp_dC.cumulative_avg.num_samples,
                                 die1_max_temp.average_max_temp_dC,
                                 die1_max_temp.num_samples);
     max_temp_data->peak_max_dC = FPFW_MAX(computed_metrics_d2d_2mins.max_soc_temp_dC.max, die1_max_temp.peak_temp_dC);

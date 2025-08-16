@@ -67,7 +67,25 @@ void data_util_calc_mma_u16(mma_u16_t* mma, uint16_t mma_latest_value)
     {
         mma->min = mma_latest_value;
     }
-    data_util_running_avg_update(&mma->running_avg, mma_latest_value);
+    data_util_cumulative_avg_u16_add_sample(&mma->cumulative_avg, mma_latest_value);
+}
+
+void data_util_calc_mma_u32(mma_u32_t* mma, uint32_t mma_latest_value)
+{
+    if (mma == NULL)
+    {
+        FPFW_ET_LOG(MMAU32NullPointer);
+        return;
+    }
+    if (mma_latest_value > mma->max)
+    {
+        mma->max = mma_latest_value;
+    }
+    if ((mma_latest_value < mma->min) || (mma->min == 0))
+    {
+        mma->min = mma_latest_value;
+    }
+    data_util_running_avg_u32_add_sample(&mma->running_avg, mma_latest_value);
 }
 
 void data_util_calc_mma_dur_u16(mma_u16_dur_t* mma_dur, uint16_t mma_latest_value, uint32_t duration_uS)
@@ -104,47 +122,132 @@ uint64_t data_util_convert_systick_to_microseconds(uint64_t tick_count)
     return timestamp_us;
 }
 
-void data_util_running_avg_update(running_avg_t* running_avg, uint16_t new_value)
+void data_util_cumulative_avg_u16_add_sample(cumulative_u16_avg_t* avg, uint16_t sample)
 {
-    if (running_avg == NULL)
+    if (avg == NULL)
+    {
+        FPFW_ET_LOG(CumulativeAverageNullPointer);
+        return;
+    }
+    // Saturating sum
+    if (avg->sum <= UINT32_MAX - sample)
+    {
+        avg->sum += sample;
+    }
+    else
+    {
+        FPFW_ET_LOG(AvgAddSampleSumSat, (uint32_t)avg);
+        avg->sum = UINT32_MAX; // clamp to max
+    }
+
+    // Saturating num_samples
+    if (avg->num_samples < UINT16_MAX)
+    {
+        avg->num_samples += 1;
+    }
+    else
+    {
+        FPFW_ET_LOG(AvgAddSampleNumSat, (uint32_t)avg);
+        avg->num_samples = UINT16_MAX; // clamp to max
+    }
+}
+
+uint16_t data_util_cumulative_avg_u16_get(const cumulative_u16_avg_t* avg)
+{
+
+    if (avg == NULL)
+    {
+        FPFW_ET_LOG(CumulativeAverageNullPointer);
+        return 0;
+    }
+
+    if (avg->num_samples == 0)
+    {
+        return 0; // Avoid divide by zero
+    }
+
+    // Use 64-bit arithmetic to prevent overflow
+    uint64_t avg64 = ((uint64_t)avg->sum + avg->num_samples - 1) / avg->num_samples;
+
+    // Clamp to uint16_t maximum
+    if (avg64 > UINT16_MAX)
+    {
+        FPFW_ET_LOG(AvgGetOutputSat, (uint32_t)avg);
+        return UINT16_MAX;
+    }
+
+    return (uint16_t)avg64;
+}
+
+void data_util_cumulative_avg_u16_reset(cumulative_u16_avg_t* avg)
+{
+    if (avg == NULL)
+    {
+        FPFW_ET_LOG(CumulativeAverageNullPointer);
+        return;
+    }
+
+    avg->sum = 0;
+    avg->num_samples = 0;
+}
+
+void data_util_running_avg_u32_add_sample(running_u32_avg_t* avg, uint32_t sample)
+{
+    if (avg == NULL)
     {
         FPFW_ET_LOG(RunningAverageNullPointer);
         return;
     }
 
-    if (running_avg->num_samples == 0)
+    if (avg->num_samples == 0)
     {
-        running_avg->average = new_value;
-        running_avg->num_samples = 1;
+        avg->average = sample;
+        avg->num_samples = 1;
         return;
     }
 
     // Cap sample count at UINT16_MAX to prevent rollover
-    if (running_avg->num_samples < UINT16_MAX)
+    if (avg->num_samples < UINT16_MAX)
     {
-        running_avg->num_samples += 1;
+        avg->num_samples += 1;
+    }
+    else
+    {
+        FPFW_ET_LOG(RunningAvgAddSampleNumSat, (uint32_t)avg);
+        avg->num_samples = UINT16_MAX; // clamp to max
     }
 
-    uint32_t total = (uint32_t)(running_avg->average) * (running_avg->num_samples - 1) + new_value;
-    uint32_t updated_avg = (total + running_avg->num_samples / 2) / running_avg->num_samples;
+    uint64_t total = (uint64_t)(avg->average) * (avg->num_samples - 1) + sample;
+    uint64_t updated_avg = (total + avg->num_samples / 2) / avg->num_samples;
 
-    // Clamping to UINT16_MAX for average is not needed here because:
-    //  - Both the existing average and the new input are uint16_t values (max 65535).
-    //  - The updated average is a weighted mean of these two values.
-    //  - A weighted mean of two bounded values can never exceed the maximum of those values.
-    //  - Integer overflow is prevented by computing the sum and mean using uint32_t.
-    running_avg->average = (uint16_t)updated_avg;
+    // Clamping to UINT32_MAX for average is not needed here because:
+    //  - Both the existing average and the new sample are uint32_t values.
+    //  - The result is the arithmetic mean of all samples (existing + new).
+    //  - The arithmetic mean of bounded values cannot exceed the maximum input value.
+    //  - Integer overflow is prevented by computing the sum and mean using uint64_t.
+    avg->average = (uint32_t)updated_avg;
 }
 
-void data_util_running_avg_reset(running_avg_t* running_avg)
+uint32_t data_util_running_avg_u32_get(const running_u32_avg_t* avg)
 {
-    if (running_avg == NULL)
+    if (avg == NULL)
+    {
+        FPFW_ET_LOG(RunningAverageNullPointer);
+        return 0;
+    }
+    return avg->average;
+}
+
+void data_util_running_avg_u32_reset(running_u32_avg_t* avg)
+{
+    if (avg == NULL)
     {
         FPFW_ET_LOG(RunningAverageNullPointer);
         return;
     }
-    running_avg->average = 0;
-    running_avg->num_samples = 0;
+
+    avg->average = 0;
+    avg->num_samples = 0;
 }
 
 void data_util_running_avg_dur_reset(running_avg_dur_t* ra)

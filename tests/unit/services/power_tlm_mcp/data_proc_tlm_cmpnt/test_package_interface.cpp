@@ -69,7 +69,8 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 
     for (uint16_t pstate_id = 0; pstate_id < NUMBER_OF_PSTATES; pstate_id++)
     {
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg.average = 4000;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.cumulative_avg.sum = 4000 * 1;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.cumulative_avg.num_samples = 1;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.min = 50;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.max = 150;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].entry_count = 1;
@@ -82,9 +83,9 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
     for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
     {
 
-        assert_int_equal(
-            pstate_array[pstate_index].avg_power_mW,
-            computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.running_avg.average);
+        assert_int_equal(pstate_array[pstate_index].avg_power_mW,
+                         data_util_cumulative_avg_u16_get(
+                             &computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.cumulative_avg));
 
         assert_int_equal(pstate_array[pstate_index].min_power_mW,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_index].power_mW.min);
@@ -100,7 +101,8 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
     }
     // setup for failure case, change pstate 0 element data.
     uint8_t index = 0;
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg.average = 5000;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.cumulative_avg.sum = 5000 * 1;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.cumulative_avg.num_samples = 1;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.min = 55;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.max = 155;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].entry_count = 2;
@@ -110,7 +112,8 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data, test_setup, test_teardown)
 
     // verify for pstate 0
     assert_int_not_equal(pstate_array[index].avg_power_mW,
-                         computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.running_avg.average);
+                         data_util_cumulative_avg_u16_get(
+                             &computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.cumulative_avg));
     assert_int_not_equal(pstate_array[index].min_power_mW,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[index].power_mW.min);
     assert_int_not_equal(pstate_array[index].max_power_mW,
@@ -166,7 +169,9 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
 
     for (throttle_source = 0; throttle_source < NUMBER_OF_THROTTLE_SOURCES; throttle_source++)
     {
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.running_avg.average = avg_pstate;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.cumulative_avg.sum =
+            avg_pstate * 1;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.cumulative_avg.num_samples = 1;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].entry_count = entry_count;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.max = max_pstate;
         computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].residency_uS = residency_uS;
@@ -184,7 +189,8 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
 
     // setup for failure case.
     uint8_t index = 0; // test for one of the throttle type.
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].pstate.running_avg.average = 6;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].pstate.cumulative_avg.sum = 6 * 1;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].pstate.cumulative_avg.num_samples = 1;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].entry_count = 12;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].pstate.max = 28;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[index].residency_uS = 20000;
@@ -194,7 +200,8 @@ TEST_FUNCTION(test_get_pwr_core_throttle_data, test_setup, test_teardown)
 
     assert_int_not_equal(
         throttle_array[throttle_source].avg_pstate,
-        computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.running_avg.average);
+        data_util_cumulative_avg_u16_get(
+            &computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].pstate.cumulative_avg));
 
     assert_int_not_equal(throttle_array[throttle_source].entry_count,
                          computed_metrics_2_mins.cores[TEST_CORE_ID_5].throttle_info[throttle_source].entry_count);
@@ -256,13 +263,15 @@ TEST_FUNCTION(test_get_pwr_core_voltage_data, test_setup, test_teardown)
     uint8_t core_id = 0;
     computed_metrics_2_mins.cores[core_id].voltage_mV.min = 1200;
     computed_metrics_2_mins.cores[core_id].voltage_mV.max = 1800;
-    computed_metrics_2_mins.cores[core_id].voltage_mV.running_avg.average = 1500;
+    computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg.sum = 1500 * 1;
+    computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg.num_samples = 1;
 
     data_proc_tlm_cmpnt_get_pwr_core_voltage_data(core_id, &voltage_data);
 
     assert_int_equal(voltage_data.min_mV, computed_metrics_2_mins.cores[core_id].voltage_mV.min);
     assert_int_equal(voltage_data.max_mV, computed_metrics_2_mins.cores[core_id].voltage_mV.max);
-    assert_int_equal(voltage_data.average_mV, computed_metrics_2_mins.cores[core_id].voltage_mV.running_avg.average);
+    assert_int_equal(voltage_data.average_mV,
+                     data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg));
 
     core_id = NUMBER_OF_CORES_PER_DIE;
     // Invalid case
@@ -276,7 +285,8 @@ TEST_FUNCTION(test_get_pwr_core_current_data, test_setup, test_teardown)
     pwr_core_element_current_t current_get_data = {0};
     uint8_t index = TEST_CORE_ID_5;
 
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.running_avg.average = 30;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.cumulative_avg.sum = 30 * 1;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.cumulative_avg.num_samples = 1;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.max = 40;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.min = 20;
 
@@ -284,11 +294,13 @@ TEST_FUNCTION(test_get_pwr_core_current_data, test_setup, test_teardown)
 
     assert_int_equal(current_get_data.min_mA, computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.min);
     assert_int_equal(current_get_data.max_mA, computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.max);
-    assert_int_equal(current_get_data.average_mA,
-                     computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.running_avg.average);
+    assert_int_equal(
+        current_get_data.average_mA,
+        data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.cumulative_avg));
 
     // setup for fail case .
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.running_avg.average = 0;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.cumulative_avg.sum = 0;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.cumulative_avg.num_samples = 0;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.max = 0;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].current_mA.min = 0;
 
@@ -300,7 +312,8 @@ TEST_FUNCTION(test_get_pwr_core_temperature_data, test_setup, test_teardown)
 {
     pwr_core_element_temperature_t temp_data = {0};
 
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.running_avg.average = 30;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.cumulative_avg.sum = 30 * 1;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.cumulative_avg.num_samples = 1;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.max = 40;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.min = 20;
 
@@ -309,11 +322,13 @@ TEST_FUNCTION(test_get_pwr_core_temperature_data, test_setup, test_teardown)
     assert_int_equal(temp_data.min_dC, computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.min);
     assert_int_equal(temp_data.max_dC, computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.max);
     assert_int_equal(temp_data.average_dC,
-                     computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.running_avg.average);
+                     data_util_cumulative_avg_u16_get(
+                         &computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.cumulative_avg));
 
     // setup for fail case .
 
-    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.running_avg.average = 0;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.cumulative_avg.sum = 0;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.cumulative_avg.num_samples = 0;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.max = 0;
     computed_metrics_2_mins.cores[TEST_CORE_ID_5].temperature_dC.min = 0;
 
@@ -343,13 +358,16 @@ TEST_FUNCTION(test_get_pwr_soc_vr_rail_data, test_setup, test_teardown)
     uint16_t rail_id = TEST_RAIL_ID_2;
 
     // Set up test values in computed_metrics_2_mins for this rail
-    computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.running_avg.average = 123;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.cumulative_avg.sum = 123 * 1;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.cumulative_avg.num_samples = 1;
     computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.max = 150;
     computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.min = 100;
-    computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.running_avg.average = 1100;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.cumulative_avg.sum = 1100 * 1;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.cumulative_avg.num_samples = 1;
     computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.max = 1200;
     computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.min = 1000;
-    computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.running_avg.average = 55;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.cumulative_avg.sum = 55 * 1;
+    computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.cumulative_avg.num_samples = 1;
     computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.max = 60;
     computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.min = 50;
 
@@ -386,7 +404,8 @@ TEST_FUNCTION(test_get_pwr_soc_hnf_data, test_setup, test_teardown)
     pwr_soc_element_hnf_t hnf_data = {0};
     uint8_t hnf_channel = 4;
 
-    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].running_avg.average = 100;
+    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].cumulative_avg.sum = 100 * 1;
+    computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].cumulative_avg.num_samples = 1;
     computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].max = 200;
     computed_metrics_2_mins.soc.hnf_temperature_dC[hnf_channel].min = 40;
 
@@ -407,11 +426,13 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_temp_data, test_setup, test_teardown)
 
     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.min = 200;
     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.max = 300;
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.running_avg.average = 250;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.cumulative_avg.sum = 250 * 1;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.cumulative_avg.num_samples = 1;
 
     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.min = 200;
     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.max = 300;
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.running_avg.average = 250;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.cumulative_avg.sum = 250 * 1;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.cumulative_avg.num_samples = 1;
 
     data_proc_tlm_cmpnt_get_pwr_soc_temp_dimm_data(TEST_DIMM_MOD_ID_3, &dimm_data);
 
@@ -420,14 +441,16 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_temp_data, test_setup, test_teardown)
     assert_int_equal(dimm_data.s0.min_dC,
                      computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.min);
     assert_int_equal(dimm_data.s0.average_dC,
-                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.running_avg.average);
+                     data_util_cumulative_avg_u16_get(
+                         &computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.cumulative_avg));
 
     assert_int_equal(dimm_data.s1.max_dC,
                      computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.max);
     assert_int_equal(dimm_data.s1.min_dC,
                      computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.min);
     assert_int_equal(dimm_data.s1.average_dC,
-                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.running_avg.average);
+                     data_util_cumulative_avg_u16_get(
+                         &computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s1_dC.cumulative_avg));
 
     // Invalid case
     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].temperature_s0_dC.min = 400;
@@ -444,13 +467,15 @@ TEST_FUNCTION(test_get_pwr_soc_dimm_power_data, test_setup, test_teardown)
 
     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.min = 200;
     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.max = 300;
-    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.running_avg.average = 250;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.cumulative_avg.sum = 250 * 1;
+    computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.cumulative_avg.num_samples = 1;
 
     // Check DIMM information
     data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(TEST_DIMM_MOD_ID_3, &dimm_data);
 
     assert_int_equal(dimm_data.power_mW.average_mW,
-                     computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.running_avg.average);
+                     data_util_cumulative_avg_u16_get(
+                         &computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.cumulative_avg));
 
     assert_int_equal(dimm_data.power_mW.min_mW, computed_metrics_2_mins.soc.dimm[TEST_DIMM_MOD_ID_3].power_mW.min);
 
@@ -469,7 +494,8 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, test_setup, t
     uint16_t sensor_id = 1;
 
     // Set up test values in computed_metrics_2_mins for this sensor
-    computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].running_avg.average = 77;
+    computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].cumulative_avg.sum = 77 * 1;
+    computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].cumulative_avg.num_samples = 1;
     computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].max = 88;
     computed_metrics_2_mins.soc.top_sensor_temp_dC[sensor_id].min = 66;
 
@@ -499,10 +525,10 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, test_setup, te
     die_2_die_exch_init(1);
     die_2_die_exch_ib_write_pwr_pkg_max_die_temp(500, 10, 600);
 
-    computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average = 300;
+    computed_metrics_d2d_2mins.max_soc_temp_dC.cumulative_avg.sum = 300 * 5;
+    computed_metrics_d2d_2mins.max_soc_temp_dC.cumulative_avg.num_samples = 5;
     computed_metrics_d2d_2mins.max_soc_temp_dC.max = 400;
     computed_metrics_d2d_2mins.max_soc_temp_dC.min = 200;
-    computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples = 5;
 
     data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(&max_temp_data);
 
@@ -622,13 +648,15 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_core_power_data, test_setup, test
     uint8_t core_id = 0;
     computed_metrics_2_mins.cores[core_id].power_mW.min = 10;
     computed_metrics_2_mins.cores[core_id].power_mW.max = 20;
-    computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average = 15;
+    computed_metrics_2_mins.cores[core_id].power_mW.cumulative_avg.sum = 15 * 1;
+    computed_metrics_2_mins.cores[core_id].power_mW.cumulative_avg.num_samples = 1;
 
     data_proc_tlm_cmpnt_get_pwr_core_power_data(core_id, &power_data);
 
     assert_int_equal(power_data.min_mW, computed_metrics_2_mins.cores[core_id].power_mW.min);
     assert_int_equal(power_data.max_mW, computed_metrics_2_mins.cores[core_id].power_mW.max);
-    assert_int_equal(power_data.average_mW, computed_metrics_2_mins.cores[core_id].power_mW.running_avg.average);
+    assert_int_equal(power_data.average_mW,
+                     data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].power_mW.cumulative_avg));
     // invalid case
     computed_metrics_2_mins.cores[core_id].power_mW.min = 20;
     data_proc_tlm_cmpnt_get_pwr_core_power_data(NUMBER_OF_CORES_PER_DIE, &power_data);

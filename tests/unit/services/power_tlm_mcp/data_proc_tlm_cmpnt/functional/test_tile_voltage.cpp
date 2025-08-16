@@ -83,58 +83,6 @@ static int32_t calculate_expected_max(int32_t latest_value, int32_t prev_max, in
     return (latest_value > prev_max) ? latest_value : prev_max;
 }
 
-// Calculate expected average based on iteration logic
-static int32_t calculate_expected_avg(int32_t latest_value, int32_t prev_avg, int32_t iteration)
-{
-    if (iteration == 0)
-    {
-        return latest_value; // First iteration, avg = latest value
-    }
-
-#if 0
-    if (iteration == 1)
-    {
-        return latest_value; // For iteration 1, return latest value directly
-    }
-
-    // For iteration 2:
-    // residency_uS: 8000, time_diff_uS: 4000
-    if (iteration == 2)
-    {
-        uint64_t time_diff_uS = 4000;
-        uint64_t total_time = 8000;
-
-        // Calculate weighted contributions
-        uint64_t weighted_prev_avg = static_cast<uint64_t>(prev_avg) * time_diff_uS;
-        uint64_t weighted_latest = static_cast<uint64_t>(latest_value) * time_diff_uS;
-
-        // Calculate total and round to nearest integer
-        return static_cast<int32_t>((weighted_prev_avg + weighted_latest) / total_time);
-    }
-
-    // For iteration 3:
-    //residency_uS: 12000, time_diff_uS: 4000
-    if (iteration == 3)
-    {
-        uint64_t prev_time = 8000;
-        uint64_t time_diff_uS = 4000;
-        uint64_t total_time = 12000;
-
-        // Calculate weighted contributions
-        uint64_t weighted_prev_avg = static_cast<uint64_t>(prev_avg) * prev_time;
-        uint64_t weighted_latest = static_cast<uint64_t>(latest_value) * time_diff_uS;
-
-        // Calculate total and round to nearest integer
-        return static_cast<int32_t>((weighted_prev_avg + weighted_latest) / total_time);
-    }
-#endif
-
-    int32_t total = (prev_avg * iteration) + latest_value;
-    int32_t updated_avg = (total + (iteration + 1) / 2) / (iteration + 1);
-
-    return updated_avg; // Default case
-}
-
 // Add these function declarations
 static int32_t test_setup(void** state)
 {
@@ -168,10 +116,14 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
 {
 
     // Track previous values for calculations
-    static int32_t prev_core0_min = 0, prev_core0_max = 0, prev_core0_avg = 0;
-    static int32_t prev_core1_min = 0, prev_core1_max = 0, prev_core1_avg = 0;
-    static int32_t prev_vcpu_min = 0, prev_vcpu_max = 0, prev_vcpu_avg = 0;
-    static int32_t prev_vsys_min = 0, prev_vsys_max = 0, prev_vsys_avg = 0;
+    static uint32_t prev_core0_min = 0, prev_core0_max = 0;
+    static uint32_t prev_core1_min = 0, prev_core1_max = 0;
+    static uint32_t prev_vcpu_min = 0, prev_vcpu_max = 0;
+    static uint32_t prev_vsys_min = 0, prev_vsys_max = 0;
+
+    uint32_t core0_summation = 0;
+    uint32_t core1_summation = 0;
+    uint16_t num_samples = 0;
 
     // Create mock voltage data for tile 0
     tile_voltage_t mock_voltage_data = {0};
@@ -235,24 +187,23 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
         int32_t expected_vsys_max = calculate_expected_max(expected_vsys_voltage, prev_vsys_max, iteration);
 
         // Calculate average values
-        int32_t expected_core0_avg = calculate_expected_avg(expected_core0_voltage, prev_core0_avg, iteration);
-        int32_t expected_core1_avg = calculate_expected_avg(expected_core1_voltage, prev_core1_avg, iteration);
-        int32_t expected_vcpu_avg = calculate_expected_avg(expected_vcpu_voltage, prev_vcpu_avg, iteration);
-        int32_t expected_vsys_avg = calculate_expected_avg(expected_vsys_voltage, prev_vsys_avg, iteration);
+        core0_summation += expected_core0_voltage;
+        core1_summation += expected_core1_voltage;
+        num_samples++;
+
+        // round up
+        int32_t expected_core0_avg = (core0_summation + num_samples - 1) / num_samples;
+        int32_t expected_core1_avg = (core1_summation + num_samples - 1) / num_samples;
 
         // Store current values for next iteration
         prev_core0_min = expected_core0_min;
         prev_core0_max = expected_core0_max;
-        prev_core0_avg = expected_core0_avg;
         prev_core1_min = expected_core1_min;
         prev_core1_max = expected_core1_max;
-        prev_core1_avg = expected_core1_avg;
         prev_vcpu_min = expected_vcpu_min;
         prev_vcpu_max = expected_vcpu_max;
-        prev_vcpu_avg = expected_vcpu_avg;
         prev_vsys_min = expected_vsys_min;
         prev_vsys_max = expected_vsys_max;
-        prev_vsys_avg = expected_vsys_avg;
 
         will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
 

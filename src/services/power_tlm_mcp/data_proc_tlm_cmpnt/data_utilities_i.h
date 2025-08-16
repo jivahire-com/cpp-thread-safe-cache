@@ -19,17 +19,33 @@
 
 /*-------------- Typedefs ----------------*/
 
-typedef struct {
-    uint16_t average;
-    uint16_t num_samples;
-} running_avg_t;
+
+// use the 32 bit cumulative average when the sample size is <= 16 bit
+typedef struct
+ {
+    uint32_t sum;         // Running sum of all samples
+    uint16_t num_samples; // Number of samples added
+} cumulative_u16_avg_t;
 
 typedef struct {
-    running_avg_t running_avg;
+    cumulative_u16_avg_t cumulative_avg;
     uint16_t min;
     uint16_t max;
 } mma_u16_t, *p_mma_u16_t;
 
+// use the 32 bit running average when the sample size is greater than 16 bit
+typedef struct {
+    uint32_t average;
+    uint16_t num_samples;
+} running_u32_avg_t;
+
+typedef struct {
+    running_u32_avg_t running_avg;
+    uint32_t min;
+    uint32_t max;
+} mma_u32_t, *p_mma_u32_t;
+
+// use the duration average when the samples are not periodic and are weighted by duration
 typedef struct {
     uint64_t sum_weighted;   // Accumulated value × duration_ms
     uint32_t total_time_uS;  // Accumulated time in milliseconds
@@ -41,7 +57,7 @@ typedef struct {
     uint16_t max;
 } mma_u16_dur_t, *p_mma_u16_dur_t;
 
-
+// use the moving average when its low pass filter characteristics are needed
 typedef struct {
     uint16_t* samples;         // Pointer to circular sample array
     uint32_t  total_sum;       // Running sum of all values
@@ -97,6 +113,15 @@ void data_util_calc_time_diff_and_update(uint64_t* last_timestamp_uS, uint64_t* 
 void data_util_calc_mma_u16(mma_u16_t* mma, uint16_t mma_latest_value);
 
 /**
+ * @brief Update the min, max, and average using the latest value. Supports uint32_t values.
+ * @param[in,out] mma - Pointer to the mma_u32_t structure containing min, max, and average values.
+ * @param[in] mma_latest_value - The latest value to be used for updating the min, max, and average.
+ *
+ * @return None
+ */
+void data_util_calc_mma_u32(mma_u32_t* mma, uint32_t mma_latest_value);
+
+/**
  * @brief Update the min, max, and average using the latest value. Only supports uint16_t values.
  *
  * @param[in,out] mma_dur - Pointer to the mma_u16_dur_t structure containing min, max, and average values.
@@ -116,23 +141,48 @@ void data_util_calc_mma_dur_u16(mma_u16_dur_t* mma_dur, uint16_t mma_latest_valu
  */
 uint64_t data_util_convert_systick_to_microseconds(uint64_t tick_count);
 
-/**
- * @brief data_util_running_avg_update function updates the running average with a new value.
+/** * @brief data_util_cumulative_avg_u16_add_sample function adds a sample to the cumulative average structure.
  *
- * @param[in,out] running_avg - Pointer to the running average structure to be updated.
- * @param[in] new_value - The new value to be added to the running average.
+ * @param[in,out] avg - Pointer to the cumulative_u16_avg_t structure where the sample will be added.
+ * @param[in] sample - The sample value to be added to the cumulative average.
  */
-void data_util_running_avg_update(running_avg_t *running_avg, uint16_t new_value);
+void data_util_cumulative_avg_u16_add_sample(cumulative_u16_avg_t *avg, uint16_t sample);
+
+/** * @brief data_util_cumulative_avg_u16_get function retrieves the current cumulative average from the structure.
+ *
+ * @param[in] avg - Pointer to the cumulative_u16_avg_t structure from which the average will be retrieved.
+ * @return The current cumulative average value.
+ */
+uint16_t data_util_cumulative_avg_u16_get(const cumulative_u16_avg_t *avg);
+
+/** * @brief data_util_cumulative_avg_u16_reset function resets the cumulative average to zero.
+ *
+ * @param[in,out] avg - Pointer to the cumulative_u16_avg_t structure to be reset.
+ */
+void data_util_cumulative_avg_u16_reset(cumulative_u16_avg_t* avg);
+
+/** * @brief data_util_running_avg_u32_add_sample function adds a sample to the running average structure.
+ *
+ * @param[in,out] avg - Pointer to the running_u32_avg_t structure where the sample will be added.
+ * @param[in] sample - The sample value to be added to the running average.
+ */
+void data_util_running_avg_u32_add_sample(running_u32_avg_t* avg, uint32_t sample);
+
+/** * @brief data_util_running_avg_u32_get function retrieves the current running average from the structure.
+ *
+ * @param[in] avg - Pointer to the running_u32_avg_t structure from which the average will be retrieved.
+ * @return The current running average value.
+ */
+uint32_t data_util_running_avg_u32_get(const running_u32_avg_t* avg);
+
+/** * @brief data_util_running_avg_u32_reset function resets the running average to zero.
+ *
+ * @param[in,out] avg - Pointer to the running_u32_avg_t structure to be reset.
+ */
+void data_util_running_avg_u32_reset(running_u32_avg_t* avg);
 
 /**
- * @brief data_util_running_avg_reset function resets the running average structure to its initial state.
- *
- * @param[in,out] running_avg - Pointer to the running average structure to be reset.
- */
-void data_util_running_avg_reset(running_avg_t *running_avg);
-
-/**
- * @brief data_util_running_avg_dur_reset function resets the running average duration structure to its initial state.
+ * @brief data_util_running_avg_dur_reset function resets the running average duration data to zero.
  *
  * @param[in,out] ra - Pointer to the running average duration structure to be reset.
  */

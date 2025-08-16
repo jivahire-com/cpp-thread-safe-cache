@@ -41,8 +41,10 @@ bool core_is_active[NUMBER_OF_CORES_PER_DIE] = {0};
 
 void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
 {
-    die_2_die_exch_ib_write_pwr_pkg_max_die_temp(computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.average,
-                                                 computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
+    uint16_t max_soc_temp_avg_dC =
+        data_util_cumulative_avg_u16_get(&computed_metrics_d2d_2mins.max_soc_temp_dC.cumulative_avg);
+    die_2_die_exch_ib_write_pwr_pkg_max_die_temp(max_soc_temp_avg_dC,
+                                                 computed_metrics_d2d_2mins.max_soc_temp_dC.cumulative_avg.num_samples,
                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.max);
 
     memset(&computed_metrics_d2d_2mins, 0, sizeof(computed_metrics_d2d_2mins));

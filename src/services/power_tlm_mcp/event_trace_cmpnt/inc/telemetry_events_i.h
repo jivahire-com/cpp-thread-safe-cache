@@ -332,7 +332,23 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     61,
+                    CumulativeAverageNullPointer,
+                    FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    62,
                     RunningAverageNullPointer,
+                    FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    63,
+                    RunningAvgAddSampleNumSat,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    64,
+                    MMAU32NullPointer,
                     FPFW_ET_LEVEL_ERROR)
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
@@ -407,6 +423,24 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     81,
                     RunningAvgDurGetNullPointer,
                     FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    82,
+                    AvgAddSampleSumSat,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    83,
+                    AvgAddSampleNumSat,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    84,
+                    AvgGetOutputSat,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
 
 /*--------- Function Prototypes ----------*/
 

@@ -22,13 +22,21 @@ stages:
       Configuration: Debug
       ArtifactName: Build_Arm_EABI_AARCH_Debug
 
-- stage: SVP_Pythia_Tests_SingleDie
+- stage: SVP_Pythia_Tests_SingleDie_0
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
-  - template: templates/svp_pythia_test.yaml
+  - template: templates/svp_pythia_test.yaml@self
     parameters:
-      ArtifactName: SVP_Pythia_Tests_SingleDie
-      TestPlan: .\tests\functional\test_plan\svp_single_die_test_plan.args
+      ArtifactName: SVP_Pythia_Tests_SingleDie_0
+      TestPlan: .\tests\functional\test_plan\svp_single_die_0_test_plan.args
+
+- stage: SVP_Pythia_Tests_SingleDie_1
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  jobs:
+  - template: templates/svp_pythia_test.yaml@self
+    parameters:
+      ArtifactName: SVP_Pythia_Tests_SingleDie_1
+      TestPlan: .\tests\functional\test_plan\svp_single_die_1_test_plan.args
 
 - stage: SVP_Pythia_Accel_Tests_SingleDie
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
@@ -39,13 +47,21 @@ stages:
       TestPlan: .\tests\functional\test_plan\accel_single_die_test_plan.args
       ifwi: '.\.build\Debug\arm-eabi-aarch\bin\flash\kingsgate.ifwi.ap.baremetal.debug.dat'
 
-- stage: SVP_Pythia_Tests_DualDie
+- stage: SVP_Pythia_Tests_DualDie_0
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
-  - template: templates/svp_pythia_test.yaml
+  - template: templates/svp_pythia_test.yaml@self
     parameters:
-      ArtifactName: SVP_Pythia_Tests_DualDie
-      TestPlan: .\tests\functional\test_plan\svp_dual_die_test_plan.args
+      ArtifactName: SVP_Pythia_Tests_DualDie_0
+      TestPlan: .\tests\functional\test_plan\svp_dual_die_0_test_plan.args
+
+- stage: SVP_Pythia_Tests_DualDie_1
+  dependsOn: [Build_Arm_EABI_AARCH_Debug]
+  jobs:
+  - template: templates/svp_pythia_test.yaml@self
+    parameters:
+      ArtifactName: SVP_Pythia_Tests_DualDie_1
+      TestPlan: .\tests\functional\test_plan\svp_dual_die_1_test_plan.args
 
 - stage: ACCEL_FPGA_Pythia_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
@@ -91,7 +107,7 @@ stages:
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote
-  dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie, SVP_Pythia_Tests_DualDie, MSCP_FPGA_Pythia_Tests, ACCEL_FPGA_Pythia_Tests, MSCP_FPGA_Pythia_Dualdie_Tests]
+  dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie_0, SVP_Pythia_Tests_SingleDie_1, SVP_Pythia_Tests_DualDie_0, SVP_Pythia_Tests_DualDie_1, MSCP_FPGA_Pythia_Tests, ACCEL_FPGA_Pythia_Tests, MSCP_FPGA_Pythia_Dualdie_Tests]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool: 

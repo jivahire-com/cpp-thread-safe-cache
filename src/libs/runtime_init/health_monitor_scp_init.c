@@ -64,11 +64,11 @@ FPFW_INIT_COMPONENT(hm_post_init, FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "m
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_scp, FPFW_INIT_DEPENDENCIES("hm_svc", "icc_d2dmbx"))
+FPFW_INIT_COMPONENT(hm_scp, FPFW_INIT_DEPENDENCIES("hm_svc", "icc_die2die"))
 {
     if (!idhw_is_single_die_boot_en())
     {
-        hm_post_intercore_init(HM_INTERCORE_LOCAL, fpfw_init_get_handle("icc_d2dmbx"));
+        hm_post_intercore_init(HM_INTERCORE_LOCAL, fpfw_init_get_handle("icc_die2die"));
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

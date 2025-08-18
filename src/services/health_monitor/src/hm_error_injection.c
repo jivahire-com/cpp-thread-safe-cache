@@ -9,8 +9,10 @@
 
 /*------------- Includes -----------------*/
 #include <bug_check.h>
+#include <fpfw_icc_base.h>
 #include <health_monitor_events.h>
 #include <health_monitor_i.h>
+#include <health_monitor_icc.h>
 #include <icc_platform_defines.h>
 #include <idhw.h>
 #include <idsw.h>
@@ -46,17 +48,16 @@ void hm_inject_error_recv_cb(void* context, size_t output_size_bytes, fpfw_statu
 
 void hm_prepare_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx)
 {
-    static rmss_d2d_mailbox_msg einj_relay_msg = {0};
-    static fpfw_icc_base_recv_req_t scp_recv_params = {
-        .payload_buffer = &einj_relay_msg,
-        .buffer_size = sizeof(einj_relay_msg),
-        .recv_cmd_code = RMSS_D2D_MAILBOX_MSG_ERROR_INJECTION_REQ,
-        .cb = hm_inject_error_recv_cb,
-        .cb_ctx = NULL,
-    };
+    static icc_mhu_header_t einj_relay_payload;
 
-    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &scp_recv_params);
-    HM_ET_INFO_PARAM(HM_ET_TYPE_INJECTION_ICC_TRANSFER, status);
+    static fpfw_icc_base_recv_req_t einj_routing_recv_params;
+    einj_routing_recv_params.recv_cmd_code = ICC_HM_ERROR_INJECTION_ROUTING_REQ;
+    einj_routing_recv_params.payload_buffer = &einj_relay_payload;
+    einj_routing_recv_params.buffer_size = sizeof(einj_relay_payload);
+    einj_routing_recv_params.cb = hm_inject_error_recv_cb;
+    einj_routing_recv_params.cb_ctx = NULL;
+
+    fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &einj_routing_recv_params);
     BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, icc_ctx);
 }
 
@@ -83,21 +84,19 @@ acpi_einj_cmd_status_t hm_inject_error(void)
         {
             HM_LOG_INFO("error injection request was made for remote core, re-route");
 
-            static rmss_d2d_mailbox_msg einj_relay_msg = {0};
-            einj_relay_msg.as_uint32[0] =
-                SET_RMSS_D2D_MAILBOX_HEADER_ASUNIT32(RMSS_D2D_MAILBOX_MSG_ERROR_INJECTION_REQ, 0, 0);
+            static icc_mhu_header_t einj_relay_msg = {0};
+            einj_relay_msg.msg_header.command = ICC_HM_ERROR_INJECTION_ROUTING_REQ;
 
-            static fpfw_icc_base_send_req_t scp_send_params = {
-                .payload_buffer = &einj_relay_msg,
-                .buffer_size = sizeof(einj_relay_msg),
-                .cb = hm_inject_error_send_cb,
-                .cb_ctx = NULL,
-            };
+            static fpfw_icc_base_send_req_t einj_routing_send_params = {.payload_buffer = &einj_relay_msg,
+                                                                        .buffer_size = sizeof(einj_relay_msg),
+                                                                        .cb = hm_inject_error_send_cb,
+                                                                        .cb_ctx = NULL};
 
-            fpfw_status_t icc_status = fpfw_icc_base_send(hm_config->icc_ctx[HM_INTERCORE_LOCAL], &scp_send_params);
+            fpfw_status_t icc_status =
+                fpfw_icc_base_send(hm_config->icc_ctx[HM_INTERCORE_LOCAL], &einj_routing_send_params);
             if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
             {
-                HM_LOG_CRIT("failed to send injection request to remote");
+                HM_LOG_CRIT("failed to route injection request to remote");
                 HM_ET_ERROR_PARAM(HM_ET_TYPE_INJECTION_ICC_TRANSFER, icc_status);
                 status = ACPI_EINJ_UNKNOWN_FAILURE;
             }

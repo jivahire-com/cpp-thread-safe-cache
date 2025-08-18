@@ -206,7 +206,12 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
 
     // TODO: POWER_TELEMETRY_ELEMENT_CORE_AGING,
 
-    // TODO: POWER_TELEMETRY_ELEMENT_CORE_DROOPS
+    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_DROOPS])
+    {
+        p_pwr_core_record_droop_count_t droop_count_record = (p_pwr_core_record_droop_count_t)pkg_location;
+        pkg_location += package_create_pwr_core_droop_count_record(droop_count_record);
+        package_hdr->payload_header.number_of_records++;
+    }
 
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS])
     {
@@ -595,6 +600,27 @@ uint32_t package_create_pwr_core_histogram_record(p_pwr_core_record_histogram_t 
                                                         &histogram_record->histogram_collection[core_id].histogram_element);
     }
     return sizeof(pwr_core_record_histogram_t);
+}
+
+uint32_t package_create_pwr_core_droop_count_record(p_pwr_core_record_droop_count_t droop_count_record)
+{
+    populate_record_hdr(&droop_count_record->record_header,
+                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_CORE_DROOPS],
+                        NUMBER_OF_CORES_PER_DIE,
+                        sizeof(pwr_core_record_droop_count_t));
+
+    for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        populate_pwr_collection_hdr(&droop_count_record->droop_count_collection[core_id].collection_header,
+                                    POWER_TELEMETRY_ELEMENT_CORE_DROOPS,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
+                                    1,
+                                    sizeof(pwr_core_collection_droop_count_t));
+
+        data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(core_id,
+                                                          &droop_count_record->droop_count_collection[core_id].droop_count_element);
+    }
+    return sizeof(pwr_core_record_droop_count_t);
 }
 
 uint32_t package_create_pwr_soc_pkg_mon_record(p_pwr_soc_record_pkg_monitor_t pkg_mon_record)

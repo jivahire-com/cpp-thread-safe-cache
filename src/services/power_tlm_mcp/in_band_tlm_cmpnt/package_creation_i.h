@@ -167,6 +167,13 @@ uint32_t package_create_pwr_core_power_record(p_pwr_core_record_power_t power_re
 uint32_t package_create_pwr_core_histogram_record(p_pwr_core_record_histogram_t histogram_record);
 
 /**
+ * @brief   Create a droop count record
+ * @param[out] droop_count_record - location where the record will be stored
+ * @return uint32_t - Number of bytes in the record
+ */
+uint32_t package_create_pwr_core_droop_count_record(p_pwr_core_record_droop_count_t droop_count_record);
+
+/**
  * @brief   Create a power soc package monitor record
  * @param[out] pkg_mon_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record

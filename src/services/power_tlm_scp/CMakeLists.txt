@@ -29,7 +29,7 @@ target_link_libraries(${TARGET}
         ms::lib::event_trace::trace
         ms::lib::pwr_tlm_core_ex
         ms::service::mts
-
+        ms::service::power
 )
 
 add_library(ms::service::pwr_tlm_scp ALIAS ${TARGET})

@@ -74,12 +74,20 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg, test_setup, tes
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg, test_setup, test_teardown)
 {
+
+    static uint64_t expected_droop_counts[NUMBER_OF_CORES_PER_DIE];
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
+    {
+        expected_droop_counts[i] = i * 10;
+    }
+
     for (uint8_t i = 0; i < SENSOR_FIFO_MAX_ID; i++)
     {
         data_proc_snsr_fifo_is_empty[i] = true;
     }
     will_return(__wrap_sensor_fifo_svc_is_empty, data_proc_snsr_fifo_is_empty);
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
     data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg();
 }
 

@@ -277,12 +277,6 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
                    expected_core1_avg,
                    voltage_record.voltage_collection[1].voltage_element.average_mV);
 
-            printf("\nTile VCPU Voltage:\n");
-            printf("  Latest (mV):      %8d   %8d\n", expected_vcpu_voltage, tile_rt[0].latest_vcpu_voltage_mV);
-
-            printf("\nTile VSYS Voltage:\n");
-            printf("  Latest (mV):      %8d   %8d\n", expected_vsys_voltage, tile_rt[0].latest_vsys_voltage_mV);
-
             printf("----------------------------------------\n");
         }
 

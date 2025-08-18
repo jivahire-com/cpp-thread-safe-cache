@@ -144,8 +144,8 @@ void data_proc_tlm_cmpnt_get_pwr_core_temperature_data(uint16_t core_id, p_pwr_c
 /**
  * @brief Get the core power data for the specified core.
  *
- * @param core_id[in] - The core id to get the power data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
- * @param power_data[out] - Pointer to the structure to store the power data in.
+ * @param[in] core_id - The core id to get the power data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] power_data- Pointer to the structure to store the power data in.
  *
  * @return None
  */
@@ -160,6 +160,17 @@ void data_proc_tlm_cmpnt_get_pwr_core_power_data(uint16_t core_id, p_pwr_core_el
  * @return None
  */
 void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(uint16_t core_id, pwr_core_element_histogram_t (*histogram_array)[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES]);
+
+/**
+ * @brief Get the droop count data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the droop count for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] droop_count - Pointer to the structure to store the droop count  data in and fill by the api
+ *                               as an output.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(uint16_t core_id, p_pwr_core_element_droop_count_t  droop_count);
 
 /**
  * @brief Get the soc pc3 data for the specified soc.

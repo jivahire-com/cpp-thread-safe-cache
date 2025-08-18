@@ -369,8 +369,6 @@ TEST_FUNCTION(test_data_smpl_parse_tile_voltage_entry, test_setup, test_teardown
     // have to use range check due to float/fixed point conversions
     assert_in_range(core_rt[index].latest_voltage_mV, 499, 500);
     assert_in_range(core_rt[index + 1].latest_voltage_mV, 5, 6);
-    assert_in_range(tile_rt[index].latest_vcpu_voltage_mV, 9, 10);
-    assert_in_range(tile_rt[index].latest_vsys_voltage_mV, 79, 80);
 
     // Test case 2: Index out of range
     index = NUMBER_OF_TILES_PER_DIE;
@@ -419,10 +417,8 @@ TEST_FUNCTION(test_data_smpl_process_tile_voltage_sensor_fifo, test_setup, test_
 
     // Verify voltage data was processed correctly
     // Tile 0 maps to cores 0 and 1
-    assert_in_range(core_rt[0].latest_voltage_mV, 499, 500);      // vcore0 for core 0
-    assert_in_range(core_rt[1].latest_voltage_mV, 599, 600);      // vcore1 for core 1
-    assert_in_range(tile_rt[0].latest_vcpu_voltage_mV, 699, 700); // vcpu for tile
-    assert_in_range(tile_rt[0].latest_vsys_voltage_mV, 799, 800); // vsys for tile
+    assert_in_range(core_rt[0].latest_voltage_mV, 499, 500); // vcore0 for core 0
+    assert_in_range(core_rt[1].latest_voltage_mV, 599, 600); // vcore1 for core 1
 
     // Test case 2: No entries to process
     sensor_ram_poll_status_t no_entries = {.curr_data_is_valid = false, .more_entries = false};
@@ -1723,11 +1719,20 @@ TEST_FUNCTION(test_data_smpl_update_max_die_temp, test_setup, test_teardown)
 
 TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown)
 {
+    static uint64_t expected_droop_counts[NUMBER_OF_CORES_PER_DIE];
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
+    {
+        expected_droop_counts[i] = i * 10;
+    }
+
     // Test Case 1: No valid states (all flags false) - should only call timestamp function
     memset(core_rt, 0, sizeof(core_rt));
     memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
 
+    // Set up mock return values for tlm_get_timestamp_microseconds
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 1000);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    // Call the function to be tested
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -1753,6 +1758,7 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
     computed_metrics_2_mins.cores[core_id_2].cstate[CSTATE_C2].residency_uS = 200;
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 2000);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -1775,6 +1781,7 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
     computed_metrics_2_mins.cores[core_id_3].pstate[pstate_3].residency_uS = 150;
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 3000);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -1799,6 +1806,7 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
     computed_metrics_2_mins.cores[core_id_4].pstate[pstate_4].residency_uS = 400;
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 4000);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -1836,6 +1844,7 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
     // Core 3: Neither valid (no flags set) - should be skipped
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5000);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -1865,12 +1874,21 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
     computed_metrics_2_mins.cores[core_throttle].throttle_info[throttle_src].residency_uS = 500;
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 6000);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
     // Should have called data_smpl_finalize_pwr_pkg_throttling_metrics and updated throttle residency
     // Throttle residency: 500 + (6000 - 3000) = 3500
     assert_int_equal(computed_metrics_2_mins.cores[core_throttle].throttle_info[throttle_src].residency_uS, 3500);
+
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
+    {
+        if (core_is_active[i])
+        {
+            assert_int_equal(computed_metrics_2_mins.cores[i].droop_count, expected_droop_counts[i]);
+        }
+    }
 }
 
 TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_throttling_metrics, test_setup, test_teardown)

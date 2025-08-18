@@ -99,10 +99,11 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_voltage, test_setup, test_teardo
     uint8_t core_id = TEST_CORE_ID;
     core_is_active[core_id] = false;
     uint16_t test_values_mV[5] = {180, 200, 300, 400, 500};
+    uint16_t test_vcpu_values_mV[5] = {180, 200, 300, 400, 500};
 
     for (uint8_t i = 0; i < 5; i++)
     {
-        comp_metrics_for_single_core_voltage(core_id, test_values_mV[i]);
+        comp_metrics_for_single_core_voltage(core_id, test_values_mV[i], test_vcpu_values_mV[i]);
     }
 
     // Check the results
@@ -111,12 +112,18 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_voltage, test_setup, test_teardo
     assert_int_equal(data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg), 0);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg.num_samples, 0);
 
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.min, 0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.max, 0);
+    assert_int_equal(data_util_cumulative_avg_u16_get(
+                         &computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.cumulative_avg),
+                     0);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.cumulative_avg.num_samples, 0);
+
     core_is_active[core_id] = true;
-    ;
 
     for (uint8_t i = 0; i < 5; i++)
     {
-        comp_metrics_for_single_core_voltage(core_id, test_values_mV[i]);
+        comp_metrics_for_single_core_voltage(core_id, test_values_mV[i], test_vcpu_values_mV[i]);
     }
 
     // Check the results
@@ -124,6 +131,13 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_voltage, test_setup, test_teardo
     assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.max, 500);
     assert_int_equal(data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg), 316);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg.num_samples, 5);
+
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.min, 180);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.max, 500);
+    assert_int_equal(data_util_cumulative_avg_u16_get(
+                         &computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.cumulative_avg),
+                     316);
+    assert_int_equal(computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.cumulative_avg.num_samples, 5);
 }
 
 // Unit test for  comp_metrics_for_single_core_temperature
@@ -780,4 +794,26 @@ TEST_FUNCTION(test_comp_metrics_init_active_cores, test_setup, test_teardown)
     assert_true(core_is_active[0]);
     assert_true(core_is_active[33]);
     assert_true(core_is_active[66]);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_cores_droop_counts, test_setup, test_teardown)
+{
+    static uint64_t expected_droop_counts[NUMBER_OF_CORES_PER_DIE];
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
+    {
+        expected_droop_counts[i] = i * 10;
+        core_is_active[i] = (i % 2 == 0);
+    }
+
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+
+    comp_metrics_for_cores_droop_counts();
+
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
+    {
+        if (core_is_active[i])
+        {
+            assert_int_equal(computed_metrics_2_mins.cores[i].droop_count, expected_droop_counts[i]);
+        }
+    }
 }

@@ -14,6 +14,7 @@
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <corebits.h>
 #include <data_sampling_i.h>
+#include <kng_soc_constants.h>
 #include <semaphore_lib.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
@@ -198,6 +199,17 @@ void __wrap_wait_for_semaphore(SEMAPHORE_ID id, uint32_t key)
 void __wrap_release_semaphore(SEMAPHORE_ID id)
 {
     FPFW_UNUSED(id);
+}
+
+void __wrap_pwr_tlm_core_exch_mcp_read_droop_counts(uint64_t (*droop_count_array)[NUM_AP_CORES_PER_DIE])
+{
+    assert_non_null(droop_count_array);
+
+    // Get the mock data pointer passed in the test
+    uint64_t* mock_data = mock_ptr_type(uint64_t*);
+    assert_non_null(mock_data);
+
+    memcpy(*droop_count_array, mock_data, sizeof(uint64_t) * NUM_AP_CORES_PER_DIE);
 }
 
 corebits_t mock_cores_in_die;

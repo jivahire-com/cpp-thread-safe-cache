@@ -220,6 +220,28 @@ void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(
     FPFW_UNUSED(histogram_array);
 }
 
+void data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(uint16_t core_id, p_pwr_core_element_droop_count_t droop_count)
+{
+    if (core_id >= NUMBER_OF_CORES_PER_DIE || droop_count == NULL)
+    {
+        FPFW_ET_LOG(DataPackageDroopCountRrecordError, POWER_TELEMETRY_ELEMENT_CORE_DROOPS);
+    }
+    else
+    {
+        droop_count->droop_count = computed_metrics_2_mins.cores[core_id].droop_count;
+
+        droop_count->ldo_output_voltage.average_mV =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg);
+        droop_count->ldo_output_voltage.min_mV = computed_metrics_2_mins.cores[core_id].voltage_mV.min;
+        droop_count->ldo_output_voltage.max_mV = computed_metrics_2_mins.cores[core_id].voltage_mV.max;
+
+        droop_count->vcpu_input_voltage.average_mV =
+            data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.cumulative_avg);
+        droop_count->vcpu_input_voltage.max_mV = computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.max;
+        droop_count->vcpu_input_voltage.min_mV = computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.min;
+    }
+}
+
 void data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(p_pwr_soc_element_pkg_monitor_t soc_pkg_mon_data)
 {
     FPFW_UNUSED(soc_pkg_mon_data);

@@ -662,3 +662,47 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_core_power_data, test_setup, test
     data_proc_tlm_cmpnt_get_pwr_core_power_data(NUMBER_OF_CORES_PER_DIE, &power_data);
     assert_int_not_equal(power_data.min_mW, computed_metrics_2_mins.cores[core_id].power_mW.min);
 }
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_core_droop_count_data, test_setup, test_teardown)
+{
+    // Test validates that the records published to consumers is using the correct data source
+
+    pwr_core_element_droop_count_t droop_counts = {0};
+
+    uint8_t core_id = 0;
+    computed_metrics_2_mins.cores[core_id].droop_count = 10;
+
+    // core
+    computed_metrics_2_mins.cores[core_id].voltage_mV.min = 1200;
+    computed_metrics_2_mins.cores[core_id].voltage_mV.max = 1800;
+    computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg.sum = 1500 * 1;
+    computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg.num_samples = 1;
+
+    // vcpu
+    computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.min = 1200;
+    computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.max = 1800;
+    computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.cumulative_avg.sum = 1500 * 1;
+    computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.cumulative_avg.num_samples = 1;
+
+    data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(core_id, &droop_counts);
+
+    assert_int_equal(droop_counts.droop_count, computed_metrics_2_mins.cores[core_id].droop_count);
+    assert_int_equal(droop_counts.ldo_output_voltage.average_mV,
+                     data_util_cumulative_avg_u16_get(&computed_metrics_2_mins.cores[core_id].voltage_mV.cumulative_avg));
+
+    assert_int_equal(droop_counts.ldo_output_voltage.min_mV, computed_metrics_2_mins.cores[core_id].voltage_mV.min);
+    assert_int_equal(droop_counts.ldo_output_voltage.max_mV, computed_metrics_2_mins.cores[core_id].voltage_mV.max);
+
+    assert_int_equal(droop_counts.vcpu_input_voltage.average_mV,
+                     data_util_cumulative_avg_u16_get(
+                         &computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.cumulative_avg));
+    assert_int_equal(droop_counts.vcpu_input_voltage.min_mV,
+                     computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.min);
+    assert_int_equal(droop_counts.vcpu_input_voltage.max_mV,
+                     computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV.max);
+
+    // invalid case
+    computed_metrics_2_mins.cores[core_id].droop_count = 20;
+    data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(NUMBER_OF_CORES_PER_DIE, &droop_counts);
+    assert_int_not_equal(droop_counts.droop_count, computed_metrics_2_mins.cores[core_id].droop_count);
+}

@@ -57,5 +57,6 @@ mock_target(${TARGET}
     in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg
     wait_for_semaphore
     release_semaphore
+    pwr_tlm_core_exch_mcp_read_droop_counts
     core_info_get_enable_cores_result
 )

@@ -211,10 +211,14 @@ void data_smpl_process_tile_voltage_sensor_fifo(void)
             {
                 uint8_t core_id = tile_index * 2;
                 // first core in the tile
-                comp_metrics_for_single_core_voltage(core_id, core_rt[core_id].latest_voltage_mV);
+                comp_metrics_for_single_core_voltage(core_id,
+                                                     core_rt[core_id].latest_voltage_mV,
+                                                     core_rt[core_id].latest_vcpu_voltage_mV);
                 core_id++;
                 // Second core in the tile
-                comp_metrics_for_single_core_voltage(core_id, core_rt[core_id].latest_voltage_mV);
+                comp_metrics_for_single_core_voltage(core_id,
+                                                     core_rt[core_id].latest_voltage_mV,
+                                                     core_rt[core_id].latest_vcpu_voltage_mV);
             }
         }
 
@@ -504,6 +508,8 @@ void data_smpl_finalize_pwr_pkg_metrics(void)
 
         core_ptr++;
     }
+    // read and update cores droop counts data
+    comp_metrics_for_cores_droop_counts();
 }
 
 void data_smpl_reset_residency_timestamps(void)
@@ -675,9 +681,9 @@ bool data_smpl_parse_tile_voltage_entry(tile_voltage_t* tile_voltage_entry, uint
     core_rt[core_id].latest_voltage_mV = DOUT2MILLIVOLTS(tile_voltage_entry->data.vcore0);
     core_rt[core_id + 1].latest_voltage_mV = DOUT2MILLIVOLTS(tile_voltage_entry->data.vcore1);
 
-    // Log the tile vcpu and vsys
-    tile_rt[tile_index].latest_vcpu_voltage_mV = DOUT2MILLIVOLTS(tile_voltage_entry->data.vcpu);
-    tile_rt[tile_index].latest_vsys_voltage_mV = DOUT2MILLIVOLTS(tile_voltage_entry->data.vsys);
+    // Log  vcpu for droop count record
+    core_rt[core_id].latest_vcpu_voltage_mV = DOUT2MILLIVOLTS(tile_voltage_entry->data.vcpu);
+    core_rt[core_id + 1].latest_vcpu_voltage_mV = DOUT2MILLIVOLTS(tile_voltage_entry->data.vcpu);
 
     return true;
 }

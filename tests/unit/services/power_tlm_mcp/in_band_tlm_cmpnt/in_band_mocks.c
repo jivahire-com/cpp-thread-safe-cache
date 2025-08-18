@@ -152,6 +152,14 @@ void data_proc_tlm_cmpnt_get_pwr_core_power_data(uint16_t core_id, p_pwr_core_el
     function_called();
 }
 
+void data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(uint16_t core_id, p_pwr_core_element_droop_count_t droop_count)
+{
+    FPFW_UNUSED(core_id);
+    memset(droop_count, 0xFF, sizeof(pwr_core_element_droop_count_t));
+
+    function_called();
+}
+
 void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(
     uint16_t core_id,
     pwr_core_element_histogram_t (*histogram_array)[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES])

@@ -87,6 +87,7 @@ typedef struct {
     uint64_t throttle_res_timestamp_uS[NUMBER_OF_THROTTLE_SOURCES];
     uint64_t rack_pri_res_timestamp_uS[NUMBER_OF_RACK_THROTTLE_PRIORITIES];
     uint16_t latest_voltage_mV;
+    uint16_t latest_vcpu_voltage_mV; /* for droop count record */
     uint16_t latest_current_mA;
     uint16_t latest_power_mW;
     uint16_t latest_max_value_dC;
@@ -102,8 +103,6 @@ typedef struct {
 } core_runtime_info_t;
 
 typedef struct {
-    uint16_t latest_vcpu_voltage_mV;
-    uint16_t latest_vsys_voltage_mV;
     uint16_t latest_max_temp_dC;
     uint8_t latest_max_temp_sensor_index;
 } tile_runtime_info_t;

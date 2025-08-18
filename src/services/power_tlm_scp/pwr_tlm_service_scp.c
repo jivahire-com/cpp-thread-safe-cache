@@ -16,6 +16,7 @@
 #include <FpFwUtils.h>                   // for FPFW_UNUSED
 #include <IFpFwEventTracingGeneration.h> // for FPFW_ET_LOG
 #include <message_transfer_service.h>
+#include <power_runconfig.h>
 #include <pwr_tlm_core_exchange.h>
 #include <stdio.h>
 
@@ -31,6 +32,10 @@
 
 /*-- Declarations (Statics and globals) --*/
 
+// Static assert to ensure structure size consistency
+static_assert(sizeof(power_adclk_tel_t) == sizeof(uint64_t) * NUM_AP_CORES_PER_DIE,
+              "Mismatch in droop_count array size between local and power service structures");
+
 // for dcs client subscription
 p_trp_msg_t pwr_tlm_client_queue_mem[PWR_TLM_MAX_TRP_MESSAGES];
 uint8_t pwr_tlm_client_pool_mem[PWR_TLM_CLIENT_BLOCK_POOL_SIZE];
@@ -39,11 +44,6 @@ static mts_client_t s_pwr_tlm_mts_client_scp = {
     .notify_from_drv_frmwk = pwr_tlm_scp_handle_incoming_mts_msgs,
 };
 /*------------- Functions ----------------*/
-
-void data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp(void)
-{
-    // TODO: implemention needed to collect droop count.
-}
 
 void mts_manager_scp_init(void)
 {
@@ -142,4 +142,14 @@ void mts_manager_scp_handle_trp_msg(p_trp_msg_t trp_msg)
 void pwr_tlm_svc_scp_init(void)
 {
     mts_manager_scp_init();
+}
+
+void data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp(void)
+{
+    power_adclk_tel_t adclk_tel;
+    // Retrieve droop count telemetry from power service
+    power_get_adclk_telem(&adclk_tel);
+
+    // Write droop counts to SCP telemetry exchange
+    pwr_tlm_core_exch_scp_write_droop_counts(&adclk_tel.droop_count);
 }

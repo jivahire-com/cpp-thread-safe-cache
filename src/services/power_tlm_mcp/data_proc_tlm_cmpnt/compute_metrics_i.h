@@ -66,6 +66,7 @@ typedef struct {
 
 typedef struct
 {
+    uint64_t droop_count;
     pstate_metrics_t pstate[NUMBER_OF_PSTATES];
     cstate_metrics_t cstate[NUMBER_OF_CSTATES];
     throttle_metrics_t throttle_info[NUMBER_OF_THROTTLE_SOURCES];
@@ -74,6 +75,7 @@ typedef struct
     mma_u16_t temperature_dC;
     mma_u16_t voltage_mV;
     mma_u16_t current_mA;
+    mma_u16_t vcpu_input_voltage_mV;        
 } computed_per_core_metrics_t;
 
 typedef struct
@@ -209,9 +211,10 @@ void comp_metrics_for_single_core_current(uint8_t core_id, uint16_t latest_value
  *
  * @param[in] core_id  core for which the current values are being updated.
  * @param[in] latest_value_mV latest value of the core voltage from telmetry packet.
+ * @param[in] latest_vcpu_voltage_mV latest value of the vcpu voltage applied to this core's LDO from telmetry packet.
  *
  */
-void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value_mV);
+void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value_mV, uint16_t latest_vcpu_voltage_mV);
 
 /**
  * @brief    function updates the minimum, maximum, and average temperature values for
@@ -415,3 +418,10 @@ void comp_metrics_reset_2_mins_metrics();
  * @return none
  */
 void comp_metrics_reset_24_hrs_metrics();
+
+/**
+ * @brief read droop counts and update compute metrics reported every 2 mins.
+ *
+ * @return none
+ */
+void comp_metrics_for_cores_droop_counts(void);

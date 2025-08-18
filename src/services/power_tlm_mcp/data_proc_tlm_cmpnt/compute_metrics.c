@@ -16,6 +16,7 @@
 
 #include <core_info.h>
 #include <corebits.h>
+#include <pwr_tlm_core_exchange.h>
 #include <stdbool.h> // for false, true
 #include <stddef.h>  // for size_t
 #include <stdint.h>  // for uint8_t, uint16_t
@@ -38,6 +39,9 @@ computed_metrics_oob_t computed_metrics_oob = {0};
 bool core_is_active[NUMBER_OF_CORES_PER_DIE] = {0};
 
 /*------------- Functions ----------------*/
+
+static_assert(NUMBER_OF_CORES_PER_DIE == NUM_AP_CORES_PER_DIE,
+              "Mismatch between NUMBER_OF_CORES_PER_DIE and NUM_AP_CORES_PER_DIE");
 
 void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
 {
@@ -110,11 +114,13 @@ void comp_metrics_for_single_core_current(uint8_t core_id, uint16_t latest_value
     }
 }
 
-void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value_mV)
+void comp_metrics_for_single_core_voltage(uint8_t core_id, uint16_t latest_value_mV, uint16_t latest_vcpu_voltage_mV)
 {
     if (core_is_active[core_id])
     {
         data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].voltage_mV, latest_value_mV);
+        // update ldo voltage for droop count.
+        data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].vcpu_input_voltage_mV, latest_vcpu_voltage_mV);
     }
 }
 
@@ -406,6 +412,21 @@ void comp_metrics_for_soc_avg_pstate(uint8_t (*pstate)[NUMBER_OF_CORES_PER_DIE])
         {
             die_2_die_exch_oob_write_window_avg_pstate(computed_metrics_oob.pstate_mov_avg.total_sum,
                                                        computed_metrics_oob.pstate_mov_avg.sample_count);
+        }
+    }
+}
+
+void comp_metrics_for_cores_droop_counts(void)
+{
+    uint64_t droop_counts[NUMBER_OF_CORES_PER_DIE];
+
+    pwr_tlm_core_exch_mcp_read_droop_counts(&droop_counts);
+
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        if (core_is_active[core_id])
+        {
+            computed_metrics_2_mins.cores[core_id].droop_count = droop_counts[core_id];
         }
     }
 }

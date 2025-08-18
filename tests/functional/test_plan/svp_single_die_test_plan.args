@@ -1,0 +1,77 @@
+--variable KEEP_SVP_ALIVE:TRUE
+--variable HOST_JSON:hsp_scp_bl_embed_fw.json
+
+## Boot tests
+./../../../tests/functional/test_suites/boot_tests/uefi_boot_single_die.robot
+
+## Single Die Heartbeat Tests
+./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
+
+## AVS Die 0 Tests
+./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die0.robot
+./../../../tests/functional/test_suites/avs_tests/avs_write_tests_die0.robot
+
+## CONFIG MANAGER Tests
+./../../../tests/functional/test_suites/configmgr_tests/configmgr_cli_test.robot
+./../../../tests/functional/test_suites/configmgr_tests/configmgr_dump_cli_test.robot
+./../../../tests/functional/test_suites/configmgr_tests/configmgr_set_cli_test.robot
+
+## Fuse Tests
+./../../../tests/functional/test_suites/fuse_tests/fuse_revision_test.robot
+
+## GPIO Driver Tests
+./../../../tests/functional/test_suites/gpio_driver_tests/gpio_driver_test.robot
+
+## HSP Mailbox Tests
+./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test.robot
+./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv.robot
+
+## Variable Service Tests
+./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot
+
+## MTS Tests
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_capabilities.robot
+
+## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Power Tests
+./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_sync.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Sensor FIFO short duration tests
+## SVP Teardown required before sensor fifo tests so ensure tests run after boot is complete
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_single_fifo_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_all_fifo_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Single Die ddrboot Tests
+./../../../tests/functional/test_suites/ddrboot_tests/mscp_ddrboot_hsp_boot.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## APNS SMBIOS Table Tests
+./../../../tests/functional/test_suites/ddrboot_tests/apns_smbios_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Crash Dump Tests
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_stack_overflow_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+# Disable crash dump svp report test until HSP crash issue fixed.
+#./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_svp_report_test.robot
+#./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## ICC Mhu Tests
+./../../../tests/functional/test_suites/icc_mhu/icc_cli_mscp_mhu.robot
+
+## Warm Start Tests
+./../../../tests/functional/test_suites/warm_start_tests/warm_start_test.robot
+
+## SVP Teardown
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

@@ -27,7 +27,6 @@
 #include <stdbool.h> // for true
 #include <stddef.h>  // for NULL
 #include <stdint.h>  // for uint32_t, uint8_t
-#include <stdio.h>   // for printf, NULL
 
 /*-------------- Macros ------------------*/
 

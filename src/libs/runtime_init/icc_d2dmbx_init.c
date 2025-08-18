@@ -4,7 +4,6 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DbgPrint.h>
 #include <DfwkHost.h>        // for DfwkDeviceInitialize
 #include <DfwkStatus.h>      // for DFWK_SUCCESS
 #include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
@@ -32,7 +31,6 @@
 #include <stdbool.h> // for true
 #include <stddef.h>  // for NULL
 #include <stdint.h>  // for uint32_t, uint8_t
-#include <stdio.h>   // for printf, NULL
 
 /*-------------- Macros ------------------*/
 #define D2D_MBOX_SPI_CTRL_BASE_ADDR      (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_CTRL_ADDRESS)
@@ -91,7 +89,7 @@ static uint32_t SpiControllerRead32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regO
  * Remote die scp can send, current die scp or mcp can recv.
  *
  */
-FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "debug_print"))
+FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
 {
     //! Statics declarations required for mailbox primitive
     static struct _fpfw_timer_t d2d_timer[ICC_MAX_ASYNC_REQ_TYPE] = {};

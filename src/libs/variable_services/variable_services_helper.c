@@ -270,7 +270,6 @@ int32_t variable_service_initialize_ctx(var_service_req_ctx_t* var_serv_ctx, var
     BUG_ASSERT(var_serv_ctx != NULL);
     if (var_serv_ctx->is_initialized)
     {
-        DEBUG_PRINT("Shared memory is already Initialized\n");
         return KNG_SUCCESS;
     }
 

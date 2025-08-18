@@ -12,6 +12,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
         fwlib.driver.interface.text_io
+        fwlib.lib.cfg_mgr
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
@@ -22,6 +23,7 @@ target_link_libraries(${TARGET}
         ms::lib::stdio_textio
         ms::lib::systick_update
         ms::lib::threadx
+        ms::service::atu_service
         silibs::common::lib_uart_pl011
         silibs::idsw
         silibs::idsw_kng
@@ -46,7 +48,10 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    config_get_uart_mcp_reassign
     fpfw_init_get_handle
+    idsw_get_cpu_type
+    idsw_get_die_id
     systick_get_emcpu_clock
     textio_pl011_device_initialize
     textio_pl011_device_interface_initialize

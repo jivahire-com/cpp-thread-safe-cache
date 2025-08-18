@@ -35,15 +35,8 @@ void* __wrap_fpfw_init_get_handle(const char* id)
     return &dummy_icc_ctx;
 }
 
-KNG_DIE_ID __wrap_idhw_get_die_id()
-{
-    return mock_type(KNG_DIE_ID);
-}
-
 TEST_FUNCTION(test_variable_service_init, nullptr, nullptr)
 {
-    // Set up expectations
-    will_return_always(__wrap_idhw_get_die_id, (KNG_DIE_ID)DIE_0);
     _fpfw_component_var_serv.init_fn();
 }
 }

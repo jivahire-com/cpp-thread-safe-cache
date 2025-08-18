@@ -37,5 +37,4 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
     fpfw_init_get_handle
-    idhw_get_die_id
 )

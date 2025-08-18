@@ -10,7 +10,9 @@
 /*------------- Includes -----------------*/
 
 #include <DfwkThreadXHost.h>     // for PDFWK_THREADX_HOST
+#include <atu_api.h>             // for MSCP_ATU_AP_WINDOW_UART_X_BASE_ADDR
 #include <build_data.h>          // for BUILD_PC, BUILD_TIMESTAMP, GIT_BRANCH
+#include <fpfw_cfg_mgr.h>        // for knobs
 #include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_get...
 #include <idsw.h>                // for idsw_get_platform_sdv,
 #include <idsw_kng.h>            // for PLATFORM_FPGA_LARGE
@@ -27,14 +29,17 @@
 #define FPGA_UART_APB_FREQUENCY 10000000U
 #define SOC_UART_APB_FREQUENCY  250000000U
 
+#define AP_NS_UART_APB_FREQUENCY_FPGA  (10000000U)
+#define AP_NS_UART_APB_FREQUENCY_SOC   (100000000U)
+
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-static uint32_t get_uart_apb_frequency()
+static uint32_t get_uart_apb_frequency(idsw_plat_id_t sdv_id)
 {
-    switch (idsw_get_platform_sdv())
+    switch (sdv_id)
     {
     case PLATFORM_SVP_SIM:
     case PLATFORM_SVP_MIN_CONFIG_SIM:
@@ -44,6 +49,19 @@ static uint32_t get_uart_apb_frequency()
         return FPGA_UART_APB_FREQUENCY;
     default:
         return SOC_UART_APB_FREQUENCY;
+    }
+}
+
+static bool platform_supports_oob(idsw_plat_id_t sdv_id)
+{
+    switch (sdv_id)
+    {
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+    case PLATFORM_RVP_EVT_SILICON:
+        return true;
+    default:
+        return false;
     }
 }
 
@@ -80,7 +98,9 @@ static void print_build_info()
     CRITICAL_PRINT("\n");
 }
 
-FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd"))
+// TODO: The UART initialization component is now dependent on the configuration manager. To resolve
+//       early boot stage debugging via UART see ado: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2856417
+FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd", "atu_svc", "cfg_mgr"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
     static textio_pl011_config_t pl011_config = {
@@ -95,7 +115,34 @@ FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd"))
         .config_type = TEXTIO_PL011_CONFIG_TYPE_INTERRUPT,
         .is_vuart_enabled = true,
     };
-    pl011_config.clk_freq = get_uart_apb_frequency(); // Set clock frequency from APB clock
+
+    idsw_plat_id_t sdv_id = idsw_get_platform_sdv();
+
+    // Set clock frequency from APB clock
+    pl011_config.clk_freq = get_uart_apb_frequency(sdv_id);
+
+    // Reassign MCP Die 0 CLI if:
+    // - MCP UART reassignment config knob is enabled
+    // - The core is the MCP
+    // - The die is die 0
+    // - The platform supports oob (and therefore needs this to be switched)
+    if ((config_get_uart_mcp_reassign()) && (idsw_get_cpu_type() == CPU_MCP) &&
+        (idsw_get_die_id() == DIE_0) && platform_supports_oob(sdv_id))
+    {
+        // Take the AP-NS UART instead
+        pl011_config.base_address = MSCP_ATU_AP_WINDOW_UART_NS_BASE_ADDR;
+
+        // Use polling, because we can't get interrupts from other subsystems
+        pl011_config.config_type = TEXTIO_PL011_CONFIG_TYPE_POLLING;
+
+        // Update the clock frequency to match the clock for the different UART.
+        // Default to the FPGA rate, and update if on silicon
+        pl011_config.clk_freq = AP_NS_UART_APB_FREQUENCY_FPGA;
+        if (sdv_id == PLATFORM_RVP_EVT_SILICON)
+        {
+            pl011_config.clk_freq = AP_NS_UART_APB_FREQUENCY_SOC;
+        }
+    }
 
     static textio_pl011_device_t pl011_device = {0};
 

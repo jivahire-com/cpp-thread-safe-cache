@@ -72,7 +72,9 @@ static uint8_t get_profile_id()
  * @brief Initialize cfg_mgr.
  *
  */
-FPFW_INIT_COMPONENT(cfg_mgr, FPFW_INIT_DEPENDENCIES("std_io", "dfwk", "atu_svc", "var_serv", "hw_ver", "sysinfo", "icc_d2dmbx"))
+// TODO: The UART initialization component is now dependent on the configuration manager. To resolve
+//       early boot stage debugging via UART see ado: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2856417
+FPFW_INIT_COMPONENT(cfg_mgr, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "var_serv", "hw_ver", "spi_bridge", "sysinfo", "icc_d2dmbx"))
 {
     // This struct is only used to initialize a fpfw_cfg_mgr_db_t struct
     fpfw_cfg_mgr_config_t cfg_mgr_config = {.mission_mode = false,

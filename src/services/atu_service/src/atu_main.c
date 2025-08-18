@@ -162,6 +162,13 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_GIC_GICD_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
+    // AP Non-Secure UART for MCP to access Die 0 UART
+    {
+        .ap_base_address = AP_TOP_D0_AP_UART_NS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_UART_NS_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_UART_NS_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
     {0},
 };
 
@@ -274,6 +281,13 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .mscp_start_address = MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_GIC_GICD_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // AP Non-Secure UART for MCP to access Die 0 UART
+    {
+        .ap_base_address = AP_TOP_D0_AP_UART_NS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_UART_NS_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_UART_NS_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
     },
     {0},
 };

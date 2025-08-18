@@ -41,6 +41,8 @@
     <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_d1_prod_t" default="{D1_U0_HSP, D1_U1_SDM, D1_U2_SCP, 0}" help="UART AFM config knobs for Die 1"/>
 
     <Knob name="uart_die_cfg" type="uart_die_sel_t" help="Die Config for Shared UARTs (UART1 and UART2 respectively)"/>
+    
+    <Knob name="uart_mcp_reassign" type="bool" default="false" help="When true, reassigns MCP Die 0 CLI to use AP-NS UART" />
   </Knobs>
 
 </ConfigSchema>

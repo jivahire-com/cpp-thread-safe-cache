@@ -32,15 +32,15 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-/* PCIe bus ranges - current as of Kingsgate address map r1p11 */
-#define PCIE_RPSS0_BUS_MAX (30)
-#define PCIE_RPSS1_BUS_MAX (61)
-#define PCIE_RPSS2_BUS_MAX (92)
-#define PCIE_RPSS3_BUS_MAX (123)
-#define PCIE_RPSS4_BUS_MAX (154)
-#define PCIE_RPSS5_BUS_MAX (185)
-#define PCIE_RPSS6_BUS_MAX (216)
-#define PCIE_RPSS7_BUS_MAX (247)
+/* PCIe bus ranges */
+#define PCIE_RPSS0_BUS_MAX (PCIE_RPSS_BUSES_PER_SS_STRIDE - 1)
+#define PCIE_RPSS1_BUS_MAX (PCIE_RPSS0_BUS_MAX + PCIE_RPSS_BUSES_PER_SS_STRIDE)
+#define PCIE_RPSS2_BUS_MAX (PCIE_RPSS1_BUS_MAX + PCIE_RPSS_BUSES_PER_SS_STRIDE)
+#define PCIE_RPSS3_BUS_MAX (PCIE_RPSS2_BUS_MAX + PCIE_RPSS_BUSES_PER_SS_STRIDE)
+#define PCIE_RPSS4_BUS_MAX (PCIE_RPSS3_BUS_MAX + PCIE_RPSS_BUSES_PER_SS_STRIDE)
+#define PCIE_RPSS5_BUS_MAX (PCIE_RPSS4_BUS_MAX + PCIE_RPSS_BUSES_PER_SS_STRIDE)
+#define PCIE_RPSS6_BUS_MAX (PCIE_RPSS5_BUS_MAX + PCIE_RPSS_BUSES_PER_SS_STRIDE)
+#define PCIE_RPSS7_BUS_MAX (PCIE_RPSS6_BUS_MAX + PCIE_RPSS_BUSES_PER_SS_STRIDE)
 
 /*------------- Functions ----------------*/
 static bool validate_einj_payload(ras_einj_info_t* info)
@@ -212,7 +212,7 @@ acpi_einj_cmd_status_t pcie_error_injection_cb(ras_einj_info_t* einj_payload, vo
     RPSS_INSTANCE rpss_idx = get_rpss_instance_from_sbdf(&(pcie_params->sbdf));
     if (rpss_idx >= NUM_RPSS)
     {
-        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: SBDF from payload cannot be matched to a rpss!\n");
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: SBDF from payload cannot be matched to an rpss!\n");
         return ACPI_EINJ_INVALID_ACCESS;
     }
 

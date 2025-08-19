@@ -150,43 +150,34 @@ silibs_status_t send_sync_rp_set_secondary_bus_reset(PDFWK_INTERFACE_HEADER ifac
 silibs_status_t send_sync_rp_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
 
 /**
- * @brief Send a synchronous request to probe the VSECRAS RAS agent for
- *        the specified RPSS and RP combination.
+ * @brief Send a synchronous request to spoof an AER Uncorrectable Internal Error to bring the link down.
  *
- * @param[in] iface         - Pointer to the driver interface header for this RPSS.
- * @param[in] rpss_idx      - The RPSS instance index.
- * @param[in] rp_idx        - The root port index.
- * @param[out] error_record - Pointer to a RAS error record structure to store any errors found during probing.
+ * @param[in] rpss_idx  - The RPSS instance index.
+ * @param[in] rp_index  - The root port index.
  *
- * @retval SILIBS_SUCCESS:      No errors found after probing the VSECRAS agent.
- * @retval SILIBS_E_DEVICE:     Errors found and returned during probing.
+ * @retval SILIBS_SUCCESS: SBR bit cleared successfully.
+ * @retval Other:          Error occurred while clearing SBR bit.
  */
-silibs_status_t send_sync_rp_probe_vsecras(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record);
+silibs_status_t send_sync_rp_force_aer_internal_uncorr_error(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
 
 /**
- * @brief Send a synchronous request to probe the DTIM RAS agent for
- *        the specified RPSS and RP combination.
+ * @brief Send a synchronous request to notify the RMM to perform stream rekeying for any TX stream that needs a key.
  *
- * @param[in] iface         - Pointer to the driver interface header for this RPSS.
- * @param[in] rpss_idx      - The RPSS instance index.
- * @param[in] rp_idx        - The root port index.
- * @param[out] error_record - Pointer to a RAS error record structure to store any errors found during probing.
+ * @param[in] rpss_idx  - The RPSS instance index.
+ * @param[in] rp_index  - The root port index.
  *
- * @retval SILIBS_SUCCESS:      No errors found after probing the dtim agent.
- * @retval SILIBS_E_DEVICE:     Errors found and returned during probing.
+ * @retval SILIBS_SUCCESS: SBR bit cleared successfully.
+ * @retval Other:          Error occurred while clearing SBR bit.
  */
-silibs_status_t send_sync_rp_probe_dtim(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record);
+silibs_status_t send_sync_rp_tx_rekey(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
 
 /**
- * @brief Send a synchronous request to probe the LTIM RAS agent for
- *        the specified RPSS and RP combination.
+ * @brief Send a synchronous request to notify the RMM to perform stream rekeying for any RX stream that needs a key.
  *
- * @param[in] iface         - Pointer to the driver interface header for this RPSS.
- * @param[in] rpss_idx      - The RPSS instance index.
- * @param[in] rp_idx        - The root port index.
- * @param[out] error_record - Pointer to a RAS error record structure to store any errors found during probing.
+ * @param[in] rpss_idx  - The RPSS instance index.
+ * @param[in] rp_index  - The root port index.
  *
- * @retval SILIBS_SUCCESS:      No errors found after probing the ltim agent.
- * @retval SILIBS_E_DEVICE:     Errors found and returned during probing.
+ * @retval SILIBS_SUCCESS: SBR bit cleared successfully.
+ * @retval Other:          Error occurred while clearing SBR bit.
  */
-silibs_status_t send_sync_rp_probe_ltim(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record);
+silibs_status_t send_sync_rp_rx_rekey(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);

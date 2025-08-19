@@ -43,9 +43,9 @@ typedef enum _pcie_rp_sync_request_t
     GET_RPSS_ENTITY_REQUEST,
     GET_RP_READY_REQUEST,
     GET_LINK_STATUS,
-    PROBE_VSECRAS_NODE,
-    PROBE_DTIM_NODE,
-    PROBE_LTIM_NODE,
+    FORCE_AER_INTERNAL_UNCORR_ERROR,
+    IDE_TX_REKEY,
+    IDE_RX_REKEY,
     INJECT_PCIE_ERROR,
     CLI_REQUEST,
     PCIE_MAX_SYNC_REQ
@@ -53,12 +53,13 @@ typedef enum _pcie_rp_sync_request_t
 
 /*
  * For now async callback just has a INT mask
- * passed back to the service.
+ * and two data fields passed back to the service.
  */
 typedef struct _pcie_async_data_t
 {
     uint32_t int_mask;
-    uint64_t int_data;
+    uint64_t glbl_ide_data;
+    uint64_t aes_hcfg_data;
 } pcie_async_data_t;
 
 typedef enum _pcie_cli_req_op_t

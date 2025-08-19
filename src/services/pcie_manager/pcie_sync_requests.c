@@ -176,20 +176,17 @@ silibs_status_t send_sync_rp_clear_secondary_bus_reset(PDFWK_INTERFACE_HEADER if
     return send_generic_rp_sync_req(iface, rpss_idx, rp_idx, CLEAR_SECONDARY_BUS_RESET_REQUEST, NULL, false);
 }
 
-silibs_status_t send_sync_rp_probe_vsecras(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record)
+silibs_status_t send_sync_rp_force_aer_internal_uncorr_error(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
 {
-    BUG_ASSERT(error_record != NULL);
-    return send_generic_rp_sync_req(iface, rpss_idx, rp_idx, PROBE_VSECRAS_NODE, error_record, true);
+    return send_generic_rp_sync_req(iface, rpss_idx, rp_idx, FORCE_AER_INTERNAL_UNCORR_ERROR, NULL, false);
 }
 
-silibs_status_t send_sync_rp_probe_dtim(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record)
+silibs_status_t send_sync_rp_tx_rekey(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
 {
-    BUG_ASSERT(error_record != NULL);
-    return send_generic_rp_sync_req(iface, rpss_idx, rp_idx, PROBE_DTIM_NODE, error_record, true);
+    return send_generic_rp_sync_req(iface, rpss_idx, rp_idx, IDE_TX_REKEY, NULL, false);
 }
 
-silibs_status_t send_sync_rp_probe_ltim(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, ras_error_record_t* error_record)
+silibs_status_t send_sync_rp_rx_rekey(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
 {
-    BUG_ASSERT(error_record != NULL);
-    return send_generic_rp_sync_req(iface, rpss_idx, rp_idx, PROBE_LTIM_NODE, error_record, true);
+    return send_generic_rp_sync_req(iface, rpss_idx, rp_idx, IDE_RX_REKEY, NULL, false);
 }

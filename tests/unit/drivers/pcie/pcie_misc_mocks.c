@@ -9,7 +9,9 @@
 
 /*------------- Includes -----------------*/
 #include <FpFwCMocka.h> // IWYU pragma: keep
-#include <cmocka.h>     // IWYU pragma: keep
+#include <FpFwUtils.h>
+#include <cmocka.h> // IWYU pragma: keep
+#include <cper.h>
 #include <fpfw_cfg_mgr.h>
 #include <pcie_ss_common.h> // for pcie_ss_entity_t, ss_bases_t
 #include <stdint.h>
@@ -58,4 +60,16 @@ uint8_t __wrap_system_info_get_board_rework_id()
 uint8_t __wrap_system_info_get_soc_position()
 {
     return mock_type(uint8_t);
+}
+
+void __wrap_hm_submit_cper(uint16_t error_domain_idx,
+                           acpi_error_severity_t err_severity,
+                           acpi_cper_section_t* err_record_section,
+                           uint32_t err_record_section_size)
+{
+    FPFW_UNUSED(error_domain_idx);
+    FPFW_UNUSED(err_severity);
+    FPFW_UNUSED(err_record_section);
+    FPFW_UNUSED(err_record_section_size);
+    function_called();
 }

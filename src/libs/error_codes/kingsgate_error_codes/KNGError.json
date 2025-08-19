@@ -443,6 +443,11 @@
           "Name": "KNG_HM_RSM_CE",
           "Value": 27,
           "Description": "Correctable Error in Shared SRAM, RSM"
+        },
+        {
+          "Name": "KNG_HM_PCIE_GENERIC",
+          "Value": 28,
+          "Description": "Generic PCIe Error placeholder"
         }
       ]
     }

@@ -188,10 +188,12 @@ target_link_libraries(
         silibs::kng_silibs_platform
         silibs::mhuv3
         silibs::pcie
+        silibs::pciess
         silibs::platform
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
         silibs::spi_bridge
+        silibs::vab_init
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)

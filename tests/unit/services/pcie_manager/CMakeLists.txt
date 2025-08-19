@@ -5,12 +5,16 @@ set(SOURCES
     pcie_mocks.c
 )
 
+# Needed to ensure that silibs enums > 32-bit are compatible with MSCP
+add_compile_options(-DMSCP_SILIBS_COMPILATION)
+
 add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.utils
     fwlib.dfwk
+    fwlib.lib.interface.platform.dbgprint
     fwlib.platform.dfwkhost.threadx
     kng_silibs_platform
     ms::cmocka::mocks

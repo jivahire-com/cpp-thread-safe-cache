@@ -12,6 +12,7 @@
 
 /*----------- Nested includes ------------*/
 #include <pcie_ss_common.h>
+#include <pciess_int.h>
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -22,18 +23,22 @@
 
 /*--------- Function Prototypes ----------*/
 /**
- *  @brief This function walks rpss intus and enqueues completions for
- *         outstanding PCIe requests based on intu status. Once done, it
- *         clears stale intu status bits.
+ *  @brief This function walks rpss intus and logs out CPERs for all
+ *         available error data given the interrupt statuses. Notifier
+ *         interrupts are enqueued, and the INTU statuses are cleared prior
+ *         to exit.
  *
- *  @param[in] irq_num
- *             IRQ number in response to which rpss handling was requested.
- *             This can be any one of the four VAB IRQs which map to SCP.
+ *  @param[in] ss
+ *             Pointer to the rpss entity struct that ties to the interrupt
+ *             domain.
+ * 
+ *  @param[in] info
+ *             INTU probe information to process
  *
  *  @return
  *      None. Status will be conveyed through request completions.
  */
-void rpss_irq_callback(uint32_t irq_num);
+void rpss_irq_callback(pcie_ss_entity_t *ss, pciess_int_probe_t *info);
 
 /**
  *  @brief In case intu status reflects a pcie link up event on an rp, this

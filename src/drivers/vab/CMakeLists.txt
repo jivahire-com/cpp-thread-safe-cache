@@ -4,6 +4,10 @@ add_library(${TARGET}
     STATIC
         vab_common_setup.c
         vab_irq.c
+        vab_irq_common.c
+        vab_rpss_irq.c
+        vab_sdmss_irq.c
+        vab_cdedss_irq.c
 )
 
 target_link_libraries(
@@ -15,18 +19,24 @@ target_link_libraries(
             fwlib.lib.cfg_mgr
             ms::driver::pcie
             ms::lib::debug
+            ms::lib::crash_dump
             ms::lib::interrupts
             ms::lib::mesh
+            ms::lib::tower
             ms::lib::register_headers
             ms::lib::scp_interrupts
             ms::lib::threadx
+            ms::service::health_monitor
             silibs::atu
+            silibs::idhw
             silibs::idsw_kng
             silibs::intu
             silibs::kng_silibs_platform
             silibs::pcie
+            silibs::pciess
             silibs::platform
             silibs::smmu
+            silibs::tower_utility
             silibs::vab_init
             silibs_platform
 )

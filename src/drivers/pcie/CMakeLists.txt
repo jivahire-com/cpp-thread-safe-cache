@@ -1,5 +1,8 @@
 set(TARGET kng.driver.scp_pcie_manager)
 
+# Needed to ensure that silibs enums > 32-bit are compatible with MSCP
+add_compile_options(-DMSCP_SILIBS_COMPILATION)
+
 add_library(${TARGET}
     STATIC
     pcie_async_dispatch.c
@@ -8,7 +11,6 @@ add_library(${TARGET}
     pcie_dfwk_init.c
     pcie_einj_helpers.c
     pcie_irq.c
-    pcie_ras.c
     pcie_rpss_init.c
     pcie_platform_overrides.c
 )
@@ -35,6 +37,7 @@ target_link_libraries(${TARGET}
     ms::lib::scp_interrupts
     ms::lib::system_info
     ms::lib::threadx
+    ms::service::health_monitor
     silibs_platform
 )
 

@@ -188,3 +188,20 @@ void handle_pcie_link_up_event(pcie_manager_context_t* ctx, pciess_completion_re
 
     send_sync_rp_post_link_up_init((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
 }
+
+void handle_aer_force_link_down_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl)
+{
+    /* We do not wait for the link-down event to occur, we simply issue the request and continue */
+    send_sync_rp_force_aer_internal_uncorr_error((PDFWK_INTERFACE_HEADER)ctx->iface, ctx->rpss_idx, cmpl->rp_index);
+}
+
+void handle_tx_rekey_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl)
+{
+    /* Note: We do not wait for the link-down event to occur, we simply issue the request and continue */
+    send_sync_rp_tx_rekey((PDFWK_INTERFACE_HEADER)ctx->iface, ctx->rpss_idx, cmpl->rp_index);
+}
+void handle_rx_rekey_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl)
+{
+    /* Note: We do not wait for the link-down event to occur, we simply issue the request and continue */
+    send_sync_rp_rx_rekey((PDFWK_INTERFACE_HEADER)ctx->iface, ctx->rpss_idx, cmpl->rp_index);
+}

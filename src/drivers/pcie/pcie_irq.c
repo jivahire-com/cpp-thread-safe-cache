@@ -10,7 +10,9 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
+#include <FpFwAssert.h>
 #include <bug_check.h>
+#include <health_monitor.h>
 #include <idsw.h>
 #include <interrupts.h>
 #include <intu_lib.h>
@@ -30,147 +32,279 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
+typedef struct _pcie_bugcheck_info_t
+{
+    KNG_STATUS error_code;
+    union
+    {
+        struct
+        {
+            uint16_t rpss_instance;
+            uint16_t rp_index;
+        };
+        uint32_t info;
+    };
+    uint32_t error_type;
+    bool valid;
+} pcie_bugcheck_info_t;
 
 /*-------- Function Prototypes -----------*/
-static pcie_ss_entity_t* get_rpss_entity_from_irq_num(uint32_t irq_num);
+static bool rpss_record_callback(ras_error_record_t* record);
 
 /*-- Declarations (Statics and globals) --*/
-static pciess_int_probe_t int_info = {0};
+static pcie_bugcheck_info_t bugcheck_info = {0};
 
 /*------------- Functions ----------------*/
-static pcie_ss_entity_t* get_rpss_entity_from_irq_num(uint32_t irq_num)
+static bool rpss_record_callback(ras_error_record_t* record)
 {
-    RPSS_INSTANCE rpss_idx = NUM_RPSS;
-    idsw_die_id_t die_id = idsw_get_die_id();
+    RPSS_INSTANCE rpss_instance = NUM_RPSS;
+    unsigned rp_index = 0;
 
-    switch (irq_num)
+    /* Check record */
+    ras_agent_entity_t* agent = (ras_agent_entity_t*)record->reporting_agent;
+    if (agent)
     {
-    case HW_INT_VAB0_COMBINED_SCP_INT:
-        rpss_idx = (die_id == 0) ? RPSS0 : RPSS4;
-        break;
-
-    case HW_INT_VAB1_COMBINED_SCP_INT:
-        rpss_idx = (die_id == 0) ? RPSS1 : RPSS5;
-        break;
-
-    case HW_INT_VAB2_COMBINED_SCP_INT:
-        rpss_idx = (die_id == 0) ? RPSS2 : RPSS6;
-        break;
-
-    case HW_INT_VAB3_COMBINED_SCP_INT:
-        rpss_idx = (die_id == 0) ? RPSS3 : RPSS7;
-        break;
-
-    /*
-     * VAB4 and VAB5 irqs should never be handled by the PCIe driver
-     * as they don't belong to a RPSS VAB.
-     */
-    case HW_INT_VAB4_COMBINED_SCP_INT:
-    case HW_INT_VAB5_COMBINED_SCP_INT:
-    default:
-        BUG_ASSERT_PARAM(irq_num <= HW_INT_VAB3_COMBINED_SCP_INT, irq_num, 0);
-        break;
+        pcie_rp_entity_t* rp = (pcie_rp_entity_t*)agent->parent;
+        rpss_instance = rp->ss_id;
+        rp_index = rp->id;
     }
 
-    return pciess_get_entity(rpss_idx);
+    acpi_cper_section_t cper_section;
+    acpi_err_sec_pcie_vendor_t* pcie_cper = &cper_section.sec_pcie_vendor;
+    uint32_t severity;
+    if (ras_agent_record_to_cper(record, pcie_cper, sizeof(acpi_err_sec_pcie_vendor_t), &severity))
+    {
+        FPFW_DBGPRINT_ALWAYS("Unable to convert RAS record to CPER!\n");
+    }
+    else
+    {
+        hm_submit_cper(ACPI_ERROR_DOMAIN_PCIE, severity, &cper_section, sizeof(cper_section));
+    }
+
+    pciess_ras_process_record(record);
+
+    /* Return true if a bugcheck is required */
+    if (severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
+    {
+        /* Setup bugcheck information if this is the first fatal error */
+        if (!bugcheck_info.valid)
+        {
+            /* KNG_HM_PCIE_GENERIC can be replaced with more granular error codes */
+            bugcheck_info.error_code = KNG_HM_PCIE_GENERIC;
+            bugcheck_info.rpss_instance = rpss_instance;
+            bugcheck_info.rp_index = rp_index;
+            bugcheck_info.error_type = pcie_cper->error_type;
+            bugcheck_info.valid = true;
+        }
+        return true;
+    }
+
+    return false;
 }
 
-void rpss_irq_callback(uint32_t irq_num)
+void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
 {
-    pcie_ss_entity_t* ss = get_rpss_entity_from_irq_num(irq_num);
     pcie_async_request_t* pending_req = {0};
+    ras_error_record_t record;
+    bool bugcheck_required = false;
 
-    memset(&int_info, 0x0, sizeof(pciess_int_probe_t));
+    BUG_ASSERT_PARAM((ss != NULL) && (info != NULL), ss, info);
 
-    /* Probe all pciess interrupts */
-    if (pciess_probe(ss, &int_info, INTU_TO_SCP))
+    for (uint8_t rp_index = 0; rp_index < (unsigned)ss->ss_type; rp_index++)
     {
-        for (uint8_t rp_idx = 0; rp_idx < PCIESS_NUM_PORTS; rp_idx++)
-        {
-            bool int_present = false;
-            uint32_t int_mask = 0;
-            uint32_t int_data = 0;
-            for (uint32_t int_idx = 0; int_idx < PCIESS_RP_NUM_INTERRUPTS; int_idx++)
-            {
-                if (int_info.rp_ints[rp_idx].ints[int_idx].asserted == false)
-                {
-                    continue;
-                }
+        pcie_rp_entity_t* rp = &ss->rps[rp_index];
+        ras_agent_entity_t* ide_agent = &rp->ide.ide_pagent;
+        ras_agent_entity_t* dtim_agent = &rp->dtim_pagent;
+        ras_agent_entity_t* ltim_agent = &rp->ltim_pagent;
+        ras_agent_entity_t* vsecras_agent = &rp->vsecras_pagent;
 
-                switch (int_idx)
+        /* Async request completion data */
+        uint32_t int_mask = 0;
+        uint64_t glbl_ide_data = 0;
+        uint64_t aes_hcfg_data = 0;
+
+        if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_GLOBAL_IDE].asserted)
+        {
+            uint64_t status = info->rp_ints[rp_index].ints[PCIESS_RP_INT_GLOBAL_IDE].status;
+            FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: Global IDE asserted! Sources: 0x%x\n", ss->id, rp_index, status);
+
+            /* Iterate per IDE sub-domain */
+            if (status & PCIE_IDE_SRAM_ECC_GLOBAL_INT)
+            {
+                /* All sources are errors (none are notifiers) */
+                while (ras_pcie_ide_agent_probe_by_type(ide_agent, RAS_PCIE_IDE_ALL_KEY_SRAM_ERRORS, &record))
                 {
-                case PCIESS_RP_INT_LINK_DOWN:
-                    int_present = true;
-                    int_mask |= 0x1 << PCIESS_RP_INT_LINK_DOWN;
-                    FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d] IRQ[%d]: Link down!\n", ss->id, rp_idx, (unsigned int)irq_num);
-                    break;
-                case PCIESS_RP_INT_LINK_UP:
-                    int_present = true;
-                    int_mask |= 0x1 << PCIESS_RP_INT_LINK_UP;
-                    FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d] IRQ[%d]: Link up!\n", ss->id, rp_idx, (unsigned int)irq_num);
-                    break;
-                case PCIESS_RP_INT_DTIM:
-                    int_present = true;
-                    int_mask |= 0x1 << PCIESS_RP_INT_DTIM;
-                    int_data = int_info.rp_ints[rp_idx].ints[int_idx].status;
-                    break;
-                case PCIESS_RP_INT_LTIM:
-                    int_present = true;
-                    int_mask |= 0x1 << PCIESS_RP_INT_LTIM;
-                    int_data = int_info.rp_ints[rp_idx].ints[int_idx].status;
-                    break;
-                case PCIESS_RP_INT_RASDP:
-                    int_present = true;
-                    int_mask |= 0x1 << PCIESS_RP_INT_RASDP;
-                    /*
-                     * vsecras probing is deferred to the service layer as
-                     * it is a much slower operation to handle in the ISR.
-                     */
-                    pcie_rp_vsecras_clear_rasdp_error_mode(&(ss->rps[rp_idx]));
-                    break;
-                case PCIESS_RP_INT_DPC:
-                    int_present = true;
-                    int_mask |= 0x1 << PCIESS_RP_INT_DPC;
-                    break;
-                case PCIESS_RP_INT_GLOBAL_IDE:
-                case PCIESS_RP_INT_AES_HCFG:
-                    FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d] IRQ[%d]: IDE interrupt!\n", ss->id, rp_idx, (unsigned int)irq_num);
-                    break;
-                /* Fall through for all non-por interrupts that aren't handled */
-                case PCIESS_RP_INT_HP_PME:
-                case PCIESS_RP_INT_WAKEUP:
-                case PCIESS_RP_INT_PM_PME:
-                case PCIESS_RP_INT_PM_TO_ACK:
-                case PCIESS_RP_INT_SEND_C:
-                case PCIESS_RP_INT_SEND_NF:
-                case PCIESS_RP_INT_SEND_F:
-                default:
-                    FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d] IRQ[%d]: Non-POR interrupt (%d) fired\n!\n",
-                                          ss->id,
-                                          rp_idx,
-                                          (unsigned int)irq_num,
-                                          (unsigned int)int_idx);
-                    break;
+                    bugcheck_required |= rpss_record_callback(&record);
+                }
+            }
+            if (status & PCIE_IDE_DATAPATH_GLOBAL_INT)
+            {
+                /* All sources are errors (none are notifiers) */
+                while (ras_pcie_ide_agent_probe_by_type(ide_agent, RAS_PCIE_IDE_ALL_DATAPATH_ERRORS, &record))
+                {
+                    bugcheck_required |= rpss_record_callback(&record);
                 }
             }
 
-            /*
-             * If int_present is set for a given RP, then complete the request
-             * for that specific RP
-             */
-            if (int_present)
+            if (status & PCIE_IDE_MISC_GLOBAL_INT)
             {
-                pending_req = get_pending_async_req_for_this_rp(ss->id, rp_idx, WAIT_FOR_EVENT);
-                if (pending_req)
+                /* Not all sources are errors (some are notifiers) */
+                while (ras_pcie_ide_agent_probe_by_type(ide_agent, RAS_PCIE_IDE_ALL_MISC_ERRORS, &record))
                 {
-                    pending_req->async_data.int_mask = int_mask;
-                    pending_req->async_data.int_data = int_data;
-                    complete_async_req_for_this_rp(pending_req);
+                    bugcheck_required |= rpss_record_callback(&record);
+                }
+
+                /* PCIE_IDE_KEY_NEEDED_INT is both an error and a notifier */
+                if (status & PCIE_IDE_KEY_NEEDED_INT)
+                {
+                    /*
+                     * This means at least one TX/RX stream has swapped into a K-bit slot without a
+                     * valid key. This is considered fatal to the link, and we must forcefully terminate ALL
+                     * streams immediately.
+                     *
+                     * This will cause an INSECURE_TRANSITION event.
+                     */
+                    silibs_status_t status = pcie_rp_ide_disable_all_streams(rp);
+                    if (status)
+                    {
+                        FPFW_DBGPRINT_ALWAYS("RP[%d, %d] Error: Unable to terminate IDE streams!\n", ss->id, rp_index);
+                        BUG_CHECK(KNG_HM_PCIE_GENERIC, status, 0x0);
+                    }
+                }
+
+                /* Advisory notifiers are serviced asynchronously */
+                if (status & PCIE_IDE_KEY_NEEDED_INT || status & PCIE_IDE_TX_KBIT_TOGGLE_INT ||
+                    status & PCIE_IDE_RX_KBIT_TOGGLE_INT || status & PCIE_IDE_TX_REKEY_REQ_INT ||
+                    status & PCIE_IDE_RX_REKEY_REQ_INT)
+                {
+                    int_mask |= 1 << PCIESS_RP_INT_GLOBAL_IDE;
+                    glbl_ide_data = status;
                 }
             }
         }
 
-        /* Clear all pending interrupts */
-        pciess_clear_handler(ss, &int_info, INTU_TO_SCP);
+        if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_AES_HCFG].asserted)
+        {
+            uint64_t status = info->rp_ints[rp_index].ints[PCIESS_RP_INT_AES_HCFG].status;
+            FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: AES HCFG asserted! Sources: 0x%x\n", ss->id, rp_index, status);
+            /* Not all sources are errors (some are advisory) */
+            while (ras_pcie_ide_agent_probe_by_type(ide_agent, RAS_PCIE_IDE_ALL_AES_HCFG_ERRORS, &record))
+            {
+                bugcheck_required |= rpss_record_callback(&record);
+            }
+
+            /* Advisory notifiers are serviced asynchronously */
+            if ((status & PCIE_IDE_TX_KEY_DONE_INT) || (status & PCIE_IDE_RX_KEY_DONE_INT))
+            {
+                int_mask |= 1 << PCIESS_RP_INT_AES_HCFG;
+                aes_hcfg_data = status;
+            }
+        }
+
+        if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_LINK_DOWN].asserted)
+        {
+            FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: Link Down asserted\n", ss->id, rp_index);
+            int_mask |= 1 << PCIESS_RP_INT_LINK_DOWN;
+        }
+
+        if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_LINK_UP].asserted)
+        {
+            FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: Link Up asserted\n", ss->id, rp_index);
+            int_mask |= 1 << PCIESS_RP_INT_LINK_UP;
+        }
+
+        if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_DTIM].asserted)
+        {
+            FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: DTIM asserted! Sources: 0x%x\n",
+                                 ss->id,
+                                 rp_index,
+                                 info->rp_ints[rp_index].ints[PCIESS_RP_INT_DTIM].status);
+            while (ras_pcie_dtim_agent_probe_by_type(dtim_agent, RAS_PCIE_DTIM_ALL_TYPES, &record))
+            {
+                bugcheck_required |= rpss_record_callback(&record);
+            }
+        }
+
+        if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_LTIM].asserted)
+        {
+            FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: LTIM asserted! Sources: 0x%x\n",
+                                 ss->id,
+                                 rp_index,
+                                 info->rp_ints[rp_index].ints[PCIESS_RP_INT_LTIM].status);
+            while (ras_pcie_ltim_agent_probe_by_type(ltim_agent, RAS_PCIE_LTIM_ALL_TYPES, &record))
+            {
+                bugcheck_required |= rpss_record_callback(&record);
+            }
+        }
+
+        if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_RASDP].asserted)
+        {
+            FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: RASDP_ERR_MODE asserted!\n", ss->id, rp_index);
+            /*
+             * RASDP_ERR_MODE breaks the 'while' fetch pattern as the records fetched cannot be cleared
+             * on a per-record basis. Instead, we gather the latest information for both CE and UE
+             * independently and clear the error mode on exit
+             */
+            if (ras_pcie_vsecras_agent_probe_by_type(vsecras_agent, RAS_UNCORRECTABLE_ERROR, &record))
+            {
+                bugcheck_required |= rpss_record_callback(&record);
+            }
+            if (ras_pcie_vsecras_agent_probe_by_type(vsecras_agent, RAS_CORRECTABLE_ERROR, &record))
+            {
+                bugcheck_required |= rpss_record_callback(&record);
+            }
+            /*
+             * Any other FW action prior to error-mode exit must occur here
+             * (such as AER upleveling for link-down)
+             */
+            silibs_status_t status = pcie_rp_vsecras_clear_rasdp_error_mode(rp);
+            if (status)
+            {
+                FPFW_DBGPRINT_ALWAYS("RP[%d, %d] Error: Unable to exit RASDP_ERR_MODE!\n", ss->id, rp_index);
+                BUG_CHECK(KNG_HM_PCIE_GENERIC, status, 0x0);
+            }
+        }
+
+        if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_DPC].asserted)
+        {
+            /* No action needs to be taken on DPC, an OS handles DPC recovery */
+            FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: DPC asserted!\n", ss->id, rp_index);
+        }
+
+        /*
+         * Unexpected PCIe interrupts (described as non-POR in the HAS)  are left
+         * unhandled.
+         *
+         * There is no need to bugcheck on these interrupts for now as they do
+         * not indicate a fatal error condition. One can be added in the future
+         * if it is determined that these interrupts indicate a fatal error.
+         */
+        if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_HP_PME].asserted ||
+            info->rp_ints[rp_index].ints[PCIESS_RP_INT_WAKEUP].asserted ||
+            info->rp_ints[rp_index].ints[PCIESS_RP_INT_PM_PME].asserted ||
+            info->rp_ints[rp_index].ints[PCIESS_RP_INT_PM_TO_ACK].asserted ||
+            info->rp_ints[rp_index].ints[PCIESS_RP_INT_SEND_C].asserted ||
+            info->rp_ints[rp_index].ints[PCIESS_RP_INT_SEND_NF].asserted ||
+            info->rp_ints[rp_index].ints[PCIESS_RP_INT_SEND_F].asserted)
+        {
+            FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: An unexpected interrupt has asserted!\n", ss->id, rp_index);
+        }
+
+        if (int_mask)
+        {
+            pending_req = get_pending_async_req_for_this_rp(ss->id, rp_index, WAIT_FOR_EVENT);
+            if (pending_req)
+            {
+                pending_req->async_data.int_mask = int_mask;
+                pending_req->async_data.aes_hcfg_data = aes_hcfg_data;
+                pending_req->async_data.glbl_ide_data = glbl_ide_data;
+                complete_async_req_for_this_rp(pending_req);
+            }
+        }
+    }
+
+    if (bugcheck_required)
+    {
+        BUG_CHECK(bugcheck_info.error_code, bugcheck_info.info, bugcheck_info.error_type);
     }
 }

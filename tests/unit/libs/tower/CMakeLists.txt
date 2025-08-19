@@ -22,14 +22,17 @@ target_link_libraries(${TARGET}
         ms::lib::error_handler
         ms::lib::hsp_firmware_headers
         ms::lib::tower
+        ms::service::health_monitor
         silibs::atu
         silibs::idhw
         silibs::idsw
         silibs::idsw_kng
         silibs::kng_silibs_platform
-        silibs::tower_sequence
+        silibs::ras_framework
         silibs_platform
         silibs::silibs_utils
+        silibs::tower_sequence
+        silibs::tower_utility
 )
 
 lint_target(${TARGET})
@@ -39,12 +42,21 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
-    tower_sequence_configure_towers
     accel_is_isolation_enabled
     atu_map
     atu_unmap
-    idsw_get_platform_sdv
-    system_info_is_hsp_present
-    fpfw_icc_base_send_recv_sync
     config_get_tower_knobs
+    crash_dump_bug_check
+    fpfw_icc_base_send_recv_sync
+    idhw_is_single_die_boot_en
+    idsw_get_die_id
+    idsw_get_platform_sdv
+    ras_agent_probe
+    ras_agent_record_to_cper
+    ras_arm_fmu_agent_set_base
+    ras_print_record
+    system_info_is_hsp_present
+    tower_fmu_inject_single_error
+    tower_get_ras_agent_entity
+    tower_sequence_configure_towers
 )

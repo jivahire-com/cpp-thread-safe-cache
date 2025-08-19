@@ -7,6 +7,9 @@ set(SOURCES
     pcie_driver_unit_tests.cpp
 )
 
+# Needed to ensure that silibs enums > 32-bit are compatible with MSCP
+add_compile_options(-DMSCP_SILIBS_COMPILATION)
+
 add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
@@ -53,6 +56,7 @@ mock_target(${TARGET}
     # Mock external MSCP interfaces
     crash_dump_bug_check
     enable_vab_isrs
+    hm_submit_cper
     system_info_get_board_id
     system_info_get_board_rework_id
     system_info_get_soc_position
@@ -85,6 +89,7 @@ mock_target(${TARGET}
     pciess_config_ss_for_bifur
     pciess_deassert_por_reset
     pciess_rp_clear_intus
+    pcie_rp_ide_disable_all_streams
     pciess_rp_initiate_link_training
     pciess_phys_toggle_clocks
     pciess_poll_phys_sram_init_done
@@ -96,17 +101,26 @@ mock_target(${TARGET}
     pciess_rps_post_rp_ready_init
     pciess_probe
     pciess_phys_program_fw
+    pciess_ras_process_record
     pcie_rp_rasdes_inject_crc_error
     pcie_rp_rasdes_inject_dllp_error
     pcie_rp_rasdes_inject_fc_error
     pcie_rp_rasdes_inject_retry_tlp_error
     pcie_rp_rasdes_inject_seqnum_error
     pcie_rp_rasdes_inject_symbol_error
+    pcie_rp_vsecras_clear_rasdp_error_mode
     pcie_ss_rp_aer_spoof
     pcie_phy_setup_error_injection
     pcie_phy_clear_injection
     pcie_rp_vsecras_clear_rasdp_error_mode
+    ras_agent_record_to_cper
+    ras_pcie_dtim_agent_probe_by_type
+    ras_pcie_ltim_agent_probe_by_type
+    ras_pcie_vsecras_agent_probe_by_type
+    ras_pcie_ide_agent_probe_by_type
+    ras_pcie_ide_agent_trigger_by_type
     ras_pcie_vsecras_agent_probe
+    ras_pcie_vsecras_agent_trigger_by_type
     ras_pcie_dtim_agent_probe
     ras_pcie_ltim_agent_probe
 )

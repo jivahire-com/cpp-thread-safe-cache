@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
     ms::lib::tower
     ms::lib::hsp_firmware_headers
     ms::lib::system_info
+    ms::service::health_monitor
     silibs::idsw_kng
     silibs::idhw
     silibs::kng_silibs_platform

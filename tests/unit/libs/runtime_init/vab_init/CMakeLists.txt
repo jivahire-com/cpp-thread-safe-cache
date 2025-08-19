@@ -13,9 +13,11 @@ target_link_libraries(${TARGET}
     fwlib.lib.interface.platform.dbgprint
     ms::cmocka::testrunner
     ms::driver::vab
+    ms::service::health_monitor
     silibs::idsw
     silibs::idsw_kng
     silibs::kng_silibs_platform
+    silibs::vab_init
 )
 
 # Defining platform APIs

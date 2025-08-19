@@ -18,7 +18,6 @@
 #include <idsw_kng.h>
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
-#include <pcie_error_handling_i.h>
 #include <pcie_error_injection_i.h>
 #include <pcie_lt_events.h>
 #include <pcie_manager_i.h>
@@ -54,6 +53,7 @@ static kingsgate_pcie_root_bridge_config rb_config_var = {{{0}}};
 static kingsgate_pcie_vab_config vab_config_var = {0};
 
 static bool pciess_disabled = true;
+static const guid_t guid_vendor_defined_pcie = ACPI_ERROR_TYPE_VENDOR_PCIE;
 
 /*------------- Functions ----------------*/
 
@@ -88,11 +88,7 @@ void scp_pcie_config_service_initialize(uint16_t rpss_to_init)
 /* Register the vendor defined PCIe error domain with the health monitor */
 static void register_pcie_error_domains(void)
 {
-    hm_register_error_domain(ACPI_ERROR_DOMAIN_PCIE,
-                             get_pcie_vendor_defined_error_domain_guid(),
-                             "PCIe Error Domain",
-                             pcie_error_injection_cb,
-                             NULL);
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_PCIE, &guid_vendor_defined_pcie, "PCIe Error Domain", pcie_error_injection_cb, NULL);
 }
 
 /* Start the thread to be alerted when all configs are populated */

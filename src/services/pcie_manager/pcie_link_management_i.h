@@ -51,3 +51,27 @@ void initiate_link_training_on_rpss(pcie_manager_context_t* ctx);
  * @param cmpl[in] Pointer to the completion request containing the event data.
  */
 void handle_pcie_link_up_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl);
+
+/*
+ * @brief Handles forcing an AER UE event to bring down the link
+ *
+ * @param ctx[in]  Pointer to the PCIe manager context associated with this RPSS + RP
+ * @param cmpl[in] Pointer to the completion request containing the event data.
+ */
+void handle_aer_force_link_down_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl);
+
+/*
+ * @brief Handles rekeying event for TX stream(s)
+ *
+ * @param ctx[in]  Pointer to the PCIe manager context associated with this RPSS + RP
+ * @param cmpl[in] Pointer to the completion request containing the event data.
+ */
+void handle_tx_rekey_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl);
+
+/*
+ * @brief Handles rekeying event for RX stream(s)
+ *
+ * @param ctx[in]  Pointer to the PCIe manager context associated with this RPSS + RP
+ * @param cmpl[in] Pointer to the completion request containing the event data.
+ */
+void handle_rx_rekey_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl);

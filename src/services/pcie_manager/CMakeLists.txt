@@ -1,9 +1,11 @@
 set(TARGET kng.service.scp_pcie_manager)
 
+# Needed to ensure that silibs enums > 32-bit are compatible with MSCP
+add_compile_options(-DMSCP_SILIBS_COMPILATION)
+
 add_library(${TARGET}
     STATIC
         pcie_async_requests.c
-        pcie_error_handling.c
         pcie_error_injection.c
         pcie_manager_init.c
         pcie_rpss_manager_thread.c

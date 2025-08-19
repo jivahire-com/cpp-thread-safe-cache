@@ -11,6 +11,7 @@
 #include <CMockaWrapper.h> // IWYU pragma: keep
 #include <cstddef>         // IWYU pragma: keep
 #include <cstdint>         // IWYU pragma: keep
+#include <pcie_rp_ide.h>
 
 extern "C" {
 #include "pcie_mocks.h"
@@ -29,16 +30,18 @@ extern "C" {
 #include <pcie_lt_events.h>
 #include <pcie_manager_i.h>        // for rpss_req_completion_cb, send_start_li...
 #include <pcie_rp_event_handler.h> // for process_wait_for_event_data
+#include <pcie_rp_ide.h>
 #include <pcie_rp_rasdes.h>
 #include <pcie_ss.h>
 #include <pcie_sync_requests_i.h>
 #include <pciess_int.h>
 #include <scp_pcie_manager.h> // for scp_pcie_initialize, pcie_manager_con...
 #include <setjmp.h>
+#include <silibs_common.h>
 #include <silibs_kng_soc.h>
 #include <silibs_status.h> // for SILIBS_E_TIMEOUT
 #include <startup_shutdown_ssi.h>
-#include <tx_api.h> // for TX_NOT_DONE, TX_NO_MEMORY, TX_NO_WAIT
+#include <tx_api.h> // for TX_NOT_DONE, TX_NO_MEMORY, TX_NOPCIE_IDE_MISC_GLOBAL_INT_WAIT
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -509,91 +512,62 @@ TEST_FUNCTION(test_process_wait_for_event_linkdown_rp_not_ready, NULL, NULL)
     }
 }
 
-/* Test RASDP event */
-TEST_FUNCTION(test_process_wait_for_event_rasdp, NULL, NULL)
+/* Test RP_INT_GLOBAL_IDE key needed notifications */
+TEST_FUNCTION(test_process_wait_for_event_global_ide_key_needed, NULL, NULL)
 {
-    /* Setup BIT3 (RASDP) in the wait for event completion */
+    /* Setup BIT1 (RP_INT_GLOBAL_IDE) in the wait for event completion */
     pciess_completion_request_t cmpl_req;
-    cmpl_req.async_data.int_mask = (1 << 3);
+    cmpl_req.async_data.int_mask = 1 << PCIESS_RP_INT_GLOBAL_IDE;
+    cmpl_req.async_data.glbl_ide_data = (uint64_t)(PCIE_IDE_MISC_GLOBAL_INT | PCIE_IDE_KEY_NEEDED_INT);
 
     for (uint8_t i = RPSS0; i < RPSS7; i++)
     {
         ctx.rpss_idx = (RPSS_INSTANCE)i;
         cmpl_req.rp_index = 0;
-        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_VSECRAS_NODE);
-        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
-        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_DEVICE);
-        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-
-        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_VSECRAS_NODE);
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, FORCE_AER_INTERNAL_UNCORR_ERROR);
         will_return(__wrap_DfwkInterfaceSendSync, nullptr);
         will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
         will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-
         process_wait_for_event_data(&ctx, &cmpl_req);
     }
 }
 
-/* Test DTIM event */
-TEST_FUNCTION(test_process_wait_for_event_dtim, NULL, NULL)
+/* Test RP_INT_GLOBAL_IDE TX rekey requests */
+TEST_FUNCTION(test_process_wait_for_event_global_ide_tx_rekey_req, NULL, NULL)
 {
-    /* Setup BIT1 (DTIM) in the wait for event completion */
+    /* Setup BIT1 (RP_INT_GLOBAL_IDE) in the wait for event completion */
     pciess_completion_request_t cmpl_req;
-    cmpl_req.async_data.int_mask = (1 << 1);
+    cmpl_req.async_data.int_mask = 1 << PCIESS_RP_INT_GLOBAL_IDE;
+    cmpl_req.async_data.glbl_ide_data = (uint64_t)(PCIE_IDE_MISC_GLOBAL_INT | PCIE_IDE_TX_REKEY_REQ_INT);
 
     for (uint8_t i = RPSS0; i < RPSS7; i++)
     {
         ctx.rpss_idx = (RPSS_INSTANCE)i;
         cmpl_req.rp_index = 0;
-        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_DTIM_NODE);
-        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
-        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_DEVICE);
-        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-
-        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_DTIM_NODE);
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, IDE_TX_REKEY);
         will_return(__wrap_DfwkInterfaceSendSync, nullptr);
         will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
         will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-
         process_wait_for_event_data(&ctx, &cmpl_req);
     }
 }
 
-/* Test LTIM event */
-TEST_FUNCTION(test_process_wait_for_event_ltim, NULL, NULL)
+/* Test RP_INT_GLOBAL_IDE RX rekey requests */
+TEST_FUNCTION(test_process_wait_for_event_global_ide_rx_rekey_req, NULL, NULL)
 {
-    /* Setup BIT2 (LTIM) in the wait for event completion */
+    /* Setup BIT1 (RP_INT_GLOBAL_IDE) in the wait for event completion */
     pciess_completion_request_t cmpl_req;
-    cmpl_req.async_data.int_mask = (1 << 2);
+    cmpl_req.async_data.int_mask = 1 << PCIESS_RP_INT_GLOBAL_IDE;
+    cmpl_req.async_data.glbl_ide_data = (uint64_t)(PCIE_IDE_MISC_GLOBAL_INT | PCIE_IDE_RX_REKEY_REQ_INT);
 
     for (uint8_t i = RPSS0; i < RPSS7; i++)
     {
         ctx.rpss_idx = (RPSS_INSTANCE)i;
         cmpl_req.rp_index = 0;
-        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_LTIM_NODE);
-        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
-        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_DEVICE);
-        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-
-        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_LTIM_NODE);
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, IDE_RX_REKEY);
         will_return(__wrap_DfwkInterfaceSendSync, nullptr);
         will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
         will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-
-        process_wait_for_event_data(&ctx, &cmpl_req);
-    }
-}
-
-/* Test other cases which we don't currently handle */
-TEST_FUNCTION(test_process_wait_for_event_dpc_handler, NULL, NULL)
-{
-    /* Setup BIT14 (DPC) in the wait for event completion */
-    pciess_completion_request_t cmpl_req;
-    cmpl_req.async_data.int_mask = (1 << 14);
-
-    for (uint8_t i = RPSS0; i < RPSS7; i++)
-    {
-        ctx.rpss_idx = (RPSS_INSTANCE)i;
         process_wait_for_event_data(&ctx, &cmpl_req);
     }
 }
@@ -601,14 +575,14 @@ TEST_FUNCTION(test_process_wait_for_event_dpc_handler, NULL, NULL)
 /* Test other cases which we don't currently handle */
 TEST_FUNCTION(test_process_wait_for_event_unhandled, NULL, NULL)
 {
-    for (uint8_t i = 4; i <= 12; i++)
+    for (uint8_t i = 9; i <= 12; i++)
     {
         pciess_completion_request_t cmpl_req;
         cmpl_req.async_data.int_mask = (1 << i);
 
-        for (uint8_t i = RPSS0; i < RPSS7; i++)
+        for (uint8_t j = RPSS0; j < RPSS7; j++)
         {
-            ctx.rpss_idx = (RPSS_INSTANCE)i;
+            ctx.rpss_idx = (RPSS_INSTANCE)j;
             process_wait_for_event_data(&ctx, &cmpl_req);
         }
     }
@@ -1019,90 +993,86 @@ TEST_FUNCTION(test_send_sync_rp_clear_secondary_bus_reset_dfwk_fail, NULL, NULL)
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_send_sync_rp_probe_vsecras_pass, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_force_aer_internal_uncorr_error_pass, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
-    ras_error_record_t mock_record;
 
-    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_VSECRAS_NODE);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, FORCE_AER_INTERNAL_UNCORR_ERROR);
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
 
-    silibs_status_t sts = send_sync_rp_probe_vsecras((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    silibs_status_t sts =
+        send_sync_rp_force_aer_internal_uncorr_error((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_send_sync_rp_probe_vsecras_dfwk_fail, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_force_aer_internal_uncorr_error_dfwk_fail, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
-    ras_error_record_t mock_record;
 
-    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_VSECRAS_NODE);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, FORCE_AER_INTERNAL_UNCORR_ERROR);
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, -1);
     expect_function_calls(__wrap_crash_dump_bug_check, 1);
 
-    silibs_status_t sts = send_sync_rp_probe_vsecras((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    silibs_status_t sts =
+        send_sync_rp_force_aer_internal_uncorr_error((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_send_sync_rp_probe_dtim_pass, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_tx_rekey_pass, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
-    ras_error_record_t mock_record;
 
-    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_DTIM_NODE);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, IDE_TX_REKEY);
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
 
-    silibs_status_t sts = send_sync_rp_probe_dtim((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    silibs_status_t sts = send_sync_rp_tx_rekey((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_send_sync_rp_probe_dtim_dfwk_fail, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_tx_rekey_dfwk_fail, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
-    ras_error_record_t mock_record;
 
-    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_DTIM_NODE);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, IDE_TX_REKEY);
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, -1);
     expect_function_calls(__wrap_crash_dump_bug_check, 1);
 
-    silibs_status_t sts = send_sync_rp_probe_dtim((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    silibs_status_t sts = send_sync_rp_tx_rekey((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_send_sync_rp_probe_ltim_pass, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_rx_rekey_pass, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
-    ras_error_record_t mock_record;
 
-    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_LTIM_NODE);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, IDE_RX_REKEY);
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
 
-    silibs_status_t sts = send_sync_rp_probe_ltim((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    silibs_status_t sts = send_sync_rp_rx_rekey((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
-TEST_FUNCTION(test_send_sync_rp_probe_ltim_dfwk_fail, NULL, NULL)
+TEST_FUNCTION(test_send_sync_rp_rx_rekey_dfwk_fail, NULL, NULL)
 {
     ctx.rpss_idx = (RPSS_INSTANCE)0x01;
-    ras_error_record_t mock_record;
 
-    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PROBE_LTIM_NODE);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, IDE_RX_REKEY);
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, -1);
     expect_function_calls(__wrap_crash_dump_bug_check, 1);
 
-    silibs_status_t sts = send_sync_rp_probe_ltim((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01, &mock_record);
+    silibs_status_t sts = send_sync_rp_rx_rekey((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, 0x01);
     assert_int_equal(sts, SILIBS_SUCCESS);
 }
 
@@ -1112,7 +1082,6 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
     RPSS_INSTANCE invalid_rpss_id = (RPSS_INSTANCE)0xFF;
     uint8_t valid_rp_id = 0x03;
     uint8_t invalid_rp_id = 0xFF;
-    ras_error_record_t mock_record;
     ras_einj_info_t mock_einj_params;
 
     expect_function_calls(__wrap_crash_dump_bug_check, 23);
@@ -1205,32 +1174,32 @@ TEST_FUNCTION(test_all_sync_req_invalid_ids, NULL, NULL)
 
     if (!bugcheck_mock_return())
     {
-        send_sync_rp_probe_vsecras((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id, &mock_record);
+        send_sync_rp_force_aer_internal_uncorr_error((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
     }
 
     if (!bugcheck_mock_return())
     {
-        send_sync_rp_probe_dtim((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id, &mock_record);
+        send_sync_rp_force_aer_internal_uncorr_error((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
     }
 
     if (!bugcheck_mock_return())
     {
-        send_sync_rp_probe_ltim((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id, &mock_record);
+        send_sync_rp_tx_rekey((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
     }
 
     if (!bugcheck_mock_return())
     {
-        send_sync_rp_probe_vsecras((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, valid_rp_id, nullptr);
+        send_sync_rp_tx_rekey((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
     }
 
     if (!bugcheck_mock_return())
     {
-        send_sync_rp_probe_dtim((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, valid_rp_id, nullptr);
+        send_sync_rp_rx_rekey((PDFWK_INTERFACE_HEADER)ctx.iface, invalid_rpss_id, valid_rp_id);
     }
 
     if (!bugcheck_mock_return())
     {
-        send_sync_rp_probe_ltim((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, valid_rp_id, nullptr);
+        send_sync_rp_rx_rekey((PDFWK_INTERFACE_HEADER)ctx.iface, valid_rpss_id, invalid_rp_id);
     }
 }
 

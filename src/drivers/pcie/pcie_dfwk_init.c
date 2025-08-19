@@ -17,7 +17,6 @@
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
 #include <pcie_einj_helpers_i.h>
-#include <pcie_ras_i.h>
 #include <pcie_rpss_init_i.h>
 #include <pcie_ss_common.h>
 #include <pciess.h>
@@ -93,20 +92,21 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
         rpss = pciess_get_entity(r->rpss_index);
         sts = oi_pcie_rp_dbi_reset_secondary_bus_reset(&rpss->rps[r->rp_index]);
         break;
-    case (PROBE_VSECRAS_NODE):
-        sts = handle_pcie_vsecras_probe_request(incoming);
-        break;
-    case (PROBE_DTIM_NODE):
-        sts = handle_pcie_dtim_probe_request(incoming);
-        break;
-    case (PROBE_LTIM_NODE):
-        sts = handle_pcie_ltim_probe_request(incoming);
-        break;
     case (CLI_REQUEST):
         handle_cli_request(r);
         break;
     case (INJECT_PCIE_ERROR):
         sts = handle_pcie_error_injection(incoming);
+        break;
+    case (FORCE_AER_INTERNAL_UNCORR_ERROR):
+        rpss = pciess_get_entity(r->rpss_index);
+        sts = pcie_ss_rp_aer_spoof(rpss, r->rp_index, PCIE_SS_APP_ERR_INTERNAL_UE);
+        break;
+    case (IDE_TX_REKEY):
+        FPFW_DBGPRINT_ALWAYS("RPSS[%d] RP[%d] Error: TX Rekeying is not yet supported!\n", r->rpss_index, r->rp_index);
+        break;
+    case (IDE_RX_REKEY):
+        FPFW_DBGPRINT_ALWAYS("RPSS[%d] RP[%d] Error: RX Rekeying is not yet supported!\n", r->rpss_index, r->rp_index);
         break;
     default:
         FPFW_DBGPRINT_ERROR("RPSS[%d]: Bad sync req received!\n", r->rpss_index);

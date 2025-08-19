@@ -39,6 +39,7 @@ typedef struct _hm_timestamp_t
 static FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_dump_einj_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv);
+static FPFW_CLI_STATUS hm_inject_err_raw_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_activate_sample_err_domain_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const char** argv);
 static void dump_ghes(uint32_t ghes_idx);
@@ -54,6 +55,7 @@ static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
     {NULL_LIST_ENTRY, "hm", "hm_dump_ghes", hm_dump_ghes_cli, "dump ghes {err_idx}", ""},
     {NULL_LIST_ENTRY, "hm", "hm_dump_einj", hm_dump_einj_cli, "dump einj payload", ""},
     {NULL_LIST_ENTRY, "hm", "hm_inject_err", hm_inject_err_cli, "inject err {err_idx}", ""},
+    {NULL_LIST_ENTRY, "hm", "hm_inject_err_raw", hm_inject_err_raw_cli, "inject err {err_idx}", ""},
     {NULL_LIST_ENTRY, "hm", "hm_activate_sample_domain", hm_activate_sample_err_domain_cli, "active sample err domain", ""},
     {NULL_LIST_ENTRY, "hm", "hm_submit_sample_cper", hm_submit_sample_cper_cli, "submit ce cper {err_idx}", ""}};
 
@@ -169,6 +171,51 @@ static PLACED_CODE FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv
     input_einj_payload.param_type.error_type = (uint16_t)strtol(argv[5], NULL, 0);
     input_einj_payload.param_type.severity = (uint16_t)strtol(argv[6], NULL, 0);
     input_einj_payload.param_type.address_64 = (uint64_t)strtoull(argv[7], NULL, 0);
+    input_einj_payload.value_type.error_values = (uint64_t)strtoull(argv[8], NULL, 0);
+
+    print_einj_payload(&input_einj_payload);
+
+    hm_config_t* hm_config = get_hm_config();
+    BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
+
+    volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
+
+    for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
+    {
+        ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
+    }
+
+    acpi_einj_cmd_status_t einj_result = ACPI_EINJ_UNKNOWN_FAILURE;
+    einj_result = hm_inject_error();
+    if (einj_result != ACPI_EINJ_SUCCESS)
+    {
+        FpFwCliPrint("EINJ Failed(%d)\n", einj_result);
+        return CLI_ERROR;
+    }
+
+    return CLI_SUCCESS;
+}
+
+static PLACED_CODE FPFW_CLI_STATUS hm_inject_err_raw_cli(int argc, const char** argv)
+{
+    if (argc < 9)
+    {
+        FpFwCliPrint("usage: hm_inject_err_raw_cli <group> <type> <instance> <status> <operation> "
+                     "<error_parameter_0> <error_parameter_1> <error_value>\n");
+        return CLI_ERROR;
+    }
+
+    ras_einj_info_t input_einj_payload;
+    memset(&input_einj_payload, 0, sizeof(ras_einj_info_t));
+    input_einj_payload.version = ERROR_INJECTION_PAYLOAD_VERSION;
+
+    input_einj_payload.component_group = (uint16_t)strtol(argv[1], NULL, 0);
+    input_einj_payload.component_type = (uint16_t)strtol(argv[2], NULL, 0);
+    input_einj_payload.component_instance = (uint16_t)strtol(argv[3], NULL, 0);
+    input_einj_payload.status_operation.status = (uint8_t)strtol(argv[4], NULL, 0);
+    input_einj_payload.status_operation.operation = (uint8_t)strtol(argv[5], NULL, 0);
+    input_einj_payload.param_type.error_parameters[0] = (uint64_t)strtoull(argv[6], NULL, 0);
+    input_einj_payload.param_type.error_parameters[1] = (uint64_t)strtoull(argv[7], NULL, 0);
     input_einj_payload.value_type.error_values = (uint64_t)strtoull(argv[8], NULL, 0);
 
     print_einj_payload(&input_einj_payload);
@@ -495,12 +542,14 @@ void print_einj_payload(ras_einj_info_t* payload)
     FpFwCliPrint(" einj stat_op.value %d\n", payload->status_operation.value);
     FpFwCliPrint(" einj stat_op.status %d\n", payload->status_operation.value & 0xFF);
     FpFwCliPrint(" einj stat_op.operation %d\n", (payload->status_operation.value >> 8) & 0xFF);
+    FpFwCliPrint(" einj param_type.error_parameters[0] %d\n", (uint64_t)((payload->param_type.error_parameters[0])));
+    FpFwCliPrint(" einj param_type.error_parameters[1] %d\n", (uint64_t)((payload->param_type.error_parameters[1])));
     FpFwCliPrint(" einj param_type.err_type %d\n", (uint16_t)((payload->param_type.error_parameters[0]) & 0xFFFF));
     FpFwCliPrint(" einj param_type.sev %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 16) & 0xFFFF));
     FpFwCliPrint(" einj param_type.reserved %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 32) & 0xFFFFFFFF));
     FpFwCliPrint(" einj param_type.addr64 %p\n", (void*)(uintptr_t)payload->param_type.address_64);
     FpFwCliPrint(" einj param_type.addr32 %p\n", (void*)(uintptr_t)payload->param_type.address_32);
-    FpFwCliPrint(" einj value_type.err_val %p\n", (void*)(uintptr_t)payload->value_type.error_values);
+    FpFwCliPrint(" einj value_type.error_values %p\n", (void*)(uintptr_t)payload->value_type.error_values);
     FpFwCliPrint(" einj value_type.data_64 %p\n", (void*)(uintptr_t)payload->value_type.data_64);
     FpFwCliPrint(" einj value_type.data_32 %p\n", (void*)(uintptr_t)payload->value_type.data_32);
 }

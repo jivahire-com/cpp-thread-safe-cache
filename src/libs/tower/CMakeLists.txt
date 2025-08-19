@@ -3,12 +3,14 @@ set(TARGET kng.lib.tower)
 add_library(${TARGET}
     STATIC
         tower.c
+        tower_isr.c
 )
 
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
     fwlib.lib.cfg_mgr
+    fwlib.lib.interface.platform.dbgprint
     fwlib.service.iccBase
     silibs_platform
     ms::lib::accelerator_ip
@@ -17,9 +19,12 @@ target_link_libraries(${TARGET}
     ms::lib::hsp_firmware_headers
     ms::lib::register_headers
     ms::lib::system_info
+    ms::service::health_monitor
     silibs::atu
     silibs::kng_silibs_platform
     silibs::tower_sequence
+    silibs::tower_utility
+    silibs::idhw
     silibs::idsw
     silibs::idsw_kng
 )

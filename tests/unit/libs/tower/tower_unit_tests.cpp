@@ -12,15 +12,21 @@
 #include <fpfw_cfg_mgr.h>
 
 extern "C" {
+#include <FpFwUtils.h>
 #include <accelerator_ip.h>
+#include <cper.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
 #include <kng_soc_constants.h>
+#include <ras_agent.h>
 #include <silibs_status.h>
 #include <tower.h>
+#include <tower_isr.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define BUGCHECK_MOCK_RETURN   (setjmp(mock_jump_buf))
+#define bugcheck_mock_return() BUGCHECK_MOCK_RETURN
 
 /*------------- Typedefs -----------------*/
 
@@ -29,8 +35,26 @@ extern "C" {
 tower_knobs_t __real_config_get_tower_knobs(void);
 
 /*-- Declarations (Statics and globals) --*/
+static jmp_buf mock_jump_buf;
+static bool should_return;
 
 /*------------- Functions ----------------*/
+void __wrap_crash_dump_bug_check(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    FPFW_UNUSED(p0);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
+
+    function_called();
+
+    /* Handle noreturn, allowing control to return to test */
+    if (!should_return)
+    {
+        longjmp(mock_jump_buf, 1);
+    }
+}
 
 //
 // Tests
@@ -1296,5 +1320,127 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
 
     // Call API under test
     tower_init(test_die, icc_ctx);
+}
+
+silibs_status_t mock_ras_generic_handler(ras_error_record_t* record)
+{
+    assert_non_null(record);
+    return SILIBS_SUCCESS;
+}
+
+TEST_FUNCTION(test_tower_fmu_corrected_handler, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_CORRECTED);
+    will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
+    tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+}
+
+TEST_FUNCTION(test_tower_fmu_fatal_handler, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+    }
+}
+
+TEST_FUNCTION(test_tower_error_injections, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+    ras_einj_info_t mock_einj_payload;
+    acpi_einj_cmd_status_t ret;
+    tower_error_inj_op_type_t* op_type =
+        (tower_error_inj_op_type_t*)(&(mock_einj_payload.param_type.error_parameters[0]));
+
+    mock_einj_payload.component_group = ACPI_ERROR_DOMAIN_NITOWER;
+    mock_einj_payload.component_instance = 0;
+    mock_einj_payload.component_type = TOWER_D2DSS0;
+    op_type->op = TOWER_EINJ_TARGET_BY_NODE;
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_idsw_get_die_id, 0);
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_tower_fmu_inject_single_error, SILIBS_SUCCESS);
+    ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
+    assert_int_equal(ret, ACPI_EINJ_SUCCESS);
+}
+
+TEST_FUNCTION(test_tower_error_injections_failures, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+    ras_einj_info_t mock_einj_payload;
+    acpi_einj_cmd_status_t ret;
+    tower_error_inj_op_type_t* op_type =
+        (tower_error_inj_op_type_t*)(&(mock_einj_payload.param_type.error_parameters[0]));
+
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    /* Bad einj buffer */
+    ret = tower_error_injection_cb(nullptr, nullptr);
+    assert_int_equal(ret, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad component group */
+    mock_einj_payload.component_group = ACPI_ERROR_DOMAIN_INVALID;
+    ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
+    assert_int_equal(ret, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad component instance */
+    mock_einj_payload.component_group = ACPI_ERROR_DOMAIN_NITOWER;
+    mock_einj_payload.component_instance = 0;
+    mock_einj_payload.component_type = TOWER_D2DSS0;
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_idsw_get_die_id, 1);
+    ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
+    assert_int_equal(ret, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad error type */
+    mock_einj_payload.component_group = ACPI_ERROR_DOMAIN_NITOWER;
+    mock_einj_payload.component_instance = 0;
+    mock_einj_payload.component_type = TOWER_D2DSS0;
+    op_type->op = TOWER_EINJ_TARGET_RAW + 1;
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_idsw_get_die_id, 0);
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
+    assert_int_equal(ret, ACPI_EINJ_SUCCESS);
+
+    /* Silibs internal error */
+    mock_einj_payload.component_group = ACPI_ERROR_DOMAIN_NITOWER;
+    mock_einj_payload.component_instance = 0;
+    mock_einj_payload.component_type = TOWER_D2DSS0;
+    op_type->op = TOWER_EINJ_TARGET_BY_NODE;
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_idsw_get_die_id, 0);
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_tower_fmu_inject_single_error, SILIBS_E_PARAM);
+    ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
+    assert_int_equal(ret, ACPI_EINJ_INVALID_ACCESS);
 }
 }

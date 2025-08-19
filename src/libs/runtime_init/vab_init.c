@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <vab.h>
+#include <vab_irq.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -102,6 +103,10 @@ FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "
     uint16_t vab_instances_enabled = vab_instances_to_be_enabled(die_num);
     FPFW_DBGPRINT_INFO("Bit mask of VAB instances to be enabled: 0x%x\n", vab_instances_enabled);
     vab_common_init(vab_instances_enabled);
+
+    /* Register the error domain for VABs in Health Monitor */
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_VAB, NULL, "VAB Error Domain", vab_error_injection_cb, NULL);
+
     FPFW_DBGPRINT_INFO("VAB Initialization: End\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

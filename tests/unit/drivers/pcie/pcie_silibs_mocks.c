@@ -27,10 +27,11 @@
 #include <pcie_x16_e32_phy_regs.h> // for pcie_x16_e32_phy_reg
 #include <pcie_x16_general_regs.h> // for pcie_x16_general_reg
 #include <pciess_int.h>            // for INTU_DEST_PIN
-#include <rpss_p1_regs.h>          // for rpss_p1_reg
-#include <silibs_status.h>         // for silibs_status_t
-#include <stdbool.h>               // for bool
-#include <stdint.h>                // for uintptr_t, uint64_t
+#include <ras_common.h>
+#include <rpss_p1_regs.h>  // for rpss_p1_reg
+#include <silibs_status.h> // for silibs_status_t
+#include <stdbool.h>       // for bool
+#include <stdint.h>        // for uintptr_t, uint64_t
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -244,12 +245,6 @@ silibs_status_t __wrap_oi_pcie_ss_set_laattr_rp_overrides(pcie_ss_entity_t* ss, 
     return mock_type(silibs_status_t);
 }
 
-int __wrap_pcie_rp_vsecras_clear_rasdp_error_mode(pcie_rp_entity_t* rp)
-{
-    assert_non_null(rp);
-    return mock_type(silibs_status_t);
-}
-
 bool __wrap_ras_pcie_vsecras_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
 {
     assert_non_null(agent);
@@ -349,4 +344,97 @@ silibs_status_t __wrap_pcie_phy_clear_injection(uintptr_t base, PCIE_PHY_INST in
     assert_in_range(inst, PCIE_PHY_0, PCIE_PHY_BCAST);
 
     return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_ras_pcie_vsecras_agent_trigger_by_type(ras_agent_entity_t* agent, uint64_t types)
+{
+    assert_non_null(agent);
+    FPFW_UNUSED(types);
+
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_ras_pcie_ide_agent_trigger_by_type(ras_agent_entity_t* agent, uint64_t types)
+{
+    assert_non_null(agent);
+    FPFW_UNUSED(types);
+
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_ras_agent_record_to_cper(ras_error_record_t* record, void* cper, size_t cper_size, uint32_t* severity)
+{
+    assert_non_null(record);
+    assert_non_null(cper);
+    assert_non_null(severity);
+    FPFW_UNUSED(cper_size);
+    *severity = mock_type(uint32_t);
+    return mock_type(silibs_status_t);
+}
+
+bool __wrap_ras_pcie_ide_agent_probe_by_type(ras_agent_entity_t* agent, uint64_t types, ras_error_record_t* record)
+{
+    assert_non_null(agent);
+    assert_non_null(record);
+    check_expected(types);
+
+    record->reporting_agent = agent;
+    agent->parent = mock_type(pcie_rp_entity_t*);
+
+    return mock_type(bool);
+}
+
+bool __wrap_ras_pcie_dtim_agent_probe_by_type(ras_agent_entity_t* agent, uint64_t types, ras_error_record_t* record)
+{
+    assert_non_null(agent);
+    assert_non_null(record);
+    check_expected(types);
+
+    record->reporting_agent = agent;
+    agent->parent = mock_type(pcie_rp_entity_t*);
+
+    return mock_type(bool);
+}
+
+bool __wrap_ras_pcie_ltim_agent_probe_by_type(ras_agent_entity_t* agent, uint64_t types, ras_error_record_t* record)
+{
+    assert_non_null(agent);
+    assert_non_null(record);
+    check_expected(types);
+
+    record->reporting_agent = agent;
+    agent->parent = mock_type(pcie_rp_entity_t*);
+
+    return mock_type(bool);
+}
+
+bool __wrap_ras_pcie_vsecras_agent_probe_by_type(ras_agent_entity_t* agent, uint64_t types, ras_error_record_t* record)
+{
+    assert_non_null(agent);
+    assert_non_null(record);
+    check_expected(types);
+
+    record->reporting_agent = agent;
+    agent->parent = mock_type(pcie_rp_entity_t*);
+
+    return mock_type(bool);
+}
+
+int __wrap_pcie_rp_vsecras_clear_rasdp_error_mode(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
+
+    return mock_type(int);
+}
+
+silibs_status_t __wrap_pciess_ras_process_record(ras_error_record_t* record)
+{
+    assert_non_null(record);
+    return mock_type(silibs_status_t);
+}
+
+int __wrap_pcie_rp_ide_disable_all_streams(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
+    return mock_type(int);
 }

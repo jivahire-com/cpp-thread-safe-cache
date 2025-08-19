@@ -25,6 +25,8 @@
 #include <hsp_firmware_headers.h>
 #include <icc_mhu.h>
 #include <icc_platform_defines.h>
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <kng_error.h>
 #include <kng_icc_shared.h>
 #include <sdm_ext_interrupts.h>
@@ -72,7 +74,6 @@ static accel_quiesce_msg_rsp accel_quiesce_rsp[NUM_VALID_ACCEL_ID];
 static fpfw_icc_base_recv_req_t accel_quiesce_recv_req[NUM_VALID_ACCEL_ID];
 
 /*------------- Functions ----------------*/
-
 // Setup receive request for PrepareForCoreReset command from HSP
 void receive_prep_core_reset()
 {
@@ -134,14 +135,14 @@ void quiesce_complete_notify(DFWK_ASYNC_REQUEST_HEADER* request, void* p_complet
     fpfw_icc_base_recv_req_t* recv_params = (fpfw_icc_base_recv_req_t*)p_completion_context;
     static fpfw_icc_base_send_req_t send_params;
     memset(&send_params, 0, sizeof(send_params));
-    ((kng_hsp_mailbox_msg*)recv_params->payload_buffer)->header.cmd = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP;
+    ((kng_hsp_mailbox_msg*)recv_params->payload_buffer)->rsp.header.cmd = HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_RSP;
+    ((kng_hsp_mailbox_msg*)recv_params->payload_buffer)->rsp.status = 0; // Indicate success
     send_params.payload_buffer = recv_params->payload_buffer; // Buffer containing the message to send
     send_params.buffer_size = HSP_MBOX_MAX_MESG_SIZE_BYTES;   // Size of the buffer
     send_params.cb = reset_complete_notify;
     send_params.cb_ctx = &send_params; // Pass the context to the callback function
 
     SOS_LOG_INFO("Preparing to send RSP for PrepareForCoreReset\n");
-
     fpfw_status_t send_status = fpfw_icc_base_send(icc_hspmbx_ctx, &send_params);
     if (send_status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
@@ -345,6 +346,14 @@ void sos_icc_init(fpfw_icc_base_ctx_t* icc_ctx,
     // Setup receive request and register to receive and handle PrepareForCoreReset command from HSP
     receive_prep_core_reset();
     recv_d2d_shutdown_request();
+}
+
+void mcp_sos_icc_init(fpfw_icc_base_ctx_t* icc_ctx)
+{
+    // FpFwLockInitialize(&mcp_icc_lock);
+    icc_hspmbx_ctx = icc_ctx;
+    // Setup receive request and register to receive and handle PrepareForCoreReset command from HSP
+    receive_prep_core_reset();
 }
 
 void sos_d2d_shutdown_send_cb(void* context, fpfw_status_t status)

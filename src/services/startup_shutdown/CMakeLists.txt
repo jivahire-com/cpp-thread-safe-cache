@@ -80,6 +80,12 @@ add_library(${TARGET}
         startup_shutdown_scp.c
 )
 
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       SCP_RUNTIME_INIT
+)
+
 target_link_libraries(${TARGET}
     PUBLIC
         ms::lib::error_codes
@@ -108,6 +114,12 @@ add_library(${TARGET}
     STATIC
         ${STARTUP_COMMON_SOURCE}
         startup_shutdown_mcp.c
+)
+
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       MCP_RUNTIME_INIT
 )
 
 target_link_libraries(${TARGET}

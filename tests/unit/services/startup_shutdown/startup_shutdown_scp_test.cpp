@@ -20,6 +20,8 @@ extern "C" {
 #include <hsp_firmware_headers.h>
 #include <icc_mhu.h>
 #include <icc_platform_defines.h>
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <mhu_icc_transport.h>
 #include <startup_shutdown.h>   // for sos_queue_entry_t, sos_queue_start_phase
 #include <startup_shutdown_i.h> // for sos_queue_start_phase, sos_thread_...

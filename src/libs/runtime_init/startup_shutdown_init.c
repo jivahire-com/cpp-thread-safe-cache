@@ -88,7 +88,7 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "ic
 
 #elif MCP_RUNTIME_INIT
 
-FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc"))
+FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx"))
 {
     // Initialize the public SOS Interface
     static sos_interface_t sos_interface;
@@ -97,6 +97,9 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc"))
     // Create a private interface specifically for SSI and register it
     static sos_interface_t ssi_interface;
     sos_interface_init(fpfw_init_get_handle("sos_svc"), &ssi_interface, false);
+
+    // initialize the intercore communication
+    mcp_sos_icc_init(fpfw_init_get_handle("icc_hspmbx"));
 
     // Register the against the private interface
     static startup_ssi_registration_t ssi_registration;

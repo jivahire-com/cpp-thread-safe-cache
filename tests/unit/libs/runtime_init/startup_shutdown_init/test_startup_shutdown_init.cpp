@@ -35,6 +35,13 @@ extern fpfw_init_component_t _fpfw_component_sos_int;
 //
 // Mocks
 //
+
+void __wrap_mcp_sos_icc_init(fpfw_icc_base_ctx_t* icc_ctx)
+{
+    check_expected_ptr(icc_ctx);
+    function_called();
+}
+
 void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
 {
     FPFW_UNUSED(id);
@@ -119,6 +126,7 @@ TEST_FUNCTION(sos_init_sos_svc, nullptr, nullptr)
     assert_non_null(result.associated_handle);
 }
 
+#ifdef SCP_RUNTIME_INIT
 TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
 {
     // Set up expectations
@@ -182,3 +190,52 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
 }
+#endif
+
+#ifdef MCP_RUNTIME_INIT
+TEST_FUNCTION(sos_init_sos_int_mcp, nullptr, nullptr)
+{
+    // Set up expectations for MCP initialization
+    sos_device_t sos_device = {};
+
+    // First sos_interface_init call (public interface)
+    will_return(__wrap_fpfw_init_get_handle, &sos_device);
+    expect_value(__wrap_sos_interface_init, p_device, &sos_device);
+    expect_value(__wrap_sos_interface_init, shared, true);
+
+    // Second sos_interface_init call (private SSI interface)
+    will_return(__wrap_fpfw_init_get_handle, &sos_device);
+    expect_value(__wrap_sos_interface_init, p_device, &sos_device);
+    expect_value(__wrap_sos_interface_init, shared, false);
+
+    // mcp_sos_icc_init call
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x12345);
+    expect_value(__wrap_mcp_sos_icc_init, icc_ctx, (void*)0x12345);
+    expect_function_call(__wrap_mcp_sos_icc_init);
+
+    // SSI registration
+    expect_not_value(__wrap_sos_register_ssi, p_interface, NULL);
+    expect_any(__wrap_sos_register_ssi, p_registration);
+    expect_any(__wrap_sos_register_ssi, p_ssi_interface);
+    will_return(__wrap_sos_register_ssi, FPFW_INIT_STATUS_SUCCESS);
+
+    // DfwkAsyncRequestInitialize call
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_start_phase_request_t));
+
+    // sos_start_phase call - MCP only makes ONE call (synchronous)
+    expect_any(__wrap_sos_start_phase, p_interface);
+    expect_value(__wrap_sos_start_phase, p_request, NULL); // NULL for synchronous
+    expect_value(__wrap_sos_start_phase, boot_type, COLD_BOOT);
+    expect_value(__wrap_sos_start_phase, startup_stage, STARTUP_PHASE_MSCP_ASYNC);
+    expect_value(__wrap_sos_start_phase, completion_routine, NULL);   // NULL for synchronous
+    expect_value(__wrap_sos_start_phase, p_completion_context, NULL); // NULL for synchronous
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_sos_int.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_non_null(result.associated_handle);
+}
+#endif

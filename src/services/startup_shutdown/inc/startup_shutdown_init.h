@@ -34,3 +34,4 @@ typedef struct  {
 void sos_interface_init(psos_device_t p_device, psos_interface_t p_interface, bool shared);
 void sos_init(psos_device_t p_device, PDFWK_SCHEDULE p_schedule);
 void sos_icc_init(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_ctx_t* icc_d2dmbx_ctx, fpfw_icc_base_ctx_t* icc_sdm_mbx_ctx, fpfw_icc_base_ctx_t* icc_cded_mbx_ctx);
+void mcp_sos_icc_init(fpfw_icc_base_ctx_t* icc_ctx);

@@ -8,22 +8,27 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DfwkClient.h>              // for DfwkClientInterfaceOpen
-#include <DfwkThreadXHost.h>         // for DFWK_THREADX_HOST
-#include <FpFwAssert.h>              // for FPFW_RUNTIME_ASSERT
-#include <addressblock0_regs.h>      // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
-#include <bug_check.h>               // for BUG_CHECK
-#include <crash_dump.h>              // for crash_dump_init
-#include <crash_dump_dfwk.h>         // for crash_dump_device_t, crash_dump_interface_t
-#include <crash_dump_events.h>       // for CRASH_DUMP_ET
-#include <crash_dump_memory.h>       // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE
-#include <exception_handler.h>       // for exception_handler_init
-#include <fpfw_init.h>               // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
-#include <fpfw_pldm_service.h>       // for pldm_platform_event_ready_notification
-#include <idhw.h>                    // for idhw_get_cpu_type, idhw_get_die_id
-#include <idsw.h>                    // for idsw_get_cpu_type, idsw_get_die_id
-#include <idsw_kng.h>                // for DIE_0, DIE_1
-#include <kng_error.h>               // for KNG_SUCCESS
+#include <DfwkClient.h>         // for DfwkClientInterfaceOpen
+#include <DfwkThreadXHost.h>    // for DFWK_THREADX_HOST
+#include <FpFwAssert.h>         // for FPFW_RUNTIME_ASSERT
+#include <addressblock0_regs.h> // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
+#include <bug_check.h>          // for BUG_CHECK
+#include <crash_dump.h>         // for crash_dump_init
+#include <crash_dump_dfwk.h>    // for crash_dump_device_t, crash_dump_interface_t
+#include <crash_dump_events.h>  // for CRASH_DUMP_ET
+#include <crash_dump_memory.h>  // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE
+#include <exception_handler.h>  // for exception_handler_init
+#include <fpfw_init.h>          // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
+#include <fpfw_pldm_service.h>  // for pldm_platform_event_ready_notification
+#include <fuses_csr_regs.h>
+#include <fuses_top_regs.h>
+#include <idhw.h>      // for idhw_get_cpu_type, idhw_get_die_id
+#include <idsw.h>      // for idsw_get_cpu_type, idsw_get_die_id
+#include <idsw_kng.h>  // for DIE_0, DIE_1
+#include <kng_error.h> // for KNG_SUCCESS
+#include <mcp_exp_csr_regs.h>
+#include <mscp_ras_and_init_ctrl_registers_regs.h>
+#include <scf_mhu_regs.h>
 #include <silibs_mcp_exp_top_regs.h> // for MCP_EXP_TOP_SCF_RAM_ADDRESS, MCP_EXP_TOP_SCF_RAM_SIZE
 #include <silibs_mcp_top_regs.h>     // for MCP_TOP_MCP_EXP_ADDRESS
 #include <stddef.h>                  // for NULL
@@ -39,9 +44,61 @@
 
 /*-- Declarations (Statics and globals) --*/
 const core_register_mmio_t core_register_mmio[] = {
-    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484991
-    // ToDo: Add MCP_EXP registers
-    // ToDo: Add Power Control registers
+    // Crash dump register list :
+    //     https://microsoft.sharepoint.com/:x:/r/teams/EchoFalls/SVT%20Documents/KNG/SDF/KNG_crashdump_reg_grading.xlsx?d=w03f0330eb98f45b5953fae51eef9f364&csf=1&web=1&e=wd00L1
+
+    // MCP EXP FUSE
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_FUSE_ADDRESS + FUSES_TOP_FUSES_CSR_ADDRESS + FUSES_CSR_SFCRAM_ERRCTRL_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_FUSE_ADDRESS + FUSES_TOP_FUSES_CSR_ADDRESS + FUSES_CSR_SFCRAM_ERRADDR_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_FUSE_ADDRESS + FUSES_TOP_FUSES_CSR_ADDRESS + FUSES_CSR_ERRSTATUS_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+
+    // MCP EXP SCF
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_SCF_MHU_ADDRESS + SCF_MHU_SENSOR_RAM_ERROR_STATUS_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_SCF_MHU_ADDRESS + SCF_MHU_TEMP_STS_ERR_ADDR_ADDRESS), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_SCF_MHU_ADDRESS + SCF_MHU_CUR_STS_ERR_ADDR_ADDRESS), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_SCF_MHU_ADDRESS + SCF_MHU_VOLT_STS_ERR_ADDR_ADDRESS), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_SCF_MHU_ADDRESS + SCF_MHU_DUAL_PORT_ERR_ADDR_ADDRESS), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+
+    // MCP EXP CSR
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_MCP_EXP_CSR_ADDRESS + MCP_EXP_CSR_RMSS_RAM0_MCP_ERRSTATUS_REG_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_MCP_EXP_CSR_ADDRESS + MCP_EXP_CSR_RMSS_RAM0_MCP_ERRADDR_REG_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_MCP_EXP_CSR_ADDRESS + MCP_EXP_CSR_RMSS_RAM1_MCP_ERRSTATUS_REG_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_MCP_EXP_CSR_ADDRESS + MCP_EXP_CSR_RMSS_RAM1_MCP_ERRADDR_REG_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_MCP_EXP_CSR_ADDRESS + MCP_EXP_CSR_SCFRAM_MCP_ERRSTATUS_REG_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_MCP_EXP_CSR_ADDRESS + MCP_EXP_CSR_SCFRAM_MCP_ERRADDR_REG_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_MCP_EXP_CSR_ADDRESS + MCP_EXP_CSR_MCP_IRPT_STATUS_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+
+    // MSCP RAS/INIT CTRL
+    {(volatile void*)(MCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS + MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRSTATUS_ADDRESS),
+     1,
+     FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS + MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRCTRL_ADDRESS), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS + MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRCODE_ADDRESS), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS + MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRADDR_ADDRESS), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS + MSCP_RAS_AND_INIT_CTRL_REGISTERS_MSCP_ICERR_ADDRESS), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+    {(volatile void*)(MCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS + MSCP_RAS_AND_INIT_CTRL_REGISTERS_MSCP_DCERR_ADDRESS), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
 
     // Watchdog registers (WDOGRIS and WDOGMIS)
     {(volatile void*)(MCP_TOP_MCP_WATCHDOG_ADDRESS + ADDRESSBLOCK0_WDOGLOAD_ADDRESS + ADDRESSBLOCK0_WDOGRIS_ADDRESS),

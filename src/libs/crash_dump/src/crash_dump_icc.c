@@ -357,7 +357,7 @@ void crash_dump_notify_hsp()
 
     if (ctx->core_index == CRASH_DUMP_CORE_SCP)
     {
-        uint32_t flags = config_get_crash_dump_warm_reset() ? 0 : 1; // HSP_MAILBOX_FLAGS_CRASHDUMP_SKIP_WARM_RESET
+        uint32_t flags = config_get_crash_dump_warm_reset() ? 0 : HSP_MAILBOX_FLAGS_CRASHDUMP_SKIP_WARM_RESET;
 
         crash_dump_send_hsp_command(HSP_MAILBOX_CMD_CRASHDUMP_REQ, flags);
     }

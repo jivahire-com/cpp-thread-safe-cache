@@ -73,6 +73,11 @@ void prod_ddrss_interrupt_handler(void *context);
 uintptr_t ddrss_get_top_base(uint32_t mc);
 int prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_sec_mem_vendor_t *ddr_cper);
 
+void prod_ddrss_convert_rh_rec_to_rh_cper(uint32_t mc,
+                                          rh_tlm_sample_type sample_type,
+                                          ddrss_rhm_tm_evt_t* p_rh_tel,
+                                          acpi_err_sec_ddrss_rhm_tm_t* p_rh_cper);
+
 /**
  * @brief Function to initialize DDRSS PCR
  * 

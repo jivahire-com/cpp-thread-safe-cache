@@ -13,6 +13,12 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
         fwlib.service.cli
+        silibs::ddr_i3c
+        silibs::ddrss
+        silibs::idhw
+        silibs::kng_silibs_platform
+        silibs::platform
+        silibs::ras_arm
         ms::lib::error_codes
         ms::lib::telemetry::fuses
         ms::service::pwr_tlm_mcp

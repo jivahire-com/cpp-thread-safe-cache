@@ -61,6 +61,7 @@ mock_target(${TARGET}
     ddrss_get_phy_training_failure
     ddrss_get_ras_agent
     ddrss_init
+    ddrss_get_telemetry_record
     ddrss_inject_media_ca_err
     ddrss_inject_media_data_err
     ddrss_mc_event_clear_interrupt

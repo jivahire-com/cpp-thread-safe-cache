@@ -57,6 +57,7 @@ add_library(${TARGET}
         pwr_tlm_svc_scp_init.c
         power_init.c
         pwr_tlm_core_ex_init.c
+        rhtlm_service_init.c
         scmi_init.c
         scmi_cli_init.c
         scp_crash_dump_init.c
@@ -172,6 +173,8 @@ target_link_libraries(
         ms::service::pcie_manager::cli
         ms::service::power
         ms::service::pwr_tlm_scp
+        ms::service::rhtlm_service
+        ms::service::rhtlm_service::cli
         ms::service::scp_startup_shutdown
         ms::service::sds_service
         ms::service::sensor_fifo

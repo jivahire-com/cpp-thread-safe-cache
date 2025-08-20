@@ -245,6 +245,17 @@ int __wrap_ddrss_convert_ras_rec_to_cper(uint32_t mc,
     function_called();
     return SILIBS_SUCCESS;
 }
+
+int __wrap_ddrss_get_telemetry_record(uint32_t mc, DDRSS_TELEMETRY_TYPE telemetry_type, void* telemetry_buf, int telemetry_buf_len)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(telemetry_type);
+    FPFW_UNUSED(telemetry_buf);
+    FPFW_UNUSED(telemetry_buf_len);
+
+    return mock_type(int);
+}
+
 int __wrap_ras_print_record(ras_error_record_t* record)
 {
     FPFW_UNUSED(record);
@@ -311,7 +322,7 @@ void __wrap_hm_submit_cper(uint16_t error_domain_idx,
                            acpi_cper_section_t* err_record_section,
                            uint32_t err_record_section_size)
 {
-    assert_int_equal(error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    assert_true((error_domain_idx == ACPI_ERROR_DOMAIN_DDR) || (error_domain_idx == ACPI_ERROR_DOMAIN_RHTLM));
     check_expected(err_severity);
 
     if (g_should_check_cper_section)

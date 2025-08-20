@@ -645,6 +645,119 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc, setup, teardown)
     g_mc_intu_sts = (1 << DDRSS_INTU_MC_FEDFLUSHDONE) | (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);
 
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
+    will_return(__wrap_ddrss_get_telemetry_record, SILIBS_E_DATA);
+
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc0_tlm, setup, teardown)
+{
+    // DDRSS_INTU_MC0_SCP_INT
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_SCP_INT);
+    g_intu_enable = 0xFFFFFFFF;         // This is a mask
+    g_mc_intu_dest_enable = 0xFFFFFFFF; // So is this
+    g_mc_intu_sts = (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);
+
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
+    will_return(__wrap_ddrss_get_telemetry_record, SILIBS_SUCCESS);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    // expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_tlm, setup, teardown)
+{
+    // DDRSS_INTU_MC1_SCP_INT
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC1_SCP_INT);
+    g_intu_enable = 0xFFFFFFFF;         // This is a mask
+    g_mc_intu_dest_enable = 0xFFFFFFFF; // So is this
+    g_mc_intu_sts = (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);
+
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
+    will_return(__wrap_ddrss_get_telemetry_record, SILIBS_SUCCESS);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_mediacs, setup, teardown)
+{
+    // DDRSS_INTU_MC0_SCP_INT
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC1_SCP_INT);
+    g_intu_enable = 0xFFFFFFFF;         // This is a mask
+    g_mc_intu_dest_enable = 0xFFFFFFFF; // So is this
+    g_mc_intu_sts = (1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED);
+
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
+    expect_value(__wrap_ddrss_mc_event_clear_interrupt, intr_evt_mask, DDRSS_MC_INTR_EVT_ECS_TRANS_CHANGED);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_tempch, setup, teardown)
+{
+    // DDRSS_INTU_MC0_SCP_INT
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC1_SCP_INT);
+    g_intu_enable = 0xFFFFFFFF;         // This is a mask
+    g_mc_intu_dest_enable = 0xFFFFFFFF; // So is this
+    g_mc_intu_sts = (1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED);
+
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
+    expect_value(__wrap_ddrss_mc_event_clear_interrupt, intr_evt_mask, DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_temphigh, setup, teardown)
+{
+    // DDRSS_INTU_MC0_SCP_INT
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC1_SCP_INT);
+    g_intu_enable = 0xFFFFFFFF;         // This is a mask
+    g_mc_intu_dest_enable = 0xFFFFFFFF; // So is this
+    g_mc_intu_sts = (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH);
+
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
+    expect_value(__wrap_ddrss_mc_event_clear_interrupt, intr_evt_mask, DDRSS_MC_INTR_EVT_REF_TEMP_HIGH);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_phyinlp3, setup, teardown)
+{
+    // DDRSS_INTU_MC0_SCP_INT
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC1_SCP_INT);
+    g_intu_enable = 0xFFFFFFFF;         // This is a mask
+    g_mc_intu_dest_enable = 0xFFFFFFFF; // So is this
+    g_mc_intu_sts = (1 << DDRSS_INTU_MC_PHYINLP3);
+
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
+    expect_value(__wrap_ddrss_mc_event_clear_interrupt, intr_evt_mask, DDRSS_MC_INTR_EVT_PHY_IN_LP3);
+
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_initdone, setup, teardown)
+{
+    // DDRSS_INTU_MC0_SCP_INT
+    g_ddr_intu_sts = (1 << DDRSS_INTU_MC1_SCP_INT);
+    g_intu_enable = 0xFFFFFFFF;         // This is a mask
+    g_mc_intu_dest_enable = 0xFFFFFFFF; // So is this
+    g_mc_intu_sts = (1 << DDRSS_INTU_MC_MEDIASCRUBINITDONE);
+
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
+    expect_value(__wrap_ddrss_mc_event_clear_interrupt, intr_evt_mask, DDRSS_MC_INTR_EVT_SCRUB_INIT_DONE);
+
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
 }
 

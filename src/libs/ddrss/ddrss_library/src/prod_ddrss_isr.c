@@ -38,7 +38,6 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*-------------- Functions ---------------*/
-
 static int ddrss_get_and_probe_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agent_entity_id, ras_agent_entity_t** ras_agent)
 {
     uint32_t sub_sts;
@@ -80,6 +79,50 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agen
         }
     }
     return sub_sts;
+}
+
+/**
+ * @brief     Convert rh record to rh cper record
+ *
+ *
+ * @param[in] mc            - Memory controller
+ * @param[in] sample_type   - info aout how the rh was sampled
+ * @param[in] p_rh_tel        - pointer to rh telemetry record
+ * @param[in] p_rh_cper     - pointer to rh cper telemetry record
+ *
+ * @return void
+ */
+void prod_ddrss_convert_rh_rec_to_rh_cper(uint32_t mc,
+                                          rh_tlm_sample_type sample_type,
+                                          ddrss_rhm_tm_evt_t* p_rh_tel,
+                                          acpi_err_sec_ddrss_rhm_tm_t* p_rh_cper)
+{
+    if (p_rh_tel == NULL || p_rh_cper == NULL)
+    {
+        return;
+    }
+
+    p_rh_cper->tlm_sample_type = sample_type;
+    p_rh_cper->mc = mc;
+    p_rh_cper->valid = p_rh_tel->valid;
+    p_rh_cper->timestamp = p_rh_tel->timestamp;
+    p_rh_cper->dropped = p_rh_tel->dropped;
+    p_rh_cper->type = p_rh_tel->type;
+    p_rh_cper->parity_err = p_rh_tel->parity_err;
+    p_rh_cper->act_rank = p_rh_tel->act_rank;
+    p_rh_cper->act_bg = p_rh_tel->act_bg;
+    p_rh_cper->act_bank = p_rh_tel->act_bank;
+    p_rh_cper->act_row = p_rh_tel->act_row;
+    p_rh_cper->smc = p_rh_tel->smc;
+    p_rh_cper->soc = p_rh_tel->soc;
+    p_rh_cper->spill_count = p_rh_tel->spill_count;
+
+    for (uint8_t i = 0; i < ACPI_DDRSS_RHM_TM_MAX_WAYS; i++)
+    {
+        p_rh_cper->way_address[i] = p_rh_tel->way_info[i].address;
+        p_rh_cper->way_count[i] = p_rh_tel->way_info[i].count;
+        p_rh_cper->way_lock[i] = p_rh_tel->way_info[i].lock;
+    }
 }
 
 /**
@@ -519,12 +562,21 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         ddrss_rhm_tm_evt_t ddrss_rm_telemetry;
         printf("MC RM telemetry avail int\n");
         sub_sts = ddrss_get_telemetry_record(mc, DDRSS_TELEMETRY_TYPE_RHM_EVT, &ddrss_rm_telemetry, sizeof(ddrss_rm_telemetry));
+
         if (sub_sts != SILIBS_SUCCESS)
         {
+            printf("sub_sts res %d\n", sub_sts);
             mc_intu_err |= (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);
         }
-        // TODO: Handle the telemetry by sending to DDR_Manager queue: RAS - RowHammer
-        // ADO Task#1485473, Task#1486728, Feature#1705011
+        else
+        {
+            mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);
+            acpi_err_sec_ddrss_rhm_tm_t rh_cper_section = {0};
+            acpi_cper_section_t cper_section;
+            cper_section.sec_rh_tlm = rh_cper_section;
+            prod_ddrss_convert_rh_rec_to_rh_cper(mc, RHTLM_SAMPLE_EVENT, &ddrss_rm_telemetry, &rh_cper_section);
+            hm_submit_cper(ACPI_ERROR_DOMAIN_RHTLM, ACPI_ERROR_SEVERITY_INFORMATIONAL, &cper_section, sizeof(cper_section));
+        }
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED))

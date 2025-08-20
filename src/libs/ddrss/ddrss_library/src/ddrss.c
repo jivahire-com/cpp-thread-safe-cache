@@ -47,6 +47,7 @@ ddrss_phy_training_dq_margin_t ddrss_phy_training_dq_margin[6] = {0};
 // Refer to N.2.5 Memory Error Section of UEFI Specification, Version 2.8 Errata C
 static const guid_t STD_MEMORY_ERROR_DOMAIN_GUID = {0xB7E2A3C9, 0x4F1D, 0x4569, {0xA3, 0x9D, 0xD6, 0x5B, 0xAF, 0x10, 0x92, 0xEE}};
 static const guid_t DDR_ERROR_DOMAIN_FRU_GUID = {0x3AC75B2E, 0xC8F1, 0x43E1, {0x88, 0x7C, 0x9A, 0x12, 0x34, 0x56, 0x78, 0x9A}};
+static const guid_t DDR_RHTL_ERROR_DOMAIN_FRU_GUID = ACPI_ERROR_TYPE_VENDOR_RHTLM;
 /*------------- Functions ----------------*/
 void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 {
@@ -493,6 +494,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     /* Register the vendor and standard error domain with the health monitor */
     hm_register_error_domain(ACPI_ERROR_DOMAIN_STD_MEMORY, &STD_MEMORY_ERROR_DOMAIN_GUID, "Std Memory Error", ddr_error_injection_cb, NULL);
     hm_register_error_domain(ACPI_ERROR_DOMAIN_DDR, &DDR_ERROR_DOMAIN_FRU_GUID, "DDR Error Domain", ddr_error_injection_cb, NULL);
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_RHTLM, &DDR_RHTL_ERROR_DOMAIN_FRU_GUID, "RowHammer Domain", ddr_error_injection_cb, NULL);
 
     printf("DDRSS init exit\n");
 }

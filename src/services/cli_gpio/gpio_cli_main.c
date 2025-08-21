@@ -551,12 +551,12 @@ static PLACED_CODE FPFW_CLI_STATUS gpio_cli_set_uart_die_config(int argc, const 
         return CLI_ERROR;
     }
 
-    if (atoi(pp_argv[1]) == 0 || atoi(pp_argv[1]) == 1)
+    if (pp_argv[1][0] == '0' || pp_argv[1][0] == '1')
     {
         die_cfg_knobs.uart1_die_id = atoi(pp_argv[1]);
     }
 
-    if (atoi(pp_argv[2]) == 0 || atoi(pp_argv[2]) == 1)
+    if (pp_argv[2][0] == '0' || pp_argv[2][0] == '1')
     {
         die_cfg_knobs.uart2_die_id = atoi(pp_argv[2]);
     }

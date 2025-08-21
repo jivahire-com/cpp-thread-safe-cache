@@ -14,10 +14,12 @@
 #include <CMockaWrapper.h>
 
 extern "C" {
-#include <event_trace_collector.h> // for etc_service_config_t, etc_service...
-#include <event_trace_decoder.h>   // for etd_service_config_t, etd_service...
-#include <fpfw_init.h>             // for fpfw_init_component_t
-#include <stddef.h>                // for NULL
+#include <event_trace_collector.h>    // for etc_service_config_t, etc_service...
+#include <event_trace_decoder.h>      // for etd_service_config_t, etd_service...
+#include <fpfw_init.h>                // for fpfw_init_component_t
+#include <message_transfer_service.h> //for mts_client_id_t
+#include <stddef.h>                   // for NULL
+#include <tx_api.h>                   // for TX_SUCCESS
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -29,6 +31,7 @@ extern "C" {
 
 extern fpfw_init_component_t _fpfw_component_etc;
 extern fpfw_init_component_t _fpfw_component_etd;
+extern fpfw_init_component_t _fpfw_component_et_mts_clnt;
 
 /*------------- Functions ----------------*/
 
@@ -47,9 +50,38 @@ void __wrap_etd_initialize(etd_service_context_t* p_service, const etd_service_c
     check_expected(p_config);
 }
 
+UINT __wrap__txe_queue_create(TX_QUEUE* queue_ptr, CHAR* name_ptr, UINT message_size, VOID* queue_start, ULONG queue_size, UINT queue_control_block_size)
+{
+    FPFW_UNUSED(queue_ptr);
+    FPFW_UNUSED(name_ptr);
+    FPFW_UNUSED(message_size);
+    FPFW_UNUSED(queue_start);
+    FPFW_UNUSED(queue_size);
+    FPFW_UNUSED(queue_control_block_size);
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_block_pool_create(TX_BLOCK_POOL* pool_ptr, CHAR* name_ptr, ULONG block_size, VOID* pool_start, ULONG pool_size, UINT pool_control_block_size)
+{
+    FPFW_UNUSED(pool_ptr);
+    FPFW_UNUSED(name_ptr);
+    FPFW_UNUSED(block_size);
+    FPFW_UNUSED(pool_start);
+    FPFW_UNUSED(pool_size);
+    FPFW_UNUSED(pool_control_block_size);
+    return mock_type(UINT);
+}
+
+void __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t client)
+{
+    check_expected(id);
+    FPFW_UNUSED(client);
+}
+
 //
 // Tests
 //
+
 TEST_FUNCTION(test_etc_init, nullptr, nullptr)
 {
     // Set up expectations
@@ -68,5 +100,15 @@ TEST_FUNCTION(test_etd_init, nullptr, nullptr)
 
     // Call API under test
     _fpfw_component_etd.init_fn();
+}
+
+TEST_FUNCTION(test_et_mts_clnt_init, nullptr, nullptr)
+{
+    // Set up expectations
+    will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    will_return(__wrap__txe_block_pool_create, TX_SUCCESS);
+    expect_value(__wrap_mts_client_register, id, MTS_CLIENT_ID_EVENT_TRACE);
+    // Call API under test
+    _fpfw_component_et_mts_clnt.init_fn();
 }
 }

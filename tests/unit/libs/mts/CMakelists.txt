@@ -1,0 +1,47 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
+set(TARGET mts_tests.test)
+
+set(SOURCES
+    mts_test.cpp
+)
+
+set(LIBS
+    PRIVATE
+        ms::cmocka::mocks
+        ms::cmocka::testrunner
+        kng.service.platform.impl.mts
+        fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.interface.platform.specialization.mts
+        kng.service.platform.impl.mts
+        ms::build_data
+        ms::lib::crash_dump
+        ms::lib::event_trace::trace
+        ms::lib::icc_platform_defines
+        ms::service::mts
+        silibs::idsw_kng
+        silibs::platform
+        silibs::kng_silibs_platform
+)
+
+# Compile test
+add_executable(${TARGET} ${SOURCES})
+target_link_libraries(${TARGET}
+    PRIVATE 
+        ${LIBS}
+)
+
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts") 
+
+lint_target(${TARGET})
+format_target(${TARGET})
+coverage_target(${TARGET})
+unit_test_target(${TARGET})
+
+mock_target(${TARGET}
+    fpfw_icc_base_send_sync
+    FPFwErrorRaise
+    transfer_rly_should_send_trp_msg
+    crash_dump_bug_check
+)

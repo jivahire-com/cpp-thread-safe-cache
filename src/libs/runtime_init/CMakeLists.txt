@@ -32,6 +32,7 @@ add_library(${TARGET}
         d2d_cntr_sync_init.c
         err_domain_scp_init.c
         etc_etd_init.c
+        et_mts_clnt_init.c
         fuse_init.c
         gpio_init.c
         gtimer_init.c
@@ -163,6 +164,8 @@ target_link_libraries(
         ms::service::atu_service
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
+        ms::service::event_trace::etc_etd
+        ms::service::event_trace::et_mts_clnt
         ms::service::fuse
         ms::service::gpio::cli
         ms::service::health_monitor
@@ -365,6 +368,8 @@ target_link_libraries(
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::event_trace::relay
+        ms::service::event_trace::etc_etd
+        ms::service::event_trace::et_mts_clnt
         ms::service::gpio::cli
         ms::service::mem::cli
         ms::service::mts

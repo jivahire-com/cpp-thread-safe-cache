@@ -25,6 +25,13 @@
 #define NUM_I3C_IRQNUMS             2
 #define NUM_I3C_IRQ_HANDLERS        2
 
+#define SHIFT_DDRSS_EN               0
+#define MASK_DDRSS_EN                0xFFFF
+#define SHIFT_DIMM_CAP               16
+#define MASK_DIMM_CAP                0xFF
+#define SHIFT_DIMM_SKU               24
+#define MASK_DIMM_SKU                0xFF
+
 typedef enum {
     KNG_SOC_DIE_0_I3C0 = 0x00,
     KNG_SOC_DIE_0_I3C1 = 0x01,
@@ -123,6 +130,8 @@ i3c_instance_t* get_i3c1();
 int i3c_controller(uint8_t die_num);
 
 void ts_display_temperature(uint8_t ts_low, uint8_t ts_high, uint8_t* ts_integer, uint8_t* ts_fraction);
+
+int i3c_controller_verify_dimm_on_current_die(uint32_t ddrss_en);
 
 i3c_instance_t* get_i3c0();
 i3c_instance_t* get_i3c1();

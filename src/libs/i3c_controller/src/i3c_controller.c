@@ -178,6 +178,78 @@ uint8_t get_i3c_dimm_sku(void)
     return g_dimm_sku;
 }
 
+int i3c_controller_verify_dimm_on_current_die(uint32_t ddrss_en)
+{
+    int status = SILIBS_E_NOMEM; // Ideally gets updated to SILIBS_SUCCESS
+    uint8_t dimm_cap_per_ch[DDRSS_DIMM_MAX] = {0};
+    uint8_t dimm_sku[DDRSS_DIMM_MAX] = {0};
+    uint8_t ddrss_index = 0x0;
+    i3c_cmd_t s_i3c_cmd_test = {0};
+
+    if (idsw_get_platform_sdv() != PLATFORM_RVP_EVT_SILICON)
+    {
+        FPFW_DBGPRINT_ALWAYS(MOD_NAME "Not verifying DIMM match on non-SoC platforms");
+        return SILIBS_SUCCESS;
+    }
+    FPFW_DBGPRINT_ALWAYS(MOD_NAME "i3c_controller_verify_dimm_on_current_die ddrss_en 0x%x Start", ddrss_en);
+    // Populate the dimm_cap_per_ch and dimm_sku info into the array by reading the data from the DIMM SPD
+    for (ddrss_index = 0; ddrss_index < DDRSS_DIMM_MAX; ddrss_index++)
+    {
+        // Convert the ddrss_en which is 1-hot encoding to ddrss_index which is a enum
+        if (ddrss_en & (1 << ddrss_index))
+        {
+            SLEEP_US(DELAY_10_MS);
+            status = ddr_i3c_interface_read_dimm_capacity(&s_i3c_cmd_test,
+                                                          ddrss_index,
+                                                          &dimm_cap_per_ch[ddrss_index],
+                                                          &dimm_sku[ddrss_index]);
+            if (status != DDR_I3C_INTERFACE_SUCCESS)
+            {
+                FPFW_DBGPRINT_ALWAYS(
+                    MOD_NAME "ddr_i3c_interface_read_dimm_capacity failed for ddrss_index %d, status %d",
+                    ddrss_index,
+                    status);
+                BUG_ASSERT(false);
+            }
+        }
+    }
+    uint8_t first_dimm_in_local = __builtin_ffs(ddrss_en) - 1;
+    // Compare the data in dimm_cap_per_ch and dimm_sku in the array
+    for (ddrss_index = 0; ddrss_index < DDRSS_DIMM_MAX; ddrss_index++)
+    {
+        if (ddrss_en & (1 << ddrss_index))
+        {
+            if (dimm_cap_per_ch[ddrss_index] != dimm_cap_per_ch[first_dimm_in_local])
+            {
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME "DIMM Capacity verification failed for ddrss_index %d", ddrss_index);
+                FPFW_DBGPRINT_ALWAYS(
+                    MOD_NAME "DIMM Capacity for ddrss_index %d is 0x%x compared to first_dimm %d is 0x%x",
+                    ddrss_index,
+                    dimm_cap_per_ch[ddrss_index],
+                    first_dimm_in_local,
+                    dimm_cap_per_ch[first_dimm_in_local]);
+                status = SILIBS_E_NOMEM;
+                BUG_ASSERT(false);
+            }
+            if (dimm_sku[ddrss_index] != dimm_sku[first_dimm_in_local])
+            {
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME "DIMM SKU verification failed for ddrss_index %d", ddrss_index);
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME
+                                     "DIMM SKU for ddrss_index %d is 0x%x compared to first_dimm %d is 0x%x",
+                                     ddrss_index,
+                                     dimm_sku[ddrss_index],
+                                     first_dimm_in_local,
+                                     dimm_sku[first_dimm_in_local]);
+                status = SILIBS_E_NOMEM;
+                BUG_ASSERT(false);
+            }
+        }
+    }
+    FPFW_DBGPRINT_ALWAYS(MOD_NAME "i3c_controller_verify_dimm_on_current_die ddrss_en 0x%x End, Status %d", ddrss_en, status);
+
+    return status; // This should be SILIBS_SUCCESS after verification
+}
+
 void i3c_controller_read_cfg_knobs_from_spi(void)
 {
     // Read the Config Knobs from SPI
@@ -375,10 +447,17 @@ int i3c_controller(uint8_t die_num)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMMs Read Err, status 0x%x\n", status);
                 // Error or BUGCHECK
-                goto check1;
+                BUG_ASSERT(false);
             }
             SLEEP_US(DELAY_10_MS);
             FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Detected: 0x%x\n", ddrss_en);
+            status = i3c_controller_verify_dimm_on_current_die(ddrss_en);
+            if (status != SILIBS_SUCCESS)
+            {
+                FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMMs Verify Err, status 0x%x\n", status);
+                // Error or BUGCHECK
+                BUG_ASSERT(false);
+            }
             // ddrss_en needs to be converted to ddrss_index
             // ddrss_en = 1, ddrss_index = 0
             // Need to read the DIMM capacity from only 1 DIMM, so find the lowest bit set in the ddrss_en
@@ -388,7 +467,7 @@ int i3c_controller(uint8_t die_num)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Capacity/SKU Read Err, status 0x%x\n", status);
                 // Error or BUGCHECK
-                goto check1;
+                BUG_ASSERT(false);
             }
             SLEEP_US(DELAY_10_MS);
             FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Capacity: 0x%x, SKU: 0x%x\n", dimm_cap_per_ch, dimm_sku);
@@ -401,33 +480,45 @@ int i3c_controller(uint8_t die_num)
             g_dimm_sku = DDR5_RDIMM_2Rx4_16Gb_64GB;
             ddrss_en = (die_num == SOC_D0) ? (0x3F) : (0xFC0);
         }
-    check1:
+
         // I3C Sync point with Remote Die on a 2-Die Config
         if (!idhw_is_single_die_boot_en()) // 2 Die
         {
             FPFW_DBGPRINT_ALWAYS("I3C Sync with Remote Die\n");
             mscp_exp_spi_invalidate_region(die_num);
+            // Send the ((g_dimm_sku << 24) | (g_dimm_cap_per_ch << 16) | ddrss_en) to the remote Die
+            uint32_t ddrss_en_data = ((g_dimm_sku & MASK_DIMM_SKU) << SHIFT_DIMM_SKU) |
+                                     (g_dimm_cap_per_ch & MASK_DIMM_CAP) << SHIFT_DIMM_CAP |
+                                     (ddrss_en & MASK_DDRSS_EN) << SHIFT_DDRSS_EN;
+            uint8_t remote_dimm_cap_per_ch = 0x0;
+            uint8_t remote_dimm_sku = 0x0;
 
             if (die_num == SOC_D0)
             {
-                i3c_test_sync.data_d0_to_d1_data = ddrss_en;
+                i3c_test_sync.data_d0_to_d1_data = ddrss_en_data;
                 i3c_test_sync.data_ack_d0_to_d1_data = SPI_SYNC_DATA_VALID;
                 ASSERT_FAIL(mscp_exp_spi_read_d1_to_d0_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
                 FPFW_DBGPRINT_VERBOSE("Data from D1 0x%x\n", i3c_test_sync.data_d1_to_d0_data);
                 ASSERT_FAIL(mscp_exp_spi_write_d0_to_d1_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
                 FPFW_DBGPRINT_VERBOSE("Data written to D1 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
-                g_ddrss_en = (ddrss_en | i3c_test_sync.data_d1_to_d0_data);
+                g_ddrss_en = (ddrss_en | ((i3c_test_sync.data_d1_to_d0_data >> SHIFT_DDRSS_EN) & MASK_DDRSS_EN));
+                remote_dimm_cap_per_ch = (i3c_test_sync.data_d1_to_d0_data >> SHIFT_DIMM_CAP) & MASK_DIMM_CAP;
+                remote_dimm_sku = (i3c_test_sync.data_d1_to_d0_data >> SHIFT_DIMM_SKU) & MASK_DIMM_SKU;
             }
             else
             {
-                i3c_test_sync.data_d1_to_d0_data = ddrss_en;
+                i3c_test_sync.data_d1_to_d0_data = ddrss_en_data;
                 i3c_test_sync.data_ack_d1_to_d0_data = SPI_SYNC_DATA_VALID;
                 ASSERT_FAIL(mscp_exp_spi_write_d1_to_d0_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
                 FPFW_DBGPRINT_VERBOSE("Data written to D0 0x%x\n", i3c_test_sync.data_d1_to_d0_data);
                 ASSERT_FAIL(mscp_exp_spi_read_d0_to_d1_data(&i3c_test_sync, die_num) == SILIBS_SUCCESS);
                 FPFW_DBGPRINT_VERBOSE("Data from D0 0x%x\n", i3c_test_sync.data_d0_to_d1_data);
-                g_ddrss_en = (ddrss_en | i3c_test_sync.data_d0_to_d1_data);
+                g_ddrss_en = (ddrss_en | ((i3c_test_sync.data_d0_to_d1_data >> SHIFT_DDRSS_EN) & MASK_DDRSS_EN));
+                remote_dimm_cap_per_ch = (i3c_test_sync.data_d0_to_d1_data >> SHIFT_DIMM_CAP) & MASK_DIMM_CAP;
+                remote_dimm_sku = (i3c_test_sync.data_d0_to_d1_data >> SHIFT_DIMM_SKU) & MASK_DIMM_SKU;
             }
+            BUG_ASSERT_PARAM(remote_dimm_cap_per_ch == g_dimm_cap_per_ch, remote_dimm_cap_per_ch, g_dimm_cap_per_ch);
+            BUG_ASSERT_PARAM(remote_dimm_sku == g_dimm_sku, remote_dimm_sku, g_dimm_sku);
         }
         else
         {

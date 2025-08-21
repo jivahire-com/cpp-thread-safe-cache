@@ -62,4 +62,5 @@ mock_target(${TARGET}
     mscp_exp_spi_read_d0_to_d1_data
     idhw_is_single_die_boot_en
     i3c_master_set_cfg_knobs
+    crash_dump_bug_check
 )

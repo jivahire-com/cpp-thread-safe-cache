@@ -12,6 +12,7 @@ set(SOURCES
     test_core_pstate_data.cpp
     test_cstate_data.cpp
     test_core_power.cpp
+    test_core_throttling_data.cpp
     )
 
 add_executable(${TARGET} ${SOURCES})

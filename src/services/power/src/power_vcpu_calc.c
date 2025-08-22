@@ -134,17 +134,20 @@ float power_vcpu_calc_peak_current_A(power_runconfig_t* p_runconfig, power_ctrl_
             if (p_runconfig->knobs.current_threshold.power_current_throt_en == true)
             {
                 float cur_threshold;
-                cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t1_percent) / 100 +
+                cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.iref_to_max_percent) / 100 *
+                                     (p_knobs->current_threshold.t1_percent) / 100 +
                                  (precalc->leakage) * leakage_scaler) *
                                 255 / MAX_CURRENT_PER_CORE_A;
                 core->plimit_t1 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
 
-                cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t2_percent) / 100 +
+                cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.iref_to_max_percent) / 100 *
+                                     (p_knobs->current_threshold.t2_percent) / 100 +
                                  (precalc->leakage) * leakage_scaler) *
                                 255 / MAX_CURRENT_PER_CORE_A;
                 core->plimit_t2 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);
 
-                cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.t3_percent) / 100 +
+                cur_threshold = ((precalc->dynamic) * (p_knobs->current_threshold.iref_to_max_percent) / 100 *
+                                     (p_knobs->current_threshold.t3_percent) / 100 +
                                  (precalc->leakage) * leakage_scaler) *
                                 255 / MAX_CURRENT_PER_CORE_A;
                 core->plimit_t3 = (uint8_t)FLOAT_TO_UNSIGNED(cur_threshold);

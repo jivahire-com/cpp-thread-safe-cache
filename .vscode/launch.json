@@ -302,6 +302,10 @@
                         "i3c_target_mcp_init.test"
                     ],
                     [
+                        "OOB Init Test",
+                        "oob_telm_mcp_init.test"
+                    ],
+                    [
                         "MTS Init",
                         "mts_init.test.exe"
                     ],

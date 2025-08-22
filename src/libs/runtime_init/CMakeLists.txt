@@ -274,8 +274,8 @@ add_library(${TARGET}
         health_monitor_mcp_init.c
         hw_semaphore_init.c
         hw_version_mcp_init.c
-        oob_telm_mcp_init.c
-        oob_telm_mcp_cli_init.c
+        oob_uart_mcp_init.c
+        oob_uart_mcp_cli_init.c
         icc_accel_mbx_init.c
         icc_cli_init.c
         icc_d2dmbx_init.c
@@ -312,7 +312,7 @@ target_link_libraries(
         fwlib.lib.init
         fwlib.lib.mboxPrimitives
         fwlib.lib.mctp
-        fwlib.lib.mctp_i3c_binding
+        fwlib.lib.mctp_uart_binding
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.utils

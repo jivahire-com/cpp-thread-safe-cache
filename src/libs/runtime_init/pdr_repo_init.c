@@ -304,7 +304,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .sensor_count = 1,
         .name_string_count = 0x01,
         .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
-        .sensor_name = u"Dummy_State_Sensor" // Sensor name in UTF-16 format
+        .sensor_name = u"Dummy_State_Sensor_0" // Sensor name in UTF-16 format
     };
 
     static fpfw_pldm_pdr_state_sensor_COMPOSITE_1_STATES_1_t s_dummy0 = {
@@ -341,7 +341,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .sensor_count = 1,
         .name_string_count = 0x01,
         .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
-        .sensor_name = u"Dummy_Numeric_Sensor" // Sensor name in UTF-16 format
+        .sensor_name = u"Dummy_Numeric_Sensor_1" // Sensor name in UTF-16 format
     };
 
     static fpfw_pldm_pdr_numeric_sensor_UINT32_UINT32_t s_dummy1 = {
@@ -402,7 +402,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .sensor_count = 1,
         .name_string_count = 0x01,
         .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
-        .sensor_name = u"Dummy_State_Sensor" // Sensor name in UTF-16 format
+        .sensor_name = u"Dummy_State_Sensor_2" // Sensor name in UTF-16 format
     };
 
     static fpfw_pldm_pdr_state_sensor_COMPOSITE_1_STATES_1_t s_dummy2 = {
@@ -661,7 +661,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .effecter_count = 1,
         .name_string_count = 0x01,
         .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
-        .effecter_name = u"Dummy_State_Effecter" // Effecter name in UTF-16 format
+        .effecter_name = u"Dummy_State_Effecter_0" // Effecter name in UTF-16 format
     };
 
     static fpfw_pldm_pdr_state_effecter_COMPOSITE_1_STATES_1_t s_dummy_effecter0 = {
@@ -691,7 +691,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .effecter_count = 1,
         .name_string_count = 0x01,
         .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
-        .effecter_name = u"Dummy_Numeric_Effecter" // Effecter name in UTF-16 format
+        .effecter_name = u"Dummy_Numeric_Effecter_1" // Effecter name in UTF-16 format
     };
 
     static fpfw_pldm_pdr_numeric_effecter_UINT32_UINT32_t s_dummy_effecter1 = {

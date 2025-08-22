@@ -9,9 +9,10 @@
  */
 
 /*------------- Includes -----------------*/
+
 #include <fpfw_init.h>      // for FPFW_INIT_COMPONENT, FPFW_INIT_D...
 #include <fpfw_pldm_service.h> // for fpfw_pldm_service_t, fpfw_pldm_pdr_state_sensor_COMPOSITE_1_STATES_1_t
-
+#include <idsw_kng.h>
 #include <libpldm/state_set.h>
 
 #include <pldm_pdr.h>
@@ -22,6 +23,23 @@
 #include <DbgPrint.h>         // for FPFW_DBGPRINT_ALWAYS, FPFW_DBGPRINT_VE...
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+/*-- Declarations (Statics and globals) --*/
+
+static bool platform_supports_oob(idsw_plat_id_t sdv_id)
+{
+    switch (sdv_id)
+    {
+    case PLATFORM_FPGA_LARGE:
+    case PLATFORM_FPGA_LARGE_RVP:
+    case PLATFORM_RVP_EVT_SILICON:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/*------------- Functions ----------------*/
 
 static void on_state_sensor_get(pldm_state_sensor_context_t* p_sensor, void* p_context)
 {
@@ -110,7 +128,13 @@ static void on_numeric_effecter_set(pldm_numeric_effecter_context_t* effecter, f
 
 FPFW_INIT_COMPONENT(ex_eff, FPFW_INIT_DEPENDENCIES("pldm"))
 {
-
+    idsw_plat_id_t sdv_id = idsw_get_platform_sdv();
+    if (idsw_get_die_id() == DIE_1 || !platform_supports_oob(sdv_id))
+    {
+        // Skip initialization on Die 1
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+    
     static pldm_state_effecter_context_t effecter0;
     pldm_state_effecter_config_t config0 = {
         .effecter_id = PLDM_EFFECTER_ID_MCP_DUMMY_0,
@@ -141,6 +165,13 @@ FPFW_INIT_COMPONENT(ex_eff, FPFW_INIT_DEPENDENCIES("pldm"))
 
 FPFW_INIT_COMPONENT(ex_sens, FPFW_INIT_DEPENDENCIES("pldm"))
 {
+    idsw_plat_id_t sdv_id = idsw_get_platform_sdv();
+    if (idsw_get_die_id() == DIE_1 || !platform_supports_oob(sdv_id))
+    {
+        // Skip initialization on Die 1
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     // Register dummy0 (state sensor)
     static pldm_state_sensor_context_t sensor0;
     pldm_state_sensor_config_t config0 = {

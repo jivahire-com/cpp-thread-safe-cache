@@ -29,6 +29,8 @@ mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/a
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
 ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }
+rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_data.build}/build/echofalls/debug/rp_data.bin' }
 
 # Build this flavor with
 #  datwizard build --flavor "kingsgate.ifwi.soc.debug.custom"

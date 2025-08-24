@@ -1,0 +1,77 @@
+{
+    "pldm_types": [
+        {
+            "id": 0,
+            "version": "1.1.0",
+            "version_encoded": "0xf1 0xf1 0xf0 0x0",
+            "commands": [
+                "SetTID",
+                "GetTID",
+                "GetPLDMVersion",
+                "GetPLDMTypes",
+                "GetPLDMCommands"
+            ]
+        },
+        {
+            "id": 2,
+            "version": "1.3.0",
+            "version_encoded": "0xf1 0xf3 0xf0 0x0",
+            "commands": [
+                "GetTerminusUID",
+                "SetEventReceiver",
+                "GetEventReceiver",
+                "PlatformEventMessage",
+                "PollForPlatformEventMessage",
+                "EventMessageBufferSize",
+                "SetNumericSensorEnable",
+                "GetSensorReading",
+                "SetStateSensorEnables",
+                "GetStateSensorReadings",
+                "SetNumericEffecterEnable",
+                "SetNumericEffecterValue",
+                "GetNumericEffecterValue",
+                "SetStateEffecterEnables",
+                "SetStateEffecterStates",
+                "GetStateEffecterStates",
+                "GetPDRRepositoryInfo",
+                "GetPDR"
+            ]
+        }
+    ],
+    "pdr_types": [
+        "State Sensor PDR",
+        "State Effecter PDR",
+        "Numeric Sensor PDR",
+        "Numeric Effecter PDR",
+        "Sensor Auxiliary Names PDR",
+        "Effecter Auxiliary Names PDR"
+    ],
+    "error_codes": {
+        "pldm_version_error": "83",
+        "pldm_commands_type_error": "83",
+        "pldm_commands_version_error": "84",
+        "pldm_invalid_record_error": "82"
+    },
+    "offsets": {
+        "pldm_commands_version_error_offset": 1,
+        "pldm_error_offset": 5,
+        "tid_data_offset": 1,
+        "pldm_type_offset": 8
+    },
+    "output_header": {
+        "get_tid": "01 01 00 02 00",
+        "set_tid": "01 01 00 01 00",
+        "get_pldm_types": "01 01 00 04 00",
+        "get_pldm_version": "01 01 00 03",
+        "get_pldm_commands": "01 01 00 05",
+        "get_pdr_repositories_info": "01 01 02 50",
+        "get_pdr": "01 01 02 51"
+    },
+    "output_header_comments": {
+        "get_tid": "01 01 00 02 00 00 -> mctp msg type, pldm instance id, pldm type, GetTID command code, CompletionCode, payload (1 byte, TID = 0)",
+        "set_tid": "01 01 00 01 00 -> mctp msg type, pldm instance id, pldm type, SetTID command code, CompletionCode",
+        "get_pldm_types": "01 01 00 04 00 -> mctp msg type, pldm instance id, pldm type, GetPLDMTypes command code, CompletionCode\n05 00 00 00 00 00 00 00 -> payload (8 bytes, bit 0 & 2 set, PLDM type 0 & 2 supported)",
+        "get_pldm_version": "01 01 00 03 00 -> mctp msg type, pldm instance id, pldm type, GetPLDMVersion command code, CompletionCode\n00 00 00 00 -> Next data transfer handle, 4 bytes\n05 -> TransferFlag, StartAndEnd\nf1 f1 f0 00 -> PLDM Type 0 version (pldm base)\n84 56 24 bf -> ?",
+        "get_pldm_commands": "01 01 00 05 00 -> mctp msg type, pldm instance id, pldm type, GetPLDMCommands command code, CompletionCode\nType 0:\n3e -> Payload, 0011 1110b, bit set for supported command codes, 10 commands supported for pldm type 0\nType 2:\n38 2c 03 00 03 .... 03 -> Payload, bit set for supported command codes, 17 commands supported for pldm type 2 (PDR + Platform Events + num & state sensors & effecters)"
+    }
+}

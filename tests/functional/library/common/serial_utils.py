@@ -27,6 +27,26 @@ class SerialUtility:
         self.log = logger
         self.dut = dut
         self._scp_mcp_heartbeat_received = False
+    
+    def open_mcp_channel(self):
+        """
+        Opens the MCP communication channel.
+        """
+        if not self.mcp_channel.is_open():
+            self.mcp_channel.open()
+            if not self.mcp_channel.is_open():
+                raise RuntimeError("Failed to open MCP communication channel")
+        self.log.info("MCP channel opened successfully")
+    
+    def open_scp_channel(self):
+        """
+        Opens the SCP communication channel.
+        """
+        if not self.scp_channel.is_open():
+            self.scp_channel.open()
+            if not self.scp_channel.is_open():
+                raise RuntimeError("Failed to open SCP communication channel")
+        self.log.info("SCP channel opened successfully")
 
     def run_command_on_mcp(self, command: str, read_until_key: str, pass_logs: Union[List[str], str] = None) -> Optional[str]:
         """

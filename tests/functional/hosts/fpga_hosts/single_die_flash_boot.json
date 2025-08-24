@@ -109,7 +109,8 @@
                         "credential": {
                             "username": "admin",
                             "password": "admin"
-                        }
+                        },
+                        "port": 2200
                     }
                 } 
             }

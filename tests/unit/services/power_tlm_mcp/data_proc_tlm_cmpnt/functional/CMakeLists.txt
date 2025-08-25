@@ -11,6 +11,7 @@ set(SOURCES
     test_soc_pvt_temperature.cpp
     test_core_pstate_data.cpp
     test_cstate_data.cpp
+    log_DIMM_power_integration_test.cpp
     test_core_power.cpp
     test_core_throttling_data.cpp
     )

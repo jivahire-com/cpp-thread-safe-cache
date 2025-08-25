@@ -12,6 +12,7 @@
 
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h>
+#include <compute_metrics_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <semaphore_lib.h>
 #include <sensor_fifo_service.h>
@@ -226,6 +227,7 @@ void reset_pwr_tlm_data(void)
 {
     reset_time();
     data_proc_tlm_cmpnt_clear_pwr_tlm_data();
+    comp_metrics_reset_2_mins_metrics();
     fflush(stdout);
     setup_snsr_fifo_is_empty();
 }

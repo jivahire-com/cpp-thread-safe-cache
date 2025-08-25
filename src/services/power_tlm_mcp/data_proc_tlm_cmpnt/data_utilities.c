@@ -147,7 +147,9 @@ void data_util_cumulative_avg_u16_add_sample(cumulative_u16_avg_t* avg, uint16_t
     }
     else
     {
-        FPFW_ET_LOG(AvgAddSampleNumSat, (uint32_t)avg);
+        // TODO: Determine which entries are getting enough samples to hit this. Adjust as needed
+        //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2872430
+        // FPFW_ET_LOG(AvgAddSampleNumSat, (uint32_t)avg);
         avg->num_samples = UINT16_MAX; // clamp to max
     }
 }

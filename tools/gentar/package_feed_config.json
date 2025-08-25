@@ -1,0 +1,26 @@
+{
+    "BIOS" : {
+        "CompatibleName" : "xyz.microsoft.Software.Element.wcs.Type.BIOS",
+        "FeedConfig" : {
+            "Default" : {
+                "Input" : {
+                    "organization" : "https://azurecsi.visualstudio.com/",
+                    "project" : "Woodinville",
+                    "feed" : "EchoFalls.Dependency"
+                },
+                "Output" : {
+                    "organization" : "https://azurecsi.visualstudio.com/",
+                    "project" : "Woodinville",
+                    "feed" : "EchoFalls.Firmware"
+                }
+            },
+            "M1120-C4143" : {
+                "Input" : {
+                    "organization" : "https://azurecsi.visualstudio.com/",
+                    "project" : "Woodinville",
+                    "feed" : "EchoFalls.Firmware"
+                }
+            }
+        }
+    }
+}

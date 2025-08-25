@@ -1,6 +1,6 @@
 {
-    "id": "HIO-211-J10-R5",
-    "ip": "HIO-211-J10-R5",
+    "id": "DEBUGPC-1103E12-N1",
+    "ip": "DEBUGPC-1103E12-N1",
     "type": "rvp",
     "connections": {
         "mb": {
@@ -14,7 +14,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM8",
+                                    "serial_port": "COM3",
                                     "line_separator": "\n",
                                     "enable_warning_logs": false,
                                     "file_name":"hsp0_logs"
@@ -26,7 +26,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM9",
+                                    "serial_port": "COM5",
                                     "line_separator": "\n",
                                     "enable_warning_logs": false,
                                     "file_name":"scp0_logs"
@@ -38,10 +38,21 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM10",
+                                    "serial_port": "COM3",
                                     "line_separator": "\n",
                                     "enable_warning_logs": false,
                                     "file_name": "mcp0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        },
+                        "aps": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM7",
+                                    "enable_warning_logs": false,
+                                    "file_name": "aps0_logs"
                                 },
                                 "default": "serial"
                             }
@@ -50,9 +61,35 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM17",
+                                    "serial_port": "COM10",
                                     "enable_warning_logs": false,
                                     "file_name": "apns0_logs"
+                                },
+                                "default": "serial"
+                            }
+                        }
+                    },
+                    "secondary_die": {
+                        "hsp": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM4",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs": false,
+                                    "file_name": "hsp1_logs"
+                                },
+                                "default": "serial"
+                            }
+                        },
+                        "scp": {
+                            "channels": {
+                                "serial": {
+                                    "baud_rate": 115200,
+                                    "serial_port": "COM6",
+                                    "line_separator": "\n",
+                                    "enable_warning_logs": false,
+                                    "file_name":"scp1_logs"
                                 },
                                 "default": "serial"
                             }
@@ -61,6 +98,14 @@
                 },
                 "dcscm": {
                     "is_present": false
+                },
+                "comport_uart_mapping": {
+                    "COM3": 0,
+                    "COM5": 1,
+                    "COM6": 2,
+                    "COM7": 3,
+                    "COM10": 4,
+                    "COM4": 0
                 }
             }
         }

@@ -1,0 +1,16 @@
+{
+    "Files": [
+        {
+            "File": "${env:IFWI_FILE_NAME}",
+            "Metadata": {
+                "SkipRegions": [
+                    {
+                        "_comment": "Preserving Persistent Debug Token block during the OOB update process, it is described on the SPI ROM address.",
+                        "Offset": "0x3FF0000",
+                        "SizeInBytes": "0x10000"
+                    }
+                ]
+            }
+        }
+    ]
+}

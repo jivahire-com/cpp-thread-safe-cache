@@ -37,6 +37,7 @@
 /.externs
 /.testlogs
 /.svp_simulator
+tools/robot-secure-txt.yml
 
 # Pythia payloads
 .payload*/

@@ -66,6 +66,12 @@ jobs:
     # Dump agent information (useful for debugging)
     - template: agent_info.yaml
 
+    # Download secure file for credential usage
+    - task: DownloadSecureFile@1
+      name: credFile
+      inputs:
+        secureFile: 'robot-secure-txt.yml'
+
     # Download input artifact for CI & nightly run
     - task: DownloadPipelineArtifact@2
       condition: and(succeeded(), eq('${{ parameters.build_id }}', '0'))
@@ -113,15 +119,14 @@ jobs:
           #python .\tests\functional\library\kng_pythia_libs\fpga_reset_com_ports.py
 
           # Get system name
-          $system_name = $env:COMPUTERNAME
-          $split_system_name = $system_name -split '-'
-          $system_name = "$($split_system_name[-2])-$($split_system_name[-1])"
+          $system_name = $env:AGENT_NAME
+          $system_name = $system_name.Substring($system_name.Length - 6)
           
           # Kick all users out
           kickusersoc -system $system_name
 
           # Flash firmware
-          flashscpfwsoc -system $system_name
+          flashscpfwsoc -system $system_name -securefile $(credFile.secureFilePath)
 
           # OOB Reset
           #soc_reset
@@ -145,6 +150,7 @@ jobs:
       displayName: 'Test: Run SOC Pythia Tests'
       env:
         AZURE_DEVOPS_EXT_PAT : $(System.AccessToken)
+        SECURE_FILE_PATH: $(credFile.secureFilePath)
       inputs:
         workingDirectory: '$(Build.SourcesDirectory)'
         targetType: 'inline'
@@ -209,3 +215,12 @@ jobs:
         artifact: 'drop_${{ parameters.ArtifactName }}_SOC_Pythia_Tests$(System.JobAttempt)'
         publishLocation: 'pipeline'
         parallel: true
+
+    - task: PowerShell@2
+      displayName: Cleanup Workspace
+      condition: not(canceled())
+      inputs:
+        targetType: 'inline'
+        showWarnings: true
+        script: |
+          Remove-Item -Path "$(Build.SourcesDirectory)\*" -Force -Recurse

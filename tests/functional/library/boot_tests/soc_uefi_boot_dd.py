@@ -2,22 +2,24 @@
 
 """
 - Python based Pythia 2.0 Test.
-- Tests SOC UEFI boot
+- Tests SOC UEFI boot DualDie
 """
 import time
 import sys, os
+import subprocess
+#import yaml
 from pathlib import Path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs'))
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
-from BmcHelperLibrary import BmcHelperLibrary
+from RscmHelperLibrary import RscmHelperLibrary
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 # Class name must match file name for Robot Framework Library usage
-class soc_uefi_boot(EchoFallsBaseTest):
+class soc_uefi_boot_dd(EchoFallsBaseTest):
 
     """
     :param name:                Name of the test case
@@ -31,7 +33,7 @@ class soc_uefi_boot(EchoFallsBaseTest):
     """
     def __init__(
         self,
-        name: str = "SOC_UEFI_Boot_Single_Die",
+        name: str = "SOC_UEFI_Boot_Dual_Die",
         number: str = "NaN",
         workspace_config: Path | str = None,
         default_log_home: str = None,
@@ -53,14 +55,25 @@ class soc_uefi_boot(EchoFallsBaseTest):
             host_name,
         )
     
-    def soc_uefi_boot(self):
+    def soc_uefi_boot_dd(self):
         """
         SOC UEFI boot test:
             1. Setup the Test.
             2. Look for UEFI Interactive Shell.
             3. Teardown Test.
         """
-        self.log.info("Running SOC UEFI boot test")
+        self.log.info("Running SOC UEFI Dual Die boot test")
+
+        print("Python executable:", sys.executable)
+        print("Python version:", sys.version)
+
+        # Try importing PyYAML, install if missing
+        try:
+            import yaml
+        except ImportError:
+            print("PyYAML not found. Installing...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "pyyaml"])
+            import yaml  # Try again after install
 
         scp_connection=self.dut.mb.node_0.soc.primary_die.scp.channel_manager
         apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
@@ -71,23 +84,26 @@ class soc_uefi_boot(EchoFallsBaseTest):
 
         self.dut.setup()
         self.log.warning("Device type is SOC. Performing SOC reset ...")
-        bmc_helper = BmcHelperLibrary(hostname="M1120-SCM-392.svceng.com")  # Fill in real host if available
-        bmc_helper.soc_reset()
+        cred_path = os.environ.get('SECURE_FILE_PATH')
+        creds = self.load_credentials_from_yaml(cred_path)
 
+        rscm_helper = RscmHelperLibrary(rm_host="172.29.89.33", bmc_host="172.17.0.97", rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'])  # Fill in real host if available
+        rscm_helper.rscm_soc_reset()
+        
         scp_connection.get_current_channel().open()
         if not scp_connection.get_current_channel().is_open():
             self.dut.teardown()
             time.sleep(30)
-            return False         
+            return False  
         apns_connection.get_current_channel().open()
         # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
         if not apns_connection.get_current_channel().is_open():
             self.dut.teardown()
             time.sleep(30)
             return False
-
-        bmc_helper.set_profile("General")
-        bmc_helper.set_boot_option("ConfApp")
+        
+        rscm_helper.rscm_set_profile("General")
+        rscm_helper.rscm_set_boot_option("ConfApp")
 
         self.log.info("Reading APNS UART for UEFI Interactive Shell")
 
@@ -116,3 +132,11 @@ class soc_uefi_boot(EchoFallsBaseTest):
         time.sleep(30)
 
         return True
+    
+    @staticmethod
+    def load_credentials_from_yaml(path):
+        import yaml
+        with open(path, 'r') as f:
+            data = yaml.safe_load(f)
+        return data
+

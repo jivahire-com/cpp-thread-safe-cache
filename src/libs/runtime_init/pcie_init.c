@@ -21,6 +21,7 @@
 #include <scp_pcie_manager.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -123,6 +124,13 @@ FPFW_INIT_COMPONENT(cxl_chbcr, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "cfg_mgr", "
     {
         goto done_cxl_init;
     }
+
+    /*
+     * Always ensure the CHBCR region is zeroed out explicitly before init
+     * This prevents issues when DDR encryption is enabled and random data
+     * is present in the memory region
+     */
+    memset((void*)MSCP_ATU_AP_WINDOW_CHBCR_BASE_ADDR, 0, MSCP_ATU_AP_WINDOW_CHBCR_SIZE);
 
     cxl_chbcr_init((uint8_t*)MSCP_ATU_AP_WINDOW_CHBCR_BASE_ADDR);
 

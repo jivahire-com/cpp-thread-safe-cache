@@ -2620,8 +2620,8 @@ TEST_FUNCTION(test_i3c_controller_soc_die_0_verify_dimm_capacity_Check_Fail, set
         }
     }
     // Call the function under test
-        int status = i3c_controller_verify_dimm_on_current_die(ddrss_en);
-        assert_int_equal(status, SILIBS_SUCCESS);
+    int status = i3c_controller_verify_dimm_on_current_die(ddrss_en);
+    assert_int_equal(status, SILIBS_SUCCESS);
 }
 
 // Test for verifying the dimm sku Check on die 0 failed

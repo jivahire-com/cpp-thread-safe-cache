@@ -56,5 +56,7 @@ mock_target(${TARGET}
     mts_client_send_trp_response
     mts_client_send_new_trp_msg
 
-    idsw_get_die_id
+    mts_get_this_die_id
+    mts_get_this_core_id
+    transfer_rly_is_primary_node
 )

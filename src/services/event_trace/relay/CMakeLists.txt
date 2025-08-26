@@ -9,15 +9,16 @@ add_library(${TARGET}
 target_link_libraries(
     ${TARGET}
     PRIVATE
+        IFPFW.EventTracing
         fwlib.lib.assert
         fwlib.lib.interface.platform.dbgprint
+        fwlib.lib.interface.platform.errorhandler
+        fwlib.service.iccBase
+        ms::lib::crash_dump
         ms::lib::hsp_firmware_headers
         ms::service::atu_service
         ms::service::mts
         silibs::idsw_kng
-        IFPFW.EventTracing
-        fwlib.service.iccBase
-        fwlib.lib.interface.platform.errorhandler
     PUBLIC
         fwlib.lib.interface.platform.threadx
         ms::lib::interface::in_band_telemetry_ddr

@@ -514,7 +514,8 @@ void ddr_err_inj_fecq_fedb_data_array_ue(uint32_t mc)
         printf("Error: Syndrome not found\n");
         return;
     }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS || ddrss_ras_agent == NULL)
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
+        ddrss_ras_agent == NULL)
     {
         printf("Error: Failed to get RAS agent\n");
         return;

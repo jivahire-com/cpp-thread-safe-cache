@@ -3,7 +3,7 @@ enabled_on(arm-eabi-aarch)
 #
 # Setup the SCP Runtime Init
 #
-set(TARGET kng.lib.scp.runtime_init.scp)
+set(TARGET kng.lib.runtime_init.scp)
 
 add_library(${TARGET}
     OBJECT
@@ -247,7 +247,7 @@ add_library(ms::lib::runtime_init::scp ALIAS ${TARGET})
 #
 # Setup the MCP Runtime Init
 #
-set(TARGET kng.lib.scp.runtime_init.mcp)
+set(TARGET kng.lib.runtime_init.mcp)
 
 add_library(${TARGET}
     OBJECT
@@ -257,6 +257,7 @@ add_library(${TARGET}
         atu_init.c
         bitrot_service_init.c
         boot_status_init.c
+        build_info_cli_init.c
         cfg_mgr_init.c
         core_info_init.c
         cli_crash_dump_init.c
@@ -338,6 +339,7 @@ target_link_libraries(
         ms::lib::accel_intr
         ms::lib::accelerator_ip
         ms::lib::boot_status
+        ms::lib::build_info_cli
         ms::lib::config_manager
         ms::lib::core_info
         ms::lib::config_manager::cli

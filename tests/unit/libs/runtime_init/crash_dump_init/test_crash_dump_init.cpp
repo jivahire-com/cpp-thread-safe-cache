@@ -24,10 +24,8 @@ extern "C" {
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <kng_error.h>
+#include <startup_shutdown.h>
 #include <system_info.h>
-#if defined(SCP_RUNTIME_INIT)
-    #include <startup_shutdown.h>
-#endif
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -180,7 +178,6 @@ void __wrap_crash_dump_interface_initialize(pcrash_dump_interface_t intf, pcrash
     function_called();
 }
 
-#if defined(SCP_RUNTIME_INIT)
 int32_t __wrap_sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
                                 pstartup_ssi_registration_t p_registration,
                                 PDFWK_INTERFACE_HEADER p_ssi_interface)
@@ -193,7 +190,6 @@ int32_t __wrap_sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
 
     return 0;
 }
-#endif
 
 //
 // Tests
@@ -311,6 +307,7 @@ TEST_FUNCTION(test_cd_drv, nullptr, nullptr)
 {
     expect_function_call(__wrap_crash_dump_device_initialize);
     expect_function_call(__wrap_crash_dump_interface_initialize);
+    expect_function_call(__wrap_sos_register_ssi);
 
     _fpfw_component_cd_drv.init_fn();
 }

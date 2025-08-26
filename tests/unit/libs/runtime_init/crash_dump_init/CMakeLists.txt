@@ -100,6 +100,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.crashDump
         fwlib.platform.dfwkhost.threadx
         fwlib.service.pldm
+        kng.lib.hsp_firmware_headers
+        ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::crash_dump
@@ -140,4 +142,5 @@ mock_target(${TARGET}
     idsw_get_cpu_type
     idsw_get_platform_sdv
     crash_dump_transfer_full_dump_to_bmc
+    sos_register_ssi
 )

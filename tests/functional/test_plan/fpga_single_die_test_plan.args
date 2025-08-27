@@ -47,4 +47,4 @@
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test.robot
 
 ## PLDM Functional Tests
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
+# ./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot

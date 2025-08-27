@@ -269,6 +269,7 @@ Function Get-AzPackages($PackageFile, $TargetDir)
             "--version $($Package.version) " +
             "--path $PackageTargetPath"
 
+        Invoke-Executable -exe "az" -exeargs " config set core.collect_telemetry=no"
         $Output = Invoke-Executable -exe "az" -exeArgs $Command
 
         if ($LASTEXITCODE -ne 0)
@@ -386,8 +387,29 @@ Function Write-Title($Title, $Color)
 Function Invoke-Executable($exe, $exeArgs)
 {
     $Explode = $exeArgs.Split(' ')
-    $Output =  [string](& $exe $Explode 2>&1)
-    return $Output
+    # Ensure non-terminating errors don't halt execution
+    $ErrorActionPreference = 'Continue'
+    try {
+        $Output = & {
+            & $exe $Explode 2>&1
+        }
+        $ExitCode = $LASTEXITCODE
+        $CleanOutput = $Output | Where-Object { 
+            $_ -notmatch 'ApplicationInsightsTelemetrySender' -and
+            $_ -notmatch "Command group 'config' is experimental"
+        }
+        if ($ExitCode -ne 0 -and $CleanOutput.Count -eq 0) {
+            Write-Host "[INFO] Ignoring telemetry-only failure." -ForegroundColor Yellow
+            return ""
+        }
+        if ($ExitCode -ne 0) {
+            throw "Command '$exe $exeArgs' failed with exit code $ExitCode"
+        }
+        return $CleanOutput
+    } catch {
+        Write-Host "[ERROR] $_" -ForegroundColor Yellow
+        throw $_
+    }
 }
 
 <#

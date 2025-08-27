@@ -14,7 +14,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM3",
+                                    "serial_port": "COM24",
                                     "line_separator": "\n",
                                     "enable_warning_logs": false,
                                     "file_name":"hsp0_logs"
@@ -26,7 +26,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM5",
+                                    "serial_port": "COM26",
                                     "line_separator": "\n",
                                     "enable_warning_logs": false,
                                     "file_name":"scp0_logs"
@@ -38,7 +38,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM3",
+                                    "serial_port": "COM24",
                                     "line_separator": "\n",
                                     "enable_warning_logs": false,
                                     "file_name": "mcp0_logs"
@@ -50,7 +50,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM7",
+                                    "serial_port": "COM29",
                                     "enable_warning_logs": false,
                                     "file_name": "aps0_logs"
                                 },
@@ -61,7 +61,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM10",
+                                    "serial_port": "COM28",
                                     "enable_warning_logs": false,
                                     "file_name": "apns0_logs"
                                 },
@@ -74,7 +74,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM4",
+                                    "serial_port": "COM25",
                                     "line_separator": "\n",
                                     "enable_warning_logs": false,
                                     "file_name": "hsp1_logs"
@@ -86,7 +86,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM6",
+                                    "serial_port": "COM27",
                                     "line_separator": "\n",
                                     "enable_warning_logs": false,
                                     "file_name":"scp1_logs"
@@ -100,12 +100,12 @@
                     "is_present": false
                 },
                 "comport_uart_mapping": {
-                    "COM3": 0,
-                    "COM5": 1,
-                    "COM6": 2,
-                    "COM7": 3,
-                    "COM10": 4,
-                    "COM4": 0
+                    "COM24": 0,
+                    "COM26": 1,
+                    "COM27": 2,
+                    "COM29": 3,
+                    "COM28": 4,
+                    "COM25": 0
                 }
             }
         }

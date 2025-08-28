@@ -39,6 +39,10 @@
  */
 #define CD_MAGIC_NUMBER 0xCDED5D55
 
+#define CRASH_DUMP_MAX_RETRY_COUNT    2
+#define CRASH_DUMP_MAX_RETRY_DELAY_US 2000 // 2 seconds
+static uint8_t s_retry_count = 0;
+
 /*-------------- Typedefs ----------------*/
 
 typedef struct
@@ -405,6 +409,28 @@ static uint32_t crash_dump_register_cded_ext_mmio(crash_dump_type_context_t* typ
     return reg_count;
 }
 
+static bool crash_dump_wait_for_accel_cd_complete(ACCEL_ID accel_type)
+{
+    /**
+     * CD collection of SDM and CDED happens in parallel. Wait only for the first
+     * accel core to complete the crash dump collection. The later accel core
+     * should have completed the crash dump collection by the time we reach here.
+     */
+    while (crash_dump_is_accel_cd_complete(accel_type) == false)
+    {
+        if (s_retry_count >= CRASH_DUMP_MAX_RETRY_COUNT)
+        {
+            return false;
+        }
+
+        s_retry_count++;
+        // Allow some time for the accel core to complete the crash dump collection
+        SLEEP_US(CRASH_DUMP_MAX_RETRY_DELAY_US);
+    }
+
+    return true;
+}
+
 static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_type)
 {
     uint32_t cd_ddr_addr;
@@ -426,7 +452,7 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
         goto cd_transfer_failed;
     }
 
-    if (!crash_dump_is_accel_cd_complete(accel_type))
+    if (!crash_dump_wait_for_accel_cd_complete(accel_type))
     {
         // Invalid MAGIC number address or CD collection is not complete for given accel core
         CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_CD_INCOMPLETE);

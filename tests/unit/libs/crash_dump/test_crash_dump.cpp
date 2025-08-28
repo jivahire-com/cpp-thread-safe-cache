@@ -1557,7 +1557,7 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_null_ctx, nullptr, nullptr)
     context.accel_cd_ctx[accel_type].cd_file_size = 0x1000;
 
     will_return(__wrap_crash_dump_context, &context);
-    will_return(__wrap_crash_dump_context, NULL);
+    will_return_count(__wrap_crash_dump_context, NULL, 3);
     will_return(__wrap_crash_dump_context, &context);
 
     // crash_dump_update_accel_state()

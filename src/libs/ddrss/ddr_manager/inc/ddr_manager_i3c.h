@@ -43,6 +43,7 @@ typedef struct {
     uint8_t ts_mr_reg_low;
     uint8_t ts_mr_reg_high;
     uint8_t pmic_mr_reg;
+    uint8_t ts_data[2];
 } ddr_i3c_descriptor_t;
 
 typedef struct {

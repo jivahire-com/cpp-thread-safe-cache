@@ -147,32 +147,19 @@ static PLACED_CODE FPFW_CLI_STATUS i3c_read_temp_sensor(int argc, const char** a
         FpFwCliPrint("i3c_bus: 0x%x, dev_id 0x%x\n", i3c_bus, dev_id);
         i3c_instance_t* instance = (i3c_bus == 0) ? get_i3c0() : get_i3c1();
         // TSx_LOW
-        uint8_t temp_mr_reg = 0x0;
-        uint8_t temp_data_len = 0x1;
-        uint8_t temp_low = 0x0;
-        uint8_t temp_high = 0x0;
-
+        uint8_t temp_mr_reg = 49;
+        uint8_t temp_data_len = 0x2;
         i3c_cmd_t s_i3c_cmd_test = {0};
         int32_t status = 0;
+        uint8_t temp_data[2] = {0};
 
-        temp_mr_reg = 49;
-        status = ddr_i3c_interface_read_temp_sensor_mr_reg(instance, &s_i3c_cmd_test, dev_id, temp_mr_reg, &temp_low, &temp_data_len);
+        status = ddr_i3c_interface_read_temp_sensor_mr_reg(instance, &s_i3c_cmd_test, dev_id, temp_mr_reg, temp_data, &temp_data_len);
         if (status != SILIBS_SUCCESS)
         {
             FpFwCliPrint("Error in reading DDR Temp TS%d, MR49 status 0x%x\n", dev_id, status);
         }
-        FpFwCliPrint("DEV_ID: %d, temp_low 0x%x\n", dev_id, temp_low);
-        SLEEP_US(DELAY_10_MS);
-        // TSx_LOW
-        temp_mr_reg = 50;
-        status = ddr_i3c_interface_read_temp_sensor_mr_reg(instance, &s_i3c_cmd_test, dev_id, temp_mr_reg, &temp_high, &temp_data_len);
-        FpFwCliPrint("DEV_ID: %d, temp_high 0x%x\n", dev_id, temp_high);
-        if (status != SILIBS_SUCCESS)
-        {
-            FpFwCliPrint("Error in reading DDR Temp TS%d, MR50 status 0x%x\n", dev_id, status);
-        }
-
-        ddr_manager_i3c_temperature_t ts_scaled_celsius = ts_convert_temperature(temp_low, temp_high);
+        FpFwCliPrint("DEV_ID: %d, temp_low 0x%x, temp_high 0x%x\n", dev_id, temp_data[0], temp_data[1]);
+        ddr_manager_i3c_temperature_t ts_scaled_celsius = ts_convert_temperature(temp_data[0], temp_data[1]);
         if (ts_scaled_celsius.is_positive)
         {
             FpFwCliPrint("DDR Temp +%d.%d C\n", ts_scaled_celsius.temp_int, ts_scaled_celsius.temp_frac);

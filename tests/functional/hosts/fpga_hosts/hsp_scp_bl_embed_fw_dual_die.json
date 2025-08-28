@@ -185,7 +185,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM10",
+                                    "serial_port": "COM11",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
                                     "file_name":"mcp1_logs",

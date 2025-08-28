@@ -43,4 +43,8 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     pcr_ddrss_configure_clock_and_pcr_reset
     system_info_is_warm_start
+    config_get_fips_kat_en
+    idsw_get_platform_sdv
+    fpfw_init_get_handle
+    fpfw_icc_base_send_recv_sync
 )

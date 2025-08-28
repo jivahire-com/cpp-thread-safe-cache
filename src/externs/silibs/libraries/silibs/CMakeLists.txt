@@ -130,6 +130,7 @@ target_compile_options (
     "-Os"
     "-DDDRSS_PHY_TRAIN_FW_BUILTIN_ENABLE=0"
     "-DDDRSS_PHY_PIE_CODE_DATA_BUILTIN_ENABLE=0"
+    "-DDDRSS_KEY_LOADING_OVERRIDE=1"
 )
 target_compile_options (cmn800_skus PRIVATE "-DCMN800_FULL_MESH_TABLE=0")
 target_compile_options (pciess PRIVATE "-Os")

@@ -17,6 +17,7 @@
 #include <ddrss_runtime_api.h>
 #include <idsw_kng.h>
 #include <silibs_platform.h>
+#include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -84,6 +85,7 @@ void prod_ddrss_convert_rh_rec_to_rh_cper(uint32_t mc,
  * @param die_num - die number
  */
 void prod_ddrss_pcr_init(KNG_DIE_ID die_num);
+int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us);
 
 // in ddrss_ras.c
 int ddrss_probe_ras_agent(uint32_t mc, uint32_t ras_agent_entity_id);

@@ -33,6 +33,8 @@ static atu_map_entry_t ddrss_cfg_space_mem_atu_map_struct[NUM_DIE];
 static atu_map_entry_t ddr_media_atu_struct = {0};
 static atu_entry_attr_t ddr_atu_attr_priv_root = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
 static bool new_atu_mapping = false;
+static atu_map_entry_t atu_map_entry_ns[NUM_DIE];
+static atu_map_entry_t atu_map_entry_rt[NUM_DIE];
 
 /*--------- Function Prototypes ----------*/
 
@@ -138,4 +140,45 @@ void ddrss_atu_unmap_media_addr(uint64_t p_addr_8K_aligned)
     {
         printf("ATU region unmapped\n");
     }
+}
+
+uintptr_t ddrss_atu_map_fips_ns_space(uint32_t die_num)
+{
+    atu_entry_attr_t fips_test_atu_ns_attr = {ATU_BUS_ATTR_NS};
+    atu_map_entry_ns[die_num].ap_base_address =
+        (die_num == SOC_D0) ? DDR_MEMORY_NUMA_DOMAIN0_START : DDR_MEMORY_NUMA_DOMAIN1_START;
+    atu_map_entry_ns[die_num].mscp_start_address = 0;
+    atu_map_entry_ns[die_num].mscp_end_address = 64 * SL_1KB - 1;
+    atu_map_entry_ns[die_num].attribute = fips_test_atu_ns_attr;
+    int sts = atu_map(ATU_ID_MSCP, &atu_map_entry_ns[die_num]);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
+    printf("ATU region mapped to Die 0x%lx ns_mem:0x%lX\n",
+           (unsigned long)die_num,
+           (unsigned long)atu_map_entry_ns[die_num].mscp_start_address);
+    return atu_map_entry_ns[die_num].mscp_start_address;
+}
+
+uintptr_t ddrss_atu_map_fips_rt_space(uint32_t die_num)
+{
+    atu_entry_attr_t fips_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
+    atu_map_entry_rt[die_num].ap_base_address =
+        (die_num == SOC_D0) ? DDR_MEMORY_NUMA_DOMAIN0_START : DDR_MEMORY_NUMA_DOMAIN1_START;
+    atu_map_entry_rt[die_num].mscp_start_address = 0;
+    atu_map_entry_rt[die_num].mscp_end_address = 64 * SL_1KB - 1;
+    atu_map_entry_rt[die_num].attribute = fips_test_atu_root_attr;
+    int sts = atu_map(ATU_ID_MSCP, &atu_map_entry_rt[die_num]);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
+    printf("ATU region mapped to Die 0x%lx rt_mem:0x%lX\n",
+           (unsigned long)die_num,
+           (unsigned long)atu_map_entry_rt[die_num].mscp_start_address);
+    return atu_map_entry_rt[die_num].mscp_start_address;
+}
+
+void ddrss_atu_unmap_fips_space(uint32_t die_num)
+{
+    int sts;
+    sts = atu_unmap(ATU_ID_MSCP, &atu_map_entry_rt[die_num]);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
+    sts = atu_unmap(ATU_ID_MSCP, &atu_map_entry_ns[die_num]);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 }

@@ -38,3 +38,7 @@ void ddrss_atu_unmap_cfg_space(uint32_t die_num);
 
 uintptr_t ddrss_atu_map_media_addr(uint64_t p_addr_8K_aligned);
 void ddrss_atu_unmap_media_addr(uint64_t p_addr_8K_aligned);
+
+uintptr_t ddrss_atu_map_fips_ns_space(uint32_t die_num);
+uintptr_t ddrss_atu_map_fips_rt_space(uint32_t die_num);
+void ddrss_atu_unmap_fips_space(uint32_t die_num);

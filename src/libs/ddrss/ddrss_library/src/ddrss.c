@@ -21,7 +21,8 @@
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <fpfw_cfg_mgr.h>
-#include <idhw.h> // for idhw_is_single_die_boot_en
+#include <fpfw_init.h> // for fpfw_init_get_handle
+#include <idhw.h>      // for idhw_is_single_die_boot_en
 #include <idsw_kng.h>
 #include <interrupts.h>
 #include <memory_map/ddrss_reserved_regions.h>
@@ -446,6 +447,27 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     // Set up per-lane margin buffer
     ddrss_cfgs.dq_lane_margin_base = (uint64_t)(uintptr_t)&ddrss_phy_training_dq_margin;
 
+    // Map both DDRSS fips test space through ATU
+    if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP) ||
+        ((platform_id == PLATFORM_RVP_EVT_SILICON) && (ddrss_cfgs.reset_reason == DDRSS_SYS_RESET_COLD) &&
+         (ddrss_cfgs.ext_knobs.fips_kat_en)))
+    {
+        if (die_num == DIE_0)
+        {
+            uint32_t d0_ns_start = ddrss_atu_map_fips_ns_space(SOC_D0);
+            uint32_t d0_rt_start = ddrss_atu_map_fips_rt_space(SOC_D0);
+            ddrss_cfgs.fips_kat_cfg.ns_mem_base[SOC_D0] = d0_ns_start;
+            ddrss_cfgs.fips_kat_cfg.rt_mem_base[SOC_D0] = d0_rt_start;
+        }
+        else
+        {
+            uint32_t d1_ns_start = ddrss_atu_map_fips_ns_space(SOC_D1);
+            uint32_t d1_rt_start = ddrss_atu_map_fips_rt_space(SOC_D1);
+            ddrss_cfgs.fips_kat_cfg.ns_mem_base[SOC_D1] = d1_ns_start;
+            ddrss_cfgs.fips_kat_cfg.rt_mem_base[SOC_D1] = d1_rt_start;
+        }
+    }
+
     // Run DDRSS init
     sts = ddrss_init(&ddrss_cfgs);
     if (sts != SILIBS_SUCCESS)
@@ -491,6 +513,21 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         ddrss_atu_unmap_cfg_space(SOC_D0);
     }
 
+    // Unmap FIPS test space
+    if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP) ||
+        ((platform_id == PLATFORM_RVP_EVT_SILICON) && (ddrss_cfgs.reset_reason == DDRSS_SYS_RESET_COLD) &&
+         (ddrss_cfgs.ext_knobs.fips_kat_en)))
+    {
+        if (die_num == DIE_0)
+        {
+            ddrss_atu_unmap_fips_space(SOC_D0);
+        }
+        else
+        {
+            ddrss_atu_unmap_fips_space(SOC_D1);
+        }
+    }
+
     /* Register the vendor and standard error domain with the health monitor */
     hm_register_error_domain(ACPI_ERROR_DOMAIN_STD_MEMORY, &STD_MEMORY_ERROR_DOMAIN_GUID, "Std Memory Error", ddr_error_injection_cb, NULL);
     hm_register_error_domain(ACPI_ERROR_DOMAIN_DDR, &DDR_ERROR_DOMAIN_FRU_GUID, "DDR Error Domain", ddr_error_injection_cb, NULL);
@@ -513,4 +550,77 @@ void prod_ddrss_pcr_init(KNG_DIE_ID die_num)
 ddrss_phy_training_dq_margin_t* ddrss_get_training_margin_base(void)
 {
     return &ddrss_phy_training_dq_margin[0];
+}
+
+int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
+{
+    // 'mc' is currently unused but reserved for future use.
+    (void)mc;
+    // 'timeout_us' is reserved for future use to allow configurable timeouts.
+    // Consider integrating it into the send/receive call when appropriate.
+    (void)timeout_us;
+
+    bool fips_kat_enabled = config_get_fips_kat_en();
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
+    int sts = SILIBS_E_SUPPORT;
+    kng_hsp_mailbox_msg mailbox_msg = {
+        .header.cmd = HSP_MAILBOX_CMD_DDRSS_DEPLOY_PROD_KEYS_REQ,
+    };
+    size_t recv_msg_size_bytes = 0;
+    fpfw_status_t icc_status = {0};
+
+    fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_hspmbx");
+    FPFW_RUNTIME_ASSERT(icc_ctx != NULL);
+
+    if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP) ||
+        (platform_id == PLATFORM_RVP_EVT_SILICON))
+    {
+        if (msg == DDRSS_HSP_MSG_FIPS_KEYS_LOADED && fips_kat_enabled)
+        {
+            mailbox_msg.header.cmd = HSP_MAILBOX_CMD_DDRSS_DEPLOY_FIPS_KEYS_REQ;
+
+            icc_status = fpfw_icc_base_send_recv_sync(icc_ctx, &mailbox_msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+
+            //! Verify sync return status & response message
+            FPFW_RUNTIME_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+            FPFW_RUNTIME_ASSERT(recv_msg_size_bytes > 0);
+            FPFW_RUNTIME_ASSERT(mailbox_msg.header.cmd == HSP_MAILBOX_CMD_DDRSS_DEPLOY_FIPS_KEYS_RSP);
+            FPFW_RUNTIME_ASSERT(mailbox_msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+
+            sts = SILIBS_SUCCESS;
+        }
+        else if (msg == DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE && fips_kat_enabled)
+        {
+            mailbox_msg.header.cmd = HSP_MAILBOX_CMD_DDRSS_FIPS_KEY_TEST_STATUS_NOTIFY;
+            icc_status = fpfw_icc_base_send_recv_sync(icc_ctx, &mailbox_msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+
+            //! Verify sync return status & response message
+            FPFW_RUNTIME_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+            FPFW_RUNTIME_ASSERT(recv_msg_size_bytes > 0);
+            FPFW_RUNTIME_ASSERT(mailbox_msg.header.cmd == HSP_MAILBOX_CMD_DDRSS_FIPS_KEY_TEST_STATUS_NOTIFY_RSP);
+            FPFW_RUNTIME_ASSERT(mailbox_msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+
+            sts = SILIBS_SUCCESS;
+        }
+        else if (msg == DDRSS_HSP_MSG_PROD_KEYS_LOADED)
+        {
+            mailbox_msg.header.cmd = HSP_MAILBOX_CMD_DDRSS_DEPLOY_PROD_KEYS_REQ;
+            icc_status = fpfw_icc_base_send_recv_sync(icc_ctx, &mailbox_msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+
+            //! Verify sync return status & response message
+            FPFW_RUNTIME_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+            FPFW_RUNTIME_ASSERT(recv_msg_size_bytes > 0);
+            FPFW_RUNTIME_ASSERT(mailbox_msg.header.cmd == HSP_MAILBOX_CMD_DDRSS_DEPLOY_PROD_KEYS_RSP);
+            FPFW_RUNTIME_ASSERT(mailbox_msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+
+            sts = SILIBS_SUCCESS;
+        }
+        else
+        {
+            sts = SILIBS_E_SUPPORT;
+        }
+    }
+
+    return sts;
 }

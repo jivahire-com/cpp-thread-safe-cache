@@ -161,8 +161,16 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    will_return(__wrap_atu_map, 0x12345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_atu_map, 0x12345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     prod_ddrss_lib_init(test_die);
 }
@@ -216,10 +224,16 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+    will_return(__wrap_atu_map, 0x12345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_atu_map, 0x12345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
     expect_value(__wrap_ddrss_init, cfg_knobs->reset_reason, DDRSS_SYS_RESET_WARM);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     prod_ddrss_lib_init(test_die);
     g_should_check_reset_reason_cfg_knobs = false;

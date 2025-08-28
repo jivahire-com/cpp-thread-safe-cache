@@ -547,11 +547,11 @@ void print_einj_payload(ras_einj_info_t* payload)
     FpFwCliPrint(" einj param_type.err_type %d\n", (uint16_t)((payload->param_type.error_parameters[0]) & 0xFFFF));
     FpFwCliPrint(" einj param_type.sev %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 16) & 0xFFFF));
     FpFwCliPrint(" einj param_type.reserved %d\n", (uint16_t)((payload->param_type.error_parameters[0] >> 32) & 0xFFFFFFFF));
-    FpFwCliPrint(" einj param_type.addr64 %p\n", (void*)(uintptr_t)payload->param_type.address_64);
-    FpFwCliPrint(" einj param_type.addr32 %p\n", (void*)(uintptr_t)payload->param_type.address_32);
-    FpFwCliPrint(" einj value_type.error_values %p\n", (void*)(uintptr_t)payload->value_type.error_values);
-    FpFwCliPrint(" einj value_type.data_64 %p\n", (void*)(uintptr_t)payload->value_type.data_64);
-    FpFwCliPrint(" einj value_type.data_32 %p\n", (void*)(uintptr_t)payload->value_type.data_32);
+    FpFwCliPrint(" einj param_type.addr64 0x%llx\n", payload->param_type.address_64);
+    FpFwCliPrint(" einj param_type.addr32 0x%08x\n", payload->param_type.address_32);
+    FpFwCliPrint(" einj value_type.error_values 0x%llx\n", payload->value_type.error_values);
+    FpFwCliPrint(" einj value_type.data_64 0x%llx\n", payload->value_type.data_64);
+    FpFwCliPrint(" einj value_type.data_32 0x%08x\n", payload->value_type.data_32);
 }
 
 const char* get_section_name(guid_t section_type)

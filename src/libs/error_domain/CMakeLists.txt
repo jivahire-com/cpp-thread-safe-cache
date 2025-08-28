@@ -10,6 +10,8 @@ set (SOURCES
         src/error_domain_pex.c
         src/error_injection_scp.c
         src/exception_trigger.c
+        src/error_domain_gic.c
+        src/error_injection_gic.c
 )
 
 add_library(${TARGET}

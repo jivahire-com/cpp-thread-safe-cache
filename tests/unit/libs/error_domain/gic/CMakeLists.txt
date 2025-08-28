@@ -1,8 +1,9 @@
-set(TARGET scp_error_domain_init.test)
+set(TARGET gic_error_domain.test)
 
 set(SOURCES
-    test_err_domain_scp_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/err_domain_scp_init.c
+    test_error_domain_gic.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_domain_gic.c
+    ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_injection_gic.c
 )
 
 # Compile test
@@ -12,9 +13,9 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
-        silibs::atu
         silibs::idsw_kng
         silibs::semaphore
         silibs::kng_silibs_platform
@@ -24,18 +25,28 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         ms::service::health_monitor
         ms::service::health_monitor::cli
+        ms::service::power
+        ms::lib::arm_intrinsic
+        ms::lib::cortex_m7::nvic
         ms::lib::error_domain::scp
+        ms::lib::crash_dump
+        ms::lib::pex_rng
+        ms::lib::scp_interrupts
+)
+
+# Get private includes for module under test
+target_include_directories(${TARGET}
+    PRIVATE
+        $<TARGET_PROPERTY:ms::lib::error_domain::scp,INCLUDE_DIRECTORIES>
+        ./
 )
 
 # Generic ports implement within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
-target_compile_definitions(
-    ${TARGET}
-    PRIVATE
-       SCP_RUNTIME_INIT
-)
+target_compile_options(gic_error_domain.test PRIVATE -Wno-unused-function)
+
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -44,9 +55,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    fpfw_init_get_handle
-    mcp_error_injection_setup_listener
-    register_scp_error_domain
-    register_pex_error_domain
-    register_gic_error_domain
+    hm_register_error_domain 
+    mmio_write64
+    atu_translate_address
 )

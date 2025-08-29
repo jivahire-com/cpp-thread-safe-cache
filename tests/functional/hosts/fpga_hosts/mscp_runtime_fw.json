@@ -55,7 +55,7 @@
                             "channels": {
                                 "serial": {
                                     "baud_rate": 115200,
-                                    "serial_port": "COM6",
+                                    "serial_port": "COM7",
                                     "line_separator": "\n",
                                     "enable_warning_logs":"false",
                                     "file_name":"mcp0_logs"

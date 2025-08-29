@@ -15,7 +15,7 @@
       <Member name="uart_die_sel" type="uint8_t" count="2" default="{0, 0}" help="Die to route Shared UARTs to" /> -->
 
       <!-- Default routing, UART 1-> Die0, UART 2 -> Die1 --> <!-- GPIO Knobs for to fetch both SCPs for flexibility  -->
-      <Member name="uart_die_sel" type="uint8_t" count="2" default="{0, 1}" help="Die to route Shared UARTs to" />
+      <Member name="uart_die_sel" type="uint8_t" count="2" default="{0, 0}" help="Die to route Shared UARTs to" />
     </Struct>
     <Struct name="uart_afm_cfg_prod_t">
       <Member name="uart0_afm" type="UART0_AFM_VAL" help="UART0 AFM" />
@@ -42,7 +42,7 @@
 
     <Knob name="uart_die_cfg" type="uart_die_sel_t" help="Die Config for Shared UARTs (UART1 and UART2 respectively)"/>
     
-    <Knob name="uart_mcp_reassign" type="bool" default="false" help="When true, reassigns MCP Die 0 CLI to use AP-NS UART" />
+    <Knob name="uart_mcp_reassign" type="bool" default="true" help="When true, reassigns MCP Die 0 CLI to use AP-NS UART" />
   </Knobs>
 
 </ConfigSchema>

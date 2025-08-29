@@ -115,6 +115,7 @@ idsw_die_id_t __wrap_idsw_get_die_id(void)
 TEST_FUNCTION(textio_init_uart, nullptr, nullptr)
 {
     //! Set up expectations
+    mock_mcp_reassign = true;
     DFWK_THREADX_HOST test_host = {};
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
@@ -126,12 +127,15 @@ TEST_FUNCTION(textio_init_uart, nullptr, nullptr)
     expect_value(__wrap_textio_pl011_device_initialize, config->clk_freq, 250000000U);
     expect_function_call(__wrap_textio_pl011_device_initialize);
 
+    will_return(__wrap_config_get_uart_mcp_reassign, false);
+
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_uart.init_fn();
 
     //! Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
+    mock_mcp_reassign = false;
 }
 
 TEST_FUNCTION(textio_init_uart_mcp_0_reassign_silicon, nullptr, nullptr)

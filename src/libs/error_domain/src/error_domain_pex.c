@@ -27,6 +27,8 @@
 #include <pex_rng.h>
 #include <scp_exp_csr_regs.h>
 #include <scp_exp_top_regs.h>
+#include <tx_api.h>
+#include <tx_timer.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
 #include <scp_top_regs.h>
 
@@ -47,6 +49,9 @@
 /*-- Declarations (Statics and globals) --*/
 static guid_t PEX_GUID = ACPI_ERROR_TYPE_PEX;
 static vptr_scp_pwr_ctrl_reg scp_pwr_ctrl_regs = (vptr_scp_pwr_ctrl_reg)(SCP_TOP_SCP_PWR_CTRL_ADDRESS);
+static TX_TIMER pex_poll_timer;
+static pex_rng_config_t* g_rng_cfg = NULL;
+static bool pex_polling_initialized = false;
 
 /*-------------- Functions ---------------*/
 
@@ -115,15 +120,93 @@ void pex_irq_handle(KNG_DIE_ID die_num, uint32_t pex_num, pex_rng_config_t* rng_
     }
 }
 
-static void enable_pex_interrupts()
+// Timer callback function for PEX polling
+static void pex_poll_timer_callback(ULONG timer_input)
 {
-    // Temporary disable PEX interrupts to avoid spurious interrupts on Silicon
-    // Cluster PEX Int
-    // pex_rng_config_t* rng_cfg = (pex_rng_config_t*)fpfw_init_get_handle("pex_rng");
-    // register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_31_0_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 0-31 PEX Interrupts
-    // register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_63_32_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 32-63 PEX Interrupts
-    // register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_67_64_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 64-67 (64-95) PEX Interrupts
-    // register_scp_ecc_isr_with_param(HW_INT_CPU_CLSTR_127_96_PEX_INT, cons_pex_isr, rng_cfg); // Clusters 96-127 PEX Interrupts
+    FPFW_UNUSED(timer_input);
+
+    if (g_rng_cfg == NULL)
+    {
+        return;
+    }
+
+    KNG_DIE_ID die_num = idsw_get_die_id();
+    scp_pwr_ctrl_proc_pex_int_status0 pex_int_status = {0};
+    uint32_t pex_int_status_size = sizeof(pex_int_status.as_uint32) * CHAR_BIT;
+
+    // Poll PEX interrupt status registers
+    for (uint32_t status_reg = 0; status_reg < 3; ++status_reg)
+    {
+        pex_int_status.as_uint32 = MMIO_READ32((uint32_t*)(&scp_pwr_ctrl_regs->proc_pex_int_status0 + status_reg));
+        for (uint32_t index = 0; index < pex_int_status_size; index++)
+        {
+            uint32_t pex_num = 0;
+            if (pex_int_status.proc_pex_int_status & (1U << index))
+            {
+                pex_num = (index + (status_reg * pex_int_status_size));
+                pex_irq_handle(die_num, pex_num, g_rng_cfg);
+            }
+        }
+    }
+}
+
+// API to start PEX polling using ThreadX timer
+static int32_t start_pex_polling(uint32_t poll_interval_ms)
+{
+    if (pex_polling_initialized)
+    {
+        FPFW_DBGPRINT_WARNING("PEX polling already initialized\n");
+        return TX_SUCCESS;
+    }
+
+    // Get PEX RNG configuration
+    g_rng_cfg = (pex_rng_config_t*)fpfw_init_get_handle("pex_rng");
+    if (g_rng_cfg == NULL)
+    {
+        FPFW_DBGPRINT_ERROR("Failed to get PEX RNG configuration\n");
+        return TX_PTR_ERROR;
+    }
+
+    // Convert milliseconds to ThreadX ticks
+    ULONG timer_ticks = (poll_interval_ms * TX_TIMER_TICKS_PER_SECOND) / 1000;
+    if (timer_ticks == 0)
+    {
+        timer_ticks = 1; // Minimum 1 tick
+    }
+
+    // Create the polling timer
+    UINT status = tx_timer_create(&pex_poll_timer,
+                                  "PEX Poll Timer",        // Timer name
+                                  pex_poll_timer_callback, // Timer callback function
+                                  0,                       // Timer input (unused)
+                                  timer_ticks,             // Initial ticks
+                                  timer_ticks,             // Reschedule ticks (periodic)
+                                  TX_AUTO_ACTIVATE);       // Auto-activate timer
+
+    if (status != TX_SUCCESS)
+    {
+        FPFW_DBGPRINT_ERROR("Failed to create PEX polling timer, status: 0x%x\n", status);
+        return status;
+    }
+
+    pex_polling_initialized = true;
+    FPFW_DBGPRINT_INFO("PEX polling started with %lu ms interval\n", poll_interval_ms);
+
+    return TX_SUCCESS;
+}
+
+// Replace the enable_pex_interrupts function
+static void enable_pex_polling()
+{
+    // Start PEX polling with 100ms interval (adjust as needed)
+    const uint32_t POLL_INTERVAL_MS = 100;
+
+    int32_t status = start_pex_polling(POLL_INTERVAL_MS);
+    if (status != TX_SUCCESS)
+    {
+        FPFW_DBGPRINT_ERROR("Failed to start PEX polling, status: 0x%x\n", status);
+        BUG_CHECK(KNG_BGCHK_BUGCHECK, status, POLL_INTERVAL_MS);
+    }
 }
 
 void register_pex_error_domain()
@@ -131,6 +214,6 @@ void register_pex_error_domain()
     //  Register the error domain
     hm_register_error_domain(ACPI_ERROR_DOMAIN_PEX, &PEX_GUID, PEX_FRU, mscp_error_injection_handler, NULL);
 
-    // Register the error interrupt handlers
-    enable_pex_interrupts();
+    // Register the error polling instead of interrupt handlers
+    enable_pex_polling();
 }

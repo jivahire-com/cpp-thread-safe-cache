@@ -82,4 +82,6 @@ mock_target(${TARGET}
     get_rng_config
     idsw_get_platform_sdv
     is_cached_space
+    _txe_timer_create
+    fpfw_init_get_handle
 )

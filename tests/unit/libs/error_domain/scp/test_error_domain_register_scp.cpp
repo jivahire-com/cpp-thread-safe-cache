@@ -30,6 +30,8 @@ extern "C" {
 #include <rng.h>
 #include <scp_exp_csr_regs.h>
 #include <scp_exp_top_regs.h>
+#include <tx_api.h>
+#include <tx_timer.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
 #include <scp_top_regs.h>
 #include <shared_sram_ecc_ras_registers_regs.h>
@@ -110,6 +112,8 @@ isr_callback_fn_with_params_t g_s_arsm_ecc_isr = NULL;
 isr_callback_fn_sans_params_t g_s_rsm_ecc_isr = NULL;
 isr_callback_fn_sans_params_t g_pll_isr = NULL;
 
+static void (*g_pex_timer_callback)(ULONG) = NULL;
+
 extern void pex_irq_handle(KNG_DIE_ID die_num, uint32_t pex_num, pex_rng_config_t* rng_cfg);
 
 /*------------- Functions ----------------*/
@@ -122,7 +126,7 @@ void __wrap_hm_register_error_domain(uint16_t error_domain_idx,
                                      hm_error_injection_cb_t err_inject_cb,
                                      void* err_inject_ctx)
 {
-    assert_true(error_domain_idx == ACPI_ERROR_DOMAIN_SCP_PROC);
+    assert_true(error_domain_idx == ACPI_ERROR_DOMAIN_SCP_PROC || error_domain_idx == ACPI_ERROR_DOMAIN_PEX);
     assert_true(err_inject_cb != NULL);
     FPFW_UNUSED(error_domain_guid);
     FPFW_UNUSED(error_domain_name);
@@ -133,6 +137,13 @@ void __wrap_hm_register_error_domain(uint16_t error_domain_idx,
     function_called();
 
     g_err_inject_cb = err_inject_cb;
+}
+
+void* __wrap_fpfw_init_get_handle(const char* handle_name)
+{
+    check_expected(handle_name);
+    function_called();
+    return mock_type(void*);
 }
 
 void __wrap_hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size)
@@ -371,6 +382,30 @@ bool __wrap_is_cached_space(uint32_t addr)
     FPFW_UNUSED(addr);
     // This function is used to determine if the address is in cached space.
     return mock_type(bool);
+}
+UINT __wrap__txe_timer_create(TX_TIMER* timer_ptr,
+                              CHAR* name_ptr,
+                              VOID (*expiration_function)(ULONG id),
+                              ULONG expiration_input,
+                              ULONG initial_ticks,
+                              ULONG reschedule_ticks,
+                              UINT auto_activate,
+                              UINT timer_control_block_size)
+{
+    assert_non_null(timer_ptr);
+    check_expected(name_ptr);
+    assert_non_null(expiration_function);
+    FPFW_UNUSED(expiration_input);
+    assert_true(initial_ticks > 0);
+    assert_true(reschedule_ticks > 0);
+    FPFW_UNUSED(auto_activate);
+    FPFW_UNUSED(timer_control_block_size);
+
+    g_pex_timer_callback = expiration_function;
+
+    function_called();
+
+    return 0;
 }
 }
 //
@@ -1692,6 +1727,29 @@ TEST_FUNCTION(test_shared_sram_ecc_isr_of, test_setup, nullptr)
     expect_function_call(__wrap_crash_dump_bug_check);
 
     g_s_arsm_ecc_isr((void*)&atu_entry);
+}
+
+TEST_FUNCTION(test_start_pex_polling_success, test_setup, nullptr)
+{
+    // Setup mock RNG configuration
+    const corebits_t test_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x00000001, 0x00000000, 0x0);
+    static pex_rng_config_t mock_rng_config = {.cluster_pex_base = 0x80000000,
+                                               .cluster_stride = 0x10000,
+                                               .platform_cores_in_die = &test_platform_cores,
+                                               .core_count = 1};
+
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_string(__wrap_fpfw_init_get_handle, handle_name, "pex_rng");
+    will_return(__wrap_fpfw_init_get_handle, &mock_rng_config);
+    expect_function_call(__wrap_fpfw_init_get_handle);
+
+    // Then tx_timer_create is called
+    expect_string(__wrap__txe_timer_create, name_ptr, "PEX Poll Timer");
+    expect_function_call(__wrap__txe_timer_create);
+
+    // Call the function under test
+    register_pex_error_domain();
 }
 
 // Temporary disable PEX interrupts to avoid spurious interrupts on Silicon

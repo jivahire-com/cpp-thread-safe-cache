@@ -74,6 +74,7 @@ void power_telemetry_enable()
     sensor_fifo_svc_enable_fifo(SENSOR_FIFO_PVT_VOLTAGE_FW);
     sensor_fifo_svc_enable_fifo(SENSOR_FIFO_VR_TEMP_FW);
     sensor_fifo_svc_enable_fifo(SENSOR_FIFO_VR_CURRENT_FW);
+    sensor_fifo_svc_enable_fifo(SENSOR_FIFO_DIMM_TEMP_FW);
 
     // deassert SCF trigger
     sensor_fifo_svc_set_global_hw_enable(true);

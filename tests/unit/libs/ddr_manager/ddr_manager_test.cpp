@@ -249,11 +249,6 @@ uint64_t __wrap_gtimer_prodfw_get_counter()
     return mock_type(uint64_t);
 }
 
-void __wrap_sensor_fifo_svc_enable_fifo(SENSOR_FIFO_ID fifo)
-{
-    check_expected(fifo);
-}
-
 } // extern "C"
 
 static int begin_bwl_disengaged(void** state)
@@ -377,7 +372,6 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
 
     // Telemetry init
     expect_function_call(__wrap__txe_mutex_create);
-    expect_value(__wrap_sensor_fifo_svc_enable_fifo, fifo, SENSOR_FIFO_DIMM_TEMP_FW);
 
     size_t output_recv_bytes = 0;
     kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY}};
@@ -454,7 +448,6 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
 
     // Telemetry init
     expect_function_call(__wrap__txe_mutex_create);
-    expect_value(__wrap_sensor_fifo_svc_enable_fifo, fifo, SENSOR_FIFO_DIMM_TEMP_FW);
 
     // Crash dump pre-dump callback init
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
@@ -518,7 +511,6 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
 
     // Telemetry init
     expect_function_call(__wrap__txe_mutex_create);
-    expect_value(__wrap_sensor_fifo_svc_enable_fifo, fifo, SENSOR_FIFO_DIMM_TEMP_FW);
 
     // Do not expect hsp_send_ddr_init_notify
     will_return(__wrap_system_info_is_warm_start, true);
@@ -1088,4 +1080,3 @@ TEST_FUNCTION(ddr_telemetry_report_verify_temps, begin_bwl_disengaged, NULL)
 
     ddr_telemetry_report();
 }
- 

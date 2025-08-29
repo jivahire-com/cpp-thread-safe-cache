@@ -100,7 +100,6 @@ mock_target(${TARGET}
     sensor_fifo_svc_add_dimm_info
     prod_ddrss_get_intr_event_cper
     hm_submit_cper
-    sensor_fifo_svc_enable_fifo
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

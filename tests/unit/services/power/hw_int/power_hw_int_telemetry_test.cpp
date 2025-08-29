@@ -124,6 +124,7 @@ POWER_TEST(power_telemetry_enable, NULL, NULL)
     expect_value(__wrap_sensor_fifo_svc_enable_fifo, fifo, SENSOR_FIFO_PVT_VOLTAGE_FW);
     expect_value(__wrap_sensor_fifo_svc_enable_fifo, fifo, SENSOR_FIFO_VR_TEMP_FW);
     expect_value(__wrap_sensor_fifo_svc_enable_fifo, fifo, SENSOR_FIFO_VR_CURRENT_FW);
+    expect_value(__wrap_sensor_fifo_svc_enable_fifo, fifo, SENSOR_FIFO_DIMM_TEMP_FW);
 
     expect_value(__wrap_sensor_fifo_svc_set_global_hw_enable, enable, true);
 

@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 
+#include <DbgPrint.h> // for FPFW_DBGPRINT_ALWAYS
 #include <DfwkThreadXHost.h>
 #include <FpFwUtils.h>
 #include <fpfw_cfg_mgr.h>           // for knobs
@@ -162,7 +163,7 @@ static void platform_event_ready_callback(uint16_t event_id, void* context)
 {
     uint16_t* last_event_id = (uint16_t*)context;
     *last_event_id = event_id;
-    DEBUG_PRINT("PLDM platform event ready callback called with event ID: %u\n", event_id);
+    FPFW_DBGPRINT_ALWAYS("PLDM platform event ready callback called with event ID: %u", event_id);
 }
 
 // Supported PLDM message types

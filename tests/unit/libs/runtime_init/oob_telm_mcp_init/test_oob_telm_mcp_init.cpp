@@ -120,6 +120,7 @@ void __wrap_fpfw_pldm_service_register_platform_event_ready_notification(pldm_pl
 {
     assert_non_null(notification);
     function_called();
+    notification->CallBack(1, notification->context); // Call the callback to simulate event ready
 }
 
 bool __wrap_config_get_uart_mcp_reassign(void)

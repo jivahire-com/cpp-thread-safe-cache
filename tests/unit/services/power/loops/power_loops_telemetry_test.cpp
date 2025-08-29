@@ -124,7 +124,7 @@ void __wrap_sensor_fifo_svc_add_vr_current(vr_current_t* vr_current)
 
     for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
     {
-        assert_true(vr_current->vr_current_mA[vr_idx] == s_vr_inputs[vr_idx].current);
+        assert_true(vr_current->vr_current_mA[vr_idx] == s_vr_inputs[vr_idx].current * 10);
         assert_true(vr_current->vr_voltage_mV[vr_idx] == s_vr_inputs[vr_idx].voltage);
     }
 

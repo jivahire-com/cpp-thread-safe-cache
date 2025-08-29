@@ -19,6 +19,7 @@ extern "C" {
 #include "power_i.h"       // for power_latest_calcs_t
 #include "power_log.h"     // for POWER_LOG_INFO
 #include "power_loops_i.h" // for power_loops_control_init
+#include "power_pldm_scp.h"
 #include "power_remote_die_i.h"
 #include "power_runconfig.h"   // for MIN_PLIMIT, power_service_config_t
 #include "power_runconfig_i.h" // for power_runconfig_t
@@ -333,6 +334,12 @@ void __wrap_pid_get_context(pid_context_t* context)
     assert_non_null(context);
     function_called();
 }
+
+void __wrap_power_pldm_service_init(power_runconfig_t* p_runconfig)
+{
+    check_expected_ptr(p_runconfig);
+}
+
 // End mocks
 
 } // extern "C"
@@ -418,6 +425,8 @@ POWER_TEST(power_loops_control_init, NULL, NULL)
     expect_value(__wrap_pid_set_resources, resources, init_resources);
 
     expect_value(__wrap_power_remote_die_init, p_runconfig, &test_runconfig);
+
+    expect_value(__wrap_power_pldm_service_init, p_runconfig, &test_runconfig);
 
     // call the function
     power_loops_control_init();

@@ -120,7 +120,7 @@ static PLACED_CODE void print_power_tdp_fuse(power_fuse_data_t* fuses)
     FpFwCliPrint("\nTDP Fuse configs\n");
     FpFwCliPrint("-----------------\n");
     FpFwCliPrint("TDP cores  : %d\n", fuses->tdp_config.num_cores);
-    FpFwCliPrint("TDP power  : %d A\n", fuses->tdp_config.power_A);
+    FpFwCliPrint("TDP power  : %d W\n", fuses->tdp_config.power_A);
     FpFwCliPrint("TDP freq   : %d MHz\n", fuses->tdp_config.freq_MHz);
     FpFwCliPrint("Valid cores: " COREBITS_FMT_STR "\n", COREBITS_FMT_DATA(fuses->valid_cores));
 

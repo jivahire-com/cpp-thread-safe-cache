@@ -25,6 +25,7 @@ add_library(${TARGET}
         power_timer.c
         power_warmstart.c
         power_vcpu_calc.c
+        power_pldm_scp.c
 )
 
 # save this for enabling debug optimization
@@ -73,6 +74,7 @@ target_link_libraries(${TARGET}
         ms::lib::gtimer
         ms::lib::icc_platform_defines
         ms::lib::warm_start
+        ms::lib::pldm_common_headers
         ms::service::sensor_fifo
         register_headers
 )

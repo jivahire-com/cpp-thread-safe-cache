@@ -23,7 +23,7 @@
 #include <libpldm/state_set.h>
 #include <platform_management_component/platform_description_record.h>
 #include <platform_management_component/platform_description_types.h>
-
+#include <pldm_common_power.h>
 #include <pldm_pdr.h>
 
 #include <stdbool.h>
@@ -735,6 +735,96 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .rated_min = 100,
     };
 
+    /*----------Power Pldm PDR entries----------*/
+    static fpfw_pldm_pdr_sensor_auxiliary_name_t s_POWER_THROTTLING_STATE_pdr_aux_name = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_SENSOR_AUXILIARY_NAMES_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_sensor_auxiliary_name_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+
+        .sensor_id = PLDM_SENSOR_ID_POWER_THROTTLING_STATE_SENSOR,
+        .sensor_count = 1,
+        .name_string_count = 0x01,
+        .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
+        .sensor_name = u"THROTTLING_STATE" // Sensor name in UTF-16 format
+    };
+
+    static fpfw_pldm_pdr_state_sensor_COMPOSITE_1_STATES_3_t s_POWER_THROTTLING_STATE_pdr = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_STATE_SENSOR_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_state_sensor_COMPOSITE_1_STATES_3_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+
+        .sensor_id = PLDM_SENSOR_ID_POWER_THROTTLING_STATE_SENSOR, // Unique id across sensors. Used for registration in the PldmService API
+
+        .entity_type = PLDM_ENTITY_PROC_MODULE, // Entity for which this sensor is associated. Section 7.1 https://www.dmtf.org/sites/default/files/standards/documents/DSP0249_1.0.0.pdf
+        .entity_instance = 0, // Instance id in case there are multiple entities of the same time in the same container
+        .container_id = 0,           // 0 = SYSTEM, related to entity associations in DSP0248_1.2.1 (Section 28)
+        .sensor_init = PLDM_NO_INIT, // Only no-init/enable supported
+        .auxiliar_init_pdr = true,  // Required if sensor has an auxiliary name
+        .composite_sensor_count = 1,
+        .possible_states = {
+            {.state_set_id = PLDM_STATE_SET_PERFORMANCE,
+                .possible_states_size = 3,
+                .possible_states = {PLDM_PERFORMANCE_NORMAL, PLDM_PERFORMANCE_THROTTLED, PLDM_PERFORMANCE_DEGRADED} //! 1 - Normal, 2 - Throttled, 3 - Degraded
+            }
+        }
+    };
+
+    static fpfw_pldm_pdr_effecter_auxiliary_name_t s_POWER_CAP_NUM_EFFECTER_pdr_aux_name = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_EFFECTER_AUXILIARY_NAMES_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_effecter_auxiliary_name_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+        .terminus_handle = 0,                       // Populated by PLDM lib
+        .effecter_id = PLDM_EFFECTER_ID_POWER_CAP_NUM_EFFECTER, // Unique id across sensors. Used for registration in the PldmService API
+        .effecter_count = 1,
+        .name_string_count = 0x01,
+        .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
+        .effecter_name = u"PWRCAP_LIMIT" // Effecter name in UTF-16 format
+    };
+
+    static fpfw_pldm_pdr_numeric_effecter_UINT16_UINT16_t s_POWER_CAP_NUM_EFFECTER_pdr = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_NUMERIC_EFFECTER_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_numeric_effecter_UINT16_UINT16_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+
+        .effecter_id = PLDM_EFFECTER_ID_POWER_CAP_NUM_EFFECTER, // Unique id across sensors. Used for registration in the PldmService API
+        .entity_type = PLDM_ENTITY_PROC_MODULE, // Entity for which this sensor is associated. Section 7.1 https://www.dmtf.org/sites/default/files/standards/documents/DSP0249_1.0.0.pdf
+        .entity_instance = 0, // Instance id in case there are multiple entities of the same time in the same container
+        .container_id = 0,             // 0 = SYSTEM, related to entity associations in DSP0248_1.2.1 (Section 28)
+        .effecter_init = PLDM_NO_INIT, // Only no-init/enable supported
+        .effecter_aux_pdr = true,      // Required if effecter has an auxiliary name
+
+        .base_unit = PLDM_BASE_UNIT_WATTS,
+        .unit_modifier = 0,                                 // None
+        .rate_unit = 0,                                     // per second
+        .base_oem_unit_handle = 0,                          // Standard unit used
+        .aux_unit = 0,                                      // No aux unit
+        .aux_unit_modifier = 0,                             // No aux unit
+        .aux_rate_unit = 0,                                 // No aux unit
+        .aux_oem_unit_handle = 0,                           // No aux unit
+        .is_linear = true,                                  // Range of this sensor is non-dynamic
+        .effecter_data_size = PLDM_SENSOR_DATA_SIZE_UINT16, // This is an u32 counter
+        .resolution = 1,
+        .offset = 0,
+        .accuracy = 0,
+        .plus_tolerance = 0,
+        .minus_tolerance = 0,
+        .state_transition_interval = 0.5, // 0.5 seconds for sensor to be enabled (to be characterized)
+        .transition_interval = 1,         // Sensor is updated every 1 seconds
+        .max_settable = 1000, //! Max electrical limit is 400 watts, overridable by knobs
+        .min_settable = 50, //! Soc Idle Power 50 Watts
+        .range_field_format = PLDM_SENSOR_DATA_SIZE_UINT16, // Range units
+        .rangel_field_support = 0,                          // Only supports warning ranges
+        .nominal_value = 0,
+        .normal_min = 0, // Not set
+        .normal_max = 0, // Not set
+        .rated_max = 700, //! @todo: Based on pioneer
+        .rated_min = 300,
+    };
+
     static void* pdr_list[] = {
         &s_SOC_TMP_MAX_pdr,
         &s_SOC_TMP_MAX_pdr_aux_name,
@@ -820,6 +910,10 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         &s_DIMM_AVG_PWR_10_pdr_aux_name,
         &s_DIMM_AVG_PWR_11_pdr,
         &s_DIMM_AVG_PWR_11_pdr_aux_name,
+        &s_POWER_THROTTLING_STATE_pdr,
+        &s_POWER_THROTTLING_STATE_pdr_aux_name,
+        &s_POWER_CAP_NUM_EFFECTER_pdr,
+        &s_POWER_CAP_NUM_EFFECTER_pdr_aux_name,
         &s_dummy0,
         &s_dummy0_name,
         &s_dummy1,

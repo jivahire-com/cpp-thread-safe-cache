@@ -65,6 +65,7 @@
 
 /* power cap */
 #define NO_POWER_CAP (UINT16_MAX)
+#define POWER_CAP_MIN (50)  //! In Watts, soc idle power is around 50W
 
 // Callback function pointer type for power cap
 typedef void (*power_cap_completed_callback_t)(int result, uint16_t current_cap, uint16_t previous_cap_watts);
@@ -565,6 +566,20 @@ void AVSPwrKnobWriteRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* 
 bool power_hw_has_avs_devices(void);
 
 void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context);
+
+/**
+ * @brief Check if the power control loop is in a degraded state.
+ *
+ * @return true if the control loop is degraded, false otherwise.
+ */
+bool power_control_loop_degraded();
+
+/**
+ * @brief Check if the power control loop is in a throttled state.
+ *
+ * @return true if the control loop is throttled, false otherwise.
+ */
+bool power_control_loop_throttled();
 
 #ifdef __cplusplus
 }

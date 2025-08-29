@@ -15,6 +15,7 @@
 #include "power_i.h"
 #include "power_log.h"
 #include "power_loops_i.h"
+#include "power_pldm_scp.h"
 #include "power_remote_die_i.h"
 #include "power_runconfig.h"
 #include "power_runconfig_i.h"
@@ -1038,6 +1039,25 @@ void power_loops_control_init()
 
     // initialize remote die sync
     power_remote_die_init(p_runconfig);
+
+    // initialize the power PLDM SCP service
+    power_pldm_service_init(p_runconfig);
+}
+
+bool power_control_loop_degraded()
+{
+    const bool degraded = s_ctrl_loop.loop_fail_query;
+    // capture current state
+    s_ctrl_loop.loop_fail_query = s_ctrl_loop.loop_failure;
+    return degraded;
+}
+
+bool power_control_loop_throttled()
+{
+    const bool throttled = s_ctrl_loop.throttle_query;
+    // capture current state
+    s_ctrl_loop.throttle_query = s_ctrl_loop.throttling;
+    return throttled;
 }
 
 // function should be called after core initialization in either cold or warm boot

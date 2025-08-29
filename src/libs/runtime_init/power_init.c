@@ -41,6 +41,7 @@ FPFW_INIT_COMPONENT(pwr_svc,
                                            "gpio_lib",
                                            "icc_d2dmbx",
                                            "icc_die2die",
+                                           "icc_mscp2mscp",
                                            "avs0_int",
                                            "avs1_int",
                                            "avs2_int",
@@ -186,6 +187,7 @@ FPFW_INIT_COMPONENT(pwr_svc,
         power_config.icc_d2d_ctx = fpfw_init_get_handle("icc_die2die");
         power_config.icc_d2d_cli_ctx = fpfw_init_get_handle("icc_d2dmbx");
     }
+    power_config.icc_mscp_ctx = fpfw_init_get_handle("icc_mscp2mscp");
 
     power_config.scp_avs_insts[AVS_BUS0] = (scp_avs_interface_t*)fpfw_init_get_handle("avs0_int");
     if (idsw_get_die_id() == DIE_0) // DIE_1 only has one AVSBus.

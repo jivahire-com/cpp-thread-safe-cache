@@ -126,19 +126,22 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
     // 3) icc_d2dmbx
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
-    // 4) Platform ID
+    // 4) icc_mscp2mscp
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
+    // 5) Platform ID
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, test_die);
-    // 5) AVS bus 0
+    // 6) AVS bus 0
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs0_test_host);
-    // 6) AVS bus 1
+    // 7) AVS bus 1
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs1_test_host);
-    // 7) AVS bus 2
+    // 8) AVS bus 2
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs2_test_host);
-    // 8) AVS bus 3
+    // 9) AVS bus 3
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs3_test_host);
     // collect array for then pwr_avs_initialize
@@ -146,7 +149,7 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
     avs_test_array[1] = &avs1_test_host;
     avs_test_array[2] = &avs2_test_host;
     avs_test_array[3] = &avs3_test_host;
-    // 9) dfwk handle，用于 power_init schedule
+    // 10) dfwk handle power_init schedule
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
@@ -163,6 +166,7 @@ TEST_FUNCTION(power_init_pwr_svc, nullptr, nullptr)
     assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
     assert_true(s_saved_config.platform_is_multi_die);
     assert_int_equal(s_saved_config.icc_d2d_ctx, TEST_HANDLE);
+    assert_int_equal(s_saved_config.icc_mscp_ctx, TEST_HANDLE);
 }
 
 TEST_FUNCTION(power_init_pwr_svc__svp, nullptr, nullptr)
@@ -178,11 +182,14 @@ TEST_FUNCTION(power_init_pwr_svc__svp, nullptr, nullptr)
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    // 2) AVS bus 0
+    // 2) icc_mscp2mscp
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
+    // 3) AVS bus 0
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs0_test_host);
     avs_test_array[0] = &avs0_test_host;
-    // 3) dfwk
+    // 4) dfwk
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
@@ -216,16 +223,19 @@ TEST_FUNCTION(power_init_pwr_svc__bigfpga, nullptr, nullptr)
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
-    // 2) AVS bus 0
+    // 2) icc_mscp2mscp
+    expect_any(__wrap_fpfw_init_get_handle, id);
+    will_return(__wrap_fpfw_init_get_handle, TEST_HANDLE);
+    // 3) AVS bus 0
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs0_test_host);
-    // 3) AVS bus 1
+    // 4) AVS bus 1
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs1_test_host);
-    // 4) AVS bus 2
+    // 5) AVS bus 2
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs2_test_host);
-    // 5) AVS bus 3
+    // 6) AVS bus 3
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &avs3_test_host);
     // collect array
@@ -233,7 +243,7 @@ TEST_FUNCTION(power_init_pwr_svc__bigfpga, nullptr, nullptr)
     avs_test_array[1] = &avs1_test_host;
     avs_test_array[2] = &avs2_test_host;
     avs_test_array[3] = &avs3_test_host;
-    // 6) dfwk
+    // 7) dfwk
     expect_any(__wrap_fpfw_init_get_handle, id);
     will_return(__wrap_fpfw_init_get_handle, &test_host);
     expect_value(__wrap_power_init, p_schedule, &(test_host.Schedule));
@@ -267,8 +277,8 @@ TEST_FUNCTION(power_init_pwr_svc__evt_silicon, nullptr, nullptr)
 
     // when single die boot is not enabled, there will be a call to get icc handle
     will_return(__wrap_idhw_is_single_die_boot_en, false);
-    will_return_count(__wrap_fpfw_init_get_handle, TEST_HANDLE, 2);
-    expect_any_count(__wrap_fpfw_init_get_handle, id, 2);
+    will_return_count(__wrap_fpfw_init_get_handle, TEST_HANDLE, 3);
+    expect_any_count(__wrap_fpfw_init_get_handle, id, 3);
 
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
@@ -305,6 +315,7 @@ TEST_FUNCTION(power_init_pwr_svc__evt_silicon, nullptr, nullptr)
     assert_int_equal(s_saved_config.platform_die_core_count, NUM_AP_CORES_PER_DIE);
     assert_true(s_saved_config.platform_is_multi_die);
     assert_int_equal(s_saved_config.icc_d2d_ctx, TEST_HANDLE);
+    assert_int_equal(s_saved_config.icc_mscp_ctx, TEST_HANDLE);
     assert_true(s_saved_config.platform_soc_power_support);
     assert_true(s_saved_config.platform_core_power_support);
 }

@@ -281,6 +281,7 @@ typedef struct _power_service_config_t
     power_vr_idx_t vr_idx_info;              // VR index    
     void* icc_d2d_ctx;                       // icc d2d context for power control loop
     void* icc_d2d_cli_ctx;                   // icc d2d context for power cli
+    void* icc_mscp_ctx;                       // icc mscp context for power control loop
     bool platform_soc_power_support;         // true if soc power supported on platform
     bool platform_core_power_support;        // true if tile/core power supported on platform
     bool platform_is_multi_die;              // true if platform is multi-die
@@ -682,6 +683,7 @@ enum _power_cap_update_result_t
                                            request */
     MP_POWER_CAP_FAIL_CLI_NOT_ALLOWED,  /* CLI not allowed if non-CLI in progress
                                          */
+    MP_POWER_CAP_FAIL_INVALID_REQUEST,   /* Invalid request received */
 };
 
 

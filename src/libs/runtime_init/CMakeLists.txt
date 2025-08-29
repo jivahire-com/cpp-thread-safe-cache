@@ -289,6 +289,7 @@ add_library(${TARGET}
         nvic_init.c
         pdr_repo_init.c
         pdr_dummy_init.c
+        power_pldm_mcp_init.c
         tlm_fuses_init.c
         pwr_tlm_svc_mcp_init.c
         sensor_fifo_init.c
@@ -358,6 +359,7 @@ target_link_libraries(
         ms::lib::interface::mhu_icc_payloads
         ms::lib::mcp_interrupts
         ms::lib::pldm_pdr
+        ms::lib::pldm_common_headers
         ms::lib::telemetry::fuses
         ms::lib::register_headers
         ms::service::mcp_startup_shutdown
@@ -375,6 +377,7 @@ target_link_libraries(
         ms::service::gpio::cli
         ms::service::mem::cli
         ms::service::mts
+        ms::service::pwr_pldm_mcp
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli

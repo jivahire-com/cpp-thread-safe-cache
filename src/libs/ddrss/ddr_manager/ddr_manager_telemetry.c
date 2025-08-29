@@ -34,6 +34,7 @@ static TX_MUTEX ddr_telemetry_mutex;
 void ddr_init_telemetry()
 {
     BUG_ASSERT(tx_mutex_create(&ddr_telemetry_mutex, "ddr_telemetry_mutex", TX_INHERIT) == TX_SUCCESS);
+    sensor_fifo_svc_enable_fifo(SENSOR_FIFO_DIMM_TEMP_FW);
 }
 
 void ddr_telemetry_lock()

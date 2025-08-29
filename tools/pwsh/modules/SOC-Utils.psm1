@@ -70,10 +70,6 @@ Function Invoke-CreateIfwiTar(
 
     Write-Title -Title "Creating Ifwi Tar" -Color Cyan
 
-    Get-ChildItem -Path $dat_loc -Recurse -File
-    Write-Host "Current directory:"
-    Write-Host (Get-Location)
-
     # Remove old tar file
     Remove-Item -Path $tar_loc -Force -ErrorAction SilentlyContinue
 
@@ -171,14 +167,6 @@ Function Write-SOCFlash(
 
             $tar_file = ($file -replace '\.dat$', '') + '.tar.gz'
             $tar_loc = Join-Path -Path $loc -ChildPath $tar_file
-
-            Write-host "loc"
-            Get-ChildItem -Path $loc -Recurse -File
-            Write-Host "Current directory:"
-            Write-Host (Get-Location)
-
-            Write-host "tar_loc"
-            Get-ChildItem -Path $tar_loc -Recurse -File
         
             Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
             Write-Host -ForegroundColor Blue "Generating tar ifwi . . ."
@@ -193,7 +181,6 @@ Function Write-SOCFlash(
 
             $srcfile = "$tar_loc"
             Write-Host "Updated source file path: $srcfile"
-
 
             Write-Title -Title "Copying Ifwi to RM" -Color Cyan
             Write-Host -ForegroundColor Blue "System: $system"

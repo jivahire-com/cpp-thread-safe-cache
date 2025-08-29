@@ -2,12 +2,11 @@
 
 """
 - Python based Pythia 2.0 Test.
-- Tests SOC UEFI boot DualDie
+- Tests SOC Windows boot DualDie
 """
 import time
 import sys, os
 import subprocess
-#import yaml
 from pathlib import Path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs'))
@@ -19,7 +18,7 @@ from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
 # Class name must match file name for Robot Framework Library usage
-class soc_uefi_boot_dd(EchoFallsBaseTest):
+class soc_win_boot_dd(EchoFallsBaseTest):
 
     """
     :param name:                Name of the test case
@@ -33,7 +32,7 @@ class soc_uefi_boot_dd(EchoFallsBaseTest):
     """
     def __init__(
         self,
-        name: str = "SOC_UEFI_Boot_Dual_Die",
+        name: str = "SOC_Windows_Boot_Dual_Die",
         number: str = "NaN",
         workspace_config: Path | str = None,
         default_log_home: str = None,
@@ -55,17 +54,14 @@ class soc_uefi_boot_dd(EchoFallsBaseTest):
             host_name,
         )
     
-    def soc_uefi_boot_dd(self):
+    def soc_win_boot_dd(self):
         """
-        SOC UEFI boot test:
+        SOC Windows boot test:
             1. Setup the Test.
-            2. Look for UEFI Interactive Shell.
+            2. Look for Windows boot SAC.
             3. Teardown Test.
         """
-        self.log.info("Running SOC UEFI Dual Die boot test")
-
-        print("Python executable:", sys.executable)
-        print("Python version:", sys.version)
+        self.log.info("Running SOC Windows Dual Die boot test")
 
         # Try importing PyYAML, install if missing
         try:
@@ -105,7 +101,7 @@ class soc_uefi_boot_dd(EchoFallsBaseTest):
         rscm_helper.rscm_set_profile("General")
         rscm_helper.rscm_set_boot_option("ConfApp")
 
-        self.log.info("Reading APNS UART for UEFI Interactive Shell")
+        self.log.info("Reading APNS UART for SAC")
 
         try:
             scp_connection.get_current_channel().read_until(key="Primary AP core power on", timeout_seconds=1200)
@@ -116,6 +112,21 @@ class soc_uefi_boot_dd(EchoFallsBaseTest):
             command = "3"
             apns_connection.get_current_channel().write_line(write_string=command)
             apns_connection.get_current_channel().read_until(key="UEFI Interactive Shell", timeout_seconds=500)
+            time.sleep(15)
+            command = "fs3:efi\\boot\\bootaa64.efi"
+            apns_connection.get_current_channel().write_line(write_string=command)
+            apns_connection.get_current_channel().read_until(key="SAC>", timeout_seconds=500)
+            command = "cmd"
+            apns_connection.get_current_channel().write_line(write_string=command)
+            apns_connection.get_current_channel().read_until(key="Cmd0001", timeout_seconds=500)
+            time.sleep(15)
+            command = "ch -si 01"
+            apns_connection.get_current_channel().write_line(write_string=command)
+            apns_connection.get_current_channel().read_until(key="view this channel", timeout_seconds=500)
+            time.sleep(15)
+            command = "vol"
+            apns_connection.get_current_channel().write_line(write_string=command)
+            apns_connection.get_current_channel().read_until(key="System32>", timeout_seconds=500)
         except Exception as e:
             self.log.error(f"Error reading APNS UART: {e}")
             apns_connection.get_current_channel().close()

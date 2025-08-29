@@ -1,6 +1,6 @@
 
 ## Boot tests
-./../../../tests/functional/test_suites/boot_tests/soc_uefi_boot_dual_die.robot
+./../../../tests/functional/test_suites/boot_tests/soc_win_boot_dual_die.robot
 
 ## Heartbeat Tests
 #./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot

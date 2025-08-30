@@ -215,5 +215,8 @@ void register_pex_error_domain()
     hm_register_error_domain(ACPI_ERROR_DOMAIN_PEX, &PEX_GUID, PEX_FRU, mscp_error_injection_handler, NULL);
 
     // Register the error polling instead of interrupt handlers
-    enable_pex_polling();
+    // TODO: Seeing persistent PEX RNG errors
+    // ADO: 2885632
+    // enable_pex_polling();
+    FPFW_UNUSED(enable_pex_polling);
 }

@@ -1777,28 +1777,28 @@ TEST_FUNCTION(test_shared_sram_ecc_isr_of, test_setup, nullptr)
     g_s_arsm_ecc_isr((void*)&atu_entry);
 }
 
-TEST_FUNCTION(test_start_pex_polling_success, test_setup, nullptr)
-{
-    // Setup mock RNG configuration
-    const corebits_t test_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x00000001, 0x00000000, 0x0);
-    static pex_rng_config_t mock_rng_config = {.cluster_pex_base = 0x80000000,
-                                               .cluster_stride = 0x10000,
-                                               .platform_cores_in_die = &test_platform_cores,
-                                               .core_count = 1};
-
-    expect_function_call(__wrap_hm_register_error_domain);
-
-    expect_string(__wrap_fpfw_init_get_handle, handle_name, "pex_rng");
-    will_return(__wrap_fpfw_init_get_handle, &mock_rng_config);
-    expect_function_call(__wrap_fpfw_init_get_handle);
-
-    // Then tx_timer_create is called
-    expect_string(__wrap__txe_timer_create, name_ptr, "PEX Poll Timer");
-    expect_function_call(__wrap__txe_timer_create);
-
-    // Call the function under test
-    register_pex_error_domain();
-}
+// TEST_FUNCTION(test_start_pex_polling_success, test_setup, nullptr)
+// {
+//     // Setup mock RNG configuration
+//     const corebits_t test_platform_cores = (corebits_t)COREBITS_INIT_UINT32(0x00000001, 0x00000000, 0x0);
+//     static pex_rng_config_t mock_rng_config = {.cluster_pex_base = 0x80000000,
+//                                                .cluster_stride = 0x10000,
+//                                                .platform_cores_in_die = &test_platform_cores,
+//                                                .core_count = 1};
+// 
+//     expect_function_call(__wrap_hm_register_error_domain);
+// 
+//     expect_string(__wrap_fpfw_init_get_handle, handle_name, "pex_rng");
+//     will_return(__wrap_fpfw_init_get_handle, &mock_rng_config);
+//     expect_function_call(__wrap_fpfw_init_get_handle);
+// 
+//     // Then tx_timer_create is called
+//     expect_string(__wrap__txe_timer_create, name_ptr, "PEX Poll Timer");
+//     expect_function_call(__wrap__txe_timer_create);
+// 
+//     // Call the function under test
+//     register_pex_error_domain();
+// }
 
 // Temporary disable PEX interrupts to avoid spurious interrupts on Silicon
 

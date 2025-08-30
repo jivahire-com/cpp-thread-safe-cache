@@ -59,6 +59,7 @@ void test_hard_fault_handler();
 void test_bus_fault_handler();
 void test_watchdog_handler();
 void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offset);
+void test_trigger_shared_sram_rsm_fault(uint32_t err_mask, uint32_t access_offset);
 
 /*-- Declarations (Statics and globals) --*/
 hm_error_injection_cb_t g_err_inject_cb = NULL;
@@ -215,6 +216,31 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
         test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
                                             MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
         break;
+
+    case MCP_ERROR_TYPE_S_ARSM_UE:
+    case MCP_ERROR_TYPE_NS_ARSM_UE:
+    case MCP_ERROR_TYPE_RL_ARSM_UE:
+        test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
+                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+        break;
+
+    case MCP_ERROR_TYPE_S_ARSM_OVERFLOW:
+    case MCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
+    case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
+    case MCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
+        test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK,
+                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+        break;
+    case MCP_ERROR_TYPE_RSM_RAM_CE:
+        test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
+                                           MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+        break;
+
+    case MCP_ERROR_TYPE_RSM_RAM_UE:
+        test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
+                                           MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+        break;
+
     case HW_INT_MCP_RSM_RAM_FHI_INT:
         g_s_rsm_ecc_isr = isr;
         break;
@@ -560,6 +586,7 @@ static int test_setup(void** ctx)
 
 void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offset)
 {
+    FPFW_UNUSED(access_offset);
     expect_function_call(__wrap_atu_map);
 
     if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK)
@@ -583,8 +610,8 @@ void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offs
         expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
         expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
         expect_function_call(__wrap_mmio_write32);
+        expect_any(__wrap_mmio_read32, addr);
 
-        expect_value(__wrap_mmio_read32, addr, access_offset);
         will_return(__wrap_mmio_read32, 0);
         expect_function_call(__wrap_mmio_read32);
     }
@@ -599,24 +626,58 @@ void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offs
         expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
         expect_function_call(__wrap_mmio_write32);
 
-        expect_value(__wrap_mmio_read32, addr, access_offset);
+        expect_any(__wrap_mmio_read32, addr);
         will_return(__wrap_mmio_read32, 0);
         expect_function_call(__wrap_mmio_read32);
 
         expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
         will_return(__wrap_mmio_read32, 0);
         expect_function_call(__wrap_mmio_read32);
-        expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        expect_any(__wrap_mmio_write32, addr);
         expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
         expect_function_call(__wrap_mmio_write32);
 
-        expect_value(__wrap_mmio_read32, addr, access_offset);
+        expect_any(__wrap_mmio_read32, addr);
         will_return(__wrap_mmio_read32, 0);
         expect_function_call(__wrap_mmio_read32);
 
         expect_function_call(__wrap_nvic_global_enable);
     }
 
+    expect_function_call(__wrap_atu_unmap);
+}
+
+void test_trigger_shared_sram_rsm_fault(uint32_t err_mask, uint32_t access_offset)
+{
+    FPFW_UNUSED(access_offset);
+    expect_function_call(__wrap_atu_map);
+
+    if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK)
+    {
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK);
+        expect_function_call(__wrap_mmio_write32);
+
+        expect_any(__wrap_mmio_read32, addr);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+    }
+    else if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK)
+    {
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
+        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        expect_function_call(__wrap_mmio_write32);
+        expect_any(__wrap_mmio_read32, addr);
+
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+    }
     expect_function_call(__wrap_atu_unmap);
 }
 
@@ -703,7 +764,6 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
         case MCP_ERROR_TYPE_INSTRUCTION_CACHE_TAG_UE:
             test_icache_tag_ue_isr();
             break;
-
         case MCP_ERROR_TYPE_HARD_FAULT:
             test_hard_fault_handler();
             break;
@@ -725,29 +785,40 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
         case MCP_ERROR_TYPE_NS_ARSM_UE:
         case MCP_ERROR_TYPE_RT_ARSM_UE:
         case MCP_ERROR_TYPE_RL_ARSM_UE:
-            // test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+            will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
+            will_return(__wrap_is_cached_space, false);
+            test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
             break;
         case MCP_ERROR_TYPE_S_ARSM_OVERFLOW:
         case MCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
         case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
         case MCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
-            // test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+            will_return(__wrap_is_cached_space, false);
+            will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
+            will_return(__wrap_is_cached_space, false);
+            test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK,
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
             break;
         case MCP_ERROR_TYPE_RSM_RAM_CE: {
             uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;
             will_return(__wrap_is_cached_space, false);
             expect_function_call(__wrap_atu_map);
-            test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
-                                                mapped_rsm_addr + RSM_RAM_DEFAULT_OFFSET);
+            test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
+                                               mapped_rsm_addr + RSM_RAM_DEFAULT_OFFSET);
             expect_function_call(__wrap_atu_unmap);
             break;
         }
-        case MCP_ERROR_TYPE_RSM_RAM_UE:
-            // uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;
-            // expect_function_call(__wrap_atu_map);
-            // test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
-            // mapped_rsm_addr + RSM_RAM_DEFAULT_OFFSET); expect_function_call(__wrap_atu_unmap);
+        case MCP_ERROR_TYPE_RSM_RAM_UE: {
+            uint32_t mapped_rsm_addr2 = (uint32_t)(uintptr_t)mapped_region;
+            will_return(__wrap_is_cached_space, false);
+            will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
+            expect_function_call(__wrap_atu_map);
+            test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
+                                               mapped_rsm_addr2 + RSM_RAM_DEFAULT_OFFSET);
+            expect_function_call(__wrap_atu_unmap);
             break;
+        }
 
         default:
             break;

@@ -191,77 +191,114 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         trigger_shared_sram_arsm_fault(MSCP_S_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         break;
     case SCP_ERROR_TYPE_S_ARSM_UE:
-        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_S_ARSM_UE is not supported in this build.\n");
-        // trigger_shared_sram_arsm_fault(MSCP_S_ARSM_RAM,
-        //                           arsm_addr,
-        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        if (!IS_PLATFORM_FPGA())
+        {
+            trigger_shared_sram_arsm_fault(MSCP_S_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_S_ARSM_UE is not supported on FPGA.\n");
+        }
         break;
     case SCP_ERROR_TYPE_S_ARSM_OVERFLOW:
-        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_S_ARSM_OVERFLOW is not supported in this build.\n");
-        // trigger_shared_sram_arsm_fault(MSCP_S_ARSM_RAM,
-        //                           arsm_addr,
-        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        if (!IS_PLATFORM_FPGA())
+        {
+            trigger_shared_sram_arsm_fault(MSCP_S_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_S_ARSM_OVERFLOW is not supported on FPGA.\n");
+        }
         break;
     case SCP_ERROR_TYPE_NS_ARSM_CE:
         trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         break;
     case SCP_ERROR_TYPE_NS_ARSM_UE:
-        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_NS_ARSM_UE is not supported in this build.\n");
-        // trigger_shared_sram_arsm_fault(SCP_NS_ARSM_RAM,
-        //                           arsm_addr,
-        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        if (!IS_PLATFORM_FPGA())
+        {
+            trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_NS_ARSM_UE is not supported on FPGA.\n");
+        }
         break;
     case SCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
-        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_NS_ARSM_OVERFLOW is not supported in this build.\n");
-        // trigger_shared_sram_arsm_fault(SCP_NS_ARSM_RAM,
-        //                           arsm_addr,
-        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        if (!IS_PLATFORM_FPGA())
+        {
+            trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_NS_ARSM_OVERFLOW is not supported on FPGA.\n");
+        }
         break;
     case SCP_ERROR_TYPE_RT_ARSM_CE:
         trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         break;
     case SCP_ERROR_TYPE_RT_ARSM_UE:
-        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RT_ARSM_UE is not supported in this build.\n");
-        // trigger_shared_sram_arsm_fault(SCP_RT_ARSM_RAM,
-        //                           arsm_addr,
-        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        if (!IS_PLATFORM_FPGA())
+        {
+            trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RT_ARSM_UE is not supported on FPGA.\n");
+        }
         break;
     case SCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
-        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RT_ARSM_OVERFLOW is not supported in this build.\n");
-        // trigger_shared_sram_arsm_fault(SCP_RT_ARSM_RAM,
-        //                           arsm_addr,
-        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        if (!IS_PLATFORM_FPGA())
+        {
+            trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RT_ARSM_OVERFLOW is not supported on FPGA.\n");
+        }
         break;
     case SCP_ERROR_TYPE_RL_ARSM_CE:
         trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         break;
     case SCP_ERROR_TYPE_RL_ARSM_UE:
-        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RL_ARSM_UE is not supported in this build.\n");
-        // trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM,
-        //                           arsm_addr,
-        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        if (!IS_PLATFORM_FPGA())
+        {
+            trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RL_ARSM_UE is not supported on FPGA.\n");
+        }
         break;
     case SCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
-        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RL_ARSM_OVERFLOW is not supported in this build.\n");
-        // trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM,
-        //                           arsm_addr,
-        //                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        if (!IS_PLATFORM_FPGA())
+        {
+            trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RL_ARSM_OVERFLOW is not supported on FPGA.\n");
+        }
         break;
-    case SCP_ERROR_TYPE_RSM_RAM_CE: {
+    case SCP_ERROR_TYPE_RSM_RAM_CE:
         atu_map_entry_t rsm_atu_entry;
         uint32_t read_addr = map_rsm_address(&rsm_atu_entry);
         trigger_shared_sram_rsm_fault(MSCP_S_RSM_RAM, read_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         unmap_rsm_address(&rsm_atu_entry);
         break;
-    }
-    case SCP_ERROR_TYPE_RSM_RAM_UE: {
-        FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RSM_RAM_UE is not supported in this build.\n");
-        // atu_map_entry_t rsm_atu_entry;
-        // uint32_t read_addr = map_rsm_address(&rsm_atu_entry);
-        // trigger_shared_sram_rsm_fault(MSCP_S_RSM_RAM, read_addr,
-        // SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK); unmap_rsm_address(&rsm_atu_entry);
+
+    case SCP_ERROR_TYPE_RSM_RAM_UE:
+        if (!IS_PLATFORM_FPGA())
+        {
+            atu_map_entry_t rsm_atu_entry;
+            uint32_t read_addr = map_rsm_address(&rsm_atu_entry);
+            trigger_shared_sram_rsm_fault(MSCP_S_RSM_RAM, read_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+            unmap_rsm_address(&rsm_atu_entry);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RSM_RAM_UE is not supported on FPGA.\n");
+        }
         break;
-    }
 
     default:
         FPFW_DBGPRINT_ERROR("Invalid/Unsupported SCP error type(%d)\n", einj_payload->param_type.error_type);

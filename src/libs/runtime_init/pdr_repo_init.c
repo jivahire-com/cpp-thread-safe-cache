@@ -10,7 +10,7 @@
  * Pioneer reference: https://azurecsi.visualstudio.com/Woodinville/_git/scp?path=/product/pioneer/mcp_ramfw/config_pldm_service.c
  * To add a PDR
  *    - Define a struct statically below based on PDR type
- *    - Add to pdr_list
+ *    - Add to s_pdr_list
  *
  */
 
@@ -825,7 +825,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .rated_min = 300,
     };
 
-    static void* pdr_list[] = {
+    static void* s_pdr_list[] = {
         &s_SOC_TMP_MAX_pdr,
         &s_SOC_TMP_MAX_pdr_aux_name,
         &s_SOC_PWR_pdr,
@@ -935,5 +935,5 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         NULL
     };
 
-    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &pdr_list};
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_pdr_list};
 }

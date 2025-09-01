@@ -2,7 +2,7 @@
 
 """
 - Python based Pythia 2.0 Test.
-- Test that checks for D2D Mailbox SEND RECV Command.
+- Test to ensure power loopdis_dual functionality
 """
 import time
 import sys, os
@@ -16,7 +16,9 @@ from kng_pythia_test_setup import KngPythiaTestSetup
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 
-class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
+
+# Class name must match file name for Robot Framework Library usage
+class mod_power_loopdis_dual(EchoFallsBaseTest):
 
     """
     :param name:                Name of the test case
@@ -30,7 +32,7 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
     """
     def __init__(
         self,
-        name: str = "D2DMBX_Send_Recv",
+        name: str = "Power loopdis_dual test",
         number: str = "NaN",
         workspace_config: Path | str = None,
         default_log_home: str = None,
@@ -51,16 +53,16 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             host_config,
             host_name,
         )
-    
-    def d2d_mailbox_cli_test_send_recv(self):
-        """ 
-        Test function: 
-            1. Setup the Test. 
-            2. Wait for SCP to be up. Send 'SEND' and 'RECV' command 
-            3. Read response and check if test passed or failed based on response
-            4. Teardown Test. 
+
+    def power_loopdis_dual_test(self):
         """
-        self.log.info("Running D2D Mailbox CLI command Test. . .")
+        Power Module loopdis_dual CLI test:
+            1. Setup the Test.
+            2. Execute Power module loopdis_dual CLI
+            3. Check for pass criteria in  SCP UART log
+            3. Teardown Test.
+        """
+        self.log.info("Running power loopdis dual CLI command Test. . .")
         self.dut.setup()
         if self.dut.get_dut_type() == DeviceType.BIGFPGA:
             self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
@@ -91,73 +93,24 @@ class d2d_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             time.sleep(30)
             return False
 
-        core_com_die0_channel.write_line(write_string="icc_d2dmbx")
-        core_com_die1_channel.write_line(write_string="icc_d2dmbx")
         try:
-            self._set_up_receive_command(core_com_die0_channel, core_com_die1_channel)
+            core_com_die0_channel.write_line(write_string="pwr set loopdis 1 dual")
+            core_com_die0_channel.read_until(key="Remote die loop disables Cmd Sent successfully.", timeout_seconds=30)
         except Exception as e:
             core_com_die0_channel.close()
-            core_com_die1_channel.close()
-            self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
+            core_com_die0_channel.close()
+            self.test_notify(step="pwr set loopdis 1 dual", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             time.sleep(30)
             return False
 
-        try:
-            self._validate_send_and_receive(core_com_die0_channel, core_com_die1_channel)
-        except Exception as e:
-            core_com_die0_channel.close()
-            core_com_die1_channel.close()
-            self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
-            self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
-            self.dut.teardown()
-            time.sleep(30)
-            return False
-
-        try:                                
-            self._validate_send_and_receive(core_com_die1_channel, core_com_die0_channel)
-        except Exception as e:
-            core_com_die0_channel.close()
-            core_com_die1_channel.close()
-            self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Fail", _is_error=True)
-            self.dut.teardown()
-            time.sleep(30)
-            return False
-
-        core_com_die0_channel.close()
-        core_com_die1_channel.close()
-        self.test_notify(step="D2DMBX SEND RECV Command", msg="Test Done", _is_error=False)
+        self.test_notify(step="Power loopdis_dual", msg="Test Done", _is_error=False)
         self.dut.teardown()
         time.sleep(30)
+
         return True
-    
+
     def _open_channels(self, *channels):
         for channel in channels:
             channel.open()
             assert channel.is_open()
-
-    def _set_up_receive_command(self, channel1, channel2):
-        """Issues recv on both dies and waits for their completions"""
-        try:
-            self.log.info(f"Submitting recv on Die0...")
-            channel1.write_line(write_string="recv")
-            channel1.read_until(key="Recv Initiated: Status[0x0]", timeout_seconds=300)
-
-            self.log.info(f"Submitting recv on Die1...")
-            channel2.write_line(write_string="recv")
-            channel2.read_until(key="Recv Initiated: Status[0x0]", timeout_seconds=300)
-        except Exception as e:
-            self.log.error(f"Error reading SCP UART: {e}")
-            raise
-
-    def _validate_send_and_receive(self, channel1, channel2):
-        self.log.info(f"Submitting command-send...")
-        channel1.write_line(write_string="send")
-        try:
-            channel1.read_until(key="Send Complete: Status[0x0]", timeout_seconds=500)
-            self.log.info("Request SENT Successfully from One Die to Another...")
-            channel2.read_until(key="Recv Complete: Status[0x0]", timeout_seconds=500)
-            self.log.info("Received Response Successfully from One Die to Another...")
-        except Exception as e:
-            self.log.error(f"Error reading SCP UART: {e}")
-            raise

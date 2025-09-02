@@ -29,7 +29,7 @@
 
 
 #define DOUT2MILLIVOLTS(dout) ((uint16_t)(DOUT2VOLTS((dout)) * 1000.0f))
-#define MILLIVOLTS2DOUT(mv) (VOLTS2DOUT(((mv) / 1000.0f)))
+#define MILLIVOLTS2DOUT(mv) ((uint16_t)(VOLTS2DOUT(((mv) / 1000.0f))))
 
 #define MICROSECONDS_TO_MILLISECONDS(time_diff_uS) ((time_diff_uS) / 1000)
 

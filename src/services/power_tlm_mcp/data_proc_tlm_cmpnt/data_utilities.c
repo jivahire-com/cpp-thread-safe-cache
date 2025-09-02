@@ -63,11 +63,11 @@ void data_util_calc_mma_u16(mma_u16_t* mma, uint16_t mma_latest_value)
     {
         mma->max = mma_latest_value;
     }
-    if ((mma_latest_value < mma->min) || (mma->min == 0))
+    if ((mma_latest_value < mma->min) || (mma->running_avg.num_samples == 0))
     {
         mma->min = mma_latest_value;
     }
-    data_util_cumulative_avg_u16_add_sample(&mma->cumulative_avg, mma_latest_value);
+    data_util_running_avg_u16_add_sample(&mma->running_avg, mma_latest_value);
 }
 
 void data_util_calc_mma_u32(mma_u32_t* mma, uint32_t mma_latest_value)
@@ -81,7 +81,7 @@ void data_util_calc_mma_u32(mma_u32_t* mma, uint32_t mma_latest_value)
     {
         mma->max = mma_latest_value;
     }
-    if ((mma_latest_value < mma->min) || (mma->min == 0))
+    if ((mma_latest_value < mma->min) || (mma->running_avg.num_samples == 0))
     {
         mma->min = mma_latest_value;
     }
@@ -122,77 +122,145 @@ uint64_t data_util_convert_systick_to_microseconds(uint64_t tick_count)
     return timestamp_us;
 }
 
-void data_util_cumulative_avg_u16_add_sample(cumulative_u16_avg_t* avg, uint16_t sample)
+/**
+ * @brief Add a sample to the 16-bit running average structure using cumulative sum approach
+ *
+ * This function implements a robust cumulative sum algorithm that replaced an alternative
+ * incremental averaging method due to critical precision loss issues.
+ *
+ * ALGORITHM COMPARISON:
+ * =====================
+ * Alternative Implementation (Incremental Averaging):
+ *   avg->average = ((avg->average * avg->num_samples) + sample) / (avg->num_samples + 1);
+ *   avg->num_samples++;
+ *
+ * Critical Shortcomings of Alternative Method:
+ * --------------------------------------------
+ * 1. PRECISION LOSS: Integer division in avg->average calculation caused truncation
+ *    General case: When accumulated samples have mixed values (zeros and non-zeros),
+ *    repeated integer division causes progressive information loss
+ *
+ *    Concrete example with 40,000 samples (20,000 zeros + 20,000 of value 840):
+ *    - Mathematically correct average: 420
+ *    - Alternative method result: Often 0 due to repeated truncation
+ *
+ * 2. "STUCK AT ZERO" BUG: When average became 0, formula became:
+ *    new_avg = (0 * count + sample) / (count + 1) = sample / (count + 1)
+ *    For large sample counts, this approaches 0, making recovery impossible
+ *    regardless of subsequent sample values. Since the incremental increase
+ *    (sample / (count + 1)) is less than 1, integer truncation prevents any
+ *    movement from zero, creating a permanent stuck state
+ *
+ * 3. CUMULATIVE ERROR: Each division step introduced error that compounded over time,
+ *    causing drift from the true mathematical average
+ *
+ * 4. NON-DETERMINISTIC: Order of samples affected final result due to rounding errors,
+ *    violating mathematical properties of averages
+ *
+ * Current (Robust) Implementation:
+ * ================================
+ * Uses cumulative summation approach:
+ * - Maintains running sum of all samples (summation field)
+ * - Tracks total number of samples (num_samples field)
+ * - Average calculated on-demand as: (summation + num_samples/2) / num_samples
+ *
+ * Benefits of Current Method:
+ * ---------------------------
+ * 1. MATHEMATICALLY CORRECT: Always produces correct average regardless of sample order
+ * 2. NO PRECISION LOSS: Summation preserves all information until final division
+ * 3. DETERMINISTIC: Same set of samples always produces same result
+ * 4. OVERFLOW PROTECTION: Prevents arithmetic overflow with proper bounds checking
+ * 5. SATURATION HANDLING: Gracefully handles edge cases at maximum values
+ *
+ * OVERFLOW PROTECTION STRATEGY:
+ * =============================
+ * Two-tier protection system:
+ * 1. Sample Count Saturation: Stop accepting samples when num_samples reaches UINT16_MAX
+ * 2. Summation Overflow Protection: Reject samples that would cause summation to exceed UINT32_MAX
+ *
+ * Example Scenarios:
+ * ==================
+ * Precision Recovery Case (40,000 samples):
+ * - 20,000 samples of 0: summation = 0, num_samples = 20,000
+ * - 20,000 samples of 840: summation = 16,800,000, num_samples = 40,000
+ * - Final average: 16,800,000 / 40,000 = 420 (mathematically correct!)
+ *
+ * General High-Volume Case (N samples with mixed values):
+ * - Summation maintains exact total regardless of sample order
+ * - Average = total_sum / sample_count (always mathematically precise)
+ * - No information loss until final division (with proper rounding)
+ *
+ * @param[in,out] avg - Pointer to running average structure to update
+ * @param[in] sample - New sample value to add to the running average
+ *
+ * @note This function will reject samples that would cause overflow, logging appropriate events
+ * @note For mathematical derivation of rounding formula, see data_util_running_avg_u16_get()
+ */
+void data_util_running_avg_u16_add_sample(running_u16_avg_t* avg, uint16_t sample)
 {
     if (avg == NULL)
     {
-        FPFW_ET_LOG(CumulativeAverageNullPointer);
+        FPFW_ET_LOG(RunningAverageNullPointer);
         return;
     }
-    // Saturating sum
-    if (avg->sum <= UINT32_MAX - sample)
+
+    // Stop accepting samples if num_samples is saturated
+    if (avg->num_samples == UINT16_MAX)
     {
-        avg->sum += sample;
-    }
-    else
-    {
-        FPFW_ET_LOG(AvgAddSampleSumSat, (uint32_t)avg);
-        avg->sum = UINT32_MAX; // clamp to max
+        FPFW_ET_LOG(RunningAvg16AddSampleNumSat, (uint32_t)avg);
+        return;
     }
 
-    // Saturating num_samples
-    if (avg->num_samples < UINT16_MAX)
+    // Check for overflow before adding
+    if (avg->summation > UINT32_MAX - sample)
     {
-        avg->num_samples += 1;
+        FPFW_ET_LOG(RunningAvg16AddSampleSumSat, (uint32_t)avg);
+        return; // Don't add sample to prevent overflow
     }
-    else
-    {
-        // TODO: Determine which entries are getting enough samples to hit this. Adjust as needed
-        //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2872430
-        // FPFW_ET_LOG(AvgAddSampleNumSat, (uint32_t)avg);
-        avg->num_samples = UINT16_MAX; // clamp to max
-    }
+
+    avg->summation += sample;
+    avg->num_samples += 1;
 }
 
-uint16_t data_util_cumulative_avg_u16_get(const cumulative_u16_avg_t* avg)
+uint16_t data_util_running_avg_u16_get(const running_u16_avg_t* avg)
 {
-
     if (avg == NULL)
     {
-        FPFW_ET_LOG(CumulativeAverageNullPointer);
+        FPFW_ET_LOG(RunningAverageNullPointer);
+        return 0;
+    }
+    if (avg->num_samples == 0)
+    {
         return 0;
     }
 
-    if (avg->num_samples == 0)
-    {
-        return 0; // Avoid divide by zero
-    }
+    // Use uint64_t to prevent overflow - plenty of headroom
+    uint64_t result = ((uint64_t)avg->summation + avg->num_samples / 2) / avg->num_samples;
 
-    // Use 64-bit arithmetic to prevent overflow
-    uint64_t avg64 = ((uint64_t)avg->sum + avg->num_samples - 1) / avg->num_samples;
-
-    // Clamp to uint16_t maximum
-    if (avg64 > UINT16_MAX)
+    // Clamp to UINT16_MAX to prevent overflow
+    if (result > UINT16_MAX)
     {
-        FPFW_ET_LOG(AvgGetOutputSat, (uint32_t)avg);
+        FPFW_ET_LOG(RunningAvg16GetClamp, (uint32_t)avg);
         return UINT16_MAX;
     }
 
-    return (uint16_t)avg64;
+    return (uint16_t)result;
 }
-
-void data_util_cumulative_avg_u16_reset(cumulative_u16_avg_t* avg)
+void data_util_running_avg_u16_reset(running_u16_avg_t* avg)
 {
     if (avg == NULL)
     {
-        FPFW_ET_LOG(CumulativeAverageNullPointer);
+        FPFW_ET_LOG(RunningAverageNullPointer);
         return;
     }
 
-    avg->sum = 0;
+    avg->summation = 0;
     avg->num_samples = 0;
 }
 
+/**
+ * @brief See explanation for data_util_running_avg_u16_add_sample(), this is the larger 32 bit version
+ */
 void data_util_running_avg_u32_add_sample(running_u32_avg_t* avg, uint32_t sample)
 {
     if (avg == NULL)
@@ -201,33 +269,22 @@ void data_util_running_avg_u32_add_sample(running_u32_avg_t* avg, uint32_t sampl
         return;
     }
 
-    if (avg->num_samples == 0)
+    // Stop accepting samples if num_samples is saturated
+    if (avg->num_samples == UINT32_MAX)
     {
-        avg->average = sample;
-        avg->num_samples = 1;
+        FPFW_ET_LOG(RunningAvg32AddSampleNumSat, (uint32_t)avg);
         return;
     }
 
-    // Cap sample count at UINT16_MAX to prevent rollover
-    if (avg->num_samples < UINT16_MAX)
+    // Check for overflow before adding
+    if (avg->summation > UINT64_MAX - sample)
     {
-        avg->num_samples += 1;
-    }
-    else
-    {
-        FPFW_ET_LOG(RunningAvgAddSampleNumSat, (uint32_t)avg);
-        avg->num_samples = UINT16_MAX; // clamp to max
+        FPFW_ET_LOG(RunningAvg32AddSampleSumSat, (uint32_t)avg);
+        return; // Don't add sample to prevent overflow
     }
 
-    uint64_t total = (uint64_t)(avg->average) * (avg->num_samples - 1) + sample;
-    uint64_t updated_avg = (total + avg->num_samples / 2) / avg->num_samples;
-
-    // Clamping to UINT32_MAX for average is not needed here because:
-    //  - Both the existing average and the new sample are uint32_t values.
-    //  - The result is the arithmetic mean of all samples (existing + new).
-    //  - The arithmetic mean of bounded values cannot exceed the maximum input value.
-    //  - Integer overflow is prevented by computing the sum and mean using uint64_t.
-    avg->average = (uint32_t)updated_avg;
+    avg->summation += sample;
+    avg->num_samples += 1;
 }
 
 uint32_t data_util_running_avg_u32_get(const running_u32_avg_t* avg)
@@ -237,7 +294,35 @@ uint32_t data_util_running_avg_u32_get(const running_u32_avg_t* avg)
         FPFW_ET_LOG(RunningAverageNullPointer);
         return 0;
     }
-    return avg->average;
+
+    if (avg->num_samples == 0)
+    {
+        return 0;
+    }
+
+    uint64_t result;
+    uint32_t half_samples = avg->num_samples / 2;
+
+    // Check if adding rounding term would overflow
+    if (avg->summation <= UINT64_MAX - half_samples)
+    {
+        // Safe to add rounding term
+        result = (avg->summation + half_samples) / avg->num_samples;
+    }
+    else
+    {
+        // Close to overflow, calculate without rounding
+        result = avg->summation / avg->num_samples;
+    }
+
+    // Clamp result to UINT32_MAX if it exceeds the range
+    if (result > UINT32_MAX)
+    {
+        FPFW_ET_LOG(RunningAvg32GetClamp, (uint32_t)avg);
+        return UINT32_MAX;
+    }
+
+    return (uint32_t)result;
 }
 
 void data_util_running_avg_u32_reset(running_u32_avg_t* avg)
@@ -248,7 +333,7 @@ void data_util_running_avg_u32_reset(running_u32_avg_t* avg)
         return;
     }
 
-    avg->average = 0;
+    avg->summation = 0;
     avg->num_samples = 0;
 }
 

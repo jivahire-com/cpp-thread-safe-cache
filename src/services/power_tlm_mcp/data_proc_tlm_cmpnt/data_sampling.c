@@ -1186,7 +1186,14 @@ void data_smpl_terminate_non_rack_throttle_sources(uint8_t core_id, uint64_t* ti
 void data_proc_tlm_cmpnt_pwr_pkg_completed(void)
 {
     // Reset the computed per core metrics
-    comp_metrics_reset_2_mins_metrics();
+    comp_metrics_reset_local_2_min_metrics();
+
+    if (die_2_die_exch_get_this_die_id() == PRIMARY_DIE_ID)
+    {
+        // primary die can clear now as the data was just sent to the host
+        // secondary die's will clear as soon as they write to the data exchange
+        comp_metrics_reset_d2d_2_min_metrics();
+    }
 }
 
 void data_proc_tlm_cmpnt_24hr_pkg_completed(void)

@@ -126,7 +126,7 @@ static int32_t test_setup(void** state)
             computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].overrun_count = 0;
             computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.min = 0;
             computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.max = 0;
-            computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.cumulative_avg.sum = 0;
+            computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].pstate.running_avg.summation = 0;
         }
     }
 
@@ -134,6 +134,8 @@ static int32_t test_setup(void** state)
     time_t0 = 100;
     // Enable PSTATE mock for all tests
     g_enable_mock_pstate = 1;
+
+    in_band_publishing_active = true;
 
     return 0;
 }

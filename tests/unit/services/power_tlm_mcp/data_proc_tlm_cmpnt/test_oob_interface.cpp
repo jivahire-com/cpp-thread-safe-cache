@@ -38,7 +38,7 @@ extern void oob_inf_init(void);
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
-    comp_metrics_reset_2_mins_metrics();
+    comp_metrics_reset_local_2_min_metrics();
     comp_metrics_reset_24_hrs_metrics();
     return 0;
 }

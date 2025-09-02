@@ -109,7 +109,7 @@ static int32_t test_setup(void** state)
     g_enable_mock_pstate = 1; // Enable P-state mocking
 
     // Reset computed metrics using already defined standard functions
-    comp_metrics_reset_2_mins_metrics();
+    comp_metrics_reset_local_2_min_metrics();
     comp_metrics_reset_24_hrs_metrics();
 
     // Reset core state for clean test
@@ -129,6 +129,8 @@ static int32_t test_setup(void** state)
     {
         core_is_active[core] = true;
     }
+
+    in_band_publishing_active = true;
 
     return 0;
 }

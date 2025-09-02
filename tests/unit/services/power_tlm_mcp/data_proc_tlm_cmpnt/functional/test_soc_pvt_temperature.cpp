@@ -46,6 +46,7 @@
 extern "C" {
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h>
+#include <compute_metrics_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <fpfw_status.h>
 #include <libs/event_trace/trace/inc/event_trace_providers.h>
@@ -59,6 +60,7 @@ static int32_t test_setup(void** state)
 {
     FPFW_UNUSED(state);
     reset_pwr_tlm_data();
+    in_band_publishing_active = true;
     return 0;
 }
 

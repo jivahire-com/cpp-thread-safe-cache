@@ -289,22 +289,121 @@ TEST_FUNCTION(test_data_util_calc_mma_u16, test_setup, test_teardown)
 {
     mma_u16_t mma = {{0}};
 
-    // Feed a few test values and validate the min and max, as the average is
-    // already tested.
+    // Test initial state
+    assert_int_equal(mma.min, 0);
+    assert_int_equal(mma.max, 0);
+    assert_int_equal(mma.running_avg.summation, 0);
+    assert_int_equal(mma.running_avg.num_samples, 0);
 
+    // Test first value - should set both min and max
     data_util_calc_mma_u16(&mma, 100);
     assert_int_equal(mma.min, 100);
     assert_int_equal(mma.max, 100);
+    assert_int_equal(data_util_running_avg_u16_get(&mma.running_avg), 100);
+    assert_int_equal(mma.running_avg.summation, 100);
+    assert_int_equal(mma.running_avg.num_samples, 1);
 
+    // Test lower value (new minimum)
     data_util_calc_mma_u16(&mma, 50);
     assert_int_equal(mma.min, 50);
     assert_int_equal(mma.max, 100);
+    assert_int_equal(data_util_running_avg_u16_get(&mma.running_avg), 75); // (100 + 50) / 2 = 75
+    assert_int_equal(mma.running_avg.summation, 150);
+    assert_int_equal(mma.running_avg.num_samples, 2);
 
+    // Test higher value (new maximum)
     data_util_calc_mma_u16(&mma, 150);
     assert_int_equal(mma.min, 50);
     assert_int_equal(mma.max, 150);
+    // Expected running average: (150 + 150) / 3 = 100
+    assert_int_equal(data_util_running_avg_u16_get(&mma.running_avg), 100);
+    assert_int_equal(mma.running_avg.summation, 300);
+    assert_int_equal(mma.running_avg.num_samples, 3);
 
+    // Test zero value - should become new minimum only if actually smaller
+    data_util_calc_mma_u16(&mma, 0);
+    assert_int_equal(mma.min, 0);   // Should update to 0 since 0 < 50
+    assert_int_equal(mma.max, 150); // Should remain unchanged
+    // Expected running average: (300 + 0) / 4 = 75
+    assert_int_equal(data_util_running_avg_u16_get(&mma.running_avg), 75);
+    assert_int_equal(mma.running_avg.summation, 300);
+    assert_int_equal(mma.running_avg.num_samples, 4);
+
+    // Test another zero value - should NOT update min since min is already 0
+    data_util_calc_mma_u16(&mma, 0);
+    assert_int_equal(mma.min, 0);   // Should remain 0
+    assert_int_equal(mma.max, 150); // Should remain unchanged
+    // Expected running average: (300 + 0) / 5 = 60
+    assert_int_equal(data_util_running_avg_u16_get(&mma.running_avg), 60);
+    assert_int_equal(mma.running_avg.summation, 300);
+    assert_int_equal(mma.running_avg.num_samples, 5);
+
+    // Test value larger than zero but smaller than current min - should update min
+    data_util_calc_mma_u16(&mma, 5);
+    assert_int_equal(mma.min, 0);   // Should remain 0 since 5 > 0
+    assert_int_equal(mma.max, 150); // Should remain unchanged
+    assert_int_equal(mma.running_avg.summation, 305);
+    assert_int_equal(mma.running_avg.num_samples, 6);
+
+    // Test scenario where zero is the first value
+    mma_u16_t mma_zero = {{0}};
+    data_util_calc_mma_u16(&mma_zero, 0);
+    assert_int_equal(mma_zero.min, 0);
+    assert_int_equal(mma_zero.max, 0);
+    assert_int_equal(data_util_running_avg_u16_get(&mma_zero.running_avg), 0);
+    assert_int_equal(mma_zero.running_avg.summation, 0);
+    assert_int_equal(mma_zero.running_avg.num_samples, 1);
+
+    // Test that subsequent non-zero values don't incorrectly update min
+    data_util_calc_mma_u16(&mma_zero, 100);
+    assert_int_equal(mma_zero.min, 0);   // Should remain 0 since 100 > 0
+    assert_int_equal(mma_zero.max, 100); // Should update to 100
+    assert_int_equal(data_util_running_avg_u16_get(&mma_zero.running_avg), 50); // (0 + 100) / 2 = 50
+    assert_int_equal(mma_zero.running_avg.summation, 100);
+    assert_int_equal(mma_zero.running_avg.num_samples, 2);
+
+    // Test negative scenario - add another zero, should not change min
+    data_util_calc_mma_u16(&mma_zero, 0);
+    assert_int_equal(mma_zero.min, 0);   // Should remain 0
+    assert_int_equal(mma_zero.max, 100); // Should remain 100
+    // Expected: (100 + 0) / 3 = 33
+    assert_int_equal(data_util_running_avg_u16_get(&mma_zero.running_avg), 33);
+    assert_int_equal(mma_zero.running_avg.summation, 100);
+    assert_int_equal(mma_zero.running_avg.num_samples, 3);
+
+    // Test the original bug scenario: samples in sequence that exposed the bug
+    mma_u16_t mma_bug = {{0}};
+    data_util_calc_mma_u16(&mma_bug, 874); // First sample
+    assert_int_equal(mma_bug.min, 874);
+    assert_int_equal(mma_bug.max, 874);
+
+    data_util_calc_mma_u16(&mma_bug, 26); // Second sample - new min
+    assert_int_equal(mma_bug.min, 26);
+    assert_int_equal(mma_bug.max, 874);
+
+    data_util_calc_mma_u16(&mma_bug, 0); // Third sample - new min (zero)
+    assert_int_equal(mma_bug.min, 0);
+    assert_int_equal(mma_bug.max, 874);
+
+    data_util_calc_mma_u16(&mma_bug, 50); // Fourth sample - should NOT change min
+    assert_int_equal(mma_bug.min, 0);     // Should stay 0, not become 50
+    assert_int_equal(mma_bug.max, 874);
+
+    // Test NULL pointer (should not crash)
     data_util_calc_mma_u16(nullptr, 150);
+
+    // Test maximum uint16_t values
+    mma_u16_t mma_max = {{0}};
+    data_util_calc_mma_u16(&mma_max, UINT16_MAX);
+    assert_int_equal(mma_max.min, UINT16_MAX);
+    assert_int_equal(mma_max.max, UINT16_MAX);
+    assert_int_equal(data_util_running_avg_u16_get(&mma_max.running_avg), UINT16_MAX);
+    assert_int_equal(mma_max.running_avg.summation, UINT16_MAX);
+    assert_int_equal(mma_max.running_avg.num_samples, 1);
+
+    data_util_calc_mma_u16(&mma_max, 0);
+    assert_int_equal(mma_max.min, 0);
+    assert_int_equal(mma_max.max, UINT16_MAX);
 }
 
 TEST_FUNCTION(test_data_util_calc_mma_u32, test_setup, test_teardown)
@@ -314,78 +413,114 @@ TEST_FUNCTION(test_data_util_calc_mma_u32, test_setup, test_teardown)
     // Test initial state
     assert_int_equal(mma.min, 0);
     assert_int_equal(mma.max, 0);
-    assert_int_equal(mma.running_avg.average, 0);
+    assert_int_equal(mma.running_avg.summation, 0);
     assert_int_equal(mma.running_avg.num_samples, 0);
 
     // Test first value
     data_util_calc_mma_u32(&mma, 1000);
     assert_int_equal(mma.min, 1000);
     assert_int_equal(mma.max, 1000);
-    assert_int_equal(mma.running_avg.average, 1000);
+    assert_int_equal(data_util_running_avg_u32_get(&mma.running_avg), 1000);
+    assert_int_equal(mma.running_avg.summation, 1000);
     assert_int_equal(mma.running_avg.num_samples, 1);
 
     // Test lower value (new minimum)
     data_util_calc_mma_u32(&mma, 500);
     assert_int_equal(mma.min, 500);
     assert_int_equal(mma.max, 1000);
-    assert_int_equal(mma.running_avg.average, 750); // (1000 + 500) / 2 = 750
+    assert_int_equal(data_util_running_avg_u32_get(&mma.running_avg), 750); // (1000 + 500) / 2 = 750
+    assert_int_equal(mma.running_avg.summation, 1500);
     assert_int_equal(mma.running_avg.num_samples, 2);
 
     // Test higher value (new maximum)
     data_util_calc_mma_u32(&mma, 2000);
     assert_int_equal(mma.min, 500);
     assert_int_equal(mma.max, 2000);
-    // Expected running average: (750*2 + 2000 + 1) / 3 = (1500 + 2000 + 1) / 3 = 3501/3 = 1167
-    assert_int_equal(mma.running_avg.average, 1167);
+    // Expected running average: (1500 + 2000) / 3 = 1167 (rounded)
+    assert_int_equal(data_util_running_avg_u32_get(&mma.running_avg), 1167);
+    assert_int_equal(mma.running_avg.summation, 3500);
     assert_int_equal(mma.running_avg.num_samples, 3);
 
     // Test value between min and max
     data_util_calc_mma_u32(&mma, 1200);
     assert_int_equal(mma.min, 500);  // Should remain unchanged
     assert_int_equal(mma.max, 2000); // Should remain unchanged
-    // Expected running average: (1167*3 + 1200 + 2) / 4 = (3501 + 1200 + 2) / 4 = 4703/4 = 1175
-    assert_int_equal(mma.running_avg.average, 1175);
+    // Expected running average: (3500 + 1200) / 4 = 1175
+    assert_int_equal(data_util_running_avg_u32_get(&mma.running_avg), 1175);
+    assert_int_equal(mma.running_avg.summation, 4700);
     assert_int_equal(mma.running_avg.num_samples, 4);
 
-    // Test zero value
+    // Test zero value - should become new minimum
     data_util_calc_mma_u32(&mma, 0);
     assert_int_equal(mma.min, 0);    // Should update to 0
     assert_int_equal(mma.max, 2000); // Should remain unchanged
-    // Expected running average: (1175*4 + 0 + 2) / 5 = (4700 + 0 + 2) / 5 = 4702/5 = 940
-    assert_int_equal(mma.running_avg.average, 940);
+    // Expected running average: (4700 + 0) / 5 = 940
+    assert_int_equal(data_util_running_avg_u32_get(&mma.running_avg), 940);
+    assert_int_equal(mma.running_avg.summation, 4700);
     assert_int_equal(mma.running_avg.num_samples, 5);
+
+    // Test another zero value - should NOT update min since min is already 0
+    data_util_calc_mma_u32(&mma, 0);
+    assert_int_equal(mma.min, 0);    // Should remain 0
+    assert_int_equal(mma.max, 2000); // Should remain unchanged
+    // Expected running average: (4700 + 0) / 6 = 783
+    assert_int_equal(data_util_running_avg_u32_get(&mma.running_avg), 783);
+    assert_int_equal(mma.running_avg.summation, 4700);
+    assert_int_equal(mma.running_avg.num_samples, 6);
+
+    // Test scenario where zero is the first value
+    mma_u32_t mma_zero = {{0}};
+    data_util_calc_mma_u32(&mma_zero, 0);
+    assert_int_equal(mma_zero.min, 0);
+    assert_int_equal(mma_zero.max, 0);
+    assert_int_equal(data_util_running_avg_u32_get(&mma_zero.running_avg), 0);
+    assert_int_equal(mma_zero.running_avg.summation, 0);
+    assert_int_equal(mma_zero.running_avg.num_samples, 1);
+
+    // Test that subsequent non-zero values don't incorrectly update min
+    data_util_calc_mma_u32(&mma_zero, 100);
+    assert_int_equal(mma_zero.min, 0);   // Should remain 0 since 100 > 0
+    assert_int_equal(mma_zero.max, 100); // Should update to 100
+    assert_int_equal(data_util_running_avg_u32_get(&mma_zero.running_avg), 50); // (0 + 100) / 2 = 50
+    assert_int_equal(mma_zero.running_avg.summation, 100);
+    assert_int_equal(mma_zero.running_avg.num_samples, 2);
+
+    // Test the original bug scenario: samples that would expose the old bug
+    mma_u32_t mma_bug = {{0}};
+    data_util_calc_mma_u32(&mma_bug, 874); // First sample
+    assert_int_equal(mma_bug.min, 874);
+    assert_int_equal(mma_bug.max, 874);
+
+    data_util_calc_mma_u32(&mma_bug, 26); // Second sample - new min
+    assert_int_equal(mma_bug.min, 26);
+    assert_int_equal(mma_bug.max, 874);
+
+    data_util_calc_mma_u32(&mma_bug, 0); // Third sample - new min (zero)
+    assert_int_equal(mma_bug.min, 0);
+    assert_int_equal(mma_bug.max, 874);
+
+    data_util_calc_mma_u32(&mma_bug, 50); // Fourth sample - should NOT change min
+    assert_int_equal(mma_bug.min, 0);     // Should stay 0, not become 50
+    assert_int_equal(mma_bug.max, 874);
 
     // Test maximum uint32_t value
     mma_u32_t mma_max = {{0}};
     data_util_calc_mma_u32(&mma_max, UINT32_MAX);
     assert_int_equal(mma_max.min, UINT32_MAX);
     assert_int_equal(mma_max.max, UINT32_MAX);
-    assert_int_equal(mma_max.running_avg.average, UINT32_MAX);
+    assert_int_equal(data_util_running_avg_u32_get(&mma_max.running_avg), UINT32_MAX);
+    assert_int_equal(mma_max.running_avg.summation, UINT32_MAX);
     assert_int_equal(mma_max.running_avg.num_samples, 1);
 
     // Test second value with max - should reduce average
     data_util_calc_mma_u32(&mma_max, 0);
     assert_int_equal(mma_max.min, 0);
     assert_int_equal(mma_max.max, UINT32_MAX);
-    // Expected: (UINT32_MAX*1 + 0 + 1) / 2 using 64-bit arithmetic
+    // Expected: (UINT32_MAX + 0 + 1) / 2 using 64-bit arithmetic
     uint32_t expected_avg = (uint32_t)(((uint64_t)UINT32_MAX + 1) / 2);
-    assert_int_equal(mma_max.running_avg.average, expected_avg);
+    assert_int_equal(data_util_running_avg_u32_get(&mma_max.running_avg), expected_avg);
+    assert_int_equal(mma_max.running_avg.summation, UINT32_MAX);
     assert_int_equal(mma_max.running_avg.num_samples, 2);
-
-    // Test min update when min is initially 0
-    mma_u32_t mma_zero = {{0}};
-    data_util_calc_mma_u32(&mma_zero, 0);
-    assert_int_equal(mma_zero.min, 0);
-    assert_int_equal(mma_zero.max, 0);
-    assert_int_equal(mma_zero.running_avg.average, 0);
-    assert_int_equal(mma_zero.running_avg.num_samples, 1);
-
-    // Test that non-zero value updates min from 0
-    data_util_calc_mma_u32(&mma_zero, 100);
-    assert_int_equal(mma_zero.min, 100);
-    assert_int_equal(mma_zero.max, 100);
-    assert_int_equal(mma_zero.running_avg.average, 50); // (0 + 100 + 1) / 2 = 101/2 = 50
-    assert_int_equal(mma_zero.running_avg.num_samples, 2);
 
     // Test large values to ensure no overflow
     mma_u32_t mma_large = {{0}};
@@ -395,24 +530,25 @@ TEST_FUNCTION(test_data_util_calc_mma_u32, test_setup, test_teardown)
     assert_int_equal(mma_large.max, 0xFFFF0001);
     // Average should be calculated correctly without overflow
     uint32_t expected_large_avg = (uint32_t)(((uint64_t)0xFFFF0000 + 0xFFFF0001 + 1) / 2);
-    assert_int_equal(mma_large.running_avg.average, expected_large_avg);
+    assert_int_equal(data_util_running_avg_u32_get(&mma_large.running_avg), expected_large_avg);
+    assert_int_equal(mma_large.running_avg.summation, (uint64_t)0xFFFF0000 + 0xFFFF0001);
     assert_int_equal(mma_large.running_avg.num_samples, 2);
 
-    // Test saturation behavior - add many samples to reach UINT16_MAX sample count
+    // Test saturation behavior - add many samples to reach UINT32_MAX sample count
     mma_u32_t mma_sat = {{0}};
-    mma_sat.running_avg.num_samples = UINT16_MAX - 1;
-    mma_sat.running_avg.average = 1000;
+    mma_sat.running_avg.num_samples = UINT32_MAX - 1;
+    mma_sat.running_avg.summation = 1000ULL * (UINT32_MAX - 1);
     mma_sat.min = 500;
     mma_sat.max = 1500;
 
     data_util_calc_mma_u32(&mma_sat, 1200);
     assert_int_equal(mma_sat.min, 500);
     assert_int_equal(mma_sat.max, 1500);
-    assert_int_equal(mma_sat.running_avg.num_samples, UINT16_MAX); // Should be saturated
+    assert_int_equal(mma_sat.running_avg.num_samples, UINT32_MAX); // Should be saturated
     // Average should still be calculated correctly
-    uint64_t total = (uint64_t)1000 * (UINT16_MAX - 1) + 1200;
-    uint64_t updated_avg = (total + UINT16_MAX / 2) / UINT16_MAX;
-    assert_int_equal(mma_sat.running_avg.average, (uint32_t)updated_avg);
+    uint64_t total = 1000ULL * (UINT32_MAX - 1) + 1200;
+    uint64_t updated_avg = (total + UINT32_MAX / 2) / UINT32_MAX;
+    assert_int_equal(data_util_running_avg_u32_get(&mma_sat.running_avg), (uint32_t)updated_avg);
 
     // Test NULL pointer (should not crash and log error)
     data_util_calc_mma_u32(nullptr, 100);
@@ -424,7 +560,8 @@ TEST_FUNCTION(test_data_util_calc_mma_u32, test_setup, test_teardown)
     data_util_calc_mma_u32(&mma_dup, 1000);
     assert_int_equal(mma_dup.min, 1000);
     assert_int_equal(mma_dup.max, 1000);
-    assert_int_equal(mma_dup.running_avg.average, 1000);
+    assert_int_equal(data_util_running_avg_u32_get(&mma_dup.running_avg), 1000);
+    assert_int_equal(mma_dup.running_avg.summation, 3000);
     assert_int_equal(mma_dup.running_avg.num_samples, 3);
 }
 
@@ -731,289 +868,6 @@ TEST_FUNCTION(test_data_util_mov_avg_u32_clear_corner, test_setup, test_teardown
     data_util_mov_avg_u32_clear(nullptr);
 }
 
-TEST_FUNCTION(test_data_util_cumulative_avg_u16_add_sample, test_setup, test_teardown)
-{
-    cumulative_u16_avg_t avg = {0};
-
-    // Test case: Initial state
-    assert_int_equal(avg.sum, 0);
-    assert_int_equal(avg.num_samples, 0);
-
-    // Test case: Add first sample
-    data_util_cumulative_avg_u16_add_sample(&avg, 100);
-    assert_int_equal(avg.sum, 100);
-    assert_int_equal(avg.num_samples, 1);
-
-    // Test case: Add second sample
-    data_util_cumulative_avg_u16_add_sample(&avg, 200);
-    assert_int_equal(avg.sum, 300);
-    assert_int_equal(avg.num_samples, 2);
-
-    // Test case: Add multiple samples
-    data_util_cumulative_avg_u16_add_sample(&avg, 150);
-    data_util_cumulative_avg_u16_add_sample(&avg, 50);
-    assert_int_equal(avg.sum, 500);
-    assert_int_equal(avg.num_samples, 4);
-
-    // Test case: Add zero value
-    data_util_cumulative_avg_u16_add_sample(&avg, 0);
-    assert_int_equal(avg.sum, 500);
-    assert_int_equal(avg.num_samples, 5);
-
-    // Test case: Add maximum uint16_t value
-    cumulative_u16_avg_t avg_max = {0};
-    data_util_cumulative_avg_u16_add_sample(&avg_max, UINT16_MAX);
-    assert_int_equal(avg_max.sum, UINT16_MAX);
-    assert_int_equal(avg_max.num_samples, 1);
-
-    // Test case: Sum saturation - force sum to near maximum
-    cumulative_u16_avg_t avg_sat = {0};
-    avg_sat.sum = UINT32_MAX - 50;
-    avg_sat.num_samples = 1;
-    data_util_cumulative_avg_u16_add_sample(&avg_sat, 100); // This should cause saturation
-    assert_int_equal(avg_sat.sum, UINT32_MAX);
-    assert_int_equal(avg_sat.num_samples, 2);
-
-    // Test case: Further addition after saturation
-    data_util_cumulative_avg_u16_add_sample(&avg_sat, 200);
-    assert_int_equal(avg_sat.sum, UINT32_MAX); // Should remain saturated
-    assert_int_equal(avg_sat.num_samples, 3);
-
-    // Test case: num_samples saturation
-    cumulative_u16_avg_t avg_num_sat = {0};
-    avg_num_sat.sum = 1000;
-    avg_num_sat.num_samples = UINT16_MAX;
-    data_util_cumulative_avg_u16_add_sample(&avg_num_sat, 50);
-    assert_int_equal(avg_num_sat.sum, 1050);               // Sum should still update
-    assert_int_equal(avg_num_sat.num_samples, UINT16_MAX); // Should remain saturated
-
-    // Test case: Both sum and num_samples at maximum
-    cumulative_u16_avg_t avg_both_sat = {0};
-    avg_both_sat.sum = UINT32_MAX - 10;
-    avg_both_sat.num_samples = UINT16_MAX;
-    data_util_cumulative_avg_u16_add_sample(&avg_both_sat, 50);
-    assert_int_equal(avg_both_sat.sum, UINT32_MAX);
-    assert_int_equal(avg_both_sat.num_samples, UINT16_MAX);
-
-    // Test case: NULL pointer (should not crash and log error)
-    data_util_cumulative_avg_u16_add_sample(nullptr, 100);
-
-    // Test case: Large number of small samples
-    cumulative_u16_avg_t avg_many = {0};
-    for (int i = 0; i < 1000; i++)
-    {
-        data_util_cumulative_avg_u16_add_sample(&avg_many, 1);
-    }
-    assert_int_equal(avg_many.sum, 1000);
-    assert_int_equal(avg_many.num_samples, 1000);
-
-    // Test case: Mixed values
-    cumulative_u16_avg_t avg_mixed = {0};
-    uint16_t test_values[] = {1, 500, 32767, 65535, 0, 100, 25000};
-    uint32_t expected_sum = 0;
-    for (size_t i = 0; i < sizeof(test_values) / sizeof(test_values[0]); i++)
-    {
-        data_util_cumulative_avg_u16_add_sample(&avg_mixed, test_values[i]);
-        expected_sum += test_values[i];
-    }
-    assert_int_equal(avg_mixed.sum, expected_sum);
-    assert_int_equal(avg_mixed.num_samples, 7);
-}
-
-TEST_FUNCTION(test_data_util_cumulative_avg_u16_get, test_setup, test_teardown)
-{
-    cumulative_u16_avg_t avg = {0};
-
-    // Test case: Zero samples (should return 0 and not crash)
-    uint16_t result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 0);
-
-    // Test case: Single sample
-    avg.sum = 100;
-    avg.num_samples = 1;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 100);
-
-    // Test case: Multiple samples - exact division
-    avg.sum = 1000;
-    avg.num_samples = 10;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 100); // 1000/10 = 100
-
-    // Test case: Rounding up behavior - 301/3 should round up to 101
-    avg.sum = 301;
-    avg.num_samples = 3;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 101); // (301 + 3 - 1) / 3 = 303/3 = 101
-
-    // Test case: Rounding up behavior - 300/3 should be exactly 100
-    avg.sum = 300;
-    avg.num_samples = 3;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 100); // (300 + 3 - 1) / 3 = 302/3 = 100
-
-    // Test case: Large values that fit in uint16_t
-    avg.sum = 65534;
-    avg.num_samples = 1;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 65534);
-
-    // Test case: Maximum uint16_t result
-    avg.sum = UINT16_MAX;
-    avg.num_samples = 1;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, UINT16_MAX);
-
-    // Test case: Result would exceed uint16_t maximum - should saturate
-    avg.sum = UINT32_MAX;
-    avg.num_samples = 1;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, UINT16_MAX); // Should saturate to UINT16_MAX
-
-    // Test case: Large sum with large divisor - should not overflow
-    avg.sum = UINT32_MAX - 1000;
-    avg.num_samples = UINT16_MAX;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, UINT16_MAX); // Should saturate
-
-    // Test case: Moderate values with rounding
-    avg.sum = 999;
-    avg.num_samples = 10;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 100); // (999 + 10 - 1) / 10 = 1008/10 = 100
-
-    // Test case: Another rounding case
-    avg.sum = 995;
-    avg.num_samples = 10;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 100); // (995 + 10 - 1) / 10 = 1004/10 = 100
-
-    // Test case: Edge case where rounding makes a difference
-    avg.sum = 991;
-    avg.num_samples = 10;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 100); // (991 + 10 - 1) / 10 = 1000/10 = 100
-
-    // Test case: Smaller rounding case
-    avg.sum = 15;
-    avg.num_samples = 4;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 4); // (15 + 4 - 1) / 4 = 18/4 = 4
-
-    // Test case: Another small rounding case
-    avg.sum = 13;
-    avg.num_samples = 4;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 4); // (13 + 4 - 1) / 4 = 16/4 = 4
-
-    // Test case: Zero sum with non-zero samples
-    avg.sum = 0;
-    avg.num_samples = 5;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 0);
-
-    // Test case: NULL pointer (should return 0 and log error)
-    result = data_util_cumulative_avg_u16_get(nullptr);
-    assert_int_equal(result, 0);
-
-    // Test case: Stress test with realistic telemetry values
-    avg.sum = 50000;
-    avg.num_samples = 100;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 500); // Exact division
-
-    // Test case: Stress test with rounding
-    avg.sum = 50001;
-    avg.num_samples = 100;
-    result = data_util_cumulative_avg_u16_get(&avg);
-    assert_int_equal(result, 501); // (50001 + 100 - 1) / 100 = 50100/100 = 501
-}
-
-TEST_FUNCTION(test_data_util_cumulative_avg_u16_reset, test_setup, test_teardown)
-{
-    cumulative_u16_avg_t avg = {0};
-
-    // Test case: Reset from non-zero state
-    avg.sum = 12345;
-    avg.num_samples = 67;
-
-    data_util_cumulative_avg_u16_reset(&avg);
-
-    assert_int_equal(avg.sum, 0);
-    assert_int_equal(avg.num_samples, 0);
-
-    // Test case: Reset from zero state (should remain zero)
-    data_util_cumulative_avg_u16_reset(&avg);
-
-    assert_int_equal(avg.sum, 0);
-    assert_int_equal(avg.num_samples, 0);
-
-    // Test case: Reset from maximum values
-    avg.sum = UINT32_MAX;
-    avg.num_samples = UINT16_MAX;
-
-    data_util_cumulative_avg_u16_reset(&avg);
-
-    assert_int_equal(avg.sum, 0);
-    assert_int_equal(avg.num_samples, 0);
-
-    // Test case: Verify functionality after reset by adding samples
-    data_util_cumulative_avg_u16_add_sample(&avg, 100);
-    data_util_cumulative_avg_u16_add_sample(&avg, 200);
-
-    assert_int_equal(avg.sum, 300);
-    assert_int_equal(avg.num_samples, 2);
-    assert_int_equal(data_util_cumulative_avg_u16_get(&avg), 150);
-
-    // Reset again and verify
-    data_util_cumulative_avg_u16_reset(&avg);
-
-    assert_int_equal(avg.sum, 0);
-    assert_int_equal(avg.num_samples, 0);
-    assert_int_equal(data_util_cumulative_avg_u16_get(&avg), 0);
-
-    // Test case: Multiple resets in succession
-    data_util_cumulative_avg_u16_reset(&avg);
-    data_util_cumulative_avg_u16_reset(&avg);
-    data_util_cumulative_avg_u16_reset(&avg);
-
-    assert_int_equal(avg.sum, 0);
-    assert_int_equal(avg.num_samples, 0);
-
-    // Test case: Reset after adding samples with various values
-    data_util_cumulative_avg_u16_add_sample(&avg, 0);
-    data_util_cumulative_avg_u16_add_sample(&avg, UINT16_MAX);
-    data_util_cumulative_avg_u16_add_sample(&avg, 32767);
-
-    // Verify samples were added
-    assert_int_equal(avg.sum, 0 + UINT16_MAX + 32767);
-    assert_int_equal(avg.num_samples, 3);
-
-    // Reset and verify
-    data_util_cumulative_avg_u16_reset(&avg);
-
-    assert_int_equal(avg.sum, 0);
-    assert_int_equal(avg.num_samples, 0);
-
-    // Test case: NULL pointer (should not crash and log error)
-    data_util_cumulative_avg_u16_reset(nullptr);
-
-    // Test case: Reset after saturation conditions
-    avg.sum = UINT32_MAX - 10;
-    avg.num_samples = UINT16_MAX - 5;
-
-    data_util_cumulative_avg_u16_reset(&avg);
-
-    assert_int_equal(avg.sum, 0);
-    assert_int_equal(avg.num_samples, 0);
-
-    // Verify we can add samples normally after reset from saturation
-    data_util_cumulative_avg_u16_add_sample(&avg, 500);
-    assert_int_equal(avg.sum, 500);
-    assert_int_equal(avg.num_samples, 1);
-    assert_int_equal(data_util_cumulative_avg_u16_get(&avg), 500);
-}
-
 TEST_FUNCTION(test_data_util_running_avg_u32_add_sample, test_setup, test_teardown)
 {
     running_u32_avg_t avg = {0};
@@ -1021,55 +875,57 @@ TEST_FUNCTION(test_data_util_running_avg_u32_add_sample, test_setup, test_teardo
     // Test case: NULL pointer (should not crash and log error)
     data_util_running_avg_u32_add_sample(nullptr, 100);
 
-    // Test case: First sample - should set average to sample value
+    // Test case: First sample - should set summation to sample value
     data_util_running_avg_u32_add_sample(&avg, 1000);
-    assert_int_equal(avg.average, 1000);
+    assert_int_equal(data_util_running_avg_u32_get(&avg), 1000);
+    assert_int_equal(avg.summation, 1000);
     assert_int_equal(avg.num_samples, 1);
 
-    // Test case: Second sample - should calculate running average
+    // Test case: Second sample - should add to summation
     data_util_running_avg_u32_add_sample(&avg, 2000);
-    assert_int_equal(avg.average, 1500); // (1000 + 2000) / 2 = 1500
+    assert_int_equal(data_util_running_avg_u32_get(&avg), 1500); // (1000 + 2000) / 2 = 1500
+    assert_int_equal(avg.summation, 3000);
     assert_int_equal(avg.num_samples, 2);
 
-    // Test case: Third sample - verify running average continues correctly
+    // Test case: Third sample - verify summation continues correctly
     data_util_running_avg_u32_add_sample(&avg, 3000);
-    // Expected: (1500*2 + 3000 + 1) / 3 = (3000 + 3000 + 1) / 3 = 6001/3 = 2000 (rounded)
-    assert_int_equal(avg.average, 2000);
+    // Expected: (1000 + 2000 + 3000) / 3 = 6000/3 = 2000
+    assert_int_equal(data_util_running_avg_u32_get(&avg), 2000);
+    assert_int_equal(avg.summation, 6000);
     assert_int_equal(avg.num_samples, 3);
 
     // Test case: Add zero value
     data_util_running_avg_u32_add_sample(&avg, 0);
-    // Expected: (2000*3 + 0 + 2) / 4 = (6000 + 0 + 2) / 4 = 6002/4 = 1500 (rounded)
-    assert_int_equal(avg.average, 1500);
+    // Expected: (6000 + 0) / 4 = 1500
+    assert_int_equal(data_util_running_avg_u32_get(&avg), 1500);
+    assert_int_equal(avg.summation, 6000);
     assert_int_equal(avg.num_samples, 4);
 
     // Test case: Add maximum uint32_t value
     running_u32_avg_t avg_max = {0};
     data_util_running_avg_u32_add_sample(&avg_max, UINT32_MAX);
-    assert_int_equal(avg_max.average, UINT32_MAX);
+    assert_int_equal(data_util_running_avg_u32_get(&avg_max), UINT32_MAX);
+    assert_int_equal(avg_max.summation, UINT32_MAX);
     assert_int_equal(avg_max.num_samples, 1);
 
     // Test case: Add second value to max - should reduce average
     data_util_running_avg_u32_add_sample(&avg_max, 0);
-    // Expected: (UINT32_MAX*1 + 0 + 1) / 2 = (UINT32_MAX + 1) / 2
-    // Using 64-bit arithmetic to avoid overflow: (4294967295ULL + 1) / 2 = 2147483648
+    // Expected: (UINT32_MAX + 0) / 2 = UINT32_MAX / 2 = 2147483647.5, rounded to 2147483648
     uint32_t expected_avg = (uint32_t)(((uint64_t)UINT32_MAX + 1) / 2);
-    assert_int_equal(avg_max.average, expected_avg);
+    assert_int_equal(data_util_running_avg_u32_get(&avg_max), expected_avg);
+    assert_int_equal(avg_max.summation, UINT32_MAX);
     assert_int_equal(avg_max.num_samples, 2);
 
-    // Test case: Sample count saturation at UINT16_MAX
+    // Test case: Sample count saturation at UINT32_MAX
     running_u32_avg_t avg_sat = {0};
-    avg_sat.average = 5000;
-    avg_sat.num_samples = UINT16_MAX;
+    avg_sat.summation = 5000ULL * UINT32_MAX;
+    avg_sat.num_samples = UINT32_MAX;
 
     data_util_running_avg_u32_add_sample(&avg_sat, 6000);
-    // num_samples should remain at UINT16_MAX (saturated)
-    assert_int_equal(avg_sat.num_samples, UINT16_MAX);
-    // Average should still be updated using UINT16_MAX as the count
-    // Expected: (5000*(UINT16_MAX-1) + 6000 + UINT16_MAX/2) / UINT16_MAX
-    uint64_t total = (uint64_t)5000 * (UINT16_MAX - 1) + 6000;
-    uint64_t updated_avg = (total + UINT16_MAX / 2) / UINT16_MAX;
-    assert_int_equal(avg_sat.average, (uint32_t)updated_avg);
+    // num_samples should remain at UINT32_MAX (saturated)
+    assert_int_equal(avg_sat.num_samples, UINT32_MAX);
+    // summation should remain unchanged since sample was rejected
+    assert_int_equal(avg_sat.summation, 5000ULL * UINT32_MAX);
 
     // Test case: Many small samples to verify precision
     running_u32_avg_t avg_small = {0};
@@ -1077,8 +933,9 @@ TEST_FUNCTION(test_data_util_running_avg_u32_add_sample, test_setup, test_teardo
     {
         data_util_running_avg_u32_add_sample(&avg_small, i);
     }
-    // Average of 1 to 100 should be 50.5, rounded to 51
-    assert_int_equal(avg_small.average, 51);
+    // Sum of 1 to 100 = 5050, average = 5050/100 = 50.5, rounded to 51
+    assert_int_equal(data_util_running_avg_u32_get(&avg_small), 51);
+    assert_int_equal(avg_small.summation, 5050);
     assert_int_equal(avg_small.num_samples, 100);
 
     // Test case: Alternating high/low values
@@ -1087,29 +944,304 @@ TEST_FUNCTION(test_data_util_running_avg_u32_add_sample, test_setup, test_teardo
     data_util_running_avg_u32_add_sample(&avg_alt, 0);
     data_util_running_avg_u32_add_sample(&avg_alt, 1000000);
     data_util_running_avg_u32_add_sample(&avg_alt, 0);
-    // Should average to approximately 500000
-    assert_int_equal(avg_alt.average, 500000);
+    // Should sum to 2000000, average to 2000000/4 = 500000
+    assert_int_equal(data_util_running_avg_u32_get(&avg_alt), 500000);
+    assert_int_equal(avg_alt.summation, 2000000);
     assert_int_equal(avg_alt.num_samples, 4);
 
     // Test case: Verify rounding behavior
     running_u32_avg_t avg_round = {0};
     data_util_running_avg_u32_add_sample(&avg_round, 1);
     data_util_running_avg_u32_add_sample(&avg_round, 2);
-    // Expected: (1*1 + 2 + 1) / 2 = 4/2 = 2
-    assert_int_equal(avg_round.average, 2);
+    // Expected: (1 + 2) / 2 = 1.5, rounded to 2
+    assert_int_equal(data_util_running_avg_u32_get(&avg_round), 2);
+    assert_int_equal(avg_round.summation, 3);
 
     data_util_running_avg_u32_add_sample(&avg_round, 2);
-    // Expected: (2*2 + 2 + 1) / 3 = (4 + 2 + 1) / 3 = 7/3 = 2 (rounded)
-    assert_int_equal(avg_round.average, 2);
+    // Expected: (1 + 2 + 2) / 3 = 5/3 = 1.67, rounded to 2
+    assert_int_equal(data_util_running_avg_u32_get(&avg_round), 2);
+    assert_int_equal(avg_round.summation, 5);
 
     // Test case: Reset and verify clean state
     data_util_running_avg_u32_reset(&avg);
-    assert_int_equal(avg.average, 0);
+    assert_int_equal(data_util_running_avg_u32_get(&avg), 0);
+    assert_int_equal(avg.summation, 0);
     assert_int_equal(avg.num_samples, 0);
 
     // Verify functionality after reset
     data_util_running_avg_u32_add_sample(&avg, 42);
-    assert_int_equal(avg.average, 42);
+    assert_int_equal(data_util_running_avg_u32_get(&avg), 42);
+    assert_int_equal(avg.summation, 42);
+    assert_int_equal(avg.num_samples, 1);
+
+    // Test case: Summation overflow protection
+    running_u32_avg_t avg_overflow = {0};
+    avg_overflow.summation = UINT64_MAX - 1000000; // Close to overflow
+    avg_overflow.num_samples = 1;
+
+    // This should succeed (no overflow)
+    data_util_running_avg_u32_add_sample(&avg_overflow, 500000);
+    assert_int_equal(avg_overflow.summation, UINT64_MAX - 500000);
+    assert_int_equal(avg_overflow.num_samples, 2);
+
+    // This should be rejected (would overflow)
+    data_util_running_avg_u32_add_sample(&avg_overflow, 1000000);
+    // summation and num_samples should remain unchanged
+    assert_int_equal(avg_overflow.summation, UINT64_MAX - 500000);
+    assert_int_equal(avg_overflow.num_samples, 2);
+}
+
+TEST_FUNCTION(test_data_util_running_avg_u16_add_sample, test_setup, test_teardown)
+{
+    running_u16_avg_t avg = {0};
+
+    // Test case: NULL pointer (should not crash and log error)
+    data_util_running_avg_u16_add_sample(nullptr, 100);
+
+    // Test case: First sample - should set summation to sample value
+    data_util_running_avg_u16_add_sample(&avg, 1000);
+    assert_int_equal(data_util_running_avg_u16_get(&avg), 1000);
+    assert_int_equal(avg.summation, 1000);
+    assert_int_equal(avg.num_samples, 1);
+
+    // Test case: Second sample - should add to summation
+    data_util_running_avg_u16_add_sample(&avg, 2000);
+    assert_int_equal(data_util_running_avg_u16_get(&avg), 1500); // (1000 + 2000) / 2 = 1500
+    assert_int_equal(avg.summation, 3000);
+    assert_int_equal(avg.num_samples, 2);
+
+    // Test case: Third sample - verify summation continues correctly
+    data_util_running_avg_u16_add_sample(&avg, 3000);
+    // Expected: (1000 + 2000 + 3000) / 3 = 6000/3 = 2000
+    assert_int_equal(data_util_running_avg_u16_get(&avg), 2000);
+    assert_int_equal(avg.summation, 6000);
+    assert_int_equal(avg.num_samples, 3);
+
+    // Test case: Add zero value
+    data_util_running_avg_u16_add_sample(&avg, 0);
+    // Expected: (6000 + 0) / 4 = 1500
+    assert_int_equal(data_util_running_avg_u16_get(&avg), 1500);
+    assert_int_equal(avg.summation, 6000);
+    assert_int_equal(avg.num_samples, 4);
+
+    // Test case: Add maximum uint16_t value
+    running_u16_avg_t avg_max = {0};
+    data_util_running_avg_u16_add_sample(&avg_max, UINT16_MAX);
+    assert_int_equal(data_util_running_avg_u16_get(&avg_max), UINT16_MAX);
+    assert_int_equal(avg_max.summation, UINT16_MAX);
+    assert_int_equal(avg_max.num_samples, 1);
+
+    // Test case: Add second value to max - should reduce average
+    data_util_running_avg_u16_add_sample(&avg_max, 0);
+    // Expected: (UINT16_MAX + 0) / 2 = UINT16_MAX / 2 = 32767.5, rounded to 32768
+    uint16_t expected_avg = (uint16_t)(((uint32_t)UINT16_MAX + 1) / 2);
+    assert_int_equal(data_util_running_avg_u16_get(&avg_max), expected_avg);
+    assert_int_equal(avg_max.summation, UINT16_MAX);
+    assert_int_equal(avg_max.num_samples, 2);
+
+    // Test case: Sample count saturation at UINT16_MAX
+    running_u16_avg_t avg_sat = {0};
+    avg_sat.summation = 5000 * UINT16_MAX;
+    avg_sat.num_samples = UINT16_MAX;
+
+    data_util_running_avg_u16_add_sample(&avg_sat, 6000);
+    // num_samples should remain at UINT16_MAX (saturated)
+    assert_int_equal(avg_sat.num_samples, UINT16_MAX);
+    // summation should remain unchanged since sample was rejected
+    assert_int_equal(avg_sat.summation, 5000 * UINT16_MAX);
+
+    // Test case: Many small samples to verify precision
+    running_u16_avg_t avg_small = {0};
+    for (int i = 1; i <= 100; i++)
+    {
+        data_util_running_avg_u16_add_sample(&avg_small, i);
+    }
+    // Sum of 1 to 100 = 5050, average = 5050/100 = 50.5, rounded to 51
+    assert_int_equal(data_util_running_avg_u16_get(&avg_small), 51);
+    assert_int_equal(avg_small.summation, 5050);
+    assert_int_equal(avg_small.num_samples, 100);
+
+    // Test case: Alternating high/low values
+    running_u16_avg_t avg_alt = {0};
+    data_util_running_avg_u16_add_sample(&avg_alt, 10000);
+    data_util_running_avg_u16_add_sample(&avg_alt, 0);
+    data_util_running_avg_u16_add_sample(&avg_alt, 10000);
+    data_util_running_avg_u16_add_sample(&avg_alt, 0);
+    // Should sum to 20000, average to 20000/4 = 5000
+    assert_int_equal(data_util_running_avg_u16_get(&avg_alt), 5000);
+    assert_int_equal(avg_alt.summation, 20000);
+    assert_int_equal(avg_alt.num_samples, 4);
+
+    // Test case: Verify rounding behavior
+    running_u16_avg_t avg_round = {0};
+    data_util_running_avg_u16_add_sample(&avg_round, 1);
+    data_util_running_avg_u16_add_sample(&avg_round, 2);
+    // Expected: (1 + 2) / 2 = 1.5, rounded to 2
+    assert_int_equal(data_util_running_avg_u16_get(&avg_round), 2);
+    assert_int_equal(avg_round.summation, 3);
+
+    data_util_running_avg_u16_add_sample(&avg_round, 2);
+    // Expected: (1 + 2 + 2) / 3 = 5/3 = 1.67, rounded to 2
+    assert_int_equal(data_util_running_avg_u16_get(&avg_round), 2);
+    assert_int_equal(avg_round.summation, 5);
+
+    // Test case: Reset and verify clean state
+    data_util_running_avg_u16_reset(&avg);
+    assert_int_equal(data_util_running_avg_u16_get(&avg), 0);
+    assert_int_equal(avg.summation, 0);
+    assert_int_equal(avg.num_samples, 0);
+
+    // Verify functionality after reset
+    data_util_running_avg_u16_add_sample(&avg, 42);
+    assert_int_equal(data_util_running_avg_u16_get(&avg), 42);
+    assert_int_equal(avg.summation, 42);
+    assert_int_equal(avg.num_samples, 1);
+
+    // Test case: Summation overflow protection
+    running_u16_avg_t avg_overflow = {0};
+    avg_overflow.summation = UINT32_MAX - 1000; // Close to overflow
+    avg_overflow.num_samples = 1;
+
+    // This should succeed (no overflow)
+    data_util_running_avg_u16_add_sample(&avg_overflow, 500);
+    assert_int_equal(avg_overflow.summation, UINT32_MAX - 500);
+    assert_int_equal(avg_overflow.num_samples, 2);
+
+    // This should be rejected (would overflow)
+    data_util_running_avg_u16_add_sample(&avg_overflow, 1000);
+    // summation and num_samples should remain unchanged
+    assert_int_equal(avg_overflow.summation, UINT32_MAX - 500);
+    assert_int_equal(avg_overflow.num_samples, 2);
+}
+
+TEST_FUNCTION(test_data_util_running_avg_u16_get, test_setup, test_teardown)
+{
+    running_u16_avg_t avg = {0};
+
+    // Test case: NULL pointer (should return 0 and log error)
+    uint16_t result = data_util_running_avg_u16_get(nullptr);
+    assert_int_equal(result, 0);
+
+    // Test case: Zero state (should return 0)
+    result = data_util_running_avg_u16_get(&avg);
+    assert_int_equal(result, 0);
+
+    // Test case: Single sample
+    avg.summation = 12345;
+    avg.num_samples = 1;
+    result = data_util_running_avg_u16_get(&avg);
+    assert_int_equal(result, 12345);
+
+    // Test case: Multiple samples
+    avg.summation = 6000;
+    avg.num_samples = 3;
+    result = data_util_running_avg_u16_get(&avg);
+    assert_int_equal(result, 2000); // 6000/3 = 2000
+
+    // Test case: Maximum value summation
+    avg.summation = UINT16_MAX;
+    avg.num_samples = 1;
+    result = data_util_running_avg_u16_get(&avg);
+    assert_int_equal(result, UINT16_MAX);
+
+    // Test case: After running average calculations
+    data_util_running_avg_u16_reset(&avg);
+    data_util_running_avg_u16_add_sample(&avg, 1000);
+    data_util_running_avg_u16_add_sample(&avg, 2000);
+    data_util_running_avg_u16_add_sample(&avg, 3000);
+    result = data_util_running_avg_u16_get(&avg);
+    assert_int_equal(result, 2000); // (1000 + 2000 + 3000) / 3 = 2000
+
+    // Test case: Verify return type is consistent with calculation
+    avg.summation = 45678;
+    avg.num_samples = 5;
+    result = data_util_running_avg_u16_get(&avg);
+    assert_int_equal(result, 9136); // (45678 + 2) / 5 = 9136 (rounded)
+
+    // Test case: Edge case with small values and rounding
+    data_util_running_avg_u16_reset(&avg);
+    data_util_running_avg_u16_add_sample(&avg, 1);
+    data_util_running_avg_u16_add_sample(&avg, 2);
+    data_util_running_avg_u16_add_sample(&avg, 3);
+    result = data_util_running_avg_u16_get(&avg);
+    assert_int_equal(result, 2); // (1 + 2 + 3) / 3 = 6/3 = 2
+
+    // Test case: Overflow protection - large summation
+    avg.summation = UINT32_MAX;
+    avg.num_samples = UINT16_MAX;
+    result = data_util_running_avg_u16_get(&avg);
+    // Should not overflow: UINT32_MAX / UINT16_MAX = 65537
+    // But result is clamped to UINT16_MAX
+    assert_int_equal(result, UINT16_MAX);
+}
+
+TEST_FUNCTION(test_data_util_running_avg_u16_reset, test_setup, test_teardown)
+{
+    running_u16_avg_t avg = {0};
+
+    // Test case: Reset from non-zero state
+    avg.summation = 12345;
+    avg.num_samples = 999;
+
+    data_util_running_avg_u16_reset(&avg);
+
+    assert_int_equal(avg.summation, 0);
+    assert_int_equal(avg.num_samples, 0);
+
+    // Test case: Reset from zero state (should remain zero)
+    data_util_running_avg_u16_reset(&avg);
+
+    assert_int_equal(avg.summation, 0);
+    assert_int_equal(avg.num_samples, 0);
+
+    // Test case: Reset from maximum values
+    avg.summation = UINT32_MAX;
+    avg.num_samples = UINT16_MAX;
+
+    data_util_running_avg_u16_reset(&avg);
+
+    assert_int_equal(avg.summation, 0);
+    assert_int_equal(avg.num_samples, 0);
+
+    // Test case: Verify functionality after reset by adding samples
+    data_util_running_avg_u16_add_sample(&avg, 100);
+    data_util_running_avg_u16_add_sample(&avg, 200);
+
+    assert_int_equal(data_util_running_avg_u16_get(&avg), 150);
+    assert_int_equal(avg.summation, 300);
+    assert_int_equal(avg.num_samples, 2);
+
+    // Reset again and verify
+    data_util_running_avg_u16_reset(&avg);
+
+    assert_int_equal(avg.summation, 0);
+    assert_int_equal(avg.num_samples, 0);
+    assert_int_equal(data_util_running_avg_u16_get(&avg), 0);
+
+    // Test case: Multiple resets in succession
+    data_util_running_avg_u16_reset(&avg);
+    data_util_running_avg_u16_reset(&avg);
+    data_util_running_avg_u16_reset(&avg);
+
+    assert_int_equal(avg.summation, 0);
+    assert_int_equal(avg.num_samples, 0);
+
+    // Test case: NULL pointer (should not crash and log error)
+    data_util_running_avg_u16_reset(nullptr);
+
+    // Test case: Reset after saturation conditions
+    avg.summation = UINT32_MAX - 10;
+    avg.num_samples = UINT16_MAX - 5;
+
+    data_util_running_avg_u16_reset(&avg);
+
+    assert_int_equal(avg.summation, 0);
+    assert_int_equal(avg.num_samples, 0);
+
+    // Verify we can add samples normally after reset from saturation
+    data_util_running_avg_u16_add_sample(&avg, 500);
+    assert_int_equal(data_util_running_avg_u16_get(&avg), 500);
+    assert_int_equal(avg.summation, 500);
     assert_int_equal(avg.num_samples, 1);
 }
 
@@ -1126,14 +1258,20 @@ TEST_FUNCTION(test_data_util_running_avg_u32_get, test_setup, test_teardown)
     assert_int_equal(result, 0);
 
     // Test case: Single sample
-    avg.average = 12345;
+    avg.summation = 12345;
     avg.num_samples = 1;
     result = data_util_running_avg_u32_get(&avg);
     assert_int_equal(result, 12345);
 
-    // Test case: Maximum value
-    avg.average = UINT32_MAX;
-    avg.num_samples = 100;
+    // Test case: Multiple samples
+    avg.summation = 6000;
+    avg.num_samples = 3;
+    result = data_util_running_avg_u32_get(&avg);
+    assert_int_equal(result, 2000); // 6000/3 = 2000
+
+    // Test case: Maximum value summation
+    avg.summation = UINT32_MAX;
+    avg.num_samples = 1;
     result = data_util_running_avg_u32_get(&avg);
     assert_int_equal(result, UINT32_MAX);
 
@@ -1143,7 +1281,34 @@ TEST_FUNCTION(test_data_util_running_avg_u32_get, test_setup, test_teardown)
     data_util_running_avg_u32_add_sample(&avg, 2000);
     data_util_running_avg_u32_add_sample(&avg, 3000);
     result = data_util_running_avg_u32_get(&avg);
-    assert_int_equal(result, 2000); // Average of 1000, 2000, 3000
+    assert_int_equal(result, 2000); // (1000 + 2000 + 3000) / 3 = 2000
+
+    // Test case: Verify return type is consistent with calculation
+    avg.summation = 45678;
+    avg.num_samples = 5;
+    result = data_util_running_avg_u32_get(&avg);
+    assert_int_equal(result, 9136); // (45678 + 2) / 5 = 9136 (rounded)
+
+    // Test case: Edge case with small values and rounding
+    data_util_running_avg_u32_reset(&avg);
+    data_util_running_avg_u32_add_sample(&avg, 1);
+    data_util_running_avg_u32_add_sample(&avg, 2);
+    data_util_running_avg_u32_add_sample(&avg, 3);
+    result = data_util_running_avg_u32_get(&avg);
+    assert_int_equal(result, 2); // (1 + 2 + 3 + 1) / 3 = 7/3 = 2 (rounded)
+
+    // Test case: Overflow protection - large summation that would exceed UINT32_MAX
+    avg.summation = UINT64_MAX;
+    avg.num_samples = 2;
+    result = data_util_running_avg_u32_get(&avg);
+    // Should clamp to UINT32_MAX since result exceeds UINT32_MAX range
+    assert_int_equal(result, UINT32_MAX);
+
+    // Test case: Large summation within UINT32_MAX range
+    avg.summation = (uint64_t)UINT32_MAX * 2;
+    avg.num_samples = 2;
+    result = data_util_running_avg_u32_get(&avg);
+    assert_int_equal(result, UINT32_MAX); // UINT32_MAX * 2 / 2 = UINT32_MAX
 }
 
 TEST_FUNCTION(test_data_util_running_avg_u32_reset, test_setup, test_teardown)
@@ -1151,41 +1316,41 @@ TEST_FUNCTION(test_data_util_running_avg_u32_reset, test_setup, test_teardown)
     running_u32_avg_t avg = {0};
 
     // Test case: Reset from non-zero state
-    avg.average = 54321;
+    avg.summation = 54321;
     avg.num_samples = 999;
 
     data_util_running_avg_u32_reset(&avg);
 
-    assert_int_equal(avg.average, 0);
+    assert_int_equal(avg.summation, 0);
     assert_int_equal(avg.num_samples, 0);
 
     // Test case: Reset from zero state (should remain zero)
     data_util_running_avg_u32_reset(&avg);
 
-    assert_int_equal(avg.average, 0);
+    assert_int_equal(avg.summation, 0);
     assert_int_equal(avg.num_samples, 0);
 
     // Test case: Reset from maximum values
-    avg.average = UINT32_MAX;
-    avg.num_samples = UINT16_MAX;
+    avg.summation = UINT64_MAX;
+    avg.num_samples = UINT32_MAX;
 
     data_util_running_avg_u32_reset(&avg);
 
-    assert_int_equal(avg.average, 0);
+    assert_int_equal(avg.summation, 0);
     assert_int_equal(avg.num_samples, 0);
 
     // Test case: Verify functionality after reset by adding samples
     data_util_running_avg_u32_add_sample(&avg, 100);
     data_util_running_avg_u32_add_sample(&avg, 200);
 
-    assert_int_equal(avg.average, 150);
-    assert_int_equal(avg.num_samples, 2);
     assert_int_equal(data_util_running_avg_u32_get(&avg), 150);
+    assert_int_equal(avg.summation, 300);
+    assert_int_equal(avg.num_samples, 2);
 
     // Reset again and verify
     data_util_running_avg_u32_reset(&avg);
 
-    assert_int_equal(avg.average, 0);
+    assert_int_equal(avg.summation, 0);
     assert_int_equal(avg.num_samples, 0);
     assert_int_equal(data_util_running_avg_u32_get(&avg), 0);
 
@@ -1194,24 +1359,24 @@ TEST_FUNCTION(test_data_util_running_avg_u32_reset, test_setup, test_teardown)
     data_util_running_avg_u32_reset(&avg);
     data_util_running_avg_u32_reset(&avg);
 
-    assert_int_equal(avg.average, 0);
+    assert_int_equal(avg.summation, 0);
     assert_int_equal(avg.num_samples, 0);
 
     // Test case: NULL pointer (should not crash and log error)
     data_util_running_avg_u32_reset(nullptr);
 
     // Test case: Reset after saturation conditions
-    avg.average = UINT32_MAX - 10;
-    avg.num_samples = UINT16_MAX - 5;
+    avg.summation = UINT64_MAX - 10;
+    avg.num_samples = UINT32_MAX - 5;
 
     data_util_running_avg_u32_reset(&avg);
 
-    assert_int_equal(avg.average, 0);
+    assert_int_equal(avg.summation, 0);
     assert_int_equal(avg.num_samples, 0);
 
     // Verify we can add samples normally after reset from saturation
     data_util_running_avg_u32_add_sample(&avg, 500);
-    assert_int_equal(avg.average, 500);
-    assert_int_equal(avg.num_samples, 1);
     assert_int_equal(data_util_running_avg_u32_get(&avg), 500);
+    assert_int_equal(avg.summation, 500);
+    assert_int_equal(avg.num_samples, 1);
 }

@@ -135,6 +135,8 @@ static int32_t test_setup(void** state)
     {
         core_is_active[core] = true;
     }
+
+    in_band_publishing_active = true;
     return 0;
 }
 

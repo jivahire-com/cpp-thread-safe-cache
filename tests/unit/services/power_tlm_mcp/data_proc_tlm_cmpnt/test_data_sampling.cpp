@@ -57,6 +57,8 @@ static int test_setup(void** pContext)
 
     comp_metrics_init_active_cores();
 
+    in_band_publishing_active = true;
+
     return 0;
 }
 

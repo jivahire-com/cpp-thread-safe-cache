@@ -39,6 +39,18 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    12,
+                    RunningAvg32AddSampleNumSat,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    13,
+                    RunningAvg32AddSampleSumSat,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      14,
                      DeAllocateInvalidLocation,
                      FPFW_ET_LEVEL_ERROR,
@@ -342,7 +354,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     63,
-                    RunningAvgAddSampleNumSat,
+                    RunningAvg16AddSampleNumSat,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
 
@@ -426,27 +438,29 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     82,
-                    AvgAddSampleSumSat,
+                    RunningAvg16GetClamp,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     83,
-                    AvgAddSampleNumSat,
+                    RunningAvg32GetClamp,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     84,
-                    AvgGetOutputSat,
-                    FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
-                    85,
                     DataPackageDroopCountRrecordError,
                     FPFW_ET_LEVEL_ERROR,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, element_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    85,
+                    RunningAvg16AddSampleSumSat,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, instance))
+
+
 
 /*--------- Function Prototypes ----------*/
 

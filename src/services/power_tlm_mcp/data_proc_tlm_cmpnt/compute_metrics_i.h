@@ -71,11 +71,11 @@ typedef struct
     cstate_metrics_t cstate[NUMBER_OF_CSTATES];
     throttle_metrics_t throttle_info[NUMBER_OF_THROTTLE_SOURCES];
     rack_priority_metrics_t rack_priorities[NUMBER_OF_RACK_THROTTLE_PRIORITIES];
+    mma_u32_t temperature_dC; //number of samples exceeds 16 bits
     mma_u16_t power_mW;
-    mma_u16_t temperature_dC;
     mma_u16_t voltage_mV;
     mma_u16_t current_mA;
-    mma_u16_t vcpu_input_voltage_mV;        
+    mma_u16_t vcpu_input_voltage_mV;
 } computed_per_core_metrics_t;
 
 typedef struct
@@ -171,6 +171,8 @@ extern computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins;
 
 extern bool core_is_active[NUMBER_OF_CORES_PER_DIE];
 
+extern bool in_band_publishing_active;
+
 /*--------- Function Prototypes ----------*/
 
 /**
@@ -186,6 +188,13 @@ void comp_metrics_init(void);
  * @return  None
  */
 void comp_metrics_init_active_cores(void);
+
+/**
+ * @brief Helper function to determine if a core is active and in-band publishing is active
+ *
+ * @return true if both conditions are met, false otherwise
+ */
+bool comp_metrics_core_and_inband_publishing_active(uint8_t core_id);
 
 /**
  * @brief function updates various metrics for all cores, including PState residency and power,
@@ -406,11 +415,18 @@ void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t curr
 void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate);
 
 /**
- * @brief Resets all metrics that get reported every two minutes.
+ * @brief Resets all local die metrics that get reported every two minutes.
  *
  * @return none
  */
-void comp_metrics_reset_2_mins_metrics();
+void comp_metrics_reset_local_2_min_metrics();
+
+/**
+ * @brief Resets all metrics that get reported every two minutes for die-to-die exchange.
+ *
+ * @return none
+ */
+void comp_metrics_reset_d2d_2_min_metrics();
 
 /**
  * @brief Resets all metrics that get reported every 24 hours.

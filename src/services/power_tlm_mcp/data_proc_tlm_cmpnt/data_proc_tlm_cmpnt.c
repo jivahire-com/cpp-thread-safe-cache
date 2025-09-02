@@ -47,8 +47,15 @@ void data_proc_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mo
     if (entering_mode == TLM_OP_MODE_PUBLISHING)
     {
         data_smpl_reset_residency_timestamps(); // reset residency timestamps for all cores
-        comp_metrics_reset_2_mins_metrics();
+        comp_metrics_reset_local_2_min_metrics();
+        comp_metrics_reset_d2d_2_min_metrics();
         comp_metrics_reset_24_hrs_metrics();
+
+        in_band_publishing_active = true;
+    }
+    else
+    {
+        in_band_publishing_active = false;
     }
 }
 

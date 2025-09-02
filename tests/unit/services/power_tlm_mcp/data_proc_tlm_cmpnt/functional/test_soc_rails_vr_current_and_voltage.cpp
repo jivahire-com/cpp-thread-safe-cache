@@ -68,9 +68,10 @@ extern "C" {
 static int32_t test_setup(void** state)
 {
     FPFW_UNUSED(state);
-    comp_metrics_reset_2_mins_metrics();
+    comp_metrics_reset_local_2_min_metrics();
     comp_metrics_reset_24_hrs_metrics();
     setup_snsr_fifo_is_empty();
+    in_band_publishing_active = true;
     return 0;
 }
 

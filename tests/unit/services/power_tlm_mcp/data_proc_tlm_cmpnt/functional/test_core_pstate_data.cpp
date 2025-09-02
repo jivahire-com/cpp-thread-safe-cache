@@ -119,7 +119,7 @@ static int32_t test_setup(void** state)
         core_rt[core_id].status_flags.pkt_pstate_is_valid = false;
         core_rt[core_id].status_flags.pkt_cstate_is_valid = true;
     }
-    comp_metrics_reset_2_mins_metrics();
+    comp_metrics_reset_local_2_min_metrics();
 
     // Reset mock timestamp to initial value
     time_t0 = 100;
@@ -131,6 +131,7 @@ static int32_t test_setup(void** state)
     {
         core_is_active[core] = true;
     }
+    in_band_publishing_active = true;
 
     return 0;
 }

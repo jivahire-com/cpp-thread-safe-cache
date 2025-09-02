@@ -56,13 +56,13 @@ extern "C" {
 }
 
 // Calculate latest value (convert raw sensor value to millivolts)
-static int32_t calculate_expected_latest(int32_t raw_value)
+static uint32_t calculate_expected_latest(uint32_t raw_value)
 {
     return DOUT2MILLIVOLTS(raw_value);
 }
 
 // Calculate expected min value based on iteration logic
-static int32_t calculate_expected_min(int32_t latest_value, int32_t prev_min, int32_t iteration)
+static uint32_t calculate_expected_min(uint32_t latest_value, uint32_t prev_min, uint32_t iteration)
 {
     if (iteration == 0)
     {
@@ -73,7 +73,7 @@ static int32_t calculate_expected_min(int32_t latest_value, int32_t prev_min, in
 }
 
 // Calculate expected max value based on iteration logic
-static int32_t calculate_expected_max(int32_t latest_value, int32_t prev_max, int32_t iteration)
+static uint32_t calculate_expected_max(uint32_t latest_value, uint32_t prev_max, uint32_t iteration)
 {
     if (iteration == 0)
     {
@@ -94,6 +94,7 @@ static int32_t test_setup(void** state)
     {
         core_is_active[core] = true;
     }
+    in_band_publishing_active = true;
     return 0;
 }
 
@@ -106,10 +107,10 @@ static int32_t test_teardown(void** state)
 // Structure to hold test voltage configurations
 typedef struct
 {
-    int32_t core0_vcore; // Core 0 voltage
-    int32_t core1_vcore; // Core 1 voltage
-    int32_t vcpu;        // Tile VCPU voltage
-    int32_t vsys;        // Tile VSYS voltage
+    uint32_t core0_vcore; // Core 0 voltage
+    uint32_t core1_vcore; // Core 1 voltage
+    uint32_t vcpu;        // Tile VCPU voltage
+    uint32_t vsys;        // Tile VSYS voltage
 } test_voltage_config_t;
 
 TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown)
@@ -121,8 +122,8 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
     static uint32_t prev_vcpu_min = 0, prev_vcpu_max = 0;
     static uint32_t prev_vsys_min = 0, prev_vsys_max = 0;
 
-    uint32_t core0_summation = 0;
-    uint32_t core1_summation = 0;
+    uint32_t expected_core0_avg = 0;
+    uint32_t expected_core1_avg = 0;
     uint16_t num_samples = 0;
 
     // Create mock voltage data for tile 0
@@ -130,32 +131,47 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
 
     // Test configurations for voltage measurements across iterations
     // Raw sensor values are converted to millivolts using DOUT2MILLIVOLTS macro (multiplied by 1000)
+    // NOTE: the sensor fifo voltage inputs are 16 bit values.
+    // using DOUT2VOLTS(65535) the maximum voltage input is about 6.34 volts or 6340 millivolts
+    // Updated to use safe voltage values that avoid uint16_t truncation
     const test_voltage_config_t test_configs[] = {
         // Iteration 0: Initial baseline value
-        // Core 0: 16 -> 16000mV, Core 1: 13 -> 13000mV, VCPU: 10 -> 10000mV, VSYS: 7 -> 7000mV
+        // Core 0: 5100mV, Core 1: 4200mV, VCPU: 3200mV, VSYS: 2200mV
         // All the metrics (Latest, Min, Max, Avg) will be equal to these initial values
-        {.core0_vcore = 16, .core1_vcore = 13, .vcpu = 10, .vsys = 7},
+        {.core0_vcore = MILLIVOLTS2DOUT(5100),
+         .core1_vcore = MILLIVOLTS2DOUT(4200),
+         .vcpu = MILLIVOLTS2DOUT(3200),
+         .vsys = MILLIVOLTS2DOUT(2200)},
 
         // Iteration 1: to test increasing voltage trend
-        // Core 0: 18 -> 18000mV (Latest/Max/Avg), keeps Min=16000
-        // Core 1: 15 -> 15000mV (Latest/Max/Avg), keeps Min=13000
-        // VCPU: 12 -> 12000mV (Latest/Max/Avg), keeps Min=10000
-        // VSYS: 9 -> 9000mV (Latest/Max/Avg), keeps Min=7000
-        {.core0_vcore = 18, .core1_vcore = 15, .vcpu = 12, .vsys = 9},
+        // Core 0: 5700mV (Latest/Max/Avg), keeps Min=5100mV
+        // Core 1: 4800mV (Latest/Max/Avg), keeps Min=4200mV
+        // VCPU: 3800mV (Latest/Max/Avg), keeps Min=3200mV
+        // VSYS: 2800mV (Latest/Max/Avg), keeps Min=2200mV
+        {.core0_vcore = MILLIVOLTS2DOUT(5700),
+         .core1_vcore = MILLIVOLTS2DOUT(4800),
+         .vcpu = MILLIVOLTS2DOUT(3800),
+         .vsys = MILLIVOLTS2DOUT(2800)},
 
         // Iteration 2: to test peak voltage values
-        // Core 0: 20 -> 20000mV (Latest/Max), Min=16000, Avg=19000 (weighted calculation)
-        // Core 1: 17 -> 17000mV (Latest/Max), Min=13000, Avg=16000 (weighted calculation)
-        // VCPU: 14 -> 14000mV (Latest/Max), Min=10000, Avg=13000 (weighted calculation)
-        // VSYS: 11 -> 11000mV (Latest/Max), Min=7000, Avg=10000 (weighted calculation)
-        {.core0_vcore = 20, .core1_vcore = 17, .vcpu = 14, .vsys = 11},
+        // Core 0: 6300mV (Latest/Max), Min=5100mV, Avg=6000mV (weighted calculation)
+        // Core 1: 5400mV (Latest/Max), Min=4200mV, Avg=5100mV (weighted calculation)
+        // VCPU: 4400mV (Latest/Max), Min=3200mV, Avg=4100mV (weighted calculation)
+        // VSYS: 3400mV (Latest/Max), Min=2200mV, Avg=3100mV (weighted calculation)
+        {.core0_vcore = MILLIVOLTS2DOUT(6300),
+         .core1_vcore = MILLIVOLTS2DOUT(5400),
+         .vcpu = MILLIVOLTS2DOUT(4400),
+         .vsys = MILLIVOLTS2DOUT(3400)},
 
         // Iteration 3: to test decreasing voltage trend
-        // Core 0: 18 -> 18000mV (Latest), keeps Min=16000/Max=20000, Avg=18666 (weighted)
-        // Core 1: 15 -> 15000mV (Latest), keeps Min=13000/Max=17000, Avg=15666 (weighted)
-        // VCPU: 12 -> 12000mV (Latest), keeps Min=10000/Max=14000, Avg=12666 (weighted)
-        // VSYS: 9 -> 9000mV (Latest), keeps Min=7000/Max=11000, Avg=9666 (weighted)
-        {.core0_vcore = 18, .core1_vcore = 15, .vcpu = 12, .vsys = 9}};
+        // Core 0: 5700mV (Latest), keeps Min=5100mV/Max=6300mV, Avg=5800mV (weighted)
+        // Core 1: 4800mV (Latest), keeps Min=4200mV/Max=5400mV, Avg=4950mV (weighted)
+        // VCPU: 3800mV (Latest), keeps Min=3200mV/Max=4400mV, Avg=4000mV (weighted)
+        // VSYS: 2800mV (Latest), keeps Min=2200mV/Max=3400mV, Avg=3050mV (weighted)
+        {.core0_vcore = MILLIVOLTS2DOUT(5700),
+         .core1_vcore = MILLIVOLTS2DOUT(4800),
+         .vcpu = MILLIVOLTS2DOUT(3800),
+         .vsys = MILLIVOLTS2DOUT(2800)}};
 
     for (int32_t iteration = 0; iteration < 4; iteration++)
     {
@@ -169,31 +185,32 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
         mock_voltage_data.data.vsys = test_configs[iteration].vsys;
 
         // Calculate latest values
-        int32_t expected_core0_voltage = calculate_expected_latest(mock_voltage_data.data.vcore0);
-        int32_t expected_core1_voltage = calculate_expected_latest(mock_voltage_data.data.vcore1);
-        int32_t expected_vcpu_voltage = calculate_expected_latest(mock_voltage_data.data.vcpu);
-        int32_t expected_vsys_voltage = calculate_expected_latest(mock_voltage_data.data.vsys);
+        uint32_t expected_core0_voltage = calculate_expected_latest(mock_voltage_data.data.vcore0);
+        uint32_t expected_core1_voltage = calculate_expected_latest(mock_voltage_data.data.vcore1);
+        uint32_t expected_vcpu_voltage = calculate_expected_latest(mock_voltage_data.data.vcpu);
+        uint32_t expected_vsys_voltage = calculate_expected_latest(mock_voltage_data.data.vsys);
 
         // Calculate min values
-        int32_t expected_core0_min = calculate_expected_min(expected_core0_voltage, prev_core0_min, iteration);
-        int32_t expected_core1_min = calculate_expected_min(expected_core1_voltage, prev_core1_min, iteration);
-        int32_t expected_vcpu_min = calculate_expected_min(expected_vcpu_voltage, prev_vcpu_min, iteration);
-        int32_t expected_vsys_min = calculate_expected_min(expected_vsys_voltage, prev_vsys_min, iteration);
+        uint32_t expected_core0_min = calculate_expected_min(expected_core0_voltage, prev_core0_min, iteration);
+        uint32_t expected_core1_min = calculate_expected_min(expected_core1_voltage, prev_core1_min, iteration);
+        uint32_t expected_vcpu_min = calculate_expected_min(expected_vcpu_voltage, prev_vcpu_min, iteration);
+        uint32_t expected_vsys_min = calculate_expected_min(expected_vsys_voltage, prev_vsys_min, iteration);
 
         // Calculate max values
-        int32_t expected_core0_max = calculate_expected_max(expected_core0_voltage, prev_core0_max, iteration);
-        int32_t expected_core1_max = calculate_expected_max(expected_core1_voltage, prev_core1_max, iteration);
-        int32_t expected_vcpu_max = calculate_expected_max(expected_vcpu_voltage, prev_vcpu_max, iteration);
-        int32_t expected_vsys_max = calculate_expected_max(expected_vsys_voltage, prev_vsys_max, iteration);
+        uint32_t expected_core0_max = calculate_expected_max(expected_core0_voltage, prev_core0_max, iteration);
+        uint32_t expected_core1_max = calculate_expected_max(expected_core1_voltage, prev_core1_max, iteration);
+        uint32_t expected_vcpu_max = calculate_expected_max(expected_vcpu_voltage, prev_vcpu_max, iteration);
+        uint32_t expected_vsys_max = calculate_expected_max(expected_vsys_voltage, prev_vsys_max, iteration);
 
         // Calculate average values
-        core0_summation += expected_core0_voltage;
-        core1_summation += expected_core1_voltage;
         num_samples++;
 
         // round up
-        int32_t expected_core0_avg = (core0_summation + num_samples - 1) / num_samples;
-        int32_t expected_core1_avg = (core1_summation + num_samples - 1) / num_samples;
+        expected_core0_avg = (expected_core0_avg * (num_samples - 1)) + expected_core0_voltage;
+        expected_core0_avg = (expected_core0_avg + num_samples / 2) / num_samples;
+
+        expected_core1_avg = (expected_core1_avg * (num_samples - 1)) + expected_core1_voltage;
+        expected_core1_avg = (expected_core1_avg + num_samples / 2) / num_samples;
 
         // Store current values for next iteration
         prev_core0_min = expected_core0_min;
@@ -246,7 +263,7 @@ TEST_FUNCTION(test_tile_voltage_collection_functional, test_setup, test_teardown
         pwr_core_record_voltage_t voltage_record;
         package_create_pwr_core_voltage_record(&voltage_record);
 
-        bool print_logs = false;
+        bool print_logs = true;
         if (print_logs)
         {
             // Print32_t debug info

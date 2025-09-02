@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::driver::textio::pl011
         ms::lib::threadx
+        ms::lib::system_info
         silibs::common::lib_uart_pl011
         silibs::platform
         silibs::kng_silibs_platform
@@ -38,4 +39,5 @@ mock_target(${TARGET}
     FpFwCliInitialize
     fpfw_init_get_handle
     FpFwCliStart
+    system_info_get_cli_enable
 )

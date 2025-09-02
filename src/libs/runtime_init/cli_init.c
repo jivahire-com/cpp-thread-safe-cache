@@ -13,6 +13,7 @@
 #include <fpfw_init.h>    // for fpfw_init_get_handle, FPFW_INIT_COMPONENT
 #include <stdint.h>       // for uint8_t
 #include <stdio.h>        // for printf, NULL, stdout
+#include <system_info.h>  // for system_info_get_cli_enable
 #include <textio_pl011.h> // for textio_pl011_device_interface_initialize
 
 /*------- Symbolic Constant Macros (defines) ----------*/
@@ -28,7 +29,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io", "debug_print"))
+FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io", "debug_print", "sysinfo"))
 {
     fpfw_init_component_id_t uart_id = "uart";
     static uint8_t cli_cmd_history[CLI_COMMAND_HISTORY_SIZE];
@@ -51,8 +52,12 @@ FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io", "debug_print")
     //! Start cli lib
     if (CLI_SUCCESS == cli_result)
     {
-        FpFwCliStart();
-        FPFW_DBGPRINT_INFO("CLI Started\n");
+
+        if (system_info_get_cli_enable())
+        {
+            FpFwCliStart();
+            FPFW_DBGPRINT_INFO("CLI Started for non SVP non-secure mode!\n");
+        }
     }
     return (fpfw_init_result_t){cli_result, NULL};
 }

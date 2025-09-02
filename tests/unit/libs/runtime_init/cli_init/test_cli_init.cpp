@@ -60,7 +60,10 @@ int32_t __wrap_FpFwCliInitialize(PFPFW_CLI_CONFIG pCliConfig)
     function_called();
     return 0;
 }
-
+bool __wrap_system_info_get_cli_enable()
+{
+    return mock_type(bool);
+}
 void __wrap_FpFwCliStart()
 {
     //! function expected to be called in init
@@ -75,6 +78,7 @@ TEST_FUNCTION(cli_init, nullptr, nullptr)
     //! Set up expectations
     textio_pl011_device_t test_pl011_device = {};
     will_return(__wrap_fpfw_init_get_handle, &test_pl011_device);
+    will_return(__wrap_system_info_get_cli_enable, true);
     expect_value(__wrap_textio_pl011_device_interface_initialize, device, &test_pl011_device);
     expect_function_call(__wrap_textio_pl011_device_interface_initialize);
     expect_function_call(__wrap_FpFwCliInitialize);

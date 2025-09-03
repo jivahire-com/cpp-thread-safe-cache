@@ -3,6 +3,7 @@ set(TARGET kng.driver.icc_mhu_trans)
 add_library(${TARGET}
     STATIC
     src/mhu_icc_transport.c
+    src/mhu_icc_transport_events.c
 )
 
 
@@ -21,6 +22,7 @@ target_link_libraries(${TARGET}
         ms::lib::arm_intrinsic
         ms::lib::crash_dump
         ms::lib::debug
+        ms::lib::event_trace::trace
         silibs_platform
     PUBLIC
         fwlib.lib.interface.platform.interrupts

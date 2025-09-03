@@ -209,39 +209,39 @@ Function Write-SOCFlash(
             # Create the SFTP and SSH sessions to the RM
             $RmSecurePassword = ConvertTo-SecureString $rmpw -AsPlainText -Force
             $RmCredential = New-Object System.Management.Automation.PSCredential ($rmuser, $RmSecurePassword)
-            $RmSFTPSession = New-SFTPSession -ComputerName $rmip -Credential $RmCredential -AcceptKey -Force -KeepAliveInterval 60
-            $RmSSHSession = New-SSHSession -ComputerName $rmip -Credential $RmCredential -AcceptKey -Force -KeepAliveInterval 60
+            $RmSFTPSession = New-SFTPSession -ComputerName $rmip -Credential $RmCredential -AcceptKey -Force -KeepAliveInterval 180
+            $RmSSHSession = New-SSHSession -ComputerName $rmip -Credential $RmCredential -AcceptKey -Force -KeepAliveInterval 180
 
             # Copy the file to the RM
             Set-SFTPItem -SessionId $RmSFTPSession.SessionId -Path $srcfile -Destination $rmdest -Force
 
-            # Run commands on RM
-            Write-Title -Title "Flash Image file" -Color Cyan
-            $commands = @(
-                #"set system file put -i $nodeid -f kingsgate.ifwi.soc.debug.custom.dat",
-                #"start serial session -i $nodeid -p 2200"
-                "set system bios update -i $nodeid -f $srcfile"
-            )
+            # Flash Ifwi tar file
+			Write-Title -Title "Flash Ifwi tar file" -Color Cyan
+            $Command = "set system bios update -i $nodeid -f kingsgate.ifwi.soc.debug.custom.tar.gz"
+            $maxRetries = 4
+            $retryCount = 0
+            $success = $false
 
-            foreach ($cmd in $commands) {
+            while (-not $success -and $retryCount -lt $maxRetries) {
                 try {
-                    $output = Invoke-SSHCommand -SSHSession $RmSSHSession -Command $cmd
-                    # Introduce a delay of 5 seconds (adjust as needed)
-                    Start-Sleep -Seconds 60
-
-                    # Check for success even if timeout occurred
+                    $output = Invoke-SSHCommand -SSHSession $RmSSHSession -Command $Command -ShowStandardOutputStream -Timeout 180
                     if ($output.ExitStatus -eq 0) {
-                        Write-Host "Command '$cmd' succeeded with Completion Code: Success."
                         $success = $true
                     } else {
-                        Write-Warning "Command '$cmd' may have failed or timed out."
-                        Write-Host "ExitStatus: $($output.ExitStatus)"
-                        Write-Host "Error: $($output.Error)"
+                        Write-Host -ForegroundColor Yellow "Command failed (ExitStatus: $($output.ExitStatus)). Retrying..."
+                        $retryCount++
                     }
-
                 } catch {
-                    Write-Error "Exception occurred while executing '$cmd': $_"
+                    Write-Host -ForegroundColor Yellow "Command execution error: $($_.Exception.Message). Retrying..."
+                    $retryCount++
                 }
+            }
+
+            if (-not $success) {
+                Write-Host -ForegroundColor Red "Failed to flash Ifwi tar."
+            }
+            else {
+                Write-Host -ForegroundColor Green "Ifwi tar successfully flashed."
             }
 
             Remove-SFTPSession -SFTPSession $RmSFTPSession | Out-Null

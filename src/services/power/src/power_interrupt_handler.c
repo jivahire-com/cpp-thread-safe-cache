@@ -45,12 +45,12 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static vptr_scp_pwr_ctrl_reg scp_pwr_ctrl_regs = (vptr_scp_pwr_ctrl_reg)(SCP_TOP_SCP_PWR_CTRL_ADDRESS);
 
 /*-------------- Functions ---------------*/
 // Function to print the PLL error status for a specific core
 void core_pll_error_status(uint32_t core_idx, bool is_unlock)
 {
+    FPFW_UNUSED(is_unlock);
     power_runconfig_t* p_runconfig = power_runconfig_get();
     const power_service_config_t* p_config = p_runconfig->p_sconfig;
 
@@ -62,11 +62,8 @@ void core_pll_error_status(uint32_t core_idx, bool is_unlock)
     fgpll_pll_error_mask_cr pll_error_mask_cr;
 
     core_pll = (ptr_fgpll_reg)core_pll_base_addr;
-    // Select base status register based on is_unlock
-    const uint32_t* base_status_reg = is_unlock ? (uint32_t*)&scp_pwr_ctrl_regs->cpu_pll_unlock_status0
-                                                : (uint32_t*)&scp_pwr_ctrl_regs->cpu_pll_lock_status0;
 
-    pll_error_sr.as_uint32 = MMIO_READ32((uint32_t*)base_status_reg + (core_idx / 32));
+    pll_error_sr.as_uint32 = MMIO_READ32((uint32_t*)&core_pll->pll_error_sr);
     pll_error_mask_cr.as_uint32 = MMIO_READ32((uint32_t*)&core_pll->pll_error_mask_cr);
 
     POWER_LOG_INFO("core_idx = %u, core_pll_addr = 0x%lx, pll_error_sr = 0x%lx\n",

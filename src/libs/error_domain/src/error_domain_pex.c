@@ -12,6 +12,7 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <cper.h>
+#include <dvfs.h>
 #include <dvfs_regs.h> // for (anonymous union)::(anonymous), dvfs_...
 #include <error_domain_i.h>
 #include <error_domain_pex.h>
@@ -130,22 +131,35 @@ static void pex_poll_timer_callback(ULONG timer_input)
         return;
     }
 
-    KNG_DIE_ID die_num = idsw_get_die_id();
-    scp_pwr_ctrl_proc_pex_int_status0 pex_int_status = {0};
-    uint32_t pex_int_status_size = sizeof(pex_int_status.as_uint32) * CHAR_BIT;
-
-    // Poll PEX interrupt status registers
-    for (uint32_t status_reg = 0; status_reg < 3; ++status_reg)
+    for (unsigned int core = 0; core < g_rng_cfg->core_count; ++core)
     {
-        pex_int_status.as_uint32 = MMIO_READ32((uint32_t*)(&scp_pwr_ctrl_regs->proc_pex_int_status0 + status_reg));
-        for (uint32_t index = 0; index < pex_int_status_size; index++)
+        const uintptr_t cluster_pex_base_addr = (g_rng_cfg->cluster_pex_base + (g_rng_cfg->cluster_stride * core));
+        uint32_t ap_rng_base = cluster_pex_base_addr + PEX_RNG_ADDRESS;
+
+        uint32_t scp_irq = 0;
+        scp_irq = dvfs_get_pex_scp_irq(cluster_pex_base_addr);
+
+        if ((scp_irq & 0x1) != 0)
         {
-            uint32_t pex_num = 0;
-            if (pex_int_status.proc_pex_int_status & (1U << index))
-            {
-                pex_num = (index + (status_reg * pex_int_status_size));
-                pex_irq_handle(die_num, pex_num, g_rng_cfg);
-            }
+            FPFW_DBGPRINT_INFO("rng_error occurred");
+            // Reset the RNG IP by disabling and re-enabling it
+            reset_pex_rng(ap_rng_base);
+        }
+
+        if ((scp_irq & 0x2) != 0)
+        {
+            FPFW_DBGPRINT_INFO("dvfs_telem_overflow error occurred");
+        }
+
+        if ((scp_irq & 0x4) != 0)
+        {
+            FPFW_DBGPRINT_INFO("pvt_irq error occurred");
+        }
+
+        // Clear PEX errors
+        if (scp_irq != 0)
+        {
+            dvfs_clr_pex_scp_irq(cluster_pex_base_addr, scp_irq);
         }
     }
 }

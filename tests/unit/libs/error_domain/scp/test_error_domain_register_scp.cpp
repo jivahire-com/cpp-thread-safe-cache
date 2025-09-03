@@ -1785,17 +1785,17 @@ TEST_FUNCTION(test_shared_sram_ecc_isr_of, test_setup, nullptr)
 //                                                .cluster_stride = 0x10000,
 //                                                .platform_cores_in_die = &test_platform_cores,
 //                                                .core_count = 1};
-// 
+//
 //     expect_function_call(__wrap_hm_register_error_domain);
-// 
+//
 //     expect_string(__wrap_fpfw_init_get_handle, handle_name, "pex_rng");
 //     will_return(__wrap_fpfw_init_get_handle, &mock_rng_config);
 //     expect_function_call(__wrap_fpfw_init_get_handle);
-// 
+//
 //     // Then tx_timer_create is called
 //     expect_string(__wrap__txe_timer_create, name_ptr, "PEX Poll Timer");
 //     expect_function_call(__wrap__txe_timer_create);
-// 
+//
 //     // Call the function under test
 //     register_pex_error_domain();
 // }

@@ -18,6 +18,7 @@ extern "C" {
 #include <ddr_manager_bwl.h>
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <ddrss_intu.h>
+#include <error_handler.h> // for set_error_handler_return
 #include <idhw.h>
 } // extern "C"
 
@@ -57,11 +58,14 @@ TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, setup_disengaged_a
     expect_function_call(__wrap_mmio_read32);
     will_return(__wrap_mmio_read32, 0);
     expect_function_call(__wrap_mmio_write32);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
 
     // Arrange disable_bwl_i3c()
     expect_function_call(__wrap_mmio_read32);
     will_return(__wrap_mmio_read32, 0);
     expect_function_call(__wrap_mmio_write32);
+    will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
 
     // High temp (> 85C): 88
     for (uint8_t sens_idx = 0; sens_idx < NUM_SENSORS_PER_DIMM; sens_idx++)
@@ -117,27 +121,24 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
     }
 
     // Expect a GPIO Read/Write for critical temperature
-    for (uint8_t dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
-    {
-        expect_value(__wrap_prod_ddrss_get_intr_event_cper, mc, dimm_idx * 2);
-        expect_value(__wrap_prod_ddrss_get_intr_event_cper, intr_event, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED);
-        will_return(__wrap_prod_ddrss_get_intr_event_cper, SILIBS_SUCCESS);
+    expect_value(__wrap_prod_ddrss_get_intr_event_cper, mc, 0);
+    expect_value(__wrap_prod_ddrss_get_intr_event_cper, intr_event, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED);
+    will_return(__wrap_prod_ddrss_get_intr_event_cper, SILIBS_SUCCESS);
 
-        expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
-        expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
-        expect_function_call(__wrap_hm_submit_cper);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper);
 
-        expect_function_call(__wrap_mmio_read32);
-        will_return(__wrap_mmio_read32, 0);
-        expect_function_call(__wrap_mmio_write32);
-    }
-
-    // Expect another set of GPIO Read/Writes for ddr_manager_enable_bwl_i3c(); after the critical temp is met
     expect_function_call(__wrap_mmio_read32);
     will_return(__wrap_mmio_read32, 0);
     expect_function_call(__wrap_mmio_write32);
 
     // Act
     ddr_poll_dimms();
-    check_dimm_temp_thresholds();
+
+    expect_value(FPFwErrorRaise, error, (uint32_t)TX_NO_MEMORY); // DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD
+    if (!set_error_handler_return())
+    {
+        check_dimm_temp_thresholds();
+    }
 }

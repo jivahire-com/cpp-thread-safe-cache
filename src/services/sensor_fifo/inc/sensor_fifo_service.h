@@ -62,6 +62,7 @@ typedef enum
     DIMM_THROTTLE_SOURCE_EXT_TEMP_SENSOR = 1,
     DIMM_THROTTLE_SOURCE_MR4 = 2,
     DIMM_THROTTLE_SOURCE_BOTH = 3,
+    DIMM_THROTTLE_SOURCE_FORCED_CLI = 4,
 } dimm_throttle_source_t;
 
 /**

@@ -19,6 +19,7 @@
 #include "ddr_manager_i.h"
 #include "ddr_manager_i3c.h"
 
+#include <ErrorHandler.h> // for FPFwErrorRaise
 #include <bug_check.h>
 #include <cper.h>
 #include <ddr_manager_events.h>
@@ -36,13 +37,14 @@
 void init_thresholds(ddr_dimm_temp_thresholds_t* thresholds);
 
 /*-- Declarations (Statics and globals) --*/
+ddr_manager_i3c_temperature_t ts0_temp;
+ddr_manager_i3c_temperature_t ts1_temp;
 
 /*------------- Functions ----------------*/
 void ddr_poll_dimms()
 {
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {
-        ddr_manager_i3c_temperature_t ts0_temp;
         if (ddr_manager_temperature_sensor_read(dimm_idx, 0, &ts0_temp) == DDR_MANAGER_I3C_SUCCESS)
         {
             ddr_telemetry_update_dimm_temp(dimm_idx, 0, ts0_temp);
@@ -53,10 +55,11 @@ void ddr_poll_dimms()
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_TEMPERATURE_SENSOR_0, dimm_idx);
         }
 
-        ddr_manager_i3c_temperature_t ts1_temp;
+        tx_thread_sleep(2); // This measures ~ 16 ms (usually)
+
         if (ddr_manager_temperature_sensor_read(dimm_idx, 1, &ts1_temp) == DDR_MANAGER_I3C_SUCCESS)
         {
-            ddr_telemetry_update_dimm_temp(dimm_idx, 1, ts0_temp);
+            ddr_telemetry_update_dimm_temp(dimm_idx, 1, ts1_temp);
         }
         else
         {
@@ -74,7 +77,7 @@ void ddr_poll_dimms()
 void check_dimm_temp_thresholds()
 {
     static bool is_first_run = true;
-    static ddr_dimm_temp_thresholds_t thresholds = {};
+    static ddr_dimm_temp_thresholds_t thresholds = {0};
 
     acpi_err_sec_mem_vendor_t ddr_cper = {0};
     acpi_cper_section_t cper_section = {0};
@@ -113,6 +116,7 @@ void check_dimm_temp_thresholds()
         {
             printf("DIMM %d exceeded critical temperature threshold: %d\n", dimm_idx, thresholds.crit);
             DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD, dimm_idx);
+            printf("DIMM %d exceeded critical temperature threshold: %d\n", dimm_idx, max_dimm_temp);
 
             memset(&ddr_cper, 0x0, sizeof(ddr_cper));
             prod_ddrss_get_intr_event_cper(dimm_idx * 2, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED, &ddr_cper);
@@ -123,8 +127,7 @@ void check_dimm_temp_thresholds()
 
             // Blow things up
             ddr_manager_set_thermal_trip_gpio();
-            // And BUG_CHECK here?
-            // Task 2584104: Determine correct behavior when DDR exceeds critical temperature
+            FPFwErrorRaise(DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD, dimm_idx, 0, 0, 0);
         }
     }
 

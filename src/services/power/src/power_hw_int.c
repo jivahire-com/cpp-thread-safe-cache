@@ -378,7 +378,7 @@ static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig
     {
         uint16_t temp = power_hw_dts_pvt_raw_to_temp_dC(temp_itd_temp_boundaries[temp_idx],
                                                         p_runconfig->fuses.dts_coeff_tile[tile_num]);
-        POWER_LOG_INFO("Temp idx %d, Temp dC:[%d] C:[%d]\n", temp_idx, temp, temp / 10);
+        POWER_LOG_INFO("Temp idx %d, Temp dC:[%d] C:[%d]", temp_idx, temp, temp / 10);
     }
 
     // update highest perf based on curve

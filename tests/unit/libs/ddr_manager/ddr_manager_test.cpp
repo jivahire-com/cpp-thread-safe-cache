@@ -63,7 +63,6 @@ extern "C" {
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
-static int begin_bwl_disengaged(void** state);
 
 /*-- Declarations (Statics and globals) --*/
 static fpfw_icc_base_ctx_t* icc_ctx;
@@ -250,19 +249,6 @@ uint64_t __wrap_gtimer_prodfw_get_counter()
 }
 
 } // extern "C"
-
-static int begin_bwl_disengaged(void** state)
-{
-    (void)state;
-
-    // Arrange
-    expect_function_call(__wrap_mmio_read32);
-    will_return(__wrap_mmio_read32, 0);
-    expect_function_call(__wrap_mmio_write32);
-
-    ddr_manager_disable_bwl_i3c();
-    return 0;
-}
 
 //
 // Tests
@@ -1044,7 +1030,7 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_timer, NULL
     }
 }
 
-TEST_FUNCTION(ddr_telemetry_report_verify_temps, begin_bwl_disengaged, NULL)
+TEST_FUNCTION(ddr_telemetry_report_verify_temps, NULL, NULL)
 {
     ddr_manager_i3c_temperature_t dimm_temp = {.is_positive = true};
     sensor_ram_dimm_info_t test_dimm_info = {0};

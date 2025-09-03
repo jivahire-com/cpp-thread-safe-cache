@@ -25,4 +25,6 @@ KNG_DIE_ID __wrap_idsw_get_die_id();
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv();
 int __wrap_prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_sec_mem_vendor_t* ddr_cper);
 void __wrap_hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size);
+int __wrap_ddrss_bandwidth_limiter_config(uint32_t mc, bool enable, uint32_t max_acc_cost, uint32_t rd_wr_cost);
+
 }

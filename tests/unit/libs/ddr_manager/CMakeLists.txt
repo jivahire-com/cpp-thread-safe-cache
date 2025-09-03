@@ -71,6 +71,7 @@ mock_target(${TARGET}
     ddr_i3c_interface_read_pmic_power
     ddr_i3c_interface_get_instance
     ddr_manager_platform_is_polling_supported
+    ddrss_bandwidth_limiter_config
     ddrss_get_system_mem_region
     ddrss_get_training_margin_base
     ddrss_is_valid_local_mc

@@ -14,6 +14,9 @@
 #include "ddr_manager_i.h"
 
 #include <ddr_manager_events.h>
+#include <fpfw_cfg_mgr.h>
+#include <idsw_kng.h>
+#include <sensor_fifo_service.h>
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -23,47 +26,77 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static bwl_state_t bwl_state = BWL_STATE_DISABLED;
+static dimm_throttle_source_t bwl_state = DIMM_THROTTLE_SOURCE_NONE;
 static bool s_bwlEngaged = false;
 
+static const bool START = true;
+static const bool STOP = false;
+
 /*------------- Functions ----------------*/
-static void ddr_manager_engage_bwl()
+static void ddr_manager_control_bwl(int action)
 {
-    // Engage the DDR BWL
-    // This is a stub implementation
-    // Replace with actual implementation
-    // ADO: #1983310
-    if (s_bwlEngaged)
-    {
-        return;
-    }
+    uint32_t DDR_BWL_MAX_ACC_COST = config_get_ddrmanager_bwl_max_acc_cost(); // Maximum accumulated cost value
+    uint32_t DDR_BWL_RD_WR_COST = config_get_ddrmanager_bwl_rd_wr_cost(); // Cost of issuing a read or write to the media
 
-    ddr_manager_set_memhot_gpio();
-    s_bwlEngaged = true;
-    printf("DDR BWL+\n");
+    // Get Die ID
+    KNG_DIE_ID die_id = idsw_get_die_id();
+    int mc_start = die_id == DIE_0 ? 0 : DDRSS_MAX_SS_NUM;
+
+    if (action == START)
+    {
+        // Engage the DDR BWL
+        if (s_bwlEngaged)
+        {
+            return;
+        }
+
+        // TODO: add config knob to throttle single DIMM or all DIMMs on local die
+        for (int mc = mc_start; mc < (mc_start + DDRSS_MAX_SS_NUM); mc++)
+        {
+            // Configure the bandwidth limiter for this MC
+            int sts = ddrss_bandwidth_limiter_config(mc, START, DDR_BWL_MAX_ACC_COST, DDR_BWL_RD_WR_COST);
+            if (sts != SILIBS_SUCCESS)
+            {
+                printf("Failed to configure BWL for MC %d: %d\n", mc, sts);
+            }
+        }
+
+        ddr_manager_set_memhot_gpio();
+        s_bwlEngaged = true;
+        printf("DDR BWL+\n");
+    }
+    else if (action == STOP)
+    {
+        // Disengage the DDR BWL
+        if (!s_bwlEngaged)
+        {
+            return;
+        }
+
+        // TODO #2675040: add config knob to throttle single DIMM or all DIMMs on local die
+        for (int mc = mc_start; mc < (mc_start + DDRSS_MAX_SS_NUM); mc++)
+        {
+            // Configure the bandwidth limiter for this MC
+            int sts = ddrss_bandwidth_limiter_config(mc, STOP, DDR_BWL_MAX_ACC_COST, DDR_BWL_RD_WR_COST);
+            if (sts != SILIBS_SUCCESS)
+            {
+                printf("Failed to configure BWL for MC %d: %d\n", mc, sts);
+            }
+        }
+
+        ddr_manager_clear_memhot_gpio();
+        s_bwlEngaged = false;
+        printf("DDR BWL-\n");
+    }
 }
 
-static void ddr_manager_disengage_bwl()
-{
-    // Disengage the DDR BWL
-    // This is a stub implementation
-    // Replace with actual implementation
-    // ADO: #1983310
-    if (!s_bwlEngaged)
-    {
-        return;
-    }
-
-    ddr_manager_clear_memhot_gpio();
-    s_bwlEngaged = false;
-    printf("DDR BWL-\n");
-}
-
+// TODO #2675040: add config knob to throttle single DIMM or all DIMMs on local die
 bool ddr_manager_get_bwl_engaged()
 {
     return s_bwlEngaged;
 }
 
+// TODO #2675040: add config knob to throttle single DIMM or all DIMMs on local die ... (and so on)
 uint8_t ddr_manager_get_bwl_state()
 {
     return (uint8_t)bwl_state;
@@ -71,24 +104,24 @@ uint8_t ddr_manager_get_bwl_state()
 
 void ddr_manager_enable_bwl_i3c()
 {
-    if (bwl_state == BWL_STATE_DISABLED)
+    if (bwl_state == DIMM_THROTTLE_SOURCE_NONE)
     {
-        ddr_manager_engage_bwl();
+        ddr_manager_control_bwl(START);
         printf("DDR BWL enabled by I3C\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_ENABLED_BY_I3C);
     }
 
-    bwl_state |= BWL_STATE_ENABLED_I3C;
+    bwl_state |= DIMM_THROTTLE_SOURCE_EXT_TEMP_SENSOR;
 }
 
 void ddr_manager_disable_bwl_i3c()
 {
-    bwl_state_t previous_bwl_state = bwl_state;
-    bwl_state &= ~(BWL_STATE_ENABLED_I3C);
+    dimm_throttle_source_t previous_bwl_state = bwl_state;
 
-    if ((bwl_state == BWL_STATE_DISABLED) && (previous_bwl_state == BWL_STATE_ENABLED_I3C))
+    bwl_state &= ~(DIMM_THROTTLE_SOURCE_EXT_TEMP_SENSOR);
+    if ((bwl_state == DIMM_THROTTLE_SOURCE_NONE) && (previous_bwl_state == DIMM_THROTTLE_SOURCE_EXT_TEMP_SENSOR))
     {
-        ddr_manager_disengage_bwl();
+        ddr_manager_control_bwl(STOP);
         printf("DDR BWL disabled by I3C\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_DISABLED_BY_I3C);
     }
@@ -96,24 +129,24 @@ void ddr_manager_disable_bwl_i3c()
 
 void ddr_manager_enable_bwl_mr4()
 {
-    if (bwl_state == BWL_STATE_DISABLED)
+    if (bwl_state == DIMM_THROTTLE_SOURCE_NONE)
     {
-        ddr_manager_engage_bwl();
+        ddr_manager_control_bwl(START);
         printf("DDR BWL enabled by MR4\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_ENABLED_BY_MR4);
     }
 
-    bwl_state |= BWL_STATE_ENABLED_MR4;
+    bwl_state |= DIMM_THROTTLE_SOURCE_MR4;
 }
 
 void ddr_manager_disable_bwl_mr4()
 {
-    bwl_state_t previous_bwl_state = bwl_state;
-    bwl_state &= ~(BWL_STATE_ENABLED_MR4);
+    dimm_throttle_source_t previous_bwl_state = bwl_state;
 
-    if ((bwl_state == BWL_STATE_DISABLED) && (previous_bwl_state == BWL_STATE_ENABLED_MR4))
+    bwl_state &= ~(DIMM_THROTTLE_SOURCE_MR4);
+    if ((bwl_state == DIMM_THROTTLE_SOURCE_NONE) && (previous_bwl_state == DIMM_THROTTLE_SOURCE_MR4))
     {
-        ddr_manager_disengage_bwl();
+        ddr_manager_control_bwl(STOP);
         printf("DDR BWL disabled by MR4\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_DISABLED_BY_MR4);
     }
@@ -121,24 +154,24 @@ void ddr_manager_disable_bwl_mr4()
 
 void ddr_manager_enable_bwl_force()
 {
-    if (bwl_state == BWL_STATE_DISABLED)
+    if (bwl_state == DIMM_THROTTLE_SOURCE_NONE)
     {
-        ddr_manager_engage_bwl();
+        ddr_manager_control_bwl(START);
         printf("DDR BWL forced enabled\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_FORCED_ENABLE);
     }
 
-    bwl_state |= BWL_STATE_ENABLED_FORCED;
+    bwl_state |= DIMM_THROTTLE_SOURCE_FORCED_CLI;
 }
 
 void ddr_manager_disable_bwl_force()
 {
-    bwl_state_t previous_bwl_state = bwl_state;
-    bwl_state &= ~(BWL_STATE_ENABLED_FORCED);
+    dimm_throttle_source_t previous_bwl_state = bwl_state;
 
-    if ((bwl_state == BWL_STATE_DISABLED) && (previous_bwl_state == BWL_STATE_ENABLED_FORCED))
+    bwl_state &= ~(DIMM_THROTTLE_SOURCE_FORCED_CLI);
+    if ((bwl_state == DIMM_THROTTLE_SOURCE_NONE) && (previous_bwl_state == DIMM_THROTTLE_SOURCE_FORCED_CLI))
     {
-        ddr_manager_disengage_bwl();
+        ddr_manager_control_bwl(STOP);
         printf("DDR BWL forced disabled\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_BWL_FORCED_DISABLE);
     }

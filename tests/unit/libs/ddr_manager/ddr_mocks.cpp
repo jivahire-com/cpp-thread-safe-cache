@@ -214,4 +214,12 @@ unsigned int __wrap__tx_thread_sleep(unsigned long ticks)
     return 0;
 }
 
+int __wrap_ddrss_bandwidth_limiter_config(uint32_t mc, bool enable, uint32_t max_acc_cost, uint32_t rd_wr_cost)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(enable);
+    FPFW_UNUSED(max_acc_cost);
+    FPFW_UNUSED(rd_wr_cost);
+    return mock_type(int);
+}
 } // extern "C"

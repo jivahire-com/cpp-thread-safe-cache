@@ -32,6 +32,7 @@ static uint8_t get_pmic_reg(int dimm_idx);
 
 /*-- Declarations (Statics and globals) --*/
 ddr_i3c_details_t ddr_i3c_sensors = {0};
+uint8_t power_byte = 0;
 
 /*------------- Functions ----------------*/
 ddr_manager_i3c_temperature_t ts_convert_temperature(uint8_t ts_low, uint8_t ts_high)
@@ -242,12 +243,10 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
 
     if (status != DDR_I3C_INTERFACE_SUCCESS)
     {
-        printf("Error reading DIMM %d TS %d low byte\n", dimm_idx, channel_idx);
+        printf("Error reading DIMM %d TS %d\n", dimm_idx, channel_idx);
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TEMPERATURE_SENSOR_MR49_READ, status);
         return DDR_MANAGER_I3C_TRANSACTION_ERROR;
     }
-
-    tx_thread_sleep(2); // This measures ~ 16 ms
 
     *ts_scaled_celsius = ts_convert_temperature(ddr_i3c_sensors.dimm[dimm_idx].ts_data[0],
                                                 ddr_i3c_sensors.dimm[dimm_idx].ts_data[1]);
@@ -258,7 +257,6 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
 int ddr_manager_power_mw_read(int dimm_idx, uint16_t* power_mW)
 {
     uint8_t data_len = 1;
-    uint8_t power_byte = 0;
 
     BUG_ASSERT_PARAM(dimm_idx >= 0 && dimm_idx < NUM_DIMM_PER_DIE, dimm_idx, 0);
 

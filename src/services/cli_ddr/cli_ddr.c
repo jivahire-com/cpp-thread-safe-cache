@@ -12,6 +12,7 @@
 #include <FpFwLinkedList.h> // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>      // for FPFW_UNUSED, FPFW_ARRAY_SIZE
 #include <ddr_err_inj.h>
+#include <ddr_manager_bwl.h>
 #include <ddr_manager_i3c.h>
 #include <ddr_memory_map.h>
 #include <ddrss_lib.h>
@@ -52,8 +53,12 @@ STATIC FPFW_CLI_STATUS ca_parity_transient_error_injection(int Argc, const char*
 STATIC FPFW_CLI_STATUS rh_counters_sram_parity_error_injection(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS rh_drfm_sram_parity_error_injection(int Argc, const char** Argv);
 
+// DIMM I3C Commands
 STATIC FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** Argv);
+
+// BWL/Throttling Commands
+STATIC FPFW_CLI_STATUS ddr_manager_bwl_force(int Argc, const char** Argv);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -72,11 +77,14 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr_err_inj", "mrdp_parity_ue", mrdp_parity_ue_error_injection, "MRDP Parity UE error injection (1877181)", "Usage: mrdp_parity_ue <mc>"},
     {NULL_LIST_ENTRY, "ddr_err_inj", "ca_parity_persistent", ca_parity_persistent_error_injection, "Command Address Parity - Persistent einj (2031571)", "Usage: ca_parity_persistent <mc>"},
     {NULL_LIST_ENTRY, "ddr_err_inj", "ca_parity_transient", ca_parity_transient_error_injection, "Command Address Parity - Transient einj (2093837)", "Usage: ca_parity_transient <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "rh_counters", rh_counters_sram_parity_error_injection, "Row hammer counters sram parity einj (TBD)", "Usage: rh_counters <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "rh_drfm", rh_drfm_sram_parity_error_injection, "Command Address Parity - Transient einj (TBD)", "Usage: rh_drfm <mc>"},
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    {NULL_LIST_ENTRY, "ddr_i3c", "read_dimm_pmic_power", read_dimm_pmic_power, "Read PMIC power", "Usage: read_dimm_pmic_power <dimm_idx>"},
-    {NULL_LIST_ENTRY, "ddr_i3c", "read_dimm_temp_sensor", read_dimm_temp_sensor, "Read DIMM temperature sensor", "Usage: read_dimm_temp_sensor <dimm_idx> <channel_idx>"},
+    {NULL_LIST_ENTRY, "ddr", "read_dimm_pmic_power", read_dimm_pmic_power, "Read PMIC power", "Usage: read_dimm_pmic_power <dimm_idx>"},
+    {NULL_LIST_ENTRY, "ddr", "read_dimm_temp_sensor", read_dimm_temp_sensor, "Read DIMM temperature sensor", "Usage: read_dimm_temp_sensor <dimm_idx> <channel_idx>"},
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    {NULL_LIST_ENTRY, "ddr", "rh_counters", rh_counters_sram_parity_error_injection, "Row hammer counters sram parity einj (TBD)", "Usage: rh_counters <mc>"},
+    {NULL_LIST_ENTRY, "ddr", "rh_drfm", rh_drfm_sram_parity_error_injection, "Command Address Parity - Transient einj (TBD)", "Usage: rh_drfm <mc>"},
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    {NULL_LIST_ENTRY, "ddr", "bwl_force", ddr_manager_bwl_force, "Control BWL forced throttling state", "Usage: bwl_force <0|1>"},
 };
 
 // ecc_ce_err (mc) (phy_add) {error bit}
@@ -450,6 +458,34 @@ STATIC PLACED_CODE FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** 
     }
 
     FpFwCliPrint("Temperature: %d.%d\n", temperature.temp_int, temperature.temp_frac);
+    return CLI_SUCCESS;
+}
+
+STATIC FPFW_CLI_STATUS ddr_manager_bwl_force(int Argc, const char** Argv)
+{
+    if (Argc != 2)
+    {
+        FpFwCliPrint("Invalid number of arguments.  Usage: bwl_force <0|1>\n");
+        return CLI_ERROR;
+    }
+
+    char* endptr;
+    uint8_t force = (uint8_t)(strtoul(Argv[1], &endptr, 0));
+    if (*endptr != '\0' || (force != 0 && force != 1))
+    {
+        FpFwCliPrint("Invalid argument - force must be either 0 or 1\n");
+        return CLI_ERROR;
+    }
+
+    if (force == 1)
+    {
+        ddr_manager_enable_bwl_force();
+    }
+    else
+    {
+        ddr_manager_disable_bwl_force();
+    }
+
     return CLI_SUCCESS;
 }
 

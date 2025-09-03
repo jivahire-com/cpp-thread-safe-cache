@@ -1051,7 +1051,6 @@ TEST_FUNCTION(ddr_telemetry_report_verify_temps, begin_bwl_disengaged, NULL)
     test_dimm_info.dimm_memory_frequency_id = (uint8_t)config_get_ddr_speed_grade();
     const int POWER_SCALING_FACTOR = 125;
 
-    will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_gtimer_prodfw_get_counter, 0);
 
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)

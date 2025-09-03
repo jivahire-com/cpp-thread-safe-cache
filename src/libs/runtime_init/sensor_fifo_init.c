@@ -107,9 +107,14 @@ static_assert((CORE_CURRENT_FIFO_NUM_ENTRIES <= 16), "CORE_CURRENT_FIFO_NUM_ENTR
 #define PVT_VOLT_FIFO_START_ADDR              (PVT_TEMP_FIFO_END_ADDR)
 #define PVT_VOLT_FIFO_END_ADDR                (PVT_VOLT_FIFO_START_ADDR + (PVT_VOLT_FIFO_NUM_ENTRIES * PVT_VOLT_FIFO_STRIDE_SIZE_BYTES))
 
-#define DIMM_FIFO_NUM_ENTRIES                 (8)
+//
+// Each Die has 6 DIMMs, with a single entry in the FIFO representing the data for one DIMM.
+// Allow for enough DIMM entries in the FIFO to accommodate:
+// - (6 DIMMs per die * SCP Production Rate) vs. MCP Consumption Rate == 96/6 == 36 sets of DIMM entries
+//
+#define DIMM_FIFO_NUM_ENTRIES                 (96)
 #define DIMM_FIFO_ENTRY_SIZE_BYTES            (BUFFER_ADDRESS_INC_3QW)
-#define DIMM_FIFO_STRIDE_SIZE_BYTES           (DIMM_FIFO_ENTRY_SIZE_BYTES) //6 DIMM per die
+#define DIMM_FIFO_STRIDE_SIZE_BYTES           (DIMM_FIFO_ENTRY_SIZE_BYTES)
 #define DIMM_FIFO_START_ADDR                  (PVT_VOLT_FIFO_END_ADDR)
 #define DIMM_FIFO_END_ADDR                    (DIMM_FIFO_START_ADDR + (DIMM_FIFO_NUM_ENTRIES * DIMM_FIFO_STRIDE_SIZE_BYTES))
 

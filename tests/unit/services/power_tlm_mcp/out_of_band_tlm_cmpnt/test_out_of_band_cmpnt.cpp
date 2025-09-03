@@ -21,6 +21,7 @@ extern "C" {
 #include <out_of_band_tlm_cmpnt.h>
 #include <out_of_band_tlm_cmpnt_i.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
+#include <telemetry_package_defs.h>
 #include <tx_api.h>
 }
 /*-- Symbolic Constant Macros (defines) --*/
@@ -317,5 +318,9 @@ TEST_FUNCTION(test_out_of_band_tlm_cmpnt_print_sensors, test_setup, test_teardow
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC, 1000);
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW, 0xFF000000);
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz, 3600);
+
+    will_return_count(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC, 290, NUMBER_OF_DIMMS_PER_DIE * 2);
+    will_return_count(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC, 300, NUMBER_OF_DIMMS_PER_DIE * 2);
+    will_return_count(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW, 3200, NUMBER_OF_DIMMS_PER_DIE * 2);
     out_of_band_tlm_cmpnt_print_sensors();
 }

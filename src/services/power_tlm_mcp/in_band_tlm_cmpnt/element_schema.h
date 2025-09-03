@@ -176,11 +176,9 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s0_max_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s0_min_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s0_average_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s0_temperature_reserved),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s1_max_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s1_min_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s1_average_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s1_temperature_reserved))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s1_average_dC))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER,
@@ -188,8 +186,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_LEVEL_DEBUG,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mW),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, reserved))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mW))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_HNF_TEMP,

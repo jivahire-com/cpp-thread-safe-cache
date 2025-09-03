@@ -71,7 +71,6 @@ ddr_manager_i3c_temperature_t ddr_telemetry_get_dimm_temp(uint8_t dimm_idx, uint
 
 void ddr_telemetry_report()
 {
-    KNG_DIE_ID die_num = idsw_get_die_id();
     sensor_ram_dimm_info_t dimm_info = {0};
     uint16_t power_mW = 0;
 
@@ -81,7 +80,7 @@ void ddr_telemetry_report()
 
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {
-        dimm_info.dimm_id = dimm_idx + (die_num * NUM_DIMM_PER_DIE);
+        dimm_info.dimm_id = dimm_idx;
         if (ddr_manager_power_mw_read(dimm_idx, &power_mW) != DDR_MANAGER_I3C_SUCCESS)
         {
             printf("Error reading DIMM %d power\n", dimm_idx);

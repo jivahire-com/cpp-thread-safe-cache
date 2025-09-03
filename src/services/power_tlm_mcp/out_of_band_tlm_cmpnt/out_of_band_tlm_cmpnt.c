@@ -22,6 +22,9 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+// Number of iterations before printing non-critical sensor data
+#define OOB_PRINT_NON_CRITICAL_SENSORS_INTERVAL (10U)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -308,16 +311,39 @@ void pwr_tlm_oob_get_dimm_avg_pwr(uint16_t sensor_id, fpfw_pldm_composite_value_
 
 void out_of_band_tlm_cmpnt_print_sensors(void)
 {
+    static uint32_t s_oob_print_non_critical_sensors_iter = 0;
+
     uint16_t max_soc_temp_dC = data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC();
     uint32_t soc_pwr_mW = data_proc_tlm_cmpnt_get_oob_soc_pwr_mW();
     uint16_t max_dimm_tmp_dC = data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC();
     uint32_t dimm_total_pwr_mW = data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW();
     uint16_t soc_avg_freq_Mhz = data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz();
 
-    FPFW_DBGPRINT_ALWAYS("OOB Sensors:\n");
+    FPFW_DBGPRINT_ALWAYS("OOB CRITICAL SENSORS - START\n");
     FPFW_DBGPRINT_ALWAYS("SOC_TMP_MAX: %d dC\n", max_soc_temp_dC);
     FPFW_DBGPRINT_ALWAYS("SOC_PWR: %d mW\n", soc_pwr_mW);
     FPFW_DBGPRINT_ALWAYS("DIMM_TMP_MAX: %d dC\n", max_dimm_tmp_dC);
     FPFW_DBGPRINT_ALWAYS("DIMM_TOTAL_PWR: %d mW\n", dimm_total_pwr_mW);
     FPFW_DBGPRINT_ALWAYS("SOC_AVG_FREQ: %d MHz\n", soc_avg_freq_Mhz);
+    FPFW_DBGPRINT_ALWAYS("OOB CRITICAL SENSORS - END\n");
+
+    if (s_oob_print_non_critical_sensors_iter % OOB_PRINT_NON_CRITICAL_SENSORS_INTERVAL == 0)
+    {
+        FPFW_DBGPRINT_ALWAYS("OOB NON-CRITICAL SENSORS - START\n\n");
+        // Print non-critical sensor data here
+        for (uint8_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_DIE * 2; dimm_idx++)
+        {
+            uint16_t dimm_avg_temp_dC = data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC(dimm_idx);
+            uint16_t dimm_max_temp_dC = data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC(dimm_idx);
+            uint32_t dimm_avg_pwr_mW = data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(dimm_idx);
+
+            FPFW_DBGPRINT_ALWAYS("DIMM[%d] AVG_TEMP: %d dC\n", dimm_idx, dimm_avg_temp_dC);
+            FPFW_DBGPRINT_ALWAYS("DIMM[%d] MAX_TEMP: %d dC\n", dimm_idx, dimm_max_temp_dC);
+            FPFW_DBGPRINT_ALWAYS("DIMM[%d] AVG_PWR: %d mW\n\n", dimm_idx, dimm_avg_pwr_mW);
+        }
+
+        FPFW_DBGPRINT_ALWAYS("OOB NON-CRITICAL SENSORS - END\n");
+    }
+
+    s_oob_print_non_critical_sensors_iter++;
 }

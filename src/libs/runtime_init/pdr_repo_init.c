@@ -814,7 +814,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .minus_tolerance = 0,
         .state_transition_interval = 0.5, // 0.5 seconds for sensor to be enabled (to be characterized)
         .transition_interval = 1,         // Sensor is updated every 1 seconds
-        .max_settable = 1000, //! Max electrical limit is 400 watts, overridable by knobs
+        .max_settable = 65535, //! Max electrical limit is 400 watts, overridable by knobs, 65535 for uncapped power
         .min_settable = 50, //! Soc Idle Power 50 Watts
         .range_field_format = PLDM_SENSOR_DATA_SIZE_UINT16, // Range units
         .rangel_field_support = 0,                          // Only supports warning ranges

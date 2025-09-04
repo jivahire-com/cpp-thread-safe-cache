@@ -11,6 +11,7 @@
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <gtimer_prodfw.h>
 #include <stddef.h> // for NULL
+#include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define US_PER_S (1000 * 1000)
@@ -34,10 +35,11 @@ FPFW_INIT_COMPONENT(debug, FPFW_INIT_DEPENDENCIES("std_io"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(debug_print, FPFW_INIT_DEPENDENCIES("std_io", "gtimer"))
+FPFW_INIT_COMPONENT(debug_print, FPFW_INIT_DEPENDENCIES("std_io", "gtimer", "sysinfo"))
 {
     fpfw_debug_print_config_t config = {
-        .default_level = FPFW_DEBUG_PRINT_LEVEL_INFO,
+        // Set the default debug print level based on whether CLI is enabled or not
+        .default_level = system_info_get_cli_enable() ? FPFW_DEBUG_PRINT_LEVEL_INFO : FPFW_DEBUG_PRINT_LEVEL_WARNING,
         .timestamp_us_cb = dbgprint_counter_to_us,
     };
     DbgPrintInit(&config);

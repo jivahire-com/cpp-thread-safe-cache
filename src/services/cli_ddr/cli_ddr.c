@@ -420,6 +420,7 @@ STATIC PLACED_CODE FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** A
         return CLI_ERROR;
     }
 
+    FpFwCliPrint("DIMM %d Power: %d mW\n", ddrss_index, power_mw);
     return CLI_SUCCESS;
 }
 

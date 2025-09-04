@@ -7,6 +7,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "crash_dump_diagnostics_lockup.h" // for lockup_usage_fault_handler, lockup_hardfault_handler
 #include "crash_dump_icc.h"
 #include "crash_dump_status.h"
 
@@ -16,6 +17,7 @@
 #include <crash_dump.h>        // for crash_dump_register_address32
 #include <crash_dump_events.h> // for CRASH_DUMP_ET
 #include <kng_error.h>         // for KNG_SUCCESS
+#include <nvic.h>              // for NVIC_SetVector
 #include <string.h>            // for strlen
 #include <tx_api.h>            // for tx_thread_sleep
 #include <tx_thread.h>         // for _tx_thread_current_ptr
@@ -36,6 +38,7 @@ static FPFW_CLI_STATUS cd_get_status(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS cd_set_status(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS cd_set_core_status(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS cd_transfer_dump(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS cd_diagnostics_lockup(int argc, const char** pp_argv);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND s_cd_cmd_list[] = {
@@ -49,6 +52,7 @@ static FPFW_CLI_COMMAND s_cd_cmd_list[] = {
     {NULL_LIST_ENTRY, "crashdump", "set_status", cd_set_status, "Update crash dump header status", "Usage: set_status <type: 0: mini, 1: full> <0: Not in use, 1: In use, 2: in transfer>"},
     {NULL_LIST_ENTRY, "crashdump", "set_core_status", cd_set_core_status, "Update crash dump core status", "Usage: set_core_status <type: 0: mini, 1: full> <core index> <core status: 0: NA, 1:RD, 2:IP, 3:CP>"},
     {NULL_LIST_ENTRY, "crashdump", "transfer", cd_transfer_dump, "Transfer dump to BMC", "Usage: transfer"},
+    {NULL_LIST_ENTRY, "crashdump", "lockup", cd_diagnostics_lockup, "Triggers a diagnostics lockup", "Usage: Triggering lockup error"},
 };
 
 static uint32_t dead_beef = 0xDEADBEEF;
@@ -275,6 +279,23 @@ static FPFW_CLI_STATUS cd_transfer_dump(int argc, const char** pp_argv)
     FPFW_UNUSED(pp_argv);
 
     crash_dump_request_transfer_dump();
+
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS cd_diagnostics_lockup(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+
+    /* The processor enters a lockup state if a fault occurs when executing the NMI or HardFault handlers.*/
+    // Set the usage and hardfault handlers to our fake ones
+    FpFwCliPrint("Setting UsageFault and HardFault handlers\n");
+    NVIC_SetVector(UsageFault_IRQn, (uint32_t)lockup_usage_fault_handler);
+    NVIC_SetVector(HardFault_IRQn, (uint32_t)lockup_hardfault_handler);
+
+    FpFwCliPrint("Triggering lockup error\n");
+    lockup_invalid_opcode_exception();
 
     return CLI_SUCCESS;
 }

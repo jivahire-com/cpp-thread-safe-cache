@@ -659,6 +659,18 @@ Function Invoke-CreateIfwi()
         --flavor kingsgate.ifwi.soc.debug.custom `
         --flavor kingsgate.ifwi.ap.baremetal.debug `
         --outdir $env:REPO_APP_TARGET_FLASH_DIR
+
+    # Add a variable list to the soc.debug.custom ifwi to enable booting to UEFI shell
+    & ${env:REPO_APP_PATH_1pfw.datwizard-preview-x86_64-pc-windows-msvc}\tools\datwizard.exe `
+        edit `
+        --flavor kingsgate.ifwi `
+        --output $env:REPO_APP_TARGET_FLASH_DIR/kingsgate.ifwi.soc.debug.uefi.shell.custom.dat `
+        --set vlist=${env:REPO_APP_PATH_shell-boot-variable-list}/shellboot.vl `
+        --quiet `
+        $env:REPO_APP_TARGET_FLASH_DIR/kingsgate.ifwi.soc.debug.custom.dat `
+        | Out-Null
+    Write-Host "Created $env:REPO_APP_TARGET_FLASH_DIR/kingsgate.ifwi.soc.debug.uefi.shell.custom.dat"
+
 }
 
 <#

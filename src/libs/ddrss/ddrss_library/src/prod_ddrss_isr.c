@@ -72,6 +72,13 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agen
             {
                 printf("Error encountered while handling record!\n");
             }
+
+            // For ER0/ER2 and ER4/ER6 of ERG0, need to reset the CEC threshold.
+            if ((ras_agent_entity_id == DDRSS_RAS_NODE_ID_MC_ERG0) &&
+                ((record.position == 0) || (record.position == 2) || (record.position == 4) || (record.position == 6)))
+            {
+                ddrss_ras_update_ce_threshold(mc, 1 << record.position, false);
+            }
         }
         else
         {
@@ -570,13 +577,13 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         }
         else
         {
-            mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);
             acpi_err_sec_ddrss_rhm_tm_t rh_cper_section = {0};
             acpi_cper_section_t cper_section;
             cper_section.sec_rh_tlm = rh_cper_section;
             prod_ddrss_convert_rh_rec_to_rh_cper(mc, RHTLM_SAMPLE_EVENT, &ddrss_rm_telemetry, &rh_cper_section);
             hm_submit_cper(ACPI_ERROR_DOMAIN_RHTLM, ACPI_ERROR_SEVERITY_INFORMATIONAL, &cper_section, sizeof(cper_section));
         }
+        mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);
     }
 
     if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED))

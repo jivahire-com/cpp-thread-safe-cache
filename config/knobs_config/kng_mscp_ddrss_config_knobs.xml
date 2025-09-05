@@ -100,7 +100,7 @@
     <Knob name="ppr_type" type="DDRSS_PPR_TYPE" default="DDRSS_PPR_NONE" help="This value indicates the kind of PPR to be performed" />
     <Knob name="ppr_defect_list" type="ddrss_defect_list_t" help="List that contains info on the defect addresses for PPR operation" />
     <Knob name="rfm_en" type="uint8_t" default="0x0" help="Enable Refresh managment 0 - Disable, 1 - Enable, 2 - Auto" />
-    <Knob name="erhm_en" type="uint8_t" default="0x1" help="Enable Enhanced Row Hammer mitigation logic 0 - Disable, 1 - Enable, 2 - AUTO (Enable if DIMM requests)" />
+    <Knob name="erhm_en" type="uint8_t" default="1" help="Enable Enhanced Row Hammer mitigation logic 0 - Disable, 1 - Enable, 2 - AUTO (Enable if DIMM requests)" />
     <Knob name="rfm_raaimt_ovr" type="uint8_t" default="0" help="Override RFM RAA Initial Management Threshold (0 ~ 15) , 0 - No override: raaimt_ovr,raammt_ovr and raa_dec_ref_val_ovr will be ignored, 1 - override the values" />
     <Knob name="rfm_raammt_ovr" type="uint8_t" default="6" help="Override RFM RAA Maximum Management Threshold (0 ~ 7)" />
     <Knob name="rfm_raa_dec_ref_ovr" type="uint8_t" default="1" help="Override RFM RAA counter Decrement per Refresh command (0 ~ 3)" />
@@ -116,8 +116,8 @@
     <Knob name="rm_tm_filter_bank_mask" type="uint8_t" default="0xF" help="Bank groups for which filtered RHM telemetry shall be collected. All bit combinations are legal. Each bit indicate a bank.  (0x00 ~ 0x0f)" />
     <Knob name="rm_tm_filter_bg_mask" type="uint8_t" default="0xFF" help="Bank groups for which filtered RHM telemetry shall be collected. All bit combinations are legal. Each bit indicate a bank group.  (0x00 ~ 0xff)" />
     <Knob name="rm_tm_filter_rank_mask" type="uint8_t" default="3" help="Ranks for which filtered RHM telemetry shall be collected. All bit combinations are legal. Each bit indicate a rank.  (0 ~ 3)" />
-    <Knob name="rm_tm_sel_always" type="uint8_t" default="0x1f" help="Types of RHM telemetry events to always collect." />
-    <Knob name="rm_tm_sel_filtered" type="uint8_t" default="0x1f" help="Types of RHM telemetry events to collect with filter." />
+    <Knob name="rm_tm_sel_always" type="uint8_t" default="0x19" help="Types of RHM telemetry events to always collect." />
+    <Knob name="rm_tm_sel_filtered" type="uint8_t" default="0x19" help="Types of RHM telemetry events to collect with filter." />
     <Knob name="rm_drt_clr" type="uint8_t" default="4" help="RHM DRFM Row Tracking structure clear rate. Number of 1.95us pulses." />
     <Knob name="rm_cnt_clr" type="uint16_t" default="0x4000" help="RHM counter's structure clear rate in number of 1.95us pulses." />
     <Knob name="rm_sample_thr" type="uint16_t" default="256" help="RHM sampling probability. Must be greater than 2." />

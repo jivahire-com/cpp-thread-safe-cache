@@ -6,6 +6,7 @@ add_compile_options(-DMSCP_SILIBS_COMPILATION)
 add_library(${TARGET}
     STATIC
     pcie_async_dispatch.c
+    pcie_bdat.c
     pcie_config.c
     pcie_cli_helpers.c
     pcie_dfwk_init.c

@@ -10,9 +10,10 @@
 /*------------- Includes -----------------*/
 #include "pcie_silibs_mocks.h"
 
-#include <FpFwCMocka.h>       // IWYU pragma: keep
-#include <FpFwUtils.h>        // for FPFW_UNUSED
-#include <atu_lib.h>          // for atu_id_t, atu_map_entry_t
+#include <FpFwCMocka.h> // IWYU pragma: keep
+#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <atu_lib.h>    // for atu_id_t, atu_map_entry_t
+#include <bdat_schema.h>
 #include <cmocka.h>           // IWYU pragma: keep
 #include <e32_mem_map_regs.h> // for e32_mem_map_reg
 #include <idsw.h>             // for platform ID declarations
@@ -26,7 +27,8 @@
 #include <pcie_ss_common.h>        // for pcie_ss_entity_t
 #include <pcie_x16_e32_phy_regs.h> // for pcie_x16_e32_phy_reg
 #include <pcie_x16_general_regs.h> // for pcie_x16_general_reg
-#include <pciess_int.h>            // for INTU_DEST_PIN
+#include <pciess_common.h>
+#include <pciess_int.h> // for INTU_DEST_PIN
 #include <ras_common.h>
 #include <rpss_p1_regs.h>  // for rpss_p1_reg
 #include <silibs_status.h> // for silibs_status_t
@@ -63,7 +65,15 @@ int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     check_expected(atu_id);
 
     /* Keep mscp base zero to allow checking base address in UTs */
-    atu_map_entry->mscp_start_address = 0x0;
+    atu_map_entry->mscp_start_address = mock();
+
+    return mock_type(int);
+}
+
+int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    check_expected(atu_id);
+    assert_non_null(atu_map_entry);
 
     return mock_type(int);
 }
@@ -437,4 +447,13 @@ int __wrap_pcie_rp_ide_disable_all_streams(pcie_rp_entity_t* rp)
 {
     assert_non_null(rp);
     return mock_type(int);
+}
+
+silibs_status_t __wrap_oi_pcie_ss_populate_rp_bdat(pcie_ss_entity_t* ss, unsigned rp_index, void* bdat, size_t bdat_size)
+{
+    assert_non_null(ss);
+    assert_non_null(bdat);
+    assert_in_range(rp_index, 0, PCIESS_NUM_PORTS - 1);
+    assert_int_equal(bdat_size, sizeof(BDAT_PCIE_PER_RP_DATA_MSFT_1));
+    return mock_type(silibs_status_t);
 }

@@ -76,6 +76,7 @@ mock_target(${TARGET}
     _txe_semaphore_put
     # Silibs mocks begin
     atu_map
+    atu_unmap
     idsw_get_die_id
     pciess_rp_get_link_train_done
     intu_get_interrupt_status
@@ -84,6 +85,7 @@ mock_target(${TARGET}
     oi_pcie_ss_set_laattr_rp_overrides
     oi_pcie_rp_dbi_set_write_cacheability
     oi_pcie_rp_dbi_set_read_cacheability
+    oi_pcie_ss_populate_rp_bdat
     pciess_get_entity
     pciess_config_entity
     pciess_config_ss_for_bifur

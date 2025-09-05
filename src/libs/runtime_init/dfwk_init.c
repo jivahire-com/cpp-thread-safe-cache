@@ -16,7 +16,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-#define DFWK_STACK_SIZE (TX_MINIMUM_STACK + 0x1200)
+#define DFWK_STACK_SIZE (TX_MINIMUM_STACK + 0x1500)
 
 #define DFWK_THREAD_PRIORITY      (1)
 #define DFWK_PREEMPTION_THRESHOLD (1)

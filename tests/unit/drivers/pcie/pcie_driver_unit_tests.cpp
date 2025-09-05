@@ -30,6 +30,7 @@ extern "C" {
 #include <cper.h>
 #include <error_handler.h>
 #include <kng_soc_constants.h>
+#include <pcie_bdat_i.h>
 #include <pcie_config_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
@@ -70,6 +71,7 @@ static pciess_device_interface_t iface;
 static pcie_async_request_t r;
 static jmp_buf mock_jump_buf;
 static bool should_return;
+uint8_t mock_buf[2048];
 
 /* mock entity*/
 pcie_ss_entity_t mock_pcie_ent;
@@ -195,6 +197,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
 
         mock_pcie_ent.id = r.rpss_index;
         expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+        will_return(__wrap_atu_map, 0x00);
         will_return(__wrap_atu_map, SILIBS_SUCCESS);
         expect_value(__wrap_pciess_get_entity, rpss_idx, i);
         will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
@@ -244,6 +247,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
 
         mock_pcie_ent.id = r.rpss_index;
         expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+        will_return(__wrap_atu_map, 0x00);
         will_return(__wrap_atu_map, SILIBS_SUCCESS);
         expect_value(__wrap_pciess_get_entity, rpss_idx, i);
         will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
@@ -298,6 +302,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     /* Setup silibs expectations */
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, 0x00);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
@@ -331,6 +336,7 @@ TEST_FUNCTION(test_pcie_rpss_init_atu_map_fail, test_setup, test_teardown)
     r.rp_index = 0;
 
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, 0x00);
     will_return(__wrap_atu_map, SILIBS_E_RANGE);
     expect_function_calls(__wrap_crash_dump_bug_check, 1);
     if (!bugcheck_mock_return())
@@ -513,6 +519,12 @@ TEST_FUNCTION(test_begin_rp_post_link_up_init, test_setup, test_teardown)
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return(__wrap_pciess_rp_post_link_up_init, SILIBS_SUCCESS);
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, &mock_buf[0]);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_oi_pcie_ss_populate_rp_bdat, SILIBS_SUCCESS);
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
@@ -1286,6 +1298,7 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
     /* Setup silibs expectations */
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, 0x00);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
     will_return_always(__wrap_system_info_get_soc_position, 0x1);
     bool is_mirroring = __real_config_get_pcie_configuration_mirroring();
@@ -1355,4 +1368,28 @@ TEST_FUNCTION(test_get_workarounds, test_setup, test_teardown)
     {
         get_workaround_for_rpss(NUM_RPSS);
     }
+}
+
+TEST_FUNCTION(test_get_pcie_bdat_info_errors, test_setup, test_teardown)
+{
+    /* Make atu map fail */
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, &mock_buf[0]);
+    will_return(__wrap_atu_map, SILIBS_E_RANGE);
+
+    mock_pcie_ent.id = (RPSS_INSTANCE)0;
+    mock_pcie_ent.rps[0].enabled = true;
+    mock_pcie_ent.rps[1].enabled = false;
+    mock_pcie_ent.rps[2].enabled = false;
+    mock_pcie_ent.rps[3].enabled = false;
+
+    silibs_status_t status = publish_pcie_bdat_info_for_this_rp(&mock_pcie_ent, 0);
+    assert_int_equal(status, SILIBS_E_RANGE);
+
+    /*
+     * Now ensure that we aren't attempting to repopulate bdat data for rpss 0
+     * (even though the earlier init failed)
+     */
+    status = publish_pcie_bdat_info_for_this_rp(&mock_pcie_ent, 0);
+    assert_int_equal(status, SILIBS_SUCCESS);
 }

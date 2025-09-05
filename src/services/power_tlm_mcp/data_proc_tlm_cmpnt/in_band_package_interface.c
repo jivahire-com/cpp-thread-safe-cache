@@ -362,11 +362,16 @@ void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_tem
     max_temp_data->peak_max_dC = FPFW_MAX(computed_metrics_d2d_2mins.max_soc_temp_dC.max, die1_max_temp.peak_temp_dC);
 }
 
-void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id,
-                                                  pwr_soc_element_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES])
+void data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data)
 {
-    FPFW_UNUSED(mpam_id);
-    FPFW_UNUSED(mpam_pstate_array);
+    mpam_vm_core_pwr_data_t die1_mpam_data;
+    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, mpam_id, &die1_mpam_data);
+
+    mpam_core_pwr_data->average_mW =
+        data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg) +
+        die1_mpam_data.average_pwr_mW;
+
+    mpam_core_pwr_data->max_mW = computed_metrics_d2d_2mins.mpam[mpam_id].core_power.max + die1_mpam_data.max_pwr_mW;
 }
 
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_soc_element_mpam_throttle_t mpam_throttle_data)
@@ -392,15 +397,17 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
         core_summary_data->current_mA = core_rt[core_id].latest_current_mA;
         core_summary_data->temperature_dC = core_rt[core_id].latest_max_value_dC;
         core_summary_data->plimit = core_rt[core_id].latest_plimit;
+        core_summary_data->mpam_id = core_rt[core_id].latest_mpam_id;
 
         // TODO :Below items need to be updated, when corresponding records will have implementation.
-        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584933
-        core_summary_data->mpam_id = 0;
+
         // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584924
         core_summary_data->cstate_entry_latency_uS = 0;
+
         // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584925
         core_summary_data->cstate_exit_latency_uS = 0;
         core_summary_data->velocity_boost_priority = 0;
+
         /* Note : Every bit represt an active throttling*/
         // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2684261
         core_summary_data->throttling_type = data_smpl_get_active_throttle_sources(core_id);

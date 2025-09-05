@@ -33,6 +33,7 @@ extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_rt;
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
+extern computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins;
 bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
 }
 
@@ -3032,4 +3033,245 @@ TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo, test_setup, test_teardo
 
     // Should have processed both entries
     assert_int_equal(core_rt[core_id].latest_pstate, 3);
+}
+
+TEST_FUNCTION(test_data_smpl_calculate_mpam_power, test_setup, test_teardown)
+{
+    // Arrange: Clear computed metrics and set up test data
+    memset(&computed_metrics_d2d_2mins, 0, sizeof(computed_metrics_d2d_2mins));
+    memset(core_rt, 0, sizeof(core_rt));
+
+    // Initialize all cores as inactive
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        core_is_active[i] = false;
+    }
+
+    // Test specific cores with known MPAM IDs and power values
+    uint8_t test_cores[] = {0, 1, 10};
+    uint8_t num_test_cores = sizeof(test_cores) / sizeof(test_cores[0]);
+
+    for (uint8_t i = 0; i < num_test_cores; i++)
+    {
+        uint8_t core_id = test_cores[i];
+        core_rt[core_id].latest_mpam_id = i;              // MPAM IDs: 0, 1, 2
+        core_rt[core_id].latest_power_mW = (i + 1) * 100; // Power: 100, 200, 300 mW
+        core_is_active[core_id] = true;
+    }
+
+    // Act: Call the function under test
+    data_smpl_calculate_mpam_power();
+
+    // Assert: Verify that MPAM power values are correctly calculated in computed_metrics_d2d_2mins
+    for (uint8_t i = 0; i < num_test_cores; i++)
+    {
+        uint8_t mpam_id = i;
+        uint32_t expected_power = (i + 1) * 100;
+
+        // Check that the MPAM power metrics are updated correctly
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.min, expected_power);
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.max, expected_power);
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg),
+                         expected_power);
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg.num_samples, 1);
+    }
+
+    // Verify all other MPAM IDs remain zero, except for num_samples, zero values will be averaged in
+    for (uint8_t mpam_id = num_test_cores; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+    {
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.min, 0);
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.max, 0);
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg), 0);
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg.num_samples, 1);
+    }
+}
+
+TEST_FUNCTION(test_data_smpl_calculate_mpam_power_multiple_cores_same_mpam, test_setup, test_teardown)
+{
+    // Arrange: Test multiple cores assigned to the same MPAM ID
+    memset(&computed_metrics_d2d_2mins, 0, sizeof(computed_metrics_d2d_2mins));
+    memset(core_rt, 0, sizeof(core_rt));
+
+    // Initialize all cores as inactive
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        core_is_active[i] = false;
+    }
+
+    // Set up multiple cores with the same MPAM ID
+    uint8_t mpam_id = 5;
+    uint8_t test_cores[] = {0, 1, 2};         // Three cores
+    uint16_t core_powers[] = {100, 200, 300}; // Different power values
+
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        uint8_t core_id = test_cores[i];
+        core_rt[core_id].latest_mpam_id = mpam_id;
+        core_rt[core_id].latest_power_mW = core_powers[i];
+        core_is_active[core_id] = true;
+    }
+
+    // Act: Call the function under test
+    data_smpl_calculate_mpam_power();
+
+    // Assert: Verify that powers are summed for the same MPAM ID
+    uint32_t expected_total_power = 100 + 200 + 300; // 600 mW
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.min, expected_total_power);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.max, expected_total_power);
+    assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg),
+                     expected_total_power);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg.num_samples, 1);
+
+    // Verify all other MPAM IDs remain zero, except for num_samples, zero values will be averaged in
+    for (uint8_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        if (i != mpam_id)
+        {
+            assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.min, 0);
+            assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.max, 0);
+            assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[i].core_power.running_avg), 0);
+            assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.running_avg.num_samples, 1);
+        }
+    }
+}
+
+TEST_FUNCTION(test_data_smpl_calculate_mpam_power_inactive_cores, test_setup, test_teardown)
+{
+    // Arrange: Test that inactive cores are not included in MPAM power calculation
+    memset(&computed_metrics_d2d_2mins, 0, sizeof(computed_metrics_d2d_2mins));
+    memset(core_rt, 0, sizeof(core_rt));
+
+    // Initialize all cores as inactive
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        core_is_active[i] = false;
+    }
+
+    uint8_t mpam_id = 10;
+
+    // Set up active core
+    core_rt[0].latest_mpam_id = mpam_id;
+    core_rt[0].latest_power_mW = 100;
+    core_is_active[0] = true;
+
+    // Set up inactive core with same MPAM ID but higher power
+    core_rt[1].latest_mpam_id = mpam_id;
+    core_rt[1].latest_power_mW = 500;
+    core_is_active[1] = false; // Inactive
+
+    // Act: Call the function under test
+    data_smpl_calculate_mpam_power();
+
+    // Assert: Only active core's power should be included
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.min, 100);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.max, 100);
+    assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg), 100);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg.num_samples, 1);
+
+    // Verify all other MPAM IDs remain zero, except for num_samples, zero values will be averaged in
+    for (uint8_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        if (i != mpam_id)
+        {
+            assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.min, 0);
+            assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.max, 0);
+            assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[i].core_power.running_avg), 0);
+            assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.running_avg.num_samples, 1);
+        }
+    }
+}
+
+TEST_FUNCTION(test_data_smpl_calculate_mpam_power_invalid_mpam_id, test_setup, test_teardown)
+{
+    // Arrange: Test with invalid MPAM IDs (should be ignored)
+    memset(&computed_metrics_d2d_2mins, 0, sizeof(computed_metrics_d2d_2mins));
+    memset(core_rt, 0, sizeof(core_rt));
+
+    // Initialize all cores as inactive
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        core_is_active[i] = false;
+    }
+
+    // Set up core with invalid MPAM ID
+    core_rt[0].latest_mpam_id = NUMBER_OF_MPAMS; // Invalid MPAM ID
+    core_rt[0].latest_power_mW = 100;
+    core_is_active[0] = true;
+
+    // Set up another core with valid MPAM ID for comparison
+    uint8_t valid_mpam_id = 5;
+    core_rt[1].latest_mpam_id = valid_mpam_id;
+    core_rt[1].latest_power_mW = 200;
+    core_is_active[1] = true;
+
+    // Act: Call the function under test
+    data_smpl_calculate_mpam_power();
+
+    // Assert: Invalid MPAM ID should not affect any MPAM power calculations
+    // Check that only the valid MPAM has power
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[valid_mpam_id].core_power.min, 200);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[valid_mpam_id].core_power.max, 200);
+    assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[valid_mpam_id].core_power.running_avg), 200);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[valid_mpam_id].core_power.running_avg.num_samples, 1);
+
+    // Verify all other MPAM IDs remain zero, except for num_samples, zero values will be averaged in
+    for (uint8_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        if (i != valid_mpam_id)
+        {
+            assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.min, 0);
+            assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.max, 0);
+            assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[i].core_power.running_avg), 0);
+            assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.running_avg.num_samples, 1);
+        }
+    }
+}
+
+TEST_FUNCTION(test_data_smpl_calculate_mpam_power_boundary_mpam_ids, test_setup, test_teardown)
+{
+    // Arrange: Test with boundary MPAM IDs (0 and NUMBER_OF_MPAMS-1)
+    memset(&computed_metrics_d2d_2mins, 0, sizeof(computed_metrics_d2d_2mins));
+    memset(core_rt, 0, sizeof(core_rt));
+
+    // Initialize all cores as inactive
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        core_is_active[i] = false;
+    }
+
+    // Test minimum valid MPAM ID
+    core_rt[0].latest_mpam_id = 0; // Minimum valid MPAM ID
+    core_rt[0].latest_power_mW = 100;
+    core_is_active[0] = true;
+
+    // Test maximum valid MPAM ID
+    core_rt[1].latest_mpam_id = NUMBER_OF_MPAMS - 1; // Maximum valid MPAM ID
+    core_rt[1].latest_power_mW = 300;
+    core_is_active[1] = true;
+
+    // Act: Call the function under test
+    data_smpl_calculate_mpam_power();
+
+    // Assert: Both boundary MPAM IDs should be handled correctly
+    // Check minimum MPAM ID
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[0].core_power.min, 100);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[0].core_power.max, 100);
+    assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[0].core_power.running_avg), 100);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[0].core_power.running_avg.num_samples, 1);
+
+    // Check maximum MPAM ID
+    uint8_t max_mpam_id = NUMBER_OF_MPAMS - 1;
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.min, 300);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.max, 300);
+    assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.running_avg), 300);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.running_avg.num_samples, 1);
+
+    // Verify all other MPAM IDs remain zero, except for num_samples, zero values will be averaged in
+    for (uint8_t i = 1; i < NUMBER_OF_MPAMS - 1; i++)
+    {
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.min, 0);
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.max, 0);
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[i].core_power.running_avg), 0);
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.running_avg.num_samples, 1);
+    }
 }

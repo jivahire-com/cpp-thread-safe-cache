@@ -240,14 +240,14 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
 void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_temp_t max_temp_data);
 
 /**
- * @brief Get the mpam pstate data for the specified mpam.
+ * @brief Get the mpam power data for the specified mpam.
  *
  * @param[in] mpam_id - The mpam_id to get the data for. 0 .. NUMBER_OF_MPAMS-1
- * @param[out] mpam_pstate_array - Pointer to the array to store the mpam pstate data in.
+ * @param[out] mpam_core_pwr_data - Pointer to the structure to store the mpam core power data in.
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id, pwr_soc_element_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES]);
+void data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data);
 
 /**
  * @brief Get the mpam thottle data for the specified mpam.

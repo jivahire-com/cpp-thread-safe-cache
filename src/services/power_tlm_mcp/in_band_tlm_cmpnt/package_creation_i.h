@@ -223,11 +223,11 @@ uint32_t package_create_pwr_soc_sensor_temp_record(p_pwr_soc_record_sensor_temp_
 uint32_t package_create_pwr_soc_max_temp_record(p_pwr_soc_record_max_soc_temp_t max_temp_record);
 
 /**
- * @brief   Create a power mpam pstate record
+ * @brief   Create a power mpam power record
  * @param[out] mpam_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record
  */
-uint32_t package_create_pwr_mpam_pstate_record(p_pwr_soc_record_mpam_pstate_t mpam_record);
+uint32_t package_create_pwr_mpam_core_pwr_record(p_pwr_soc_record_mpam_core_power_t mpam_record);
 
 /**
  * @brief   Create a power mpam throttle record

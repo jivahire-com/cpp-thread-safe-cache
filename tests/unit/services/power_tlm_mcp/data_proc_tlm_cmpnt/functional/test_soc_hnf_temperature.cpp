@@ -22,10 +22,11 @@
  *    - (Optional) Print debug information if g_print_debug is enabled.
  */
 
- // @SSI_Unit_Test
- // @SSI_Unit_Test:telemetry
+// @SSI_Unit_Test
+// @SSI_Unit_Test:telemetry
 
 #include "telemetry_functional.h"
+
 #include <CMockaWrapper.h>
 #include <inttypes.h>
 #include <limits.h>

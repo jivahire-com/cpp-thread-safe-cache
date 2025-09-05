@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <stdint.h> // for uint8_t
+#include <telemetry_package_defs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define PRIMARY_DIE_ID (0)
@@ -40,6 +41,11 @@ typedef struct
     uint16_t max_temp_dC;
 } dimm_data_t, *p_dimm_data_t;
 
+typedef struct
+{
+    uint32_t average_pwr_mW;
+    uint32_t max_pwr_mW;
+} mpam_vm_core_pwr_data_t, *p_mpam_vm_core_pwr_data_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -99,6 +105,25 @@ void die_2_die_exch_ib_write_pwr_pkg_max_die_temp(uint16_t average_max_temp_dC, 
  * @param[out] max_die_temperature Pointer to a structure to store the maximum die temperature data.
  */
 void die_2_die_exch_ib_read_pwr_pkg_max_die_temp_dC(uint8_t die_id, p_max_die_temps_t max_die_temperature);
+
+/**
+ * @brief Write the MPAM core power data to the die to die exchange.
+ * This function writes the MPAM core power data for all MPAMs to the exchange. It writes the location for the die
+ * specified by `this_die_id`, which is initialized using `die_2_die_exch_init`.
+ *
+ * @param[in] mpam_core_pwr_array Pointer to an array of MPAM core power data structures.
+ */
+void die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(mpam_vm_core_pwr_data_t (*mpam_core_pwr_array)[NUMBER_OF_MPAMS]);
+
+/**
+ * @brief Read the MPAM core power data from the die to die exchange.
+ * This function reads the MPAM core power data for a specific MPAM from a specific die.
+ *
+ * @param[in] die_id The ID of the die to read the MPAM core power data from.
+ * @param[in] mpam_id The ID of the MPAM to read the core power data for.
+ * @param[out] mpam_core_pwr_data Pointer to a structure to store the MPAM core power data.
+ */
+void die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(uint8_t die_id, uint8_t mpam_id, p_mpam_vm_core_pwr_data_t mpam_core_pwr_data);
 
 /**
  * @brief Write the maximum die temperature window to the die to die exchange.

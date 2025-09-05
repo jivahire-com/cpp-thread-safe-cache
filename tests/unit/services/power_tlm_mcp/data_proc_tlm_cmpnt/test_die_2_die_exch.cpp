@@ -98,6 +98,80 @@ TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_max_die_temp_negative, t
     assert_int_equal(read_temps.peak_temp_dC, 0);
 }
 
+TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_mpam_core_pwr, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    // Create test data for MPAM core power
+    mpam_vm_core_pwr_data_t test_mpam_array[NUMBER_OF_MPAMS];
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        test_mpam_array[i].average_pwr_mW = 1000 + i;
+        test_mpam_array[i].max_pwr_mW = 2000 + i;
+    }
+
+    // Write the MPAM core power data
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_mpam_array);
+
+    // Read and verify a few MPAM entries
+    mpam_vm_core_pwr_data_t read_mpam = {0};
+
+    // Test MPAM ID 0
+    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, 0, &read_mpam);
+    assert_int_equal(read_mpam.average_pwr_mW, 1000);
+    assert_int_equal(read_mpam.max_pwr_mW, 2000);
+
+    // Test MPAM ID 10
+    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, 10, &read_mpam);
+    assert_int_equal(read_mpam.average_pwr_mW, 1010);
+    assert_int_equal(read_mpam.max_pwr_mW, 2010);
+
+    // Test last MPAM ID
+    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, NUMBER_OF_MPAMS - 1, &read_mpam);
+    assert_int_equal(read_mpam.average_pwr_mW, 1000 + NUMBER_OF_MPAMS - 1);
+    assert_int_equal(read_mpam.max_pwr_mW, 2000 + NUMBER_OF_MPAMS - 1);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_mpam_core_pwr_negative, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    // Create test data
+    mpam_vm_core_pwr_data_t test_mpam_array[NUMBER_OF_MPAMS];
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        test_mpam_array[i].average_pwr_mW = 1000 + i;
+        test_mpam_array[i].max_pwr_mW = 2000 + i;
+    }
+
+    // Write data
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_mpam_array);
+
+    mpam_vm_core_pwr_data_t read_mpam = {0};
+
+    // Test reading from invalid die ID (die 0 doesn't write to exchange)
+    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(0, 0, &read_mpam);
+    assert_int_equal(read_mpam.average_pwr_mW, 0);
+    assert_int_equal(read_mpam.max_pwr_mW, 0);
+
+    // Test reading with null pointer
+    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, 0, nullptr);
+    // Should not crash, but we can't verify the behavior since it's a null pointer
+
+    // Test writing from invalid die ID (die 0)
+    die_2_die_exch_init(0);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_mpam_array);
+
+    // Switch back to die 1 and verify data wasn't written
+    die_2_die_exch_init(1);
+    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, 0, &read_mpam);
+    assert_int_equal(read_mpam.average_pwr_mW, 0);
+    assert_int_equal(read_mpam.max_pwr_mW, 0);
+
+    // Test writing with null pointer (should not crash)
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(nullptr);
+}
+
 TEST_FUNCTION(test_die_2_die_exch_oob_read_write_window_max_die_temp, test_setup, test_teardown)
 {
     die_2_die_exch_init(1);

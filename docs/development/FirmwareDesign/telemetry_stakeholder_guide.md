@@ -64,12 +64,10 @@ NOTE: These values are pending final specification approval and are subject to c
 |          | 0x10   | SOC_SENSOR_TEMP          |
 |          | 0x11   | SOC_PER_DIE_MESH         |
 |          | 0x12   | SOC_DIE_TO_DIE_LINK_STATE|
-|          | 0x13   | SOC_PER_DIE_PHY_COUNTERS |
-|          | 0x14   | SOC_MAX_TEMPERATURE      |
-|          | 0x15   | SOC_ACCEL_COUNTERS       |
-|          | 0x16   | SOC_VM_MPAM              |
-|          | 0x17   | SOC_VM_MPAM_THROTTLE     |
-|          | 0x18   | SOC_VM_MPAM_POWER        |
+|          | 0x13   | SOC_MAX_TEMPERATURE      |
+|          | 0x14   | SOC_VM_MPAM_CORE_POWER   |
+|          | 0x15   | SOC_VM_MPAM_THROTTLE     |
+|          | 0x16   | SOC_VM_MPAM_MEMORY_POWER |
 
 | Provider ID | Event ID | Record / Event Name |
 |-------------|----------|---------------------|

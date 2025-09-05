@@ -87,13 +87,8 @@ typedef struct
 
 typedef struct
 {
-    uint16_t stub_metric;
+    mma_u32_t core_power;
 } computed_per_mpam_metrics_t;
-
-typedef struct
-{
-    uint16_t stub_metric;
-} computed_per_tile_metrics_t;
 
 typedef struct
 {
@@ -112,8 +107,6 @@ typedef struct
 
 typedef struct {
     computed_per_core_metrics_t cores[NUMBER_OF_CORES_PER_DIE];
-    computed_per_mpam_metrics_t mpams[NUMBER_OF_CORES_PER_DIE];
-    computed_per_tile_metrics_t tiles[NUMBER_OF_TILES_PER_DIE];
     computed_per_soc_metrics_t soc;
 } computed_metrics_2_min_t;
 
@@ -124,6 +117,7 @@ typedef struct
 
 typedef struct
 {
+    computed_per_mpam_metrics_t mpam[NUMBER_OF_MPAMS];
     mma_u16_t max_soc_temp_dC;
 } computed_metrics_d2d_2_min_t;
 
@@ -195,15 +189,6 @@ void comp_metrics_init_active_cores(void);
  * @return true if both conditions are met, false otherwise
  */
 bool comp_metrics_core_and_inband_publishing_active(uint8_t core_id);
-
-/**
- * @brief function updates various metrics for all cores, including PState residency and power,
- * CState residency, throttling status, core current, voltage, and temperature. It calculates the
- * time difference since the last update and uses this information to update the residency and metrics for each core.
- * @param   None
- * @return  None
- */
-void comp_metrics_for_cores_for_sampling_period(void);
 
 /**
  * @brief  function updates the minimum, maximum, and average current values for a specified core based on the provided
@@ -406,15 +391,6 @@ void comp_metrics_for_single_core_single_cstate(uint8_t core_id, uint8_t current
 void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t current_pstate,  uint16_t latest_power_mW);
 
 /**
- * @brief function is intended to update the MPAM residency for a specified core and MPAM ID.
- *
- * @param[in] core_id - The identifier of the core for which the MPAM residency is being updated.
- * @param[in] mpam_id - The identifier of the MPAM for which the residency is being updated.
- * @param[in] pstate - The PState associated with the MPAM residency update.
- */
-void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate);
-
-/**
  * @brief Resets all local die metrics that get reported every two minutes.
  *
  * @return none
@@ -441,3 +417,10 @@ void comp_metrics_reset_24_hrs_metrics();
  * @return none
  */
 void comp_metrics_for_cores_droop_counts(void);
+
+/**
+ * @brief Update MPAM power metrics for all MPAMs based on the provided power values.
+ *
+ * @param[in] mpam_power_mW  Array of latest MPAM power values in mW.
+ */
+void comp_metrics_for_mpam_power( uint32_t (*mpam_power_mW)[NUMBER_OF_MPAMS]);

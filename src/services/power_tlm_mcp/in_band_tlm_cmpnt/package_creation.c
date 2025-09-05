@@ -251,8 +251,6 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
 
     // TODO: POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE
 
-    // TODO: POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_PHY_COUNTERS
-
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE])
     {
         if (inband_die_id == 0)
@@ -264,12 +262,16 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
         }
     }
 
-    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM])
+    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_CORE_POWER])
     {
-        p_pwr_soc_record_mpam_pstate_t mpam_record = (p_pwr_soc_record_mpam_pstate_t)pkg_location;
-        pkg_location += package_create_pwr_mpam_pstate_record(mpam_record);
-        package_hdr->payload_header.number_of_records++;
+        if (inband_die_id == 0)
+        {
+            p_pwr_soc_record_mpam_core_power_t mpam_record = (p_pwr_soc_record_mpam_core_power_t)pkg_location;
+            pkg_location += package_create_pwr_mpam_core_pwr_record(mpam_record);
+            package_hdr->payload_header.number_of_records++;
+        }
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE])
     {
         p_pwr_soc_record_mpam_throttle_t mpam_record = (p_pwr_soc_record_mpam_throttle_t)pkg_location;
@@ -277,7 +279,7 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
         package_hdr->payload_header.number_of_records++;
     }
 
-    // TODO: POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_POWER
+    // TODO: POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER
 
     uint32_t pkg_size = pkg_location - (uintptr_t)package_hdr;
     if (pkg_size == sizeof(telemetry_package_hdr_t))
@@ -321,8 +323,6 @@ uint32_t package_create_24hr_pkg(uintptr_t pkg_location, size_t pkg_available_si
         pkg_location += package_create_pwr_soc_pkg_mon_record(pkg_mon_record);
         package_hdr->payload_header.number_of_records++;
     }
-
-    // TODO: POWER_TELEMETRY_ELEMENT_SOC_ACCEL_COUNTERS
 
     uint32_t pkg_size = pkg_location - (uintptr_t)package_hdr;
     if (pkg_size == sizeof(telemetry_package_hdr_t))
@@ -766,24 +766,25 @@ uint32_t package_create_pwr_soc_max_temp_record(p_pwr_soc_record_max_soc_temp_t 
     return sizeof(pwr_soc_record_max_soc_temp_t);
 }
 
-uint32_t package_create_pwr_mpam_pstate_record(p_pwr_soc_record_mpam_pstate_t mpam_record)
+uint32_t package_create_pwr_mpam_core_pwr_record(p_pwr_soc_record_mpam_core_power_t mpam_record)
 {
     populate_record_hdr(&mpam_record->record_header,
-                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM],
+                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_CORE_POWER],
                         NUMBER_OF_MPAMS,
-                        sizeof(pwr_soc_record_mpam_pstate_t));
+                        sizeof(pwr_soc_record_mpam_core_power_t));
 
     for (uint16_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
     {
-        populate_pwr_collection_hdr(&mpam_record->mpam_pstate_collection[mpam_id].collection_header,
-                                    POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM,
+        populate_pwr_collection_hdr(&mpam_record->mpam_core_power_collection[mpam_id].collection_header,
+                                    POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_CORE_POWER,
                                     mpam_id,
-                                    NUMBER_OF_PSTATES,
-                                    sizeof(pwr_soc_collection_mpam_pstate_t));
+                                    1,
+                                    sizeof(pwr_soc_collection_mpam_core_power_t));
 
-        data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(mpam_id, &mpam_record->mpam_pstate_collection[mpam_id].mpam_pstate_element);
+        data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(mpam_id,
+                                                       &mpam_record->mpam_core_power_collection[mpam_id].mpam_core_power_element);
     }
-    return sizeof(pwr_soc_record_mpam_pstate_t);
+    return sizeof(pwr_soc_record_mpam_core_power_t);
 }
 
 uint32_t package_create_pwr_mpam_throttle_record(p_pwr_soc_record_mpam_throttle_t mpam_throttle_record)

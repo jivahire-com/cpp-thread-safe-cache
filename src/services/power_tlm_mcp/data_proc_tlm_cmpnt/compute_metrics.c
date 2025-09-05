@@ -52,6 +52,17 @@ void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.max);
 
+    // Prepare MPAM core power data array
+    mpam_vm_core_pwr_data_t mpam_core_pwr_array[NUMBER_OF_MPAMS];
+    for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+    {
+        mpam_core_pwr_array[mpam_id].average_pwr_mW =
+            data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg);
+        mpam_core_pwr_array[mpam_id].max_pwr_mW = computed_metrics_d2d_2mins.mpam[mpam_id].core_power.max;
+    }
+
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&mpam_core_pwr_array);
+
     comp_metrics_reset_d2d_2_min_metrics();
 }
 
@@ -454,14 +465,18 @@ void comp_metrics_for_cores_droop_counts(void)
     }
 }
 
-void comp_metrics_for_mpam(uint8_t core_id, uint16_t mpam_id, uint8_t pstate)
+void comp_metrics_for_mpam_power(uint32_t (*mpam_power_mW)[NUMBER_OF_MPAMS])
 {
+    if (mpam_power_mW == NULL)
+    {
+        FPFW_ET_LOG(CompMetricsMpamPwrNullPointer);
+        return;
+    }
 
-    FPFW_UNUSED(core_id);
-    FPFW_UNUSED(mpam_id);
-    FPFW_UNUSED(pstate);
-    // Update the core - mpam - pstate instantaneous power
-    // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319779
+    for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+    {
+        data_util_calc_mma_u32(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power, (*mpam_power_mW)[mpam_id]);
+    }
 }
 
 void comp_metrics_reset_local_2_min_metrics()

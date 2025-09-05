@@ -25,6 +25,7 @@
 #include <stddef.h>              // for size_t
 #include <stdint.h>              // for uint8_t, uint16_t
 #include <string.h>              // for memset
+#include <telemetry_package_defs.h>
 #include <tlm_fuses.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -276,9 +277,7 @@ void data_smpl_process_pstate_sensor_fifo(void)
                                                            entry_data.cstate_change);
             }
 
-            // TODO:Update when implementing MPAM https://azurecsi.visualstudio.com/Dev/_workitems/edit/2319779
-            comp_metrics_for_mpam(core_id, core_rt[core_id].latest_mpam_id, core_rt[core_id].latest_pstate);
-            // update throttling compute .
+            // update throttling compute.
             if (entry_data.throttling_state_change)
             {
                 // since multiple throttling sources can be active at the same time, no need for current
@@ -286,9 +285,9 @@ void data_smpl_process_pstate_sensor_fifo(void)
                 comp_metrics_for_single_core_single_throttle_source(core_id,
                                                                     entry_data.throttle_source,
                                                                     entry_data.throttle_time_diff_uS,
-
                                                                     entry_data.throttle_start);
             }
+
             // update rack throttling compute.
             if (entry_data.rack_throttling_state_change)
             {
@@ -299,6 +298,7 @@ void data_smpl_process_pstate_sensor_fifo(void)
                                                                   core_rt[core_id].latest_rack_throttle_priority,
                                                                   entry_data.rack_priority_start);
             }
+
             if (entry_data.overrun_count_change)
             {
                 comp_metrics_for_single_core_throttle_overrun(core_id, entry_data.throttle_source);
@@ -311,6 +311,7 @@ void data_smpl_process_core_current_sensor_fifo(void)
 {
     sensor_ram_poll_status_t status;
     bool valid_entry = false;
+    bool power_updated = false;
     core_current_t* core_current_entry = (core_current_t*)fifo_entry;
     uint16_t core_id;
 
@@ -324,6 +325,7 @@ void data_smpl_process_core_current_sensor_fifo(void)
             // update any metrics from data parsed from the entry
             if (valid_entry)
             {
+                power_updated = true;
                 comp_metrics_for_single_core_current(core_id, core_rt[core_id].latest_current_mA);
                 comp_metrics_for_single_core_power(core_id, core_rt[core_id].latest_power_mW);
 
@@ -352,6 +354,13 @@ void data_smpl_process_core_current_sensor_fifo(void)
             }
         }
     } while (status.more_entries == true);
+
+    // at least one core power was updated, so re-check mpam power
+    // note: it is sufficient to update once per poll period instead of per fifo entry
+    if (power_updated)
+    {
+        data_smpl_calculate_mpam_power();
+    }
 }
 
 void data_smpl_process_vr_temp_sensor_fifo(void)
@@ -1181,6 +1190,30 @@ void data_smpl_terminate_non_rack_throttle_sources(uint8_t core_id, uint64_t* ti
         }
     }
     core_rt[core_id].status_flags.throttle_is_active = data_smpl_get_active_throttle_sources(core_id) == 0 ? false : true;
+}
+
+void data_smpl_calculate_mpam_power()
+{
+    uint32_t mpam_power_mW[NUMBER_OF_MPAMS] = {0};
+
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        uint8_t mpam_id = core_rt[core_id].latest_mpam_id;
+
+        if (mpam_id < NUMBER_OF_MPAMS)
+        {
+            if (core_is_active[core_id])
+            {
+                mpam_power_mW[mpam_id] += core_rt[core_id].latest_power_mW;
+            }
+        }
+        else
+        {
+            FPFW_ET_LOG(LogInvalidMpamId, core_id, mpam_id);
+        }
+    }
+
+    comp_metrics_for_mpam_power(&mpam_power_mW);
 }
 
 void data_proc_tlm_cmpnt_pwr_pkg_completed(void)

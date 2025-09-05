@@ -217,11 +217,10 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(uint16_t mpam_id,
-                                                  pwr_soc_element_mpam_pstate_t (*mpam_pstate_array)[NUMBER_OF_PSTATES])
+void data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data)
 {
     FPFW_UNUSED(mpam_id);
-    memset((*mpam_pstate_array), 0xFF, sizeof(pwr_soc_element_mpam_pstate_t) * NUMBER_OF_PSTATES);
+    memset(mpam_core_pwr_data, 0xFF, sizeof(pwr_soc_element_mpam_core_power_t));
 
     function_called();
 }

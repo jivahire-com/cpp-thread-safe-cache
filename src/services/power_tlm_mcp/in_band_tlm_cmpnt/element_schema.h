@@ -137,11 +137,9 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, ldo_output_max_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, ldo_output_min_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, ldo_output_average_mV),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, reserved1),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, vcpu_input_max_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, vcpu_input_min_mV),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, vcpu_input_average_mV),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, reserved2))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, vcpu_input_average_mV))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_PKG_MON,
@@ -157,17 +155,14 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mV),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, voltage_reserved),
 
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mA),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_mA),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mA),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, current_reserved),
 
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, temperature_reserved))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_dC))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE,
@@ -178,7 +173,8 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s0_average_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s1_max_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s1_min_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s1_average_dC))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, s1_average_dC),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, dimm_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_DIMM_POWER,
@@ -186,7 +182,8 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_LEVEL_DEBUG,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mW),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mW))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mW),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, dimm_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_HNF_TEMP,
@@ -194,8 +191,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_LEVEL_DEBUG,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, temperature_reserved))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_dC))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_SENSOR_TEMP,
@@ -203,8 +199,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_LEVEL_DEBUG,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_dC),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, temperature_reserved))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_dC))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH,
@@ -227,19 +222,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, link_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
-                     POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_PHY_COUNTERS,
-                     pwr_soc_element_die_phy,
-                     FPFW_ET_LEVEL_DEBUG,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, counter0),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, counter1),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, counter2),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, counter3),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, counter4),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, counter5),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, counter6),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, counter7))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE,
                      pwr_soc_element_max_soc_temp,
                      FPFW_ET_LEVEL_DEBUG,
@@ -247,22 +229,11 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, peak_max_dC))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
-                     POWER_TELEMETRY_ELEMENT_SOC_ACCEL_COUNTERS,
-                     pwr_soc_element_accel_count,
+                     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_CORE_POWER,
+                     pwr_soc_element_mpam_core_power,
                      FPFW_ET_LEVEL_DEBUG,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, counter))
-
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
-                     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM,
-                     pwr_soc_element_mpam_pstate,
-                     FPFW_ET_LEVEL_DEBUG,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, reserved),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, residency_mS),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, transition_count),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, pstate_id))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, max_mW),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, average_mW))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE,
@@ -272,16 +243,15 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, nominal_pstate_frequency_Mhz),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_pstate_frequency_Mhz),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, avg_throttle_frequency_Mhz),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, throttle_extent_centipct))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, throttle_extent_centipct),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, mpam_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
-                     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_POWER,
-                     pwr_soc_element_mpam_power,
+                     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER,
+                     pwr_soc_element_mpam_memory_power,
                      FPFW_ET_LEVEL_DEBUG,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, reserved))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, max_mW),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, average_mW))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,
                      INST_TELEMETRY_ELEMENT_CORE,

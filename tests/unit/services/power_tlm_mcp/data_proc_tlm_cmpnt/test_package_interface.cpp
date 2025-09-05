@@ -539,12 +539,102 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, test_setup, te
     assert_int_equal(max_temp_data.peak_max_dC, 800);
 }
 
-TEST_FUNCTION(test_get_pwr_mpam_pstate_data, test_setup, test_teardown)
+TEST_FUNCTION(test_get_pwr_mpam_core_pwr_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    pwr_soc_element_mpam_pstate_t mpam_pstate_array[NUMBER_OF_PSTATES] = {{{0}}};
-    data_proc_tlm_cmpnt_get_pwr_mpam_pstate_data(TEST_MPAM_ID_4, &mpam_pstate_array);
+    pwr_soc_element_mpam_core_power_t mpam_core_pwr_data = {0};
+
+    // Initialize die_2_die_exchange for die 1
+    die_2_die_exch_init(1);
+
+    // Set up test data for die 0 (local computed metrics)
+    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg.summation = 1000 * 5;
+    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg.num_samples = 5;
+    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.max = 1200;
+    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.min = 800;
+
+    // Set up test data for die 1 using die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr
+    mpam_vm_core_pwr_data_t test_die1_mpam_array[NUMBER_OF_MPAMS] = {{0}};
+    test_die1_mpam_array[TEST_MPAM_ID_4].average_pwr_mW = 500;
+    test_die1_mpam_array[TEST_MPAM_ID_4].max_pwr_mW = 600;
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
+
+    // Test valid case
+    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
+
+    // Verify combined data from both dies
+    // Die 0 average: 1000*5/5 = 200, Die 1 average: 500 => Total: 700
+    uint32_t expected_average =
+        data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg) + 500;
+    assert_int_equal(mpam_core_pwr_data.average_mW, expected_average);
+
+    // Die 0 max: 1200, Die 1 max: 600 => Total: 1800
+    uint32_t expected_max = computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.max + 600;
+    assert_int_equal(mpam_core_pwr_data.max_mW, expected_max);
+
+    // Test with different die 1 data
+    test_die1_mpam_array[TEST_MPAM_ID_4].average_pwr_mW = 300;
+    test_die1_mpam_array[TEST_MPAM_ID_4].max_pwr_mW = 400;
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
+
+    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
+
+    // Verify updated combined data
+    expected_average =
+        data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg) + 300;
+    assert_int_equal(mpam_core_pwr_data.average_mW, expected_average);
+
+    expected_max = computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.max + 400;
+    assert_int_equal(mpam_core_pwr_data.max_mW, expected_max);
+
+    // Test edge case: MPAM ID 0
+    computed_metrics_d2d_2mins.mpam[0].core_power.running_avg.summation = 2000 * 3;
+    computed_metrics_d2d_2mins.mpam[0].core_power.running_avg.num_samples = 3;
+    computed_metrics_d2d_2mins.mpam[0].core_power.max = 2500;
+
+    test_die1_mpam_array[0].average_pwr_mW = 100;
+    test_die1_mpam_array[0].max_pwr_mW = 150;
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
+
+    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(0, &mpam_core_pwr_data);
+
+    expected_average = data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[0].core_power.running_avg) + 100;
+    assert_int_equal(mpam_core_pwr_data.average_mW, expected_average);
+
+    expected_max = computed_metrics_d2d_2mins.mpam[0].core_power.max + 150;
+    assert_int_equal(mpam_core_pwr_data.max_mW, expected_max);
+
+    // Test edge case: Maximum valid MPAM ID
+    uint16_t max_mpam_id = NUMBER_OF_MPAMS - 1;
+    computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.running_avg.summation = 3000 * 2;
+    computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.running_avg.num_samples = 2;
+    computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.max = 3500;
+
+    test_die1_mpam_array[max_mpam_id].average_pwr_mW = 250;
+    test_die1_mpam_array[max_mpam_id].max_pwr_mW = 300;
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
+
+    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(max_mpam_id, &mpam_core_pwr_data);
+
+    expected_average =
+        data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.running_avg) + 250;
+    assert_int_equal(mpam_core_pwr_data.average_mW, expected_average);
+
+    expected_max = computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.max + 300;
+    assert_int_equal(mpam_core_pwr_data.max_mW, expected_max);
+
+    // Test boundary case: Zero power values
+    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg.summation = 0;
+    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg.num_samples = 1;
+    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.max = 0;
+
+    test_die1_mpam_array[TEST_MPAM_ID_4].average_pwr_mW = 0;
+    test_die1_mpam_array[TEST_MPAM_ID_4].max_pwr_mW = 0;
+    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
+
+    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
+
+    assert_int_equal(mpam_core_pwr_data.average_mW, 0);
+    assert_int_equal(mpam_core_pwr_data.max_mW, 0);
 }
 
 TEST_FUNCTION(test_get_pwr_soc_mpam_throttle_data, test_setup, test_teardown)

@@ -87,7 +87,7 @@ typedef struct {
     uint64_t throttle_res_timestamp_uS[NUMBER_OF_THROTTLE_SOURCES];
     uint64_t rack_pri_res_timestamp_uS[NUMBER_OF_RACK_THROTTLE_PRIORITIES];
     uint16_t latest_voltage_mV;
-    uint16_t latest_vcpu_voltage_mV; /* for droop count record */
+    uint16_t latest_vcpu_voltage_mV; // for droop count record
     uint16_t latest_current_mA;
     uint16_t latest_power_mW;
     uint16_t latest_max_value_dC;
@@ -125,6 +125,7 @@ typedef struct {
     uint32_t latest_dimm_total_pwr_mW;
     uint16_t latest_max_dimm_temp_dC;
 } dimm_runtime_info_t;
+
 /**
  *  @brief Enum for Pstate message throttle status codes
  * // Status from KNG RMSSHASv0.p14 Document index value
@@ -438,3 +439,10 @@ void data_smpl_handle_rack_throttle_start(uint8_t core_id,
  * @param[out] entry_data - Update the core state entry data with the rack throttle end information.
  */
 void data_smpl_handle_rack_throttle_end(uint8_t core_id, core_state_entry_data_t* entry_data);
+
+/**
+ * @brief Calculate MPAM power for all MPAMs based on the latest core power and MPAM ID.
+ *
+ * @return none
+ */
+void data_smpl_calculate_mpam_power();

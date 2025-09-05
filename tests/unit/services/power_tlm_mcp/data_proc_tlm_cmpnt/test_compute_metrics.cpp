@@ -826,3 +826,49 @@ TEST_FUNCTION(test_comp_metrics_for_cores_droop_counts, test_setup, test_teardow
         }
     }
 }
+
+TEST_FUNCTION(test_comp_metrics_for_mpam_power, test_setup, test_teardown)
+{
+    // Arrange: Create test MPAM power array with known values
+    uint32_t test_mpam_power[NUMBER_OF_MPAMS];
+
+    // Initialize with test values - use different patterns for verification
+    for (uint8_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        test_mpam_power[i] = (i + 1) * 100; // 100, 200, 300, ..., 12800 mW
+    }
+
+    // Act: Call the function under test
+    comp_metrics_for_mpam_power(&test_mpam_power);
+
+    // Assert: Verify that all MPAM power values are updated correctly
+    for (uint8_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        // Check that min, max are set to the input value (first sample)
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.min, test_mpam_power[i]);
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.max, test_mpam_power[i]);
+
+        // Check that average is set to the input value (first sample)
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[i].core_power.running_avg),
+                         test_mpam_power[i]);
+        assert_int_equal(computed_metrics_d2d_2mins.mpam[i].core_power.running_avg.num_samples, 1);
+    }
+}
+
+TEST_FUNCTION(test_comp_metrics_for_mpam_power_null_pointer, test_setup, test_teardown)
+{
+    // Arrange: Initialize some values in the metrics
+    computed_metrics_d2d_2mins.mpam[0].core_power.min = 100;
+    computed_metrics_d2d_2mins.mpam[0].core_power.max = 200;
+    computed_metrics_d2d_2mins.mpam[0].core_power.running_avg.summation = 150 * 1;
+    computed_metrics_d2d_2mins.mpam[0].core_power.running_avg.num_samples = 1;
+
+    // Act: Call function with null pointer (should not crash)
+    comp_metrics_for_mpam_power(NULL);
+
+    // Assert: Verify that existing values are unchanged
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[0].core_power.min, 100);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[0].core_power.max, 200);
+    assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[0].core_power.running_avg), 150);
+    assert_int_equal(computed_metrics_d2d_2mins.mpam[0].core_power.running_avg.num_samples, 1);
+}

@@ -18,6 +18,7 @@
 #include <kng_scp_tfa_shared.h>
 #include <semaphore_lib.h>
 #include <telemetry_events_i.h>
+#include <telemetry_package_defs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -30,13 +31,14 @@ typedef struct __attribute__((packed))
 {
     uint16_t ib_max_inst_die_temperature_dC;
     max_die_temps_t ib_max_pwr_pkg_die_temp;
-    sliding_window_data_t oob_window_max_die_temp_dC;  // sliding window for max die temperature
-    sliding_window_data_t oob_window_soc_pwr_mW;       // sliding window SOC power
-    sliding_window_data_t oob_window_max_dimm_temp_dC; // sliding window for max dimm temperature
-    sliding_window_data_t oob_window_dimm_pwr_mW;      // sliding window dimm power
-    sliding_window_data_t oob_window_max_vr_temp_dC;   // sliding window for max voltage rail temperature
-    sliding_window_data_t oob_window_avg_pstate;       // sliding window for average pstate
-    dimm_data_t oob_dimm_info[NUMBER_OF_DIMMS];        // dimm channel information
+    mpam_vm_core_pwr_data_t ib_mpam_core_pwr[NUMBER_OF_MPAMS]; // max/avg core power for all mpams
+    sliding_window_data_t oob_window_max_die_temp_dC;          // sliding window for max die temperature
+    sliding_window_data_t oob_window_soc_pwr_mW;               // sliding window SOC power
+    sliding_window_data_t oob_window_max_dimm_temp_dC;         // sliding window for max dimm temperature
+    sliding_window_data_t oob_window_dimm_pwr_mW;              // sliding window dimm power
+    sliding_window_data_t oob_window_max_vr_temp_dC; // sliding window for max voltage rail temperature
+    sliding_window_data_t oob_window_avg_pstate;     // sliding window for average pstate
+    dimm_data_t oob_dimm_info[NUMBER_OF_DIMMS];      // dimm channel information
 
 } secondary_mcp_to_die0_mcp_t;
 
@@ -199,6 +201,33 @@ void die_2_die_exch_ib_read_pwr_pkg_max_die_temp_dC(uint8_t die_id, p_max_die_te
         d2d_exch_wait_for_sem();
         *max_die_temperature = *in_band_temp_ptr;
         memset(in_band_temp_ptr, 0, sizeof(max_die_temps_t)); // clear the value after reading
+        d2d_exch_release_sem();
+    }
+}
+
+void die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(mpam_vm_core_pwr_data_t (*mpam_core_pwr_array)[NUMBER_OF_MPAMS])
+{
+    if (die_id_is_valid(this_die_id) && mpam_core_pwr_array != NULL)
+    {
+        d2d_exch_wait_for_sem();
+        for (uint16_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+        {
+            s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].ib_mpam_core_pwr[mpam_id] =
+                (*mpam_core_pwr_array)[mpam_id];
+        }
+        d2d_exch_release_sem();
+    }
+}
+
+void die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(uint8_t die_id, uint8_t mpam_id, p_mpam_vm_core_pwr_data_t mpam_core_pwr_data)
+{
+    if (die_id_is_valid(die_id) && mpam_core_pwr_data != NULL)
+    {
+        d2d_exch_wait_for_sem();
+        *mpam_core_pwr_data = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_mpam_core_pwr[mpam_id];
+        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_mpam_core_pwr[mpam_id],
+               0,
+               sizeof(mpam_vm_core_pwr_data_t)); // clear the value after reading
         d2d_exch_release_sem();
     }
 }

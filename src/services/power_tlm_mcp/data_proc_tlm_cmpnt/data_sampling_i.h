@@ -110,9 +110,9 @@ typedef struct {
 typedef struct {
     uint32_t soc_pc3_residency_mS;
     uint32_t soc_pc4_residency_mS;
+    uint32_t latest_rail_current_mA[MAX_NUM_OF_VR_RAILS];
     uint16_t latest_rail_temperature_dC[MAX_NUM_OF_VR_RAILS];
     uint16_t latest_rail_voltage_mV[MAX_NUM_OF_VR_RAILS];
-    uint16_t latest_rail_current_mA[MAX_NUM_OF_VR_RAILS];
     uint16_t latest_hnf_max_temp_dC[NUMBER_OF_HNF_CHANNELS_PER_DIE];
     uint16_t latest_soc_top_temp_dC[NUMBER_OF_SOC_TEMP_SENSORS];
     uint16_t latest_max_tile_temp_dC;

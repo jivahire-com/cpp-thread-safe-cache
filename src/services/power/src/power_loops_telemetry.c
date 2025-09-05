@@ -513,7 +513,7 @@ static void hw_send_telemetry(power_telem_type_t type)
 
         for (int vr_idx = 0; vr_idx < MAX_NUM_OF_VR_RAILS; ++vr_idx)
         {
-            data.vr_current_mA[vr_idx] = s_telem_loop.vr_data[vr_idx].current * CURRENT_MA_PER_LSB;
+            data.vr_current_cA[vr_idx] = s_telem_loop.vr_data[vr_idx].current; // source data is in units of cA
             data.vr_voltage_mV[vr_idx] = s_telem_loop.vr_data[vr_idx].voltage;
         }
 

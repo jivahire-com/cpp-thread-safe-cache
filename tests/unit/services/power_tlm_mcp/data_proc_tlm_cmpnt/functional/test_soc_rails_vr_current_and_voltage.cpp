@@ -50,6 +50,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
+// Conversion macro: centi-amps to milliamps (1 cA = 10 mA)
+#define CONVERT_CENTIAMPS_TO_MILLIAMPS(ca) ((ca) * 10)
+
 extern "C" {
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h>
@@ -95,7 +98,7 @@ TEST_FUNCTION(test_soc_rails_vr_current_and_voltage_collection_functional, test_
     // 3. Keep voltage values offset by +5 from current for clear separation
     struct
     {
-        uint16_t vr_current_mA[MAX_NUM_OF_VR_RAILS];
+        uint16_t vr_current_cA[MAX_NUM_OF_VR_RAILS];
         uint16_t vr_voltage_mV[MAX_NUM_OF_VR_RAILS];
     } current_data_sets[] = {{{15, 25, 35, 45, 55, 65, 75, 85}, {20, 30, 40, 50, 60, 70, 80, 90}},
                              {{16, 26, 36, 46, 56, 66, 76, 86}, {21, 31, 41, 51, 61, 71, 81, 91}},
@@ -106,10 +109,12 @@ TEST_FUNCTION(test_soc_rails_vr_current_and_voltage_collection_functional, test_
     {
         for (int32_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
         {
-            mock_temp_data.vr_current_mA[index] = current_data_sets[iteration].vr_current_mA[index];
+            mock_temp_data.vr_current_cA[index] = current_data_sets[iteration].vr_current_cA[index];
             mock_temp_data.vr_voltage_mV[index] = current_data_sets[iteration].vr_voltage_mV[index];
 
-            update_stats(&expected_vr_current_mA[index], current_data_sets[iteration].vr_current_mA[index]);
+            // Update expected values with converted cA to mA
+            update_stats(&expected_vr_current_mA[index],
+                         CONVERT_CENTIAMPS_TO_MILLIAMPS(current_data_sets[iteration].vr_current_cA[index]));
             update_stats(&expected_vr_voltage_mV[index], current_data_sets[iteration].vr_voltage_mV[index]);
         }
 

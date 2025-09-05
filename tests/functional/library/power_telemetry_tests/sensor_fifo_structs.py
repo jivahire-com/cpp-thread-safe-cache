@@ -239,7 +239,7 @@ class vr_temp(ctypes.Structure):
 class vr_current(ctypes.Structure):
     _fields_ = [
         ("timestamp", ctypes.c_uint64),
-        ("vr_current_ma", ctypes.c_uint16 * 8),  # Array of 8 uint16 values
+        ("vr_current_ca", ctypes.c_uint16 * 8),  # Array of 8 uint16 values
         ("vr_voltage_mv", ctypes.c_uint16 * 8),  # Array of 8 uint16 values
     ]
 

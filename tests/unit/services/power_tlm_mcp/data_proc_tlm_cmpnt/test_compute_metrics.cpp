@@ -199,7 +199,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails, test_setup, test_teardown)
 
     // Arrange
     uint16_t voltage[MAX_NUM_OF_VR_RAILS];
-    uint16_t current[MAX_NUM_OF_VR_RAILS];
+    uint32_t current[MAX_NUM_OF_VR_RAILS];
     uint32_t expected_total_power = 0;
 
     for (uint16_t i = 0; i < NUM_DIE1_VR_RAILS; i++)
@@ -221,7 +221,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails, test_setup, test_teardown)
     {
         assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg),
                          voltage[i]);
-        assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg),
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg),
                          current[i]);
     }
 }
@@ -238,7 +238,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails_primary_die_inband_inactive, test_
 
     // Arrange
     uint16_t voltage[MAX_NUM_OF_VR_RAILS];
-    uint16_t current[MAX_NUM_OF_VR_RAILS];
+    uint32_t current[MAX_NUM_OF_VR_RAILS];
     uint32_t expected_total_power = 0;
 
     for (uint16_t i = 0; i < NUM_DIE0_VR_RAILS; i++)
@@ -260,7 +260,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails_primary_die_inband_inactive, test_
     for (uint16_t i = 0; i < NUM_DIE0_VR_RAILS; i++)
     {
         assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg), 0);
-        assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg), 0);
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg), 0);
     }
 }
 

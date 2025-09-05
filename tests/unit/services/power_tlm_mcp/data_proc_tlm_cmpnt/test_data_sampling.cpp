@@ -28,6 +28,9 @@ extern "C" {
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
+// Conversion macro: centi-amps to milliamps (1 cA = 10 mA)
+#define CONVERT_CENTIAMPS_TO_MILLIAMPS(ca) ((ca) * 10)
+
 extern "C" {
 extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
@@ -804,7 +807,7 @@ TEST_FUNCTION(test_data_smpl_parse_vr_current_entry, test_setup, test_teardown)
     // Test case 1: Standard VR current and voltage values
     vr_current_t vr_data = {
         .timestamp = 1000,
-        .vr_current_mA = {10, 20, 30, 40, 50, 60, 70, 80},
+        .vr_current_cA = {10, 20, 30, 40, 50, 60, 70, 80},
         .vr_voltage_mV = {1000, 900, 800, 700, 600, 700, 800, 900},
     };
 
@@ -813,14 +816,15 @@ TEST_FUNCTION(test_data_smpl_parse_vr_current_entry, test_setup, test_teardown)
     // Verify all VR current and voltage values were updated correctly
     for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_rt.latest_rail_current_mA[index], vr_data.vr_current_mA[index]);
+        assert_int_equal(soc_rt.latest_rail_current_mA[index],
+                         CONVERT_CENTIAMPS_TO_MILLIAMPS(vr_data.vr_current_cA[index]));
         assert_int_equal(soc_rt.latest_rail_voltage_mV[index], vr_data.vr_voltage_mV[index]);
     }
 
     // Test case 2: Zero/minimum values
     vr_current_t vr_data_zeros = {
         .timestamp = 2000,
-        .vr_current_mA = {0, 0, 0, 0, 0, 0, 0, 0},
+        .vr_current_cA = {0, 0, 0, 0, 0, 0, 0, 0},
         .vr_voltage_mV = {0, 0, 0, 0, 0, 0, 0, 0},
     };
 
@@ -836,7 +840,7 @@ TEST_FUNCTION(test_data_smpl_parse_vr_current_entry, test_setup, test_teardown)
     // Test case 3: High current and voltage values
     vr_current_t vr_data_high = {
         .timestamp = 3000,
-        .vr_current_mA = {5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500},
+        .vr_current_cA = {5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500},
         .vr_voltage_mV = {1200, 1100, 1050, 1000, 950, 900, 850, 800},
     };
 
@@ -845,14 +849,15 @@ TEST_FUNCTION(test_data_smpl_parse_vr_current_entry, test_setup, test_teardown)
     // Verify high values were updated correctly
     for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_rt.latest_rail_current_mA[index], vr_data_high.vr_current_mA[index]);
+        assert_int_equal(soc_rt.latest_rail_current_mA[index],
+                         CONVERT_CENTIAMPS_TO_MILLIAMPS(vr_data_high.vr_current_cA[index]));
         assert_int_equal(soc_rt.latest_rail_voltage_mV[index], vr_data_high.vr_voltage_mV[index]);
     }
 
     // Test case 4: Mixed patterns
     vr_current_t vr_data_mixed = {
         .timestamp = 4000,
-        .vr_current_mA = {100, 200, 150, 250, 175, 225, 125, 275},
+        .vr_current_cA = {100, 200, 150, 250, 175, 225, 125, 275},
         .vr_voltage_mV = {1100, 950, 1050, 900, 1000, 850, 950, 800},
     };
 
@@ -864,14 +869,14 @@ TEST_FUNCTION(test_data_smpl_parse_vr_current_entry, test_setup, test_teardown)
 
     for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_rt.latest_rail_current_mA[index], expected_current[index]);
+        assert_int_equal(soc_rt.latest_rail_current_mA[index], CONVERT_CENTIAMPS_TO_MILLIAMPS(expected_current[index]));
         assert_int_equal(soc_rt.latest_rail_voltage_mV[index], expected_voltage[index]);
     }
 
     // Test case 5: Verify overwrite behavior (new values replace old ones)
     vr_current_t vr_data_overwrite = {
         .timestamp = 5000,
-        .vr_current_mA = {999, 888, 777, 666, 555, 444, 333, 222},
+        .vr_current_cA = {999, 888, 777, 666, 555, 444, 333, 222},
         .vr_voltage_mV = {1111, 1000, 889, 778, 667, 556, 445, 334},
     };
 
@@ -880,7 +885,8 @@ TEST_FUNCTION(test_data_smpl_parse_vr_current_entry, test_setup, test_teardown)
     // Verify overwrite occurred correctly
     for (uint8_t index = 0; index < MAX_NUM_OF_VR_RAILS; index++)
     {
-        assert_int_equal(soc_rt.latest_rail_current_mA[index], vr_data_overwrite.vr_current_mA[index]);
+        assert_int_equal(soc_rt.latest_rail_current_mA[index],
+                         CONVERT_CENTIAMPS_TO_MILLIAMPS(vr_data_overwrite.vr_current_cA[index]));
         assert_int_equal(soc_rt.latest_rail_voltage_mV[index], vr_data_overwrite.vr_voltage_mV[index]);
     }
 }
@@ -893,13 +899,13 @@ TEST_FUNCTION(test_data_smpl_process_vr_current_sensor_fifo, test_setup, test_te
 
     vr_current_t vr_current_entry_1 = {
         .timestamp = 1000,
-        .vr_current_mA = {100, 0, 0, 0, 0, 0, 0, 0}, // Simple data for FIFO testing
+        .vr_current_cA = {100, 0, 0, 0, 0, 0, 0, 0}, // Simple data for FIFO testing
         .vr_voltage_mV = {1000, 0, 0, 0, 0, 0, 0, 0},
     };
 
     vr_current_t vr_current_entry_2 = {
         .timestamp = 2000,
-        .vr_current_mA = {200, 0, 0, 0, 0, 0, 0, 0}, // Simple data for FIFO testing
+        .vr_current_cA = {200, 0, 0, 0, 0, 0, 0, 0}, // Simple data for FIFO testing
         .vr_voltage_mV = {1100, 0, 0, 0, 0, 0, 0, 0},
     };
 
@@ -914,7 +920,7 @@ TEST_FUNCTION(test_data_smpl_process_vr_current_sensor_fifo, test_setup, test_te
     data_smpl_process_vr_current_sensor_fifo();
 
     // Basic verification that processing occurred (last entry processed)
-    assert_int_equal(soc_rt.latest_rail_current_mA[0], 200);
+    assert_int_equal(soc_rt.latest_rail_current_mA[0], CONVERT_CENTIAMPS_TO_MILLIAMPS(200));
     assert_int_equal(soc_rt.latest_rail_voltage_mV[0], 1100);
 
     // Test case 2: No entries to process (curr_data_is_valid = false)
@@ -923,7 +929,7 @@ TEST_FUNCTION(test_data_smpl_process_vr_current_sensor_fifo, test_setup, test_te
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &invalid_entry);
 
     // Store previous value to verify no change
-    uint16_t prev_current = soc_rt.latest_rail_current_mA[0];
+    uint32_t prev_current = soc_rt.latest_rail_current_mA[0];
 
     data_smpl_process_vr_current_sensor_fifo();
 

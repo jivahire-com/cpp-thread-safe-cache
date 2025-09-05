@@ -30,6 +30,9 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+// Conversion macro: centi-amps to milliamps (1 cA = 10 mA)
+#define CONVERT_CENTIAMPS_TO_MILLIAMPS(ca) ((uint32_t)(ca) * 10)
+
 /*------------- Typedefs -----------------*/
 
 typedef struct
@@ -741,7 +744,8 @@ void data_smpl_parse_vr_current_entry(vr_current_t* vr_current_entry)
     // Extract VR Current and voltage entries for all VR Rails
     for (uint8_t vr_index = 0; vr_index < MAX_NUM_OF_VR_RAILS; vr_index++)
     {
-        soc_rt.latest_rail_current_mA[vr_index] = vr_current_entry->vr_current_mA[vr_index];
+        soc_rt.latest_rail_current_mA[vr_index] =
+            CONVERT_CENTIAMPS_TO_MILLIAMPS(vr_current_entry->vr_current_cA[vr_index]);
         soc_rt.latest_rail_voltage_mV[vr_index] = vr_current_entry->vr_voltage_mV[vr_index];
     }
 }

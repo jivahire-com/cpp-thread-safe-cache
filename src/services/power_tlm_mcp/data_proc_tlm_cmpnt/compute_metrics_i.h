@@ -92,8 +92,13 @@ typedef struct
 
 typedef struct
 {
+    uint16_t stub_metric;
+} computed_per_tile_metrics_t;
+
+typedef struct
+{
+    mma_u32_t current_mA;
     mma_u16_t voltage_mV;
-    mma_u16_t current_mA;
     mma_u16_t temperature_dC;
 } computed_per_rail_metrics_t;
 
@@ -253,7 +258,7 @@ void comp_metrics_for_single_core_pstate_power(uint8_t core_id, uint8_t pstate_i
  * @param[in] latest_current_mA Array of latest vr rail currents
  */
 void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS],
-                                uint16_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS]);
+                                uint32_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS]);
 
 /**
  * @brief  function updates the minimum, maximum, and average temperature values for

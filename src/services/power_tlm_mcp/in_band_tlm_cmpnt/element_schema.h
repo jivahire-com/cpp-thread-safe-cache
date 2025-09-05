@@ -152,14 +152,12 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS,
                      pwr_soc_element_vr_rail,
                      FPFW_ET_LEVEL_DEBUG,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mV),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, max_mA),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, min_mA),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, average_mA),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mv),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mV),
-
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mA),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_mA),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mA),
-
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_dC))
@@ -277,8 +275,8 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,
                      INST_TELEMETRY_ELEMENT_SOC_VOLTAGE_RAILS,
                      inst_soc_element_rail,
                      FPFW_ET_LEVEL_DEBUG,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, current_mA),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, voltage_mV),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, current_mA),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, temperature_dC))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,

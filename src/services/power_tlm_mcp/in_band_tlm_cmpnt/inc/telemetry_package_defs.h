@@ -130,6 +130,12 @@ typedef struct {
 } current_t;
 
 typedef struct {
+    uint32_t max_mA;
+    uint32_t min_mA;
+    uint32_t average_mA;
+} large_current_t;
+
+typedef struct {
     uint16_t max_mW;
     uint16_t min_mW;
     uint16_t average_mW;
@@ -349,8 +355,8 @@ typedef struct {
 //----------------POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS----------------
 
 typedef struct {
+    large_current_t current;
     voltage_t voltage;
-    current_t current;
     temperature_t temperature;
 } pwr_soc_element_vr_rail_t, *p_pwr_soc_element_vr_rail_t;
 
@@ -563,8 +569,8 @@ typedef struct {
 //----------------INST_TELEMETRY_ELEMENT_SOC_VOLTAGE_RAILS----------------
 
 typedef struct {
+    uint32_t current_mA;
     uint16_t voltage_mV;
-    uint16_t current_mA;
     uint16_t temperature_dC;
 } inst_soc_element_rail_t, *p_inst_soc_element_rail_t;
 

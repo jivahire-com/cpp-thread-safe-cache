@@ -146,7 +146,7 @@ typedef struct __attribute__((packed)) {
  */
 typedef struct __attribute__((packed)) {
     uint64_t timestamp;
-    uint16_t vr_current_mA[MAX_NUM_OF_VR_RAILS];
+    uint16_t vr_current_cA[MAX_NUM_OF_VR_RAILS];
     uint16_t vr_voltage_mV[MAX_NUM_OF_VR_RAILS];
 } vr_current_t;
 

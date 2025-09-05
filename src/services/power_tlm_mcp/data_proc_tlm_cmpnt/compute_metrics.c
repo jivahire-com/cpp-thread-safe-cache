@@ -260,7 +260,7 @@ void comp_metrics_for_single_hnf_channel(uint8_t hnf_channel, uint16_t latest_te
 }
 
 void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS],
-                                uint16_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS])
+                                uint32_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS])
 {
     uint16_t num_rails = NUM_DIE0_VR_RAILS;
     if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
@@ -279,7 +279,7 @@ void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR
                                    (*latest_rail_voltage_mV)[vr_index]);
 
             // Update the rail current
-            data_util_calc_mma_u16(&computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA,
+            data_util_calc_mma_u32(&computed_metrics_2_mins.soc.vr_rail[vr_index].current_mA,
                                    (*latest_rail_current_mA)[vr_index]);
         }
 

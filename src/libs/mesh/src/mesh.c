@@ -322,7 +322,7 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
                   idsw_get_platform_sdv(),
                   cmn800_sequence_param->cmn_config_enum);
     }
-    if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
+    if ((idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON) || IS_PLATFORM_EMU())
     {
         // Get the default values in Mesh Lib
         cmn800_sam_cfg_t* temp_cmn800_sam_cfg = cmn800_get_mesh_sam_cfg_knob(); // This is the default struct from Mesh Lib

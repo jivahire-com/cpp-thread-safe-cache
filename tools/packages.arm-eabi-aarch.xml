@@ -28,8 +28,8 @@
 
     <pip_packages>
         <package name="pythia-tdk-rrm" version="0.1.99" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
-        <package name="pythia-tdk-echofalls" version="1.0.40-dev6425" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
-        <package name="pythia-tdk-common" version="0.4.23.dev6355" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
+        <package name="pythia-tdk-echofalls" version="1.0.42-dev6451" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
+        <package name="pythia-tdk-common" version="0.5.3-dev6448" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
         <package name="diagtool" version="1.1.255" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
     </pip_packages>
 

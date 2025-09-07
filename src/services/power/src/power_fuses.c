@@ -14,6 +14,7 @@
 
 #include <FpFwAssert.h>  // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>   // for BUG_CHECK
+#include <core_info.h>   // for core_info_get_enable_core
 #include <corebits.h>    // for corebits_set_bit, corebits_clear_bit
 #include <dvfs_struct.h> // for dvfs_core_memasst_entry_t, dvfs_core_...
 #include <fuse.h>        //fuse_read
@@ -845,8 +846,9 @@ void power_fuses_read(power_fuse_data_t* p_fuses)
     // read fuses on platforms that support reads
     if (power_fuses_is_power_hw_supported())
     {
-        int32_t status = power_fuses_clear_core_valid_bits(&p_fuses->valid_cores);
-        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
+        int32_t status = FPFW_STATUS_SUCCESS;
+        // solve the bug2762916 [C4143] Core Disable Configuration Register doesn't reflect the core_defect_mask bit in fuses
+        memcpy(&p_fuses->valid_cores, core_info_get_enable_cores_result(), sizeof(corebits_t));
         status = power_fuses_read_vf(&p_fuses->vf, p_run_config->knobs.ldo_offset);
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_read_memasst(&p_fuses->memasst);

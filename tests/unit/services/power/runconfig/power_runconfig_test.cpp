@@ -182,7 +182,6 @@ static int setup(void** state)
     UNUSED(state);
     basic_fuse_setup(&s_expected_fuses);
     basic_knobs_setup(&s_expected_knobs);
-
     return 0;
 }
 
@@ -202,7 +201,7 @@ void set_default_expectations(uint8_t min_plimit)
 
     will_return(__wrap_power_knobs_read, &s_expected_knobs);
     will_return(__wrap_power_fuses_read, &s_expected_fuses);
-
+    // Return the same platform cores mask the SUT uses, so runconfig.fuses matches expected
     for (unsigned core_idx = 0; core_idx < valid_cores; ++core_idx)
     {
         will_return(__wrap_power_fuses_get_curve_assignment, FPFW_STATUS_SUCCESS);
@@ -224,7 +223,6 @@ void set_default_expectations(uint8_t min_plimit)
 POWER_TEST(runconfig_sconfig, setup, NULL)
 {
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
-
     power_runconfig_init(&s_test_config);
 
     assert_int_equal((uintptr_t)&s_test_config, (uintptr_t)power_runconfig_get()->p_sconfig);

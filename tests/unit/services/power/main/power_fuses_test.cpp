@@ -178,8 +178,7 @@ POWER_TEST(read_fuse_power_hw_supported_core_enabled, set_run_config_core_enable
 POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_config_to_empty)
 {
     power_fuse_data_t test_fuses = {};
-    will_return_always(__wrap_idsw_get_platform_sdv,
-                       PLATFORM_RVP_EVT_SILICON); // Required since there is a workaround that checks if it SVP
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
@@ -190,111 +189,117 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_clear_core_valid_bits will fail
-        will_return(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER);
-        power_fuses_read(&test_fuses);
-    }
-
-    if (!bugcheck_mock_return())
-    {
-        // power_fuses_read_vf will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 6);
+        // 1) read_vf -> fail on second call (ldo)
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 5);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_read_memasst will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 398);
+        // 2) read_memasst -> fail in first entry (9 reads)
+        // reach memasst: read_vf success = 392
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 392);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 9);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_get_ldodac_to_voltage will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 444);
+        // 3) get_ldodac_to_voltage -> fail on first read
+        // reach ldo: read_vf 392 + memasst 45 = 437
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 437);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_get_dts_coeff_tile will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 446);
+        // 4) get_dts_coeff_tile -> fail on first Y read
+        // reach tile Y: 392 + 45 + 2 (ldo) + 1 (pmm_rev) = 440
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 440);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_get_dts_coeff_soctop will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 515);
+        // 5) get_dts_coeff_soctop -> fail on first Y read
+        // reach soctop Y: 440 + 4 (finish tile Y/K for 2 coeffs) + 1 (soctop pmm_rev) = 445
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 445);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_get_ldo_headroom will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 545);
+        // 6) get_ldo_headroom -> fail on first read
+        // soctop full success adds 3 (soctop Y for 2 coeffs; pmm_rev already counted) → 445 + 3 = 448,
+        // BUT we fail *before* the ldo_headroom read, so successes before failure = 447.
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 449);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_get_vcpu_guardband will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 546);
+        // 7) get_vcpu_guardband -> fail on first read
+        // ldo_headroom success +1 → 448
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 450);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_vcpu_leakage will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 547);
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 4);
-        power_fuses_read(&test_fuses);
-    }
-
-    if (!bugcheck_mock_return())
-    {
-        // power_fuses_ldo_dyn will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 575);
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 4);
-        power_fuses_read(&test_fuses);
-    }
-
-    if (!bugcheck_mock_return())
-    {
-        // power_fuses_core_cdyn will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 583);
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 2);
-        power_fuses_read(&test_fuses);
-    }
-
-    if (!bugcheck_mock_return())
-    {
-        // power_fuses_process_id will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 589);
+        // 8) vcpu_leakage -> fail in first entry (simulate 4 failing reads)
+        // guardband success +1 → 449
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 451);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_get_tdp_config will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 591);
+        // 9) ldo_dyn -> fail in first entry (4 reads)
+        // vcpu_leakage full success adds 28 → 449 + 28 = 477
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 479);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
 
     if (!bugcheck_mock_return())
     {
-        // power_fuses_get_curve_temp will fail
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 590);
+        // 10) core_cdyn -> fail in first entry (2 reads)
+        // ldo_dyn full success adds 8 → 477 + 8 = 485
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 487);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
+        power_fuses_read(&test_fuses);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        // 11) process_id -> fail on first read
+        // core_cdyn full success adds 6 → 485 + 6 = 491
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 493);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
+        power_fuses_read(&test_fuses);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        // 12) get_tdp_config -> fail on first read
+        // process_id success +1 → 492
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 494);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
+        power_fuses_read(&test_fuses);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        // 13) get_curve_temp -> fail on first read
+        // tdp_config two reads success +2 → 494
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 496);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }

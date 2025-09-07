@@ -235,6 +235,7 @@ void print_mesh_d2d_knob_values(void)
     MESH_INFO("d2d_sleep_cfg = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg);
     MESH_INFO("d2d_sleep_cfg_entry = 0x%x\n", temp_d2d_cfg->d2d_sleep_cfg_entry);
     MESH_INFO("d2d_rxcal_find_goodlanes_skip = 0x%x\n", temp_d2d_cfg->d2d_rxcal_find_goodlanes_skip);
+    MESH_INFO("d2d_close_fb_wa = 0x%x\n", temp_d2d_cfg->d2d_close_fb_wa);
     */
 }
 
@@ -448,6 +449,7 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
         temp_d2d_cfg->d2d_sleep_cfg = config_get_d2d_sleep_cfg();
         temp_d2d_cfg->d2d_sleep_cfg_entry = config_get_d2d_sleep_cfg_entry();
         temp_d2d_cfg->d2d_rxcal_find_goodlanes_skip = config_get_d2d_rxcal_find_goodlanes_skip();
+        temp_d2d_cfg->d2d_close_fb_wa = config_get_d2d_close_fb_wa();
 
         MESH_DBG("Mesh and D2D Knob values after cfg_mgr read\n");
         print_mesh_d2d_knob_values();

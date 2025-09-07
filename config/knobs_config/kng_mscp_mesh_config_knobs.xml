@@ -156,6 +156,7 @@
     <Knob name="d2d_sleep_cfg_entry" type="uint32_t" default="100000" help="Sleep configuration entry: Idle entry time, Number of clock cycle the channel must be Idle"/>
     <Knob name="d2d_rxcal_find_goodlanes_skip" type="bool" default="1" help="Skip the D2D PHY stage to find the good/bad lanes in the Dual Link"/>
     <Knob name="d2d_ecc_ce_counter" type="uint16_t" default="0x0" max="0x7FFF" help="Set the total CE Counts before triggering a RAS CE Interrupt"/>
+    <Knob name="d2d_close_fb_wa" type="bool" default="1" help="Enable(1)/disable(0) workaround for D2D close feedback issue"/>
   </Knobs>
 
 </ConfigSchema>

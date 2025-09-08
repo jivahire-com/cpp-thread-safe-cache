@@ -12,8 +12,11 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs')
 
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
+from RscmHelperLibrary import RscmHelperLibrary
+
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
+import re
 
 class varserv_dd_test(EchoFallsBaseTest):
 
@@ -60,10 +63,25 @@ class varserv_dd_test(EchoFallsBaseTest):
             4. Teardown Test. 
         """
         self.log.info("Running Variable Services DD command Test. . .")
+
+        # Try importing PyYAML, install if missing
+        try:
+            import yaml
+        except ImportError:
+            print("PyYAML not found. Installing...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "pyyaml"])
+            import yaml  # Try again after install
+
         self.dut.setup()
         if self.dut.get_dut_type() == DeviceType.BIGFPGA:
             self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
             KngPythiaTestSetup.fpga_oob_reset(self.log)
+        elif self.dut.get_dut_type() == DeviceType.RVP:
+            self.log.warning("Device type is RVP. Performing SoC Reset ...")
+            cred_path = os.environ.get('SECURE_FILE_PATH')
+            creds = self.load_credentials_from_yaml(cred_path)
+            rscm_helper = RscmHelperLibrary(rm_host="172.29.89.33", bmc_host="172.17.0.97", rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'])  # Fill in real host if available
+            rscm_helper.rscm_soc_reset()
             
         scp_channel=self.dut.mb.node_0.soc.secondary_die.scp.channel_manager.get_current_channel()
         # Open SCP channel
@@ -227,3 +245,10 @@ class varserv_dd_test(EchoFallsBaseTest):
             return data
         self.log.info("Vendor Data NOT found . . .")
         return None
+    
+    @staticmethod
+    def load_credentials_from_yaml(path):
+        import yaml
+        with open(path, 'r') as f:
+            data = yaml.safe_load(f)
+        return data

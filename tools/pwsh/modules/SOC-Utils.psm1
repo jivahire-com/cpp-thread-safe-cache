@@ -106,7 +106,7 @@ flashsoc -system A15-R3 -loc .build/soc -file kingsgate.ifwi.soc.local.dat
 #>
 Function Write-SOCFlash(
     [Parameter(Mandatory=$true)] [string] $system,
-    [Parameter(Mandatory=$false)] [string] $loc = "${env:REPO_APP_ROOT}\.build\Debug\arm-eabi-aarch\bin\flash",
+    [Parameter(Mandatory=$false)] [string] $loc = "${env:REPO_APP_ROOT}/.build/Debug/arm-eabi-aarch/bin/flash",
     [Parameter(Mandatory=$false)] [string] $file = "kingsgate.ifwi.soc.debug.custom.dat",
     [Parameter(Mandatory=$false)] [string] $securefile = "tools/robot-secure-txt.yml"
 )
@@ -213,7 +213,16 @@ Function Write-SOCFlash(
             $RmSSHSession = New-SSHSession -ComputerName $rmip -Credential $RmCredential -AcceptKey -Force -KeepAliveInterval 180
 
             # Copy the file to the RM
-            Set-SFTPItem -SessionId $RmSFTPSession.SessionId -Path $srcfile -Destination $rmdest -Force
+            #Set-SFTPItem -SessionId $RmSFTPSession.SessionId -Path $srcfile -Destination $rmdest -Force
+            try {
+                Set-SFTPItem -SessionId $RmSFTPSession.SessionId -Path $srcfile -Destination $rmdest -Force -Verbose
+            } catch {
+                Write-Host -ForegroundColor Red "File transfer to RM failed."
+                Remove-SFTPSession -SFTPSession $RmSFTPSession | Out-Null
+                Remove-SSHSession -SSHSession $RmSSHSession | Out-Null
+                return
+            }
+            Write-Host -ForegroundColor Green "File transfer to RM successful."
 
             # Flash Ifwi tar file
 			Write-Title -Title "Flash Ifwi tar file" -Color Cyan

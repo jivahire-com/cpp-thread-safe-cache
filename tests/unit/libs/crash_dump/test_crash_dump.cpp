@@ -135,6 +135,20 @@ void set_expectations_initialize_crash_dump_header(bool wait, SEMAPHORE_ID sem_i
     expect_function_call(__wrap_release_semaphore);
 }
 
+void set_expectations_initialize_crash_dump_header_warmstart(bool cd_available, SEMAPHORE_ID sem_id, uint32_t sem_key)
+{
+    expect_value(__wrap_wait_for_semaphore, id, sem_id);
+    expect_value(__wrap_wait_for_semaphore, key, sem_key);
+    expect_function_call(__wrap_wait_for_semaphore);
+
+    expect_value(__wrap_release_semaphore, id, sem_id);
+    expect_function_call(__wrap_release_semaphore);
+
+    expect_function_call(__wrap_gpio_set_output);
+    expect_value(__wrap_gpio_set_output, gpio_pin_id, 0x0603); // MSCP_EXP_GPIO_6 | CD_AVAILABLE (3)
+    expect_value(__wrap_gpio_set_output, level, cd_available ? 0 : 1);
+}
+
 void set_expectations_init_mem_pool(uint64_t addr, uint32_t size)
 {
     expect_function_call(__wrap_FPFwCDInitMemoryPool);
@@ -363,8 +377,69 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp, nullptr, nullptr)
                                     .in_memory = in_memory};
 
     will_return_always(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_system_info_is_warm_start, false);
 
     set_expectations_initialize_crash_dump_header(true, SEM_ID_DIE0_IOSS_0, 1);
+
+    // init_dump_desc()
+    set_expectations_init_dump_desc(true);
+
+    // init_mem_pool()
+    set_expectations_init_mem_pool(CRASH_DUMP_FULL_MCP_ADDR, CRASH_DUMP_FULL_MCP_SIZE);
+
+    // init_dump_file()
+    set_expectations_init_dump_file();
+
+    // init_dump_manager()
+    set_expectations_init_dump_manager(CRASH_DUMP_FULL_MCP_SIZE);
+
+    // crash_dump_register_core_registers()
+    set_expectations_crash_dump_register_core_registers();
+
+    // crash_dump_register_default_registers()
+    set_expectations_crash_dump_register_default_registers(core_register_mmio, 2);
+
+    // crash_dump_register_core_stack()
+    set_expectations_crash_dump_register_core_stack();
+
+    // crash_dump_register_standard_info()
+    set_expectations_crash_dump_register_standard_info();
+
+    // crash_dump_register_threadx()
+    set_expectations_crash_dump_register_threadx();
+
+    // Call API under test
+    KNG_STATUS result = crash_dump_register_dump(&type_context);
+    assert_true(KNG_SUCCESS == result);
+}
+
+/**
+ * @brief MCP full crash dump type context registration test on warm start
+ *
+ */
+TEST_FUNCTION(test_crash_dump_register_full_dump_mcp_warmstart, nullptr, nullptr)
+{
+    const core_register_mmio_t core_register_mmio[] = {{(volatile void*)(0x12123434), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL},
+                                                       {(volatile void*)(0xababcdcd), 1, FPFW_CD_DUMP_PRIORITY_CRITICAL}};
+
+    crash_dump_header_t header = {.status = CRASH_DUMP_IN_USE};
+
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
+                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
+                                              .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                              .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 1},
+                                              .header = &header};
+
+    crash_dump_context_t context = {.die_index = 0,
+                                    .core_index = CRASH_DUMP_CORE_MCP,
+                                    .mmio_register_count = 2,
+                                    .mmio_registers = core_register_mmio,
+                                    .in_memory = in_memory};
+
+    will_return_always(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_system_info_is_warm_start, true);
+
+    set_expectations_initialize_crash_dump_header_warmstart(false, SEM_ID_DIE0_IOSS_0, 1);
 
     // init_dump_desc()
     set_expectations_init_dump_desc(true);
@@ -422,6 +497,7 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
                                     .in_memory = in_memory};
 
     will_return_always(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_system_info_is_warm_start, false);
 
     set_expectations_initialize_crash_dump_header(false, SEM_ID_DIE0_IOSS_0, 2);
 
@@ -481,6 +557,7 @@ TEST_FUNCTION(test_crash_dump_register_mini_dump, nullptr, nullptr)
                                     .in_memory = in_memory};
 
     will_return_always(__wrap_crash_dump_context, &context);
+    will_return_always(__wrap_system_info_is_warm_start, false);
 
     set_expectations_initialize_crash_dump_header(false, SEM_ID_MSCP_EXP_0, 2);
 

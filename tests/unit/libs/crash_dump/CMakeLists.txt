@@ -114,4 +114,5 @@ mock_target(${TARGET}
     crash_dump_get_is_dump_complete
     crash_dump_get_dump_size
     fpfw_pldm_service_raise_platform_event
+    system_info_is_warm_start
 )

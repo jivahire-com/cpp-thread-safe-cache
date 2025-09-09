@@ -19,7 +19,9 @@ extern "C" {
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #if defined(MCP_RUNTIME_INIT)
+    #include <DfwkClient.h>
     #include <fpfw_pldm_service.h>
+    #include <gpio.h>
 #endif
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -40,6 +42,7 @@ extern fpfw_init_component_t _fpfw_component_cd_mhu_loc;
 extern fpfw_init_component_t _fpfw_component_cd_hsp;
 extern fpfw_init_component_t _fpfw_component_cd_drv;
 #if defined(MCP_RUNTIME_INIT)
+extern fpfw_init_component_t _fpfw_component_cd_gpio;
 extern fpfw_init_component_t _fpfw_component_cd_pldm;
 #endif
 #if defined(SCP_RUNTIME_INIT)
@@ -142,6 +145,54 @@ bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
 }
 
 #if defined(MCP_RUNTIME_INIT)
+void __wrap_gpio_interface_init(pgpio_interface_t iface)
+{
+    assert_non_null(iface);
+
+    function_called();
+}
+
+static DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE s_gpio_isr_callback = NULL;
+
+uint32_t __wrap_gpio_register_deferred_isr(pgpio_interface_t iface,
+                                           pgpio_request_t request,
+                                           uint32_t gpio_ctrl_pin_id,
+                                           DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE callback,
+                                           void* context)
+{
+    assert_non_null(iface);
+    assert_non_null(request);
+    check_expected(gpio_ctrl_pin_id);
+    assert_non_null(callback);
+    assert_null(context);
+
+    s_gpio_isr_callback = callback;
+
+    function_called();
+
+    return 0;
+}
+
+void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    check_expected(errorCode);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
+
+    function_called();
+}
+
+int32_t __wrap_DfwkClientInterfaceOpen(PDFWK_INTERFACE_HEADER Interface)
+{
+    assert_non_null(Interface);
+
+    function_called();
+
+    return 0;
+}
+
 void __wrap_crash_dump_transfer_full_dump_to_bmc()
 {
     function_called();
@@ -310,6 +361,20 @@ TEST_FUNCTION(test_cd_drv, nullptr, nullptr)
     expect_function_call(__wrap_sos_register_ssi);
 
     _fpfw_component_cd_drv.init_fn();
+}
+
+TEST_FUNCTION(test_cd_gpio, nullptr, nullptr)
+{
+    expect_function_call(__wrap_gpio_interface_init);
+    expect_function_call(__wrap_DfwkClientInterfaceOpen);
+    expect_value(__wrap_gpio_register_deferred_isr, gpio_ctrl_pin_id, GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_6, 4)); // CD_REQUEST
+    expect_function_call(__wrap_gpio_register_deferred_isr);
+
+    _fpfw_component_cd_gpio.init_fn();
+
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_CD_EXTERNAL_REQUEST);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    s_gpio_isr_callback(NULL, NULL);
 }
 
 TEST_FUNCTION(test_cd_bmc, nullptr, nullptr)

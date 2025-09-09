@@ -22,6 +22,7 @@
 #include <fpfw_pldm_service.h>  // for pldm_platform_event_ready_notification
 #include <fuses_csr_regs.h>
 #include <fuses_top_regs.h>
+#include <gpio.h>      // for gpio_device_init, gpio_interface_init
 #include <idhw.h>      // for idhw_get_cpu_type, idhw_get_die_id
 #include <idsw.h>      // for idsw_get_cpu_type, idsw_get_die_id
 #include <idsw_kng.h>  // for DIE_0, DIE_1
@@ -38,6 +39,9 @@
 #define MCP_SCF_RAM_ADDRESS  (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_SCF_RAM_ADDRESS)
 #define MCP_EXP_RAM0_ADDRESS (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM0_ADDRESS)
 #define MCP_EXP_RAM1_ADDRESS (MCP_TOP_MCP_EXP_ADDRESS + MCP_EXP_TOP_RAM1_ADDRESS)
+
+#define CD_REQUEST      4
+#define GPIO_CD_REQUEST GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_6, CD_REQUEST)
 
 /*------------- Typedefs -----------------*/
 
@@ -194,6 +198,31 @@ FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk", "sos_int")
     FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &crash_dump_interface};
+}
+
+static void gpio_cd_req_callback(PDFWK_ASYNC_REQUEST_HEADER request, void* completion_context)
+{
+    FPFW_UNUSED(request);
+    FPFW_UNUSED(completion_context);
+
+    BUG_CHECK(KNG_CD_EXTERNAL_REQUEST, 0, 0);
+}
+
+FPFW_INIT_COMPONENT(cd_gpio, FPFW_INIT_DEPENDENCIES("cd_drv", "gpio_dev"))
+{
+    // Create and initialize GPIO interface for CLI.
+    static gpio_interface_t gpio_interface;
+    static gpio_request_t isr_request = {0};
+
+    gpio_interface_init(&gpio_interface);
+    DfwkClientInterfaceOpen(&gpio_interface.Header);
+
+    // Register ISR for GPIO CD request from BMC
+    uint32_t status =
+        gpio_register_deferred_isr(&gpio_interface, &isr_request, GPIO_CD_REQUEST, gpio_cd_req_callback, NULL);
+    FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
 static void pldm_platform_event_ready_callback(uint16_t event_id, void* context)

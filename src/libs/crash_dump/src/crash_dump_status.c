@@ -10,6 +10,8 @@
 /*------------- Includes -----------------*/
 #include "crash_dump_status.h"
 
+#include "crash_dump_gpio.h"
+
 #include <crash_dump.h>        // for GetCrashDumpConfig
 #include <crash_dump_events.h> // for CRASH_DUMP_ET
 #include <crash_dump_memory.h>
@@ -137,43 +139,63 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
     {
         // Keep crash dump status if warm start.
         CRASH_DUMP_ET_WARNING(CRASH_DUMP_ET_TYPE_STATUS_WARM_START);
-        return;
-    }
 
-    crash_dump_context_t* ctx = crash_dump_context();
-
-    if ((type_context->type == CRASH_DUMP_TYPE_MINI || ctx->die_index == DIE_0) && ctx->core_index == CRASH_DUMP_CORE_SCP)
-    {
-        // Initialize core status to CRASH_DUMP_STATE_NOT_AVAILABLE
-        if (type_context->header != NULL)
+        // Check crash dump status and assert gpio if available.
+        if (type_context->type == CRASH_DUMP_TYPE_FULL && type_context->header != NULL)
         {
+            bool cd_available = false;
+
             wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
             for (uint16_t i = 0; i < CRASH_DUMP_CORE_NUM * 2; i++)
             {
-                type_context->header->cores[i] = CRASH_DUMP_STATE_NOT_AVAILABLE;
+                if (type_context->header->cores[i] == CRASH_DUMP_STATE_COMPLETED)
+                {
+                    cd_available = true;
+                    break;
+                }
             }
             release_semaphore(type_context->semaphore.id);
-        }
 
-        // Set this region is ready for crash dump.
-        crash_dump_update_state(type_context, CRASH_DUMP_IN_USE);
+            cd_gpio_assert_cd_available(cd_available);
+        }
     }
     else
     {
-        // MCP or DIE_1 SCP for full dump wait until DIE_0 SCP initialize header.
-        bool is_ready = false;
+        crash_dump_context_t* ctx = crash_dump_context();
 
-        // Polling until crash dump header is ready.
-        while (!is_ready)
+        if ((type_context->type == CRASH_DUMP_TYPE_MINI || ctx->die_index == DIE_0) && ctx->core_index == CRASH_DUMP_CORE_SCP)
         {
-            wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
-            is_ready = type_context->header->status == CRASH_DUMP_IN_USE;
-            release_semaphore(type_context->semaphore.id);
-        }
-    }
+            // Initialize core status to CRASH_DUMP_STATE_NOT_AVAILABLE
+            if (type_context->header != NULL)
+            {
+                wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+                for (uint16_t i = 0; i < CRASH_DUMP_CORE_NUM * 2; i++)
+                {
+                    type_context->header->cores[i] = CRASH_DUMP_STATE_NOT_AVAILABLE;
+                }
+                release_semaphore(type_context->semaphore.id);
+            }
 
-    // Set this core state to ready.
-    crash_dump_update_core_state(type_context, CRASH_DUMP_STATE_READY);
+            // Set this region is ready for crash dump.
+            crash_dump_update_state(type_context, CRASH_DUMP_IN_USE);
+        }
+        else
+        {
+            // MCP or DIE_1 SCP for full dump wait until DIE_0 SCP initialize header.
+            bool is_ready = false;
+
+            // Polling until crash dump header is ready.
+            while (!is_ready)
+            {
+                wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+                is_ready = type_context->header->status == CRASH_DUMP_IN_USE;
+                release_semaphore(type_context->semaphore.id);
+            }
+        }
+
+        // Set this core state to ready.
+        crash_dump_update_core_state(type_context, CRASH_DUMP_STATE_READY);
+    }
 }
 
 void crash_dump_update_state(crash_dump_type_context_t* type_context, crash_dump_state_t state)

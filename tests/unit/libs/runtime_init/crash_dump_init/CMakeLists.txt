@@ -104,6 +104,7 @@ target_link_libraries(${TARGET}
         ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
         ms::cmsis::interface
+        ms::driver::gpio
         ms::lib::crash_dump
         ms::lib::system_info
         ms::lib::exception_handler::mcp
@@ -131,6 +132,8 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    DfwkClientInterfaceOpen
+    crash_dump_bug_check
     crash_dump_init
     crash_dump_register_dump
     crash_dump_config_icc
@@ -138,6 +141,8 @@ mock_target(${TARGET}
     crash_dump_interface_initialize
     exception_handler_init
     fpfw_pldm_service_register_platform_event_ready_notification
+    gpio_interface_init
+    gpio_register_deferred_isr
     idsw_get_die_id
     idsw_get_cpu_type
     idsw_get_platform_sdv

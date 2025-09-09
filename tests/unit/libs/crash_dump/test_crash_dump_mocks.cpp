@@ -633,4 +633,9 @@ nvic_status_t __wrap_nvic_get_current_irq(uint32_t* irq_num)
     return mock_type(nvic_status_t);
 }
 
+bool __wrap_system_info_is_warm_start()
+{
+    return mock_type(bool);
+}
+
 } // extern "C"

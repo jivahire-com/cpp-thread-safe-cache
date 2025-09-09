@@ -121,7 +121,7 @@ uint16_t data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC(uint8_t dimm_idx)
         // on die 0
         average_temp_dC = data_util_mov_avg_u16_get(&computed_metrics_oob.dimm_chan_temp_mov_avg[dimm_idx]);
     }
-    else if (dimm_idx < (NUMBER_OF_DIMMS_PER_DIE * 2))
+    else if (dimm_idx < (NUMBER_OF_DIMMS_PER_SOC))
     {
         // on die 1
         average_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, dimm_idx - NUMBER_OF_DIMMS_PER_DIE);
@@ -139,7 +139,7 @@ uint16_t data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC(uint8_t dimm_idx)
         max_temp_dC = computed_metrics_oob.dimm_chan_max_temp_dC[dimm_idx];
         computed_metrics_oob.dimm_chan_max_temp_dC[dimm_idx] = 0; // reset for next read
     }
-    else if (dimm_idx < (NUMBER_OF_DIMMS_PER_DIE * 2))
+    else if (dimm_idx < (NUMBER_OF_DIMMS_PER_SOC))
     {
         // on die 1
         // api resets max temp for next read
@@ -157,7 +157,7 @@ uint16_t data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(uint8_t dimm_idx)
         // on die 0
         avg_pwr_mW = data_util_mov_avg_u16_get(&computed_metrics_oob.dimm_chan_pwr_mov_avg[dimm_idx]);
     }
-    else if (dimm_idx < (NUMBER_OF_DIMMS_PER_DIE * 2))
+    else if (dimm_idx < (NUMBER_OF_DIMMS_PER_SOC))
     {
         // on die 1
         avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, dimm_idx - NUMBER_OF_DIMMS_PER_DIE);

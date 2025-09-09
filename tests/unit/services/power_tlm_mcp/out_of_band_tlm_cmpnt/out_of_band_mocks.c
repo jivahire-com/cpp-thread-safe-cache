@@ -36,6 +36,11 @@ void __wrap_exec_tlm_cmpnt_notify_new_out_of_band_pldm_request(void)
     function_called();
 }
 
+uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
+{
+    return mock_type(uint64_t);
+}
+
 uint16_t __wrap_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC(void)
 {
     return mock_type(uint16_t);

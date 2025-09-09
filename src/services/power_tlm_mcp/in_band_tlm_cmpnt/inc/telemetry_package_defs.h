@@ -36,6 +36,7 @@
 // TODO: These values are placeholders and need to be verified
 /*Note : total DIMM in SoC is 12, per Die 6 module*/
 #define NUMBER_OF_DIMMS_PER_DIE      (6)
+#define NUMBER_OF_DIMMS_PER_SOC (NUMBER_OF_DIMMS_PER_DIE * 2) // 2 dies per SOC
 #define NUMBER_OF_MPAMS             (128)
 
 

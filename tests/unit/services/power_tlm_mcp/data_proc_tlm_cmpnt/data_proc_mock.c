@@ -166,7 +166,7 @@ fpfw_status_t __wrap_tlm_fuses_get_dts_coeff_tile(dts_tlm_coeff_t* dts_coeff, ui
 
 uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
 {
-    return mock_type(int64_t);
+    return mock_type(uint64_t);
 }
 
 uint32_t __wrap_gtimer_prodfw_get_frequency(void)

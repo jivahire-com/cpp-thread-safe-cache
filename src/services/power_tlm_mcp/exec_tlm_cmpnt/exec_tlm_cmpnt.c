@@ -153,8 +153,8 @@ void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t in
                                "oob_print_tmr",      /* CHAR *name_ptr */
                                oob_timer_cb,         /* VOID (*expiration_function)(ULONG input)*/
                                0,                    /* ULONG expiration_input */
-                               MS_TO_TX_TICKS(2000), /* ULONG initial_ticks >= 1 */
-                               MS_TO_TX_TICKS(2000), /* ULONG  reschedule_ticks */
+                               MS_TO_TX_TICKS(4000), /* ULONG initial_ticks >= 1 */
+                               MS_TO_TX_TICKS(4000), /* ULONG  reschedule_ticks */
                                TX_NO_ACTIVATE);      /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 

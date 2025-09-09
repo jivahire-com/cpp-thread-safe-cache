@@ -36,6 +36,14 @@ extern "C" {
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
+    // Reset cache validity state for each test
+    cache_is_valid = false;
+    cache_timestamp_uS = 0;
+    // Clear active sensor/handler
+    active_sensor = nullptr;
+    active_handler = nullptr;
+    // Clear cache
+    memset(pwr_tlm_oob_sensor_cache, 0, sizeof(pwr_tlm_oob_sensor_cache));
     return 0;
 }
 
@@ -126,6 +134,9 @@ TEST_FUNCTION(test_out_of_band_tlm_cmpnt_handle_new_pldm_requests, test_setup, t
     will_return(__wrap_fpfw_pldm_service_numeric_sensor_set, FPFW_STATUS_SUCCESS);
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
+    // Mock the timestamp function for cache validity update
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 12345678ULL);
+
     expect_any_always(__wrap__txe_event_flags_set, group_ptr);
     expect_value(__wrap__txe_event_flags_set, flags_to_set, RELEASE_PLDM_SERVICE);
     expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
@@ -133,6 +144,9 @@ TEST_FUNCTION(test_out_of_band_tlm_cmpnt_handle_new_pldm_requests, test_setup, t
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
     out_of_band_tlm_cmpnt_handle_new_pldm_requests();
+
+    // Verify that the cache was populated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TMP_MAX_NUM_SENS)], 1000);
 }
 
 TEST_FUNCTION(test_out_of_band_tlm_cmpnt_handle_new_pldm_requests_negative, test_setup, test_teardown)
@@ -167,6 +181,8 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_max_soc_temp, test_setup, test_teardown)
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC, 800);
     pwr_tlm_oob_get_max_soc_temp(PLDM_SENSOR_ID_POWER_TLM_SOC_TMP_MAX_NUM_SENS, &sensor_value);
     assert_int_equal(sensor_value.numeric.u16, 800);
+    // Verify cache is updated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TMP_MAX_NUM_SENS)], 800);
 }
 
 TEST_FUNCTION(test_pwr_tlm_oob_get_max_soc_temp_negative, test_setup, test_teardown)
@@ -181,6 +197,8 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_max_dimm_temp, test_setup, test_teardown)
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC, 1000);
     pwr_tlm_oob_get_max_dimm_temp(PLDM_SENSOR_ID_POWER_TLM_DIMM_TMP_MAX_NUM_SENS, &sensor_value);
     assert_int_equal(sensor_value.numeric.u16, 1000);
+    // Verify cache is updated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_TMP_MAX_NUM_SENS)], 1000);
 }
 
 TEST_FUNCTION(test_pwr_tlm_oob_get_max_dimm_temp_negative, test_setup, test_teardown)
@@ -195,6 +213,8 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_soc_pwr, test_setup, test_teardown)
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_pwr_mW, 0xFF000000);
     pwr_tlm_oob_get_soc_pwr(PLDM_SENSOR_ID_POWER_TLM_SOC_PWR_NUM_SENS, &sensor_value);
     assert_int_equal(sensor_value.numeric.u32, 0xFF000000);
+    // Verify cache is updated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_PWR_NUM_SENS)], 0xFF000000);
 }
 
 TEST_FUNCTION(test_pwr_tlm_oob_get_soc_pwr_negative, test_setup, test_teardown)
@@ -209,6 +229,9 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_total_pwr, test_setup, test_teardown)
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW, 0xFF000000);
     pwr_tlm_oob_get_dimm_total_pwr(PLDM_SENSOR_ID_POWER_TLM_DIMM_TOTAL_PWR_NUM_SENS, &sensor_value);
     assert_int_equal(sensor_value.numeric.u32, 0xFF000000);
+    // Verify cache is updated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_TOTAL_PWR_NUM_SENS)],
+                     0xFF000000);
 }
 
 TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_total_pwr_negative, test_setup, test_teardown)
@@ -223,6 +246,8 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_max_vr_temp, test_setup, test_teardown)
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_vr_temp_dC, 1000);
     pwr_tlm_oob_get_max_vr_temp(PLDM_SENSOR_ID_POWER_TLM_VR_TMP_MAX_NUM_SENS, &sensor_value);
     assert_int_equal(sensor_value.numeric.u16, 1000);
+    // Verify cache is updated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_VR_TMP_MAX_NUM_SENS)], 1000);
 }
 
 TEST_FUNCTION(test_pwr_tlm_oob_get_max_vr_temp_negative, test_setup, test_teardown)
@@ -237,6 +262,8 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_soc_avg_freq, test_setup, test_teardown)
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz, 3600);
     pwr_tlm_oob_get_soc_avg_freq(PLDM_SENSOR_ID_POWER_TLM_SOC_AVG_FREQ_NUM_SENS, &sensor_value);
     assert_int_equal(sensor_value.numeric.u16, 3600);
+    // Verify cache is updated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_AVG_FREQ_NUM_SENS)], 3600);
 }
 
 TEST_FUNCTION(test_pwr_tlm_oob_get_soc_avg_freq_negative, test_setup, test_teardown)
@@ -249,8 +276,10 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_avg_temp, test_setup, test_teardown)
 {
     fpfw_pldm_composite_value_t sensor_value = {{{0}}};
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC, 750);
-    pwr_tlm_oob_get_dimm_avg_temp(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_00_NUM_SENS, &sensor_value);
+    pwr_tlm_oob_get_dimm_avg_temp(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_05_NUM_SENS, &sensor_value);
     assert_int_equal(sensor_value.numeric.u16, 750);
+    // Verify cache is updated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_05_NUM_SENS)], 750);
 }
 
 TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_avg_temp_negative, test_setup, test_teardown)
@@ -271,8 +300,10 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_max_temp, test_setup, test_teardown)
 {
     fpfw_pldm_composite_value_t sensor_value = {{{0}}};
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC, 850);
-    pwr_tlm_oob_get_dimm_max_temp(PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_00_NUM_SENS, &sensor_value);
+    pwr_tlm_oob_get_dimm_max_temp(PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_11_NUM_SENS, &sensor_value);
     assert_int_equal(sensor_value.numeric.u16, 850);
+    // Verify cache is updated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_11_NUM_SENS)], 850);
 }
 
 TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_max_temp_negative, test_setup, test_teardown)
@@ -293,8 +324,11 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_avg_pwr, test_setup, test_teardown)
 {
     fpfw_pldm_composite_value_t sensor_value = {{{0}}};
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW, 0x5678);
-    pwr_tlm_oob_get_dimm_avg_pwr(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_00_NUM_SENS, &sensor_value);
+    pwr_tlm_oob_get_dimm_avg_pwr(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_02_NUM_SENS, &sensor_value);
     assert_int_equal(sensor_value.numeric.u32, 0x5678);
+    // Verify cache is updated correctly
+    assert_int_equal(pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_02_NUM_SENS)],
+                     0x5678);
 }
 
 TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_avg_pwr_negative, test_setup, test_teardown)
@@ -313,14 +347,82 @@ TEST_FUNCTION(test_pwr_tlm_oob_get_dimm_avg_pwr_negative, test_setup, test_teard
 
 TEST_FUNCTION(test_out_of_band_tlm_cmpnt_print_sensors, test_setup, test_teardown)
 {
+    cache_is_valid = false;
+
+    // Test when cache is invalid - should use direct API calls
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC, 800);
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_pwr_mW, 0xFF000000);
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC, 1000);
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW, 0xFF000000);
     will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz, 3600);
 
-    will_return_count(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC, 290, NUMBER_OF_DIMMS_PER_DIE * 2);
-    will_return_count(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC, 300, NUMBER_OF_DIMMS_PER_DIE * 2);
-    will_return_count(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW, 3200, NUMBER_OF_DIMMS_PER_DIE * 2);
+    will_return_count(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC, 290, NUMBER_OF_DIMMS_PER_SOC);
+    will_return_count(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC, 300, NUMBER_OF_DIMMS_PER_SOC);
+    will_return_count(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW, 3200, NUMBER_OF_DIMMS_PER_SOC);
+
+    out_of_band_tlm_cmpnt_print_sensors();
+}
+
+TEST_FUNCTION(test_out_of_band_tlm_cmpnt_print_sensors_with_valid_cache, test_setup, test_teardown)
+{
+    // Setup cache with valid data
+    pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_TMP_MAX_NUM_SENS)] = 850;
+    pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_PWR_NUM_SENS)] = 0xAA000000;
+    pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_TMP_MAX_NUM_SENS)] = 950;
+    pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_TOTAL_PWR_NUM_SENS)] = 0xBB000000;
+    pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_SOC_AVG_FREQ_NUM_SENS)] = 3800;
+
+    for (uint8_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_SOC; dimm_idx++)
+    {
+        pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_TMP_00_NUM_SENS + dimm_idx)] = 320;
+        pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_MAX_TMP_00_NUM_SENS + dimm_idx)] = 330;
+        pwr_tlm_oob_sensor_cache[PWR_TLM_PDR_SENSOR_INDEX(PLDM_SENSOR_ID_POWER_TLM_DIMM_AVG_PWR_00_NUM_SENS + dimm_idx)] = 3400;
+    }
+
+    // Mark cache as valid with recent timestamp
+    cache_is_valid = true;
+    uint64_t current_time = 12345678ULL;
+    cache_timestamp_uS = current_time;
+
+    // Mock timestamp for cache validity check (within 10 seconds)
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, current_time + 5000000ULL); // 5 seconds later
+
+    // Should not call data processing functions since cache is valid
+    out_of_band_tlm_cmpnt_print_sensors();
+}
+
+TEST_FUNCTION(test_out_of_band_tlm_cmpnt_print_sensors_with_invalid_cache, test_setup, test_teardown)
+{
+    // Ensure cache is invalid (test_setup already sets cache_is_valid = false)
+    cache_is_valid = false;
+    cache_timestamp_uS = 0;
+    oob_print_non_critical_sensors_iter = 1;
+
+    for (uint16_t i = 0; i < OOB_PRINT_NON_CRITICAL_SENSORS_INTERVAL - 1; i++)
+    {
+        // Mock all data processing function calls since cache is invalid
+        will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC, 850);
+        will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_pwr_mW, 0xAA000000);
+        will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC, 950);
+        will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW, 0xBB000000);
+        will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz, 3800);
+
+        out_of_band_tlm_cmpnt_print_sensors();
+    }
+
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC, 850);
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_pwr_mW, 0xAA000000);
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC, 950);
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_total_pwr_mW, 0xBB000000);
+    will_return(__wrap_data_proc_tlm_cmpnt_get_oob_soc_avg_freq_MHz, 3800);
+
+    for (uint8_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_SOC; dimm_idx++)
+    {
+        will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_temp_dC, 320);
+        will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC, 330);
+        will_return(__wrap_data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW, 3400);
+    }
+
+    // Should call all data processing functions since cache is invalid
     out_of_band_tlm_cmpnt_print_sensors();
 }

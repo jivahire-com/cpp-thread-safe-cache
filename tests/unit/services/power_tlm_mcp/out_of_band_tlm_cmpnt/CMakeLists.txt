@@ -42,6 +42,7 @@ mock_target(${TARGET}
     _txe_event_flags_set
     exec_tlm_cmpnt_is_oob_data_valid
     exec_tlm_cmpnt_notify_new_out_of_band_pldm_request
+    exec_tlm_cmpnt_get_timestamp_microseconds
     data_proc_tlm_cmpnt_get_oob_crit_max_soc_temp_dC
     data_proc_tlm_cmpnt_get_oob_soc_pwr_mW
     data_proc_tlm_cmpnt_get_oob_crit_max_dimm_temp_dC

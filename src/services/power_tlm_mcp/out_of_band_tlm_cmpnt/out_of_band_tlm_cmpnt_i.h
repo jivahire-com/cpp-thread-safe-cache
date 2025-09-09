@@ -16,10 +16,9 @@
 #define PRIMARY_DIE_ID (0)
 
 #define NUM_PWR_TLM_PLDM_SENSORS (PLDM_SENSOR_ID_POWER_TLM_LAST - PLDM_SENSOR_ID_POWER_TLM_BASE - 1)
-
 #define PWR_TLM_PDR_SENSOR_INDEX(sensor_id)  ((sensor_id) - PLDM_SENSOR_ID_POWER_TLM_BASE - 1)
-
 #define RELEASE_PLDM_SERVICE (1 << 0)
+#define OOB_PRINT_NON_CRITICAL_SENSORS_INTERVAL (10U)
 
 /*-------------- Typedefs ----------------*/
 typedef void (*pwr_tlm_numeric_sensor_get_handler_t)(uint16_t sensor_id, fpfw_pldm_composite_value_t* sensor_value);
@@ -27,8 +26,14 @@ typedef void (*pwr_tlm_numeric_sensor_get_handler_t)(uint16_t sensor_id, fpfw_pl
 
 extern pldm_numeric_sensor_context_t pwr_tlm_numeric_sensor_ctxts[NUM_PWR_TLM_PLDM_SENSORS];
 extern pwr_tlm_numeric_sensor_get_handler_t pwr_tlm_numeric_sensor_get_handlers[NUM_PWR_TLM_PLDM_SENSORS];
+extern uint32_t pwr_tlm_oob_sensor_cache[NUM_PWR_TLM_PLDM_SENSORS];
 extern pldm_numeric_sensor_context_t* active_sensor;
 extern pwr_tlm_numeric_sensor_get_handler_t active_handler;
+
+// Cache validity tracking (exposed for testing)
+extern bool cache_is_valid;
+extern uint64_t cache_timestamp_uS;
+extern uint32_t oob_print_non_critical_sensors_iter;
 /*--------- Function Prototypes ----------*/
 
 

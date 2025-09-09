@@ -72,7 +72,7 @@ int sos_queue_find_phase(ssi_startup_stage_t phase)
 void sos_accel_quiesce_complete(uint32_t accel_id, uint32_t event_flag)
 {
     FPFW_UNUSED(accel_id)
-    SOS_LOG_TRACE("Accel:%d Quiesce Complete, event flag: %x\n", accel_id, event_flag);
+    SOS_LOG_TRACE("Accel:%d Quiesce Complete, event flag: %x\n", (int)accel_id, (int)event_flag);
     int status = tx_event_flags_set(&s_sos_thread_ctx.ssi_flags, event_flag, TX_OR);
     FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
 }

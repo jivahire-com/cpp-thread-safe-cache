@@ -30,6 +30,7 @@ target_link_libraries(
     ${TARGET}
     PUBLIC
         fwlib.lib.status
+        ms::client_interface::startup_shutdown
         ms::lib::accel_intr
         silibs::accelip_ss_init
         silibs::atu

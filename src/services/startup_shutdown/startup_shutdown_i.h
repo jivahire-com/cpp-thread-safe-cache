@@ -31,7 +31,7 @@
 #if SOS_ENABLE_TRACE_LEVEL_LOG
 #define SOS_LOG_TRACE(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #else
-#define SOS_LOG_TRACE(fmt, ...) 
+#define SOS_LOG_TRACE(fmt, ...)
 #endif
 #define SOS_LOG_INFO(fmt, ...) FPFW_DBGPRINT_INFO(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define SOS_LOG_WARN(fmt, ...) FPFW_DBGPRINT_VERBOSE(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
@@ -89,7 +89,7 @@ typedef struct _startup_shutdown_shutdown_stage_t
 {
     ssi_shutdown_type_t stage;
     unsigned timeout_ms;
-    bool remote_die_sync_required; 
+    bool remote_die_sync_required;
 } startup_shutdown_shutdown_stage_t;
 /*-- Declarations (Statics and globals) --*/
 
@@ -129,9 +129,9 @@ bool wait_for_remote_die_boot_stage(startup_shutdown_boot_stage_t current_boot_s
  * @brief Wait for a stage from a local core to complete. Will poll the remote core's
  *        boot stage until it matches the local core's stage. Will sleep on each
  *        poll iteration to allow other threads to run.
- * 
- * @param[in] current_boot_stage 
- * 
+ *
+ * @param[in] current_boot_stage
+ *
  * @return true if the local sync was successful or not needed.
  */
 bool wait_for_local_core_boot_stage(startup_shutdown_boot_stage_t current_boot_stage);

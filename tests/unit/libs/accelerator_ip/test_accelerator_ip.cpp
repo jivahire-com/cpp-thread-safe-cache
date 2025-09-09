@@ -484,6 +484,28 @@ TEST_FUNCTION(scp_accelerators_init_warm_reset_pass, nullptr, nullptr)
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
 
     // In init_accelerator()
+    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
+
+    will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
+
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
+
     will_return_always(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_system_info_is_warm_start, true);
     will_return_always(__wrap_accel_scp_intr_init, ACCEL_INTR_RET_SUCCESS);
@@ -1061,9 +1083,16 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_invalid_args, nullptr, nullptr)
 TEST_FUNCTION(accel_core_suspend_sdm_test, nullptr, nullptr)
 {
     // Arrange
-    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // Act
     accel_core_suspend(ACCEL_ID_SDM);
@@ -1072,9 +1101,16 @@ TEST_FUNCTION(accel_core_suspend_sdm_test, nullptr, nullptr)
 TEST_FUNCTION(accel_core_suspend_cded_test, nullptr, nullptr)
 {
     // Arrange
-    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // Act
     accel_core_suspend(ACCEL_ID_CDED);
@@ -1086,9 +1122,16 @@ TEST_FUNCTION(accel_core_suspend_invalid_accel_test, nullptr, nullptr)
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
     // Arrange returns for downstream calls if bugcheck returns
-    will_return(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0);
+    will_return(__wrap_sdm_init_itcm_enable, SILIBS_SUCCESS);
+    will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+    will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
+    will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
 
     // Configure bugcheck to return so function continues for test coverage
     should_return = true;

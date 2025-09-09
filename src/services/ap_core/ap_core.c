@@ -229,12 +229,34 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 
     case SSI_STARTUP_STAGE_START_ASYNC: {
         pssi_startup_notification_request_t ssi_request = (pssi_startup_notification_request_t)p_request;
-        // Complete request immediately if not cold boot or not MCP load or accel warm boot
-        if (ssi_request->boot_type != COLD_BOOT && ssi_request->stage != STARTUP_MCP_LOAD &&
-            ssi_request->boot_type != WARM_BOOT_ACCEL)
+        /**
+         * 1. For cold boot all image download requests are allowed through
+         * 2. ADO: 2902462 In case of accelerator warm boot, only accel download requests will be issued (to be deprecated )
+         * 3. For Warm boot post AP, only MCP and accel ITCM/DTCM requests are allowed through
+         *
+         */
+        switch (ssi_request->boot_type)
         {
-            DfwkAsyncRequestComplete(p_request);
+        case COLD_BOOT:
+        case WARM_BOOT_ACCEL:
             break;
+        case WARM_BOOT_POST_AP:
+            switch (ssi_request->stage)
+            {
+            case STARTUP_MCP_LOAD:
+            case STARTUP_SDM_ITCM_LOAD:
+            case STARTUP_SDM_DTCM_LOAD:
+            case STARTUP_CDED_ITCM_LOAD:
+            case STARTUP_CDED_DTCM_LOAD:
+                break;
+            default:
+                DfwkAsyncRequestComplete(p_request);
+                return;
+            }
+            break;
+        default:
+            DfwkAsyncRequestComplete(p_request);
+            return;
         }
 
         switch (ssi_request->stage)

@@ -208,8 +208,14 @@ void accel_quiesce_response_cb(void* context, size_t output_size_bytes, fpfw_sta
         SOS_LOG_TRACE("[%s] Accel:%d Quiesce Resp Success.\n", __func__, accel_id);
         // Invoking accel quiesce complete only when ICC receive is successful
         sos_accel_quiesce_complete((uint32_t)accel_id, sos_event_flag); // Lower 16-bits is accel_id and upper 16-bits is sos_event_mask
-        // TODO ADO: 2516167 Confirm it is enough to put emcpu in nsysreset
-        accel_core_suspend(accel_id);
+        /**
+         * TODO ADO: 2902462
+         * 1. Disable accel emcpu watchdog from scp on quiesce start - remove emcpu reset from quiesce ack
+         * 2. Mask all interrupts except mailbox interrupt
+         * 3. Reset the emcpu in runtime init flow for scp warm reset (Done)
+         * 4. Ensure the emcpu interrupts are unmasked only for emcpu boot completes
+         *
+         */
     }
 }
 

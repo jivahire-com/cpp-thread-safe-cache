@@ -74,6 +74,11 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
             return ACCEL_RET_FAIL_SS_INIT;
         }
     }
+    else
+    {
+        // Reset accel here in case of SCP warm boot
+        accel_core_suspend(accel_type);
+    }
 
     /*
      * TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2023638/

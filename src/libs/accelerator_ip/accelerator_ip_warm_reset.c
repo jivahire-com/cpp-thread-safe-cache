@@ -104,11 +104,8 @@ static void accel_post_warm_reset_cb(PDFWK_ASYNC_REQUEST_HEADER request, void* c
     FPFwCoreInterruptEnableVector(IRQnum);
 }
 
-static void accel_warm_boot_sequence(ACCEL_ID accel_type, uintptr_t sdm_ext_cfg_base)
+static void accel_emcpu_reset_sequence(uintptr_t sdm_ext_cfg_base)
 {
-    static startup_start_phase_request_t startup_accel_warm_reset_request[NUM_VALID_ACCEL_ID];
-    ssi_startup_stage_t startup_stage;
-
     /**
      * Sequence to reset Embed CPU without letting it execute
      * CPUWAIT      = 1
@@ -130,6 +127,14 @@ static void accel_warm_boot_sequence(ACCEL_ID accel_type, uintptr_t sdm_ext_cfg_
 
     sdm_init_enable_fence(sdm_ext_cfg_base, false);
     sdm_init_deassert_nsysreset(sdm_ext_cfg_base);
+}
+
+static void accel_warm_boot_sequence(ACCEL_ID accel_type, uintptr_t sdm_ext_cfg_base)
+{
+    static startup_start_phase_request_t startup_accel_warm_reset_request[NUM_VALID_ACCEL_ID];
+    ssi_startup_stage_t startup_stage;
+
+    accel_emcpu_reset_sequence(sdm_ext_cfg_base);
 
     startup_stage = accel_type == ACCEL_ID_SDM ? STARTUP_WARM_BOOT_SDM_ASYNC : STARTUP_WARM_BOOT_CDED_ASYNC;
 
@@ -173,7 +178,7 @@ void accel_core_suspend(ACCEL_ID accel_type)
     BUG_ASSERT_PARAM(accel_type < NUM_VALID_ACCEL_ID, accel_type, 0);
 
     uint32_t emcpu_addr = get_accel_ext_cfg_offset_addr(accel_type) + atu_svc_accel_atu_addr(accel_type);
+    FPFW_DBGPRINT_INFO("%s: Accel type %d CORE_SUSP\n", __func__, accel_type);
 
-    sdm_init_enable_cpuwait(emcpu_addr);
-    sdm_init_assert_nsysreset(emcpu_addr);
+    accel_emcpu_reset_sequence(emcpu_addr);
 }

@@ -624,7 +624,6 @@ SOS_TEST(execute_accel_quiesce_flow_register_and_send_and_cb, NULL, NULL)
 
     // Simulate response callback and ensure accel_core_suspend is invoked
     assert_non_null(fw_load_cb);
-    expect_function_call(__wrap_accel_core_suspend);
     fw_load_cb(cb_ctx, 0, DFWK_SUCCESS);
 }
 
@@ -680,7 +679,6 @@ SOS_TEST(execute_accel_quiesce_flow_one_isolated_offset_and_cb, NULL, NULL)
 
     // A callback should have been registered; invoke and verify suspend is called
     assert_non_null(fw_load_cb);
-    expect_function_call(__wrap_accel_core_suspend);
     fw_load_cb(cb_ctx, 0, DFWK_SUCCESS);
 }
 

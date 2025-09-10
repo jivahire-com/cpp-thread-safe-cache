@@ -16,6 +16,7 @@
 extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <aging_counters_i.h>
 #include <compute_metrics_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <data_sampling_i.h>
@@ -34,6 +35,7 @@ extern "C" {
 extern "C" {
 extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
+extern aging_counter_t core_aging[NUMBER_OF_CORES_PER_DIE];
 extern soc_runtime_info_t soc_rt;
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 extern computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins;
@@ -1698,7 +1700,12 @@ TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_24hr_pkg_completed, test_setup, test_teardown)
 {
-    // TODO - complete with the records will be collected with 24hr window.
+
+    uint8_t core_id = 0;
+    for (core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        expect_function_call(__wrap_dvfs_c2_pcm_enable_aging_sensor_measurement);
+    }
     data_proc_tlm_cmpnt_24hr_pkg_completed();
 }
 
@@ -1726,9 +1733,46 @@ TEST_FUNCTION(test_data_smpl_update_max_die_temp, test_setup, test_teardown)
     data_smpl_update_max_die_temp();
 }
 
+TEST_FUNCTION(test_data_smpl_process_aging_data, test_setup, test_teardown)
+{
+    uint64_t this_pwr_pkg_timestamp_uS = 2000;
+    uint8_t core_id = 0;
+    core_aging[core_id].measurement_index = 0;
+    core_is_active[core_id] = 1;
+    core_rt[core_id].latest_voltage_mV = 100;
+    core_rt[core_id].latest_max_value_dC = 20;
+    core_aging[core_id].measurement_armed = true;
+    uint8_t counter_id = core_aging[core_id].measurement_index;
+
+    will_return(__wrap_dvfs_c2_pcm_aging_get_sensor_status, 1);
+    will_return(__wrap_dvfs_c2_get_pcm_bank_sensor_data, 30);
+    will_return(__wrap_dvfs_c2_get_pcm_bank_sensor_data, 28);
+    will_return(__wrap_dvfs_c2_get_pcm_bank_sensor_data, 0);
+    expect_function_call(__wrap_dvfs_c2_pcm_enable_aging_sensor_measurement);
+
+    data_smpl_process_aging_data(core_id, this_pwr_pkg_timestamp_uS);
+
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS, 2000);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter, 30);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter, 28);
+    assert_int_equal(computed_metrics_24_hrs.cores[0].core_aging_counters[counter_id].voltage_mV, 100);
+    assert_int_equal(computed_metrics_24_hrs.cores[0].core_aging_counters[counter_id].temperature_dC, 20);
+}
+
+TEST_FUNCTION(test_data_smpl_update_metrics_for_cores_aging_counters, test_setup, test_teardown)
+{
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 2000);
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        core_is_active[core_id] = false;
+    }
+    data_smpl_update_metrics_for_cores_aging_counters();
+}
+
 TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown)
 {
     static uint64_t expected_droop_counts[NUMBER_OF_CORES_PER_DIE];
+
     for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
     {
         expected_droop_counts[i] = i * 10;

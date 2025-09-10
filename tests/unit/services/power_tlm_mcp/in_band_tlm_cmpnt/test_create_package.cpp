@@ -341,6 +341,36 @@ TEST_FUNCTION(test_get_pwr_core_power_data, test_setup, test_teardown)
     }
 }
 
+TEST_FUNCTION(test_get_pwr_core_aging_counters_data, test_setup, test_teardown)
+{
+    pwr_core_record_aging_t record = {{0}};
+
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_aging_data, NUMBER_OF_CORES_PER_DIE);
+    uint32_t record_size = package_create_pwr_core_aging_record(&record);
+
+    assert_int_equal(record_size, sizeof(pwr_core_record_aging_t));
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
+    assert_int_not_equal(record.record_header.record_number, 0);
+    assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_CORES_PER_DIE);
+    assert_int_equal(record.record_header.record_payload_size,
+                     (sizeof(pwr_core_record_aging_t) - sizeof(telemetry_record_hdr_t)));
+
+    for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        assert_int_equal(record.aging_collection[core_id].collection_header.provider_id,
+                         EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA);
+        assert_int_equal(record.aging_collection[core_id].collection_header.element_id, POWER_TELEMETRY_ELEMENT_CORE_AGING);
+        assert_int_equal(record.aging_collection[core_id].collection_header.collection_id, core_id);
+        assert_int_equal(record.aging_collection[core_id].collection_header.number_of_elements, NUMBER_OF_AGING_COUNTER_PAIRS);
+        assert_int_equal(record.aging_collection[core_id].collection_header.collection_payload_size,
+                         sizeof(pwr_core_collection_aging_t) - sizeof(telemetry_collection_hdr_t));
+
+        // event data ranges are initialized to 0, the mock Get Api sets them to 0xFF
+        // This verifies that the correct data ranges are passed to the data processing component get data api's
+        assert_memset_to_ff((uint8_t*)&record.aging_collection[core_id].aging_element, sizeof(pwr_core_element_aging_t));
+    }
+}
+
 TEST_FUNCTION(test_get_pwr_core_droop_count_data, test_setup, test_teardown)
 {
     pwr_core_record_droop_count_t droop_count_record = {{0}};
@@ -903,12 +933,13 @@ TEST_FUNCTION(test_package_create_24hr_pkg_all_enabled, test_setup, test_teardow
     }
 
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_histogram_data, NUMBER_OF_CORES_PER_DIE);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_core_aging_data, NUMBER_OF_CORES_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data, 1);
 
     uint32_t pkg_size = package_create_24hr_pkg((uintptr_t)cr_max_package_mem, POWER_24HR_PKG_MAX_SIZE);
 
     // TODO: remove records below when added to the package
-    assert_int_equal(pkg_size, POWER_24HR_PKG_MAX_SIZE - sizeof(pwr_core_record_aging_t));
+    assert_int_equal(pkg_size, POWER_24HR_PKG_MAX_SIZE);
 }
 
 TEST_FUNCTION(test_package_create_24hr_pkg_too_small, test_setup, test_teardown)

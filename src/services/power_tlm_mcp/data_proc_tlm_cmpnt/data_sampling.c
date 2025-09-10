@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "aging_counters_i.h"
 #include "compute_metrics_i.h"
 #include "data_sampling_i.h" // internal APIs
 #include "data_utilities_i.h"
@@ -58,6 +59,8 @@ void data_smpl_init(void)
 {
     /* Initialize dts coeff data at startup */
     data_smpl_init_dts_coefficients();
+    /* Note:  Enable first counter pair id for each core  */
+    aging_counter_init();
 }
 
 void data_smpl_init_dts_coefficients(void)
@@ -155,6 +158,46 @@ void data_proc_tlm_cmpnt_process_input_data(void)
 
         comp_metrics_for_total_dimm_pwr(dimm_rt.latest_dimm_total_pwr_mW);
         dimm_rt.latest_dimm_total_pwr_mW = 0; // reset for next dimm entry parsing
+    }
+}
+
+void data_smpl_process_aging_data(uint8_t core_id, uint64_t this_pwr_pkg_timestamp_uS)
+{
+    if (core_is_active[core_id])
+    {
+        /* Note : check if the ring oscillator (RO) is armed or not  */
+        if (core_aging[core_id].measurement_armed == true)
+        {
+            aging_sensor_status_t aging_status = aging_counter_get_sensor_status(core_id);
+            // check aging counter measurement status
+            if (aging_status == MEASUREMENT_COMPLETE)
+            {
+                uint32_t latest_aged_counter;
+                uint32_t latest_unaged_counter;
+                if (aging_counter_read(core_id, &latest_aged_counter, &latest_unaged_counter) == true)
+                {
+                    uint8_t counter_id = core_aging[core_id].measurement_index;
+                    comp_metrics_for_single_core_aging_counters(core_id,
+                                                                core_rt[core_id].latest_voltage_mV,
+                                                                core_rt[core_id].latest_max_value_dC,
+                                                                this_pwr_pkg_timestamp_uS,
+                                                                latest_aged_counter,
+                                                                latest_unaged_counter,
+                                                                counter_id);
+                    // Armed next counter, measurement_index get updated after aging_counter_read on a successful read.
+                    aging_counter_enable_sensor_measurement(core_id, core_aging[core_id].measurement_index++);
+                }
+            }
+        }
+    }
+}
+
+void data_smpl_update_metrics_for_cores_aging_counters(void)
+{
+    uint64_t this_pwr_pkg_timestamp_uS = exec_tlm_cmpnt_get_timestamp_microseconds();
+    for (unsigned int core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; ++core_id)
+    {
+        data_smpl_process_aging_data(core_id, this_pwr_pkg_timestamp_uS);
     }
 }
 
@@ -1236,4 +1279,5 @@ void data_proc_tlm_cmpnt_pwr_pkg_completed(void)
 void data_proc_tlm_cmpnt_24hr_pkg_completed(void)
 {
     comp_metrics_reset_24_hrs_metrics();
+    aging_counter_reset();
 }

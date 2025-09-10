@@ -251,6 +251,14 @@ bool data_smpl_process_pvt_temperature_sensor_fifo(void);
 bool data_smpl_process_dimm_sensor_fifo(void);
 
 /**
+ * @brief Process Aging counters data read from core cluster 
+ * @param[in] core_id 
+ * @param[in] this_pwr_pkg_timestamp_uS timestamp when we are creating package.
+ * @return none
+ */
+void data_smpl_process_aging_data(uint8_t core_id, uint64_t this_pwr_pkg_timestamp_uS);
+
+/**
  * @brief   Update the maximum die temperature based on the latest tile and SOC top temperatures.
  *          This function compares the latest maximum tile temperature and the latest maximum SOC top temperature,
  *          and updates the maximum die temperature accordingly.
@@ -439,6 +447,13 @@ void data_smpl_handle_rack_throttle_start(uint8_t core_id,
  * @param[out] entry_data - Update the core state entry data with the rack throttle end information.
  */
 void data_smpl_handle_rack_throttle_end(uint8_t core_id, core_state_entry_data_t* entry_data);
+
+/**
+ * @brief update aging counter metrics for all cores.
+ *
+ * @return   none
+ */
+void data_smpl_update_metrics_for_cores_aging_counters(void);
 
 /**
  * @brief Calculate MPAM power for all MPAMs based on the latest core power and MPAM ID.

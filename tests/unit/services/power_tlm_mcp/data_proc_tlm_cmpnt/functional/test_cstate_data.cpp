@@ -110,6 +110,7 @@ static int32_t test_setup(void** state)
 
     // Reset computed metrics using already defined standard functions
     comp_metrics_reset_local_2_min_metrics();
+    // reset 24 hrs metrics
     comp_metrics_reset_24_hrs_metrics();
 
     // Reset core state for clean test

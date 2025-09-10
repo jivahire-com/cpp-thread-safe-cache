@@ -2,6 +2,7 @@ set(TARGET kng.service.pwr_tlm_mcp.cmpnt.data_process)
 
 add_library(${TARGET}
     STATIC
+        aging_counters.c
         compute_metrics.c
         data_proc_tlm_cmpnt.c
         data_sampling.c
@@ -34,6 +35,7 @@ target_link_libraries(${TARGET}
         ms::lib::telemetry::fuses
         ms::lib::gtimer
         ms::lib::pwr_tlm_core_ex
+        ms::lib::core_info
         silibs::dvfs
         silibs::pvt
         silibs::semaphore

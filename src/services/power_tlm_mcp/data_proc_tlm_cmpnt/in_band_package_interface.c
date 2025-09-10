@@ -220,6 +220,33 @@ void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(
     FPFW_UNUSED(histogram_array);
 }
 
+void data_proc_tlm_cmpnt_get_pwr_core_aging_data(uint16_t core_id, pwr_core_element_aging_t (*aging_data)[NUMBER_OF_AGING_COUNTER_PAIRS])
+{
+    // parameter check: core_id, check if correct
+    if (core_id >= NUMBER_OF_CORES_PER_DIE || aging_data == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_CORE_AGING);
+    }
+    else
+    {
+        for (uint16_t counter_id = 0; counter_id < NUMBER_OF_AGING_COUNTER_PAIRS; counter_id++)
+        {
+            (*aging_data)[counter_id].counter_id = counter_id;
+
+            (*aging_data)[counter_id].aged_counter =
+                computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter;
+            (*aging_data)[counter_id].unaged_counter =
+                computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter;
+            (*aging_data)[counter_id].temperature_dC =
+                computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].temperature_dC;
+            (*aging_data)[counter_id].voltage_mV =
+                computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].voltage_mV;
+            (*aging_data)[counter_id].timestamp_uS =
+                computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS;
+        }
+    }
+}
+
 void data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(uint16_t core_id, p_pwr_core_element_droop_count_t droop_count)
 {
     if (core_id >= NUMBER_OF_CORES_PER_DIE || droop_count == NULL)

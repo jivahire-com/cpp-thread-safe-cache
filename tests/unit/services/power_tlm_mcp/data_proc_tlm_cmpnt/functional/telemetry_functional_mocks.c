@@ -13,6 +13,7 @@
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h>
 #include <compute_metrics_i.h>
+#include <corebits.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <semaphore_lib.h>
 #include <sensor_fifo_service.h>
@@ -268,6 +269,43 @@ void __wrap_wait_for_semaphore(SEMAPHORE_ID id, uint32_t key)
 void __wrap_release_semaphore(SEMAPHORE_ID id)
 {
     FPFW_UNUSED(id);
+}
+
+corebits_t mock_cores_in_die;
+corebits_t* __wrap_core_info_get_enable_cores_result()
+{
+    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
+    {
+        mock_cores_in_die.bits[i] = mock_type(uint32_t);
+    }
+    return (&mock_cores_in_die);
+}
+void __wrap_dvfs_c2_pcm_enable_aging_sensor_measurement(const uintptr_t cluster_pex_base_addr, uint8_t ro_index, uint8_t timer_cfg)
+{
+    FPFW_UNUSED(cluster_pex_base_addr);
+    FPFW_UNUSED(ro_index);
+    FPFW_UNUSED(timer_cfg);
+
+    function_called();
+}
+
+int __wrap_dvfs_c2_pcm_aging_get_sensor_status(const uintptr_t cluster_pex_base_addr)
+{
+    FPFW_UNUSED(cluster_pex_base_addr);
+
+    return mock_type(int);
+}
+
+int __wrap_dvfs_c2_get_pcm_bank_sensor_data(const uintptr_t cluster_pex_base_addr, uint32_t* bank_a_counter, uint32_t* bank_b_counter)
+{
+    FPFW_UNUSED(cluster_pex_base_addr);
+    assert_non_null(bank_a_counter);
+    assert_non_null(bank_b_counter);
+
+    *bank_a_counter = mock_type(uint32_t);
+    *bank_b_counter = mock_type(uint32_t);
+
+    return mock_type(int);
 }
 
 // Mock event trace metadata symbols

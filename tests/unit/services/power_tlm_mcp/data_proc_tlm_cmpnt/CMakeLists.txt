@@ -9,6 +9,7 @@ set(SOURCES
     test_die_2_die_exch.cpp
     test_oob_interface.cpp
     test_package_interface.cpp
+    test_aging_counters.cpp
 )
 
 add_subdirectory(functional)
@@ -59,4 +60,7 @@ mock_target(${TARGET}
     release_semaphore
     pwr_tlm_core_exch_mcp_read_droop_counts
     core_info_get_enable_cores_result
+    dvfs_c2_pcm_enable_aging_sensor_measurement
+    dvfs_c2_pcm_aging_get_sensor_status
+    dvfs_c2_get_pcm_bank_sensor_data
 )

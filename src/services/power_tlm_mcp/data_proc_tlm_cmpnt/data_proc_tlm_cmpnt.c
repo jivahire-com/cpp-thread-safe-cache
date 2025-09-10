@@ -71,6 +71,16 @@ void data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg(void)
     }
 
     in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg();
+
+    // read and update cores aging counters data
+
+    /* Note: data_smpl_update_metrics_for_cores_aging_counters is
+             called here (not during the sensor fifo polling period) to avoid excess compute..
+             Aging counter data is aggregated at final package preparation, leveraging the 2-minute interval
+             for efficient 24-hour collection without unnecessary per-core overhead.
+     */
+
+    data_smpl_update_metrics_for_cores_aging_counters();
 }
 
 void data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg(void)

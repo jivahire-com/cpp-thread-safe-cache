@@ -203,16 +203,12 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
         pkg_location += package_create_pwr_core_power_record(power_record);
         package_hdr->payload_header.number_of_records++;
     }
-
-    // TODO: POWER_TELEMETRY_ELEMENT_CORE_AGING,
-
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_DROOPS])
     {
         p_pwr_core_record_droop_count_t droop_count_record = (p_pwr_core_record_droop_count_t)pkg_location;
         pkg_location += package_create_pwr_core_droop_count_record(droop_count_record);
         package_hdr->payload_header.number_of_records++;
     }
-
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS])
     {
         p_pwr_soc_record_vr_rail_t vr_rail_record = (p_pwr_soc_record_vr_rail_t)pkg_location;
@@ -315,7 +311,12 @@ uint32_t package_create_24hr_pkg(uintptr_t pkg_location, size_t pkg_available_si
         package_hdr->payload_header.number_of_records++;
     }
 
-    // TODO: POWER_TELEMETRY_ELEMENT_CORE_AGING
+    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_AGING])
+    {
+        p_pwr_core_record_aging_t pkg_aging_record = (p_pwr_core_record_aging_t)pkg_location;
+        pkg_location += package_create_pwr_core_aging_record(pkg_aging_record);
+        package_hdr->payload_header.number_of_records++;
+    }
 
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PKG_MON])
     {
@@ -600,6 +601,26 @@ uint32_t package_create_pwr_core_histogram_record(p_pwr_core_record_histogram_t 
                                                         &histogram_record->histogram_collection[core_id].histogram_element);
     }
     return sizeof(pwr_core_record_histogram_t);
+}
+
+uint32_t package_create_pwr_core_aging_record(p_pwr_core_record_aging_t aging_record)
+{
+    populate_record_hdr(&aging_record->record_header,
+                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_CORE_AGING],
+                        NUMBER_OF_CORES_PER_DIE,
+                        sizeof(pwr_core_record_aging_t));
+
+    for (uint16_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        populate_pwr_collection_hdr(&aging_record->aging_collection[core_id].collection_header,
+                                    POWER_TELEMETRY_ELEMENT_CORE_AGING,
+                                    CORE_ID_WITH_DIE_OFFSET(core_id),
+                                    NUMBER_OF_AGING_COUNTER_PAIRS,
+                                    sizeof(pwr_core_collection_aging_t));
+
+        data_proc_tlm_cmpnt_get_pwr_core_aging_data(core_id, &aging_record->aging_collection[core_id].aging_element);
+    }
+    return sizeof(pwr_core_record_aging_t);
 }
 
 uint32_t package_create_pwr_core_droop_count_record(p_pwr_core_record_droop_count_t droop_count_record)

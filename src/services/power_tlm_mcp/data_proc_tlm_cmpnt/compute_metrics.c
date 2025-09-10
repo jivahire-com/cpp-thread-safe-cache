@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "aging_counters_i.h"
 #include "compute_metrics_i.h"
 #include "data_proc_tlm_cmpnt.h"
 #include "data_utilities_i.h"
@@ -463,6 +464,23 @@ void comp_metrics_for_cores_droop_counts(void)
             computed_metrics_2_mins.cores[core_id].droop_count = droop_counts[core_id];
         }
     }
+}
+
+void comp_metrics_for_single_core_aging_counters(uint8_t core_id,
+                                                 uint16_t latest_voltage_mV,
+                                                 uint16_t latest_max_value_dC,
+                                                 uint64_t this_pwr_pkg_timestamp_uS,
+                                                 uint32_t latest_aged_counter,
+                                                 uint32_t latest_unaged_counter,
+                                                 uint8_t counter_id)
+{
+
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].counter_id = counter_id;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter = latest_aged_counter;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter = latest_unaged_counter;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS = this_pwr_pkg_timestamp_uS;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].temperature_dC = latest_max_value_dC;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].voltage_mV = latest_voltage_mV;
 }
 
 void comp_metrics_for_mpam_power(uint32_t (*mpam_power_mW)[NUMBER_OF_MPAMS])

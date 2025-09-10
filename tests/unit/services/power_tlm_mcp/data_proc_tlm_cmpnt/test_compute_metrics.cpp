@@ -16,6 +16,7 @@
 extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <aging_counters_i.h>
 #include <compute_metrics_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <data_sampling_i.h>
@@ -26,6 +27,7 @@ extern "C" {
 
 /*-- Symbolic Constant Macros (defines) --*/
 extern "C" {
+extern aging_counter_t core_aging[NUMBER_OF_CORES_PER_DIE];
 }
 
 #define TEST_CORE_ID (7)
@@ -37,7 +39,9 @@ extern "C" {
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
+
     comp_metrics_reset_local_2_min_metrics();
+
     comp_metrics_reset_24_hrs_metrics();
 
     will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
@@ -827,6 +831,40 @@ TEST_FUNCTION(test_comp_metrics_for_cores_droop_counts, test_setup, test_teardow
     }
 }
 
+TEST_FUNCTION(test_comp_metrics_for_single_core_aging_counters, test_setup, test_teardown)
+{
+    uint8_t core_id = 0;
+    uint64_t this_pwr_pkg_timestamp_uS = 20000;
+    uint16_t latest_voltage_mV = 100;
+    uint16_t latest_max_value_dC = 19;
+
+    uint32_t latest_aged_counter = 30;
+    uint32_t latest_unaged_counter = 28;
+
+    core_is_active[core_id] = 1;
+    core_aging[core_id].measurement_armed = true;
+    memset(&computed_metrics_24_hrs, 0, sizeof(computed_metrics_24_hrs));
+
+    for (uint8_t counter_id = 0; counter_id < NUMBER_OF_AGING_COUNTER_PAIRS; counter_id++)
+    {
+
+        comp_metrics_for_single_core_aging_counters(core_id,
+                                                    latest_voltage_mV,
+                                                    latest_max_value_dC,
+                                                    this_pwr_pkg_timestamp_uS,
+                                                    latest_aged_counter,
+                                                    latest_unaged_counter,
+                                                    counter_id);
+
+        assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS, 20000);
+        assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter, 30);
+        assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter, 28);
+        assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].counter_id,
+                         counter_id); // this will increment on each iteration
+        assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].voltage_mV, 100);
+        assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].temperature_dC, 19);
+    }
+}
 TEST_FUNCTION(test_comp_metrics_for_mpam_power, test_setup, test_teardown)
 {
     // Arrange: Create test MPAM power array with known values

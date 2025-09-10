@@ -162,6 +162,16 @@ void data_proc_tlm_cmpnt_get_pwr_core_power_data(uint16_t core_id, p_pwr_core_el
 void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(uint16_t core_id, pwr_core_element_histogram_t (*histogram_array)[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES]);
 
 /**
+ * @brief Get the core aging counters data for the specified core.
+ *
+ * @param[in] core_id - The core id to get the rack priority data for. 0 .. NUMBER_OF_CORES_PER_DIE-1
+ * @param[out] aging_data - Pointer to the array to store the aging counters data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_core_aging_data(uint16_t core_id, pwr_core_element_aging_t (*aging_data)[NUMBER_OF_AGING_COUNTER_PAIRS]);
+
+/**
  * @brief Get the droop count data for the specified core.
  *
  * @param[in] core_id - The core id to get the droop count for. 0 .. NUMBER_OF_CORES_PER_DIE-1

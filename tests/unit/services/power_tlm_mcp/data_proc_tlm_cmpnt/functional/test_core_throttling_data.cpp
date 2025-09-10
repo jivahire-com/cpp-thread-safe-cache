@@ -255,6 +255,7 @@ TEST_FUNCTION(test_core_current_throttling_functional, test_setup, test_teardown
     setup_mock_pstate_data_with_throttling(&mock_pstate_data_end, core_index, 11, 25, CURRENT_THROTTLING_END, 0, T3_us);
     setup_mock_current_data(&mock_current_data_end, core_index, T3_us, 100, 80, 120, 100, 200, 11);
     setup_mock_gtimer_frequency();
+
     if (g_print_logs)
         printf("Processing step 3: CURRENT_THROTTLING_END\n");
     data_smpl_process_pstate_sensor_fifo();
@@ -326,6 +327,7 @@ TEST_FUNCTION(test_core_multiple_current_throttling_cycles, test_setup, test_tea
     setup_mock_pstate_data_with_throttling(&pstate_start1, core_index, 10, 20, CURRENT_THROTTLING_START, 0, T2_us);
     setup_mock_current_data(&current_start1, core_index, T2_us, 100, 80, 120, 100, 150, 10);
     setup_mock_gtimer_frequency();
+
     if (g_print_logs)
         printf("Processing step 2: CURRENT_THROTTLING_START #1\n");
     data_smpl_process_pstate_sensor_fifo();

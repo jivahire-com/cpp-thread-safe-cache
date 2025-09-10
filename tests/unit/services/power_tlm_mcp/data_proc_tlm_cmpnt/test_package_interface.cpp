@@ -46,9 +46,11 @@ extern soc_runtime_info_t soc_rt;
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
+
     comp_metrics_reset_local_2_min_metrics();
     comp_metrics_reset_24_hrs_metrics();
     return 0;
@@ -794,4 +796,40 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_core_droop_count_data, test_setup
     computed_metrics_2_mins.cores[core_id].droop_count = 20;
     data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(NUMBER_OF_CORES_PER_DIE, &droop_counts);
     assert_int_not_equal(droop_counts.droop_count, computed_metrics_2_mins.cores[core_id].droop_count);
+}
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_core_aging_counters_data, test_setup, test_teardown)
+{
+
+    pwr_core_element_aging_t aging_data[NUMBER_OF_AGING_COUNTER_PAIRS] = {{0}};
+    uint8_t counter_id = 0;
+    uint8_t core_id = 0;
+    for (counter_id = 0; counter_id < NUMBER_OF_AGING_COUNTER_PAIRS; counter_id++)
+    {
+        computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter = 20;
+        computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter = 10;
+        computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].counter_id = counter_id;
+        computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS = 1000;
+        computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].temperature_dC = 20;
+        computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].voltage_mV = 100;
+    }
+
+    data_proc_tlm_cmpnt_get_pwr_core_aging_data(core_id, &aging_data);
+
+    for (counter_id = 0; counter_id < NUMBER_OF_AGING_COUNTER_PAIRS; counter_id++)
+    {
+        assert_int_equal(aging_data[counter_id].counter_id, counter_id);
+        assert_int_equal(aging_data[counter_id].aged_counter,
+                         computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter);
+        assert_int_equal(aging_data[counter_id].unaged_counter,
+                         computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter);
+        assert_int_equal(aging_data[counter_id].timestamp_uS,
+                         computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS);
+        assert_int_equal(aging_data[counter_id].voltage_mV,
+                         computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].voltage_mV);
+    }
+
+    // case : core id out of range
+    core_id = NUMBER_OF_CORES_PER_DIE;
+    data_proc_tlm_cmpnt_get_pwr_core_aging_data(core_id, &aging_data);
 }

@@ -152,6 +152,14 @@ void data_proc_tlm_cmpnt_get_pwr_core_power_data(uint16_t core_id, p_pwr_core_el
     function_called();
 }
 
+void data_proc_tlm_cmpnt_get_pwr_core_aging_data(uint16_t core_id, pwr_core_element_aging_t (*aging_data)[NUMBER_OF_AGING_COUNTER_PAIRS])
+{
+    FPFW_UNUSED(core_id);
+    memset((*aging_data), 0xFF, sizeof(pwr_core_element_aging_t) * NUMBER_OF_AGING_COUNTER_PAIRS);
+
+    function_called();
+}
+
 void data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(uint16_t core_id, p_pwr_core_element_droop_count_t droop_count)
 {
     FPFW_UNUSED(core_id);

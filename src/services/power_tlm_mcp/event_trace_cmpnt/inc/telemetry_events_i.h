@@ -471,6 +471,25 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     87,
                     CompMetricsMpamPwrNullPointer,
                     FPFW_ET_LEVEL_ERROR)
+                   
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    88,
+                    AgingCountrInValidCounterID,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, counter_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    89,
+                    AgingCounterInvalidCoreID,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    90,
+                    AgingCounterNotArmed,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id)) 
 
 /*--------- Function Prototypes ----------*/
 

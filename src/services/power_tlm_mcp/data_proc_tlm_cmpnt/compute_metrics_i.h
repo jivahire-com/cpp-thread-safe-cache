@@ -64,6 +64,15 @@ typedef struct {
     uint32_t residency_uS;
 } rack_priority_metrics_t;
 
+typedef struct {
+    uint64_t timestamp_uS;
+    uint32_t unaged_counter;
+    uint32_t aged_counter;
+    uint16_t voltage_mV;
+    uint16_t temperature_dC;
+    uint8_t counter_id;
+} aging_counter_metrics_t;
+
 typedef struct
 {
     uint64_t droop_count;
@@ -77,6 +86,11 @@ typedef struct
     mma_u16_t current_mA;
     mma_u16_t vcpu_input_voltage_mV;
 } computed_per_core_metrics_t;
+
+typedef struct 
+{
+    aging_counter_metrics_t core_aging_counters[NUMBER_OF_AGING_COUNTER_PAIRS];
+} computed_per_core_24_hrs_metrics_t;
 
 typedef struct
 {
@@ -117,7 +131,7 @@ typedef struct {
 
 typedef struct
 {
-    uint16_t stub_metric;
+    computed_per_core_24_hrs_metrics_t cores[NUMBER_OF_CORES_PER_DIE];
 } computed_metrics_24_hrs_t;
 
 typedef struct
@@ -422,6 +436,19 @@ void comp_metrics_reset_24_hrs_metrics();
  * @return none
  */
 void comp_metrics_for_cores_droop_counts(void);
+
+/**
+ * @brief function update aging counters metrics for a specified core.
+ *
+ * @param[in] core_id - The identifier of the core for which the MPAM residency is being updated.
+ * @param[in] latest_voltage_mV - latest core voltage 
+ * @param[in] latest_max_value_dC -latest max temperature for the core
+ * @param[in] this_pwr_pkg_timestamp_uS - timestamp when this package is getting created.
+ * @param[in] latest_aged_counter latest aged counter value  for the core_id 
+ * @param[in] latest_unaged_counter latest aged counter for the core_id 
+ * @param[in] counter_id  the counter id for which we are reading value .
+ */
+void comp_metrics_for_single_core_aging_counters( uint8_t core_id, uint16_t latest_voltage_mV, uint16_t latest_max_value_dC, uint64_t this_pwr_pkg_timestamp_uS, uint32_t latest_aged_counter, uint32_t latest_unaged_counter, uint8_t counter_id);
 
 /**
  * @brief Update MPAM power metrics for all MPAMs based on the provided power values.

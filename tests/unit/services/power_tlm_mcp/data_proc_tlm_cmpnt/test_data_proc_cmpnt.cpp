@@ -16,6 +16,7 @@
 extern "C" {
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <aging_counters_i.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <data_sampling_i.h>
 #include <die_2_die_exchange_i.h>
@@ -24,6 +25,7 @@ extern "C" {
 
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 bool data_proc_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
+extern aging_counter_t core_aging[NUMBER_OF_CORES_PER_DIE];
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -61,14 +63,21 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_init, test_setup, test_teardown)
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg, test_setup, test_teardown)
 {
-
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
+    {
+        core_aging[i].measurement_armed = false;
+    }
     die_2_die_exch_init(0);
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg);
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 1000);
+
     data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg();
 
     die_2_die_exch_init(1);
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 1000);
+
     data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg();
 }
 

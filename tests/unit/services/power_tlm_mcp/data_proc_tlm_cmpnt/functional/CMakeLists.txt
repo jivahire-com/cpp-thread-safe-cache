@@ -15,6 +15,7 @@ set(SOURCES
     test_core_power.cpp
     test_soc_hnf_temperature.cpp
     test_core_throttling_data.cpp
+    log_core_instantaneous_data_integration_test.cpp
     )
 
 add_executable(${TARGET} ${SOURCES})

@@ -110,3 +110,9 @@ add_custom_command(
     COMMAND init_graph_tool -i ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp/mcp_fw.elf
     COMMAND echo "Checking for Cyclic Dependencies for ${TARGET}"
 )
+
+add_custom_command(
+    TARGET ${TARGET}
+    COMMAND $ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/bin/arm-none-eabi-objdump.exe -xdlSC ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp/mcp_fw.elf > ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mcp/mcp.dis
+    COMMAND echo "Generating mcp.dis ${TARGET}"
+)

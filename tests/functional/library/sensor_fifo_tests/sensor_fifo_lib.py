@@ -1,8 +1,16 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
+import ctypes
+import sys, os
+import time
 from dataclasses import dataclass
 from enum import IntEnum
+from pathlib import Path
 from typing import List, Union, Dict, Optional, Tuple
-import struct
-import time
+
+sys.path.append(str(Path(__file__).parent.parent / 'power_telemetry_tests'))
+
+from sensor_fifo_structs import sensor_ram_dimm_info
 
 # Constants from header files
 NUMBER_OF_SOC_TEMP_SENSORS = 15
@@ -395,13 +403,15 @@ class SensorDataCreator:
         dimm_temp_s0: int = 0,
         dimm_temp_s1: int = 0,
         dimm_power: int = 0,
-        dimm_mr4_throttle_count: int = 0
+        dimm_mr4_throttle_count: int = 0,
+        dimm_throttle_duration_ms: int = 0
     ) -> List[str]:
         """Create DIMM information data"""
         if timestamp is None:
             timestamp = SensorDataCreator.get_timestamp()
 
         # Validate input ranges
+        if not (0 <= dimm_throttle_duration_ms <= 0xFF): raise ValueError("dimm_throttle_duration_ms must be 0-255")
         if not (0 <= dimm_id <= 0xFF): raise ValueError("dimm_id must be 0-255")
         if not (0 <= dimm_throttling <= 0xFF): raise ValueError("dimm_throttling must be 0-255")
         if not (0 <= dimm_memory_frequency_id <= 0xFF): raise ValueError("dimm_memory_frequency_id must be 0-255")
@@ -409,26 +419,26 @@ class SensorDataCreator:
         # Validate 16-bit values
         for value in [dimm_temp_s0, dimm_temp_s1, dimm_power, dimm_mr4_throttle_count]:
             if not (0 <= value <= 0xFFFF):
-                raise ValueError("Temperature and power values must be 0-65535")
+                raise ValueError("Temperature, power, and throttle count values must be 0-65535")
 
-        # Pack first quadword: timestamp
+        # Pack first quadword
         result = [f"0x{timestamp:016x}"]
 
-        # Pack second quadword:
+        # Pack second quadword
         data1 = (
-            (dimm_mr4_throttle_count & 0xFFFF) |
-            ((dimm_power & 0xFFFF) << 16) |
-            ((dimm_temp_s1 & 0xFFFF) << 32) |
-            ((dimm_temp_s0 & 0xFFFF) << 48)
+            (dimm_temp_s0 & 0xFFFF) |
+            ((dimm_temp_s1 & 0xFFFF) << 16) |
+            ((dimm_power & 0xFFFF) << 32) |
+            ((dimm_mr4_throttle_count & 0xFFFF) << 48)
         )
         result.append(f"0x{data1:016x}")
 
-        # Pack third quadword: thresholds
+        # Pack third quadword
         data2 = (
-            0 |
-            ((dimm_memory_frequency_id & 0xFF) << 40) |
-            ((dimm_throttling & 0xFF) << 48) |
-            ((dimm_id & 0xFF) << 56)
+            (dimm_id & 0xFF) |
+            ((dimm_throttling & 0xFF) << 8) |
+            ((dimm_memory_frequency_id & 0xFF) << 16) |
+            ((dimm_throttle_duration_ms & 0xFF) << 24)
         )
         result.append(f"0x{data2:016x}")
 
@@ -538,6 +548,9 @@ def create_sensor_data(fifo_id: Union[SensorFifoId, int], timestamp_offset_ns: i
     return creators[fifo_id](**kwargs)
 
 # Example usage
+#
+# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/sensor_fifo_tests/sensor_fifo_lib.py
+#
 if __name__ == "__main__":
     # Example: Create temperature FIFO data
     temp_data = create_sensor_data(
@@ -568,3 +581,27 @@ if __name__ == "__main__":
         voltages=[1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070]
     )
     print("VR Data:", vr_data)
+
+    # Example: Create DIMM Data and Copy it into a struct
+    dimm_data = create_sensor_data(
+        SensorFifoId.DIMM_TEMP_FW,
+        dimm_temp_s0=75,
+        dimm_temp_s1=78,
+        dimm_power=100,
+        dimm_mr4_throttle_count=5,
+        dimm_id=4,
+        dimm_throttling=1,
+        dimm_memory_frequency_id=123,
+        dimm_throttle_duration_ms=234
+    )
+
+    # Convert list of hex quadwords to list of ctypes.c_uint64, then to bytes
+
+    dimm_data_uint64_list = [ctypes.c_uint64(int(qw, 16)) for qw in dimm_data]
+    dimm_data_bytes = b''.join(x.value.to_bytes(8, byteorder="little") for x in dimm_data_uint64_list)
+    dimm_data_struct = sensor_ram_dimm_info.from_buffer_copy(dimm_data_bytes)
+
+    print("DIMM Data Created:", dimm_data)
+    print("DIMM Data uint64_ts:", dimm_data_uint64_list)
+    print("DIMM Data Bytes:", dimm_data_bytes)
+    print("DIMM Data Struct:", dimm_data_struct)

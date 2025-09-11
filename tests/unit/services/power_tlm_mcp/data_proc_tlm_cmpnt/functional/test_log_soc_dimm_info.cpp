@@ -179,23 +179,29 @@ TEST_FUNCTION(test_tlm_logger_log_dimm_information, test_setup, test_teardown)
     // Expected values are set to the input values for each iteration.
     // As there is no transformation, conversion, or aggregation logic for these fields in tlm_logger,
     // they are copied as-is and validated and asserted accordingly.
-    sensor_ram_dimm_info_t dimm_info[] = {
-        {.dimm_temp_s0_dC = 26, .dimm_temp_s1_dC = 28, .dimm_power_mW = 100, .dimm_id = 0, .dimm_throttling = 0, .dimm_memory_frequency_id = 0},
-        {.dimm_temp_s0_dC = 30, .dimm_temp_s1_dC = 32, .dimm_power_mW = 120, .dimm_id = 1, .dimm_throttling = 0, .dimm_memory_frequency_id = 1},
-        {.dimm_temp_s0_dC = 35, .dimm_temp_s1_dC = 38, .dimm_power_mW = 150, .dimm_id = 2, .dimm_throttling = 1, .dimm_memory_frequency_id = 2},
-        {.dimm_temp_s0_dC = 40, .dimm_temp_s1_dC = 42, .dimm_power_mW = 180, .dimm_id = 3, .dimm_throttling = 1, .dimm_memory_frequency_id = 3}};
+    // clang-format off
+    sensor_ram_dimm_info_t dimm_info[NO_OF_ITERATIONS] = {
+        {.dimm_temp_s0_dC = 26, .dimm_temp_s1_dC = 28, .dimm_power_mW = 100, .dimm_id = 0, .dimm_throttling = 0, .dimm_memory_frequency_id = 0, .dimm_throttle_duration_ms = 100},
+        {.dimm_temp_s0_dC = 30, .dimm_temp_s1_dC = 32, .dimm_power_mW = 120, .dimm_id = 1, .dimm_throttling = 0, .dimm_memory_frequency_id = 1, .dimm_throttle_duration_ms = 120},
+        {.dimm_temp_s0_dC = 35, .dimm_temp_s1_dC = 38, .dimm_power_mW = 150, .dimm_id = 2, .dimm_throttling = 1, .dimm_memory_frequency_id = 2, .dimm_throttle_duration_ms = 150},
+        {.dimm_temp_s0_dC = 40, .dimm_temp_s1_dC = 42, .dimm_power_mW = 180, .dimm_id = 3, .dimm_throttling = 1, .dimm_memory_frequency_id = 3, .dimm_throttle_duration_ms = 180},
+    };
+    // clang-format on
 
     sensor_ram_dimm_info_t mock_dimm_data = {0};
 
     for (int32_t iteration = 0; iteration < NO_OF_ITERATIONS; iteration++)
     {
 
+        mock_dimm_data.dimm_throttle_duration_ms = dimm_info[iteration].dimm_throttle_duration_ms;
         mock_dimm_data.dimm_temp_s0_dC = dimm_info[iteration].dimm_temp_s0_dC;
         mock_dimm_data.dimm_temp_s1_dC = dimm_info[iteration].dimm_temp_s1_dC;
         mock_dimm_data.dimm_power_mW = dimm_info[iteration].dimm_power_mW;
         mock_dimm_data.dimm_id = dimm_info[iteration].dimm_id;
         mock_dimm_data.dimm_throttling = dimm_info[iteration].dimm_throttling;
         mock_dimm_data.dimm_memory_frequency_id = dimm_info[iteration].dimm_memory_frequency_id;
+        // Assert dimm_throttle_duration_ms is correctly processed
+        assert_int_equal(dimm_info[iteration].dimm_throttle_duration_ms, mock_dimm_data.dimm_throttle_duration_ms);
 
         will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
 

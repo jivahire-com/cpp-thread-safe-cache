@@ -213,6 +213,7 @@ TEST_FUNCTION(test_svc_add_pvt_voltage, test_setup, nullptr)
 TEST_FUNCTION(test_svc_add_dimm_info, test_setup, nullptr)
 {
     sensor_ram_dimm_info_t sensor_data = {0};
+    sensor_data.dimm_throttle_duration_ms = 42; // 8-bit per new layout
 
     expect_value(__wrap_sensor_fifo_driver_write_entries, fifo_id, DEVICE_FIFO_DIMM_TEMP_TLM_FW_PROD);
     expect_value(__wrap_sensor_fifo_driver_write_entries, entry_size, sizeof(sensor_ram_dimm_info_t));
@@ -400,6 +401,7 @@ TEST_FUNCTION(test_svc_poll_pvt_voltage, test_setup, nullptr)
 TEST_FUNCTION(test_svc_poll_dimm_info, test_setup, nullptr)
 {
     sensor_ram_dimm_info_t sensor_data = {0};
+    sensor_data.dimm_throttle_duration_ms = 7;
 
     expect_value(__wrap_sensor_fifo_driver_read_entry, fifo_id, DEVICE_FIFO_DIMM_TEMP_TLM_FW_PROD);
     expect_value(__wrap_sensor_fifo_driver_read_entry, entry_size, sizeof(sensor_ram_dimm_info_t));

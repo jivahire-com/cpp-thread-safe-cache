@@ -254,6 +254,17 @@ class sensor_ram_dimm_info(ctypes.Structure):
         ("dimm_id", ctypes.c_uint8),
         ("dimm_throttling", ctypes.c_uint8),  # dimm_throttle_source_t
         ("dimm_memory_frequency_id", ctypes.c_uint8),
-        ("padding", ctypes.c_uint8 * 5),  # Padding to align to 8 bytes
+        ("dimm_throttle_duration_ms", ctypes.c_uint8),
+        ("padding", ctypes.c_uint8 * 4),  # Padding to align to 8 bytes (24 bytes total)
     ]
 
+    def __str__(self):
+        return (f"timestamp: {self.timestamp}, "
+                f"dimm_temp_s0_dc: {self.dimm_temp_s0_dc}, "
+                f"dimm_temp_s1_dc: {self.dimm_temp_s1_dc}, "
+                f"dimm_power_mw: {self.dimm_power_mw}, "
+                f"dimm_mr4_throttle_count: {self.dimm_mr4_throttle_count}, "
+                f"dimm_id: {self.dimm_id}, "
+                f"dimm_throttling: {self.dimm_throttling}, "
+                f"dimm_memory_frequency_id: {self.dimm_memory_frequency_id}, "
+                f"dimm_throttle_duration_ms: {self.dimm_throttle_duration_ms}, ")

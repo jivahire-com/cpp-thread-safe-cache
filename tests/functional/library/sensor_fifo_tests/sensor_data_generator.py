@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 from typing import List, Optional, Union, Dict
 import random
 from sensor_fifo_lib import (
@@ -67,7 +69,8 @@ class SensorDataGenerator:
                 'id': (0, 6),            # DIMM IDs
                 'freq': (0, 10),         # DDRSS_SPEED_GRADE
                 'throttle': (0, 3),      # Throttling states
-                'mr4_count' : (0, 1000)  # dimm_mr4_throttle_count
+                'mr4_count' : (0, 1000), # dimm_mr4_throttle_count
+                'duration_ms': (0, 255)  # dimm throttle duration mS
             }
         }
 
@@ -201,6 +204,7 @@ class SensorDataGenerator:
                     dimm_temp_s1=random.randint(*self.ranges['temperature']),
                     dimm_power=random.randint(*self.ranges['power']),
                     dimm_mr4_throttle_count=random.randint(*self.ranges['dimm']['mr4_count']),
+                    dimm_throttle_duration_ms=random.randint(*self.ranges['dimm']['duration_ms']),
                 )
 
             elif fifo_id == SensorFifoId.VR_TEMP_FW:

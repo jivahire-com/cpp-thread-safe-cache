@@ -163,7 +163,8 @@ typedef struct __attribute__((packed)) {
     uint8_t dimm_id;
     uint8_t dimm_throttling; // dimm_throttle_source_t
     uint8_t dimm_memory_frequency_id; // DDRSS_SPEED_GRADE
-    uint8_t  padding[5]; // needs to be multiple of QUADWORD_SIZE
+    uint8_t dimm_throttle_duration_ms; // total time dimm throttled since last report, in mS (0-255)
+    uint8_t padding[4]; // pad to multiple of QUADWORD_SIZE; total struct size remains 24 bytes
 } sensor_ram_dimm_info_t;
 
 /**

@@ -21,6 +21,7 @@ set(LIBS
             ms::lib::icc_platform_defines
             ms::lib::interface::mhu_icc_payloads
             ms::lib::hsp_firmware_headers
+            ms::lib::utils		
             silibs::kng_silibs_platform
             silibs::platform
             silibs::icc_mhu

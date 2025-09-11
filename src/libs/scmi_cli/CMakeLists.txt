@@ -11,7 +11,8 @@ set(LIBS
             silibs::platform
             ms::driver::scmi_drv
             ms::lib::arm_intrinsic
-            ms::lib::register_headers			
+            ms::lib::register_headers
+            ms::lib::utils			
         PUBLIC
             ms::lib::debug
             silibs_platform

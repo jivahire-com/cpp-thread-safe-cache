@@ -22,6 +22,7 @@
 #include <stdint.h>               // for uint32_t, uint8_t
 #include <stdlib.h>               // for atoi, NULL, size_t
 #include <string.h>               // for memset
+#include <utils.h>
 
 //*-- Symbolic Constant Macros (defines) --*/
 #define MAX_ICC_MAILBOXES_INST  2
@@ -97,7 +98,7 @@ static bool is_send_test_active = false;
 static bool is_recv_test_active = false;
 
 /*------------- Functions ----------------*/
-FPFW_CLI_STATUS display_mbx_list(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS display_mbx_list(int argc, const char** argv)
 {
     FPFW_UNUSED(argv);
     FPFW_UNUSED(argc);
@@ -117,7 +118,7 @@ FPFW_CLI_STATUS display_mbx_list(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-FPFW_CLI_STATUS display_mbx_register_status(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS display_mbx_register_status(int argc, const char** argv)
 {
     FPFW_UNUSED(argv);
     FPFW_UNUSED(argc);
@@ -144,7 +145,7 @@ FPFW_CLI_STATUS display_mbx_register_status(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv)
 {
     uint32_t old_value = 0;
     uint32_t new_value = 0;
@@ -185,7 +186,7 @@ FPFW_CLI_STATUS set_mbx_reg_val(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-void my_icc_base_send_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+PLACED_CODE void my_icc_base_send_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
 
     fpfw_icc_base_send_recv_req_t* req_params = (fpfw_icc_base_send_recv_req_t*)context; // NOLINT
@@ -212,7 +213,7 @@ void my_icc_base_send_recv_complete_notify(void* context, size_t output_size_byt
     is_echo_test_active = false;
 }
 
-FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
 
@@ -276,7 +277,7 @@ FPFW_CLI_STATUS hsp_mbox_echo(int argc, const char** argv)
     return cli_status;
 }
 
-void my_icc_base_send_complete_notify(void* context, fpfw_status_t status)
+PLACED_CODE void my_icc_base_send_complete_notify(void* context, fpfw_status_t status)
 {
     fpfw_icc_base_send_req_t* req_params = (fpfw_icc_base_send_req_t*)context; // NOLINT
     if (status != DFWK_SUCCESS)
@@ -302,7 +303,7 @@ void my_icc_base_send_complete_notify(void* context, fpfw_status_t status)
     is_send_test_active = false;
 }
 
-FPFW_CLI_STATUS hsp_mbox_send(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS hsp_mbox_send(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
 
@@ -364,7 +365,7 @@ FPFW_CLI_STATUS hsp_mbox_send(int argc, const char** argv)
     return cli_status;
 }
 
-void my_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+PLACED_CODE void my_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     fpfw_icc_base_recv_req_t* req_params = (fpfw_icc_base_recv_req_t*)context; // NOLINT
     if (status != DFWK_SUCCESS)
@@ -393,7 +394,7 @@ void my_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, f
     is_recv_test_active = false;
 }
 
-FPFW_CLI_STATUS hsp_mbox_recv(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS hsp_mbox_recv(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
 

@@ -24,6 +24,7 @@
 #include <stdint.h>               // for uint32_t, uint8_t
 #include <stdlib.h>               // for atoi, NULL, size_t
 #include <string.h>               // for memset
+#include <utils.h>
 
 //*-- Symbolic Constant Macros (defines) --*/
 
@@ -74,7 +75,7 @@ static void my_icc_large_fifo_loopback_send_complete_notify(void* context, fpfw_
 
 /*------------- Functions ----------------*/
 
-static void my_icc_large_fifo_send_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+static PLACED_CODE void my_icc_large_fifo_send_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
 
     fpfw_icc_base_send_recv_req_t* req_params = (fpfw_icc_base_send_recv_req_t*)context; // NOLINT
@@ -100,7 +101,7 @@ static void my_icc_large_fifo_send_recv_complete_notify(void* context, size_t ou
     is_accel_echo_test_active = false;
 }
 
-FPFW_CLI_STATUS large_fifo_mbox_echo(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS large_fifo_mbox_echo(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
     fpfw_icc_base_ctx_t* icc_base;
@@ -173,7 +174,7 @@ FPFW_CLI_STATUS large_fifo_mbox_echo(int argc, const char** argv)
     return cli_status;
 }
 
-static void my_icc_large_fifo_send_complete_notify(void* context, fpfw_status_t status)
+static PLACED_CODE void my_icc_large_fifo_send_complete_notify(void* context, fpfw_status_t status)
 {
     fpfw_icc_base_send_req_t* req_params = (fpfw_icc_base_send_req_t*)context; // NOLINT
     if (status != DFWK_SUCCESS)
@@ -197,7 +198,7 @@ static void my_icc_large_fifo_send_complete_notify(void* context, fpfw_status_t 
     is_accel_send_test_active = false;
 }
 
-FPFW_CLI_STATUS large_fifo_mbox_send(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS large_fifo_mbox_send(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
     fpfw_icc_base_ctx_t* icc_base;
@@ -269,7 +270,7 @@ FPFW_CLI_STATUS large_fifo_mbox_send(int argc, const char** argv)
     return cli_status;
 }
 
-static void my_icc_large_fifo_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+static PLACED_CODE void my_icc_large_fifo_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     fpfw_icc_base_recv_req_t* req_params = (fpfw_icc_base_recv_req_t*)context; // NOLINT
     if (status != DFWK_SUCCESS)
@@ -294,7 +295,7 @@ static void my_icc_large_fifo_recv_complete_notify(void* context, size_t output_
     is_accel_recv_test_active = false;
 }
 
-FPFW_CLI_STATUS large_fifo_mbox_recv(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS large_fifo_mbox_recv(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
     fpfw_icc_base_ctx_t* icc_base;
@@ -354,7 +355,7 @@ FPFW_CLI_STATUS large_fifo_mbox_recv(int argc, const char** argv)
     return cli_status;
 }
 
-static fpfw_status_t my_icc_large_fifo_loopback_send_recv()
+static PLACED_CODE fpfw_status_t my_icc_large_fifo_loopback_send_recv()
 {
     //! Prepare send request
     loopback_send_params.payload_buffer = &loopback_send_msg;
@@ -407,7 +408,7 @@ func_exit:
     return status;
 }
 
-static void my_icc_large_fifo_loopback_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+static PLACED_CODE void my_icc_large_fifo_loopback_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     fpfw_icc_base_recv_req_t* req_params = (fpfw_icc_base_recv_req_t*)context; // NOLINT
     bool mismatch = false;
@@ -466,7 +467,7 @@ static void my_icc_large_fifo_loopback_recv_complete_notify(void* context, size_
     }
 }
 
-static void my_icc_large_fifo_loopback_send_complete_notify(void* context, fpfw_status_t status)
+static PLACED_CODE void my_icc_large_fifo_loopback_send_complete_notify(void* context, fpfw_status_t status)
 {
     fpfw_icc_base_send_req_t* req_params = (fpfw_icc_base_send_req_t*)context; // NOLINT
     if (status != DFWK_SUCCESS)
@@ -484,7 +485,7 @@ static void my_icc_large_fifo_loopback_send_complete_notify(void* context, fpfw_
     }
 }
 
-FPFW_CLI_STATUS large_fifo_mbox_loopback(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS large_fifo_mbox_loopback(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
     unsigned int i;

@@ -28,6 +28,7 @@
 #include <stdio.h>   // for NULL
 #include <stdlib.h>  // for strtoul
 #include <string.h>  // for memset
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -68,7 +69,7 @@ static FPFW_CLI_COMMAND cli_rh_tlm_commands[] = {
  * @param  : p_tm - pointer to RH Cfg
  * @retval : void
  */
-static void print_rhm_cfg_telemetry(ddrss_rhm_tm_cfg_t* p_tm)
+static PLACED_CODE void print_rhm_cfg_telemetry(ddrss_rhm_tm_cfg_t* p_tm)
 {
     if (p_tm == NULL)
     {
@@ -91,7 +92,7 @@ static void print_rhm_cfg_telemetry(ddrss_rhm_tm_cfg_t* p_tm)
  * @param  : p_ddrss_rm_telemetry - pointer to RH Telemetry record
  * @retval : void
  */
-static void print_rh_tm_evt(ddrss_rhm_tm_evt_t* p_ddrss_rm_telemetry)
+static PLACED_CODE void print_rh_tm_evt(ddrss_rhm_tm_evt_t* p_ddrss_rm_telemetry)
 {
     if (p_ddrss_rm_telemetry == NULL)
     {
@@ -141,7 +142,7 @@ static void print_rh_tm_evt(ddrss_rhm_tm_evt_t* p_ddrss_rm_telemetry)
  * @retval : true - valid param and valid MC for die
  *           false - otherwise
  */
-static bool check_mc_param(int Argc, const char** Argv, uint32_t* mc, bool just_mc)
+static PLACED_CODE bool check_mc_param(int Argc, const char** Argv, uint32_t* mc, bool just_mc)
 {
     if (Argc == 1) // no argument passed
     {
@@ -180,7 +181,7 @@ static bool check_mc_param(int Argc, const char** Argv, uint32_t* mc, bool just_
  * @retval : true - mc and die match
  *           false - otherwise
  */
-bool is_mc_belong_to_die(uint32_t mc)
+PLACED_CODE bool is_mc_belong_to_die(uint32_t mc)
 {
     KNG_DIE_ID die_id = idsw_get_die_id();
     if (die_id == DIE_0)
@@ -214,7 +215,7 @@ void cli_rhtlm_initialize(void)
     FpFwCliRegisterTable(&cli_rh_tlm_commands[0], FPFW_ARRAY_SIZE(cli_rh_tlm_commands));
 }
 
-static FPFW_CLI_STATUS display_info(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS display_info(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -231,7 +232,7 @@ static FPFW_CLI_STATUS display_info(int Argc, const char** Argv)
  * @retval : CLI_ERROR - something went wrong
  *           CLI_SUCCESS - Success
  */
-static FPFW_CLI_STATUS default_rh_cfg(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS default_rh_cfg(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     if (!check_mc_param(Argc, Argv, &mc, false))
@@ -269,7 +270,7 @@ static FPFW_CLI_STATUS default_rh_cfg(int Argc, const char** Argv)
  * @retval : CLI_ERROR - something went wrong
  *           CLI_SUCCESS - Success
  */
-static FPFW_CLI_STATUS read_ddr_rh_evt(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS read_ddr_rh_evt(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
     int result = SILIBS_SUCCESS;
@@ -307,7 +308,7 @@ static FPFW_CLI_STATUS read_ddr_rh_evt(int Argc, const char** Argv)
  * @retval : CLI_ERROR - something went wrong
  *           CLI_SUCCESS - Success
  */
-static FPFW_CLI_STATUS read_ddr_rh_config(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS read_ddr_rh_config(int Argc, const char** Argv)
 {
     uint32_t mc = 0;
 
@@ -336,7 +337,7 @@ static FPFW_CLI_STATUS read_ddr_rh_config(int Argc, const char** Argv)
  * @retval : CLI_ERROR - something went wrong
  *           CLI_SUCCESS - Success
  */
-static FPFW_CLI_STATUS set_rh_filtermask(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS set_rh_filtermask(int Argc, const char** Argv)
 {
     ddrss_rhm_tm_rpt_mask_t tm_rec_msk = {0};
 
@@ -392,7 +393,7 @@ static FPFW_CLI_STATUS set_rh_filtermask(int Argc, const char** Argv)
  * @retval : CLI_ERROR - something went wrong
  *           CLI_SUCCESS - Success
  */
-static FPFW_CLI_STATUS enable_all_rh_filtermask(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS enable_all_rh_filtermask(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -415,7 +416,7 @@ static FPFW_CLI_STATUS enable_all_rh_filtermask(int Argc, const char** Argv)
  * @retval : CLI_ERROR - something went wrong
  *           CLI_SUCCESS - Success
  */
-static FPFW_CLI_STATUS submit_hm_rh_record(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS submit_hm_rh_record(int Argc, const char** Argv)
 {
 
     FPFW_UNUSED(Argc);

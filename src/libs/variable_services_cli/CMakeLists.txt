@@ -14,6 +14,7 @@ set(LIBS
             ms::lib::variable_services
             silibs::kng_silibs_platform
             silibs::platform
+            ms::lib::utils
 )
 
 add_library(${TARGET} STATIC ${SRC})

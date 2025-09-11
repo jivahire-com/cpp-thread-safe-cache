@@ -27,6 +27,7 @@
 #include <stdint.h>  // for uint32_t, uint8_t
 #include <stdlib.h>  // for atoi, NULL, size_t
 #include <string.h>  // for memset
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define D2D_MBOX_TEST_PAYLOAD      0x11111111UL
@@ -83,7 +84,7 @@ static const char* d2d_test_identifier_str[MAX_TEST_ID] =
 /**
  * @brief Callback for generic send test
  */
-void my_d2d_icc_base_send_complete_notify(void* context, fpfw_status_t status)
+PLACED_CODE void my_d2d_icc_base_send_complete_notify(void* context, fpfw_status_t status)
 {
     uint32_t remote_die_id = ((current_die_id == DIE_0) ? DIE_1 : DIE_0);
     fpfw_icc_base_send_req_t* req_params = (fpfw_icc_base_send_req_t*)context; // NOLINT
@@ -120,7 +121,7 @@ void my_d2d_icc_base_send_complete_notify(void* context, fpfw_status_t status)
 /**
  * @brief Callback for echo server send response
  */
-void my_d2d_icc_base_send_resp_complete_notify(void* context, fpfw_status_t status)
+PLACED_CODE void my_d2d_icc_base_send_resp_complete_notify(void* context, fpfw_status_t status)
 {
     uint32_t remote_die_id = ((current_die_id == DIE_0) ? DIE_1 : DIE_0);
     fpfw_icc_base_send_rsp_t* req_params = (fpfw_icc_base_send_rsp_t*)context; // NOLINT
@@ -158,7 +159,7 @@ void my_d2d_icc_base_send_resp_complete_notify(void* context, fpfw_status_t stat
 /**
  * @brief Common Callback for generic receive & echo server recv test
  */
-void my_d2d_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+PLACED_CODE void my_d2d_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     uint32_t remote_die_id = ((current_die_id == DIE_0) ? DIE_1 : DIE_0);
     fpfw_icc_base_recv_req_t* req_params = (fpfw_icc_base_recv_req_t*)context; // NOLINT
@@ -254,7 +255,7 @@ void my_d2d_icc_base_recv_complete_notify(void* context, size_t output_size_byte
     }
 }
 
-void my_d2d_icc_base_send_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+PLACED_CODE void my_d2d_icc_base_send_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     uint32_t remote_die_id = ((current_die_id == DIE_0) ? DIE_1 : DIE_0);
     fpfw_icc_base_send_recv_req_t* req_params = (fpfw_icc_base_send_recv_req_t*)context; // NOLINT
@@ -314,7 +315,10 @@ void my_d2d_icc_base_send_recv_complete_notify(void* context, size_t output_size
 }
 
 /*---------------------------------------------- Helper Functions ---------------------------------------------*/
-fpfw_status_t d2d_mbox_recv_common(fpfw_icc_base_recv_req_t* recv_param, rmss_d2d_mailbox_msg* msg, uint32_t recv_cmd_code, d2d_mbx_test_type type)
+PLACED_CODE fpfw_status_t d2d_mbox_recv_common(fpfw_icc_base_recv_req_t* recv_param,
+                                               rmss_d2d_mailbox_msg* msg,
+                                               uint32_t recv_cmd_code,
+                                               d2d_mbx_test_type type)
 {
     uint32_t remote_die_id = ((current_die_id == DIE_0) ? DIE_1 : DIE_0);
 
@@ -341,7 +345,7 @@ fpfw_status_t d2d_mbox_recv_common(fpfw_icc_base_recv_req_t* recv_param, rmss_d2
 }
 
 /*---------------------------------------------- CLI Test Functions ------------------------------------------*/
-FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
     uint32_t remote_die_id = ((current_die_id == DIE_0) ? DIE_1 : DIE_0);
@@ -413,7 +417,7 @@ FPFW_CLI_STATUS d2d_mbox_send(int argc, const char** argv)
     return cli_status;
 }
 
-FPFW_CLI_STATUS d2d_mbox_recv(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS d2d_mbox_recv(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
     uint16_t recv_cmd_code = 0;
@@ -448,7 +452,7 @@ FPFW_CLI_STATUS d2d_mbox_recv(int argc, const char** argv)
     return cli_status;
 }
 
-FPFW_CLI_STATUS d2d_mbox_echo_server(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS d2d_mbox_echo_server(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);
@@ -473,7 +477,7 @@ FPFW_CLI_STATUS d2d_mbox_echo_server(int argc, const char** argv)
     return cli_status;
 }
 
-FPFW_CLI_STATUS d2d_mbox_echo_client(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS d2d_mbox_echo_client(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
     uint32_t remote_die_id = ((current_die_id == DIE_0) ? DIE_1 : DIE_0);
@@ -572,7 +576,7 @@ static mscp_exp_spi_sync_point_t my_d2d_sync_point;
  * through SRAM0 in die 1. Die 0 will use the SPI to access this memory. Die 1
  * will use local access to this memory. SRAM0 in DIE1 will be the memory used.
  */
-FPFW_CLI_STATUS d2d_sync_test(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS d2d_sync_test(int argc, const char** argv)
 {
     if (argc != 4)
     {
@@ -609,7 +613,7 @@ FPFW_CLI_STATUS d2d_sync_test(int argc, const char** argv)
  * and this will prevent us from trying to call echo_client again on die 0 as the
  * prev test sequence isn't finished. The reset command will come handy in such situation
  */
-FPFW_CLI_STATUS d2d_reset_test(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS d2d_reset_test(int argc, const char** argv)
 {
     if (argc < 2)
     {
@@ -651,7 +655,7 @@ FPFW_CLI_STATUS d2d_reset_test(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-FPFW_CLI_STATUS d2d_mbox_echo_server_sync(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS d2d_mbox_echo_server_sync(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);
@@ -746,7 +750,7 @@ FPFW_CLI_STATUS d2d_mbox_echo_server_sync(int argc, const char** argv)
     return cli_status;
 }
 
-FPFW_CLI_STATUS d2d_mbox_echo_client_sync(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS d2d_mbox_echo_client_sync(int argc, const char** argv)
 {
     FPFW_CLI_STATUS cli_status = CLI_ERROR;
     uint32_t remote_die_id = ((current_die_id == DIE_0) ? DIE_1 : DIE_0);

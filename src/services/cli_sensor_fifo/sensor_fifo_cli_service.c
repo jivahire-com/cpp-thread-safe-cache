@@ -21,6 +21,7 @@
 #include <stdint.h>                       // for uint32_t, uint16_t
 #include <stdio.h>                        // for NULL
 #include <stdlib.h>                       // for strtoul
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MAX_ENTRY_SIZE_BYTES (81)
@@ -55,14 +56,14 @@ static FPFW_CLI_COMMAND cli_sensor_fifo_commands[] = {
 /*------------- Functions ----------------*/
 static psensor_fifo_driver_interface_t sp_sensor_fifo_driver_inf;
 
-void sensor_fifo_cli_svc_initialize(sensor_fifo_driver_interface_t* driver_interface)
+PLACED_CODE void sensor_fifo_cli_svc_initialize(sensor_fifo_driver_interface_t* driver_interface)
 {
     sp_sensor_fifo_driver_inf = driver_interface;
 
     FpFwCliRegisterTable(&cli_sensor_fifo_commands[0], FPFW_ARRAY_SIZE(cli_sensor_fifo_commands));
 }
 
-static FPFW_CLI_STATUS read_reg(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS read_reg(int Argc, const char** Argv)
 {
     if (Argc == 2)
     {
@@ -81,7 +82,7 @@ static FPFW_CLI_STATUS read_reg(int Argc, const char** Argv)
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS write_reg(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS write_reg(int Argc, const char** Argv)
 {
     if (Argc == 3)
     {
@@ -100,7 +101,7 @@ static FPFW_CLI_STATUS write_reg(int Argc, const char** Argv)
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS list_properties(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS list_properties(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -128,7 +129,7 @@ static FPFW_CLI_STATUS list_properties(int Argc, const char** Argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS set_global_hw_enable(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS set_global_hw_enable(int Argc, const char** Argv)
 {
     if (Argc == 2)
     {
@@ -146,7 +147,7 @@ static FPFW_CLI_STATUS set_global_hw_enable(int Argc, const char** Argv)
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS reset_fifos(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS reset_fifos(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -162,7 +163,7 @@ static FPFW_CLI_STATUS reset_fifos(int Argc, const char** Argv)
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS fifo_enable(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS fifo_enable(int Argc, const char** Argv)
 {
     if (Argc == 3)
     {
@@ -187,7 +188,7 @@ static FPFW_CLI_STATUS fifo_enable(int Argc, const char** Argv)
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS read_entry(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS read_entry(int Argc, const char** Argv)
 {
     FPFW_CLI_STATUS ret_status = CLI_ERROR;
     if (Argc == 3)
@@ -254,7 +255,7 @@ static FPFW_CLI_STATUS read_entry(int Argc, const char** Argv)
     return ret_status;
 }
 
-static FPFW_CLI_STATUS write_entry(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS write_entry(int Argc, const char** Argv)
 {
     uint32_t fifo = strtoul(Argv[1], NULL, 10);
     uint32_t stride_index = strtoul(Argv[2], NULL, 10);
@@ -315,7 +316,7 @@ static FPFW_CLI_STATUS write_entry(int Argc, const char** Argv)
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS update_stride_index(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS update_stride_index(int Argc, const char** Argv)
 {
     if (Argc == 2)
     {

@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -48,7 +49,7 @@ static fpfw_icc_base_recv_req_t s_icc_base_recv_params;
 
 /*------------- Functions ----------------*/
 
-static void mhu_icc_base_send_complete_notify(void* context, fpfw_status_t status)
+static PLACED_CODE void mhu_icc_base_send_complete_notify(void* context, fpfw_status_t status)
 {
     FpFwCliPrint("MHU Send Complete CB - status: 0x%08x\n", status);
 
@@ -65,7 +66,7 @@ static void mhu_icc_base_send_complete_notify(void* context, fpfw_status_t statu
     s_pending_send_request = false;
 }
 
-static void mhu_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+static PLACED_CODE void mhu_icc_base_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(output_size_bytes);
     FpFwCliPrint("MHU Recv Complete CB - status: 0x%08x\n", status);
@@ -83,7 +84,7 @@ static void mhu_icc_base_recv_complete_notify(void* context, size_t output_size_
     s_pending_recv_request = false;
 }
 
-FPFW_CLI_STATUS mhu_list_indices(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS mhu_list_indices(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);
@@ -103,7 +104,7 @@ FPFW_CLI_STATUS mhu_list_indices(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-FPFW_CLI_STATUS mhu_recv(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS mhu_recv(int argc, const char** argv)
 {
     /**
      * We can recv if all of the following are true:
@@ -163,7 +164,7 @@ FPFW_CLI_STATUS mhu_recv(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
 {
     /**
      * We can send if all of the following are true:
@@ -248,7 +249,7 @@ FPFW_CLI_STATUS mhu_send(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-FPFW_CLI_STATUS mhu_clear(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS mhu_clear(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);
@@ -264,7 +265,7 @@ FPFW_CLI_STATUS mhu_clear(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-FPFW_CLI_STATUS mhu_props(int argc, const char** argv)
+PLACED_CODE FPFW_CLI_STATUS mhu_props(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);

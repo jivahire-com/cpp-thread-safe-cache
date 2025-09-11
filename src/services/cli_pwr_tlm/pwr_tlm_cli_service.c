@@ -25,6 +25,7 @@
 #include <stdlib.h>  // for strtoul
 #include <string.h>  // for memset
 #include <tlm_fuses.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -58,7 +59,7 @@ void pwr_tlm_cli_svc_init(void)
     FpFwCliRegisterTable(&cli_pwr_tlm_commands[0], FPFW_ARRAY_SIZE(cli_pwr_tlm_commands));
 }
 
-static FPFW_CLI_STATUS show_info(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS show_info(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -85,7 +86,7 @@ static FPFW_CLI_STATUS show_info(int Argc, const char** Argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS clear_data(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS clear_data(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -96,7 +97,7 @@ static FPFW_CLI_STATUS clear_data(int Argc, const char** Argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS disable_collection(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS disable_collection(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -107,7 +108,7 @@ static FPFW_CLI_STATUS disable_collection(int Argc, const char** Argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS change_mode(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS change_mode(int Argc, const char** Argv)
 {
     if (Argc == 2)
     {
@@ -144,7 +145,7 @@ static FPFW_CLI_STATUS change_mode(int Argc, const char** Argv)
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS change_timer_periods(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS change_timer_periods(int Argc, const char** Argv)
 {
     if (Argc == 5)
     {
@@ -170,7 +171,7 @@ static FPFW_CLI_STATUS change_timer_periods(int Argc, const char** Argv)
     return CLI_ERROR;
 }
 
-static FPFW_CLI_STATUS oob_log(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS oob_log(int Argc, const char** Argv)
 {
     if (Argc == 2)
     {
@@ -199,7 +200,7 @@ static FPFW_CLI_STATUS oob_log(int Argc, const char** Argv)
     return CLI_ERROR;
 }
 
-bool parse_arg(const char* arg, uint32_t* out)
+PLACED_CODE bool parse_arg(const char* arg, uint32_t* out)
 {
     char* end;
     errno = 0;

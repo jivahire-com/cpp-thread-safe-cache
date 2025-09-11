@@ -24,6 +24,7 @@
 #include <idsw_kng.h>       // for PLATFORM_FPGA_LARGE
 #include <stdint.h>         // for uint32_t, uint8_t
 #include <stdlib.h>         // for atoi, NULL, size_t
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -108,7 +109,7 @@ static FPFW_CLI_COMMAND s_icc_cded_large_fifo_mbx_cmd_list[] = {
 
 /*------------- Functions ----------------*/
 
-void icc_cli_init(icc_cli_init_params_t* params)
+PLACED_CODE void icc_cli_init(icc_cli_init_params_t* params)
 {
     FPFW_RUNTIME_ASSERT(params != NULL);
     icc_cli_ctx = params;
@@ -160,7 +161,7 @@ void icc_cli_init(icc_cli_init_params_t* params)
     FpFwCliRegisterTable(s_icc_mhu_cmd_list, FPFW_ARRAY_SIZE(s_icc_mhu_cmd_list));
 }
 
-icc_cli_init_params_t* get_icc_cli_ctx(void)
+PLACED_CODE icc_cli_init_params_t* get_icc_cli_ctx(void)
 {
     return icc_cli_ctx;
 }

@@ -23,6 +23,7 @@ target_link_libraries(
         ms::lib::telemetry::fuses
         ms::service::pwr_tlm_mcp
         pwr_tlm_mcp.service.cmpnt.interfaces #give cli access to internal component headers
+        ms::lib::utils
 )
 
 target_include_directories(${TARGET}

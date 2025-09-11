@@ -29,6 +29,8 @@ target_link_libraries(
         silibs::ras_arm
         ms::service::health_monitor
         ms::service::rhtlm_service
+        ms::lib::utils
+
 )
 
 lint_target(${TARGET})

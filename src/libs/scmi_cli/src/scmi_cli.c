@@ -13,6 +13,7 @@
 #include <scmi_prim.h> // for
 #include <stdint.h>    // for uint32_t, uint8_t
 #include <stdlib.h>    // for atoi
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -37,7 +38,7 @@ void scmi_cli_init(void)
     FpFwCliRegisterTable(s_scmi_cmd_list, FPFW_ARRAY_SIZE(s_scmi_cmd_list));
 }
 
-static FPFW_CLI_STATUS scmi_setm(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS scmi_setm(int argc, const char** argv)
 {
     FPFW_UNUSED(argv);
     if (argc != 2)
@@ -52,7 +53,7 @@ static FPFW_CLI_STATUS scmi_setm(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS scmi_send(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS scmi_send(int argc, const char** argv)
 {
 
     if (argc < 4)

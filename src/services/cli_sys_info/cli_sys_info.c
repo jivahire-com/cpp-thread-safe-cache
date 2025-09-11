@@ -17,6 +17,7 @@
 #include <stdint.h>          // for uint32_t, uint8_t
 #include <stdlib.h>          // for errno, strtol
 #include <system_info.h>     // for system_info_is_hsp_present, system_info_is_warm_start
+#include <utils.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -45,7 +46,7 @@ static FPFW_CLI_COMMAND s_sys_info_int_commands_table[] = {
  *  On success, CLI_SUCCESS
  *  On failure, CLI_ERROR
  * */
-static FPFW_CLI_STATUS cli_get_platform_id(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cli_get_platform_id(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);

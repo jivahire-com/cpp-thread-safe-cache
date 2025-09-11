@@ -11,6 +11,7 @@ target_link_libraries(
         fwlib.service.cli
         ms::driver::sensor_fifo
         ms::service::sensor_fifo
+        ms::lib::utils
 )
 
 target_include_directories(${TARGET}

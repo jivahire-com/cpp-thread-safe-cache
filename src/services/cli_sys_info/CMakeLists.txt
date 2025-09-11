@@ -23,6 +23,7 @@ target_link_libraries(
             fwlib.service.cli
             silibs::kng_silibs_platform
             silibs::platform
+            ms::lib::utils
         PUBLIC
             silibs::idsw_kng
             ms::lib::system_info

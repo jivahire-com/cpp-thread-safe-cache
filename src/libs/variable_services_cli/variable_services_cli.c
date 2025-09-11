@@ -16,6 +16,7 @@
 #include <kng_error.h> // for KNG_E_INVALIDARG, KNG_E_NOTIMPL
 #include <stdlib.h>    // for atoi
 #include <string.h>
+#include <utils.h>
 #include <variable_services.h>     // for var_service_shared_mem_t, var_serv...
 #include <variable_services_cli.h> // for variable_services_sync_get_vari...
 
@@ -61,10 +62,10 @@ void variable_services_cli_init(var_service_shared_mem_t* mem_ctx)
     FpFwCliRegisterTable(s_variable_serv_cmd_list, FPFW_ARRAY_SIZE(s_variable_serv_cmd_list));
 }
 
-void test_variable_service_req_complete_notify(void* context,
-                                               struct _variable_service_req_ctx* var_serv_ctx,
-                                               uint8_t* data_start_ptr,
-                                               size_t data_size)
+PLACED_CODE void test_variable_service_req_complete_notify(void* context,
+                                                           struct _variable_service_req_ctx* var_serv_ctx,
+                                                           uint8_t* data_start_ptr,
+                                                           size_t data_size)
 {
     FPFW_UNUSED(context);
     BUG_ASSERT(var_serv_ctx != NULL);   // NOLINT
@@ -104,7 +105,7 @@ void test_variable_service_req_complete_notify(void* context,
     FpFwCliPrint("[var_serv] Async %s Variable Done\n", operation_str);
 }
 
-static FPFW_CLI_STATUS var_serv_async_get_var(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS var_serv_async_get_var(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);
@@ -148,7 +149,7 @@ static FPFW_CLI_STATUS var_serv_async_get_var(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS var_serv_async_set_var(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS var_serv_async_set_var(int argc, const char** argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(argv);

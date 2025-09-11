@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //
 
-// 
+//
 // @brief: Send a DCP message and wait for a message back. Saving the final message to a file.
 //
 // @param[in]: Required - message_id: DCP Message ID, must be in hex.
@@ -61,7 +61,7 @@ if ("&message_payload"!="")
 )
 
 //
-// Since we want to send a message and get a response, we should vlaidate that there are not pending messages
+// Since we want to send a message and get a response, we should validate that there are not pending messages
 // from the MCP. If there are, clear them.
 //
 
@@ -76,7 +76,7 @@ if (&pending_status==1)
 	chdir.DO ../d0_ap_ns_mcp_icc/get_packet.cmm
 	ENTRY &file_name
 	chdir &pwd
-	
+
 	Wait  &resp_timeout_ms.ms
 )
 
@@ -193,7 +193,7 @@ if (&send_status!=0)
     ENDDO -1
 )
 
-// The MCP has to respond to the message, we validate this here by waiting and checking the 
+// The MCP has to respond to the message, we validate this here by waiting and checking the
 // pending status bit.
 
 &index= 0

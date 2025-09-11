@@ -10,19 +10,24 @@ from ctypes import Structure, c_uint16, c_uint8, c_uint32
 # Add paths for both package and direct imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
 pylibs_dir = os.path.dirname(current_dir)
-sys.path.extend([
-    pylibs_dir,
-    current_dir,
-])
+sys.path.extend(
+    [
+        pylibs_dir,
+        current_dir,
+    ]
+)
 
-from dcp_protocol import data_collection_protocol, struct_to_hex_string, byte_list_to_hex_string
+from dcp_protocol import (
+    data_collection_protocol,
+    struct_to_hex_string,
+    byte_list_to_hex_string,
+)
+
 
 class trp_node_t(ctypes.LittleEndianStructure):
     _pack_ = 1  # Force no padding
-    _fields_ = [
-        ("die_id", ctypes.c_ubyte, 4),
-        ("core_id",  ctypes.c_ubyte, 4)
-    ]
+    _fields_ = [("die_id", ctypes.c_ubyte, 4), ("core_id", ctypes.c_ubyte, 4)]
+
 
 class transfer_relay_protocol:
 
@@ -37,41 +42,42 @@ class transfer_relay_protocol:
         CPU_CDED_KMP = 0x8
 
     class trp_status_t(IntEnum):
-        TRP_STATUS_RD_DATA_VALID_MORE   = 3
-        TRP_STATUS_RD_DATA_VALID_LAST   = 2
-        TRP_STATUS_RD_DATA_NONE         = 1
-        TRP_STATUS_SUCCESS              = 0
-        TRP_STATUS_E_SIZE               = -1
-        TRP_STATUS_E_PARAM              = -2
-        TRP_STATUS_E_UNK_MSG            = -3
-        TRP_STATUS_E_UNK_CLIENT         = -4
+        TRP_STATUS_RD_DATA_VALID_MORE = 3
+        TRP_STATUS_RD_DATA_VALID_LAST = 2
+        TRP_STATUS_RD_DATA_NONE = 1
+        TRP_STATUS_SUCCESS = 0
+        TRP_STATUS_E_SIZE = -1
+        TRP_STATUS_E_PARAM = -2
+        TRP_STATUS_E_UNK_MSG = -3
+        TRP_STATUS_E_UNK_CLIENT = -4
         TRP_STATUS_E_INCOMPLETE_HANDLER = -5
-        TRP_STATUS_E_DCP_ERROR          = -6
+        TRP_STATUS_E_DCP_ERROR = -6
 
     class trp_msg_id_t(IntEnum):
-        TRP_MSG_ID_DCP_FORWARD                      = 0x0
-        TRP_MSG_ID_PACKAGE_NOTIFICATION             = 0x1
-        TRP_MSG_ID_READ_PACKAGE                     = 0x2 # command only
-        TRP_MSG_ID_READ_PACKAGE_RESPONSE            = 0x3
-        TRP_MSG_ID_READ_PACKAGE_COMPLETE            = 0x4
-        TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION     = 0x5
-        TRP_MSG_ID_READ_INTERCORE_BLOCK             = 0x6
-        TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE    = 0x7
-        TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE    = 0x8
+        TRP_MSG_ID_DCP_FORWARD = 0x0
+        TRP_MSG_ID_PACKAGE_NOTIFICATION = 0x1
+        TRP_MSG_ID_READ_PACKAGE = 0x2  # command only
+        TRP_MSG_ID_READ_PACKAGE_RESPONSE = 0x3
+        TRP_MSG_ID_READ_PACKAGE_COMPLETE = 0x4
+        TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION = 0x5
+        TRP_MSG_ID_READ_INTERCORE_BLOCK = 0x6
+        TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE = 0x7
+        TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE = 0x8
 
     class trp_msg_hdr_t(ctypes.LittleEndianStructure):
         _pack_ = 1  # Force no padding
         _fields_ = [
-            ("src_node" , trp_node_t),
-            ("dest_node" , trp_node_t),
+            ("src_node", trp_node_t),
+            ("dest_node", trp_node_t),
             ("trp_msg_status", ctypes.c_int8),
             ("broadcast_type", ctypes.c_uint8),
             ("mts_client_id", ctypes.c_uint16),
             ("trp_msg_id", ctypes.c_uint16),
-            ("incoming_endpt", ctypes.c_uint32),    # pointer to trp_endpoint
+            ("incoming_endpt", ctypes.c_uint32),  # pointer to trp_endpoint
             ("source_seq_num", ctypes.c_uint16),
-            ("payload_size", ctypes.c_uint16)
+            ("payload_size", ctypes.c_uint16),
         ]
+
         def __init__(self):
             self.src_node.die_id = 0
             self.src_node.core_id = 0
@@ -99,7 +105,10 @@ class transfer_relay_protocol:
             ("source_die_id", ctypes.c_uint8),
             ("source_core_id", ctypes.c_uint8),  # mts_platform_core_id_t
             ("reserved", ctypes.c_uint16),
-            ("addr_offset", ctypes.c_uint32),  # Offset from the beginning of the client-mapped block region
+            (
+                "addr_offset",
+                ctypes.c_uint32,
+            ),  # Offset from the beginning of the client-mapped block region
             ("block_size", ctypes.c_uint32),
             ("crc", ctypes.c_uint32),  # fpfw_crc32
         ]

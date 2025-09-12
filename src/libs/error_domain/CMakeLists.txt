@@ -8,7 +8,9 @@ set (SOURCES
         src/error_domain_scp.c
         src/error_domain_shared.c
         src/error_domain_pex.c
+        src/error_domain_smmu.c
         src/error_injection_scp.c
+        src/error_injection_smmu.c
         src/exception_trigger.c
         src/error_domain_gic.c
         src/error_injection_gic.c

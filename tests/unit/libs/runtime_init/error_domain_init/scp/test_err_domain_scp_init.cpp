@@ -38,6 +38,10 @@ void __wrap_register_pex_error_domain()
 {
     function_called();
 }
+void __wrap_register_smmu_error_domain()
+{
+    function_called();
+}
 
 void __wrap_register_gic_error_domain()
 {
@@ -67,6 +71,7 @@ TEST_FUNCTION(scp_ras, nullptr, nullptr)
     will_return_always(__wrap_fpfw_init_get_handle, (void*)1234);
     expect_function_call(__wrap_register_scp_error_domain);
     expect_function_call(__wrap_register_pex_error_domain);
+    expect_function_call(__wrap_register_smmu_error_domain);
     expect_function_call(__wrap_register_gic_error_domain);
 
     // Call the function under test

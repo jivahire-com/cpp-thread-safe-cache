@@ -278,29 +278,9 @@ FPFW_INIT_COMPONENT(mts_svc,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-#ifdef SCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(mts_scp_startup, FPFW_INIT_DEPENDENCIES("mts_svc"))
-{
-    // once HSP supports copying metadata from flash, update to use HSP mailbox here
-    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2145384
-    // for now, just copy scp metata from flash to staging DDR.  MCP builds in place.
-
-    if (idsw_get_die_id() == DIE_0)
-    {
-        mts_create_manifest_from_elf(IB_TLM_DDR_ATU_AP_MSCP_STAGING_MANIFEST_BASE_ADDR,
-                                     IB_TLM_DDR_ATU_AP_CORE_STAGING_MANIFEST_SIZE);
-    }
-    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
-}
-#endif
-
 #ifdef MCP_RUNTIME_INIT
 FPFW_INIT_COMPONENT(mts_ncp_startup, FPFW_INIT_DEPENDENCIES("mts_svc"))
 {
-    // once HSP supports copying metadata from flash, update to use HSP mailbox here
-    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2145384
-    // for now, just copy scp metata from flash to staging DDR.  MCP builds in place.
-
     if (idsw_get_die_id() == DIE_0)
     {
         mts_build_diag_decoder_full_manifest();

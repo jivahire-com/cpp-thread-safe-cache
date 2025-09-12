@@ -36,6 +36,7 @@
 #include <data_collection_protocol.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
+#include <mts_platform_specialization.h>
 #include <sdm_ext_cfg_regs.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/

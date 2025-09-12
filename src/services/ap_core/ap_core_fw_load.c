@@ -23,6 +23,7 @@
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_send, fpfw_icc_base...
 #include <fpfw_status.h>          // for fpfw_init_get_handle, FPFW_INIT_S...
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#include <in_band_telemetry_ddr.h>
 #define __NO_CSR_TYPEDEFS__
 #include <mcp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
@@ -134,6 +135,34 @@ static void request_mcp_load_complete_notify(void* context, size_t output_size_b
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("MCP FW load completed - Requesting load core now");
+}
+
+static void request_mscp_manifest_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(output_size_bytes);
+
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT(recv_payload_buffer.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
+
+    DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
+
+    APCORE_LOG_INFO("MSCP Manifest load completed");
+}
+
+static void request_accel_manifest_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(output_size_bytes);
+
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT(recv_payload_buffer.header.cmd == HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP);
+    BUG_ASSERT(recv_payload_buffer.rsp.status == 0);
+
+    DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
+
+    APCORE_LOG_INFO("Accel Manifest load completed");
 }
 
 static void request_kmp_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -248,6 +277,20 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
         recv_params.cb = request_mcp_load_complete_notify;
         recv_params.cb_ctx = icc_hspmbx_ctx;
     }
+    else if (fw_id == AP_FW_ID_MSCP_MANIFEST)
+    {
+        FPFW_DBGPRINT_INFO("MSCP Manifest load requested");
+        recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP;
+        recv_params.cb = request_mscp_manifest_load_complete_notify;
+        recv_params.cb_ctx = icc_hspmbx_ctx;
+    }
+    else if (fw_id == AP_FW_ID_ACCEL_MANIFEST)
+    {
+        FPFW_DBGPRINT_INFO("Accelerator Manifest load requested");
+        recv_params.recv_cmd_code = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP;
+        recv_params.cb = request_accel_manifest_load_complete_notify;
+        recv_params.cb_ctx = icc_hspmbx_ctx;
+    }
     else if (fw_id == AP_FW_ID_KMP)
     {
         recv_params.recv_cmd_code =
@@ -337,6 +380,26 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
     case AP_FW_ID_MCP:
         send_request.load_fw_req.id = HSP_FIRMWARE_ID_MCP;
         send_request.load_fw_req.address = SCP_EXP_MSCP_BOOT_DATA_BASE;
+        break;
+    case AP_FW_ID_MSCP_MANIFEST:
+        send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_MSCP_MANIFEST;
+        send_request.load_fw_64bit_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
+
+        uint64_t mscp_manifest_load_addr =
+            IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR +
+            EVT_TELEMETRY_MANIFEST_GET_DDR_OFFSET(IB_TLM_DDR_ATU_AP_MSCP_STAGING_MANIFEST_BASE_ADDR);
+        send_request.load_fw_64bit_req.load_addr_low = mscp_manifest_load_addr & (uint32_t)0xFFFFFFFF;
+        send_request.load_fw_64bit_req.load_addr_high = mscp_manifest_load_addr >> 32;
+        break;
+    case AP_FW_ID_ACCEL_MANIFEST:
+        send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_ACCEL_MANIFEST;
+        send_request.load_fw_64bit_req.header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_REQ;
+
+        uint64_t accel_manifest_load_addr =
+            IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR +
+            EVT_TELEMETRY_MANIFEST_GET_DDR_OFFSET(IB_TLM_DDR_ATU_AP_SDM_CDED_STAGING_MANIFEST_BASE_ADDR);
+        send_request.load_fw_64bit_req.load_addr_low = accel_manifest_load_addr & (uint32_t)0xFFFFFFFF;
+        send_request.load_fw_64bit_req.load_addr_high = accel_manifest_load_addr >> 32;
         break;
     case AP_FW_ID_SDM_ITCM:
         send_request.load_fw_64bit_req.id = HSP_FIRMWARE_ID_SDM_ITCM;

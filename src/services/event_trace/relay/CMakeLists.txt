@@ -13,6 +13,7 @@ target_link_libraries(
         fwlib.lib.assert
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.interface.platform.specialization.mts
         fwlib.service.iccBase
         ms::lib::crash_dump
         ms::lib::hsp_firmware_headers

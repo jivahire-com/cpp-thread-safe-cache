@@ -159,6 +159,10 @@ static_assert((uint64_t)(MSCP_ATU_AP_WINDOW_VAR_SVC_PCIE_PAYLOAD_BASE + MSCP_ATU
 #define ATU_LOG_WARN(fmt, ...) printf(ATU_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define ATU_LOG_CRIT(fmt, ...) printf(ATU_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 
+// Macros to decode ATU mapped address into their offsets
+#define EVT_TELEMETRY_MANIFEST_GET_DDR_OFFSET(mscp_atu_mapped_addr) \
+    ((mscp_atu_mapped_addr) - MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR)
+
 /*-------------- Typedefs ----------------*/
 /**
  *  @brief ATU service interface type

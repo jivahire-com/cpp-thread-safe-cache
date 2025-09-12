@@ -67,8 +67,11 @@ void etc_svc_init(void)
     };
 
     etc_config.core_id = idsw_get_cpu_type();
-    etc_config.manifest_id = *(PFPFW_ET_MANIFEST_ID)&g_BuildMetadata.String;
     etc_config.p_decoder_service = get_etd_service_context();
+
+    // the gnu build id is unique per core.  Use the first 16 bytes for the manifest id which needs to be
+    // unique for the diagnostic decoder tool to decode the data
+    memcpy((void*)&etc_config.manifest_id, (void*)g_note_gnu_build_id.BuildId, sizeof(etc_config.manifest_id));
 
     etc_initialize(&s_etc_service_ctx, &etc_config);
 }

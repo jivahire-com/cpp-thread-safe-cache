@@ -41,6 +41,8 @@ enum SSI_REQUEST_IDS
 typedef enum _ssi_startup_stage
 {
     STARTUP_PHASE_MSCP_ASYNC = 0x0, /* Phase included in cold boot and MSCP subsystem reset */
+    STARTUP_MSCP_MANIFEST_LOAD,
+    STARTUP_ACCEL_MANIFEST_LOAD,
     STARTUP_MCP_LOAD,
     STARTUP_SDM_ITCM_LOAD,
     STARTUP_SDM_DTCM_LOAD,

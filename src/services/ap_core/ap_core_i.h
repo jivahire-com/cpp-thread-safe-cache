@@ -54,6 +54,8 @@ typedef enum {
     AP_FW_ID_RP_EXE,
     AP_FW_ID_RP_DATA,
     AP_FW_ID_MCP,
+    AP_FW_ID_MSCP_MANIFEST,
+    AP_FW_ID_ACCEL_MANIFEST,
     AP_FW_PCIE_PHY,
     AP_FW_ID_SDM_ITCM,
     AP_FW_ID_SDM_DTCM,

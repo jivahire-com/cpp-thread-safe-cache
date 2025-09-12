@@ -43,26 +43,27 @@ target_link_libraries(${TARGET}
         ms::lib::corebits
     PRIVATE
         fwlib.dfwk
-        fwlib.platform.dfwkhost.threadx
         fwlib.lib.cfg_mgr
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.init
         fwlib.service.iccBase
+        fwlib.platform.dfwkhost.threadx
         ms::build_data
+        ms::driver::pcie
+        ms::client_interface::ap_core
+        ms::client_interface::startup_shutdown
         ms::lib::accelerator_ip
+        ms::lib::bandgap
         ms::lib::crash_dump
         ms::lib::debug
         ms::lib::error_codes
         ms::lib::hsp_firmware_headers
+        ms::lib::interface::in_band_telemetry_ddr
+        ms::lib::mesh
         ms::lib::system_info
         ms::lib::threadx
         ms::lib::utils
-	    ms::lib::mesh
-        ms::lib::bandgap
-        ms::client_interface::ap_core
-        ms::client_interface::startup_shutdown
-        ms::driver::pcie
         ms::service::fuse
         ms::service::pcie_manager
         ms::service::sds_service

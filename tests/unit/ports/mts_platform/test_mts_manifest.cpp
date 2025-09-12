@@ -71,53 +71,38 @@ TEST_FUNCTION(test_mts_platform_get_manifest_info, test_setup, nullptr)
     assert_int_equal(manifest_info.total_size, 0);
 }
 
-TEST_FUNCTION(test_mts_create_manifest_from_elf, test_setup, nullptr)
-{
-    uint8_t dest_buffer[1024] = {0};
-
-    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
-
-    mts_create_manifest_from_elf((uintptr_t)dest_buffer, sizeof(dest_buffer));
-
-    p_diag_manifest_header_t manifest_hdr = (p_diag_manifest_header_t)dest_buffer;
-    assert_int_equal(manifest_hdr->manifest_parser_type, DIAG_MANIFEST_PARSER_PACKED);
-}
-
 TEST_FUNCTION(test_mts_build_diag_decoder_full_manifest, test_setup, nullptr)
 {
-    // output destination buffer
-    uintptr_t dest_write_ptr = IB_TLM_DDR_ATU_AP_FULL_MANIFEST_BASE_ADDR;
-    diag_manifest_set_v2_header_t* set_header = (diag_manifest_set_v2_header_t*)dest_write_ptr;
-    memset(set_header, 0, sizeof(diag_manifest_set_v2_header_t));
+    /* Initialize the full Manifest - set to Zeroes */
+    diag_manifest_set_v2_header_t* full_manifest_hdr = (diag_manifest_set_v2_header_t*)IB_TLM_DDR_ATU_AP_FULL_MANIFEST_BASE_ADDR;
+    memset(full_manifest_hdr, 0, sizeof(diag_manifest_set_v2_header_t));
 
-    diag_manifest_header_t* scp_staging_manifest_hdr =
-        (diag_manifest_header_t*)IB_TLM_DDR_ATU_AP_MSCP_STAGING_MANIFEST_BASE_ADDR;
-    diag_packed_manifest_header_t* scp_staging_packed_manifest_hdr =
-        (diag_packed_manifest_header_t*)scp_staging_manifest_hdr->payload;
+    /* Set Up Staging Buffers */
+    uintptr_t dest_write_ptr = IB_TLM_DDR_ATU_AP_MSCP_STAGING_MANIFEST_BASE_ADDR;
+    diag_manifest_set_v2_header_t* mscp_staging_manifest_hdr = (diag_manifest_set_v2_header_t*)dest_write_ptr;
+    memset(mscp_staging_manifest_hdr, 0, sizeof(diag_manifest_set_v2_header_t));
 
-    scp_staging_manifest_hdr->manifest_parser_type = DIAG_MANIFEST_PARSER_PACKED;
-    scp_staging_manifest_hdr->manifest_size = 0;
-    memset(&scp_staging_packed_manifest_hdr->manifest_id, 0xAA, sizeof(scp_staging_packed_manifest_hdr->manifest_id));
+    mscp_staging_manifest_hdr->sentinel = DIAG_METADATA_SENTINEL;
+    mscp_staging_manifest_hdr->manifest_set_size = 0xAABB;
+    mscp_staging_manifest_hdr->manifest_count = 2;
+    mscp_staging_manifest_hdr->crc32 = 0xDEADBEEF;
+    mscp_staging_manifest_hdr->manifest_set_header_version = DIAG_MANIFEST_SET_HEADER_VERSION_V2;
 
-    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+    dest_write_ptr = IB_TLM_DDR_ATU_AP_SDM_CDED_STAGING_MANIFEST_BASE_ADDR;
+    diag_manifest_set_v2_header_t* sdm_cded_staging_manifest_hdr = (diag_manifest_set_v2_header_t*)dest_write_ptr;
+    memset(sdm_cded_staging_manifest_hdr, 0, sizeof(diag_manifest_set_v2_header_t));
 
-    mts_build_diag_decoder_full_manifest();
-}
+    sdm_cded_staging_manifest_hdr->sentinel = DIAG_METADATA_SENTINEL;
+    sdm_cded_staging_manifest_hdr->manifest_set_size = 0xAABB;
+    sdm_cded_staging_manifest_hdr->manifest_count = 2;
+    sdm_cded_staging_manifest_hdr->crc32 = 0xDEADBEEF;
+    sdm_cded_staging_manifest_hdr->manifest_set_header_version = DIAG_MANIFEST_SET_HEADER_VERSION_V2;
 
-TEST_FUNCTION(test_mts_build_diag_decoder_full_manifest_validate, test_setup, nullptr)
-{
-    // output destination buffer
-    uintptr_t dest_write_ptr = IB_TLM_DDR_ATU_AP_FULL_MANIFEST_BASE_ADDR;
-    diag_manifest_set_v2_header_t* set_header = (diag_manifest_set_v2_header_t*)dest_write_ptr;
-    memset(set_header, 0, sizeof(diag_manifest_set_v2_header_t));
-
-    diag_manifest_header_t* scp_staging_manifest_hdr =
-        (diag_manifest_header_t*)IB_TLM_DDR_ATU_AP_MSCP_STAGING_MANIFEST_BASE_ADDR;
-
-    // validate wrong parser type
-    scp_staging_manifest_hdr->manifest_parser_type = 0x48;
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 44);
     mts_build_diag_decoder_full_manifest();
 
-    assert_int_equal(set_header->manifest_set_size, 0);
-    assert_int_equal(set_header->manifest_count, 0);
+    /* Check that all fields for the final manifest are updated and not zero */
+    assert_int_not_equal(full_manifest_hdr->manifest_set_size, 0);
+    assert_int_not_equal(full_manifest_hdr->manifest_count, 0);
+    assert_int_not_equal(full_manifest_hdr->crc32, 0);
 }

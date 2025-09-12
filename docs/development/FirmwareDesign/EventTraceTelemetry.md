@@ -69,6 +69,7 @@ Once Event Trace Buffers are copied into DDR they need to be read by the host (w
 Event Tracing Telemetry shall use MTS as the interface to communicate between cores. The communication within all the cores and all the dies shall be via TRP, while interface between the Primary ETR (on MCP D0) and the host shall be via DCP. Below is a diagram of all the interfaces that the Event Trace Telemetry will use.
 
 For HSP Event Trace, we will interface with ICC messages instead of using MTS.
+
 ## Design
 
 ### Component Flow Chart
@@ -281,3 +282,35 @@ sequenceDiagram
     Host -->> ETR: DCP Message DCP_MSG_ID_READ_DATA_COMPLETE
     ETR -->> ETR: Free ASIC Buffer
 :::
+
+## Event Trace Manifest
+
+To enable the decoding of event traces, each core publishes a manifest, that contains metadata about events, providers as well as parameters. For Kingsgate, there are 2 Event Trace Manifests for control cores: one from the Kingsgate.MSCP repository, and one from the Kingsgate.SDM.CDED repositoy. The MSCP Manifest contains the SCP and MCP manifests packed into an etman.bin file, while the SDM.CDED Manifest contains the SDM and CDED emCPU manifests packed into another etman.bin file. 
+
+There are both packed into the ifwi [here](https://azurecsi.visualstudio.com/Woodinville/_git/KNG-Integration?path=/tools/datwizard/dat.toml&version=GBmain&line=57&lineEnd=58&lineStartColumn=1&lineEndColumn=87&lineStyle=plain&_a=contents).
+
+In firmware, on Die 0 these manifests are loaded into DDR by the HSP, orchestrated by the SCP, before the MCP boots up. The sequence of steps is as follows. There is no action on Die 1.
+
+:::mermaid
+sequenceDiagram
+    participant HSP
+    participant DDR
+    participant SCP
+    participant MCP
+
+    SCP -->> HSP: Request MSCP Manifest
+    HSP -->> DDR: Load MSCP Manifest at requested address
+    HSP -->> SCP: Ack MSCP Manifest Load Complete
+    SCP -->> HSP: Request Accel Manifest
+    HSP -->> DDR: Load Accel Manifest at requested address
+    HSP -->> SCP: Ack Accel Manifest Load Complete
+    SCP -->> HSP: Init MCP
+    HSP -->> MCP: Load MCP FW and Release From Reset
+    MCP -->> DDR: Validate MSCP Manifest
+    MCP -->> DDR: Copy MSCP Manifest to Full Manifest
+    MCP -->> DDR: Validate Accel Manifest
+    MCP -->> DDR: Copy Accel Manifest to Full Manifest
+    MCP -->> DDR: Update Full Manifest Header
+:::
+
+The host can query the Event Trace Manifest with the Primary MCP, and the Primary MCP will share the Physical DDR Base Address for the full manifest, the offset from the base address, as well as the size of the full manifest. This will enable the AP Host to read the full manifest and use it to decode any incoming Event Trace Buffers.

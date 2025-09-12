@@ -393,6 +393,26 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
                 DfwkAsyncRequestComplete(p_request);
             }
             break;
+        case STARTUP_MSCP_MANIFEST_LOAD:
+            if (system_info_is_hsp_present() && (idsw_get_die_id() == DIE_0))
+            {
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_MSCP_MANIFEST);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+            break;
+        case STARTUP_ACCEL_MANIFEST_LOAD:
+            if (system_info_is_hsp_present() && (idsw_get_die_id() == DIE_0))
+            {
+                ap_core_request_load_ap_fw(s_icc_base_ctx, AP_FW_ID_ACCEL_MANIFEST);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+            break;
         case STARTUP_SDM_ITCM_LOAD:
             if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_SDM))
             {

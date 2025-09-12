@@ -22,7 +22,10 @@ extern "C" {
 #include <telemetry_package_defs.h>
 #include <data_sampling_i.h>
 #include <package_creation_i.h>
+
 /*-- Symbolic Constant Macros (defines) --*/
+// Use a constant for mock timestamp increment
+#define MOCK_TIMESTAMP_INCREMENT 1000
 
 /*-------------- Typedefs ----------------*/
 typedef struct

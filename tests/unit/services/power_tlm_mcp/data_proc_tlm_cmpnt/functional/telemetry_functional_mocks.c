@@ -1,3 +1,4 @@
+
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //
@@ -245,7 +246,7 @@ void setup_snsr_fifo_is_empty(void)
 // Modifing the timestamp function to return larger intervals
 uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
 {
-    time_t0 += 1000; // Increment by 1000μs or 1ms  each time
+    time_t0 += MOCK_TIMESTAMP_INCREMENT; // Increment by constant value each time
     return time_t0;
 }
 

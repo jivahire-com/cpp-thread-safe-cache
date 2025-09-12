@@ -48,7 +48,7 @@ typedef enum
     CHUNK_PAYLOAD_CDED1,
     CHUNK_PAYLOAD_KMP1,
     CHUNK_COUNT
-} chunk_index;
+}   chunk_index_t;
 
 typedef struct
 {
@@ -66,9 +66,8 @@ typedef struct
     // Metadata and payload chunks for each core
     crash_dump_chunk_t chunks[CHUNK_COUNT];
 
-    // Stream state
-    chunk_index current_chunk_index;
-    uint32_t current_chunk_offset;
+    size_t prev_offset;         // Previous read offset
+    uint32_t transfer_percent;  // Percentage of data transferred
 
     // Raw crash dump addresses for each core
     atu_map_entry_t die1_map_entry;
@@ -93,18 +92,12 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream);
 void crash_dump_stream_close(crash_dump_stream_t* stream, bool invalidate_dumps);
 
 /**
- * @brief Reset the crash dump stream to the initial state
- *
- * @param stream Pointer to the crash dump stream
- */
-void crash_dump_stream_reset(crash_dump_stream_t* stream);
-
-/**
  * @brief Read data from the crash dump stream into a buffer
  *
  * @param stream Pointer to the crash dump stream
  * @param buffer Buffer to read data into
+ * @param offset Offset within the stream to start reading
  * @param size Number of bytes to read
  * @return Number of bytes read
  */
-uint32_t crash_dump_stream_read(crash_dump_stream_t* stream, uint8_t* buffer, const uint32_t size);
+uint32_t crash_dump_stream_read(crash_dump_stream_t* stream, uint8_t* buffer, const size_t offset, const size_t size);

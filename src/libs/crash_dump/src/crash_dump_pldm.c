@@ -99,7 +99,8 @@ uint32_t crash_dump_pldm_transfer_dump()
     crash_dump_update_state(type_context, CRASH_DUMP_IN_TRANSFER);
 
     transfer_completed = false;
-    CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_PLDM_START_TRANSFER);
+    CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_PLDM_START_TRANSFER,
+                             (uint32_t)crash_dump_stream.header_aggregate.FileSize);
 
     return KNG_SUCCESS;
 }
@@ -111,17 +112,22 @@ bool crash_dump_pldm_transfer_completed()
 
 void crash_dump_transfer_dump_platform_event_cb(void* ctx, void* dest, size_t offset, size_t numBytes)
 {
-    FPFW_UNUSED(offset); // Assume callback is called in order, so offset is not used
-
     if (!ctx || !dest)
     {
         CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_PLDM_TRANSFER_ERROR, KNG_E_INVALIDARG);
         return;
     }
 
-    uint32_t bytes_read = crash_dump_stream_read((crash_dump_stream_t*)ctx, (uint8_t*)dest, numBytes);
+    crash_dump_stream_t* stream = (crash_dump_stream_t*)ctx;
 
-    CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_PLDM_TRANSFER, bytes_read);
+    uint32_t bytes_read = crash_dump_stream_read(stream, (uint8_t*)dest, offset, numBytes);
+    uint32_t transfer_percent = ((offset + bytes_read) * 100) / stream->header_aggregate.FileSize;
+
+    if (transfer_percent != stream->transfer_percent)
+    {
+        CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_PLDM_TRANSFER, transfer_percent);
+    }
+    stream->transfer_percent = transfer_percent;
 }
 
 void crash_dump_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* ctx)
@@ -135,16 +141,15 @@ void crash_dump_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* ctx)
     crash_dump_context_t* cd_ctx = crash_dump_context();
     crash_dump_type_context_t* type_context = cd_ctx->type_ctx[CRASH_DUMP_TYPE_FULL];
 
+    // Reset Crash dump state to In Use, so that next crash dump can be captured.
+    crash_dump_update_state(type_context, CRASH_DUMP_IN_USE);
+
     if (completionCode == FPFW_PLDM_CC_SUCCESS)
     {
-        // It will be re-initialized on the next cold boot.
-        crash_dump_update_state(type_context, CRASH_DUMP_NOT_IN_USE);
         CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_PLDM_TRANSFER_COMPLETE);
     }
     else
     {
-        // If transfer failed, set the state to in use. This dump can be retried later.
-        crash_dump_update_state(type_context, CRASH_DUMP_IN_USE);
         CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_PLDM_TRANSFER_COMPLETE, completionCode);
     }
 

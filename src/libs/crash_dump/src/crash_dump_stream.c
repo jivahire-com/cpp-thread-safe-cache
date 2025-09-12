@@ -239,8 +239,8 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream)
     // Iterate through each die and core to aggregate crash dump data
     for (KNG_DIE_ID die = DIE_0; die <= DIE_1; die++)
     {
-        chunk_index metadata_chunk_index = (die == DIE_0) ? CHUNK_METADATA_MCP0 : CHUNK_METADATA_MCP1;
-        chunk_index payload_chunk_index = (die == DIE_0) ? CHUNK_PAYLOAD_MCP0 : CHUNK_PAYLOAD_MCP1;
+        chunk_index_t metadata_chunk_index = (die == DIE_0) ? CHUNK_METADATA_MCP0 : CHUNK_METADATA_MCP1;
+        chunk_index_t payload_chunk_index = (die == DIE_0) ? CHUNK_PAYLOAD_MCP0 : CHUNK_PAYLOAD_MCP1;
 
         for (crash_dump_core_t core = 0; core < CRASH_DUMP_CORE_NUM; core++, metadata_chunk_index++, payload_chunk_index++)
         {
@@ -344,6 +344,9 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream)
     stream->metadata_header_aggregate.Root.ChunkCount = total_metadata_chunk_count;
     stream->payload_header_aggregate.Root.ChunkCount = total_payload_chunk_count;
 
+    stream->prev_offset = 0;
+    stream->transfer_percent = 0;
+
     if (ret)
     {
         CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_STREAM_OPEN);
@@ -372,6 +375,10 @@ void crash_dump_stream_close(crash_dump_stream_t* stream, bool invalidate_dumps)
 
     if (invalidate_dumps)
     {
+        crash_dump_context_t* cd_context = crash_dump_context();
+        crash_dump_type_context_t* type_context = cd_context->type_ctx[CRASH_DUMP_TYPE_FULL];
+
+        wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
         // Invalidate the crash dump header magic to indicate no valid dump
         for (KNG_DIE_ID die = DIE_0; die <= DIE_1; die++)
         {
@@ -383,28 +390,48 @@ void crash_dump_stream_close(crash_dump_stream_t* stream, bool invalidate_dumps)
                 {
                     header->Magic = 0; // Invalidate the magic number
                 }
+
+                if (type_context->header->cores[die * CRASH_DUMP_CORE_NUM + core] == CRASH_DUMP_STATE_COMPLETED)
+                {
+                    type_context->header->cores[die * CRASH_DUMP_CORE_NUM + core] = CRASH_DUMP_STATE_READY;
+                }
             }
         }
+        release_semaphore(type_context->semaphore.id);
     }
 
     // Unmap the die1 crash dump region
     unmap_die1_crash_dump_region(&stream->die1_map_entry);
 }
 
-/**
- * @brief Reset the crash dump stream to the initial state
- *
- * @param stream Pointer to the crash dump stream
- */
-void crash_dump_stream_reset(crash_dump_stream_t* stream)
+static bool crash_dump_stream_get_chunk_index(crash_dump_stream_t* stream,
+                                              const size_t offset,
+                                              chunk_index_t* chunk_index,
+                                              uint32_t* chunk_offset)
 {
-    if (stream == NULL)
+    if (stream == NULL || chunk_index == NULL || chunk_offset == NULL)
     {
-        return;
+        return false;
     }
 
-    stream->current_chunk_index = CHUNK_HEADER;
-    stream->current_chunk_offset = 0;
+    size_t offset_temp = offset;
+
+    // Find the chunk that contains the given offset
+    for (chunk_index_t i = CHUNK_HEADER; i < CHUNK_COUNT; i++)
+    {
+        crash_dump_chunk_t* chunk = &stream->chunks[i];
+
+        if (offset_temp < chunk->size || offset_temp == 0)
+        {
+            *chunk_index = i;
+            *chunk_offset = offset_temp;
+            return true;
+        }
+
+        offset_temp -= chunk->size;
+    }
+
+    return false;
 }
 
 /**
@@ -412,58 +439,70 @@ void crash_dump_stream_reset(crash_dump_stream_t* stream)
  *
  * @param stream Pointer to the crash dump stream
  * @param buffer Pointer to the buffer to read data into
+ * @param offset Offset within the stream to start reading
  * @param size Number of bytes to read
  * @return uint32_t Number of bytes read, or 0 if no more data
  */
-uint32_t crash_dump_stream_read(crash_dump_stream_t* stream, uint8_t* buffer, const uint32_t size)
+uint32_t crash_dump_stream_read(crash_dump_stream_t* stream, uint8_t* buffer, const size_t offset, const size_t size)
 {
     uint32_t bytes_read = 0;
+    chunk_index_t chunk_index;
+    uint32_t chunk_offset;
 
-    if (stream == NULL || buffer == NULL || size == 0)
+    if (stream == NULL || buffer == NULL || size == 0 || offset >= stream->header_aggregate.FileSize)
     {
         return bytes_read;
     }
 
-    while (stream->current_chunk_index < CHUNK_COUNT)
+    if (offset <= stream->prev_offset)
     {
-        crash_dump_chunk_t* chunk = &stream->chunks[stream->current_chunk_index];
+        // Read is not sequential. Log a warning.
+        CRASH_DUMP_ET_WARNING_PARAM(CRASH_DUMP_ET_TYPE_STREAM_READ_WARNING, offset);
+    }
 
-        if (chunk->size > stream->current_chunk_offset)
+    if (crash_dump_stream_get_chunk_index(stream, offset, &chunk_index, &chunk_offset))
+    {
+        while (chunk_index < CHUNK_COUNT)
         {
-            uint32_t remaining_size = chunk->size - stream->current_chunk_offset; // remaining size of current chunk
-            uint32_t bytes_to_read = (remaining_size < (size - bytes_read) ? remaining_size : (size - bytes_read));
+            crash_dump_chunk_t* chunk = &stream->chunks[chunk_index];
 
-            if (bytes_to_read > 0)
+            if (chunk->size > chunk_offset)
             {
-                // memcpy(buffer + bytes_read,
-                //        (uint8_t*)(chunk->start + stream->current_chunk_offset),
-                //        bytes_to_read);
-                // buffer or size can be un-aligned, so we copy byte by byte
-                for (uint32_t i = 0; i < bytes_to_read; i++)
-                {
-                    buffer[bytes_read + i] = *((uint8_t*)(chunk->start + stream->current_chunk_offset + i));
-                }
-                bytes_read += bytes_to_read;
-                stream->current_chunk_offset += bytes_to_read;
+                uint32_t remaining_size = chunk->size - chunk_offset; // remaining size of current chunk
+                uint32_t bytes_to_read = (remaining_size < (size - bytes_read) ? remaining_size : (size - bytes_read));
 
-                if (stream->current_chunk_offset >= chunk->size)
+                if (bytes_to_read > 0)
                 {
-                    stream->current_chunk_index++;    // Move to the next chunk
-                    stream->current_chunk_offset = 0; // Reset offset for the next chunk
+                    // memcpy(buffer + bytes_read, (uint8_t*)(chunk->start + chunk_offset), bytes_to_read);
+                    // buffer or size can be un-aligned, so we copy byte by byte
+                    for (uint32_t i = 0; i < bytes_to_read; i++)
+                    {
+                        buffer[bytes_read + i] = *((uint8_t*)(chunk->start + chunk_offset + i));
+                    }
+                    bytes_read += bytes_to_read;
+                    chunk_offset += bytes_to_read;
+
+                    if (chunk_offset >= chunk->size)
+                    {
+                        chunk_index++;    // Move to the next chunk
+                        chunk_offset = 0; // Reset offset for the next chunk
+                    }
+                }
+
+                if (bytes_read >= size)
+                {
+                    break; // Read enough data
                 }
             }
-
-            if (bytes_read >= size)
+            else
             {
-                break; // Read enough data
+                chunk_index++;    // Move to the next chunk
+                chunk_offset = 0; // Reset offset for the next chunk
             }
-        }
-        else
-        {
-            stream->current_chunk_index++;    // Move to the next chunk
-            stream->current_chunk_offset = 0; // Reset offset for the next chunk
         }
     }
+
+    stream->prev_offset = offset;
 
     return bytes_read;
 }

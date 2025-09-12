@@ -200,6 +200,12 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump, test_setup, test_teardown)
 
 TEST_FUNCTION(test_crash_dump_transfer_dump_platform_event_cb, test_setup, test_teardown)
 {
+    crash_dump_header_t full_header = {.status = CRASH_DUMP_IN_USE,
+                                       .cores = {CRASH_DUMP_STATE_COMPLETED, CRASH_DUMP_STATE_COMPLETED}};
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
+    crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .core_index = CRASH_DUMP_CORE_MCP};
+    will_return_always(__wrap_crash_dump_context, &context);
+
     crash_dump_stream_t crash_dump_stream = {};
     uint8_t dest[1024] = {0}; // Destination buffer for the transfer
 
@@ -243,17 +249,18 @@ TEST_FUNCTION(test_crash_dump_transfer_dump_platform_event_cb, test_setup, test_
     test_size = die1_hsp_dump->first_chunk_desc.HeaderSize + die1_hsp_dump->first_chunk_desc.PayloadSize;
     assert_memory_equal(((uint8_t*)&merged_dump->first_chunk_desc) + test_offset, &die1_hsp_dump->first_chunk_desc, test_size);
 
-    // Reset test
-    crash_dump_stream_reset(&crash_dump_stream);
-    assert_true(crash_dump_stream.current_chunk_index == 0);
-    assert_true(crash_dump_stream.current_chunk_offset == 0);
-
     // Crash dump stream read failure test
-    uint32_t read_size = crash_dump_stream_read(NULL, dest, 0);
+    uint32_t read_size = crash_dump_stream_read(NULL, dest, 0, 0);
     assert_true(read_size == 0); // Expect no data read
 
     // Close the stream
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
     crash_dump_stream_close(&crash_dump_stream, true);
 }
 
@@ -270,6 +277,11 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete, test_setup, test_teardown)
     crash_dump_stream_open(&crash_dump_stream);
 
     // Set expectations
+    expect_any(__wrap_wait_for_semaphore, id);
+    expect_any(__wrap_wait_for_semaphore, key);
+    expect_function_call(__wrap_wait_for_semaphore);
+    expect_any(__wrap_release_semaphore, id);
+    expect_function_call(__wrap_release_semaphore);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_any(__wrap_wait_for_semaphore, id);
@@ -282,7 +294,7 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete, test_setup, test_teardown)
     crash_dump_pldm_on_ppe_complete(FPFW_PLDM_CC_SUCCESS, &crash_dump_stream);
 
     // Assert
-    assert_true(full_header.status == CRASH_DUMP_NOT_IN_USE);
+    assert_true(full_header.status == CRASH_DUMP_IN_USE);
 }
 
 TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete_with_fail, test_setup, test_teardown)

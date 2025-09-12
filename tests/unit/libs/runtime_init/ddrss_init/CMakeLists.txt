@@ -44,7 +44,9 @@ mock_target(${TARGET}
     pcr_ddrss_configure_clock_and_pcr_reset
     system_info_is_warm_start
     config_get_fips_kat_en
+    config_get_pas_encryption_en_mask
     idsw_get_platform_sdv
     fpfw_init_get_handle
     fpfw_icc_base_send_recv_sync
+    fpfw_icc_base_send_sync
 )

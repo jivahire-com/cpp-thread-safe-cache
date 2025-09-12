@@ -177,6 +177,7 @@ uintptr_t ddrss_atu_map_fips_rt_space(uint32_t die_num)
 void ddrss_atu_unmap_fips_space(uint32_t die_num)
 {
     int sts;
+
     sts = atu_unmap(ATU_ID_MSCP, &atu_map_entry_rt[die_num]);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
     sts = atu_unmap(ATU_ID_MSCP, &atu_map_entry_ns[die_num]);

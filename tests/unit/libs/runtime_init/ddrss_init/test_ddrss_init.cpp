@@ -21,7 +21,6 @@ extern "C" {
 #include <hsp_firmware_headers.h>
 #include <idsw.h>
 #include <idsw_kng.h>
-#include <kingsgate_hsp_mailbox_commands.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -106,7 +105,12 @@ void __wrap_pcr_ddrss_configure_clock_and_pcr_reset(uint32_t ddrss_mask, uint8_t
     function_called();
 }
 
-bool __wrap_config_get_fips_kat_en(void)
+uint8_t __wrap_config_get_fips_kat_en(void)
+{
+    return mock_type(uint8_t);
+}
+
+bool __wrap_config_get_pas_encryption_en_mask(void)
 {
     return mock_type(bool);
 }
@@ -138,18 +142,21 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, 
         recv_msg->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
         *output_recv_bytes = sizeof(kng_hsp_mailbox_msg);
     }
-    else if (send_msg->header.cmd == HSP_MAILBOX_CMD_DDRSS_FIPS_KEY_TEST_STATUS_NOTIFY)
-    {
-        recv_msg->header.cmd = HSP_MAILBOX_CMD_DDRSS_FIPS_KEY_TEST_STATUS_NOTIFY_RSP;
-        recv_msg->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
-        *output_recv_bytes = sizeof(kng_hsp_mailbox_msg);
-    }
     else if (send_msg->header.cmd == HSP_MAILBOX_CMD_DDRSS_DEPLOY_PROD_KEYS_REQ)
     {
         recv_msg->header.cmd = HSP_MAILBOX_CMD_DDRSS_DEPLOY_PROD_KEYS_RSP;
         recv_msg->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
         *output_recv_bytes = sizeof(kng_hsp_mailbox_msg);
     }
+
+    return mock_type(fpfw_status_t);
+}
+
+fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void* payload_buffer, size_t buffer_size)
+{
+    FPFW_UNUSED(icc_ctx);
+    FPFW_UNUSED(payload_buffer);
+    check_expected(buffer_size);
 
     return mock_type(fpfw_status_t);
 }
@@ -184,80 +191,73 @@ TEST_FUNCTION(test_ddr_pcr_init, nullptr, nullptr)
     _fpfw_component_ddr_pcr.init_fn();
 }
 
-TEST_FUNCTION(test_fips_kat_enable_ddrss_load_crypto_key, nullptr, nullptr)
+TEST_FUNCTION(test_ddrss_load_crypto_key_fips_kat_enable_FIPS_KEYS_LOADED, nullptr, nullptr)
 {
     uint32_t mc = 0;
     uint32_t msg = 0;
     uint32_t timeout_us = 0;
     int sts = SILIBS_E_SUPPORT;
     KNG_PLAT_ID platform_id = PLATFORM_FPGA_LARGE;
+    uint8_t test_fips_kat_en = 1;
 
-    // Set up expectations : fips_kat_enable on fpga : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
+    // Set up expectations : fips_kat_enable and pas_mask is non-zero on fpga : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
     msg = DDRSS_HSP_MSG_FIPS_KEYS_LOADED;
-    will_return(__wrap_config_get_fips_kat_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, true);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    sts = ddrss_load_crypto_key(mc, msg, timeout_us);
-    assert_int_equal(sts, SILIBS_SUCCESS);
-
-    // Set up expectations : fips_kat_enable on fpga : DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE
-    msg = DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE;
-    will_return(__wrap_config_get_fips_kat_en, true);
-    will_return(__wrap_idsw_get_platform_sdv, platform_id);
-
-    expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_send_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     sts = ddrss_load_crypto_key(mc, msg, timeout_us);
     assert_int_equal(sts, SILIBS_SUCCESS);
 
-    // Set up expectations : fips_kat_enable on fpga : DDRSS_HSP_MSG_PROD_KEYS_LOADED
-    msg = DDRSS_HSP_MSG_PROD_KEYS_LOADED;
-    will_return(__wrap_config_get_fips_kat_en, true);
-    will_return(__wrap_idsw_get_platform_sdv, platform_id);
-
-    expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-
-    sts = ddrss_load_crypto_key(mc, msg, timeout_us);
-    assert_int_equal(sts, SILIBS_SUCCESS);
-
-    // Set up expectations : fips_kat_enable on silicon : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
+    // Set up expectations : fips_kat_enable and pas_mask is non-zero on silicon : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
     platform_id = PLATFORM_RVP_EVT_SILICON;
     msg = DDRSS_HSP_MSG_FIPS_KEYS_LOADED;
-    will_return(__wrap_config_get_fips_kat_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, true);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    sts = ddrss_load_crypto_key(mc, msg, timeout_us);
-    assert_int_equal(sts, SILIBS_SUCCESS);
-
-    // Set up expectations : fips_kat_enable on silicon : DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE
-    msg = DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE;
-    will_return(__wrap_config_get_fips_kat_en, true);
-    will_return(__wrap_idsw_get_platform_sdv, platform_id);
-
-    expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_icc_base_send_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     sts = ddrss_load_crypto_key(mc, msg, timeout_us);
     assert_int_equal(sts, SILIBS_SUCCESS);
+}
 
-    // Set up expectations : fips_kat_enable on silicon : DDRSS_HSP_MSG_PROD_KEYS_LOADED
+TEST_FUNCTION(test_ddrss_load_crypto_key_fips_kat_enable_PROD_KEYS_LOADED, nullptr, nullptr)
+{
+    uint32_t mc = 0;
+    uint32_t msg = 0;
+    uint32_t timeout_us = 0;
+    int sts = SILIBS_E_SUPPORT;
+    KNG_PLAT_ID platform_id = PLATFORM_RVP_EVT_SILICON;
+    uint8_t test_fips_kat_en = 1;
+
+    // Set up expectations : fips_kat_enable and pas_mask is non-zero on silicon : Run two times DDRSS_HSP_MSG_PROD_KEYS_LOADED
     msg = DDRSS_HSP_MSG_PROD_KEYS_LOADED;
-    will_return(__wrap_config_get_fips_kat_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, true);
+    will_return(__wrap_idsw_get_platform_sdv, platform_id);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, true);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
-    sts = ddrss_load_crypto_key(mc, msg, timeout_us);
-    assert_int_equal(sts, SILIBS_SUCCESS);
+    for (int i = 0; i < 2; i++)
+    {
+        sts = ddrss_load_crypto_key(mc, msg, timeout_us);
+        assert_int_equal(sts, SILIBS_SUCCESS);
+    }
 }
 
 TEST_FUNCTION(test_fips_kat_disable_ddrss_load_crypto_key, nullptr, nullptr)
@@ -267,26 +267,30 @@ TEST_FUNCTION(test_fips_kat_disable_ddrss_load_crypto_key, nullptr, nullptr)
     uint32_t timeout_us = 0;
     int sts = SILIBS_E_SUPPORT;
     KNG_PLAT_ID platform_id = PLATFORM_FPGA_LARGE;
+    uint8_t test_fips_kat_en = 0;
 
-    // Set up expectations : fips_kat_disable on fpga : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
+    // Set up expectations : fips_kat_disable and pas_mask is zero on fpga : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
     msg = DDRSS_HSP_MSG_FIPS_KEYS_LOADED;
-    will_return(__wrap_config_get_fips_kat_en, false);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     sts = ddrss_load_crypto_key(mc, msg, timeout_us);
     assert_int_equal(sts, SILIBS_E_SUPPORT);
 
-    // Set up expectations : fips_kat_disable on fpga : DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE
+    // Set up expectations : fips_kat_disable and pas_mask is zero on fpga : DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE
     msg = DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE;
-    will_return(__wrap_config_get_fips_kat_en, false);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     sts = ddrss_load_crypto_key(mc, msg, timeout_us);
     assert_int_equal(sts, SILIBS_E_SUPPORT);
 
-    // Set up expectations : fips_kat_disable on fpga : DDRSS_HSP_MSG_PROD_KEYS_LOADED
+    // Set up expectations : fips_kat_disable and pas_mask is zero on fpga : DDRSS_HSP_MSG_PROD_KEYS_LOADED
     msg = DDRSS_HSP_MSG_PROD_KEYS_LOADED;
-    will_return(__wrap_config_get_fips_kat_en, false);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
@@ -295,26 +299,29 @@ TEST_FUNCTION(test_fips_kat_disable_ddrss_load_crypto_key, nullptr, nullptr)
     sts = ddrss_load_crypto_key(mc, msg, timeout_us);
     assert_int_equal(sts, SILIBS_SUCCESS);
 
-    // Set up expectations : fips_kat_disable on silicon : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
+    // Set up expectations : fips_kat_disable and pas_mask is zero on silicon : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
     platform_id = PLATFORM_RVP_EVT_SILICON;
     msg = DDRSS_HSP_MSG_FIPS_KEYS_LOADED;
-    will_return(__wrap_config_get_fips_kat_en, false);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     sts = ddrss_load_crypto_key(mc, msg, timeout_us);
     assert_int_equal(sts, SILIBS_E_SUPPORT);
 
-    // Set up expectations : fips_kat_disable on silicon : DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE
+    // Set up expectations : fips_kat_disable and pas_mask is zero on silicon : DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE
     msg = DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE;
-    will_return(__wrap_config_get_fips_kat_en, false);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     sts = ddrss_load_crypto_key(mc, msg, timeout_us);
     assert_int_equal(sts, SILIBS_E_SUPPORT);
 
-    // Set up expectations : fips_kat_disable on silicon : DDRSS_HSP_MSG_PROD_KEYS_LOADED
+    // Set up expectations : fips_kat_disable and pas_mask is zero on silicon : DDRSS_HSP_MSG_PROD_KEYS_LOADED
     msg = DDRSS_HSP_MSG_PROD_KEYS_LOADED;
-    will_return(__wrap_config_get_fips_kat_en, false);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));

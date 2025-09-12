@@ -56,6 +56,7 @@ typedef union _kng_hsp_mailbox_msg {
 	struct kng_hsp_mailbox_cmd_prepare_for_core_reset_req prepare_for_core_reset_req; /**< outgoing mailbox message to notify other cores to do quiscing */
 	struct kng_hsp_mailbox_msg_cmd_enable_smmu_access_req smmu_access_req;
 	struct kng_hsp_mailbox_msg_cmd_post_scp_init_tower_config_req tower_config_req;
+	struct kng_hsp_mailbox_cmd_ddrss_fips_key_test_status_notify fips_key_test_status_notify; /**< outgoing mailbox message to notify the status of the FIPS key test. */
 	uint32_t as_uint32[HSP_MBOX_FIFO_DEPTH];
 } kng_hsp_mailbox_msg;
 

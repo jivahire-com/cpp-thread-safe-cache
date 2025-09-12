@@ -18,6 +18,7 @@
 #include <idsw_kng.h>
 #include <silibs_platform.h>
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
+#include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
 #include <stdbool.h>
 #include <stdint.h>
 

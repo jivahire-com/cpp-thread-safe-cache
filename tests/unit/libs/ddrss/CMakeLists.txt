@@ -47,9 +47,13 @@ mock_target(${TARGET}
     FpFwAssert
     atu_map
     atu_unmap
+    config_get_fips_kat_en
     cmn800_generate_ddr_mc_map_from_cached_config
     ddrss_atu_map_cfg_space
     ddrss_atu_unmap_cfg_space
+    ddrss_atu_map_fips_ns_space
+    ddrss_atu_map_fips_rt_space
+    ddrss_atu_unmap_fips_space
     ddrss_clear_phy_interrupt_status
     ddrss_convert_ras_rec_to_cper
     ddrss_ddr_intu_clear_destination_interrupt

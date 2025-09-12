@@ -75,6 +75,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
 {
     KNG_DIE_ID test_die = (KNG_DIE_ID)0;
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    uint8_t test_fips_kat_en = 0;
     int i = 0;
 
     // ddrss init is skipped on svp, therefore no expectations
@@ -93,13 +94,32 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
         expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
     }
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return_always(__wrap_system_info_is_warm_start, false);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
 
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
+
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_1);
 
     prod_ddrss_lib_init(test_die);
@@ -127,6 +147,7 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    uint8_t test_fips_kat_en = 0;
     int i = 0;
 
     // initialize the CFG
@@ -156,21 +177,33 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
 
-    will_return(__wrap_atu_map, 0x12345678);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    will_return(__wrap_atu_map, 0x12345678);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
 
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     prod_ddrss_lib_init(test_die);
 }
@@ -179,6 +212,7 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    uint8_t test_fips_kat_en = 0;
     int i = 0;
     extern bool g_should_check_reset_reason_cfg_knobs;
     g_should_check_reset_reason_cfg_knobs = true;
@@ -214,6 +248,7 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     test_ddrss_knobs.ext_knobs.ddrss_mask = 0x03F;
     test_ddrss_knobs.die_id = (DIE_INSTANCE)test_die;
 
@@ -224,16 +259,28 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
-    will_return(__wrap_atu_map, 0x12345678);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    will_return(__wrap_atu_map, 0x12345678);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
 
     expect_value(__wrap_ddrss_init, cfg_knobs->reset_reason, DDRSS_SYS_RESET_WARM);
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     prod_ddrss_lib_init(test_die);
     g_should_check_reset_reason_cfg_knobs = false;
@@ -243,6 +290,7 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)0;
+    uint8_t test_fips_kat_en = 0;
     int i = 0;
 
     // initialize the CFG
@@ -272,12 +320,32 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
+
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_1);
 
     prod_ddrss_lib_init(test_die);
@@ -287,6 +355,7 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    uint8_t test_fips_kat_en = 0;
     int i = 0;
 
     // initialize the CFG
@@ -313,12 +382,94 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
+
     will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+
+    prod_ddrss_lib_init(test_die);
+}
+
+TEST_FUNCTION(test_ddrss_lib_init_rvp_fips_kat_enable, setup, teardown)
+{
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    uint8_t test_fips_kat_en = 1;
+    int i = 0;
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 1;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
+    idsw_set_platform_sdv(PLATFORM_RVP_EVT_SILICON);
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
+
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_system_info_is_warm_start, false);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
+
+    will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
     prod_ddrss_lib_init(test_die);
@@ -328,6 +479,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    uint8_t test_fips_kat_en = 0;
     int i = 0;
 
     // initialize the CFG
@@ -354,6 +506,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -361,7 +514,25 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure, setup, teardown)
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
 
     // Set expectations for ddrss_init() failure.Simulate a training failure
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
+
     will_return(__wrap_ddrss_init, SILIBS_E_STATE);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
     uint8_t mc = 0;
     will_return(__wrap_ddrss_get_phy_training_failure, mc);
     will_return(__wrap_ddrss_get_phy_training_failure, SILIBS_SUCCESS);
@@ -377,6 +548,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure2, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    uint8_t test_fips_kat_en = 0;
     int i = 0;
 
     // initialize the CFG
@@ -403,6 +575,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure2, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -410,7 +583,26 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure2, setup, teardown)
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
 
     // Set expectations for ddrss_init() failure.
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
+
     will_return(__wrap_ddrss_init, SILIBS_E_PARAM);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
     expect_function_call(__wrap_post_led_status);
     expect_value(__wrap_FpFwAssert, expression, false);
 
@@ -423,6 +615,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure_max_mc, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    uint8_t test_fips_kat_en = 0;
     int i = 0;
 
     // initialize the CFG
@@ -449,6 +642,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure_max_mc, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -456,7 +650,25 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure_max_mc, setup, teardown)
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
 
     // Set expectations for ddrss_init() failure.Simulate a training failure
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
+
     will_return(__wrap_ddrss_init, SILIBS_E_STATE);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
     uint8_t mc = DDRSS_MAX_MC_NUM_PER_DIE;
     will_return(__wrap_ddrss_get_phy_training_failure, mc);
     will_return(__wrap_ddrss_get_phy_training_failure, SILIBS_SUCCESS);
@@ -472,6 +684,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    uint8_t test_fips_kat_en = 0;
     int i = 0;
 
     // initialize the CFG
@@ -498,6 +711,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
     }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -505,7 +719,25 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
 
     // Set expectations for ddrss_init() failure.Simulate a training failure
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
+
     will_return(__wrap_ddrss_init, SILIBS_E_STATE);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
     uint8_t mc = 0;
     will_return(__wrap_ddrss_get_phy_training_failure, mc);
     will_return(__wrap_ddrss_get_phy_training_failure, SILIBS_E_SUPPORT);

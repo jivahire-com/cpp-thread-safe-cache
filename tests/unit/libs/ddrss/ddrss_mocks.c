@@ -304,6 +304,24 @@ void __wrap_ddrss_atu_unmap_cfg_space(uint32_t die_num)
     check_expected(die_num);
 }
 
+uintptr_t __wrap_ddrss_atu_map_fips_ns_space(uint32_t die_num)
+{
+    check_expected(die_num);
+    return mock_type(uintptr_t);
+}
+
+uintptr_t __wrap_ddrss_atu_map_fips_rt_space(uint32_t die_num)
+{
+    check_expected(die_num);
+    return mock_type(uintptr_t);
+}
+
+void __wrap_ddrss_atu_unmap_fips_space(uint32_t die_num)
+{
+    check_expected(die_num);
+    return;
+}
+
 int __wrap_ddrss_physical_to_media_addr(uint64_t pa, ddrss_media_addr_t* ma, uint32_t* mc)
 {
     FPFW_UNUSED(pa);
@@ -331,6 +349,11 @@ void __wrap_hm_submit_cper(uint16_t error_domain_idx,
     }
     FPFW_UNUSED(err_record_section);
     check_expected(err_record_section_size);
+}
+
+uint8_t __wrap_config_get_fips_kat_en(void)
+{
+    return mock_type(uint8_t);
 }
 
 int __wrap_ddrss_get_config(ddrss_cfg_knobs_t* ddrss_cfgs)

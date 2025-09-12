@@ -30,6 +30,10 @@
  * Validate and assert all values accordingly.
  */
 
+// @SSI_integration_Test
+// @SSI_integration_Test:power_telemetry
+// TEST_CASE_ID:2148249
+
 #include "telemetry_functional.h"
 
 #include <CMockaWrapper.h>

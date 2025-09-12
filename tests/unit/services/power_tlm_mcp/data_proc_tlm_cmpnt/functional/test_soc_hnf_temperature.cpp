@@ -22,8 +22,9 @@
  *    - (Optional) Print debug information if g_print_debug is enabled.
  */
 
-// @SSI_Unit_Test
-// @SSI_Unit_Test:telemetry
+// @SSI_integration_Test
+// @SSI_integration_Test:power_telemetry
+// TEST_CASE_ID:2779233
 
 #include "telemetry_functional.h"
 

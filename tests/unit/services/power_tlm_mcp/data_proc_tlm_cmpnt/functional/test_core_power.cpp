@@ -20,6 +20,10 @@
  * - It validates that power values are correctly computed and packaged
  */
 
+// @SSI_integration_Test
+// @SSI_integration_Test:power_telemetry
+// TEST_CASE_ID:2779224
+
 #include "telemetry_functional.h"
 
 #include <CMockaWrapper.h>

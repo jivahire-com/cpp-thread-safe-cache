@@ -41,6 +41,10 @@
  * Verify that repeated C-state entries (iteration 2) do not increment entry_count.
  */
 
+// @SSI_integration_Test
+// @SSI_integration_Test:power_telemetry
+// TEST_CASE_ID:2889376
+
 #include "telemetry_functional.h"
 
 #include <CMockaWrapper.h>

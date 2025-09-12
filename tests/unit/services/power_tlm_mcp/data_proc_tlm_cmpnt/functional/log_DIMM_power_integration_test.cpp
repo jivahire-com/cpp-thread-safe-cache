@@ -15,8 +15,9 @@
  * 5. Test multiple power samples for a single DIMM to validate calculated average, minimum, and maximum power values.
  */
 
-// @SSI_functional_Test
-// @SSI_functional_Test:power_telemetry
+// @SSI_integration_Test
+// @SSI_integration_Test:power_telemetry
+// TEST_CASE_ID:2779093
 
 #include "telemetry_functional.h"
 

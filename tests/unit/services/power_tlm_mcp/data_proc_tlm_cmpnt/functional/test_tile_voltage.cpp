@@ -32,8 +32,9 @@
  * Record structs are in telemetry_package_defs.h
  */
 
-// @SSI_functional_Test
-// @SSI_functional_Test:power_telemetry
+// @SSI_integration_Test
+// @SSI_integration_Test:power_telemetry
+// TEST_CASE_ID:2148241
 
 #include "telemetry_functional.h"
 

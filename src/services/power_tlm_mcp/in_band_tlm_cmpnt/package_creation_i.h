@@ -230,6 +230,20 @@ uint32_t package_create_pwr_soc_sensor_temp_record(p_pwr_soc_record_sensor_temp_
 uint32_t package_create_pwr_soc_max_temp_record(p_pwr_soc_record_max_soc_temp_t max_temp_record);
 
 /**
+ * @brief   Create a power soc die mesh record
+ * @param[out] die_mesh_record - location where the record will be stored
+ * @return uint32_t - Number of bytes in the record
+ */
+uint32_t package_create_pwr_soc_die_mesh_record(p_pwr_soc_record_die_mesh_t die_mesh_record);
+
+/**
+ * @brief   Create a power soc die to die link record
+ * @param[out] d2d_link_record - location where the record will be stored
+ * @return uint32_t - Number of bytes in the record
+ */
+uint32_t package_create_pwr_soc_d2d_link_record(p_pwr_soc_record_d2d_link_t d2d_link_record);
+
+/**
  * @brief   Create a power mpam power record
  * @param[out] mpam_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record
@@ -242,6 +256,13 @@ uint32_t package_create_pwr_mpam_core_pwr_record(p_pwr_soc_record_mpam_core_powe
  * @return uint32_t - Number of bytes in the record
  */
 uint32_t package_create_pwr_mpam_throttle_record(p_pwr_soc_record_mpam_throttle_t mpam_throttle_record);
+
+/**
+ * @brief Create a power mpam memory power record
+ * @param[out] mpam_memory_power_record - location where the record will be stored
+ * @return uint32_t - Number of bytes in the record
+ */
+uint32_t package_create_pwr_mpam_memory_power_record(p_pwr_soc_record_mpam_memory_power_t mpam_memory_power_record);
 
 /**
  * @brief   Create a instantaneous core summary record

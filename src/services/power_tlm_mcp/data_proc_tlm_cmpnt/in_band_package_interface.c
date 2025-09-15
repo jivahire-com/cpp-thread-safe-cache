@@ -370,6 +370,20 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
     }
 }
 
+void data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(p_pwr_soc_element_die_mesh_t die_mesh_data)
+{
+    // TODO: Implement the rest of the record
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584672/?view=edit
+    memset(die_mesh_data, 0, sizeof(pwr_soc_element_die_mesh_t));
+}
+
+void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(p_pwr_soc_element_d2d_link_t d2d_link_data)
+{
+    // TODO: Implement the rest of the record
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584673/?view=edit
+    memset(d2d_link_data, 0, sizeof(pwr_soc_element_d2d_link_t));
+}
+
 void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_temp_t max_temp_data)
 {
     // record is only created on die 0
@@ -387,7 +401,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_tem
     max_temp_data->peak_max_dC = FPFW_MAX(computed_metrics_d2d_2mins.max_soc_temp_dC.max, die1_max_temp.peak_temp_dC);
 }
 
-void data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data)
 {
     mpam_vm_core_pwr_data_t die1_mpam_data;
     die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, mpam_id, &die1_mpam_data);
@@ -401,8 +415,18 @@ void data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_
 
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_soc_element_mpam_throttle_t mpam_throttle_data)
 {
+    // TODO: Implement the rest of the record once computed metrics are available for mpam throttle
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584712/?view=edit
     FPFW_UNUSED(mpam_id);
-    FPFW_UNUSED(mpam_throttle_data);
+    memset(mpam_throttle_data, 0, sizeof(pwr_soc_element_mpam_throttle_t));
+}
+
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(uint16_t mpam_id, p_pwr_soc_element_mpam_memory_power_t mpam_memory_power_data)
+{
+    // TODO: Implement the rest of the record once computed metrics are available for mpam memory power
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584713/?view=edit
+    FPFW_UNUSED(mpam_id);
+    memset(mpam_memory_power_data, 0, sizeof(pwr_soc_element_mpam_memory_power_t));
 }
 
 void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst_core_element_summary_t core_summary_data)

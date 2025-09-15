@@ -225,7 +225,21 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(p_pwr_soc_element_die_mesh_t die_mesh_data)
+{
+    memset(die_mesh_data, 0xFF, sizeof(pwr_soc_element_die_mesh_t));
+
+    function_called();
+}
+
+void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(p_pwr_soc_element_d2d_link_t d2d_link_data)
+{
+    memset(d2d_link_data, 0xFF, sizeof(pwr_soc_element_d2d_link_t));
+
+    function_called();
+}
+
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data)
 {
     FPFW_UNUSED(mpam_id);
     memset(mpam_core_pwr_data, 0xFF, sizeof(pwr_soc_element_mpam_core_power_t));
@@ -237,6 +251,14 @@ void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_
 {
     FPFW_UNUSED(mpam_id);
     memset(mpam_throttle_data, 0xFF, sizeof(pwr_soc_element_mpam_throttle_t));
+
+    function_called();
+}
+
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(uint16_t mpam_id, p_pwr_soc_element_mpam_memory_power_t mpam_memory_power_data)
+{
+    FPFW_UNUSED(mpam_id);
+    memset(mpam_memory_power_data, 0xFF, sizeof(pwr_soc_element_mpam_memory_power_t));
 
     function_called();
 }

@@ -519,6 +519,22 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, test_setup, t
     data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(sensor_id, NULL);
 }
 
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data, test_setup, test_teardown)
+{
+    // TODO: Implement the rest of the record
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584672/?view=edit
+    pwr_soc_element_die_mesh_t die_mesh_data = {0};
+    data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(&die_mesh_data);
+}
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data, test_setup, test_teardown)
+{
+    // TODO: Implement the rest of the record
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584673/?view=edit
+    pwr_soc_element_d2d_link_t d2d_link_data = {0};
+    data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(&d2d_link_data);
+}
+
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, test_setup, test_teardown)
 {
     pwr_soc_element_max_soc_temp_t max_temp_data = {0};
@@ -561,7 +577,7 @@ TEST_FUNCTION(test_get_pwr_mpam_core_pwr_data, test_setup, test_teardown)
     die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
 
     // Test valid case
-    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
 
     // Verify combined data from both dies
     // Die 0 average: 1000*5/5 = 200, Die 1 average: 500 => Total: 700
@@ -578,7 +594,7 @@ TEST_FUNCTION(test_get_pwr_mpam_core_pwr_data, test_setup, test_teardown)
     test_die1_mpam_array[TEST_MPAM_ID_4].max_pwr_mW = 400;
     die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
 
-    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
 
     // Verify updated combined data
     expected_average =
@@ -597,7 +613,7 @@ TEST_FUNCTION(test_get_pwr_mpam_core_pwr_data, test_setup, test_teardown)
     test_die1_mpam_array[0].max_pwr_mW = 150;
     die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
 
-    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(0, &mpam_core_pwr_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(0, &mpam_core_pwr_data);
 
     expected_average = data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[0].core_power.running_avg) + 100;
     assert_int_equal(mpam_core_pwr_data.average_mW, expected_average);
@@ -615,7 +631,7 @@ TEST_FUNCTION(test_get_pwr_mpam_core_pwr_data, test_setup, test_teardown)
     test_die1_mpam_array[max_mpam_id].max_pwr_mW = 300;
     die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
 
-    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(max_mpam_id, &mpam_core_pwr_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(max_mpam_id, &mpam_core_pwr_data);
 
     expected_average =
         data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.running_avg) + 250;
@@ -633,7 +649,7 @@ TEST_FUNCTION(test_get_pwr_mpam_core_pwr_data, test_setup, test_teardown)
     test_die1_mpam_array[TEST_MPAM_ID_4].max_pwr_mW = 0;
     die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
 
-    data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
 
     assert_int_equal(mpam_core_pwr_data.average_mW, 0);
     assert_int_equal(mpam_core_pwr_data.max_mW, 0);
@@ -641,10 +657,18 @@ TEST_FUNCTION(test_get_pwr_mpam_core_pwr_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_soc_mpam_throttle_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
+    // TODO: Implement the rest of the record once computed metrics are available for mpam throttle
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584712/?view=edit
     pwr_soc_element_mpam_throttle_t mpam_throttle_data = {0};
     data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(TEST_MPAM_ID_4, &mpam_throttle_data);
+}
+
+TEST_FUNCTION(test_get_pwr_soc_mpam_memory_power_data, test_setup, test_teardown)
+{
+    // TODO: Implement the rest of the record once computed metrics are available for mpam memory power
+    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584713/?view=edit
+    pwr_soc_element_mpam_memory_power_t mpam_memory_power_data = {0};
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(TEST_MPAM_ID_4, &mpam_memory_power_data);
 }
 
 TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)

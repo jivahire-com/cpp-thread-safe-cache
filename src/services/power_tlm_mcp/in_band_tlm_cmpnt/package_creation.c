@@ -243,9 +243,19 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
         package_hdr->payload_header.number_of_records++;
     }
 
-    // TODO: POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH
+    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH])
+    {
+        p_pwr_soc_record_die_mesh_t per_die_mesh_record = (p_pwr_soc_record_die_mesh_t)pkg_location;
+        pkg_location += package_create_pwr_soc_die_mesh_record(per_die_mesh_record);
+        package_hdr->payload_header.number_of_records++;
+    }
 
-    // TODO: POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE
+    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE])
+    {
+        p_pwr_soc_record_d2d_link_t die_to_die_link_state_record = (p_pwr_soc_record_d2d_link_t)pkg_location;
+        pkg_location += package_create_pwr_soc_d2d_link_record(die_to_die_link_state_record);
+        package_hdr->payload_header.number_of_records++;
+    }
 
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE])
     {
@@ -270,12 +280,23 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
 
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE])
     {
-        p_pwr_soc_record_mpam_throttle_t mpam_record = (p_pwr_soc_record_mpam_throttle_t)pkg_location;
-        pkg_location += package_create_pwr_mpam_throttle_record(mpam_record);
-        package_hdr->payload_header.number_of_records++;
+        if (inband_die_id == 0)
+        {
+            p_pwr_soc_record_mpam_throttle_t mpam_record = (p_pwr_soc_record_mpam_throttle_t)pkg_location;
+            pkg_location += package_create_pwr_mpam_throttle_record(mpam_record);
+            package_hdr->payload_header.number_of_records++;
+        }
     }
 
-    // TODO: POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER
+    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER])
+    {
+        if (inband_die_id == 0)
+        {
+            p_pwr_soc_record_mpam_memory_power_t mpam_record = (p_pwr_soc_record_mpam_memory_power_t)pkg_location;
+            pkg_location += package_create_pwr_mpam_memory_power_record(mpam_record);
+            package_hdr->payload_header.number_of_records++;
+        }
+    }
 
     uint32_t pkg_size = pkg_location - (uintptr_t)package_hdr;
     if (pkg_size == sizeof(telemetry_package_hdr_t))
@@ -769,6 +790,44 @@ uint32_t package_create_pwr_soc_sensor_temp_record(p_pwr_soc_record_sensor_temp_
     return sizeof(pwr_soc_record_sensor_temp_t);
 }
 
+uint32_t package_create_pwr_soc_die_mesh_record(p_pwr_soc_record_die_mesh_t die_mesh_record)
+{
+    populate_record_hdr(&die_mesh_record->record_header,
+                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH],
+                        1,
+                        sizeof(pwr_soc_record_die_mesh_t));
+
+    // This record is created per die, and each die has a single mesh topology
+    populate_pwr_collection_hdr(&die_mesh_record->die_mesh_collection.collection_header,
+                                POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH,
+                                0,
+                                1,
+                                sizeof(pwr_soc_collection_die_mesh_t));
+
+    data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(&die_mesh_record->die_mesh_collection.die_mesh_element);
+
+    return sizeof(pwr_soc_record_die_mesh_t);
+}
+
+uint32_t package_create_pwr_soc_d2d_link_record(p_pwr_soc_record_d2d_link_t d2d_link_record)
+{
+    populate_record_hdr(&d2d_link_record->record_header,
+                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE],
+                        1,
+                        sizeof(pwr_soc_record_d2d_link_t));
+
+    // This record is created per die, and each die has a single D2D link
+    populate_pwr_collection_hdr(&d2d_link_record->d2d_link_collection.collection_header,
+                                POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE,
+                                0,
+                                1,
+                                sizeof(pwr_soc_collection_d2d_link_t));
+
+    data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(&d2d_link_record->d2d_link_collection.d2d_link_element);
+
+    return sizeof(pwr_soc_record_d2d_link_t);
+}
+
 uint32_t package_create_pwr_soc_max_temp_record(p_pwr_soc_record_max_soc_temp_t max_temp_record)
 {
     populate_record_hdr(&max_temp_record->record_header,
@@ -802,8 +861,8 @@ uint32_t package_create_pwr_mpam_core_pwr_record(p_pwr_soc_record_mpam_core_powe
                                     1,
                                     sizeof(pwr_soc_collection_mpam_core_power_t));
 
-        data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(mpam_id,
-                                                       &mpam_record->mpam_core_power_collection[mpam_id].mpam_core_power_element);
+        data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(mpam_id,
+                                                           &mpam_record->mpam_core_power_collection[mpam_id].mpam_core_power_element);
     }
     return sizeof(pwr_soc_record_mpam_core_power_t);
 }
@@ -817,17 +876,39 @@ uint32_t package_create_pwr_mpam_throttle_record(p_pwr_soc_record_mpam_throttle_
 
     for (uint16_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
     {
-        // populate_pwr_collection_hdr(&mpam_throttle_record->mpam_throttle_collection[mpam_id].collection_header,
-        //                             POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE,
-        //                             mpam_id,
-        //                             1,
-        //                             sizeof(pwr_collection_mpam_throttle_t));
+        populate_pwr_collection_hdr(&mpam_throttle_record->mpam_throttle_collection[mpam_id].collection_header,
+                                    POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE,
+                                    mpam_id,
+                                    1,
+                                    sizeof(pwr_soc_collection_mpam_throttle_t));
 
-        // data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(
-        //     mpam_id,
-        //     &mpam_throttle_record->mpam_throttle_collection[mpam_id].mpam_throttle_element);
+        data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(
+            mpam_id,
+            &mpam_throttle_record->mpam_throttle_collection[mpam_id].mpam_throttle_element);
     }
     return sizeof(pwr_soc_record_mpam_throttle_t);
+}
+
+uint32_t package_create_pwr_mpam_memory_power_record(p_pwr_soc_record_mpam_memory_power_t mpam_memory_power_record)
+{
+    populate_record_hdr(&mpam_memory_power_record->record_header,
+                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER],
+                        NUMBER_OF_MPAMS,
+                        sizeof(pwr_soc_record_mpam_memory_power_t));
+
+    for (uint16_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+    {
+        populate_pwr_collection_hdr(&mpam_memory_power_record->mpam_memory_power_collection[mpam_id].collection_header,
+                                    POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER,
+                                    mpam_id,
+                                    1,
+                                    sizeof(pwr_soc_collection_mpam_memory_power_t));
+
+        data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(
+            mpam_id,
+            &mpam_memory_power_record->mpam_memory_power_collection[mpam_id].mpam_memory_power_element);
+    }
+    return sizeof(pwr_soc_record_mpam_memory_power_t);
 }
 
 uint32_t package_create_inst_core_summary_record(p_inst_core_record_summary_t summary_record)

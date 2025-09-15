@@ -241,6 +241,20 @@ void data_proc_tlm_cmpnt_get_pwr_soc_power_dimm_data(uint16_t dimm_idx, p_pwr_so
 void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_soc_element_sensor_temp_t sensor_temp_data);
 
 /**
+ * @brief Get the soc die mesh data for the specified die.
+ *
+ * @param[out] die_mesh_data - Pointer to the structure to store the die mesh data in.
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(p_pwr_soc_element_die_mesh_t die_mesh_data);
+
+/**
+ * @brief Get the soc d2d link data for the specified die.
+ *
+ * @param[out] d2d_link_data - Pointer to the structure to store the d2d link data in.
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(p_pwr_soc_element_d2d_link_t d2d_link_data);
+
+/**
  * @brief Get the soc maximum temperature data.
  *
  * @param[out] max_temp_data - Pointer to the structure to store the maximum temperature data in.
@@ -257,7 +271,7 @@ void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_tem
  *
  * @return None
  */
-void data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data);
 
 /**
  * @brief Get the mpam thottle data for the specified mpam.
@@ -268,6 +282,17 @@ void data_proc_tlm_cmpnt_get_pwr_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_
  * @return None
  */
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_soc_element_mpam_throttle_t mpam_throttle_data);
+
+
+/**
+ * @brief Get the mpam memory power data for the specified mpam.
+ *
+ * @param[in] mpam_id - The mpam_id to get the data for. 0 .. NUMBER_OF_MPAMS-1
+ * @param[out] mpam_memory_power_data - Pointer to the location to store the mpam memory power data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(uint16_t mpam_id, p_pwr_soc_element_mpam_memory_power_t mpam_memory_power_data);
 
 /**
  * @brief Get the core summary instantaneous data for the specified core.

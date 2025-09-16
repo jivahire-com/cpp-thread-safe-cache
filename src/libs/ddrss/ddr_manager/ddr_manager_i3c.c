@@ -152,8 +152,6 @@ void ddr_manager_i3c_init()
     ddr_i3c_interface_get_instance(&i3c_instance_0, &i3c_instance_1);
 
     KNG_DIE_ID die_id = idhw_get_die_id();
-
-    i3c_cmd_t i3c_cmd[NUM_DIMM_PER_DIE] = {0};
     uint8_t i3c_dev_idx;
 
     BUG_ASSERT(i3c_instance_0 != NULL && i3c_instance_1 != NULL);
@@ -175,7 +173,6 @@ void ddr_manager_i3c_init()
         ddr_i3c_sensors.dimm[dimm].ts1_dev_id = get_ts_idx(i3c_dev_idx, 1);
         ddr_i3c_sensors.dimm[dimm].pmic_dev_id = get_pmic_reg(dimm);
         ddr_i3c_sensors.dimm[dimm].instance = i3c_instance;
-        ddr_i3c_sensors.dimm[dimm].cmd = &i3c_cmd[dimm];
         ddr_i3c_sensors.dimm[dimm].ts_mr_reg_low = TS_MR49;
         ddr_i3c_sensors.dimm[dimm].ts_mr_reg_high = TS_MR50;
         ddr_i3c_sensors.dimm[dimm].pmic_mr_reg = PMIC_REGISTER_0C;
@@ -235,7 +232,7 @@ int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manag
 
     // Read TS[0/1] low and high byte
     int status = ddr_i3c_interface_read_temp_sensor_mr_reg(ddr_i3c_sensors.dimm[dimm_idx].instance,
-                                                           ddr_i3c_sensors.dimm[dimm_idx].cmd,
+                                                           &ddr_i3c_sensors.dimm[dimm_idx].cmd,
                                                            ts_per_channel_idx,
                                                            ddr_i3c_sensors.dimm[dimm_idx].ts_mr_reg_low,
                                                            ddr_i3c_sensors.dimm[dimm_idx].ts_data,
@@ -266,7 +263,7 @@ int ddr_manager_power_mw_read(int dimm_idx, uint16_t* power_mW)
     }
 
     int32_t status = ddr_i3c_interface_read_pmic_power(ddr_i3c_sensors.dimm[dimm_idx].instance,
-                                                       ddr_i3c_sensors.dimm[dimm_idx].cmd,
+                                                       &ddr_i3c_sensors.dimm[dimm_idx].cmd,
                                                        ddr_i3c_sensors.dimm[dimm_idx].pmic_dev_id,
                                                        ddr_i3c_sensors.dimm[dimm_idx].pmic_mr_reg,
                                                        &power_byte,

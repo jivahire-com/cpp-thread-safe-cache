@@ -51,11 +51,9 @@ void ddr_poll_dimms()
         }
         else
         {
-            printf("Error reading DIMM %d TS0\n", dimm_idx);
+            DDR_LOG_CRIT("Error reading DIMM %d TS0\n", dimm_idx);
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_TEMPERATURE_SENSOR_0, dimm_idx);
         }
-
-        tx_thread_sleep(2); // This measures ~ 16 ms (usually)
 
         if (ddr_manager_temperature_sensor_read(dimm_idx, 1, &ts1_temp) == DDR_MANAGER_I3C_SUCCESS)
         {
@@ -63,7 +61,7 @@ void ddr_poll_dimms()
         }
         else
         {
-            printf("Error reading DIMM %d TS1\n", dimm_idx);
+            DDR_LOG_CRIT("Error reading DIMM %d TS1\n", dimm_idx);
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_TEMPERATURE_SENSOR_1, dimm_idx);
         }
     }
@@ -114,9 +112,9 @@ void check_dimm_temp_thresholds()
         if ((ts0_temp.is_positive && ts0_temp.temp_int > thresholds.crit) ||
             (ts1_temp.is_positive && ts1_temp.temp_int > thresholds.crit))
         {
-            printf("DIMM %d exceeded critical temperature threshold: %d\n", dimm_idx, thresholds.crit);
+            DDR_LOG_WARN("DIMM %d exceeded critical temperature threshold: %d\n", dimm_idx, thresholds.crit);
             DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD, dimm_idx);
-            printf("DIMM %d exceeded critical temperature threshold: %d\n", dimm_idx, max_dimm_temp);
+            DDR_LOG_WARN("DIMM %d exceeded critical temperature threshold: %d\n", dimm_idx, max_dimm_temp);
 
             memset(&ddr_cper, 0x0, sizeof(ddr_cper));
             prod_ddrss_get_intr_event_cper(dimm_idx * 2, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED, &ddr_cper);
@@ -141,8 +139,7 @@ void check_dimm_temp_thresholds()
         }
         else
         {
-            // May want to do something else here, like log an event
-            printf("BWL is disabled, but a DIMM temperature (%d) exceeded high threshold: %d\n",
+            DDR_LOG_WARN("BWL is disabled, but a DIMM temperature (%d) exceeded high threshold: %d\n",
                    max_dimm_temp,
                    thresholds.high);
             DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_DIMM_TEMPERATURES_EXCEED_HIGH_THRESHOLD_BWL_DISABLE);

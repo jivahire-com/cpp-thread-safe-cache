@@ -86,7 +86,7 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
                 if (config_get_ddrmanager_bwl_polling_en())
                 {
-                    printf("Enabling DDR BWL polling timer\n");
+                    DDR_LOG_INFO("Enabling DDR BWL polling timer\n");
                     enable_i3c_dimm_polling_timer();
                 }
                 break;
@@ -133,7 +133,7 @@ void enable_i3c_dimm_polling_timer(void)
 
         if (status != TX_SUCCESS)
         {
-            printf("DDR Polling Timer creation failed with status: %d\n", status);
+            DDR_LOG_INFO("DDR Polling Timer creation failed with status: %d", status);
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, status);
             FPFwErrorRaise(status, 0, 0, 0, 0);
         }

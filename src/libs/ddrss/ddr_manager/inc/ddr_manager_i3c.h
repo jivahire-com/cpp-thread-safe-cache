@@ -36,7 +36,7 @@ typedef struct {
 // Create a struct for reading each DDR I3C device type
 typedef struct {
     i3c_instance_t* instance; // I3C instance
-    i3c_cmd_t* cmd;       // I3C command
+    i3c_cmd_t cmd;       // I3C command
     uint8_t ts0_dev_id;
     uint8_t ts1_dev_id;
     uint8_t pmic_dev_id;

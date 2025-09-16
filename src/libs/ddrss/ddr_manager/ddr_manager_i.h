@@ -35,6 +35,7 @@
 #define MODULE_NAME "[DDR] "
 #define NEWLINE     "\n"
 
+#define DDR_LOG_INFO(fmt, ...) DbgPrint(FPFW_DEBUG_PRINT_LEVEL_INFO,    "%-*s " fmt, FPFW_DBGPRINT_LEVEL_LEN, "[INFO]", ##__VA_ARGS__)
 #define DDR_LOG_WARN(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define DDR_LOG_CRIT(fmt, ...) printf(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 

@@ -97,7 +97,7 @@ class soc_win_boot_dd(EchoFallsBaseTest):
             self.dut.teardown()
             time.sleep(30)
             return False
-        
+
         rscm_helper.rscm_set_profile("General")
         rscm_helper.rscm_set_boot_option("ConfApp")
 
@@ -105,40 +105,20 @@ class soc_win_boot_dd(EchoFallsBaseTest):
 
         try:
             scp_connection.get_current_channel().read_until(key="Primary AP core power on", timeout_seconds=1200)
-            apns_connection.get_current_channel().read_until(key="Exit this menu", timeout_seconds=500)
-            command = "2"
-            apns_connection.get_current_channel().write_line(write_string=command)
-            apns_connection.get_current_channel().read_until(key="Select Index to boot to the corresponding option", timeout_seconds=500)
-            command = "3"
-            apns_connection.get_current_channel().write_line(write_string=command)
-            apns_connection.get_current_channel().read_until(key="UEFI Interactive Shell", timeout_seconds=500)
-            time.sleep(15)
-            command = "fs3:efi\\boot\\bootaa64.efi"
-            apns_connection.get_current_channel().write_line(write_string=command)
-            apns_connection.get_current_channel().read_until(key="SAC>", timeout_seconds=500)
-            command = "cmd"
-            apns_connection.get_current_channel().write_line(write_string=command)
-            apns_connection.get_current_channel().read_until(key="Cmd0001", timeout_seconds=500)
-            time.sleep(15)
-            command = "ch -si 01"
-            apns_connection.get_current_channel().write_line(write_string=command)
-            apns_connection.get_current_channel().read_until(key="view this channel", timeout_seconds=500)
-            time.sleep(15)
-            command = "vol"
-            apns_connection.get_current_channel().write_line(write_string=command)
-            apns_connection.get_current_channel().read_until(key="System32>", timeout_seconds=500)
+            apns_connection.get_current_channel().read_until(key="SAC>", timeout_seconds=1200)
+            apns_connection.get_current_channel().read_until(key="CMD command is now available", timeout_seconds=250)
         except Exception as e:
             self.log.error(f"Error reading APNS UART: {e}")
             apns_connection.get_current_channel().close()
             scp_connection.get_current_channel().close()
-            self.test_notify(step="UEFI_Interfactive_Shell", msg="Test Fail", _is_error=True)
+            self.test_notify(step="Windows Boot Shell", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             time.sleep(30)
             return False
 
         apns_connection.get_current_channel().close()
         scp_connection.get_current_channel().close()
-        self.test_notify(step="UEFI_Interactive_Shell", msg="Test Done", _is_error=False)
+        self.test_notify(step="Windows Boot Shell", msg="Test Done", _is_error=False)
         self.dut.teardown()
         time.sleep(30)
 

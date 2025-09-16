@@ -103,8 +103,8 @@ jobs:
         targetType: 'inline'
         showWarnings: true
         script: | 
-          # Cleanup pip cache
-          pip cache purge
+          # Cleanup pip cache - Holding off purging process to speedup artifact download
+          #pip cache purge
 
           # Init Env
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
@@ -166,7 +166,7 @@ jobs:
           Remove-Item .externs -Force -Recurse
 
           # Cleanup pip cache after the test
-          pip cache purge
+          #pip cache purge
 
     # Publish the results of the test suite
     - task: PublishTestResults@2

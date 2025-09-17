@@ -64,12 +64,17 @@ class RscmHelperLibrary:
 
         print(f"Executing command: {command}")
         stdin, stdout, stderr = self.client.exec_command(f"{command}")
-        print(f"Command output: {stdout.read().decode('latin-1')}")
-        print(f"Command error: {stderr.read().decode('latin-1')}")
+
+        command_output = stdout.read().decode('latin-1')
+        command_error = stderr.read().decode('latin-1')
+
+        print(f"Command output: {command_output}")
+        if command_error:
+            print(f"Command error: {command_error}")
 
         self.disconnect()
 
-        return stdout.read().decode('latin-1'), stderr.read().decode('latin-1')
+        return command_output, command_error
 
     def execute_bmc_command(self, command):
         """Execute a command on the BMC host via SSH tunnel."""
@@ -126,24 +131,47 @@ class RscmHelperLibrary:
     @keyword
     def rscm_soc_reset(self):
         """Perform a cold reset of the system"""
-        command = f"set system reset -i {self.node}"
+        command = f"set system cmd -i {self.node} -c power status"
         stdout, stderr = self.execute_rm_command(command)
         if stderr:
-            print(f"Error during power cycle: {stderr}")
-            raise AssertionError
-        else:
-            print("Power cycle command executed successfully.")
+            print("Error checking power status. Do a power cycle and power on.")
+            command = f"set system reset -i {self.node}"
+            stdout, stderr = self.execute_rm_command(command)
+            if stderr:
+                print(f"Error during power cycle: {stderr}")
+                raise AssertionError
+            else:
+                print("Power cycle command executed successfully.")
 
-        time.sleep(10)
+            time.sleep(30)
 
-        """Power on the system after reset"""
-        command = f"set system on -i {self.node}"
-        stdout, stderr = self.execute_rm_command(command)
-        if stderr:
-            print(f"Error during power on: {stderr}")
-            raise AssertionError
+            """Power on the system after reset"""
+            command = f"set system on -i {self.node}"
+            stdout, stderr = self.execute_rm_command(command)
+            if stderr:
+                print(f"Error during power on: {stderr}")
+                raise AssertionError
+            else:
+                print("Power on command executed successfully.")
         else:
-            print("Power on command executed successfully.")
+            if "Chassis Power is on" in stdout:
+                print("Chassis is powered on. Do a power cycle.")
+                command = f"set system reset -i {self.node}"
+                stdout, stderr = self.execute_rm_command(command)
+                if stderr:
+                    print(f"Error during power cycle: {stderr}")
+                    raise AssertionError
+                else:
+                    print("Power cycle command executed successfully.")
+            else:
+                print("Chassis is powered off. Do a power on.")
+                command = f"set system on -i {self.node}"
+                stdout, stderr = self.execute_rm_command(command)
+                if stderr:
+                    print(f"Error during power on: {stderr}")
+                    raise AssertionError
+                else:
+                    print("Power on command executed successfully.")
 
     @keyword
     def rscm_set_profile(self, profile:str):

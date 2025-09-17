@@ -86,7 +86,6 @@ mock_target(${TARGET}
     idsw_get_cpu_type
     idsw_get_die_id
     idsw_get_platform_sdv
-    mscp_exp_spi_synchronize_dies
     FpFwLockAcquire
     FpFwLockRelease
     fpfw_icc_base_send
@@ -96,6 +95,8 @@ mock_target(${TARGET}
     release_semaphore
     accel_is_isolation_enabled
     accel_core_suspend
+    mmio_read32
+    mmio_write32
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

@@ -2,5 +2,7 @@
 # Ignore the specific test file
 path_classifiers:
   library:
-    - "Kingsgate.MSCP/tests/functional/library/kng_pythia_libs/BmcHelperLibrary.py"
+    - "tests/functional/library/kng_pythia_libs/BmcHelperLibrary.py"
 
+  generated:
+    - ".build/**"

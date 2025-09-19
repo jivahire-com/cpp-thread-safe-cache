@@ -26,6 +26,7 @@ extern "C" {
 #include <pcie_ss_common.h>
 #include <pciess_int.h>
 #include <vab.h>
+#include <vab_atu_mappings.h>
 #include <vab_intu.h>
 #include <vab_irq.h>
 #include <vab_irq_common.h>
@@ -121,15 +122,10 @@ TEST_FUNCTION(test_successful_init_all_vabs, NULL, NULL)
         {
             expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
             will_return(__wrap_atu_map, SILIBS_SUCCESS);
-
             expect_value(__wrap_vab_init, vab_init_params->security_state, SECURITY_STATE_NON_SECURE);
-            expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
+            expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0xDEADBEEF);
             expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);
             expect_value(__wrap_vab_init, vab_init_params->vab_id, vab_id);
-
-            expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
-            will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
-
             expect_function_call(__wrap_vab_init);
         }
     }
@@ -151,45 +147,8 @@ TEST_FUNCTION(test_atu_map_fail, NULL, NULL)
 
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_E_INIT);
-    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
-    if (!set_error_handler_return())
-    {
-        vab_common_init(vabs_to_init);
-    }
-}
-
-TEST_FUNCTION(test_atu_unmap_fail, NULL, NULL)
-{
-    uint16_t vabs_to_init = 0x1;
-
-    smmu_vab_prod_knobs_t smmu_vab_config_knob = __real_config_get_smmu_vab_knobs();
-    will_return(__wrap_config_get_smmu_vab_knobs, &smmu_vab_config_knob);
-    expect_function_call(__wrap_config_get_smmu_vab_knobs);
-
-    vab_knobs_t vab_config_knobs = __real_config_get_vab_knobs();
-    will_return(__wrap_config_get_vab_knobs, &vab_config_knobs);
-    expect_function_call(__wrap_config_get_vab_knobs);
-
-    for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
-    {
-        if ((vabs_to_init >> vab_id) & 0x1)
-        {
-            expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-            will_return(__wrap_atu_map, SILIBS_SUCCESS);
-
-            expect_value(__wrap_vab_init, vab_init_params->security_state, SECURITY_STATE_NON_SECURE);
-            expect_value(__wrap_vab_init, vab_init_params->vab_resolved_base_addr, 0x0);
-            expect_value(__wrap_vab_init, vab_init_params->vab_configure_intu, true);
-            expect_value(__wrap_vab_init, vab_init_params->vab_id, vab_id);
-            expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
-            will_return(__wrap_atu_unmap, SILIBS_E_INIT);
-
-            expect_function_call(__wrap_vab_init);
-        }
-    }
-
-    expect_value(FPFwErrorRaise, error, (uint32_t)(-1));
-    if (!set_error_handler_return())
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
     {
         vab_common_init(vabs_to_init);
     }
@@ -714,13 +673,13 @@ TEST_FUNCTION(test_vab_error_injection, NULL, NULL)
     mock_payload.component_type = D0_VAB0_RPSS0;
     mock_payload.component_instance = 0;
 
-    will_return(__wrap_idhw_is_single_die_boot_en, false);
-    will_return(__wrap_idsw_get_die_id, 0);
-    will_return(__wrap_atu_find_map, SILIBS_E_SUPPORT);
+    /* Prep resolved base */
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+    map_vab_instance(D0_VAB0_RPSS0);
+
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_idsw_get_die_id, 0);
     params->target = VAB_ERROR_TARGET_FABRIC;
     will_return(__wrap_vab_fabric_error_trigger_by_type, SILIBS_SUCCESS);
     ret = vab_error_injection_cb(&mock_payload, nullptr);
@@ -728,7 +687,6 @@ TEST_FUNCTION(test_vab_error_injection, NULL, NULL)
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_idsw_get_die_id, 0);
-    will_return(__wrap_atu_find_map, SILIBS_SUCCESS);
     params->target = VAB_ERROR_TARGET_RAS_NODE;
     will_return(__wrap_vab_ras_trigger_by_type, SILIBS_SUCCESS);
     ret = vab_error_injection_cb(&mock_payload, nullptr);
@@ -740,6 +698,11 @@ TEST_FUNCTION(test_vab_error_injection_failure_modes, NULL, NULL)
     ras_einj_info_t mock_payload;
     acpi_einj_cmd_status_t ret;
     auto* params = (vab_error_inj_param_t*)(&mock_payload.param_type.error_parameters[0]);
+
+    /* Prep resolved base */
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    map_vab_instance(D0_VAB0_RPSS0);
 
     /* NULL einj payload */
     ret = vab_error_injection_cb(nullptr, nullptr);
@@ -769,11 +732,6 @@ TEST_FUNCTION(test_vab_error_injection_failure_modes, NULL, NULL)
     mock_payload.component_type = D0_VAB0_RPSS0;
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_idsw_get_die_id, 0);
-    will_return(__wrap_atu_find_map, SILIBS_E_SUPPORT);
-    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     params->target = VAB_ERROR_TARGET_FABRIC;
     will_return(__wrap_vab_fabric_error_trigger_by_type, SILIBS_E_SUPPORT);
     ret = vab_error_injection_cb(&mock_payload, nullptr);
@@ -782,11 +740,6 @@ TEST_FUNCTION(test_vab_error_injection_failure_modes, NULL, NULL)
     /* RAS node injection error */
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_idsw_get_die_id, 0);
-    will_return(__wrap_atu_find_map, SILIBS_E_SUPPORT);
-    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     params->target = VAB_ERROR_TARGET_RAS_NODE;
     will_return(__wrap_vab_ras_trigger_by_type, SILIBS_E_SUPPORT);
     ret = vab_error_injection_cb(&mock_payload, nullptr);
@@ -795,11 +748,6 @@ TEST_FUNCTION(test_vab_error_injection_failure_modes, NULL, NULL)
     /* Bad error type */
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_idsw_get_die_id, 0);
-    will_return(__wrap_atu_find_map, SILIBS_E_SUPPORT);
-    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     params->target = VAB_ERROR_TARGET_INVALID;
     ret = vab_error_injection_cb(&mock_payload, nullptr);
     assert_int_equal(ret, ACPI_EINJ_INVALID_ACCESS);
@@ -810,15 +758,16 @@ TEST_FUNCTION(test_enable_d0_vab_isr, NULL, NULL)
     uint16_t vabs_to_init = ((1 << D0_VAB0_RPSS0) | (1 << D0_VAB1_RPSS1) | (1 << D0_VAB2_RPSS2) |
                              (1 << D0_VAB3_RPSS3) | (1 << D0_VAB4_SDMSS) | (1 << D0_VAB5_CDEDSS_IOSS));
 
-    will_return_always(__wrap_atu_find_map, SILIBS_E_SUPPORT);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
     {
         if ((vabs_to_init >> vab_id) & 0x1)
         {
+            /* Prep resolved base */
             expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
             will_return(__wrap_atu_map, SILIBS_SUCCESS);
+            map_vab_instance(vab_id);
             expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, vab_irq_nums[vab_id]);
             expect_value(__wrap_nvic_irq_clear_pending, irq_num, vab_irq_nums[vab_id]);
             expect_value(__wrap_nvic_irq_enable, irq_num, vab_irq_nums[vab_id]);
@@ -833,15 +782,16 @@ TEST_FUNCTION(test_enable_d1_vab_isr, NULL, NULL)
     uint16_t vabs_to_init = ((1 << D1_VAB0_RPSS0) | (1 << D1_VAB1_RPSS1) | (1 << D1_VAB2_RPSS2) |
                              (1 << D1_VAB3_RPSS3) | (1 << D1_VAB4_SDMSS) | (1 << D1_VAB5_CDEDSS_IOSS));
 
-    will_return_always(__wrap_atu_find_map, SILIBS_E_SUPPORT);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
     {
         if ((vabs_to_init >> vab_id) & 0x1)
         {
+            /* Prep resolved base */
             expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
             will_return(__wrap_atu_map, SILIBS_SUCCESS);
+            map_vab_instance(vab_id);
             expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, vab_irq_nums[vab_id]);
             expect_value(__wrap_nvic_irq_clear_pending, irq_num, vab_irq_nums[vab_id]);
             expect_value(__wrap_nvic_irq_enable, irq_num, vab_irq_nums[vab_id]);
@@ -879,4 +829,82 @@ TEST_FUNCTION(test_enable_vab_isr_on_fpga, NULL, NULL)
      * interrupts constantly triggering.
      */
     enable_vab_isrs(vabs_to_init);
+}
+
+TEST_FUNCTION(test_get_rpss_resolved_base, NULL, NULL)
+{
+    uintptr_t base_addr;
+
+    /* Map all VAB instances first to initialize ATU mappings */
+    for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
+    {
+        expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+        will_return(__wrap_atu_map, SILIBS_SUCCESS);
+        map_vab_instance(vab_id);
+    }
+
+    /* Test all valid RPSS instances */
+    for (uint8_t rpss_id = RPSS0; rpss_id < NUM_RPSS; rpss_id++)
+    {
+        base_addr = get_rpss_resolved_base((RPSS_INSTANCE)rpss_id);
+
+        /* Verify that base address is non-zero (indicating successful mapping) */
+        assert_true(base_addr != 0);
+    }
+}
+
+TEST_FUNCTION(test_get_rpss_resolved_base_invalid_id, NULL, NULL)
+{
+    /* Test with invalid RPSS ID (NUM_RPSS or greater) */
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        get_rpss_resolved_base((RPSS_INSTANCE)NUM_RPSS);
+    }
+
+    /* Test with an out-of-bounds value */
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        get_rpss_resolved_base((RPSS_INSTANCE)0xFF);
+    }
+}
+
+TEST_FUNCTION(test_get_vab_resolved_base, NULL, NULL)
+{
+    uintptr_t base_addr;
+
+    /* Map all VAB instances first to initialize ATU mappings */
+    for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
+    {
+        expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+        will_return(__wrap_atu_map, SILIBS_SUCCESS);
+        map_vab_instance(vab_id);
+    }
+
+    /* Test all valid VAB instances */
+    for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
+    {
+        base_addr = get_vab_resolved_base(vab_id);
+
+        /* Verify that base address matches what was set by the mock */
+        assert_int_equal(base_addr, 0xDEADBEEF);
+    }
+}
+
+TEST_FUNCTION(test_get_vab_resolved_base_invalid_id, NULL, NULL)
+{
+    /* Test with invalid VAB ID (MAX_VAB_INSTANCES or greater) */
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        get_vab_resolved_base(MAX_VAB_INSTANCES);
+    }
+
+    /* Test with an out-of-bounds value */
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        get_vab_resolved_base(0xFFFF);
+    }
 }

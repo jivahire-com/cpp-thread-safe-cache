@@ -99,8 +99,7 @@ int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 {
     check_expected(atu_id);
 
-    /* Keep mscp base zero to allow checking base address in UTs */
-    atu_map_entry->mscp_start_address = 0x0;
+    atu_map_entry->mscp_start_address = 0xDEADBEEF;
 
     return mock_type(int);
 }

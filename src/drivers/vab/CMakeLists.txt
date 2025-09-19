@@ -2,6 +2,7 @@ set(TARGET kng.drivers.vab)
 
 add_library(${TARGET}
     STATIC
+        vab_atu_mappings.c
         vab_common_setup.c
         vab_irq.c
         vab_irq_common.c

@@ -56,6 +56,7 @@ mock_target(${TARGET}
     # Mock external MSCP interfaces
     crash_dump_bug_check
     enable_vab_isrs
+    get_rpss_resolved_base
     hm_submit_cper
     system_info_get_board_id
     system_info_get_board_rework_id

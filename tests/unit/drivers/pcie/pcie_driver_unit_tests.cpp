@@ -196,9 +196,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
         req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
 
         mock_pcie_ent.id = r.rpss_index;
-        expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-        will_return(__wrap_atu_map, 0x00);
-        will_return(__wrap_atu_map, SILIBS_SUCCESS);
+        will_return(__wrap_get_rpss_resolved_base, 0xDEADBEEF);
         expect_value(__wrap_pciess_get_entity, rpss_idx, i);
         will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
         will_return(__wrap_system_info_get_soc_position, 0x00);
@@ -246,9 +244,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
         req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
 
         mock_pcie_ent.id = r.rpss_index;
-        expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-        will_return(__wrap_atu_map, 0x00);
-        will_return(__wrap_atu_map, SILIBS_SUCCESS);
+        will_return(__wrap_get_rpss_resolved_base, 0xDEADBEEF);
         expect_value(__wrap_pciess_get_entity, rpss_idx, i);
         will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
         will_return(__wrap_system_info_get_soc_position, 0x01);
@@ -301,9 +297,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
 
     /* Setup silibs expectations */
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_map, 0x00);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_get_rpss_resolved_base, 0xDEADBEEF);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return_always(__wrap_system_info_get_soc_position, 0x0);
@@ -323,26 +317,6 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     assert_int_equal(rb_configs[0].flags.is_enabled, true);
     assert_int_equal(rb_configs[3].flags.is_enabled, true);
     assert_int_equal(rb_configs[0].flags.is_secondary_soc, false);
-}
-
-/* Test case for initial pciess init sync. request atu mapping failures */
-TEST_FUNCTION(test_pcie_rpss_init_atu_map_fail, test_setup, test_teardown)
-{
-    /* Setup the request for an rpss */
-    pcie_sync_request_t r;
-    r.header.RequestType = INITIAL_CONFIG_REQUEST;
-    r.req_type = INITIAL_CONFIG_REQUEST;
-    r.rpss_index = RPSS2;
-    r.rp_index = 0;
-
-    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_map, 0x00);
-    will_return(__wrap_atu_map, SILIBS_E_RANGE);
-    expect_function_calls(__wrap_crash_dump_bug_check, 1);
-    if (!bugcheck_mock_return())
-    {
-        pcie_sched_sync_op(&(r.header));
-    }
 }
 
 TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardown)
@@ -1297,9 +1271,7 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
 
     /* Setup silibs expectations */
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
-    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
-    will_return(__wrap_atu_map, 0x00);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_get_rpss_resolved_base, 0xDEADBEEF);
     will_return_always(__wrap_system_info_get_soc_position, 0x1);
     bool is_mirroring = __real_config_get_pcie_configuration_mirroring();
     is_mirroring = true;

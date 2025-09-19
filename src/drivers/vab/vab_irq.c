@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <vab.h>
+#include <vab_atu_mappings.h>
 #include <vab_intu.h>
 #include <vab_irq.h>
 #include <vab_regs.h>
@@ -40,25 +41,6 @@ static void map_and_get_vab_ctx(SUBSYSTEM_WITH_VAB_ID vab, vab_isr_ctx_t** vab_i
 static SUBSYSTEM_WITH_VAB_ID convert_to_subsystem_with_vab_id(VAB_ID_PER_DIE id_per_die, DIE_INSTANCE die);
 
 /*-- Declarations (Statics and globals) --*/
-/*
- * Both die 0 and die 1 VAB addresses are statically defined here to allow
- * dynamically mapping a VAB on either die at runtime.
- */
-static atu_map_entry_t atu_vabss_map[MAX_VAB_INSTANCES] = {
-    ATU_MAPPING_D0_VAB0_RPSS0(),
-    ATU_MAPPING_D0_VAB1_RPSS1(),
-    ATU_MAPPING_D0_VAB2_RPSS2(),
-    ATU_MAPPING_D0_VAB3_RPSS3(),
-    ATU_MAPPING_D1_VAB0_RPSS0(),
-    ATU_MAPPING_D1_VAB1_RPSS1(),
-    ATU_MAPPING_D1_VAB2_RPSS2(),
-    ATU_MAPPING_D1_VAB3_RPSS3(),
-    ATU_MAPPING_D0_VAB4_SDMSS(),
-    ATU_MAPPING_D1_VAB4_SDMSS(),
-    ATU_MAPPING_D0_VAB5_CDEDSS_IOSS(),
-    ATU_MAPPING_D1_VAB5_CDEDSS_IOSS(),
-};
-
 /*
  * VAB ISR contexts and probe structures contain a maximum of
  * MAX_VAB_INSTANCES_PER_DIE (6) entries. An SCP on each die does not
@@ -175,103 +157,48 @@ static void map_and_get_vab_ctx(SUBSYSTEM_WITH_VAB_ID vab, vab_isr_ctx_t** vab_i
 
     /*
      * This maps macros defined for die 0 or die 1 into their respective index
-     * into the vab ISR context array. A 'find_map' will be attempted first in order
-     * to eliminate a double-map in case one already exists.
+     * into the vab ISR context array.
      */
     switch (vab)
     {
     case D0_VAB0_RPSS0:
     case D1_VAB0_RPSS0:
-        if (atu_find_map(ATU_ID_MSCP, &atu_vabss_map[vab]))
-        {
-            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab]));
-            vab_ctxts[VAB0_RPSS0].unmap_required = true;
-        }
-        else
-        {
-            vab_ctxts[VAB0_RPSS0].unmap_required = false;
-        }
-        vab_ctxts[VAB0_RPSS0].vab_base = atu_vabss_map[vab].mscp_start_address;
+        vab_ctxts[VAB0_RPSS0].vab_base = get_vab_resolved_base(vab);
         vab_ctxts[VAB0_RPSS0].vab_id = vab;
         *vab_isr_ctxt = &(vab_ctxts[VAB0_RPSS0]);
         break;
 
     case D0_VAB1_RPSS1:
     case D1_VAB1_RPSS1:
-        if (atu_find_map(ATU_ID_MSCP, &atu_vabss_map[vab]))
-        {
-            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab]));
-            vab_ctxts[VAB1_RPSS1].unmap_required = true;
-        }
-        else
-        {
-            vab_ctxts[VAB1_RPSS1].unmap_required = false;
-        }
-        vab_ctxts[VAB1_RPSS1].vab_base = atu_vabss_map[vab].mscp_start_address;
+        vab_ctxts[VAB1_RPSS1].vab_base = get_vab_resolved_base(vab);
         vab_ctxts[VAB1_RPSS1].vab_id = vab;
         *vab_isr_ctxt = &(vab_ctxts[VAB1_RPSS1]);
         break;
 
     case D0_VAB2_RPSS2:
     case D1_VAB2_RPSS2:
-        if (atu_find_map(ATU_ID_MSCP, &atu_vabss_map[vab]))
-        {
-            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab]));
-            vab_ctxts[VAB2_RPSS2].unmap_required = true;
-        }
-        else
-        {
-            vab_ctxts[VAB2_RPSS2].unmap_required = false;
-        }
-        vab_ctxts[VAB2_RPSS2].vab_base = atu_vabss_map[vab].mscp_start_address;
+        vab_ctxts[VAB2_RPSS2].vab_base = get_vab_resolved_base(vab);
         vab_ctxts[VAB2_RPSS2].vab_id = vab;
         *vab_isr_ctxt = &(vab_ctxts[VAB2_RPSS2]);
         break;
 
     case D0_VAB3_RPSS3:
     case D1_VAB3_RPSS3:
-        if (atu_find_map(ATU_ID_MSCP, &atu_vabss_map[vab]))
-        {
-            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab]));
-            vab_ctxts[VAB3_RPSS3].unmap_required = true;
-        }
-        else
-        {
-            vab_ctxts[VAB3_RPSS3].unmap_required = false;
-        }
-        vab_ctxts[VAB3_RPSS3].vab_base = atu_vabss_map[vab].mscp_start_address;
+        vab_ctxts[VAB3_RPSS3].vab_base = get_vab_resolved_base(vab);
         vab_ctxts[VAB3_RPSS3].vab_id = vab;
         *vab_isr_ctxt = &(vab_ctxts[VAB3_RPSS3]);
         break;
 
     case D0_VAB4_SDMSS:
     case D1_VAB4_SDMSS:
-        if (atu_find_map(ATU_ID_MSCP, &atu_vabss_map[vab]))
-        {
-            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab]));
-            vab_ctxts[VAB4_SDMSS].unmap_required = true;
-        }
-        else
-        {
-            vab_ctxts[VAB4_SDMSS].unmap_required = false;
-        }
-        vab_ctxts[VAB4_SDMSS].vab_base = atu_vabss_map[vab].mscp_start_address;
+        vab_ctxts[VAB4_SDMSS].vab_base = get_vab_resolved_base(vab);
         vab_ctxts[VAB4_SDMSS].vab_id = vab;
         *vab_isr_ctxt = &(vab_ctxts[VAB4_SDMSS]);
         break;
 
     case D0_VAB5_CDEDSS_IOSS:
     case D1_VAB5_CDEDSS_IOSS:
-        if (atu_find_map(ATU_ID_MSCP, &atu_vabss_map[vab]))
-        {
-            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab]));
-            vab_ctxts[VAB5_CDEDSS_IOSS].unmap_required = true;
-        }
-        else
-        {
-            vab_ctxts[VAB5_CDEDSS_IOSS].unmap_required = false;
-        }
-        vab_ctxts[VAB5_CDEDSS_IOSS].vab_base = atu_vabss_map[vab].mscp_start_address;
+        vab_ctxts[VAB5_CDEDSS_IOSS].vab_base = get_vab_resolved_base(vab);
         vab_ctxts[VAB5_CDEDSS_IOSS].vab_id = vab;
         *vab_isr_ctxt = &(vab_ctxts[VAB5_CDEDSS_IOSS]);
         break;
@@ -379,15 +306,7 @@ acpi_einj_cmd_status_t vab_error_injection_cb(ras_einj_info_t* einj_payload, voi
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
-    /* All failures after ATU map will goto exit */
-    bool unmap_required = false;
-    if (atu_find_map(ATU_ID_MSCP, &atu_vabss_map[vab]) != SILIBS_SUCCESS)
-    {
-        FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab]));
-        unmap_required = true;
-    }
-
-    uintptr_t vab_base = atu_vabss_map[vab].mscp_start_address;
+    uintptr_t vab_base = get_vab_resolved_base(vab);
     params.as_uint64 = einj_payload->param_type.error_parameters[0];
 
     if (params.target == VAB_ERROR_TARGET_FABRIC)
@@ -429,10 +348,5 @@ acpi_einj_cmd_status_t vab_error_injection_cb(ras_einj_info_t* einj_payload, voi
     ret = ACPI_EINJ_SUCCESS;
 
 exit:
-    if (unmap_required)
-    {
-        FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_vabss_map[vab]));
-    }
-
     return ret;
 }

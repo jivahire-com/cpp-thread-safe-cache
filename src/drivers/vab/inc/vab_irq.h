@@ -25,7 +25,6 @@ typedef struct _vab_isr_ctx_t
     uintptr_t vab_base;
     vabss_int_probe_t probe;
     void (*process_probe)(struct _vab_isr_ctx_t* ctx);
-    bool unmap_required; /* Note: Currently the maps are static and resident, but this tracks if this context owns the mapping */
 } vab_isr_ctx_t;
 
 typedef enum

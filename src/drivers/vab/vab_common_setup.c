@@ -12,12 +12,12 @@
 
 /*------------- Includes -----------------*/
 #include <FpFwAssert.h>
-#include <atu_lib.h>
+#include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
-#include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
 #include <silibs_status.h>
 #include <smmu_knobs.h>
+#include <vab_atu_mappings.h>
 #include <vab_init.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -27,20 +27,6 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static atu_map_entry_t atu_vabss_map[MAX_VAB_INSTANCES] = {
-    ATU_MAPPING_D0_VAB0_RPSS0(),
-    ATU_MAPPING_D0_VAB1_RPSS1(),
-    ATU_MAPPING_D0_VAB2_RPSS2(),
-    ATU_MAPPING_D0_VAB3_RPSS3(),
-    ATU_MAPPING_D1_VAB0_RPSS0(),
-    ATU_MAPPING_D1_VAB1_RPSS1(),
-    ATU_MAPPING_D1_VAB2_RPSS2(),
-    ATU_MAPPING_D1_VAB3_RPSS3(),
-    ATU_MAPPING_D0_VAB4_SDMSS(),
-    ATU_MAPPING_D1_VAB4_SDMSS(),
-    ATU_MAPPING_D0_VAB5_CDEDSS_IOSS(),
-    ATU_MAPPING_D1_VAB5_CDEDSS_IOSS(),
-};
 
 /*------------- Functions ----------------*/
 int vab_common_init(uint16_t vab_instances_to_init)
@@ -67,21 +53,25 @@ int vab_common_init(uint16_t vab_instances_to_init)
     {
         if ((vab_instances_to_init >> vab_id) & 0x1)
         {
-            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vabss_map[vab_id]));
+            /*
+             * Map in this entry and do not unmap it - this entry will stay valid
+             * throughout SCP lifetime.
+             */
+            status = map_vab_instance(vab_id);
+            BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, vab_id, status);
 
             vab_init_cfg.vab_pcr_cfg = &vab_config_knob.vab_pcr_cfg[vab_id];
             vab_init_cfg.vab_smmu_gbpa_cfg = &smmu_vab_config_knob.smmu_gbpa_cfg[vab_id];
 
-            // TODO: What should be the default security state? This is used for configuring SMMU registers
+            /* TODO: What should be the default security state? This is used for configuring SMMU registers */
             vab_init_cfg.security_state = SECURITY_STATE_NON_SECURE;
             vab_init_cfg.system_counter_delay = vab_config_knob.vab_sys_cntr_delay[vab_id];
-            vab_init_cfg.vab_resolved_base_addr = atu_vabss_map[vab_id].mscp_start_address;
+            vab_init_cfg.vab_resolved_base_addr = get_vab_resolved_base(vab_id);
             vab_init_cfg.vab_configure_intu = true;
             vab_init_cfg.vab_id = vab_id;
 
-            FPFW_RUNTIME_ASSERT(!vab_init(&vab_init_cfg));
-
-            FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_vabss_map[vab_id]));
+            status = vab_init(&vab_init_cfg);
+            BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, vab_id, status);
         }
     }
     return status;

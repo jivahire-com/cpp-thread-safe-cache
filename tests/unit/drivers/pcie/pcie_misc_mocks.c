@@ -13,6 +13,7 @@
 #include <cmocka.h> // IWYU pragma: keep
 #include <cper.h>
 #include <fpfw_cfg_mgr.h>
+#include <kng_soc_constants.h>
 #include <pcie_ss_common.h> // for pcie_ss_entity_t, ss_bases_t
 #include <stdint.h>
 
@@ -72,4 +73,11 @@ void __wrap_hm_submit_cper(uint16_t error_domain_idx,
     FPFW_UNUSED(err_record_section);
     FPFW_UNUSED(err_record_section_size);
     function_called();
+}
+
+uintptr_t __wrap_get_rpss_resolved_base(RPSS_INSTANCE rpss_id)
+{
+    assert_in_range(rpss_id, RPSS0, RPSS7);
+
+    return mock_type(uintptr_t);
 }

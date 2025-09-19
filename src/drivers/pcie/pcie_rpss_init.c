@@ -13,11 +13,9 @@
 #include <DbgPrint.h>
 #include <DfwkDriver.h>
 #include <ap_top_regs.h>
-#include <atu_lib.h>
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
-#include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <oi_pcie.h>
@@ -32,6 +30,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <vab.h>
+#include <vab_atu_mappings.h>
 #include <vab_rpss_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -41,17 +40,6 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-static atu_map_entry_t atu_pciess_config_map[NUM_RPSS] = {
-    ATU_MAPPING_RPSS0_CFG(),
-    ATU_MAPPING_RPSS1_CFG(),
-    ATU_MAPPING_RPSS2_CFG(),
-    ATU_MAPPING_RPSS3_CFG(),
-    ATU_MAPPING_RPSS4_CFG(),
-    ATU_MAPPING_RPSS5_CFG(),
-    ATU_MAPPING_RPSS6_CFG(),
-    ATU_MAPPING_RPSS7_CFG(),
-};
-
 static uint64_t rpss_addrs[NUM_RPSS] = {
     AP_TOP_D0_VAB_RPSS0_ADDRESS,
     AP_TOP_D0_VAB_RPSS1_ADDRESS,
@@ -70,13 +58,9 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
     uint8_t rpss_id = r->rpss_index;
     silibs_status_t sts = SILIBS_SUCCESS;
 
-    /* Map rpss in the ATU */
-    sts = atu_map(ATU_ID_MSCP, &atu_pciess_config_map[rpss_id]);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
-
     /* Setup resolved addresses */
     uint64_t ap_subsystem_config_addr = rpss_addrs[rpss_id] + VAB_RPSS_TOP_RPSS_ADDRESS;
-    uint64_t resolved_subsystem_config_addr = atu_pciess_config_map[rpss_id].mscp_start_address;
+    uint64_t resolved_subsystem_config_addr = get_rpss_resolved_base(rpss_id);
 
     pcie_ss_entity_t* rpss = pciess_get_entity(rpss_id);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);

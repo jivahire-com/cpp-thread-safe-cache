@@ -9,6 +9,7 @@ add_library(
         cli_power_status.c
         cli_power_config.c
         cli_power_log.c
+        cli_power_accel.c
 )
 
 target_include_directories(
@@ -29,6 +30,7 @@ target_link_libraries(
             ms::lib::icc_platform_defines
             ms::lib::threadx
             ms::lib::utils
+            ms::service::atu_service
             ms::service::power
             fwlib.dfwk
             fwlib.service.cli
@@ -36,7 +38,7 @@ target_link_libraries(
             fwlib.lib.interface.platform.dbgprint
             fwlib.service.iccBase
             silibs::kng_silibs_platform
-            
+            silibs::sdm_qos
 )
 
 lint_target(${TARGET})

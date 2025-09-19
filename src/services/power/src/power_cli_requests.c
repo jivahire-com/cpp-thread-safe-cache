@@ -693,6 +693,11 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
         break;
     }
 
+    case CLI_COMMANDS_POWER_ACCEL: {
+        DfwkAsyncRequestComplete(p_request);
+        break;
+    }
+
     default:
         FPFW_RUNTIME_ASSERT(false);
         break;

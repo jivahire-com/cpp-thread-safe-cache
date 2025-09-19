@@ -11,6 +11,7 @@
 
 /*----------- Nested includes ------------*/
 #include <DfwkDriver.h>
+#include <accelip_id.h>
 #include <assert.h>
 #include <power_runconfig.h>
 #include <stdint.h>
@@ -29,6 +30,7 @@ typedef enum {
     CLI_COMMANDS_POWER_SET,
     CLI_COMMANDS_POWER_STATUS,
     CLI_COMMANDS_POWER_LOG,
+    CLI_COMMANDS_POWER_ACCEL,
 } e_cli_power_command_id_t;
 
 typedef enum {
@@ -118,6 +120,13 @@ struct _currthrottleparams
     uint8_t curr_threshold_3;
 };
 
+struct _accelparams
+{
+    ACCEL_ID accel_id;
+    uint8_t bw_reduction_perc;
+    bool dual_bus;
+};
+
 typedef union 
 {
     uint8_t      pmin_type;                      // set the pmin type (0 - 3)
@@ -133,6 +142,7 @@ typedef union
     struct     _pstatefreq      pstatefreq;     // sets forced frequency for testing/verification via (dco_frac, freq_ctrl, dco_div)
     struct     _alarmparams     alarm_cfg;     // sets alarm & hist threshold for VR & Temp throttle
     struct     _currthrottleparams currthresh_params; // sets current thresholds for throttling
+    struct     _accelparams     accelparams;    // accelerator parameters
 } _pwrset_subcommand_args;
 
 typedef struct _pwr_icc_cap_complete_payload_t {
@@ -154,6 +164,7 @@ typedef union
     struct     _pstatefreq      pstatefreq;     // sets forced frequency for a particular pstate (used for testing/verification)
     struct     _alarmparams     alarm_cfg;     // sets alarm & hist threshold for power management
     struct     _currthrottleparams currthresh_params; // sets current thresholds for throttling
+    struct     _accelparams     accelparams;    // accelerator parameters
 } _pwrset_response_val;
 
 /* Structure for the async dfwk CLI request to the power interface */

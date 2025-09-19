@@ -401,6 +401,9 @@ typedef enum
     POWER_IF_CMD_LOG_DDR,
     POWER_IF_CMD_LOG_MASK,
 
+    //! All accelerator commands
+    POWER_IF_CMD_ACCEL_BW_REDUCE,
+
     //! Keep last
     POWER_IF_CMD_UNKNOWN
 } power_if_cmd_t;

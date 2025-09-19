@@ -72,6 +72,7 @@ mock_target(${TARGET}
     power_timer_start_loop_timers
     power_timer_get_counter
     power_vcpu_precalculate_vf_currents
+    power_cli_requests_async_handler
     crash_dump_bug_check
     ws_data_get
     ws_data_put

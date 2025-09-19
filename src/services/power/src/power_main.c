@@ -91,6 +91,7 @@ void power_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_
     case CLI_COMMANDS_POWER_SET:
     case CLI_COMMANDS_POWER_STATUS:
     case CLI_COMMANDS_POWER_LOG:
+    case CLI_COMMANDS_POWER_ACCEL:
         power_cli_requests_async_handler(p_request, p_context);
         break;
     default:

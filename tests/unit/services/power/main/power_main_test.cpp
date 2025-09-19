@@ -103,6 +103,12 @@ void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
     check_expected_ptr(Request);
 }
 
+void __wrap_power_cli_requests_async_handler(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
+{
+    check_expected_ptr(p_request);
+    check_expected_ptr(p_context);
+}
+
 void __wrap_FpFwAssert(int expression)
 {
     check_expected(expression);
@@ -495,6 +501,35 @@ POWER_TEST(power_service_dispatch_async_shutdown, NULL, NULL)
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);
 
+    power_service_dispatch_async(&mock_request, NULL);
+}
+
+POWER_TEST(power_service_stage_async, NULL, NULL)
+{
+    DFWK_ASYNC_REQUEST_HEADER mock_request;
+    mock_request.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);
+
+    power_service_dispatch_async(&mock_request, NULL);
+}
+
+POWER_TEST(power_service_power_accel, NULL, NULL)
+{
+    DFWK_ASYNC_REQUEST_HEADER mock_request;
+    mock_request.RequestType = CLI_COMMANDS_POWER_ACCEL;
+    expect_value(__wrap_power_cli_requests_async_handler, p_request, &mock_request);
+    expect_value(__wrap_power_cli_requests_async_handler, p_context, NULL);
+
+    power_service_dispatch_async(&mock_request, NULL);
+}
+
+POWER_TEST(power_service_power_config, NULL, NULL)
+{
+    DFWK_ASYNC_REQUEST_HEADER mock_request;
+    mock_request.RequestType = CLI_COMMANDS_POWER_CONFIG;
+    expect_value(__wrap_power_cli_requests_async_handler, p_request, &mock_request);
+    expect_value(__wrap_power_cli_requests_async_handler, p_context, NULL);
     power_service_dispatch_async(&mock_request, NULL);
 }
 

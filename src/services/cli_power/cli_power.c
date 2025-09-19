@@ -15,6 +15,7 @@
 #include <DfwkClient.h>           // for DfwkAsyncRequestInitialize, DfwkAs...
 #include <FpFwUtils.h>            // for FPFW_ARRAY_SIZE
 #include <cli_power.h>            // for cli_power_init
+#include <cli_power_accel.h>      // for cli_power_accel_cmd_id
 #include <cli_power_config.h>     // for cli_power_config_get_cmd_id, cli_po...
 #include <cli_power_interface.h>  // for cli_power_cmd_context_t
 #include <cli_power_log.h>        // for cli_power_log_async_print
@@ -32,6 +33,7 @@
 #include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define BW_REDUCTION_MAX_PERCENTAGE (90)
 
 /*-- Declarations (Statics and globals) --*/
 static cli_power_cmd_context_t power_cli_cmd_context;
@@ -45,6 +47,7 @@ static FPFW_CLI_STATUS cli_power_config_command(int argc, const char** argv);
 static FPFW_CLI_STATUS cli_power_set_command(int argc, const char** argv);
 static FPFW_CLI_STATUS cli_power_status_command(int argc, const char** argv);
 static FPFW_CLI_STATUS cli_power_log_command(int argc, const char** argv);
+static FPFW_CLI_STATUS cli_power_accel_command(int argc, const char** argv);
 
 static FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, const char** argv, _pwrset_subcommand_args* p_pwrset_sub_command_args);
 static uint8_t cli_power_cmd_arg_count(int subcommand_id);
@@ -63,6 +66,7 @@ static FPFW_CLI_COMMAND cli_power_commands[] = {
     {NULL_LIST_ENTRY, "pwr", "set",    cli_power_set_command,    "Set specific internal values",         "Usage: pwr set <sub_command>"   },
     {NULL_LIST_ENTRY, "pwr", "status", cli_power_status_command, "Display module status",                "Usage: pwr status <sub_command>"},
     {NULL_LIST_ENTRY, "pwr", "log",    cli_power_log_command,    "Access power log",                     "Usage: pwr log <sub_command>"   },
+    {NULL_LIST_ENTRY, "pwr", "accel",  cli_power_accel_command,  "Accelerator power management",         "Usage: pwr accel <sub_command>" },
     };
 //clang-format on
 
@@ -78,6 +82,8 @@ static power_if_cmd_t cli_power_get_cmd_id(e_cli_power_command_id_t command, cha
             return cli_power_status_get_cmd_id(subcommand);
         case CLI_COMMANDS_POWER_LOG :
             return cli_power_log_get_cmd_id(subcommand);
+        case CLI_COMMANDS_POWER_ACCEL:
+            return cli_power_accel_cmd_id(subcommand);
         default:
             return POWER_IF_CMD_UNKNOWN;
     }
@@ -199,6 +205,8 @@ static PLACED_CODE uint8_t cli_power_cmd_arg_count(int subcommand_id)
         case POWER_IF_CMD_SET_ALARM_THRESHOLD:
             expected_argc = 9;
             break;
+        case POWER_IF_CMD_ACCEL_BW_REDUCE:
+            expected_argc = 5;
         default:
             break;
     }
@@ -794,6 +802,62 @@ static PLACED_CODE fpfw_status_t pwr_cli_d2d_mbox_recv_subscribe(void)
     //! Register for recv thru icc base
     fpfw_status_t status = fpfw_icc_base_recv(icc_base_rmss_d2d_mbx_ctx, &d2d_recv_params);
     return status;
+}
+
+static PLACED_CODE FPFW_CLI_STATUS cli_power_accel_command(int argc, const char** argv)
+{
+    _pwrset_subcommand_args pwrset_sub_command_args = {};
+
+    if (argc < 2) {
+        FpFwCliPrint("Usage: pwr accel <sub_cmd>\nTo see available sub_cmd -> pwr accel -h\n");
+        return CLI_ERROR;
+    }
+
+    if ((strcmp(argv[1], "??") == 0) || (strcmp(argv[1], "help") == 0) || (strcmp(argv[1], "-h") == 0)) {
+        FpFwCliPrint("\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr accel ??", "- help menu\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr accel bw_reduce <accelerator id> <bandwidth reduction percentage> <dual bus>", "bandwidth reduction\n"
+                                "                           accelerator id                 - 0 for SDM, 1 - for CDED\n"
+                                "                           bandwidth reduction percentage - between 0 and 90\n"
+                                "                           dual bus                       - 1 for SDM standalone, 0 for SDM CDED\n");
+        FpFwCliPrint("\n");
+        return CLI_SUCCESS;
+    }
+
+    switch (cli_power_accel_cmd_id(argv[1])) {
+        case POWER_IF_CMD_ACCEL_BW_REDUCE : {
+            if (argc != cli_power_cmd_arg_count(POWER_IF_CMD_ACCEL_BW_REDUCE)) {
+                FpFwCliPrint("%-72s%s", "Usage: pwr accel bw_reduce <accelerator id> <bandwidth reduction percentage> <dual bus>", "bandwidth reduction\n"
+                                        "                           accelerator id                 - 0 for SDM, 1 - for CDED\n"
+                                        "                           bandwidth reduction percentage - between 0 and 90\n"
+                                        "                           dual bus                       - 1 for SDM standalone, 0 for SDM CDED\n");
+                return CLI_ERROR;
+            }
+
+            pwrset_sub_command_args.accelparams.accel_id = (uint8_t)strtoul(argv[2], NULL, 10);
+            if (pwrset_sub_command_args.accelparams.accel_id > ACCEL_ID_CDED) {
+                FPFW_DBGPRINT_ERROR("[PWR CLI] Invalid accel id\n");
+                return CLI_ERROR;
+            }
+
+            pwrset_sub_command_args.accelparams.bw_reduction_perc = (uint8_t)strtoul(argv[3], NULL, 10);
+            if (pwrset_sub_command_args.accelparams.bw_reduction_perc > BW_REDUCTION_MAX_PERCENTAGE) {
+                FPFW_DBGPRINT_ERROR("[PWR CLI] Invalid bandwidth reduction percentage\n");
+                return CLI_ERROR;
+            }
+
+            pwrset_sub_command_args.accelparams.dual_bus = ((uint8_t)strtoul(argv[4], NULL, 10) != 0);
+
+            break;
+        }
+
+        default: {
+            FPFW_DBGPRINT_ERROR("[PWR CLI] Unsupported power accel subcommand\n");
+            return CLI_ERROR;
+        }
+    }
+
+    return dispatch_power_cli_async_request((uint8_t)idsw_get_die_id(), CLI_COMMANDS_POWER_ACCEL, (char*)argv[1], &pwrset_sub_command_args, cli_power_accel_complete);
 }
 
 PLACED_CODE FPFW_CLI_STATUS cli_power_init(ppower_service_interface_t p_interface, fpfw_icc_base_ctx_t* p_icc_base_ctx)

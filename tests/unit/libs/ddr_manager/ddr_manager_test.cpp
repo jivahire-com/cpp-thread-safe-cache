@@ -1048,15 +1048,16 @@ TEST_FUNCTION(ddr_telemetry_report_verify_temps, NULL, NULL)
         for (int ts_idx = 0; ts_idx < NUM_TEMP_SENSORS_PER_DIMM; ts_idx++)
         {
             dimm_temp.temp_int = (10 * dimm_idx) + ts_idx;
+            dimm_temp.temp_frac = 50;
             ddr_telemetry_update_dimm_temp(dimm_idx, ts_idx, dimm_temp);
 
             if (ts_idx == 0)
             {
-                test_dimm_info.dimm_temp_s0_dC = (10 * dimm_temp.temp_int) + (dimm_temp.temp_frac / 10);
+                test_dimm_info.dimm_temp_s0_dC = (10 * dimm_temp.temp_int) + ((dimm_temp.temp_frac + 5) / 10);
             }
             else
             {
-                test_dimm_info.dimm_temp_s1_dC = (10 * dimm_temp.temp_int) + (dimm_temp.temp_frac / 10);
+                test_dimm_info.dimm_temp_s1_dC = (10 * dimm_temp.temp_int) + ((dimm_temp.temp_frac + 5) / 10);
             }
         }
 

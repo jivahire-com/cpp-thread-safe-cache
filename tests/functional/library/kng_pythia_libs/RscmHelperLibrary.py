@@ -135,7 +135,7 @@ class RscmHelperLibrary:
         stdout, stderr = self.execute_rm_command(command)
         if stderr:
             print("Error checking power status. Do a power cycle and power on.")
-            command = f"set system reset -i {self.node}"
+            command = f"set system cmd -i {self.node} -c power cycle"
             stdout, stderr = self.execute_rm_command(command)
             if stderr:
                 print(f"Error during power cycle: {stderr}")
@@ -146,7 +146,7 @@ class RscmHelperLibrary:
             time.sleep(30)
 
             """Power on the system after reset"""
-            command = f"set system on -i {self.node}"
+            command = f"set system cmd -i {self.node} -c power on"
             stdout, stderr = self.execute_rm_command(command)
             if stderr:
                 print(f"Error during power on: {stderr}")
@@ -156,7 +156,7 @@ class RscmHelperLibrary:
         else:
             if "Chassis Power is on" in stdout:
                 print("Chassis is powered on. Do a power cycle.")
-                command = f"set system reset -i {self.node}"
+                command = f"set system cmd -i {self.node} -c power cycle"
                 stdout, stderr = self.execute_rm_command(command)
                 if stderr:
                     print(f"Error during power cycle: {stderr}")
@@ -165,7 +165,7 @@ class RscmHelperLibrary:
                     print("Power cycle command executed successfully.")
             else:
                 print("Chassis is powered off. Do a power on.")
-                command = f"set system on -i {self.node}"
+                command = f"set system cmd -i {self.node} -c power on"
                 stdout, stderr = self.execute_rm_command(command)
                 if stderr:
                     print(f"Error during power on: {stderr}")

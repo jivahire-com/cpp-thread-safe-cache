@@ -104,6 +104,10 @@ void receive_prep_core_reset()
 void reset_complete_wait_forever()
 {
     SOS_LOG_INFO("Reset complete, waiting forever...");
+
+    // Disable interrupts
+    FPFwCoreInterruptDisable();
+
     while (1)
     {
         __WFI(); // Wait for interrupt

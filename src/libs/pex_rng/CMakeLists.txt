@@ -11,13 +11,20 @@ target_link_libraries(${TARGET}
     ms::lib::corebits
     
     PRIVATE
+    fwlib.dfwk
+    fwlib.lib.init
     fwlib.lib.assert
+    fwlib.lib.interface.platform.dbgprint
+    fwlib.platform.dfwkhost.threadx
+    ms::lib::threadx
     silibs_platform
     silibs::idsw
     silibs::idsw_kng
     ms::lib::register_headers
     silibs::crypto::rng
-
+    silibs::dvfs
+    ms::service::health_monitor
+    ms::lib::error_domain::scp 
 )
 
 target_include_directories(${TARGET}

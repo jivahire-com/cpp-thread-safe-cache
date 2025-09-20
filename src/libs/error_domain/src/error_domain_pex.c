@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
+#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <cper.h>
@@ -30,6 +31,7 @@
 #include <scp_exp_top_regs.h>
 #include <tx_api.h>
 #include <tx_timer.h>
+#include <utils.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
 #include <scp_top_regs.h>
 
@@ -133,6 +135,11 @@ static void pex_poll_timer_callback(ULONG timer_input)
 
     for (unsigned int core = 0; core < g_rng_cfg->core_count; ++core)
     {
+        const corebits_t* enabled_cores = g_rng_cfg->platform_cores_in_die;
+        if (!corebits_is_bit_set(enabled_cores, core))
+        {
+            continue;
+        }
         const uintptr_t cluster_pex_base_addr = (g_rng_cfg->cluster_pex_base + (g_rng_cfg->cluster_stride * core));
         uint32_t ap_rng_base = cluster_pex_base_addr + PEX_RNG_ADDRESS;
 
@@ -144,6 +151,8 @@ static void pex_poll_timer_callback(ULONG timer_input)
             FPFW_DBGPRINT_INFO("rng_error occurred");
             // Reset the RNG IP by disabling and re-enabling it
             reset_pex_rng(ap_rng_base);
+
+            schedule_pex_error_handling_dfwk(g_rng_cfg);
         }
 
         if ((scp_irq & 0x2) != 0)
@@ -171,14 +180,6 @@ static int32_t start_pex_polling(uint32_t poll_interval_ms)
     {
         FPFW_DBGPRINT_WARNING("PEX polling already initialized\n");
         return TX_SUCCESS;
-    }
-
-    // Get PEX RNG configuration
-    g_rng_cfg = (pex_rng_config_t*)fpfw_init_get_handle("pex_rng");
-    if (g_rng_cfg == NULL)
-    {
-        FPFW_DBGPRINT_ERROR("Failed to get PEX RNG configuration\n");
-        return TX_PTR_ERROR;
     }
 
     // Convert milliseconds to ThreadX ticks
@@ -223,14 +224,17 @@ static void enable_pex_polling()
     }
 }
 
-void register_pex_error_domain()
+void register_pex_error_domain(pex_rng_config_t* pex_config)
 {
+    FPFW_RUNTIME_ASSERT(pex_config != NULL);
+
+    // Store the configuration for use in callbacks
+    g_rng_cfg = pex_config;
+
     //  Register the error domain
     hm_register_error_domain(ACPI_ERROR_DOMAIN_PEX, &PEX_GUID, PEX_FRU, mscp_error_injection_handler, NULL);
 
     // Register the error polling instead of interrupt handlers
-    // TODO: Seeing persistent PEX RNG errors
     // ADO: 2885632
-    // enable_pex_polling();
-    FPFW_UNUSED(enable_pex_polling);
+    enable_pex_polling();
 }

@@ -47,7 +47,6 @@ mock_target(${TARGET}
     fpfw_init_get_handle
     mcp_error_injection_setup_listener
     register_scp_error_domain
-    register_pex_error_domain
     register_smmu_error_domain
     register_gic_error_domain
 )

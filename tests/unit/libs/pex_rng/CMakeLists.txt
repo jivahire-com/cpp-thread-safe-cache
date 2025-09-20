@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
 
 # Generic ports implmented within this project
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -30,4 +31,12 @@ mock_target(${TARGET}
     rng_enable_r
     rng_disable_r
     rng_wait_for_rng_complete_r
+    fpfw_init_get_handle
+    DfwkDeviceInitialize
+    DfwkInterfaceInitialize
+    DfwkAsyncRequestInitialize
+    DfwkQueueInitialize
+    DfwkClientInterfaceOpen
+    DfwkAsyncRequestComplete
+    hm_submit_cper
 )

@@ -10,8 +10,10 @@
 #pragma once
 
 /*--------------- Includes ---------------*/
+#include <DfwkDriver.h> 
 #include <stdint.h>  
 #include <corebits.h>
+#include <utils.h>
 
 /*--------------- Typedefs ---------------*/
 
@@ -23,6 +25,25 @@ typedef struct _pex_rng_config_t
     unsigned int core_count;                 // platform core count
 } pex_rng_config_t, *ppex_rng_config_t;
 
+typedef struct {
+    DFWK_ASYNC_REQUEST_HEADER Header;
+} pex_rng_request_t, *pex_rng_request_ptr_t;
+
+enum pex_request_type
+{
+    PEX_SEND_CPER = 1, // Request type to send CPER
+};
+
+typedef struct {
+    DFWK_DEVICE_HEADER header;
+    pex_rng_config_t config;
+    DFWK_QUEUE default_queue;
+} pex_rng_device_t, *pex_rng_device_ptr_t;
+
+typedef struct {
+    DFWK_INTERFACE_HEADER header;
+    pex_rng_device_t* pex_device;
+} pex_rng_interface_t, *pex_rng_interface_ptr_t;
 
 /*--------------- Function Prototypes ---------------*/
 /**
@@ -31,3 +52,7 @@ typedef struct _pex_rng_config_t
  */
 void init_pex_rng(pex_rng_config_t* rng_config);
 void reset_pex_rng(uintptr_t ap_rng_base);
+
+void schedule_pex_error_handling_dfwk(void* context);
+
+void register_pex_error_domain(pex_rng_config_t* pex_config);

@@ -88,8 +88,6 @@ void register_scp_error_domain(fpfw_icc_base_ctx_t* icc_ctx);
 /**
  * @brief Register the SCP error domain.
  */
-void register_pex_error_domain();
-
 /**
  * @brief Get Shared ATU entry for Shared SRAM, ARSM, ECC Registers.
  */

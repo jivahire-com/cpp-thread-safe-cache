@@ -119,6 +119,10 @@ static void crash_dump_transfer_req_cb(PDFWK_ASYNC_REQUEST_HEADER Request, void*
     {
         FPFwCDPrintf("Crash dump transfer started successfully.\n");
     }
+    else if (cd_request->status == (uint32_t)KNG_E_NOT_READY)
+    {
+        FPFwCDPrintf("Crash dump is empty.\n");
+    }
     else
     {
         FPFwCDPrintf("Crash dump transfer failed to start: status = 0x%08lx\n", cd_request->status);

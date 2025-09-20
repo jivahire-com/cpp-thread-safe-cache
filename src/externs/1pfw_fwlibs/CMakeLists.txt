@@ -14,7 +14,7 @@ option(FPFW_CFG_MGR_ENABLE "Compiles Config Knob XMLs and Compiles Config Manage
 # Config Manager
 if (${FPFW_CFG_MGR_ENABLE})
     set(TARGET_DIR_SILIBS ${REPO_ROOT_DIR}/.externs/repo/silibs)
-    set(TARGET_DIR_SILIBS_COMMON ${REPO_ROOT_DIR}/.externs/repo/silibs_common)
+    set(TARGET_DIR_SILIBS_COMMON ${TARGET_DIR_SILIBS}/libraries/common)
     set(TARGET_DIR_SILIBS_PLATFORM ${TARGET_DIR_SILIBS}/libraries/kng_silibs_platform/include)
     set(GENERATED_PUBLIC_PATH ${CMAKE_CURRENT_BINARY_DIR}/include)
     set(PROD_FW_COMBINED_GENERATED_KNOBS ${GENERATED_PUBLIC_PATH}/kng_generated_knobs.xml)

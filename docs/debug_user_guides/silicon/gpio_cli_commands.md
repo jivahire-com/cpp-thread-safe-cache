@@ -28,39 +28,43 @@ These CLI commands allow you to query and configure the mapping and ownership of
 
 Possible Configurations :
 
-
 ### UART AFM Mapping Table
+
+| AFM Key | Meaning           |
+|---------|-------------------|
+|    x    | Not mapped        |
+|    0    | Default mapping   |
+|   1-2   | Alternate mapping |
 
 #### Die 0
 
-| UART   | COM Name         | SCP | HSP | MCP | SDM | SDM_CDED | CDED(KMP) | AP-NS | AP-Sec |
-|--------|------------------|-----|-----|-----|-----|----------|-----------|-------|--------|
-| UART0  | COM4 - HSP       |  x  |  0  |  1  |  x  |    2     |     3     |   x   |        |
-| UART1  | COM5 - SCP       |  0  |  x  |  x  |  1  |    2     |     3     |   x   |        |
-| UART2  | COM6 - MCP       |  1  |  x  |  0  |  2  |    x     |     x     |   x   |        |
-| UART3  | COM7 - AP-NS     |     |     |     |     |          |           |   0   |   1    |
-| UART4  | COM8 - AP-NS IOSS|  -  |  -  |  -  |  -  |    -     |     -     |   -   |   -    |
+| UART  | COM Name | SCP | HSP | MCTP | SDM | SDM_CDED | MCP | AP-Sec |
+|-------|----------|-----|-----|------|-----|----------|-----|--------|
+| UART0 |   COM4   |  x  |  0  |   1  |  x  |    2     |  x  |        |
+| UART1 |   COM5   |  0  |  x  |   x  |  1  |    2     |  x  |        |
+| UART2 |   COM6   |  1  |  x  |   0  |  2  |    x     |  x  |        |
+| UART3 |   COM7   |     |     |      |     |          |  0  |   1    |
+| UART4 |   COM8   |  -  |  -  |   -  |  -  |    -     |  -  |   -    |
 
 #### Die 1
 
-| UART   | COM Name     | SCP | HSP | MCP | SDM | SDM_CDED | CDED(KMP) |
-|--------|--------------|-----|-----|-----|-----|----------|-----------|
-| UART5  | COM9         |  x  |  0  |  1  |  x  |    2     |    3      |
-| UART1  | COM5         |  0  |  x  |  x  |  1  |    2     |    3      |
-| UART2  | COM6         |  1  |  x  |  0  |  2  |    x     |    x      |
-
+| UART  | COM Name | SCP | HSP | MCP | SDM | SDM_CDED |
+|-------|----------|-----|-----|-----|-----|----------|
+| UART1 |   COM5   |  0  |  x  |  x  |  1  |    2     |
+| UART2 |   COM6   |  1  |  x  |  0  |  2  |    x     |
+| UART5 |   COM9   |  x  |  0  |  1  |  x  |    2     |
 
 ---
 
 ## Command Summary
 
-| Command            | Description                                 | Usage Example |
-|--------------------|---------------------------------------------|--------------|
-| uart_afm           | Set UART AFM (all UARTs)                    | `uart_afm 0 2 x x` |
-| uart_die           | Set UART die configuration                  | `uart_die 0 1` |
+| Command            | Description                                 | Usage Example        |
+|--------------------|---------------------------------------------|----------------------|
+| uart_afm           | Set UART AFM (all UARTs)                    | `uart_afm 0 2 x x`   |
+| uart_die           | Set UART die configuration                  | `uart_die 0 1`       |
 | uart_get_ownership | Get UART ownership                          | `get_uart_ownership` |
-| uart_get_afm       | Get UART AFM                                | `get_uart_afm` |
-| get_mux_table      | Print the UART Mux Table                    | `get_mux_table`  |
+| uart_get_afm       | Get UART AFM                                | `get_uart_afm`       |
+| get_mux_table      | Print the UART Mux Table                    | `get_mux_table`      |
 
 ---
 

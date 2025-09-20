@@ -366,10 +366,10 @@ static PLACED_CODE FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** 
 /* GPIO UART AFM Management */
 /* ------------------------ */
 static const char* uart_afm_map_table[4][4] = {
-    {"HSP", "MCP", "CDED", "KMP"}, // UART0 for Die 0, UART 5 for Die 1
-    {"SCP", "SDM", "CDED", "KMP"}, // UART1
-    {"MCP", "SCP", "SDM", "APS"},  // UART2
-    {"APNS", "APS", "NA", "NA"}    // UART3
+    {"HSP", "MCTP", "CDED", "KMP"}, // UART0 for Die 0, UART 5 for Die 1
+    {"SCP", "SDM", "CDED", "KMP"},  // UART1
+    {"MCTP", "SCP", "SDM", "APS"},  // UART2
+    {"MCP", "APS", "NA", "NA"}      // UART3
 };
 
 static void print_uart_afm_config(const uart_afm_cfg_t* afm_knobs, const char* note)

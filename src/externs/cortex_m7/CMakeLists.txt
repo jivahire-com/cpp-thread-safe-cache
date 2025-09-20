@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET extern.populate.cortex_m7)
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/cortex_m7)
 
@@ -13,6 +15,7 @@ FetchContent_GetProperties(${TARGET})
 
 if (NOT ${TARGET}_POPULATED)
     FetchContent_Populate(${TARGET})
+    set(SILIBS_COMMON_DIR ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/common)
     
     # Add the source directory
     add_subdirectory(${TARGET_DIR}/src ${CMAKE_CURRENT_BINARY_DIR}/src/cortex_m7 EXCLUDE_FROM_ALL)

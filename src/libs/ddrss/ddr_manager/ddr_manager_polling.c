@@ -140,8 +140,8 @@ void check_dimm_temp_thresholds()
         else
         {
             DDR_LOG_WARN("BWL is disabled, but a DIMM temperature (%d) exceeded high threshold: %d\n",
-                   max_dimm_temp,
-                   thresholds.high);
+                         max_dimm_temp,
+                         thresholds.high);
             DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_DIMM_TEMPERATURES_EXCEED_HIGH_THRESHOLD_BWL_DISABLE);
         }
     }

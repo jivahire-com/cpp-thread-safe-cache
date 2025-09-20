@@ -46,6 +46,14 @@ jobs:
 
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}
           build
+
+          # Lint for latent autoformat changes: ensure git status returns no changes
+          $gitStatus = git status --porcelain
+          if ($gitStatus) {
+              Write-Error "Git working directory is not clean after build. Please run a local build to update all autoformat changes. `nFiles: `n$gitStatus"
+          } else {
+              Write-Host "Git working directory is clean after build."
+          }
           
           $TargetLogDir = "$(System.ArtifactsDirectory)\Unit_Test_Logs"
           & "${env:REPO_APP_PATH_1pfw.tools.win64}\sptest" `

@@ -38,6 +38,7 @@ typedef struct _hm_timestamp_t
 /*--------- Function Prototypes ----------*/
 static FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_dump_einj_cli(int argc, const char** argv);
+static FPFW_CLI_STATUS hm_dump_last_cper_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_inject_err_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_inject_err_raw_cli(int argc, const char** argv);
 static FPFW_CLI_STATUS hm_activate_sample_err_domain_cli(int argc, const char** argv);
@@ -54,6 +55,7 @@ static acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t* payload
 static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
     {NULL_LIST_ENTRY, "hm", "hm_dump_ghes", hm_dump_ghes_cli, "dump ghes {err_idx}", ""},
     {NULL_LIST_ENTRY, "hm", "hm_dump_einj", hm_dump_einj_cli, "dump einj payload", ""},
+    {NULL_LIST_ENTRY, "hm", "hm_dump_last_cper", hm_dump_last_cper_cli, "dump last full cper record", ""},
     {NULL_LIST_ENTRY, "hm", "hm_inject_err", hm_inject_err_cli, "inject err {err_idx}", ""},
     {NULL_LIST_ENTRY, "hm", "hm_inject_err_raw", hm_inject_err_raw_cli, "inject err {err_idx}", ""},
     {NULL_LIST_ENTRY, "hm", "hm_activate_sample_domain", hm_activate_sample_err_domain_cli, "active sample err domain", ""},
@@ -68,6 +70,9 @@ static const guid_name_map_t guid_map[] = {
     {ACPI_ERROR_TYPE_VENDOR_AP, "AP"},
     {ACPI_ERROR_TYPE_VENDOR_PCIE, "vendor pcie"},
     {ACPI_ERROR_TYPE_PROCESSOR_ARM, "proc arm"},
+    {ACPI_ERROR_TYPE_VENDOR_HSP_PROCESSOR, "hsp"},
+    {ACPI_ERROR_TYPE_VENDOR_PEX, "pex"},
+    {ACPI_ERROR_TYPE_VENDOR_RHTLM, "RowHammer"},
 };
 
 /*------------- Functions ----------------*/
@@ -252,6 +257,85 @@ static PLACED_CODE FPFW_CLI_STATUS hm_dump_einj_cli(int argc, const char** argv)
     ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
     print_einj_payload(einj_payload);
+    return CLI_SUCCESS;
+}
+
+static PLACED_CODE void PrintOutGuid(const char* name, guid_t guid)
+{
+    FpFwCliPrint("%s: {0x%08X, 0x%04X, 0x%04X, {0x%02X, 0x%02X, 0x%02X, 0x%02X, "
+                 "0x%02X, 0x%02X, 0x%02X, 0x%02X}}\n",
+                 name,
+                 guid.guid1,
+                 guid.guid2,
+                 guid.guid3,
+                 guid.guid4[0],
+                 guid.guid4[1],
+                 guid.guid4[2],
+                 guid.guid4[3],
+                 guid.guid4[4],
+                 guid.guid4[5],
+                 guid.guid4[6],
+                 guid.guid4[7]);
+}
+
+static PLACED_CODE void dump_cper_contents(acpi_cper_record_t* record_addr)
+{
+    if (!record_addr)
+    {
+        return;
+    }
+
+    acpi_cper_record_header_t* hdr = &record_addr->record_header;
+    FpFwCliPrint("CPER Record Header:\n");
+    FpFwCliPrint("  Signature: %c%c%c%c\n",
+                 (hdr->signature_start & 0xFF),
+                 (hdr->signature_start >> 8) & 0xFF,
+                 (hdr->signature_start >> 16) & 0xFF,
+                 (hdr->signature_start >> 24) & 0xFF);
+
+    FpFwCliPrint("  Revision: %u\n", hdr->revision);
+    FpFwCliPrint("  Section Count: %u\n", hdr->section_count);
+    FpFwCliPrint("  Error Severity: 0x%08x\n", hdr->error_severity);
+    FpFwCliPrint("  Record Length: %u\n", hdr->record_length);
+    PrintOutGuid("  Platform_id", hdr->platform_id);
+    PrintOutGuid("  Creator_id", hdr->creator_id);
+    PrintOutGuid("  Notification_type", hdr->notification_type);
+
+    uint8_t* base = (uint8_t*)record_addr;
+    for (int i = 0; i < hdr->section_count; ++i)
+    {
+        acpi_cper_sec_desc_t* desc =
+            (acpi_cper_sec_desc_t*)(base + sizeof(acpi_cper_record_header_t) + i * sizeof(acpi_cper_sec_desc_t));
+        FpFwCliPrint("\nSection Descriptor %d:\n", i);
+        FpFwCliPrint("  Section Offset: %u\n", desc->section_offset);
+        FpFwCliPrint("  Section Length: %u\n", desc->section_length);
+        FpFwCliPrint("  Revision: %u\n", desc->revision);
+        PrintOutGuid("  Section Type", desc->section_type);
+        PrintOutGuid("  FRU ID", desc->fru_id);
+        FpFwCliPrint("  Severity: 0x%08x\n", desc->section_severity);
+        FpFwCliPrint("  FRU Text: %.*s\n", ACPI_FRU_TEXT_LENGTH, desc->fru_text);
+
+        uint8_t* section_data = base + desc->section_offset;
+        FpFwCliPrint("  Section Data : ");
+        for (uint32_t j = 0; j < desc->section_length; ++j)
+        {
+            FpFwCliPrint("%02x ", section_data[j]);
+        }
+        FpFwCliPrint("\n");
+    }
+}
+
+static PLACED_CODE FPFW_CLI_STATUS hm_dump_last_cper_cli(int argc, const char** argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(argv);
+
+    hm_config_t* hm_config = get_hm_config();
+    BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
+
+    acpi_cper_record_t* cper_record_on_rmss = (acpi_cper_record_t*)hm_config->mscp_full_cper_record_base;
+    dump_cper_contents(cper_record_on_rmss);
+
     return CLI_SUCCESS;
 }
 

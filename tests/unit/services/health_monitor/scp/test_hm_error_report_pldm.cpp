@@ -22,6 +22,7 @@ extern "C" {
 #include <hm_test.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <libpldm/platform.h>
 #include <ras.h>
 #include <stdint.h>
 
@@ -42,6 +43,9 @@ fpfw_status_t __wrap_fpfw_pldm_service_raise_platform_event(pldm_platform_event_
 {
     assert_non_null(p_pe_config);
     assert_non_null(p_notification);
+
+    assert_true(p_pe_config->p_descriptor->event_payload_size ==
+                sizeof(acpi_cper_record_t) + sizeof(struct pldm_platform_cper_event));
 
     function_called();
 

@@ -22,6 +22,11 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
+typedef struct _pldm_cper_record_t
+{
+    struct pldm_platform_cper_event cper_event_header;
+    acpi_cper_record_t cper_record;
+} pldm_cper_record_t;
 
 /*-------- Function Prototypes -----------*/
 void hm_transfer_cper_to_bmc_local();
@@ -37,7 +42,7 @@ static void hm_transfer_cper_completion_pldm_cb(fpfw_pldm_cc_t completionCode, v
 
     if (completionCode == FPFW_PLDM_CC_SUCCESS)
     {
-        HM_LOG_INFO("PLDM CPER transfer succeeded.");
+        HM_LOG_INFO("PLDM CPER transfer succeeded");
     }
     else
     {
@@ -83,18 +88,24 @@ void hm_transfer_cper_to_bmc_local()
 {
     if (cper_transfer_ongoing)
     {
-        HM_LOG_INFO("Another PLDM CPER transfer is already in progress.");
+        HM_LOG_INFO("PLDM CPER transfer already in progress\n");
         return;
     }
+
+    HM_LOG_INFO("Request PLDM CPER transfer\n");
 
     cper_transfer_ongoing = true;
     volatile uint8_t* rmss_cper_record_base = (volatile uint8_t*)(uintptr_t)get_hm_config()->mscp_full_cper_record_base;
     BUG_ASSERT_PARAM(rmss_cper_record_base != NULL, rmss_cper_record_base, 0);
 
-    static acpi_cper_record_t full_cper;
+    static pldm_cper_record_t full_cper;
+
+    full_cper.cper_event_header.format_version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION;
+    full_cper.cper_event_header.format_type = PLDM_PLATFORM_CPER_EVENT_WITH_HEADER;
+    full_cper.cper_event_header.event_data_length = sizeof(acpi_cper_record_t);
 
     volatile uint8_t* src = rmss_cper_record_base;
-    uint8_t* dst = (uint8_t*)&full_cper;
+    uint8_t* dst = (uint8_t*)&full_cper.cper_record;
 
     wait_for_semaphore(get_hm_config()->semaphore_id, get_hm_config()->semaphore_key);
     for (size_t i = 0; i < sizeof(acpi_cper_record_t); i++)
@@ -104,7 +115,7 @@ void hm_transfer_cper_to_bmc_local()
     release_semaphore(get_hm_config()->semaphore_id);
 
     static fpfw_pmc_platform_event_descriptor_t descriptor = {.event_class = PLDM_CPER_EVENT,
-                                                              .event_payload_size = sizeof(acpi_cper_record_t)};
+                                                              .event_payload_size = sizeof(pldm_cper_record_t)};
 
     descriptor.event_payload = &full_cper;
 
@@ -115,10 +126,7 @@ void hm_transfer_cper_to_bmc_local()
 
     fpfw_status_t status = fpfw_pldm_service_raise_platform_event(&event, &notification);
 
-    if (FPFW_STATUS_SUCCEEDED(status))
-    {
-    }
-    else
+    if (FPFW_STATUS_FAILED(status))
     {
         cper_transfer_ongoing = false;
     }

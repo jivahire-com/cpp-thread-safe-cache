@@ -300,7 +300,7 @@
     -->
     
     <!-- Undocumented -->
-    <Knob name="power_plimit_current_thresholds" type="power_currthrot_threshold_cfg_t" default="{true, 80, 90, 95, 100}" />
+    <Knob name="power_plimit_current_thresholds" type="power_currthrot_threshold_cfg_t" default="{true, 100, 70, 80, 90}" />
     <Knob name="power_soc_vm_overvolt_en" type="bool" default="true" />
     <Knob name="power_soc_vm_undervolt_en" type="bool" default="true" />
     <Knob name="power_tile_vm_overvolt_en" type="bool" default="true" />

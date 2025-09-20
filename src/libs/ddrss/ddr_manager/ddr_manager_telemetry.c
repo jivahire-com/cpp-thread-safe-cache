@@ -89,7 +89,7 @@ void ddr_telemetry_report()
         dimm_info.dimm_power_mW = power_mW;
 
         ddr_manager_i3c_temperature_t temp0 = ddr_telemetry_get_dimm_temp(dimm_idx, 0);
-        // Franctional temperatures may be {0,25,50,75} 
+        // Franctional temperatures may be {0,25,50,75}
         dimm_info.dimm_temp_s0_dC = (10 * temp0.temp_int) + (temp0.temp_frac + 5) / 10;
 
         ddr_manager_i3c_temperature_t temp1 = ddr_telemetry_get_dimm_temp(dimm_idx, 1);

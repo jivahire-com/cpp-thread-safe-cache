@@ -4,6 +4,10 @@ import ctypes
 from enum import IntEnum
 
 
+# Type aliases for better clarity
+UInt16 = int  # Constrained to 0-65535 range
+
+
 def struct_to_hex_string(struct_instance):
     """Convert a ctypes structure to a decimal stream."""
     byte_stream = bytes(struct_instance)  # Convert struct to bytes
@@ -337,6 +341,29 @@ def event_list_init(self, number_of_events: int, events: list[tuple[int, int, in
     # Default to an empty list if no events are provided
     if events is None:
         events = []
+
+    # Validate that all event tuple values fit in ctypes.c_uint16 range (0-65535)
+    for i, event in enumerate(events):
+        if len(event) != 3:
+            raise ValueError(
+                f"Event {i} must be a tuple of exactly 3 integers: (provider_id, event_id, state)"
+            )
+
+        provider_id, event_id, state = event
+        for field_name, value in [
+            ("provider_id", provider_id),
+            ("event_id", event_id),
+            ("state", state),
+        ]:
+            if not isinstance(value, int):
+                raise TypeError(
+                    f"Event {i} {field_name} must be an integer, got {type(value).__name__}"
+                )
+            if not (0 <= value <= 0xFFFF):
+                raise ValueError(
+                    f"Event {i} {field_name} value {value} must be in range 0-65535 "
+                    f"(0x0000-0xFFFF) for ctypes.c_uint16"
+                )
 
     # Ensure events list has exactly MAX_EVENTS entries, filling with (0, 0, 0) if needed
     events = (

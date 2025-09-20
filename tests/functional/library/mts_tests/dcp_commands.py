@@ -54,6 +54,17 @@ class dcp_commands:
         return [current & 0xFF, (current >> 8) & 0xFF]
 
     @staticmethod
+    def _log_response_fields(response_obj, response_name: str):
+        """Helper function to log ctypes structure fields in a readable format"""
+        logger.debug(f"Response for {response_name}:")
+        for field in response_obj._fields_:
+            value = getattr(response_obj, field[0])
+            if isinstance(value, int):
+                logger.debug(f"  {field[0]}: 0x{value:x}")
+            else:
+                logger.debug(f"  {field[0]}: {value}")
+
+    @staticmethod
     def create_header(
         msg_id: int,
         payload_size: int,
@@ -97,13 +108,16 @@ class dcp_commands:
             dest_die: Destination die
             dest_cpu: Destination CPU
             client_id: Client identifier
-            events: List of events to enable/disable
+            events: List of events to enable/disable as tuples (provider_id, event_id, state)
         Returns:
             None
+        Raises:
+            ValueError: If DCP command fails or returns error status
         """
-        number_of_events = len([item for item in events if isinstance(item, tuple)])
+        # Simplified event count - type hints already enforce tuple constraint
+        number_of_events = len(events)
 
-        # Create payload based on state
+        # Create payload based on events
         dcp_msg_events = data_collection_protocol.client_events_enable_disable_msg.dcp_msg_events_enable_disable_t(
             number_of_events=number_of_events, events=events
         )
@@ -111,14 +125,15 @@ class dcp_commands:
         # Convert the structure to bytes
         payload = bytearray(dcp_msg_events)
 
+        # Calculate payload size using actual struct size up to used events
+        event_struct_size = ctypes.sizeof(
+            data_collection_protocol.client_events_enable_disable_msg.event
+        )
         payload_used_size = ctypes.sizeof(ctypes.c_uint16) + (
-            number_of_events
-            * ctypes.sizeof(
-                data_collection_protocol.client_events_enable_disable_msg.event
-            )
+            number_of_events * event_struct_size
         )
 
-        # Create complete message with client_id
+        # Create complete message header
         dcp_msg_bytes = dcp_commands.create_header(
             data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_EVENTS_ENABLE_DISABLE,
             payload_used_size,
@@ -126,8 +141,11 @@ class dcp_commands:
         )
         dcp_msg_bytes.extend(payload[:payload_used_size])
 
-        # Log raw message for debugging
-        logger.debug(f"Sending client_enable_disable_events message")
+        # Enhanced logging with context
+        logger.debug(
+            f"Sending client_enable_disable_events: {number_of_events} events to "
+            f"die={dest_die}, cpu={dest_cpu.name}, client={client_id.name}"
+        )
 
         byte_response = src_endpoint.send_dcp_message(
             dest_die=dest_die,
@@ -141,8 +159,11 @@ class dcp_commands:
         )
 
         if not dcp_commands.validate_response(msg_status, logger):
+            cmd_name = data_collection_protocol.dcp_msg_id_t(
+                response_dcp_msg_hdr.msg_id
+            ).name
             raise ValueError(
-                f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} "
+                f"DCP enable/disable events failed: {msg_status.name} for {cmd_name}"
             )
 
     # Using * in the method definition to enforce named parameters
@@ -236,6 +257,7 @@ class dcp_commands:
             dcp_msg=dcp_msg_bytes,
         )
         response_dcp_msg_hdr = dcp_msg_hdr_t.from_buffer_copy(byte_response)
+
         msg_status = data_collection_protocol.dcp_status_t(
             response_dcp_msg_hdr.msg_status
         )
@@ -249,10 +271,11 @@ class dcp_commands:
             byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]
         )
 
+        dcp_commands._log_response_fields(client_payload, "client_get_state")
+
         state = data_collection_protocol.client_get_state_msg.dcp_client_state_t(
             client_payload.state
         )
-        logger.debug(f"Client state = : {state.name}")
         return state
 
     @staticmethod
@@ -262,16 +285,18 @@ class dcp_commands:
         dest_die: int,
         dest_cpu: transfer_relay_protocol.cpu_type,
         client_id: data_collection_protocol.mts_client_id_t,
+        output_file: Optional[str] = None,
     ) -> Tuple[
         data_collection_protocol.dcp_status_t,
         data_collection_protocol.client_get_manifest_msg.dcp_msg_get_manifest_t,
     ]:
-        """Manifest data from client
+        """Manifest data from client and optionally write manifest to file
         Args:
             src_endpoint: endpoint that message is sent from
             dest_die: Destination die
             dest_cpu: Destination CPU
             client_id: Client identifier
+            output_file: Optional file path to write manifest data to
         Returns:
             msg_status
             manifest_rsp
@@ -296,7 +321,7 @@ class dcp_commands:
             response_dcp_msg_hdr.msg_status
         )
 
-        logger.debug(f"Message Status for client_get_manifest : {msg_status}")
+        logger.debug(f"Message Status for client_get_manifest : {msg_status.name}")
 
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(
@@ -306,7 +331,38 @@ class dcp_commands:
         manifest_rsp = data_collection_protocol.client_get_manifest_msg.dcp_msg_get_manifest_t.from_buffer_copy(
             byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]
         )
-        logger.debug(f"Response for client_get_manifest : {manifest_rsp}")
+        dcp_commands._log_response_fields(manifest_rsp, "client_get_manifest")
+
+        # If output_file is specified, try to use read_to_file API if supported
+        if output_file and manifest_rsp:
+            if hasattr(src_endpoint, "read_to_file") and callable(
+                getattr(src_endpoint, "read_to_file")
+            ):
+                try:
+                    # Use the physical start address and manifest size from the response
+                    memory_address = (
+                        manifest_rsp.physical_start_addr.value
+                        + manifest_rsp.start_addr_offset.value
+                    )
+                    manifest_size = manifest_rsp.manifest_size.value
+                    src_endpoint.read_to_file(
+                        memory_address,
+                        manifest_size,
+                        output_file,
+                    )
+                    logger.debug(
+                        f"Manifest data written to {output_file} using read_to_file API "
+                        f"(addr: 0x{memory_address:x}, size: {manifest_size})"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"read_to_file API failed for manifest file write: {e}"
+                    )
+                    raise
+            else:
+                logger.debug(
+                    "read_to_file API not supported by endpoint, skipping manifest file write"
+                )
 
         return msg_status, manifest_rsp
 
@@ -352,7 +408,7 @@ class dcp_commands:
         )
 
         logger.debug(
-            f"Message Status for client_get_platform_information: {msg_status}"
+            f"Message Status for client_get_platform_information: {msg_status.name}"
         )
 
         if not dcp_commands.validate_response(msg_status, logger):
@@ -362,10 +418,12 @@ class dcp_commands:
 
         platform_rsp = (
             data_collection_protocol.dcp_msg_get_plat_info_t.from_buffer_copy(
-                byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]
+                byte_response[ctypes.sizeof(dcp_msg_hdr_t):]
             )
         )
-        logger.debug(f"Response for client_get_platform_information: {platform_rsp}")
+        dcp_commands._log_response_fields(
+            platform_rsp, "client_get_platform_information"
+        )
         return msg_status, platform_rsp
 
     @staticmethod
@@ -414,7 +472,7 @@ class dcp_commands:
             response_dcp_msg_hdr.msg_status
         )
 
-        logger.debug(f"Message Status for client_get_capabilities: {msg_status}")
+        logger.debug(f"Message Status for client_get_capabilities: {msg_status.name}")
 
         # Validate response
         if not dcp_commands.validate_response(msg_status, logger):
@@ -430,7 +488,9 @@ class dcp_commands:
             )
         )
 
-        logger.debug(f"Response for client_get_capabilities: {capabilities_response}")
+        dcp_commands._log_response_fields(
+            capabilities_response, "client_get_capabilities"
+        )
         return msg_status, capabilities_response
 
     @staticmethod
@@ -488,8 +548,10 @@ class dcp_commands:
             == data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_LAST
         ):
             read_data_rsp = data_collection_protocol.client_read_data_msg.dcp_msg_read_data_t.from_buffer_copy(
-                byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]
+                byte_response[ctypes.sizeof(dcp_msg_hdr_t):]
             )
+
+            dcp_commands._log_response_fields(read_data_rsp, "client_read_data")
 
             # If output_file is specified, try to use read_to_file API if supported
             if output_file and read_data_rsp:
@@ -616,9 +678,6 @@ class dcp_commands:
 
         msg_status = data_collection_protocol.dcp_status_t(
             response_dcp_msg_hdr.msg_status
-        )
-        logger.info(
-            f"Msg header for reset {response_dcp_msg_hdr} and status {msg_status}"
         )
 
         if not dcp_commands.validate_response(msg_status, logger):

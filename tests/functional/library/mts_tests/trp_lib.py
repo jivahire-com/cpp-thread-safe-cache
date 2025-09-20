@@ -147,23 +147,73 @@ class trp_endpoint(ABC):
             except ValueError:
                 return f"UNKNOWN_CPU_{core_id}"
 
+        # Helper function to get TRP status name
+        def get_trp_status_name(status_value: int) -> str:
+            try:
+                trp_status = transfer_relay_protocol.trp_status_t(status_value)
+                return f"{trp_status.name} ({status_value:x})"
+            except ValueError:
+                return f"UNKNOWN_TRP_STATUS_{status_value:x}"
+
+        # Helper function to get DCP status name
+        def get_dcp_status_name(status_value: int) -> str:
+            try:
+                dcp_status = data_collection_protocol.dcp_status_t(status_value)
+                return f"{dcp_status.name} ({status_value:x})"
+            except ValueError:
+                return f"UNKNOWN_DCP_STATUS_{status_value:x}"
+
+        # Helper function to get MTS client ID name
+        def get_mts_client_id_name(client_id_value: int) -> str:
+            try:
+                mts_client_id = data_collection_protocol.mts_client_id_t(
+                    client_id_value
+                )
+                return f"{mts_client_id.name} ({client_id_value})"
+            except ValueError:
+                return f"UNKNOWN_MTS_CLIENT_ID_{client_id_value}"
+
+        # Helper function to get TRP message ID name
+        def get_trp_msg_id_name(msg_id_value: int) -> str:
+            try:
+                trp_msg_id = transfer_relay_protocol.trp_msg_id_t(msg_id_value)
+                return f"{trp_msg_id.name} ({msg_id_value:x})"
+            except ValueError:
+                return f"UNKNOWN_TRP_MSG_ID_{msg_id_value:x}"
+
+        # Helper function to get DCP message ID name
+        def get_dcp_msg_id_name(msg_id_value: int) -> str:
+            try:
+                dcp_msg_id = data_collection_protocol.dcp_msg_id_t(msg_id_value)
+                return f"{dcp_msg_id.name} ({msg_id_value:x})"
+            except ValueError:
+                return f"UNKNOWN_DCP_MSG_ID_{msg_id_value:x}"
+
         # Log the TRP header fields
         logger.debug(f"Response TRP Header")
         logger.debug(f"TRP Header - Source Die ID: {trp_msg_hdr.src_node.die_id}")
         logger.debug(
-            f"TRP Header - Source Core ID: {trp_msg_hdr.src_node.core_id} ({get_cpu_name(trp_msg_hdr.src_node.core_id)})"
+            f"TRP Header - Source Core ID: {trp_msg_hdr.src_node.core_id} "
+            f"({get_cpu_name(trp_msg_hdr.src_node.core_id)})"
         )
         logger.debug(f"TRP Header - Destination Die ID: {trp_msg_hdr.dest_node.die_id}")
         logger.debug(
-            f"TRP Header - Destination Core ID: {trp_msg_hdr.dest_node.core_id} ({get_cpu_name(trp_msg_hdr.dest_node.core_id)})"
+            f"TRP Header - Destination Core ID: {trp_msg_hdr.dest_node.core_id} "
+            f"({get_cpu_name(trp_msg_hdr.dest_node.core_id)})"
         )
-        logger.debug(f"TRP Header - Message status: {trp_msg_hdr.trp_msg_status:x}")
-        logger.debug(f"TRP Header - MTS Client ID: {trp_msg_hdr.mts_client_id}")
-        logger.debug(f"TRP Header - TRP Message ID: {trp_msg_hdr.trp_msg_id:x}")
         logger.debug(
-            f"TRP Header - Source Sequence Number: {trp_msg_hdr.source_seq_num:x}"
+            f"TRP Header - Message status: {get_trp_status_name(trp_msg_hdr.trp_msg_status)}"
         )
-        logger.debug(f"TRP Header - Payload Size: {trp_msg_hdr.payload_size:x}")
+        logger.debug(
+            f"TRP Header - MTS Client ID: {get_mts_client_id_name(trp_msg_hdr.mts_client_id)}"
+        )
+        logger.debug(
+            f"TRP Header - TRP Message ID: {get_trp_msg_id_name(trp_msg_hdr.trp_msg_id)}"
+        )
+        logger.debug(
+            f"TRP Header - Source Sequence Number: 0x{trp_msg_hdr.source_seq_num:X}"
+        )
+        logger.debug(f"TRP Header - Payload Size: 0x{trp_msg_hdr.payload_size:X}")
 
         # Log the DCP header fields if response is large enough
         if len(response_bytes) >= ctypes.sizeof(
@@ -176,11 +226,17 @@ class trp_endpoint(ABC):
                 dcp_msg_bytes
             )
             logger.debug(f"Response DCP Header")
-            logger.debug(f"DCP Header - Client ID: {dcp_msg_hdr.client_id}")
-            logger.debug(f"DCP Header - Message ID: {dcp_msg_hdr.msg_id:x}")
-            logger.debug(f"DCP Header - Sequence Number: {dcp_msg_hdr.seq_num:x}")
-            logger.debug(f"DCP Header - Message Status: {dcp_msg_hdr.msg_status:x}")
-            logger.debug(f"DCP Header - Payload Size: {dcp_msg_hdr.payload_size:x}")
+            logger.debug(
+                f"DCP Header - Client ID: {get_mts_client_id_name(dcp_msg_hdr.client_id)}"
+            )
+            logger.debug(
+                f"DCP Header - Message ID: {get_dcp_msg_id_name(dcp_msg_hdr.msg_id)}"
+            )
+            logger.debug(f"DCP Header - Sequence Number: 0x{dcp_msg_hdr.seq_num:X}")
+            logger.debug(
+                f"DCP Header - Message Status: {get_dcp_status_name(dcp_msg_hdr.msg_status)}"
+            )
+            logger.debug(f"DCP Header - Payload Size: 0x{dcp_msg_hdr.payload_size:X}")
         else:
             logger.debug(
                 f"Response too short to contain DCP header: {len(response_bytes)} bytes"
@@ -216,7 +272,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
         )
 
         send_str = (
-            f"mts trp_send "
+            "mts trp_send "
             + struct_to_hex_string(trp_msg_hdr)
             + byte_list_to_hex_string(dcp_msg)
         )
@@ -266,7 +322,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
 
         # Extract DCP response (skip TRP header)
         dcp_msg_bytes = response_bytes[
-            ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t) :
+            ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t):
         ]
         return dcp_msg_bytes
 
@@ -322,7 +378,7 @@ class mts_icc_mhu_trp_endpoint(trp_endpoint, CoreMemoryMapAccess):
         trp_header_bytes = bytearray(trp_msg_hdr)
         packet = trp_header_bytes + bytearray(dcp_msg)
 
-        logger.debug(f"Sending DCP in TRP message via ICC MHU:")
+        logger.debug("Sending DCP in TRP message via ICC MHU:")
         logger.debug(f"TRP Header: {' '.join(f'{b:02X}' for b in trp_header_bytes)}")
         logger.debug(f"DCP Payload: {' '.join(f'{b:02X}' for b in dcp_msg)}")
 

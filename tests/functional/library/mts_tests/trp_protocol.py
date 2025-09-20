@@ -4,8 +4,7 @@ import os
 import sys
 from enum import IntEnum
 import ctypes
-from ctypes import Structure, c_uint16, c_uint8, c_uint32
-
+from ctypes import Structure, c_uint16
 
 # Add paths for both package and direct imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,11 +16,6 @@ sys.path.extend(
     ]
 )
 
-from dcp_protocol import (
-    data_collection_protocol,
-    struct_to_hex_string,
-    byte_list_to_hex_string,
-)
 
 
 class trp_node_t(ctypes.LittleEndianStructure):

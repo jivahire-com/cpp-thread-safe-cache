@@ -53,17 +53,6 @@ void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.max);
 
-    // Prepare MPAM core power data array
-    mpam_vm_core_pwr_data_t mpam_core_pwr_array[NUMBER_OF_MPAMS];
-    for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
-    {
-        mpam_core_pwr_array[mpam_id].average_pwr_mW =
-            data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg);
-        mpam_core_pwr_array[mpam_id].max_pwr_mW = computed_metrics_d2d_2mins.mpam[mpam_id].core_power.max;
-    }
-
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&mpam_core_pwr_array);
-
     comp_metrics_reset_d2d_2_min_metrics();
 }
 
@@ -401,6 +390,59 @@ void comp_metrics_for_single_soc_dimm(uint8_t dimm_idx, uint16_t latest_dimm_tem
     }
 }
 
+void comp_metrics_for_cores_droop_counts(void)
+{
+    if (in_band_publishing_active)
+    {
+        uint64_t droop_counts[NUMBER_OF_CORES_PER_DIE];
+
+        pwr_tlm_core_exch_mcp_read_droop_counts(&droop_counts);
+
+        for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            if (comp_metrics_core_and_inband_publishing_active(core_id))
+            {
+                computed_metrics_2_mins.cores[core_id].droop_count = droop_counts[core_id];
+            }
+        }
+    }
+}
+
+void comp_metrics_for_single_core_aging_counters(uint8_t core_id,
+                                                 uint16_t latest_voltage_mV,
+                                                 uint16_t latest_max_value_dC,
+                                                 uint64_t this_pwr_pkg_timestamp_uS,
+                                                 uint32_t latest_aged_counter,
+                                                 uint32_t latest_unaged_counter,
+                                                 uint8_t counter_id)
+{
+
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].counter_id = counter_id;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter = latest_aged_counter;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter = latest_unaged_counter;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS = this_pwr_pkg_timestamp_uS;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].temperature_dC = latest_max_value_dC;
+    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].voltage_mV = latest_voltage_mV;
+}
+
+void comp_metrics_for_mpam_data(mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS])
+{
+    if (in_band_publishing_active)
+    {
+        if (mpam_data_array == NULL)
+        {
+            FPFW_ET_LOG(CompMetricsMpamPwrNullPointer);
+            return;
+        }
+
+        for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+        {
+            data_util_calc_mma_u32(&computed_metrics_2_mins.mpam[mpam_id].core_power,
+                                   (*mpam_data_array)[mpam_id].latest_total_pwr_mW);
+        }
+    }
+}
+
 void comp_metrics_for_max_dimm_temp(uint16_t latest_max_dimm_temp_dC)
 {
     data_util_mov_avg_u16_add_sample(&computed_metrics_oob.max_dimm_temp_mov_avg_dC, latest_max_dimm_temp_dC);
@@ -448,52 +490,6 @@ void comp_metrics_for_soc_avg_pstate(uint8_t (*pstate)[NUMBER_OF_CORES_PER_DIE])
             die_2_die_exch_oob_write_window_avg_pstate(computed_metrics_oob.pstate_mov_avg.total_sum,
                                                        computed_metrics_oob.pstate_mov_avg.sample_count);
         }
-    }
-}
-
-void comp_metrics_for_cores_droop_counts(void)
-{
-    uint64_t droop_counts[NUMBER_OF_CORES_PER_DIE];
-
-    pwr_tlm_core_exch_mcp_read_droop_counts(&droop_counts);
-
-    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
-    {
-        if (comp_metrics_core_and_inband_publishing_active(core_id))
-        {
-            computed_metrics_2_mins.cores[core_id].droop_count = droop_counts[core_id];
-        }
-    }
-}
-
-void comp_metrics_for_single_core_aging_counters(uint8_t core_id,
-                                                 uint16_t latest_voltage_mV,
-                                                 uint16_t latest_max_value_dC,
-                                                 uint64_t this_pwr_pkg_timestamp_uS,
-                                                 uint32_t latest_aged_counter,
-                                                 uint32_t latest_unaged_counter,
-                                                 uint8_t counter_id)
-{
-
-    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].counter_id = counter_id;
-    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter = latest_aged_counter;
-    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter = latest_unaged_counter;
-    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS = this_pwr_pkg_timestamp_uS;
-    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].temperature_dC = latest_max_value_dC;
-    computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].voltage_mV = latest_voltage_mV;
-}
-
-void comp_metrics_for_mpam_power(uint32_t (*mpam_power_mW)[NUMBER_OF_MPAMS])
-{
-    if (mpam_power_mW == NULL)
-    {
-        FPFW_ET_LOG(CompMetricsMpamPwrNullPointer);
-        return;
-    }
-
-    for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
-    {
-        data_util_calc_mma_u32(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power, (*mpam_power_mW)[mpam_id]);
     }
 }
 

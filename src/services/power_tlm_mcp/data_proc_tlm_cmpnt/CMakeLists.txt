@@ -29,13 +29,13 @@ target_link_libraries(${TARGET}
         fwlib.lib.status
         fwlib.lib.utils
         ms::cmsis::interface
+        ms::lib::arm_intrinsic
         ms::lib::core_info
         ms::lib::error_codes
-        ms::lib::arm_intrinsic
-        ms::lib::telemetry::fuses
+        ms::lib::event_trace::trace
         ms::lib::gtimer
         ms::lib::pwr_tlm_core_ex
-        ms::lib::core_info
+        ms::lib::telemetry::fuses
         silibs::dvfs
         silibs::pvt
         silibs::semaphore

@@ -25,6 +25,9 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 
+static mpam_data_t s_test_data_array[NUMBER_OF_MPAMS];
+static mpam_data_t s_read_data_array[NUMBER_OF_MPAMS];
+
 /*-------- Function Prototypes -----------*/
 static int test_setup(void** pContext)
 {
@@ -96,80 +99,30 @@ TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_max_die_temp_negative, t
     assert_int_equal(read_temps.average_max_temp_dC, 0);
     assert_int_equal(read_temps.num_samples, 0);
     assert_int_equal(read_temps.peak_temp_dC, 0);
-}
 
-TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_mpam_core_pwr, test_setup, test_teardown)
-{
-    die_2_die_exch_init(1);
-
-    // Create test data for MPAM core power
-    mpam_vm_core_pwr_data_t test_mpam_array[NUMBER_OF_MPAMS];
-    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
-    {
-        test_mpam_array[i].average_pwr_mW = 1000 + i;
-        test_mpam_array[i].max_pwr_mW = 2000 + i;
-    }
-
-    // Write the MPAM core power data
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_mpam_array);
-
-    // Read and verify a few MPAM entries
-    mpam_vm_core_pwr_data_t read_mpam = {0};
-
-    // Test MPAM ID 0
-    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, 0, &read_mpam);
-    assert_int_equal(read_mpam.average_pwr_mW, 1000);
-    assert_int_equal(read_mpam.max_pwr_mW, 2000);
-
-    // Test MPAM ID 10
-    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, 10, &read_mpam);
-    assert_int_equal(read_mpam.average_pwr_mW, 1010);
-    assert_int_equal(read_mpam.max_pwr_mW, 2010);
-
-    // Test last MPAM ID
-    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, NUMBER_OF_MPAMS - 1, &read_mpam);
-    assert_int_equal(read_mpam.average_pwr_mW, 1000 + NUMBER_OF_MPAMS - 1);
-    assert_int_equal(read_mpam.max_pwr_mW, 2000 + NUMBER_OF_MPAMS - 1);
-}
-
-TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_mpam_core_pwr_negative, test_setup, test_teardown)
-{
-    die_2_die_exch_init(1);
-
-    // Create test data
-    mpam_vm_core_pwr_data_t test_mpam_array[NUMBER_OF_MPAMS];
-    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
-    {
-        test_mpam_array[i].average_pwr_mW = 1000 + i;
-        test_mpam_array[i].max_pwr_mW = 2000 + i;
-    }
-
-    // Write data
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_mpam_array);
-
-    mpam_vm_core_pwr_data_t read_mpam = {0};
-
-    // Test reading from invalid die ID (die 0 doesn't write to exchange)
-    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(0, 0, &read_mpam);
-    assert_int_equal(read_mpam.average_pwr_mW, 0);
-    assert_int_equal(read_mpam.max_pwr_mW, 0);
-
-    // Test reading with null pointer
-    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, 0, nullptr);
-    // Should not crash, but we can't verify the behavior since it's a null pointer
-
-    // Test writing from invalid die ID (die 0)
+    // Test write with invalid die ID (die 0 should not write to exchange)
     die_2_die_exch_init(0);
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_mpam_array);
+    die_2_die_exch_ib_write_pwr_pkg_max_die_temp(700, 20, 800);
 
-    // Switch back to die 1 and verify data wasn't written
+    // Switch back to valid die and verify data wasn't written
     die_2_die_exch_init(1);
-    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, 0, &read_mpam);
-    assert_int_equal(read_mpam.average_pwr_mW, 0);
-    assert_int_equal(read_mpam.max_pwr_mW, 0);
+    max_die_temps_t read_temps_after_invalid_write = {0};
+    die_2_die_exch_ib_read_pwr_pkg_max_die_temp_dC(0, &read_temps_after_invalid_write);
+    assert_int_equal(read_temps_after_invalid_write.average_max_temp_dC, 0);
+    assert_int_equal(read_temps_after_invalid_write.num_samples, 0);
+    assert_int_equal(read_temps_after_invalid_write.peak_temp_dC, 0);
 
-    // Test writing with null pointer (should not crash)
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(nullptr);
+    // Test write with invalid die ID (die 2 doesn't exist - beyond valid range)
+    die_2_die_exch_init(2);
+    die_2_die_exch_ib_write_pwr_pkg_max_die_temp(900, 30, 1000);
+
+    // Switch back to valid die and verify data wasn't written
+    die_2_die_exch_init(1);
+    max_die_temps_t read_temps_after_invalid_write2 = {0};
+    die_2_die_exch_ib_read_pwr_pkg_max_die_temp_dC(1, &read_temps_after_invalid_write2);
+    assert_int_equal(read_temps_after_invalid_write2.average_max_temp_dC, 0);
+    assert_int_equal(read_temps_after_invalid_write2.num_samples, 0);
+    assert_int_equal(read_temps_after_invalid_write2.peak_temp_dC, 0);
 }
 
 TEST_FUNCTION(test_die_2_die_exch_oob_read_write_window_max_die_temp, test_setup, test_teardown)
@@ -379,14 +332,18 @@ TEST_FUNCTION(test_die_2_die_exch_oob_write_read_dimm_info, test_setup, test_tea
     die_2_die_exch_oob_write_dimm_info(5, 6000, 45, 50);
     die_2_die_exch_oob_write_dimm_info(5, 6000, 45, 55);
 
+    // Test case where latest_temp_dC <= dimm_info_ptr->max_temp_dC (condition is false)
+    // Channel 0 currently has max_temp_dC = 30, so write with latest_temp_dC = 25 (25 <= 30)
+    die_2_die_exch_oob_write_dimm_info(0, 1500, 22, 25);
+
     uint16_t avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, 0);
-    assert_int_equal(avg_temp_dC, 20);
+    assert_int_equal(avg_temp_dC, 22); // Should be the latest average temp we just wrote
 
     uint16_t max_temp_dC = die_2_die_exch_oob_read_dimm_max_temp_dC(1, 0);
-    assert_int_equal(max_temp_dC, 30);
+    assert_int_equal(max_temp_dC, 30); // Should remain 30 since 25 <= 30
 
     uint16_t avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, 0);
-    assert_int_equal(avg_pwr_mW, 1000);
+    assert_int_equal(avg_pwr_mW, 1500); // Should be 1500, the latest power we wrote
 
     avg_temp_dC = die_2_die_exch_oob_read_dimm_avg_temp_dC(1, 1);
     assert_int_equal(avg_temp_dC, 25);
@@ -475,4 +432,390 @@ TEST_FUNCTION(test_die_2_die_exch_oob_read_dimm_avg_pwr_mW_negative, test_setup,
     die_2_die_exch_oob_write_dimm_info(1, 1000, 20, 30);
     avg_pwr_mW = die_2_die_exch_oob_read_dimm_avg_pwr_mW(1, 0);
     assert_int_equal(avg_pwr_mW, 0);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_get_mpam_data_missed_counts_basic, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    uint32_t reads_without_new_data = 0;
+    uint32_t writes_without_consumption = 0;
+
+    // Initially both counters should be 0
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 0);
+    assert_int_equal(writes_without_consumption, 0);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_get_mpam_data_missed_counts_null_pointers, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    uint32_t reads_without_new_data = 999;
+    uint32_t writes_without_consumption = 999;
+
+    // Test with NULL pointer for first parameter
+    die_2_die_exch_get_mpam_data_missed_counts(nullptr, &writes_without_consumption);
+    assert_int_equal(writes_without_consumption, 0);
+
+    // Test with NULL pointer for second parameter
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, nullptr);
+    assert_int_equal(reads_without_new_data, 0);
+
+    // Test with both NULL pointers (should not crash)
+    die_2_die_exch_get_mpam_data_missed_counts(nullptr, nullptr);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_mpam_reads_without_new_data_counter, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    uint32_t reads_without_new_data = 0;
+    uint32_t writes_without_consumption = 0;
+
+    // write once
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&s_test_data_array);
+
+    // Perform multiple reads without any writes - should increment reads_without_new_data counter
+    mpam_data_t read_data_array[NUMBER_OF_MPAMS];
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array); // normal
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array); // inc count
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array); // inc count
+
+    // Check that reads_without_new_data counter has incremented
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 2);
+    assert_int_equal(writes_without_consumption, 0);
+
+    // Reading the counters should clear them
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 0);
+    assert_int_equal(writes_without_consumption, 0);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_mpam_writes_without_consumption_counter, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    uint32_t reads_without_new_data = 0;
+    uint32_t writes_without_consumption = 0;
+
+    // Use file-level static array to avoid stack overflow
+
+    // Now set the actual test values
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        s_test_data_array[i].latest_total_pwr_mW = 1000; // Default power value
+        s_test_data_array[i].latest_pstate = 5;          // Default pstate value
+        s_test_data_array[i].active = 1;                 // Set active bit
+        s_test_data_array[i].throttling = 0;             // Clear throttling bit
+    }
+
+    // Set specific values for array position 127 (last element) to verify memcpy works correctly
+    s_test_data_array[127].latest_total_pwr_mW = 0x12345678; // Unique 32-bit value for position 127
+    s_test_data_array[127].latest_pstate = 0xAB;             // Unique 8-bit value for position 127
+    s_test_data_array[127].active = 1;                       // Set active bit
+    s_test_data_array[127].throttling = 0;                   // Clear throttling bit
+
+    // Perform multiple writes without any reads - should increment writes_without_consumption counter
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&s_test_data_array);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&s_test_data_array);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&s_test_data_array);
+
+    // Check that writes_without_consumption counter has incremented
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 0);
+    assert_int_equal(writes_without_consumption, 2); // First write is normal, next 2 increment counter
+
+    // Test memcpy correctness by reading back data and verifying array position 127
+    // Initialize static read array to zero
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        s_read_data_array[i].latest_total_pwr_mW = 0;
+        s_read_data_array[i].latest_pstate = 0;
+        s_read_data_array[i].flags_byte = 0;
+    }
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &s_read_data_array);
+
+    // Verify memcpy worked correctly for array position 127
+    assert_int_equal(s_read_data_array[127].latest_total_pwr_mW, 0x12345678);
+    assert_int_equal(s_read_data_array[127].latest_pstate, 0xAB);
+
+    // Also verify other positions to ensure memcpy didn't corrupt data
+    assert_int_equal(s_read_data_array[0].latest_total_pwr_mW, 1000);
+    assert_int_equal(s_read_data_array[0].latest_pstate, 5);
+    assert_int_equal(s_read_data_array[126].latest_total_pwr_mW, 1000);
+    assert_int_equal(s_read_data_array[126].latest_pstate, 5);
+
+    // Reading the counters should clear them
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 0);
+    assert_int_equal(writes_without_consumption, 0);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_mpam_sequence_tracking_mixed_operations, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    uint32_t reads_without_new_data = 0;
+    uint32_t writes_without_consumption = 0;
+
+    // Create test MPAM data
+    mpam_data_t test_data_array[NUMBER_OF_MPAMS];
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        test_data_array[i].active = 1;
+        test_data_array[i].throttling = 0;
+    }
+
+    mpam_data_t read_data_array[NUMBER_OF_MPAMS];
+
+    // setup, clear counters from any previous sets
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+
+    // Scenario 1: Normal write-read sequences - should not increment any counters
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+
+    // Multiple normal write-read sequences should not increment counters
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 0);
+    assert_int_equal(writes_without_consumption, 0);
+
+    // Scenario 2: Write twice in a row - should increment writes_without_consumption
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 0);
+    assert_int_equal(writes_without_consumption, 1); // Second write increments counter
+
+    // Scenario 3: Read twice in a row - should increment reads_without_new_data
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 1); // Second read increments counter
+    assert_int_equal(writes_without_consumption, 0);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_mpam_sequence_tracking_clear_on_read_behavior, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    uint32_t reads_without_new_data = 0;
+    uint32_t writes_without_consumption = 0;
+
+    // Create test MPAM data
+    mpam_data_t test_data_array[NUMBER_OF_MPAMS];
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        test_data_array[i].active = 1;
+        test_data_array[i].throttling = 0;
+    }
+
+    mpam_data_t read_data_array[NUMBER_OF_MPAMS];
+
+    // Generate some sequence violations
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array); // writes_without_consumption++
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array); // reads_without_new_data++
+
+    // First read should return the counts and clear them
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 1);
+    assert_int_equal(writes_without_consumption, 1);
+
+    // Second read should return 0 for both since they were cleared
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 0);
+    assert_int_equal(writes_without_consumption, 0);
+
+    // Third read should still return 0
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 0);
+    assert_int_equal(writes_without_consumption, 0);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_mpam_sequence_tracking_independent_counters, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    uint32_t reads_without_new_data = 0;
+    uint32_t writes_without_consumption = 0;
+
+    // Clear any existing state from previous test runs
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+
+    // Create test MPAM data
+    mpam_data_t test_data_array[NUMBER_OF_MPAMS];
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        test_data_array[i].active = 1;
+        test_data_array[i].throttling = 0;
+    }
+
+    mpam_data_t read_data_array[NUMBER_OF_MPAMS];
+
+    // Test that counters operate independently
+    // Generate only writes_without_consumption violations
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+
+    // Read only writes_without_consumption counter
+    die_2_die_exch_get_mpam_data_missed_counts(nullptr, &writes_without_consumption);
+    assert_int_equal(writes_without_consumption, 2); // First write is normal, next 2 increment counter
+
+    // Generate only reads_without_new_data violations
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+
+    // Read only reads_without_new_data counter
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, nullptr);
+    assert_int_equal(reads_without_new_data, 2); // First read is normal, next 2 increment counter
+
+    // Verify both counters are now cleared
+    die_2_die_exch_get_mpam_data_missed_counts(&reads_without_new_data, &writes_without_consumption);
+    assert_int_equal(reads_without_new_data, 0);
+    assert_int_equal(writes_without_consumption, 0);
+}
+
+TEST_FUNCTION(test_die_2_die_exch_ib_write_pwr_pkg_mpam_data_negative, test_setup, test_teardown)
+{
+    // Create test MPAM data
+    mpam_data_t test_data_array[NUMBER_OF_MPAMS];
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        test_data_array[i].active = 1;
+        test_data_array[i].throttling = 0;
+    }
+
+    // Test 1: Invalid die ID (die 0) - die_id_is_valid(this_die_id) returns false
+    die_2_die_exch_init(0);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+
+    // Switch to valid die and verify data wasn't written
+    die_2_die_exch_init(1);
+    mpam_data_t read_data_array[NUMBER_OF_MPAMS] = {{0}};          // Initialize to zero
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array); // Read from die 1, not die 0
+    // Verify all data is zero (not written)
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        assert_int_equal(read_data_array[i].active, 0);
+        assert_int_equal(read_data_array[i].throttling, 0);
+    }
+
+    // Test 2: Invalid die ID (die 2, beyond valid range) - die_id_is_valid(this_die_id) returns false
+    die_2_die_exch_init(2);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+
+    // Switch to valid die and verify data wasn't written
+    die_2_die_exch_init(1);
+    memset(&read_data_array, 0, sizeof(read_data_array)); // Clear array
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+    // Verify all data is zero (not written)
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        assert_int_equal(read_data_array[i].active, 0);
+        assert_int_equal(read_data_array[i].throttling, 0);
+    }
+
+    // Test 3: NULL pointer - mpam_data_array != NULL returns false
+    die_2_die_exch_init(1); // valid die
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(nullptr);
+
+    // Verify data wasn't written due to NULL pointer
+    memset(&read_data_array, 0, sizeof(read_data_array)); // Clear array
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        assert_int_equal(read_data_array[i].active, 0);
+        assert_int_equal(read_data_array[i].throttling, 0);
+    }
+
+    // Test 4: Both conditions false - invalid die ID AND NULL pointer
+    die_2_die_exch_init(0);                             // invalid die
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(nullptr); // should not crash
+
+    // Switch to valid die and verify no data was written
+    die_2_die_exch_init(1);
+    memset(&read_data_array, 0, sizeof(read_data_array)); // Clear array
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &read_data_array);
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        assert_int_equal(read_data_array[i].active, 0);
+        assert_int_equal(read_data_array[i].throttling, 0);
+    }
+}
+
+TEST_FUNCTION(test_die_2_die_exch_ib_read_pwr_pkg_mpam_data_negative, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1);
+
+    // Set up some test data to write first
+    mpam_data_t test_data_array[NUMBER_OF_MPAMS];
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        test_data_array[i].active = 1;
+        test_data_array[i].throttling = 1;
+    }
+    die_2_die_exch_ib_write_pwr_pkg_mpam_data(&test_data_array);
+
+    // Test 1: Invalid die ID (die 0) - die_id_is_valid(die_id) returns false
+    mpam_data_t read_data_array[NUMBER_OF_MPAMS];
+    // Initialize with known values (opposite of what we wrote) to verify function doesn't modify them
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        read_data_array[i].active = 0;     // opposite of what we wrote (1)
+        read_data_array[i].throttling = 0; // opposite of what we wrote (1)
+    }
+
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(0, &read_data_array); // die 0 is invalid
+
+    // Verify data wasn't modified due to invalid die ID - should still be 0
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        assert_int_equal(read_data_array[i].active, 0);
+        assert_int_equal(read_data_array[i].throttling, 0);
+    }
+
+    // Test 2: Invalid die ID (die 2, beyond valid range) - die_id_is_valid(die_id) returns false
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        read_data_array[i].active = 0;     // Initialize to 0
+        read_data_array[i].throttling = 0; // Initialize to 0
+    }
+
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(2, &read_data_array); // die 2 is beyond valid range
+
+    // Verify data wasn't modified due to invalid die ID - should still be 0
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        assert_int_equal(read_data_array[i].active, 0);
+        assert_int_equal(read_data_array[i].throttling, 0);
+    } // Test 3: NULL pointer - mpam_data_array != NULL returns false
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, nullptr); // should not crash
+
+    // Test 4: Both conditions false - invalid die ID AND NULL pointer
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(0, nullptr); // should not crash
+
+    // Verify that the original data in exchange is still intact by reading with valid parameters
+    mpam_data_t verify_data_array[NUMBER_OF_MPAMS] = {{0}};
+    die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &verify_data_array);
+
+    // Should get the original test data we wrote
+    for (uint16_t i = 0; i < NUMBER_OF_MPAMS; i++)
+    {
+        assert_int_equal(verify_data_array[i].active, 1);
+        assert_int_equal(verify_data_array[i].throttling, 1);
+    }
 }

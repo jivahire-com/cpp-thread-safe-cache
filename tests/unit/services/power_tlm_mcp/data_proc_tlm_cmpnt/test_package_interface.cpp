@@ -560,99 +560,43 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, test_setup, te
 TEST_FUNCTION(test_get_pwr_mpam_core_pwr_data, test_setup, test_teardown)
 {
     pwr_soc_element_mpam_core_power_t mpam_core_pwr_data = {0};
+    uint16_t mpam_id = TEST_MPAM_ID_4;
 
-    // Initialize die_2_die_exchange for die 1
-    die_2_die_exch_init(1);
+    // Set up test values in computed_metrics_2_mins for this MPAM
+    computed_metrics_2_mins.mpam[mpam_id].core_power.running_avg.summation = 5000 * 2;
+    computed_metrics_2_mins.mpam[mpam_id].core_power.running_avg.num_samples = 2;
+    computed_metrics_2_mins.mpam[mpam_id].core_power.max = 6000;
 
-    // Set up test data for die 0 (local computed metrics)
-    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg.summation = 1000 * 5;
-    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg.num_samples = 5;
-    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.max = 1200;
-    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.min = 800;
+    // Call the API with valid MPAM ID
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(mpam_id, &mpam_core_pwr_data);
 
-    // Set up test data for die 1 using die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr
-    mpam_vm_core_pwr_data_t test_die1_mpam_array[NUMBER_OF_MPAMS] = {{0}};
-    test_die1_mpam_array[TEST_MPAM_ID_4].average_pwr_mW = 500;
-    test_die1_mpam_array[TEST_MPAM_ID_4].max_pwr_mW = 600;
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
+    // Verify the data was populated correctly
+    assert_int_equal(mpam_core_pwr_data.average_mW, 5000); // summation / num_samples = 10000 / 2 = 5000
+    assert_int_equal(mpam_core_pwr_data.max_mW, 6000);
 
-    // Test valid case
-    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
+    // Test boundary case - MPAM ID 127 (last valid index) to verify array access is working correctly
+    uint16_t last_mpam_id = NUMBER_OF_MPAMS - 1; // 127
+    computed_metrics_2_mins.mpam[last_mpam_id].core_power.running_avg.summation = 0x12345678;
+    computed_metrics_2_mins.mpam[last_mpam_id].core_power.running_avg.num_samples = 2;
+    computed_metrics_2_mins.mpam[last_mpam_id].core_power.max = 0xABCDEF00;
 
-    // Verify combined data from both dies
-    // Die 0 average: 1000*5/5 = 200, Die 1 average: 500 => Total: 700
-    uint32_t expected_average =
-        data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg) + 500;
-    assert_int_equal(mpam_core_pwr_data.average_mW, expected_average);
+    pwr_soc_element_mpam_core_power_t mpam_127_data = {0};
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(last_mpam_id, &mpam_127_data);
 
-    // Die 0 max: 1200, Die 1 max: 600 => Total: 1800
-    uint32_t expected_max = computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.max + 600;
-    assert_int_equal(mpam_core_pwr_data.max_mW, expected_max);
+    // Verify array position 127 works correctly
+    assert_int_equal(mpam_127_data.average_mW, 0x12345678 / 2);
+    assert_int_equal(mpam_127_data.max_mW, 0xABCDEF00);
 
-    // Test with different die 1 data
-    test_die1_mpam_array[TEST_MPAM_ID_4].average_pwr_mW = 300;
-    test_die1_mpam_array[TEST_MPAM_ID_4].max_pwr_mW = 400;
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
+    // Negative test: invalid MPAM ID (out of bounds)
+    pwr_soc_element_mpam_core_power_t mpam_invalid_data;
+    memset(&mpam_invalid_data, 0xFF, sizeof(mpam_invalid_data)); // Pre-fill with known values
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(NUMBER_OF_MPAMS, &mpam_invalid_data);
 
-    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
+    // Should not have modified the structure (error case should not populate data)
+    assert_int_equal(mpam_invalid_data.average_mW, 0xFFFFFFFF);
+    assert_int_equal(mpam_invalid_data.max_mW, 0xFFFFFFFF);
 
-    // Verify updated combined data
-    expected_average =
-        data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg) + 300;
-    assert_int_equal(mpam_core_pwr_data.average_mW, expected_average);
-
-    expected_max = computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.max + 400;
-    assert_int_equal(mpam_core_pwr_data.max_mW, expected_max);
-
-    // Test edge case: MPAM ID 0
-    computed_metrics_d2d_2mins.mpam[0].core_power.running_avg.summation = 2000 * 3;
-    computed_metrics_d2d_2mins.mpam[0].core_power.running_avg.num_samples = 3;
-    computed_metrics_d2d_2mins.mpam[0].core_power.max = 2500;
-
-    test_die1_mpam_array[0].average_pwr_mW = 100;
-    test_die1_mpam_array[0].max_pwr_mW = 150;
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
-
-    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(0, &mpam_core_pwr_data);
-
-    expected_average = data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[0].core_power.running_avg) + 100;
-    assert_int_equal(mpam_core_pwr_data.average_mW, expected_average);
-
-    expected_max = computed_metrics_d2d_2mins.mpam[0].core_power.max + 150;
-    assert_int_equal(mpam_core_pwr_data.max_mW, expected_max);
-
-    // Test edge case: Maximum valid MPAM ID
-    uint16_t max_mpam_id = NUMBER_OF_MPAMS - 1;
-    computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.running_avg.summation = 3000 * 2;
-    computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.running_avg.num_samples = 2;
-    computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.max = 3500;
-
-    test_die1_mpam_array[max_mpam_id].average_pwr_mW = 250;
-    test_die1_mpam_array[max_mpam_id].max_pwr_mW = 300;
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
-
-    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(max_mpam_id, &mpam_core_pwr_data);
-
-    expected_average =
-        data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.running_avg) + 250;
-    assert_int_equal(mpam_core_pwr_data.average_mW, expected_average);
-
-    expected_max = computed_metrics_d2d_2mins.mpam[max_mpam_id].core_power.max + 300;
-    assert_int_equal(mpam_core_pwr_data.max_mW, expected_max);
-
-    // Test boundary case: Zero power values
-    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg.summation = 0;
-    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.running_avg.num_samples = 1;
-    computed_metrics_d2d_2mins.mpam[TEST_MPAM_ID_4].core_power.max = 0;
-
-    test_die1_mpam_array[TEST_MPAM_ID_4].average_pwr_mW = 0;
-    test_die1_mpam_array[TEST_MPAM_ID_4].max_pwr_mW = 0;
-    die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(&test_die1_mpam_array);
-
-    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(TEST_MPAM_ID_4, &mpam_core_pwr_data);
-
-    assert_int_equal(mpam_core_pwr_data.average_mW, 0);
-    assert_int_equal(mpam_core_pwr_data.max_mW, 0);
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(mpam_id, NULL); // Should not crash
 }
 
 TEST_FUNCTION(test_get_pwr_soc_mpam_throttle_data, test_setup, test_teardown)

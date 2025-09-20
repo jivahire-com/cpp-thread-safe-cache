@@ -21,31 +21,39 @@
 #define NUMBER_OF_DIMMS (6 )
 
 /*-------------- Typedefs ----------------*/
-typedef struct
+typedef struct __attribute__((packed))
 {
     uint16_t average_max_temp_dC;
     uint16_t num_samples;
     uint16_t peak_temp_dC;
 } max_die_temps_t, *p_max_die_temps_t;
 
-typedef struct
+typedef struct __attribute__((packed))
 {
     uint32_t sum;
     uint16_t num_samples;
 } sliding_window_data_t, *p_sliding_window_data_t;
 
-typedef struct
+typedef struct __attribute__((packed))
 {
     uint16_t average_pwr_mW;
     uint16_t average_temp_dC;
     uint16_t max_temp_dC;
 } dimm_data_t, *p_dimm_data_t;
 
-typedef struct
+typedef struct __attribute__((packed))
 {
-    uint32_t average_pwr_mW;
-    uint32_t max_pwr_mW;
-} mpam_vm_core_pwr_data_t, *p_mpam_vm_core_pwr_data_t;
+    uint32_t latest_total_pwr_mW; // sum of all cores assigned to mpam
+    uint8_t latest_pstate;
+    union {
+        struct {
+            uint8_t active : 1;
+            uint8_t throttling : 1;
+            uint8_t reserved : 6;  // Padding bits for future use
+        };
+        uint8_t flags_byte;  // Access the entire byte directly
+    };
+} mpam_data_t, *p_mpam_data_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -66,6 +74,18 @@ void die_2_die_exch_init(uint8_t die_id);
  * @return The ID of the current die.
  */
 uint8_t die_2_die_exch_get_this_die_id(void);
+
+/**
+ * @brief Get the MPAM data sequence violation counts and clear them.
+ * This function returns the number of reads without new data and writes without consumption for MPAM data exchange,
+ * then clears the counters after reading.
+ *
+ * @param[out] reads_without_new_data Pointer to store the count of reads that occurred without a write since the last read.
+ *                                    Can be NULL if this count is not needed.
+ * @param[out] writes_without_consumption Pointer to store the count of writes that occurred without subsequent reads.
+ *                                        Can be NULL if this count is not needed.
+ */
+void die_2_die_exch_get_mpam_data_missed_counts(uint32_t* reads_without_new_data, uint32_t* writes_without_consumption);
 
 /**
  * @brief Write the maximum die temperature to the die to die exchange.
@@ -107,23 +127,22 @@ void die_2_die_exch_ib_write_pwr_pkg_max_die_temp(uint16_t average_max_temp_dC, 
 void die_2_die_exch_ib_read_pwr_pkg_max_die_temp_dC(uint8_t die_id, p_max_die_temps_t max_die_temperature);
 
 /**
- * @brief Write the MPAM core power data to the die to die exchange.
- * This function writes the MPAM core power data for all MPAMs to the exchange. It writes the location for the die
+ * @brief Write the MPAM data to the die to die exchange.
+ * This function writes the MPAM data for all MPAMs to the exchange. It writes the location for the die
  * specified by `this_die_id`, which is initialized using `die_2_die_exch_init`.
  *
- * @param[in] mpam_core_pwr_array Pointer to an array of MPAM core power data structures.
+ * @param[in] mpam_data_array Pointer to an array of MPAM data structures.
  */
-void die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(mpam_vm_core_pwr_data_t (*mpam_core_pwr_array)[NUMBER_OF_MPAMS]);
+void die_2_die_exch_ib_write_pwr_pkg_mpam_data(mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS]);
 
 /**
- * @brief Read the MPAM core power data from the die to die exchange.
- * This function reads the MPAM core power data for a specific MPAM from a specific die.
+ * @brief Read the MPAM data from the die to die exchange.
+ * This function reads the MPAM data for all MPAMs from a specific die.
  *
- * @param[in] die_id The ID of the die to read the MPAM core power data from.
- * @param[in] mpam_id The ID of the MPAM to read the core power data for.
- * @param[out] mpam_core_pwr_data Pointer to a structure to store the MPAM core power data.
+ * @param[in] die_id The ID of the die to read the MPAM data from.
+ * @param[out] mpam_data_array Pointer to an array to store the MPAM data structures.
  */
-void die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(uint8_t die_id, uint8_t mpam_id, p_mpam_vm_core_pwr_data_t mpam_core_pwr_data);
+void die_2_die_exch_ib_read_pwr_pkg_mpam_data(uint8_t die_id, mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS]);
 
 /**
  * @brief Write the maximum die temperature window to the die to die exchange.

@@ -403,14 +403,17 @@ void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_tem
 
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_soc_element_mpam_core_power_t mpam_core_pwr_data)
 {
-    mpam_vm_core_pwr_data_t die1_mpam_data;
-    die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(1, mpam_id, &die1_mpam_data);
+    if ((mpam_id >= NUMBER_OF_MPAMS) || mpam_core_pwr_data == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_CORE_POWER);
+    }
+    else
+    {
+        mpam_core_pwr_data->average_mW =
+            data_util_running_avg_u32_get(&computed_metrics_2_mins.mpam[mpam_id].core_power.running_avg);
 
-    mpam_core_pwr_data->average_mW =
-        data_util_running_avg_u32_get(&computed_metrics_d2d_2mins.mpam[mpam_id].core_power.running_avg) +
-        die1_mpam_data.average_pwr_mW;
-
-    mpam_core_pwr_data->max_mW = computed_metrics_d2d_2mins.mpam[mpam_id].core_power.max + die1_mpam_data.max_pwr_mW;
+        mpam_core_pwr_data->max_mW = computed_metrics_2_mins.mpam[mpam_id].core_power.max;
+    }
 }
 
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_soc_element_mpam_throttle_t mpam_throttle_data)

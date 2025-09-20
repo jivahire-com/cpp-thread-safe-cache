@@ -16,6 +16,7 @@
 
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <die_2_die_exchange_i.h>
 #include <fpfw_status.h>
 #include <pvt_struct.h>
 #include <sensor_fifo_service.h> // for sensor ram data structures
@@ -94,6 +95,7 @@ typedef struct {
     uint8_t latest_mpam_id;
     uint8_t latest_cstate;  //cstate from pstate packet from sensor fifo
     uint8_t latest_pstate; //either pstate_from_pstate_pkt or pstate_from_current_pkt
+    uint8_t nominal_pstate; // used to determine throttling extent
     uint8_t latest_rack_throttle_priority;
     uint8_t latest_plimit;
     uint8_t pstate_from_pstate_pkt; //pstate from pstate packet
@@ -178,6 +180,7 @@ extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_rt;
 extern dimm_runtime_info_t dimm_rt;
+extern mpam_data_t mpam_staging[NUMBER_OF_MPAMS];
 
 /*--------- Function Prototypes ----------*/
 /**
@@ -251,8 +254,8 @@ bool data_smpl_process_pvt_temperature_sensor_fifo(void);
 bool data_smpl_process_dimm_sensor_fifo(void);
 
 /**
- * @brief Process Aging counters data read from core cluster 
- * @param[in] core_id 
+ * @brief Process Aging counters data read from core cluster
+ * @param[in] core_id
  * @param[in] this_pwr_pkg_timestamp_uS timestamp when we are creating package.
  * @return none
  */
@@ -460,4 +463,4 @@ void data_smpl_update_metrics_for_cores_aging_counters(void);
  *
  * @return none
  */
-void data_smpl_calculate_mpam_power();
+void data_smpl_calculate_mpam_data_from_cores();

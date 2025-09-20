@@ -52,14 +52,15 @@ core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE] = {0};
 tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE] = {0};
 soc_runtime_info_t soc_rt = {0};
 dimm_runtime_info_t dimm_rt = {0};
+mpam_data_t mpam_staging[NUMBER_OF_MPAMS] = {0};
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
 
 /*------------- Functions ----------------*/
 void data_smpl_init(void)
 {
-    /* Initialize dts coeff data at startup */
+    // Initialize dts coeff data at startup
     data_smpl_init_dts_coefficients();
-    /* Note:  Enable first counter pair id for each core  */
+    // Note:  Enable first counter pair id for each core
     aging_counter_init();
 }
 
@@ -357,7 +358,7 @@ void data_smpl_process_core_current_sensor_fifo(void)
 {
     sensor_ram_poll_status_t status;
     bool valid_entry = false;
-    bool power_updated = false;
+    bool update_mpam = false;
     core_current_t* core_current_entry = (core_current_t*)fifo_entry;
     uint16_t core_id;
 
@@ -371,7 +372,7 @@ void data_smpl_process_core_current_sensor_fifo(void)
             // update any metrics from data parsed from the entry
             if (valid_entry)
             {
-                power_updated = true;
+                update_mpam = true;
                 comp_metrics_for_single_core_current(core_id, core_rt[core_id].latest_current_mA);
                 comp_metrics_for_single_core_power(core_id, core_rt[core_id].latest_power_mW);
 
@@ -403,9 +404,9 @@ void data_smpl_process_core_current_sensor_fifo(void)
 
     // at least one core power was updated, so re-check mpam power
     // note: it is sufficient to update once per poll period instead of per fifo entry
-    if (power_updated)
+    if (update_mpam)
     {
-        data_smpl_calculate_mpam_power();
+        data_smpl_calculate_mpam_data_from_cores();
     }
 }
 
@@ -1048,6 +1049,7 @@ void data_smpl_parse_pstate(pstate_telem_t* pstate_entry, core_state_entry_data_
     core_rt[core_id].pstate_res_timestamp_uS = entry_data->packet_timestamp_uS;
     core_rt[core_id].pstate_from_pstate_pkt = packet_pstate;
     core_rt[core_id].latest_pstate = packet_pstate;
+    core_rt[core_id].nominal_pstate = pstate_entry->data.base_perf_vfsm_pn;
     core_rt[core_id].latest_plimit = pstate_entry->data.plimit;
 }
 
@@ -1239,28 +1241,69 @@ void data_smpl_terminate_non_rack_throttle_sources(uint8_t core_id, uint64_t* ti
     core_rt[core_id].status_flags.throttle_is_active = data_smpl_get_active_throttle_sources(core_id) == 0 ? false : true;
 }
 
-void data_smpl_calculate_mpam_power()
+/**
+ * @note Currently the hypervisor is not configured, so detailed integration testing is not yet available
+ * Power telemetry data retrieves data per core, and each core has an mpam-id that associates the core to an mpam.
+ * Various metrics from the cores are then total together per mpam.  In order to produce the desired telemetry, the
+ * following assumptions have to be made:
+ *   All cores in an mpam have the same base performance pstate.
+ *   The base performance state does not dynamically change during a two minute reporting window.
+ *   All cores in an mpam are actively assigned the same pstate.
+ *   All cores in an mpam will throttle together.
+ *   If these assumptions are correct, then firmware can pick a value from any core in an mpam.
+ *   If these assumptions are not correct, then firmware does not have a valid algorithm to determine what values to use.
+ *   That will negate the value of the telemetry collected.
+ */
+void data_smpl_calculate_mpam_data_from_cores()
 {
-    uint32_t mpam_power_mW[NUMBER_OF_MPAMS] = {0};
+    // if a secondary die, total up the mpam data and write to the exchange, done.
+    // if primary, read the secondary die info into the staging area, then modify in place to save ram,
+    // calculate totals and write to comp_metrics.  that means mpam comp_metrics is not used on secondary dies
+    core_runtime_info_t* current_core;
 
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        memset(mpam_staging, 0, sizeof(mpam_staging));
+    }
+    else
+    {
+        die_2_die_exch_ib_read_pwr_pkg_mpam_data(1, &mpam_staging);
+    }
+
+    // on secondary dies, mpam_staging was zero'd out, the following loop then writes to the exchange to allow
+    // for processing by the primary die
+    // for the primary die, mpam_staging contains the secondary die info
+    // NOTE: for mpams that span both dies, the following loop will add/or the data together
+    // this loop also handles mpams that have cores only on the primary die or only on the secondary die as well
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {
-        uint8_t mpam_id = core_rt[core_id].latest_mpam_id;
-
-        if (mpam_id < NUMBER_OF_MPAMS)
+        current_core = &core_rt[core_id];
+        if (current_core->latest_mpam_id < NUMBER_OF_MPAMS)
         {
             if (core_is_active[core_id])
             {
-                mpam_power_mW[mpam_id] += core_rt[core_id].latest_power_mW;
+                mpam_staging[current_core->latest_mpam_id].active = true;
+                mpam_staging[current_core->latest_mpam_id].throttling |= current_core->status_flags.throttle_is_active;
+                mpam_staging[current_core->latest_mpam_id].latest_total_pwr_mW += current_core->latest_power_mW;
+                mpam_staging[current_core->latest_mpam_id].latest_pstate = current_core->latest_pstate;
             }
         }
         else
         {
-            FPFW_ET_LOG(LogInvalidMpamId, core_id, mpam_id);
+            FPFW_ET_LOG(LogInvalidMpamId, core_id, current_core->latest_mpam_id);
         }
     }
 
-    comp_metrics_for_mpam_power(&mpam_power_mW);
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        // mpam_staging was zero'd out, and only contains the secondary die mpams
+        // write to the exchange and let the primary read it out and add to it
+        die_2_die_exch_ib_write_pwr_pkg_mpam_data(&mpam_staging);
+    }
+    else
+    {
+        comp_metrics_for_mpam_data(&mpam_staging);
+    }
 }
 
 void data_proc_tlm_cmpnt_pwr_pkg_completed(void)

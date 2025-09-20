@@ -27,22 +27,22 @@
 
 /*------------- Typedefs -----------------*/
 
-typedef struct __attribute__((packed))
+typedef struct
 {
-    uint16_t ib_max_inst_die_temperature_dC;
+    mpam_data_t ib_mpam_data[NUMBER_OF_MPAMS];
     max_die_temps_t ib_max_pwr_pkg_die_temp;
-    mpam_vm_core_pwr_data_t ib_mpam_core_pwr[NUMBER_OF_MPAMS]; // max/avg core power for all mpams
-    sliding_window_data_t oob_window_max_die_temp_dC;          // sliding window for max die temperature
-    sliding_window_data_t oob_window_soc_pwr_mW;               // sliding window SOC power
-    sliding_window_data_t oob_window_max_dimm_temp_dC;         // sliding window for max dimm temperature
-    sliding_window_data_t oob_window_dimm_pwr_mW;              // sliding window dimm power
-    sliding_window_data_t oob_window_max_vr_temp_dC; // sliding window for max voltage rail temperature
-    sliding_window_data_t oob_window_avg_pstate;     // sliding window for average pstate
-    dimm_data_t oob_dimm_info[NUMBER_OF_DIMMS];      // dimm channel information
+    uint16_t ib_max_inst_die_temperature_dC;
+    sliding_window_data_t oob_window_max_die_temp_dC;  // sliding window for max die temperature
+    sliding_window_data_t oob_window_soc_pwr_mW;       // sliding window SOC power
+    sliding_window_data_t oob_window_max_dimm_temp_dC; // sliding window for max dimm temperature
+    sliding_window_data_t oob_window_dimm_pwr_mW;      // sliding window dimm power
+    sliding_window_data_t oob_window_max_vr_temp_dC;   // sliding window for max voltage rail temperature
+    sliding_window_data_t oob_window_avg_pstate;       // sliding window for average pstate
+    dimm_data_t oob_dimm_info[NUMBER_OF_DIMMS];        // dimm channel information
 
 } secondary_mcp_to_die0_mcp_t;
 
-typedef struct __attribute__((packed))
+typedef struct
 {
     secondary_mcp_to_die0_mcp_t sec_mcp_to_die0_mcp[NUMBER_OF_SECONDARY_DIES]; // die number - 1 to access
 } die_2_die_exch_t;
@@ -53,10 +53,16 @@ typedef struct __attribute__((packed))
 
 static uint8_t this_die_id; // initialized in die_2_die_exch_init
 
+// Sequence tracking counters for MPAM data APIs only
+static uint32_t mpam_data_reads_without_new_data_counter = 0; // incremented when read occurs with no write since last read
+static uint32_t mpam_data_writes_without_consumption_counter = 0; // incremented when two writes occur without a read
+static bool mpam_data_write_occurred_since_last_read = false; // tracks if write happened since last read
+static bool mpam_data_read_occurred_since_last_write = true;  // tracks if read happened since last write
+
 #ifdef PWR_TLM_TEST_OVERRIDE
 
     #undef MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR
-static uint8_t test_array[D0_ARSM_PWR_TLM_MCP_2_MCP_SIZE];
+static uint8_t test_array[ARSM_GET_REGION_OFFSET(D0_ARSM_PWR_TLM_MCP_2_MCP_BASE) + D0_ARSM_PWR_TLM_MCP_2_MCP_SIZE];
     #define MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR (test_array)
 #endif
 
@@ -123,14 +129,18 @@ void die_2_die_exch_init(uint8_t die_id)
 {
     this_die_id = die_id;
 
+    d2d_exch_wait_for_sem();
+
     if (this_die_id == PRIMARY_DIE_ID)
     {
-        d2d_exch_wait_for_sem();
-
         zero_fortified_memory(s_die_2_die_exch, sizeof(die_2_die_exch_t));
-
-        d2d_exch_release_sem();
     }
+    mpam_data_reads_without_new_data_counter = 0;
+    mpam_data_writes_without_consumption_counter = 0;
+    mpam_data_write_occurred_since_last_read = false;
+    mpam_data_read_occurred_since_last_write = true;
+
+    d2d_exch_release_sem();
 }
 
 static void zero_fortified_memory(void* ptr, size_t size)
@@ -141,6 +151,23 @@ static void zero_fortified_memory(void* ptr, size_t size)
 uint8_t die_2_die_exch_get_this_die_id(void)
 {
     return this_die_id;
+}
+
+void die_2_die_exch_get_mpam_data_missed_counts(uint32_t* reads_without_new_data, uint32_t* writes_without_consumption)
+{
+    d2d_exch_wait_for_sem();
+    if (reads_without_new_data != NULL)
+    {
+        *reads_without_new_data = mpam_data_reads_without_new_data_counter;
+        mpam_data_reads_without_new_data_counter = 0; // clear on read
+    }
+
+    if (writes_without_consumption != NULL)
+    {
+        *writes_without_consumption = mpam_data_writes_without_consumption_counter;
+        mpam_data_writes_without_consumption_counter = 0; // clear on read
+    }
+    d2d_exch_release_sem();
 }
 
 static bool die_id_is_valid(uint8_t die_id)
@@ -173,7 +200,6 @@ uint16_t die_2_die_exch_ib_read_inst_max_die_temp_dC(uint8_t die_id)
         uint16_t* temp_ptr_dC = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_max_inst_die_temperature_dC;
         d2d_exch_wait_for_sem();
         ib_max_inst_die_temperature_dC = *temp_ptr_dC;
-        *temp_ptr_dC = 0; // clear the value after reading
         d2d_exch_release_sem();
     }
     return ib_max_inst_die_temperature_dC;
@@ -205,29 +231,48 @@ void die_2_die_exch_ib_read_pwr_pkg_max_die_temp_dC(uint8_t die_id, p_max_die_te
     }
 }
 
-void die_2_die_exch_ib_write_pwr_pkg_mpam_core_pwr(mpam_vm_core_pwr_data_t (*mpam_core_pwr_array)[NUMBER_OF_MPAMS])
+void die_2_die_exch_ib_write_pwr_pkg_mpam_data(mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS])
 {
-    if (die_id_is_valid(this_die_id) && mpam_core_pwr_array != NULL)
+    if (die_id_is_valid(this_die_id) && mpam_data_array != NULL)
     {
         d2d_exch_wait_for_sem();
-        for (uint16_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+
+        // Check for sequence violation: write when previous write hasn't been read
+        if (!mpam_data_read_occurred_since_last_write)
         {
-            s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].ib_mpam_core_pwr[mpam_id] =
-                (*mpam_core_pwr_array)[mpam_id];
+            mpam_data_writes_without_consumption_counter++;
         }
+        memcpy(s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].ib_mpam_data,
+               mpam_data_array,
+               sizeof(s_die_2_die_exch->sec_mcp_to_die0_mcp[0].ib_mpam_data));
+
+        // Update sequence tracking
+        mpam_data_write_occurred_since_last_read = true;
+        mpam_data_read_occurred_since_last_write = false;
+
         d2d_exch_release_sem();
     }
 }
 
-void die_2_die_exch_ib_read_pwr_pkg_mpam_core_pwr(uint8_t die_id, uint8_t mpam_id, p_mpam_vm_core_pwr_data_t mpam_core_pwr_data)
+void die_2_die_exch_ib_read_pwr_pkg_mpam_data(uint8_t die_id, mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS])
 {
-    if (die_id_is_valid(die_id) && mpam_core_pwr_data != NULL)
+    if (die_id_is_valid(die_id) && mpam_data_array != NULL)
     {
         d2d_exch_wait_for_sem();
-        *mpam_core_pwr_data = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_mpam_core_pwr[mpam_id];
-        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_mpam_core_pwr[mpam_id],
-               0,
-               sizeof(mpam_vm_core_pwr_data_t)); // clear the value after reading
+
+        // Check for sequence violation: read with no write since last read
+        if (!mpam_data_write_occurred_since_last_read)
+        {
+            mpam_data_reads_without_new_data_counter++;
+        }
+        memcpy(mpam_data_array,
+               s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_mpam_data,
+               sizeof(s_die_2_die_exch->sec_mcp_to_die0_mcp[0].ib_mpam_data));
+
+        // Update sequence tracking
+        mpam_data_write_occurred_since_last_read = false;
+        mpam_data_read_occurred_since_last_write = true;
+
         d2d_exch_release_sem();
     }
 }

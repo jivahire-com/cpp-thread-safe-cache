@@ -33,12 +33,6 @@
 
 /*-------------- Typedefs ----------------*/
 
-//
-// TODO: Some of these structs currently have stub metrics (to get the organization in place),
-//       these will be replaced with actual metrics as each computed metric is added to
-//       this design.
-//
-
 typedef struct
 {
     uint32_t  residency_uS;
@@ -87,7 +81,7 @@ typedef struct
     mma_u16_t vcpu_input_voltage_mV;
 } computed_per_core_metrics_t;
 
-typedef struct 
+typedef struct
 {
     aging_counter_metrics_t core_aging_counters[NUMBER_OF_AGING_COUNTER_PAIRS];
 } computed_per_core_24_hrs_metrics_t;
@@ -103,11 +97,6 @@ typedef struct
 {
     mma_u32_t core_power;
 } computed_per_mpam_metrics_t;
-
-typedef struct
-{
-    uint16_t stub_metric;
-} computed_per_tile_metrics_t;
 
 typedef struct
 {
@@ -127,6 +116,7 @@ typedef struct
 typedef struct {
     computed_per_core_metrics_t cores[NUMBER_OF_CORES_PER_DIE];
     computed_per_soc_metrics_t soc;
+    computed_per_mpam_metrics_t mpam[NUMBER_OF_MPAMS];
 } computed_metrics_2_min_t;
 
 typedef struct
@@ -136,7 +126,7 @@ typedef struct
 
 typedef struct
 {
-    computed_per_mpam_metrics_t mpam[NUMBER_OF_MPAMS];
+    mma_u32_t mpam_mem_pwr_mW[NUMBER_OF_MPAMS];
     mma_u16_t max_soc_temp_dC;
 } computed_metrics_d2d_2_min_t;
 
@@ -441,11 +431,11 @@ void comp_metrics_for_cores_droop_counts(void);
  * @brief function update aging counters metrics for a specified core.
  *
  * @param[in] core_id - The identifier of the core for which the MPAM residency is being updated.
- * @param[in] latest_voltage_mV - latest core voltage 
+ * @param[in] latest_voltage_mV - latest core voltage
  * @param[in] latest_max_value_dC -latest max temperature for the core
  * @param[in] this_pwr_pkg_timestamp_uS - timestamp when this package is getting created.
- * @param[in] latest_aged_counter latest aged counter value  for the core_id 
- * @param[in] latest_unaged_counter latest aged counter for the core_id 
+ * @param[in] latest_aged_counter latest aged counter value  for the core_id
+ * @param[in] latest_unaged_counter latest aged counter for the core_id
  * @param[in] counter_id  the counter id for which we are reading value .
  */
 void comp_metrics_for_single_core_aging_counters( uint8_t core_id, uint16_t latest_voltage_mV, uint16_t latest_max_value_dC, uint64_t this_pwr_pkg_timestamp_uS, uint32_t latest_aged_counter, uint32_t latest_unaged_counter, uint8_t counter_id);
@@ -455,4 +445,4 @@ void comp_metrics_for_single_core_aging_counters( uint8_t core_id, uint16_t late
  *
  * @param[in] mpam_power_mW  Array of latest MPAM power values in mW.
  */
-void comp_metrics_for_mpam_power( uint32_t (*mpam_power_mW)[NUMBER_OF_MPAMS]);
+void comp_metrics_for_mpam_data( mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS]);

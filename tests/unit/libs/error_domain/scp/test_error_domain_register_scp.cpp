@@ -1232,7 +1232,6 @@ TEST_FUNCTION(test_rmss_scfram_ecc_of_isr, test_setup, nullptr)
     expect_function_call(__wrap_nvic_irq_clear_pending);
 
     expect_function_call(__wrap_hm_submit_cper);
-    expect_function_call(__wrap_crash_dump_bug_check);
     g_scfram_of_isr();
 }
 
@@ -1277,7 +1276,6 @@ TEST_FUNCTION(test_rmss_ram0_ecc_of_isr, test_setup, nullptr)
     expect_function_call(__wrap_nvic_irq_clear_pending);
 
     expect_function_call(__wrap_hm_submit_cper);
-    expect_function_call(__wrap_crash_dump_bug_check);
     g_ram0_of_isr();
 }
 
@@ -1322,7 +1320,6 @@ TEST_FUNCTION(test_rmss_ram1_ecc_of_isr, test_setup, nullptr)
     expect_function_call(__wrap_nvic_irq_clear_pending);
 
     expect_function_call(__wrap_hm_submit_cper);
-    expect_function_call(__wrap_crash_dump_bug_check);
     g_ram1_of_isr();
 }
 
@@ -1371,7 +1368,6 @@ TEST_FUNCTION(test_tcm_ecc_of_isr, test_setup, nullptr)
     expect_function_call(__wrap_nvic_irq_clear_pending);
 
     expect_function_call(__wrap_hm_submit_cper);
-    expect_function_call(__wrap_crash_dump_bug_check);
     g_tcm_of_isr();
 }
 
@@ -1771,8 +1767,6 @@ TEST_FUNCTION(test_shared_sram_ecc_isr_of, test_setup, nullptr)
 
     // Unmap the shared SRAM ECC registers
     expect_function_call(__wrap_atu_unmap);
-
-    expect_function_call(__wrap_crash_dump_bug_check);
 
     g_s_arsm_ecc_isr((void*)&atu_entry);
 }

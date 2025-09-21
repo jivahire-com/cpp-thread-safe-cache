@@ -972,7 +972,6 @@ TEST_FUNCTION(test_tcm_ecc_of_isr, nullptr, nullptr)
     expect_function_call(__wrap_nvic_irq_clear_pending);
 
     expect_function_call(__wrap_hm_submit_cper);
-    expect_function_call(__wrap_crash_dump_bug_check);
     g_tcm_of_isr();
 }
 

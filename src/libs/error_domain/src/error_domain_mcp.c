@@ -144,7 +144,7 @@ static void tcm_overflow_isr()
                                    .err_source_irq = HW_INT_TCM_ECCOF_INT,
                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_TCM_OF,
-                                   .bugcheck_required = true,
+                                   .bugcheck_required = false,
                                    .err_status_addr = (uint32_t*)&mcp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
                                    .err_address_addr = (uint32_t*)&mcp_ras_and_init_ctrl_registers_reg->tcmecc_erraddr,
                                    .err_status_mask = MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRSTATUS_OF_MASK};
@@ -186,7 +186,7 @@ static void rmss_scfram_ecc_of_isr()
                                    .err_source_irq = HW_INT_MCP_SCFRAM_ECCOF_INT,
                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_SCF_OF,
-                                   .bugcheck_required = true,
+                                   .bugcheck_required = false,
                                    .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->scfram_mcp_errstatus_reg,
                                    .err_address_addr = (uint32_t*)&mcp_exp_csr_regs->scfram_mcp_erraddr_reg,
                                    .err_status_mask = MCP_EXP_CSR_SCFRAM_MCP_ERRSTATUS_REG_OF_MASK};
@@ -217,7 +217,7 @@ static void rmss_ram0_ecc_of_isr()
                                    .err_source_irq = HW_INT_MCP_RAM0_ECCOF_INT,
                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_RMSS_RAM0_OF,
-                                   .bugcheck_required = true,
+                                   .bugcheck_required = false,
                                    .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram0_mcp_errstatus_reg,
                                    .err_address_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram0_mcp_erraddr_reg,
                                    .err_status_mask = MCP_EXP_CSR_RMSS_RAM0_MCP_ERRSTATUS_REG_OF_MASK};
@@ -259,7 +259,7 @@ static void rmss_ram1_ecc_of_isr()
                                    .err_source_irq = HW_INT_MCP_RAM1_ECCOF_INT,
                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_RMSS_RAM1_OF,
-                                   .bugcheck_required = true,
+                                   .bugcheck_required = false,
                                    .err_status_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram1_mcp_errstatus_reg,
                                    .err_address_addr = (uint32_t*)&mcp_exp_csr_regs->rmss_ram1_mcp_erraddr_reg,
                                    .err_status_mask = MCP_EXP_CSR_RMSS_RAM1_MCP_ERRSTATUS_REG_OF_MASK};

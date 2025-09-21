@@ -151,7 +151,7 @@ static void rmss_scfram_ecc_of_isr()
                                     .err_source_irq = HW_INT_SCP_SCFRAM_ECCOF_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_SCF_OF,
-                                    .bugcheck_required = true,
+                                    .bugcheck_required = false,
                                     .param1 = (uint32_t*)&scp_exp_csr_regs->scfram_scp_errstatus_reg,
                                     .param2 = (uint32_t*)&scp_exp_csr_regs->scfram_scp_erraddr_reg,
                                     .err_status_mask = SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_OF_MASK};
@@ -179,7 +179,7 @@ static void rmss_ram0_ecc_of_isr()
                                     .err_source_irq = HW_INT_SCP_RAM0_ECCOF_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_RMSS_RAM0_OF,
-                                    .bugcheck_required = true,
+                                    .bugcheck_required = false,
                                     .param1 = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_errstatus_reg,
                                     .param2 = (uint32_t*)&scp_exp_csr_regs->rmss_ram0_scp_erraddr_reg,
                                     .err_status_mask = SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_OF_MASK};
@@ -207,7 +207,7 @@ static void rmss_ram1_ecc_of_isr()
                                     .err_source_irq = HW_INT_SCP_RAM1_ECCOF_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_RMSS_RAM1_OF,
-                                    .bugcheck_required = true,
+                                    .bugcheck_required = false,
                                     .param1 = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_errstatus_reg,
                                     .param2 = (uint32_t*)&scp_exp_csr_regs->rmss_ram1_scp_erraddr_reg,
                                     .err_status_mask = SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_OF_MASK};
@@ -251,7 +251,7 @@ static void tcm_overflow_isr()
                                     .err_source_irq = HW_INT_SCP_TCM_ECCOF_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_TCM_OF,
-                                    .bugcheck_required = true,
+                                    .bugcheck_required = false,
                                     .param1 = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_errstatus,
                                     .param2 = (uint32_t*)&scp_ras_and_init_ctrl_registers_reg->tcmecc_erraddr,
                                     .err_status_mask = MSCP_RAS_AND_INIT_CTRL_REGISTERS_TCMECC_ERRSTATUS_OF_MASK};

@@ -242,7 +242,7 @@ void shared_sram_ecc_isr(void* ctx)
         }
         else if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK)
         {
-            severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+            severity = ACPI_ERROR_SEVERITY_CORRECTED;
             err_code = KNG_HM_ARSM_OF;
         }
         else if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK)

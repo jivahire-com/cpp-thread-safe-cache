@@ -9,7 +9,9 @@
  */
 
 /*------------- Includes -----------------*/
+#include "sensor_fifo_service.h"
 #include "telemetry_functional.h"
+#include "telemetry_package_defs.h"
 
 #include <FpFwCMocka.h>
 #include <FpFwUtils.h>
@@ -22,6 +24,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Droop count mock globals (shared for tests)
 
 int g_enable_mock_pstate = 0;
 bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
@@ -310,16 +314,21 @@ int __wrap_dvfs_c2_get_pcm_bank_sensor_data(const uintptr_t cluster_pex_base_add
 }
 
 // Mock event trace metadata symbols
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // as per the original declarations in dcs_manifest.c
 uint8_t _ProviderMetadata_et_msdata_start;
 uint8_t _ProviderMetadata_et_msdata_end;
 uint8_t _EventMetadata_et_msdata_start;
 uint8_t _EventMetadata_et_msdata_end;
 
-#ifdef __cplusplus
+// CMocka wrapper for droop count function
+void __wrap_pwr_tlm_core_exch_mcp_read_droop_counts(uint64_t* droop_counts)
+{
+    uint64_t* mock_data = (uint64_t*)mock_ptr_type(uint64_t*);
+    if (mock_data && droop_counts)
+    {
+        for (unsigned int i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
+        {
+            droop_counts[i] = mock_data[i];
+        }
+    }
 }
-#endif

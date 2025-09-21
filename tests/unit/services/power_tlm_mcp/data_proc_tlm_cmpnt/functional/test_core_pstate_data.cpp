@@ -402,6 +402,9 @@ static void initialize_test_data_arrays(test_pstate_config_t pstate_data_sets[NO
 // Test basic PSTATE collection with power metrics accumulation across iterations
 TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     // Test data setup for 4 iterations with same PSTATEs but different power values
     test_pstate_config_t pstate_data_sets[NO_OF_ITERATIONS][NUMBER_OF_CORES_TO_TEST] = {{{0}}};
     test_current_config_t current_data_sets[NO_OF_ITERATIONS][NUMBER_OF_CORES_TO_TEST] = {{{0}}};

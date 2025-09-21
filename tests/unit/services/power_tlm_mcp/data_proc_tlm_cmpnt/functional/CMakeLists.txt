@@ -14,6 +14,7 @@ set(SOURCES
     log_DIMM_power_integration_test.cpp
     test_core_power.cpp
     test_soc_hnf_temperature.cpp
+    test_droop_count.cpp
     test_core_throttling_data.cpp
     log_core_instantaneous_data_integration_test.cpp
     )
@@ -67,6 +68,7 @@ mock_target(${TARGET}
     sensor_fifo_svc_poll_vr_current
     sensor_fifo_svc_poll_soc_pvt_temperature
     sensor_fifo_svc_poll_dimm_info
+    pwr_tlm_core_exch_mcp_read_droop_counts
     exec_tlm_cmpnt_get_timestamp_microseconds
     gtimer_prodfw_get_frequency
     initialize_semaphore

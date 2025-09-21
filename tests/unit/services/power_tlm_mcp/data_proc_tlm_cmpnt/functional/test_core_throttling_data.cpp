@@ -258,6 +258,9 @@ void set_next_finalize_timestamp(uint64_t desired_timestamp)
 // --- FINAL CHECK: entry_count=1, active=false (Functional Test Complete) ---
 TEST_FUNCTION(test_core_current_throttling_functional, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     if (g_print_logs)
     {
         printf("***\n");
@@ -370,6 +373,9 @@ TEST_FUNCTION(test_core_current_throttling_functional, test_setup, test_teardown
 // --- FINAL CHECK: entry_count=3, active=true (Multiple Cycles Test with Duplicate Handling) ---
 TEST_FUNCTION(test_core_multiple_current_throttling_cycles, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     if (g_print_logs)
     {
         printf("***\n");
@@ -527,6 +533,9 @@ TEST_FUNCTION(test_core_multiple_current_throttling_cycles, test_setup, test_tea
 // --- FINAL CHECK: entry_count=2, active=true (Multiple Cycles Test)
 TEST_FUNCTION(test_core_multiple_temperature_throttling_cycles, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     if (g_print_logs)
     {
         printf("***\n");
@@ -659,6 +668,9 @@ TEST_FUNCTION(test_core_multiple_temperature_throttling_cycles, test_setup, test
 // --- FINAL CHECK: both entry_count=1, both active=false (Simultaneous Test Complete) ---
 TEST_FUNCTION(test_core_simultaneous_current_and_temperature_throttling, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     if (g_print_logs)
     {
         printf("***\n");
@@ -803,6 +815,9 @@ TEST_FUNCTION(test_core_simultaneous_current_and_temperature_throttling, test_se
 // --- FINAL CHECK: both entry_count=1, both active=false (NO_THROTTLING End Test Complete) ---
 TEST_FUNCTION(test_core_simultaneous_current_and_temperature_throttling_with_no_throttling, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     if (g_print_logs)
     {
         printf("***\n");
@@ -946,6 +961,9 @@ TEST_FUNCTION(test_core_simultaneous_current_and_temperature_throttling_with_no_
 // - Tests cumulative residency, independent lifecycle management, and overlapping throttling with restarts
 TEST_FUNCTION(test_core_overlapping_current_and_temperature_throttling_with_current_restart, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     if (g_print_logs)
     {
         printf("***\n");
@@ -1128,6 +1146,9 @@ TEST_FUNCTION(test_core_overlapping_current_and_temperature_throttling_with_curr
 // --- FINAL CHECK: entry_count=2, active=true (Duplicate START Handling + Multiple Cycles Test) ---
 TEST_FUNCTION(test_core_multiple_adaptive_clocking_throttling_cycles, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     if (g_print_logs)
     {
         printf("***\n");
@@ -1290,6 +1311,9 @@ TEST_FUNCTION(test_core_multiple_adaptive_clocking_throttling_cycles, test_setup
 
 TEST_FUNCTION(test_core_multiple_rack_throttling_cycles, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     if (g_print_logs)
     {
         printf("***\n");
@@ -1473,6 +1497,9 @@ TEST_FUNCTION(test_core_multiple_rack_throttling_cycles, test_setup, test_teardo
 // --- FINAL CHECK: both entry_count=1, both active=false (Simultaneous Rack+Current Test Complete) ---
 TEST_FUNCTION(test_core_simultaneous_rack_and_current_throttling, test_setup, test_teardown)
 {
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
     if (g_print_logs)
     {
         printf("***\n");

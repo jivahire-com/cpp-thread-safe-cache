@@ -1516,7 +1516,7 @@ void verify_mesh_config_knobs(void)
 
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl, 0x2000001000200002);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl_1, 0x3001005A900);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C017389A3000);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738921000);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F00);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x0);

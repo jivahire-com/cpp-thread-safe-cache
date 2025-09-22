@@ -3,22 +3,30 @@
 icc_mhu_ap_lib.py - Python interface to AP ICC MHU interface
 """
 
-import struct
+
 import time
 import logging
 import os
+import re
 import sys
-from datetime import datetime
-from typing import Optional, Tuple, List
+import tempfile
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Optional, Tuple
+from fpfw_automation_trace32.trace32 import trace32 as FpFwTrace32Debugger
+from fpfw_automation_trace32.trace32 import PROCESSOR
+from pythia.tdk.common.util.debugger.trace32 import Trace32
+from pythia.tdk.common.util.debugger.trace32 import Trace32Config
 
 # Add paths for both package and direct imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
 pylibs_dir = os.path.dirname(current_dir)
-sys.path.extend([
-    pylibs_dir,
-    current_dir,
-])
+sys.path.extend(
+    [
+        pylibs_dir,
+        current_dir,
+    ]
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +75,137 @@ class CoreMemoryMapInterface(ABC):
         return bytearray([self.read(address + i, 1) for i in range(size)])
 
 
-class ApCoreMemoryMapInterface(CoreMemoryMapInterface):
-    """AP-specific implementation of CoreMemoryMapInterface - stubbed for now"""
+class Trace32ApCore(Trace32):
+    """
+    T32 implementation of Trace32 for the AP Core on Die 0.
+    """
+
+    def __init__(self):
+        # Check that the X: drive is available before continuing
+        if not os.path.exists("X:/") and not os.path.exists("X:\\"):
+            raise RuntimeError(
+                "X: drive is not available. Please mount or map the X: drive before running Trace32."
+            )
+
+        # Setup all of the paths and settings required to launch T32
+        self.processor_type = PROCESSOR.ARM
+        self.debugger_name = "T32_AP_DIE_0"
+        self.t32_bins_path = Path("X:/kingsgate/tools/T32/bin/windows64")
+        self.t32_core_config_path = "X:/kingsgate/tools/Kingsgate_TRACE32/Start/JTAG/configJTAG_AP_Die0_Autoconnect.t32"  # noqa: E501
+        self.t32_start_script_path = "X:/kingsgate/tools/Kingsgate_TRACE32/Start/JTAG/work-settings_JTAG_DUAL_DIE_AP_Die_0_Dasiy_chain.cmm"  # noqa: E501
+        self.t32_launch_delay_seconds = 5
+
+        #
+        # Node: localhost due to UDP communication to the T32 instance
+        # Port: Defined in the core config file, default is 30004 for AP Die 0
+        # See
+        #
+        self.node = "localhost"
+        self.port = "30004"
+
+        # Setup the config, enabling validation of the paths
+        self.t32_config = Trace32Config(
+            bins=self.t32_bins_path,
+            node=self.node,
+            port=self.port,
+            processor_type=PROCESSOR.ARM,
+        )
+
+        # Set the actual debugger instance
+        self.t32_instance = FpFwTrace32Debugger(
+            powerview_bin_dir=self.t32_bins_path,
+            proc_type=self.processor_type,
+            node=self.node,
+            port=self.port,
+            name=self.debugger_name,
+        )
+
+        # Initialize the base Trace32 class
+        super().__init__(
+            config=self.t32_config,
+            t32_instance=self.t32_instance,
+            debugger_name=self.debugger_name,
+        )
+
+        # Initialize and launch the T32 debugger via the Trace32 Class
+        # Pythia will do this for all debuggers in a configuration on
+        # environment setup, but we need it here for standalone use.
+        # https://azurecsi.visualstudio.com/DuvallFw/_git/fse.pythia2.0?path=/tdk_cobalt/pythia/tdk/cobalt/duts/rvp_dut.py&version=GBmain&line=94&lineEnd=141&lineStartColumn=5&lineEndColumn=55&lineStyle=plain&_a=contents # noqa: E501
+        self.initialize()
+        self.launch(
+            config=self.t32_core_config_path,
+            args=self.t32_start_script_path,
+            wait_time=self.t32_launch_delay_seconds,
+        )
+
+    def __del__(self):
+        # attempt to disconnect cleanly, but ignore any errors and quit
+        logger.debug(f"Destructor called - cleaning up {self.__str__()}")
+        self.execute_command("sys.d")
+        self.execute_command("quit")
+        self.quit()
+
+    def __str__(self):
+        return (
+            f"Trace32ApCore(\n"
+            f"  debugger_name={self.debugger_name!r},\n"
+            f"  node={self.node!r},\n"
+            f"  port={self.port!r},\n"
+            f"  processor_type={self.processor_type!r},\n"
+            f"  t32_bins_path={str(self.t32_bins_path)!r},\n"
+            f"  t32_core_config_path={self.t32_core_config_path!r},\n"
+            f"  t32_start_script_path={self.t32_start_script_path!r},\n"
+            f"  t32_launch_delay_seconds={self.t32_launch_delay_seconds!r}\n"
+            f")"
+        )
+
+
+class ApCore(CoreMemoryMapInterface):
+    """
+    T32 implementation of CoreMemoryMapInterface for AP Die 0
+    """
+
+    def __init__(self, t32_instance: Optional[Trace32] = None):
+
+        # If no instance is passed in (like the from pythia), use our own
+        # version.
+        self.t32_instance = t32_instance
+        if self.t32_instance is None:
+            self.t32_instance = Trace32ApCore()
+
+        # Both Pythia and our own version will have already launched
+        # the T32 debugger, so we can use it directly. Attach so all
+        # further commands don't need to.
+        ret_tuple = self.t32_instance.execute_command("sys.a")
+        self._validate_t32_tuple(ret_tuple)
+        logger.debug(f"Attached to T32 instance: {self.t32_instance}")
+
+    def _validate_t32_tuple(self, ret_tuple: Tuple[bool, str, str]) -> None:
+        # The type is Tuple[success, stdout, stderr]
+
+        # There is a failure if:
+        # - The success flag is False
+        # - The stdout contains "failed"
+        # - The stderr is not empty
+        if not ret_tuple[0] or "failed" in ret_tuple[1].lower() or ret_tuple[2]:
+            raise RuntimeError(
+                f"T32 command failed:\n"
+                f"  Success: {ret_tuple[0]}\n"
+                f"  Stdout:  {ret_tuple[1]!r}\n"
+                f"  Stderr:  {ret_tuple[2]!r}"
+            )
+
+        # There is also an error if stdout contains 'bus error at address EOAXI'
+        # which indicates a read/write failure. We only want to check for addresses
+        # that start with 'EOAXI' to avoid false positives. All address access by this
+        # class should be EOAXI.
+        if "bus error at address eoaxi" in ret_tuple[1].lower():
+            raise RuntimeError(
+                f"T32 command failed - Bus Error:\n"
+                f"  Success: {ret_tuple[0]}\n"
+                f"  Stdout:  {ret_tuple[1]!r}\n"
+                f"  Stderr:  {ret_tuple[2]!r}"
+            )
 
     def read(self, address: int, size: int = 4) -> int:
         """
@@ -81,8 +218,45 @@ class ApCoreMemoryMapInterface(CoreMemoryMapInterface):
         Returns:
             Value read from memory
         """
-        # TODO: Implement actual AP memory read
-        return 0
+
+        logger.debug(f"Reading {size} bytes from address 0x{address:08X}")
+
+        #
+        # Build a byte array by reading each byte at a time.
+        # Required Trace 32 Read Alignment requirements, reading each byte
+        # at a time allows for unaligned reads of larger sizes.
+        #
+        # Use the data.in EOAXI:<address> Trace 32 Command and parse the output
+        # for a successful read.
+        #
+        # EX:
+        # "2025-09-11 14:26:18 | Trace32API | miscellaneous message:
+        #   b'EOAXI:0000020111080003 = 00'\n2025-09-11 14:26:18"
+        #
+        pattern = r"=\s*(\w{2})"
+
+        return_bytes = bytearray()
+        for byte_offset in range(0, size):
+            ret = self.t32_instance.execute_command(
+                f"data.in EOAXI:{hex(address + byte_offset)} /Byte"
+            )
+            self._validate_t32_tuple(ret)
+
+            regex_match = re.search(pattern, ret[1])
+            if regex_match:
+                # The pattern will match the first instance in the returned string.
+                # Group 0 is the full match; group 1 captures the byte value we care about.
+                byte_val = regex_match.group(1)
+                return_bytes.append(int(byte_val, 16))
+            else:
+                raise RuntimeError(
+                    f"Failed to read byte at address 0x{address + byte_offset:08X}"
+                )
+
+        logger.debug(
+            f"Read {len(return_bytes)} bytes from address 0x{address:08X}: {[return_bytes]}"
+        )
+        return int.from_bytes(return_bytes, byteorder="little")
 
     def write(self, address: int, value: int, size: int = 4) -> None:
         """
@@ -93,8 +267,15 @@ class ApCoreMemoryMapInterface(CoreMemoryMapInterface):
             value: Value to write
             size: Size in bytes (1, 2, 4, 8)
         """
-        # TODO: Implement actual AP memory write
-        return
+        # Write each byte of the value in little endian order
+        # One byte at a time to handle unaligned writes
+        value_bytes = value.to_bytes(size, byteorder="little")
+        for byte_offset in range(size):
+            byte_val = value_bytes[byte_offset]
+            ret = self.t32_instance.execute_command(
+                f"data.set EOAXI:{hex(address + byte_offset)} %Byte {hex(byte_val)}"
+            )
+            self._validate_t32_tuple(ret)
 
     def dump(self, address: int, size: int) -> bytearray:
         """
@@ -108,7 +289,22 @@ class ApCoreMemoryMapInterface(CoreMemoryMapInterface):
         Returns:
             Bytearray of memory values
         """
-        return bytearray([self.read(address + i, 1) for i in range(size)])
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            tmp_file.write(
+                b"Temporary file contents for dumping memory, will be overwritten.\n"
+            )
+            tmp_file_path = tmp_file.name
+
+        ret = self.t32_instance.execute_command(
+            f"data.save.binary {tmp_file_path} EOAXI:{hex(address)}--{hex(address + (size-1))}"
+        )
+        self._validate_t32_tuple(ret)
+
+        with open(tmp_file_path, "rb") as f:
+            buffer = f.read()
+        os.remove(tmp_file_path)
+
+        return bytearray(buffer)
 
 
 class IccMhu:
@@ -154,7 +350,9 @@ class IccMhu:
         if self.SND_MHU_ADDRESS == 0 or self.REC_MHU_ADDRESS == 0:
             raise ValueError("Subclass must define SND_MHU_ADDRESS and REC_MHU_ADDRESS")
         if self.SEND_PAYLOAD_ADDR == 0 or self.RECV_PAYLOAD_ADDR == 0:
-            raise ValueError("Subclass must define SEND_PAYLOAD_ADDR and RECV_PAYLOAD_ADDR")
+            raise ValueError(
+                "Subclass must define SEND_PAYLOAD_ADDR and RECV_PAYLOAD_ADDR"
+            )
 
     def _read_memory(self, address: int, size: int = 4) -> int:
         """
@@ -217,13 +415,17 @@ class IccMhu:
             mhu_address = self.SND_MHU_ADDRESS
 
         # Calculate channel 0 flag 0 post box address
-        ch_0_flag_0_pb_address = mhu_address + self.CHANNELS_OFFSET + self.CHANNEL_STATUS_OFFSET
+        ch_0_flag_0_pb_address = (
+            mhu_address + self.CHANNELS_OFFSET + self.CHANNEL_STATUS_OFFSET
+        )
 
         try:
             # Read the status register
             status = self._read_memory(ch_0_flag_0_pb_address, 4)
 
-            logger.debug(f"Checking for Pending Packet - Address [0x{ch_0_flag_0_pb_address:08X}] Status [0x{status:X}]")
+            logger.debug(
+                f"Checking for Pending Packet - Address [0x{ch_0_flag_0_pb_address:08X}] Status [0x{status:X}]"
+            )
 
             return bool(status & 0x1)  # Return bit 0 status as boolean
 
@@ -256,7 +458,9 @@ class IccMhu:
 
             # Check timeout
             if time.time() - start_time > timeout_sec:
-                raise TimeoutError(f"Timeout waiting for packet after {timeout_sec} seconds")
+                raise TimeoutError(
+                    f"Timeout waiting for packet after {timeout_sec} seconds"
+                )
 
             # Small delay before checking again
             time.sleep(0.01)
@@ -267,7 +471,9 @@ class IccMhu:
             token = self._read_memory(self.RECV_PAYLOAD_ADDR + self.TOKEN_OFFSET, 2)
             packet_id = self._read_memory(self.RECV_PAYLOAD_ADDR + self.ID_OFFSET, 2)
             command = self._read_memory(self.RECV_PAYLOAD_ADDR + self.COMMAND_OFFSET, 4)
-            payload_size = self._read_memory(self.RECV_PAYLOAD_ADDR + self.PAYLOAD_SIZE_OFFSET, 2)
+            payload_size = self._read_memory(
+                self.RECV_PAYLOAD_ADDR + self.PAYLOAD_SIZE_OFFSET, 2
+            )
             status = self._read_memory(self.RECV_PAYLOAD_ADDR + self.STATUS_OFFSET, 2)
 
             logger.debug("Getting ICC Packet.")
@@ -280,7 +486,9 @@ class IccMhu:
             logger.debug(f"    STATUS  [0x{status:04X}]")
 
             # Read payload data efficiently
-            payload_data = self._dump_memory(self.RECV_PAYLOAD_ADDR + self.PAYLOAD_OFFSET, payload_size)
+            payload_data = self._dump_memory(
+                self.RECV_PAYLOAD_ADDR + self.PAYLOAD_OFFSET, payload_size
+            )
 
             # payload_data is already a bytearray from _dump_memory
             packet_data = payload_data
@@ -329,7 +537,9 @@ class IccMhu:
 
             # Check timeout
             if time.time() - start_time > timeout_sec:
-                raise TimeoutError(f"Timeout waiting for send channel to be available after {timeout_sec} seconds")
+                raise TimeoutError(
+                    f"Timeout waiting for send channel to be available after {timeout_sec} seconds"
+                )
 
             # Small delay before checking again
             time.sleep(0.01)
@@ -342,14 +552,20 @@ class IccMhu:
 
         try:
             # Write packet size
-            self._write_memory(self.SEND_PAYLOAD_ADDR + self.PAYLOAD_SIZE_OFFSET, packet_size, 2)
+            self._write_memory(
+                self.SEND_PAYLOAD_ADDR + self.PAYLOAD_SIZE_OFFSET, packet_size, 2
+            )
 
             # Write packet data
             for i, byte_val in enumerate(packet):
-                self._write_memory(self.SEND_PAYLOAD_ADDR + self.PAYLOAD_OFFSET + i, byte_val, 1)
+                self._write_memory(
+                    self.SEND_PAYLOAD_ADDR + self.PAYLOAD_OFFSET + i, byte_val, 1
+                )
 
             # Trigger the send by setting the MHU channel
-            mhu_set_address = self.SND_MHU_ADDRESS + self.CHANNELS_OFFSET + self.CHANNEL_SET_OFFSET
+            mhu_set_address = (
+                self.SND_MHU_ADDRESS + self.CHANNELS_OFFSET + self.CHANNEL_SET_OFFSET
+            )
             self._write_memory(mhu_set_address, 0x1, 4)
 
             logger.debug("Packet sent successfully")
@@ -359,9 +575,9 @@ class IccMhu:
 
     def _clear_pending_recv(self) -> None:
         """Clear the pending status on the receive mailbox."""
-        ch_0_flag_0_clr_address = (self.REC_MHU_ADDRESS +
-                                  self.CHANNELS_OFFSET +
-                                  self.CHANNEL_CLEAR_OFFSET)
+        ch_0_flag_0_clr_address = (
+            self.REC_MHU_ADDRESS + self.CHANNELS_OFFSET + self.CHANNEL_CLEAR_OFFSET
+        )
         self._write_memory(ch_0_flag_0_clr_address, 0x1, 4)
 
 
@@ -388,16 +604,17 @@ class IccMhuAp(IccMhu):
         Initialize the ICC MHU AP interface.
 
         Args:
-            memory_interface: Memory access interface implementation (optional, defaults to ApCoreMemoryMapInterface)
+            memory_interface: Memory access interface implementation (optional, defaults to CoreMemoryMapInterface)
         """
         if memory_interface is None:
-            memory_interface = ApCoreMemoryMapInterface()
+            memory_interface = CoreMemoryMapInterface()
         super().__init__(memory_interface)
 
 
 # ============================================================================
 # Test Infrastructure - Mock Memory Interface and Test Functions
 # ============================================================================
+
 
 class MockMemoryInterface(CoreMemoryMapInterface):
     """Mock memory interface for testing IccMhuAp without real hardware"""
@@ -438,7 +655,7 @@ class MockMemoryInterface(CoreMemoryMapInterface):
             raise RuntimeError("Mock read failure")
 
         value = self.memory.get(address, 0)
-        self.operations_log.append(('read', address, size, value))
+        self.operations_log.append(("read", address, size, value))
 
         if self.debug:
             logger.debug(f"MockMem READ  [0x{address:08X}] size={size} -> 0x{value:X}")
@@ -464,20 +681,26 @@ class MockMemoryInterface(CoreMemoryMapInterface):
             raise RuntimeError("Mock write failure")
 
         self.memory[address] = value
-        self.operations_log.append(('write', address, value, size))
+        self.operations_log.append(("write", address, value, size))
 
         # Simulate hardware behavior: writing to clear register clears status register
-        recv_clear_addr = (IccMhuAp.MCP2AP_MHU_REC_NS_ADDRESS +
-                          IccMhuAp.CHANNELS_OFFSET +
-                          IccMhuAp.CHANNEL_CLEAR_OFFSET)
+        recv_clear_addr = (
+            IccMhuAp.MCP2AP_MHU_REC_NS_ADDRESS
+            + IccMhuAp.CHANNELS_OFFSET
+            + IccMhuAp.CHANNEL_CLEAR_OFFSET
+        )
         if address == recv_clear_addr and value == 0x1:
             # Clear the corresponding status register
-            recv_status_addr = (IccMhuAp.MCP2AP_MHU_REC_NS_ADDRESS +
-                               IccMhuAp.CHANNELS_OFFSET +
-                               IccMhuAp.CHANNEL_STATUS_OFFSET)
+            recv_status_addr = (
+                IccMhuAp.MCP2AP_MHU_REC_NS_ADDRESS
+                + IccMhuAp.CHANNELS_OFFSET
+                + IccMhuAp.CHANNEL_STATUS_OFFSET
+            )
             self.memory[recv_status_addr] = 0
             if self.debug:
-                logger.debug(f"MockMem: Clearing recv status register due to clear command")
+                logger.debug(
+                    "MockMem: Clearing recv status register due to clear command"
+                )
 
         if self.debug:
             logger.debug(f"MockMem WRITE [0x{address:08X}] size={size} <- 0x{value:X}")
@@ -494,10 +717,12 @@ class MockMemoryInterface(CoreMemoryMapInterface):
             Bytearray of memory values
         """
         data = bytearray([self.memory.get(address + i, i % 256) for i in range(size)])
-        self.operations_log.append(('dump', address, size, data))
+        self.operations_log.append(("dump", address, size, data))
 
         if self.debug:
-            logger.debug(f"MockMem DUMP  [0x{address:08X}] size={size} -> {[hex(b) for b in data[:8]]}")
+            logger.debug(
+                f"MockMem DUMP  [0x{address:08X}] size={size} -> {[hex(b) for b in data[:8]]}"
+            )
 
         return data
 
@@ -511,16 +736,18 @@ class MockMemoryInterface(CoreMemoryMapInterface):
         """
         if scenario == "recv_packet_ready":
             # Setup receive channel with pending packet
-            recv_status_addr = (IccMhuAp.MCP2AP_MHU_REC_NS_ADDRESS +
-                               IccMhuAp.CHANNELS_OFFSET +
-                               IccMhuAp.CHANNEL_STATUS_OFFSET)
+            recv_status_addr = (
+                IccMhuAp.MCP2AP_MHU_REC_NS_ADDRESS
+                + IccMhuAp.CHANNELS_OFFSET
+                + IccMhuAp.CHANNEL_STATUS_OFFSET
+            )
             self.memory[recv_status_addr] = 1
 
             # Setup packet data
-            payload_data = kwargs.get('payload_data', [0x10, 0x11, 0x12, 0x13])
-            command = kwargs.get('command', 0x9ABC)
-            token = kwargs.get('token', 0x1234)
-            packet_id = kwargs.get('packet_id', 0x5678)
+            payload_data = kwargs.get("payload_data", [0x10, 0x11, 0x12, 0x13])
+            command = kwargs.get("command", 0x9ABC)
+            token = kwargs.get("token", 0x1234)
+            packet_id = kwargs.get("packet_id", 0x5678)
 
             base_addr = IccMhuAp.RECV_PAYLOAD_ADDR
             self.memory[base_addr + IccMhuAp.VERSION_OFFSET] = 1
@@ -536,26 +763,34 @@ class MockMemoryInterface(CoreMemoryMapInterface):
 
         elif scenario == "send_channel_available":
             # Setup send channel as available (not pending)
-            send_status_addr = (IccMhuAp.AP2MCP_MHU_SND_NS_ADDRESS +
-                               IccMhuAp.CHANNELS_OFFSET +
-                               IccMhuAp.CHANNEL_STATUS_OFFSET)
+            send_status_addr = (
+                IccMhuAp.AP2MCP_MHU_SND_NS_ADDRESS
+                + IccMhuAp.CHANNELS_OFFSET
+                + IccMhuAp.CHANNEL_STATUS_OFFSET
+            )
             self.memory[send_status_addr] = 0
 
         elif scenario == "send_channel_busy":
             # Setup send channel as busy (pending)
-            send_status_addr = (IccMhuAp.AP2MCP_MHU_SND_NS_ADDRESS +
-                               IccMhuAp.CHANNELS_OFFSET +
-                               IccMhuAp.CHANNEL_STATUS_OFFSET)
+            send_status_addr = (
+                IccMhuAp.AP2MCP_MHU_SND_NS_ADDRESS
+                + IccMhuAp.CHANNELS_OFFSET
+                + IccMhuAp.CHANNEL_STATUS_OFFSET
+            )
             self.memory[send_status_addr] = 1
 
         elif scenario == "no_packets":
             # No packets pending on either channel
-            recv_addr = (IccMhuAp.MCP2AP_MHU_REC_NS_ADDRESS +
-                        IccMhuAp.CHANNELS_OFFSET +
-                        IccMhuAp.CHANNEL_STATUS_OFFSET)
-            send_addr = (IccMhuAp.AP2MCP_MHU_SND_NS_ADDRESS +
-                        IccMhuAp.CHANNELS_OFFSET +
-                        IccMhuAp.CHANNEL_STATUS_OFFSET)
+            recv_addr = (
+                IccMhuAp.MCP2AP_MHU_REC_NS_ADDRESS
+                + IccMhuAp.CHANNELS_OFFSET
+                + IccMhuAp.CHANNEL_STATUS_OFFSET
+            )
+            send_addr = (
+                IccMhuAp.AP2MCP_MHU_SND_NS_ADDRESS
+                + IccMhuAp.CHANNELS_OFFSET
+                + IccMhuAp.CHANNEL_STATUS_OFFSET
+            )
             self.memory[recv_addr] = 0
             self.memory[send_addr] = 0
 
@@ -593,7 +828,7 @@ def test_basic_functionality(verbose: bool = True) -> bool:
     try:
         mock_memory.configure_scenario("no_packets")
         result = mhu.check_packet_pending("recv")
-        test_results.append(result == False)
+        test_results.append(result is False)
         if verbose:
             print(f"✓ Test 1 - Initial packet pending check: {result}")
     except Exception as e:
@@ -604,7 +839,9 @@ def test_basic_functionality(verbose: bool = True) -> bool:
     # Test 2: Send packet
     try:
         mock_memory.configure_scenario("send_channel_available")
-        mhu.send_packet(bytearray([0x34, 0x12, 0x00, 0x00, 0xAA, 0xBB, 0xCC]), timeout_sec=1)
+        mhu.send_packet(
+            bytearray([0x34, 0x12, 0x00, 0x00, 0xAA, 0xBB, 0xCC]), timeout_sec=1
+        )
         test_results.append(True)
         if verbose:
             print("✓ Test 2 - Send packet successful")
@@ -615,14 +852,17 @@ def test_basic_functionality(verbose: bool = True) -> bool:
 
     # Test 3: Receive packet
     try:
-        mock_memory.configure_scenario("recv_packet_ready",
-                                     payload_data=[0x10, 0x11, 0x12, 0x13])
+        mock_memory.configure_scenario(
+            "recv_packet_ready", payload_data=[0x10, 0x11, 0x12, 0x13]
+        )
         packet = mhu.get_packet(timeout_sec=1)
         success = packet is not None and len(packet) == 4
         test_results.append(success)
         if verbose:
             if success:
-                print(f"✓ Test 3 - Receive packet successful: {[hex(b) for b in packet] if packet else 'None'}")
+                print(
+                    f"✓ Test 3 - Receive packet successful: {[hex(b) for b in packet] if packet else 'None'}"
+                )
             else:
                 print("✗ Test 3 - Receive packet failed or returned None")
     except Exception as e:
@@ -678,7 +918,9 @@ def test_error_scenarios(verbose: bool = True) -> bool:
         mhu.check_packet_pending("recv")
         test_results.append(False)  # Should have failed
         if verbose:
-            print("✗ Test 1 - Should have failed with memory interface that always fails")
+            print(
+                "✗ Test 1 - Should have failed with memory interface that always fails"
+            )
     except Exception:
         test_results.append(True)
         if verbose:
@@ -764,7 +1006,7 @@ def test_performance(verbose: bool = True) -> bool:
     start_time = time.time()
 
     for i in range(100):
-        packet = bytearray([i % 256, (i+1) % 256, (i+2) % 256, (i+3) % 256])
+        packet = bytearray([i % 256, (i + 1) % 256, (i + 2) % 256, (i + 3) % 256])
         mhu.send_packet(packet, timeout_sec=1)
 
     elapsed = time.time() - start_time
@@ -786,52 +1028,120 @@ def test_performance(verbose: bool = True) -> bool:
     return performance_ok
 
 
+def test_t32_ap_die_0(verbose: bool = True) -> bool:
+    """
+    Test T32 AP Die 0 functionality.
+
+    Args:
+        verbose: Enable verbose output
+
+    Returns:
+        True if the test passes, False otherwise
+    """
+    if verbose:
+        print("\n=== Testing T32 AP Die 0 ===")
+
+    # Open the T32 Instance
+    t32_instance = ApCore()
+
+    #
+    # Address and sizes taken from MCP CLI while testing, update as needed.
+    #
+
+    original_value = t32_instance.read(address=0x0000020111080000)
+    print(f"Original Value: {hex(original_value)}")
+
+    t32_instance.write(address=0x0000020111080000, value=0x12345678, size=4)
+
+    new_value_one = t32_instance.read(address=0x0000020111080000)
+    print(f"New Value One: {hex(new_value_one)}")
+
+    if new_value_one != 0x12345678:
+        print("❌ Failed to write new value")
+        return False
+
+    t32_instance.write(address=0x0000020111080000, value=0xAABBCCDD, size=4)
+
+    new_value_two = t32_instance.read(address=0x0000020111080000)
+    print(f"New Value Two: {hex(new_value_two)}")
+
+    if new_value_two != 0xAABBCCDD:
+        print("❌ Failed to write new value")
+        return False
+
+    dump_bytes = t32_instance.dump(address=0x0000020111080000, size=63916)
+    print(f"Dump Bytes Len {len(dump_bytes)}")
+    if len(dump_bytes) != 63916:
+        print("❌ Failed to dump correct number of bytes")
+        return False
+
+    return True
+
+
+#
+# To run the main functionality below from a repo environment
+# & (Join-Path ([System.Environment]::GetEnvironmentVariable(
+#     "REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/icc_mhu_tests/icc_mhu_ap_lib.py # noqa: E501
+#
 def main():
     """Main function for testing IccMhuAp functionality."""
     import argparse
 
     parser = argparse.ArgumentParser(description="ICC MHU AP Library Test Suite")
-    parser.add_argument('--test', choices=['basic', 'errors', 'performance', 'all'],
-                       default='all', help='Test suite to run')
-    parser.add_argument('--verbose', action='store_true', default=True,
-                       help='Enable verbose output')
-    parser.add_argument('--debug', action='store_true',
-                       help='Enable debug logging')
+    parser.add_argument(
+        "--test",
+        choices=["basic", "errors", "performance", "t32_ap_die_0", "all"],
+        default="all",
+        help="Test suite to run",
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", default=True, help="Enable verbose output"
+    )
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     args = parser.parse_args()
 
     # Setup logging
     if args.debug:
-        logging.basicConfig(level=logging.DEBUG,
-                          format='%(levelname)s: %(name)s: %(message)s')
+        logging.basicConfig(
+            level=logging.DEBUG, format="%(levelname)s: %(name)s: %(message)s"
+        )
     else:
-        logging.basicConfig(level=logging.INFO,
-                          format='%(levelname)s: %(message)s')
+        logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    print("ICC MHU AP Library Test Suite")
-    print("=" * 40)
+    # If tests for this library are enabled
+    if args.test:
+        print("ICC MHU AP Library Test Suite")
+        print("=" * 40)
 
-    results = []
+        test_results = []
 
-    if args.test in ['basic', 'all']:
-        results.append(test_basic_functionality(args.verbose))
+        if args.test in ["basic", "all"]:
+            test_results.append(test_basic_functionality(args.verbose))
 
-    if args.test in ['errors', 'all']:
-        results.append(test_error_scenarios(args.verbose))
+        if args.test in ["errors", "all"]:
+            test_results.append(test_error_scenarios(args.verbose))
 
-    if args.test in ['performance', 'all']:
-        results.append(test_performance(args.verbose))
+        if args.test in ["performance", "all"]:
+            test_results.append(test_performance(args.verbose))
 
-    print("\n" + "=" * 40)
-    passed = sum(results)
-    total = len(results)
+        # Run T32 AP Die 0 test only if specified, don't include in all
+        if args.test in ["t32_ap_die_0"]:
+            test_results.append(test_t32_ap_die_0(args.verbose))
 
-    if passed == total:
-        print(f"🎉 All {total} test suite(s) PASSED!")
-        return 0
-    else:
-        print(f"❌ {total - passed} of {total} test suite(s) FAILED!")
-        return 1
+        print("\n" + "=" * 40)
+        passed_tests = sum(test_results)
+        total_tests = len(test_results)
+
+        if total_tests != 0:
+            if passed_tests == total_tests:
+                print(f"🎉 All {total_tests} test suite(s) PASSED!")
+                return 0
+            else:
+                print(
+                    f"❌ {total_tests - passed_tests} of {total_tests} test suite(s) FAILED!"
+                )
+                return 1
 
 
 if __name__ == "__main__":

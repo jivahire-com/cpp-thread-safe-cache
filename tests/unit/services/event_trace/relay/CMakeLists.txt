@@ -8,10 +8,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.lib.utils
-    fwlib.service.iccBase
     ms::cmocka::testrunner
-    ms::lib::error_handler
     ms::lib::threadx
     ms::mocks::threadx
     ms::service::event_trace::relay
@@ -34,9 +31,6 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
-    FpFwLockAcquire
-    FpFwLockRelease
-    
     _txe_block_pool_create
     _txe_block_release
     _txe_queue_create
@@ -59,4 +53,6 @@ mock_target(${TARGET}
     mts_get_this_die_id
     mts_get_this_core_id
     transfer_rly_is_primary_node
+
+    crash_dump_bug_check
 )

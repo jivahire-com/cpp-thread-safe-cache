@@ -16,7 +16,6 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
         fwlib.service.mts
-        ms::build_data
         ms::cmocka::testrunner
         ms::lib::threadx
         ms::service::event_trace::collector
@@ -36,7 +35,10 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     etc_initialize
     etd_initialize
+    mts_client_register
+
     _txe_queue_create
     _txe_block_pool_create
-    mts_client_register
+
+    crash_dump_bug_check
 )

@@ -14,12 +14,6 @@
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
-#define ETR_CHECK_TX_STATUS(status)             \
-    if ((status) != TX_SUCCESS)             \
-    {                                       \
-        FPFwErrorRaise(status, 0, 0, 0, 0); \
-    }
-
 /*-------------------------------- Typedefs ---------------------------------*/
 
 /*------------------- Declarations (Statics and globals) --------------------*/

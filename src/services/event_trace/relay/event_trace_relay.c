@@ -29,7 +29,6 @@
 #include "event_trace_relay_i.h"
 
 #include <ErrorHandler.h>
-#include <FpFwAssert.h>
 #include <IFpFwEventTracingStatus.h>
 #include <atu_init.h>
 #include <bug_check.h>
@@ -75,9 +74,6 @@ static uint8_t g_etr_mts_client_pool_mem[ET_MTS_CLIENT_BLOCK_POOL_SIZE];
 
 /*----------------------------- Static Functions ----------------------------*/
 
-// TODO (ADO2686478): Revisit which failures are hard failures and which are soft failures
-// At the moment, all failures are treated as soft failures in the ETR MTS Processing Path
-
 /************************************************************************
  * Static Helper Functions to manage DDR ASIC buffers for the ETR service.
  ************************************************************************/
@@ -93,14 +89,18 @@ static void etr_initialize_ddr_buffers(etr_service_context_t* p_context, const e
 {
 
     /* Validate the base addresses are set */
-    FPFW_RUNTIME_ASSERT(p_config->asic_ddr_config.base_addr != 0);
-    FPFW_RUNTIME_ASSERT(p_config->hsp_ddr_config.base_addr != 0);
+    BUG_ASSERT(p_config->asic_ddr_config.base_addr != 0);
+    BUG_ASSERT(p_config->hsp_ddr_config.base_addr != 0);
 
     /* Validate we can fit at least one buffer of each */
-    FPFW_RUNTIME_ASSERT(p_config->asic_ddr_config.size_bytes <= IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE &&
-                        p_config->asic_ddr_config.size_bytes >= ASIC_BUFFER_PAYLOAD_SIZE);
-    FPFW_RUNTIME_ASSERT(p_config->hsp_ddr_config.size_bytes <= IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE &&
-                        p_config->hsp_ddr_config.size_bytes >= HSP_BUFFER_PAYLOAD_SIZE);
+    BUG_ASSERT_PARAM(p_config->asic_ddr_config.size_bytes <= IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE &&
+                         p_config->asic_ddr_config.size_bytes >= ASIC_BUFFER_PAYLOAD_SIZE,
+                     p_config->asic_ddr_config.size_bytes,
+                     0);
+    BUG_ASSERT_PARAM(p_config->hsp_ddr_config.size_bytes <= IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE &&
+                         p_config->hsp_ddr_config.size_bytes >= HSP_BUFFER_PAYLOAD_SIZE,
+                     p_config->hsp_ddr_config.size_bytes,
+                     0);
 
     uint64_t asic_count = p_config->asic_ddr_config.size_bytes / ASIC_BUFFER_PAYLOAD_SIZE;
     uint64_t hsp_count = p_config->hsp_ddr_config.size_bytes / HSP_BUFFER_PAYLOAD_SIZE;
@@ -536,16 +536,18 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
  */
 static void etr_initialize_worker_thread(etr_service_context_t* p_context, const etr_service_config_t* p_config)
 {
-    ETR_CHECK_TX_STATUS(tx_thread_create(&p_context->worker_thread,
-                                         ETR_WORKER_THREAD_NAME,
-                                         etr_worker_thread_func,
-                                         (ULONG)p_context,
-                                         p_config->thread_config.p_stack,
-                                         p_config->thread_config.stack_size,
-                                         p_config->thread_config.priority,
-                                         p_config->thread_config.priority,
-                                         p_config->thread_config.time_slice_option,
-                                         TX_AUTO_START));
+    UINT status = tx_thread_create(&p_context->worker_thread,
+                                   ETR_WORKER_THREAD_NAME,
+                                   etr_worker_thread_func,
+                                   (ULONG)p_context,
+                                   p_config->thread_config.p_stack,
+                                   p_config->thread_config.stack_size,
+                                   p_config->thread_config.priority,
+                                   p_config->thread_config.priority,
+                                   p_config->thread_config.time_slice_option,
+                                   TX_AUTO_START);
+
+    BUG_ASSERT(status == TX_SUCCESS);
 }
 
 /**
@@ -618,7 +620,7 @@ static void etr_mts_rx_msg_handler(void)
 {
     /* Set the event flag to indicate a new MTS message is available */
     UINT txStatus = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_NEW_MTS_MSG, TX_OR);
-    FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
+    BUG_ASSERT_PARAM(txStatus == TX_SUCCESS, txStatus, 0);
 }
 
 /**
@@ -639,11 +641,7 @@ static void etr_mts_client_init(p_etr_service_context_t p_context, const etr_ser
                                           g_etr_mts_client_pool_mem,                          // pool_start
                                           sizeof(g_etr_mts_client_pool_mem));                 // pool_size
 
-    FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS,
-                            tx_status,
-                            (uintptr_t)&s_event_trace_relay_mts_client.mts_client.rx_pool,
-                            0,
-                            0);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_relay_mts_client.mts_client.rx_pool);
 
     /* Create a queue for receiving Event Trace MTS client messages */
     tx_status = tx_queue_create(&s_event_trace_relay_mts_client.mts_client.rx_queue, // queue_ptr
@@ -652,16 +650,11 @@ static void etr_mts_client_init(p_etr_service_context_t p_context, const etr_ser
                                 g_etr_mts_client_queue_mem,                          // queue_start
                                 sizeof(g_etr_mts_client_queue_mem));                 // queue_size
 
-    FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS,
-                            tx_status,
-                            (uintptr_t)&s_event_trace_relay_mts_client.mts_client.rx_queue,
-                            0,
-                            0);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_relay_mts_client.mts_client.rx_queue);
 
     /* Create a flag group for synchronization between MTS and the ETR worker thread */
     tx_status = tx_event_flags_create(&s_etr_mts_flags, "ETR MTS flags");
-    FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_etr_mts_flags, 0, 0);
-
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_etr_mts_flags);
     /* Register the MTS client */
     mts_client_register(MTS_CLIENT_ID_EVENT_TRACE, &s_event_trace_relay_mts_client.mts_client);
 }
@@ -671,10 +664,8 @@ void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t
 {
     FPFW_DBGPRINT_INFO("[ETR] Initializing Event Trace Relay Service and the MTS Client");
 
-    if (NULL == p_context || NULL == p_config)
-    {
-        FPFwErrorRaise(FPFW_ET_E_INVALIDARG, 0, 0, 0, 0);
-    }
+    BUG_ASSERT(p_context != NULL);
+    BUG_ASSERT(p_config != NULL);
 
     /* Initialize the ddr buffer management */
     etr_initialize_ddr_buffers(p_context, p_config);
@@ -712,7 +703,7 @@ void etr_worker_thread_func(ULONG thread_input)
 
         /* Wait for a new message to be available. This will block until a new message is available from MTS */
         UINT status = tx_event_flags_get(&s_etr_mts_flags, ETR_EVENT_FLAG_ANY_VALID, TX_OR_CLEAR, &event_flags, TX_WAIT_FOREVER);
-        FPFW_RUNTIME_ASSERT_EXT(status == TX_SUCCESS, status, 0, 0, 0);
+        BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
 
         /* Loop until all messages are processed and queue is empty */
         /** Error Handling for tx_queue_receive
@@ -834,7 +825,7 @@ void etr_worker_thread_func(ULONG thread_input)
 
             /* Release the block back to the pool */
             status = tx_block_release(etr_request.p_trp_msg);
-            FPFW_RUNTIME_ASSERT_EXT(status == TX_SUCCESS, status, 0, 0, 0);
+            BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
 
 #ifdef _WIN32
             /* For unit tests, break out of the loop after processing one message */

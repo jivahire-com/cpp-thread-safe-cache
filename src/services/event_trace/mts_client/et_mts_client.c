@@ -10,8 +10,7 @@
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-
-#include <FpFwAssert.h>               // for FPFW_RUNTIME_ASSERT_EXT
+#include <bug_check.h>                // for BUG_CHECK
 #include <et_mts_client.h>            // for event_trace_mts_client_notify_new_msg_cb
 #include <et_svc_events.h>            // for ET_LOG_ET_SVC
 #include <etc_etd_svc.h>              // for get_etc_buffer_size, get_etc_buffer_address
@@ -150,14 +149,14 @@ void event_trace_mts_client_init(void)
                                      g_et_mts_client_queue_mem,          // queue_start
                                      sizeof(g_et_mts_client_queue_mem)); // queue_size
 
-    FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_mts_client.rx_queue, 0, 0);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_mts_client.rx_queue);
 
     tx_status = tx_block_pool_create(&s_event_trace_mts_client.rx_pool, // pool_ptr
                                      "Event Trace MTS client pool",     // name_ptr
                                      MAX_TRP_MSG_BLOCK_SIZE,            // block_size
                                      g_et_mts_client_pool_mem,          // pool_start
                                      sizeof(g_et_mts_client_pool_mem)); // pool_size
-    FPFW_RUNTIME_ASSERT_EXT(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_mts_client.rx_pool, 0, 0);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_mts_client.rx_pool);
 
     mts_client_register(MTS_CLIENT_ID_EVENT_TRACE, &s_event_trace_mts_client);
 }

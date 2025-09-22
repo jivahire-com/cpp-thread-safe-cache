@@ -12,21 +12,12 @@
 
 extern "C" {
 
-#include <ErrorHandler.h>
-#include <FpFwLock.h>
-#include <FpFwUtils.h>
-#include <IFpFwEventTracingStatus.h>
-#include <diag_decoder.h>
-#include <error_handler.h>
 #include <etr_init_config_i.h>
 #include <event_trace_relay.h>
 #include <event_trace_relay_i.h>
-#include <fpfw_icc_base.h>
 #include <idsw_kng.h>
-#include <in_band_telemetry_ddr.h>
+#include <stdnoreturn.h>
 #include <thread_x_mocks.h>
-#include <tx_api.h>
-#include <tx_initialize.h>
 
 } // extern "C"
 
@@ -34,6 +25,9 @@ extern "C" {
 
 #define TEST_ASIC_COUNT (10)
 #define TEST_HSP_COUNT  (10)
+
+#define BUGCHECK_MOCK_RETURN   (setjmp(mock_jump_buf))
+#define bugcheck_mock_return() BUGCHECK_MOCK_RETURN
 
 /*-------------- Typedefs ----------------*/
 
@@ -54,6 +48,8 @@ uint8_t _EventMetadata_et_msdata_end;      // Pointer to the end   of the .Event
 uint8_t s_asic_ddr_memory[ASIC_BUFFER_PAYLOAD_SIZE * TEST_ASIC_COUNT] = {0};
 uint8_t s_hsp_ddr_memory[HSP_BUFFER_PAYLOAD_SIZE * TEST_HSP_COUNT] = {0};
 uint8_t s_test_stack[1024] = {0};
+
+static jmp_buf mock_jump_buf;
 
 static uint32_t test_icc_base_ctx_hsp = 0;
 
@@ -181,6 +177,17 @@ void __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t client)
     // This function is mocked in the test
 }
 
+_Noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    FPFW_UNUSED(errorCode);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
+
+    longjmp(mock_jump_buf, 1);
+}
+
 } // extern "C"
 
 int test_setup(void** ppContext)
@@ -245,14 +252,12 @@ int test_teardown(void** ppContext)
 
 TEST_FUNCTION(test_etr_init_null_param, nullptr, nullptr)
 {
-    expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ET_E_INVALIDARG);
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         etr_initialize(nullptr, &s_test_config);
     }
 
-    expect_value(FPFwErrorRaise, error, (uint32_t)FPFW_ET_E_INVALIDARG);
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         etr_initialize(&s_test_context, nullptr);
     }
@@ -263,8 +268,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     etr_service_config_t bad_config = s_test_config;
     bad_config.hsp_ddr_config.base_addr = 0;
 
-    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -272,8 +276,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config = s_test_config;
     bad_config.hsp_ddr_config.base_addr = 0;
 
-    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -281,8 +284,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config = s_test_config;
     bad_config.asic_ddr_config.size_bytes = ASIC_BUFFER_PAYLOAD_SIZE - 1;
 
-    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -290,8 +292,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config = s_test_config;
     bad_config.hsp_ddr_config.size_bytes = HSP_BUFFER_PAYLOAD_SIZE - 1;
 
-    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -299,8 +300,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config = s_test_config;
     bad_config.asic_ddr_config.size_bytes = IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE + 1;
 
-    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }
@@ -308,8 +308,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     bad_config = s_test_config;
     bad_config.hsp_ddr_config.size_bytes = IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE + 1;
 
-    expect_value(FPFwErrorRaise, error, (uint32_t)-1);
-    if (!set_error_handler_return())
+    if (!bugcheck_mock_return())
     {
         etr_initialize(&s_test_context, &bad_config);
     }

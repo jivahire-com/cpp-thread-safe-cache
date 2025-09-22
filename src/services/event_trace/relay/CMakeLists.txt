@@ -10,7 +10,6 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         IFPFW.EventTracing
-        fwlib.lib.assert
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.specialization.mts

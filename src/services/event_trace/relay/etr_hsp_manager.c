@@ -11,8 +11,8 @@
 
 #include "event_trace_relay_i.h"
 
-#include <FpFwAssert.h>
 #include <IFpFwEventTracingStatus.h>
+#include <bug_check.h>
 #include <hsp_firmware_headers.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
@@ -41,7 +41,7 @@ static void etr_receive_hsp(etr_service_context_t* p_service)
     hsp_recv_params.cb_ctx = p_service;
 
     fpfw_status_t icc_base_status = fpfw_icc_base_recv(p_service->icc.p_hsp_icc_ctx, &hsp_recv_params);
-    FPFW_RUNTIME_ASSERT_EXT(icc_base_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_base_status, 0, 0, 0);
+    BUG_ASSERT_PARAM(icc_base_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_base_status, 0);
 }
 
 static void etr_notify_hsp(etr_service_context_t* p_service, struct kng_hsp_mailbox_cmd_send_log_req* p_req)
@@ -54,7 +54,7 @@ static void etr_notify_hsp(etr_service_context_t* p_service, struct kng_hsp_mail
     fpfw_status_t icc_base_status =
         fpfw_icc_base_send_sync(p_service->icc.p_hsp_icc_ctx, &hsp_send_msg, sizeof(hsp_send_msg));
 
-    FPFW_RUNTIME_ASSERT_EXT(icc_base_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_base_status, 0, 0, 0);
+    BUG_ASSERT_PARAM(icc_base_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_base_status, 0);
 
     /* Setup the next receive request */
     etr_receive_hsp(p_service);
@@ -65,7 +65,7 @@ void etr_icc_handle_hsp(void* context, size_t output_size_bytes, fpfw_status_t s
     FPFW_UNUSED(output_size_bytes);
 
     etr_service_context_t* p_service = (etr_service_context_t*)context;
-    FPFW_RUNTIME_ASSERT_EXT(status == FPFW_STATUS_SUCCESS, (uintptr_t)p_service, status, 0, 0);
+    BUG_ASSERT_PARAM(status == FPFW_STATUS_SUCCESS, (uintptr_t)p_service, status);
 
     struct kng_hsp_mailbox_cmd_send_log_req* p_req = (struct kng_hsp_mailbox_cmd_send_log_req*)hsp_recv_params.payload_buffer;
 
@@ -83,7 +83,7 @@ void etr_initialize_hsp_communication(etr_service_context_t* p_service, const et
         2. Sending a response back to the HSP, once the buffer has been copied / read elsewhere
     */
 
-    FPFW_RUNTIME_ASSERT_EXT(p_config->icc_config.p_hsp_icc_ctx != NULL, FPFW_ET_E_INVALIDARG, 0, 0, 0);
+    BUG_ASSERT_PARAM(p_config->icc_config.p_hsp_icc_ctx != NULL, FPFW_ET_E_INVALIDARG, 0);
 
     p_service->icc.p_hsp_icc_ctx = p_config->icc_config.p_hsp_icc_ctx;
 

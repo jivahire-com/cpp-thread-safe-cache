@@ -143,8 +143,6 @@ class RscmHelperLibrary:
             else:
                 print("Power cycle command executed successfully.")
 
-            time.sleep(30)
-
             """Power on the system after reset"""
             command = f"set system cmd -i {self.node} -c power on"
             stdout, stderr = self.execute_rm_command(command)
@@ -172,6 +170,8 @@ class RscmHelperLibrary:
                     raise AssertionError
                 else:
                     print("Power on command executed successfully.")
+        # Introduce sleep to complete power cycle/on before test execution
+        time.sleep(30)
 
     @keyword
     def rscm_set_profile(self, profile:str):

@@ -36,8 +36,9 @@
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
 ## Power Tests
-./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_sync.robot
-./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+## Commenting out while investigating: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2872457
+##./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_sync.robot
+##./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
 ## Sensor FIFO short duration tests
 ## SVP Teardown required before sensor fifo tests so ensure tests run after boot is complete

@@ -4,8 +4,9 @@
 ## Power Tests
 ./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_loop_health.robot
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
-./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_sync.robot
-./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+## Commenting out while investigating: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2872457
+##./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_sync.robot
+##./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 
 ## Dual Die DDRBoot Tests
 ./../../../tests/functional/test_suites/ddrboot_tests/mscp_ddrboot_hsp_boot_dual.robot

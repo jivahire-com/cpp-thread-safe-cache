@@ -22,14 +22,16 @@
 #include <boot_status.h>         // for LED_STATUS_CODE_SCP_ACCEL_FAILED
 #include <cdedss_config_regs.h>  // for CDED_PCI_DEVICE_ID
 #include <fpfw_cfg_mgr.h>        // for config_get_sdm_*, config_get_cded_*
+#include <fpfw_init.h>           // for fpfw_init_get_handle
 #include <idsw.h>                // for idsw_get_die_id
-#include <kng_soc_constants.h>   // for DIE_INSTANCE
-#include <silibs_platform.h>     // for critical_print
-#include <silibs_status.h>       // for SILIBS_SUCCESS
-#include <stdbool.h>             // for false
-#include <stdint.h>              // for int32_t, uint32_t
-#include <stdio.h>               // for NULL
-#include <system_info.h>         // for system_info_is_hsp_present, system_info_is_warm_start
+#include <kng_icc_shared.h>
+#include <kng_soc_constants.h> // for DIE_INSTANCE
+#include <silibs_platform.h>   // for critical_print
+#include <silibs_status.h>     // for SILIBS_SUCCESS
+#include <stdbool.h>           // for false
+#include <stdint.h>            // for int32_t, uint32_t
+#include <stdio.h>             // for NULL
+#include <system_info.h>       // for system_info_is_hsp_present, system_info_is_warm_start
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -250,4 +252,74 @@ accel_init_failed:
     accel_send_led_boot_status(LED_STATUS_CODE_SCP_ACCEL_FAILED);
     FPFW_RUNTIME_ASSERT(false);
     return ACCEL_RET_FAIL_GENERAL;
+}
+
+void notify_accelerators_uefi_boot_cb(void* context, fpfw_status_t status)
+{
+    ACCEL_ID accel_type = (ACCEL_ID)context;
+    if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
+    {
+        FPFW_DBGPRINT_ERROR("Error in accel (%s) UEFI boot notif. callback, status = (%x)\n",
+                            (accel_type == ACCEL_ID_SDM ? "SDM" : "CDED"),
+                            status);
+    }
+    else
+    {
+        FPFW_DBGPRINT_INFO("Accel (%s) UEFI boot notif. success\n", (accel_type == ACCEL_ID_SDM ? "SDM" : "CDED"));
+    }
+}
+
+int32_t notify_accelerators_uefi_boot(void)
+{
+    fpfw_icc_base_ctx_t* icc_ctx = {};
+    fpfw_status_t icc_status = FPFW_ICC_BASE_STATUS_SUCCESS;
+    static uefi_boot_stat_mailbox_msg payload_sdm = {0};
+    static uefi_boot_stat_mailbox_msg payload_cded = {0};
+    static fpfw_icc_base_send_req_t accel_send_params = {0};
+    static fpfw_icc_base_send_req_t accel_send_params_cded = {0};
+
+    for (ACCEL_ID accel_type = ACCEL_ID_SDM; (accel_type < NUM_VALID_ACCEL_ID); accel_type++)
+    {
+        if (accel_is_isolation_enabled(accel_type))
+        {
+            FPFW_DBGPRINT_INFO("Accel UEFI boot notif. skipped (isolated)\n");
+            return (ACCEL_RET_SUCCESS);
+        }
+
+        if (accel_type == ACCEL_ID_SDM)
+        {
+            icc_ctx = fpfw_init_get_handle("icc_sdm_mbx");
+            FPFW_RUNTIME_ASSERT(icc_ctx != NULL);
+
+            payload_sdm.hdr.cmd = LARGE_FIFO_MAILBOX_MSG_UEFI_READY;
+
+            accel_send_params.payload_buffer = &payload_sdm;
+            accel_send_params.buffer_size = sizeof(payload_sdm);
+            accel_send_params.cb = notify_accelerators_uefi_boot_cb;
+            accel_send_params.cb_ctx = (void*)ACCEL_ID_SDM;
+            icc_status = fpfw_icc_base_send(icc_ctx, &accel_send_params);
+        }
+        else
+        {
+            icc_ctx = fpfw_init_get_handle("icc_cded_mbx");
+            FPFW_RUNTIME_ASSERT(icc_ctx != NULL);
+
+            payload_cded.hdr.cmd = LARGE_FIFO_MAILBOX_MSG_UEFI_READY;
+
+            accel_send_params_cded.payload_buffer = &payload_cded;
+            accel_send_params_cded.buffer_size = sizeof(payload_cded);
+            accel_send_params_cded.cb = notify_accelerators_uefi_boot_cb;
+            accel_send_params_cded.cb_ctx = (void*)(ACCEL_ID_CDED);
+            icc_status = fpfw_icc_base_send(icc_ctx, &accel_send_params_cded);
+        }
+
+        if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
+        {
+            FPFW_DBGPRINT_ERROR("Error accel (%s) UEFI boot notif. (%0x)\n",
+                                (accel_type == ACCEL_ID_SDM ? "SDM" : "CDED"),
+                                icc_status);
+            return (ACCEL_RET_FAIL_GENERAL);
+        }
+    }
+    return (ACCEL_RET_SUCCESS);
 }

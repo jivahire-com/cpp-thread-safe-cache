@@ -14,6 +14,7 @@
 #include <accel_intr.h>                   // for E_ACCEL_INTR_INIT_CONFIG
 #include <atu_lib.h>                      // for atu_id_t, atu_map_entry_t
 #include <fpfw_status.h>                  // for fpfw_status_t
+#include <icc_platform_defines.h>         // for large_fifo_mailbox_msg_header
 #include <kng_soc_constants.h>            // for DIE_INSTANCE
 #include <stdint.h>                       // for int32_t, uint64_t, uint8_t
 
@@ -65,6 +66,13 @@ typedef struct {
     accelip_ss_init_t   *p_init_params;
     accelip_mem_info_t mem_info;
 } subsystem_ctxt_t;
+
+typedef struct _uefi_boot_stat_mailbox_msg
+{
+	large_fifo_mailbox_msg_header hdr;
+    uint32_t data;
+} uefi_boot_stat_mailbox_msg;
+
 
 typedef void (*crash_dump_cb_t)(void *);
 
@@ -213,3 +221,20 @@ fpfw_status_t accel_start_boot_status_timer(ACCEL_ID accel_type);
  * @return No return value
  */
 void accel_core_suspend(ACCEL_ID accel_type);
+
+/**
+ * @brief This function will notify the accelerators that UEFI boot is done.
+ *
+ * @param[in] none
+ * @return status
+ */
+int32_t notify_accelerators_uefi_boot(void);
+
+/**
+ * @brief Call back for notify_accelerators UEFI boot function
+ *
+ * @param[in] context accelerator ID
+ * @param[in] status Status of the ICC send operation
+ * @return none
+ */
+void notify_accelerators_uefi_boot_cb(void* context, fpfw_status_t status);

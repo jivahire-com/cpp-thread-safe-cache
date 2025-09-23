@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.cfg_mgr
         fwlib.lib.interface.platform.timers
         fwlib.service.iccBase
+        silibs::icc_mhu
         silibs::idsw
         silibs::idsw_kng
         silibs::sdm_command_desc
@@ -95,5 +96,5 @@ mock_target(${TARGET}
     sdm_init_itcm_enable
     sos_start_phase
     system_info_is_hsp_present
-    system_info_is_warm_start
+    system_info_is_warm_start 
 )

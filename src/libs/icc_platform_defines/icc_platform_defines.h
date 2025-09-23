@@ -228,6 +228,7 @@ typedef enum _large_fifo_mailbox_msg_command_code {
 	LARGE_FIFO_MAILBOX_MSG_BOOT_STATUS_RSP,
 	LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_TRANSFER,	/**< Crashdump transfer request to MCP */
 	LARGE_FIFO_MAILBOX_MSG_SCP_READY,			/**< SCP Ready message to accelerators */
+	LARGE_FIFO_MAILBOX_MSG_UEFI_READY,
     LARGE_FIFO_MAILBOX_MSG_MAX
 }large_fifo_mailbox_msg_command_code;
 

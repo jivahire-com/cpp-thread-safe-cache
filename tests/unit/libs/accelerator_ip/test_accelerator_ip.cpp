@@ -28,6 +28,7 @@ extern "C" {
 #include <fpfw_timer.h>
 #include <fpfw_timer_port.h>
 #include <hsp_firmware_headers.h>
+#include <icc_mhu.h>
 #include <idsw_kng.h> // for KNG_DIE_ID
 #include <nvic.h>     // for NVIC_STATUS_SUCCESS
 #include <pcr_rpss.h> // for pcr_rpss_entity_t
@@ -204,6 +205,12 @@ fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
 {
     assert_non_null(icc_ctx);
     s_icc_send_cb = params->cb;
+
+    if (params->cb != NULL)
+    {
+        params->cb(params->cb_ctx, FPFW_ICC_BASE_STATUS_SUCCESS);
+    }
+
     return mock_type(fpfw_status_t);
 }
 
@@ -1138,4 +1145,38 @@ TEST_FUNCTION(accel_core_suspend_invalid_accel_test, nullptr, nullptr)
 
     // Act
     accel_core_suspend(NUM_VALID_ACCEL_ID);
+}
+
+TEST_FUNCTION(notify_accelerators_uefi_boot_test, nullptr, nullptr)
+{
+    icc_mhu_header_t test_accel_uefi_msg = {0};
+    test_accel_uefi_msg.msg_header.command = 0x000A0002;
+    test_accel_uefi_msg.msg_header.payload_size = 1;
+
+    fpfw_icc_base_send_req_t test_accel_send_params;
+    test_accel_send_params.cb = notify_accelerators_uefi_boot_cb;
+    test_accel_send_params.cb_ctx = NULL;
+    test_accel_send_params.payload_buffer = &test_accel_uefi_msg;
+    test_accel_send_params.buffer_size = sizeof(test_accel_uefi_msg);
+
+    s_icc_send_resp_ctx = &test_accel_send_params;
+
+    DIE_INSTANCE die_id = SOC_D0;
+    will_return_always(__wrap_idsw_get_die_id, die_id);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
+    will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
+
+    will_return(__wrap_fpfw_init_get_handle, 0xDEADDEED);
+    expect_value(__wrap_FpFwAssert, expression, true);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+    s_icc_send_resp_cb(s_icc_send_resp_ctx, FPFW_STATUS_SUCCESS);
+
+    will_return(__wrap_fpfw_init_get_handle, 0xDEADDEED);
+    expect_value(__wrap_FpFwAssert, expression, true);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+    s_icc_send_resp_cb(s_icc_send_resp_ctx, FPFW_STATUS_SUCCESS);
+
+    assert_int_equal(notify_accelerators_uefi_boot(), ACCEL_RET_SUCCESS);
 }

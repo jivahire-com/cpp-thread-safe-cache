@@ -17,7 +17,8 @@
 
 /* Target SoC Register Includes */
 #define __NO_CSR_TYPEDEFS__     // Needed to avoid huge buffers in ap_top_regs.h and vab_sdm_top_regs.h
-#define __NO_ADDRMAP_TYPEDEFS__ // Needed to avoid huge buffers in ap_top_regs.h and vab_sdm_top_regs.h
+#define __NO_ADDRMAP_TYPEDEFS__ // Needed to avoid huge buffers in ap_top_regs.h
+
 #include <ap_top_regs.h>
 #include <vab_sdm_top_regs.h>
 

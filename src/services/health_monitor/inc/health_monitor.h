@@ -103,5 +103,7 @@ void hm_submit_cper(uint16_t error_domain_idx,
 void hm_pre_ddr_init(hm_config_t* hm_config);
 void hm_post_ddr_init();
 void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ctx_t* icc_ctx);
+void hm_map_error_injection_payload();
+void hm_unmap_error_injection_payload();
 uint32_t AP_GHES_ADDR(uint32_t mscp_addr);
 uint32_t MSCP_GHES_ADDR(uint32_t ap_addr);

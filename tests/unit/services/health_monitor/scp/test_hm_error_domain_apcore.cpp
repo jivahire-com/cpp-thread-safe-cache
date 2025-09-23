@@ -56,5 +56,16 @@ TEST_FUNCTION(hm_apcore_error_injection_listener, post_ddr_setup, nullptr)
     will_return_always(__wrap_idsw_get_die_id, 0);
     will_return_always(__wrap_idhw_is_single_die_boot_en, false);
 
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    hm_config_t* hm_config = get_hm_config();
+
+    hm_map_error_injection_payload();
+    ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
+    einj_payload->version = (ERROR_INJECTION_PAYLOAD_VERSION);
+    einj_payload->component_group = (uint16_t)test_error_domain;
+    hm_unmap_error_injection_payload();
+
     hm_apcore_error_injection_listener((fpfw_icc_base_ctx_t*)ICC_HM_ERROR_INJECTION_AP2SCP);
 }

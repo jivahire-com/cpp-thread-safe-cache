@@ -63,24 +63,29 @@ void hm_prepare_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx)
 
 acpi_einj_cmd_status_t hm_inject_error(void)
 {
+    uint32_t injection_target = 0;
     acpi_einj_cmd_status_t status = ACPI_EINJ_SUCCESS;
 
     hm_config_t* hm_config = get_hm_config();
+
+    hm_map_error_injection_payload();
     volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
+    injection_target = einj_payload->component_instance;
+    hm_unmap_error_injection_payload();
 
     if (idhw_is_single_die_boot_en() == true)
     {
-        if (einj_payload->component_instance != idsw_get_die_id())
+        if (injection_target != idsw_get_die_id())
         {
-            HM_LOG_CRIT("Invalid DIE_ID(%d)", einj_payload->component_instance);
-            HM_ET_ERROR_PARAM(HM_ET_TYPE_INJECTION_INVALID_ACCESS, einj_payload->component_instance);
+            HM_LOG_CRIT("Invalid DIE_ID(%d)", injection_target);
+            HM_ET_ERROR_PARAM(HM_ET_TYPE_INJECTION_INVALID_ACCESS, injection_target);
             return ACPI_EINJ_INVALID_ACCESS;
         }
     }
 
-    if (einj_payload->component_instance <= 1)
+    if (injection_target <= 1)
     {
-        if (einj_payload->component_instance != idsw_get_die_id())
+        if (injection_target != idsw_get_die_id())
         {
             HM_LOG_INFO("error injection request was made for remote core, re-route");
 
@@ -121,12 +126,14 @@ acpi_einj_cmd_status_t hm_inject_error_local(void)
     ras_einj_info_t einj_payload = {0};
     hm_config_t* hm_config = get_hm_config();
 
+    hm_map_error_injection_payload();
     wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
     for (size_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((uint8_t*)&einj_payload)[i] = ((volatile uint8_t*)hm_config->mscp_error_injection_addr_base)[i];
     }
     release_semaphore(hm_config->semaphore_id);
+    hm_unmap_error_injection_payload();
 
     if (einj_payload.version != (uint32_t)ERROR_INJECTION_PAYLOAD_VERSION)
     {

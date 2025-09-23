@@ -14,6 +14,7 @@ extern "C" {
 
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <accelip_id.h>
+#include <atu_lib.h>
 #include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
 #include <health_monitor.h>
 #include <health_monitor_i.h>
@@ -34,7 +35,7 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 extern acpi_error_domain_t test_error_domain;
 extern char* TEST_ERROR_DOMAIN_NAME;
-extern ras_einj_info_t einj_payload_local;
+static ras_einj_info_t einj_payload_local = {0};
 /*------------- Functions ----------------*/
 
 //
@@ -184,6 +185,22 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_
     params->cb(params->cb_ctx, sizeof(kng_hsp_mailbox_msg_rsp), FPFW_STATUS_SUCCESS);
     return (mock_type(fpfw_status_t));
 }
+
+int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    FPFW_UNUSED(atu_id);
+    atu_map_entry->mscp_start_address = (uintptr_t)&einj_payload_local;
+
+    return mock_type(int);
+}
+
+int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    FPFW_UNUSED(atu_id);
+    FPFW_UNUSED(atu_map_entry);
+
+    return mock_type(int);
+}
 }
 
 //
@@ -196,14 +213,19 @@ TEST_FUNCTION(test_hm_inject_error, post_ddr_setup, nullptr)
     expect_function_call_any(hm_error_injection_cb);
     will_return_always(__wrap_idsw_get_die_id, 0);
     will_return_always(__wrap_idhw_is_single_die_boot_en, false);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     hm_register_error_domain((uint16_t)test_error_domain, NULL, TEST_ERROR_DOMAIN_NAME, hm_error_injection_cb, nullptr);
 
     hm_config_t* hm_config = get_hm_config();
 
+    hm_map_error_injection_payload();
     ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
-    assert_true(einj_payload->version == ERROR_INJECTION_PAYLOAD_VERSION);
-    assert_true(einj_payload->component_group == test_error_domain);
+    einj_payload->version = (ERROR_INJECTION_PAYLOAD_VERSION);
+    einj_payload->component_group = (uint16_t)test_error_domain;
+    hm_unmap_error_injection_payload();
+
     assert_true(hm_inject_error() == ACPI_EINJ_SUCCESS);
 }
 
@@ -215,6 +237,16 @@ TEST_FUNCTION(test_hm_inject_error_remote, post_ddr_setup, nullptr)
     will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call_any(__wrap_fpfw_icc_base_send);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    hm_config_t* hm_config = get_hm_config();
+
+    hm_map_error_injection_payload();
+    ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
+    einj_payload->version = (ERROR_INJECTION_PAYLOAD_VERSION);
+    einj_payload->component_group = (uint16_t)test_error_domain;
+    hm_unmap_error_injection_payload();
 
     assert_true(hm_inject_error() == ACPI_EINJ_SUCCESS);
 
@@ -231,15 +263,19 @@ TEST_FUNCTION(test_hm_inject_error_singledie, post_ddr_setup, nullptr)
     expect_function_call_any(__wrap_release_semaphore);
     will_return_always(__wrap_idsw_get_die_id, 1);
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     hm_register_error_domain((uint16_t)test_error_domain, NULL, TEST_ERROR_DOMAIN_NAME, hm_error_injection_cb, nullptr);
 
     hm_config_t* hm_config = get_hm_config();
 
+    hm_map_error_injection_payload();
     ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
-    assert_true(einj_payload->version == ERROR_INJECTION_PAYLOAD_VERSION);
-    assert_true(einj_payload->component_group == test_error_domain);
+    einj_payload->version = (ERROR_INJECTION_PAYLOAD_VERSION);
+    einj_payload->component_group = (uint16_t)test_error_domain;
     einj_payload->component_instance = 0;
+    hm_unmap_error_injection_payload();
 
     assert_true(hm_inject_error() == ACPI_EINJ_INVALID_ACCESS);
 }

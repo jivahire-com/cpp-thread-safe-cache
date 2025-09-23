@@ -24,7 +24,6 @@ static uint64_t ghes_record_addr_table_local[ACPI_ERROR_DOMAIN_COUNT] = {0};
 static uint64_t ghes_ack_addr_table_local[ACPI_ERROR_DOMAIN_COUNT] = {0};
 static uint8_t hsp_ras_payload[SCP_EXP_HSP_RAS_PAYLOAD_SIZE] = {0};
 static uint8_t mscp_cper_record[SCP_EXP_MSCP_CPER_REPORT_SIZE] = {0};
-static ras_einj_info_t einj_payload_local = {0};
 extern acpi_error_domain_t test_error_domain;
 
 /*-- Declarations (Statics and globals) --*/
@@ -41,15 +40,13 @@ uint32_t __wrap_MSCP_GHES_ADDR(uint32_t ap_addr)
 int pre_ddr_setup(void** state)
 {
     FPFW_UNUSED(state);
-    einj_payload_local.version = (ERROR_INJECTION_PAYLOAD_VERSION);
-    einj_payload_local.component_group = (uint16_t)test_error_domain;
 
     hm_config_test.mscp_ghes_base = (acpi_ghes_t*)ghes_local;
     hm_config_test.mscp_ghes_error_record_addr_table_base = (uint32_t*)ghes_record_addr_table_local;
     hm_config_test.mscp_ghes_ack_addr_table_base = (uint64_t*)ghes_ack_addr_table_local;
     hm_config_test.mscp_ghes_error_record_addr_base = (uint32_t*)ghes_error_record_local;
     hm_config_test.mscp_ghes_base_apcore_offset = 0;
-    hm_config_test.mscp_error_injection_addr_base = &einj_payload_local;
+    hm_config_test.mscp_error_injection_addr_base = 0;
     hm_config_test.mscp_hsp_ras_payload_base = (uint8_t*)hsp_ras_payload;
     hm_config_test.mscp_full_cper_record_base = (uint8_t*)mscp_cper_record;
     hm_config_test.semaphore_id = SEM_ID_MSCP_EXP_1;

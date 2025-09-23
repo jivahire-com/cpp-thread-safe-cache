@@ -59,6 +59,7 @@ void __wrap_hm_pre_ddr_init(hm_config_t* hm_config)
     assert_non_null(hm_config->mscp_ghes_error_record_addr_table_base);
     assert_non_null(hm_config->mscp_ghes_ack_addr_table_base);
     assert_non_null(hm_config->mscp_ghes_error_record_addr_base);
+    assert_null(hm_config->mscp_error_injection_addr_base);
     function_called();
 }
 

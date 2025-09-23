@@ -36,6 +36,7 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
         silibs::idhw
         silibs::idsw
+        silibs::atu
         ms::lib::crash_dump
 )
 
@@ -56,6 +57,8 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    atu_map
+    atu_unmap
     atu_svc_accel_atu_addr
     crash_dump_bug_check
     initialize_semaphore

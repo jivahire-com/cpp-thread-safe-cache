@@ -243,6 +243,8 @@ TEST_FUNCTION(hm_sdm_error_injection_cb, post_ddr_setup, nullptr)
     expect_function_call(__wrap_release_semaphore);
     will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     hm_config_t* hm_config = get_hm_config();
     ras_einj_info_t input_einj_payload;
@@ -256,12 +258,14 @@ TEST_FUNCTION(hm_sdm_error_injection_cb, post_ddr_setup, nullptr)
     input_einj_payload.param_type.error_parameters[1] = 0;
     input_einj_payload.value_type.error_values = 0;
 
+    hm_map_error_injection_payload();
     volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
     for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
+    hm_unmap_error_injection_payload();
 
     hm_inject_error();
 }
@@ -274,6 +278,8 @@ TEST_FUNCTION(hm_sdm_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
     expect_function_call(__wrap_release_semaphore);
     will_return_always(__wrap_fpfw_icc_base_send, FPFW_STATUS_FAIL);
     expect_function_call(__wrap_fpfw_icc_base_send);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     hm_config_t* hm_config = get_hm_config();
     ras_einj_info_t input_einj_payload;
@@ -287,12 +293,14 @@ TEST_FUNCTION(hm_sdm_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
     input_einj_payload.param_type.error_parameters[1] = 0;
     input_einj_payload.value_type.error_values = 0;
 
+    hm_map_error_injection_payload();
     volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
     for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
+    hm_unmap_error_injection_payload();
 
     hm_inject_error();
 }
@@ -305,6 +313,8 @@ TEST_FUNCTION(hm_cded_error_injection_cb, post_ddr_setup, nullptr)
     expect_function_call(__wrap_release_semaphore);
     will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_icc_base_send);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     hm_config_t* hm_config = get_hm_config();
     ras_einj_info_t input_einj_payload;
@@ -318,12 +328,14 @@ TEST_FUNCTION(hm_cded_error_injection_cb, post_ddr_setup, nullptr)
     input_einj_payload.param_type.error_parameters[1] = 0;
     input_einj_payload.value_type.error_values = 0;
 
+    hm_map_error_injection_payload();
     volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
     for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
+    hm_unmap_error_injection_payload();
 
     hm_inject_error();
 }
@@ -336,6 +348,8 @@ TEST_FUNCTION(hm_cded_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
     expect_function_call(__wrap_release_semaphore);
     will_return_always(__wrap_fpfw_icc_base_send, FPFW_STATUS_FAIL);
     expect_function_call(__wrap_fpfw_icc_base_send);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     hm_config_t* hm_config = get_hm_config();
     ras_einj_info_t input_einj_payload;
@@ -349,12 +363,14 @@ TEST_FUNCTION(hm_cded_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
     input_einj_payload.param_type.error_parameters[1] = 0;
     input_einj_payload.value_type.error_values = 0;
 
+    hm_map_error_injection_payload();
     volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
     for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
+    hm_unmap_error_injection_payload();
 
     hm_inject_error();
 }

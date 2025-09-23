@@ -34,6 +34,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         silibs::semaphore
         silibs::icc_mhu
+        silibs::atu
     PRIVATE
         silibs::gpio
         fwlib.lib.status

@@ -1,4 +1,7 @@
 /**
+ *
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ *
  * This is the main linker script for the MCP. It defines the expected memory layout
  * and sets up necessary components for the common linker script.
 */

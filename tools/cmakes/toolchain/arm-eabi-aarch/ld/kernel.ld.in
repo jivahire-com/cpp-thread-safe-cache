@@ -1,3 +1,9 @@
+/**
+ *
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ *
+*/
+
 /* Before including this .ld file, the following values must be set
    __CODE_START__
    __CODE_SIZE__
@@ -73,40 +79,6 @@ SECTIONS
     .BuildBinaryVersion :
     {
         *(.BuildBinaryVersion)
-    } > CODE
-    
-    /**
-     * All non-code writable sections needed for Event Trace. Used for decoding events.
-     * Will be 0 sized if Event Trace is not used. Grows as providers and events added.
-     * Placed in ITCM.
-     */
-    .EventMetadata.et.msdata (READONLY): ALIGN(4)
-    {
-        _EventMetadata_et_msdata_start = ABSOLUTE(.);
-        KEEP(*(.EventMetadata.et.msdata))
-        . = ALIGN (4);
-        _EventMetadata_et_msdata_end = ABSOLUTE(.);
-    } > CODE
-    .ProviderMetadata.et.msdata (READONLY): ALIGN(4)
-    {
-        _ProviderMetadata_et_msdata_start = ABSOLUTE(.);
-        KEEP(*(.ProviderMetadata.et.msdata))
-        . = ALIGN (4);
-        _ProviderMetadata_et_msdata_end = ABSOLUTE(.);
-    } > CODE
-    .ProviderMetadata.Test.et.msdata (READONLY): ALIGN(4)
-    {
-        _ProviderMetadata_Test_et_msdata_start = ABSOLUTE(.);
-        KEEP(*(.ProviderMetadata.Test.et.msdata))
-        . = ALIGN (4);
-        _ProviderMetadata_Test_et_msdata_end = ABSOLUTE(.);
-    } > CODE
-    .EventMetadata.Test.et.msdata (READONLY): ALIGN(4)
-    {
-        _EventMetadata_Test_et_msdata_start = ABSOLUTE(.);
-        KEEP(*(.EventMetadata.Test.et.msdata))
-        . = ALIGN (4);
-        _EventMetadata_Test_et_msdata_end = ABSOLUTE(.);
     } > CODE
 
     .note.gnu.build-id (READONLY): ALIGN(4)
@@ -226,9 +198,47 @@ SECTIONS
         __placed_code_start__ = ALIGN(4);
         KEEP(*(.placed.code))
         __placed_code_end__ = ALIGN(4);
-    } > @RODATA_REGION@   
+    } > @RODATA_REGION@
 
-    @RODATA_REGION@_code =  __placed_code_end__ - __placed_code_start__;
-    @RODATA_REGION@_used = SIZEOF(@RODATA_SECTION@);
-    @RODATA_REGION@_size = LENGTH(@RODATA_REGION@) - (__placed_rodata_start__ - ORIGIN(@RODATA_REGION@));
+    .EventMetadata.et.msdata (READONLY): ALIGN(4)
+    {
+        _EventMetadata_et_msdata_start = ABSOLUTE(.);
+        KEEP(*(.EventMetadata.et.msdata))
+        . = ALIGN (4);
+        _EventMetadata_et_msdata_end = ABSOLUTE(.);
+    } > @RODATA_REGION@
+
+    .ProviderMetadata.et.msdata (READONLY): ALIGN(4)
+    {
+        _ProviderMetadata_et_msdata_start = ABSOLUTE(.);
+        KEEP(*(.ProviderMetadata.et.msdata))
+        . = ALIGN (4);
+        _ProviderMetadata_et_msdata_end = ABSOLUTE(.);
+    } > @RODATA_REGION@
+
+    .EventMetadata.Test.et.msdata (READONLY): ALIGN(4)
+    {
+        _EventMetadata_Test_et_msdata_start = ABSOLUTE(.);
+        KEEP(*(.EventMetadata.Test.et.msdata))
+        . = ALIGN (4);
+        _EventMetadata_Test_et_msdata_end = ABSOLUTE(.);
+    } > @RODATA_REGION@
+
+    .ProviderMetadata.Test.et.msdata (READONLY): ALIGN(4)
+    {
+        _ProviderMetadata_Test_et_msdata_start = ABSOLUTE(.);
+        KEEP(*(.ProviderMetadata.Test.et.msdata))
+        . = ALIGN (4);
+        _ProviderMetadata_Test_et_msdata_end = ABSOLUTE(.);
+    } > @RODATA_REGION@
+
+    /* Create linker variables for the RODATA region, used for displaying sizes */
+    /* Calculate the sizes */
+    ro_data_size = __placed_code_start__ - __placed_rodata_start__;
+    ro_code_size = __placed_code_end__ - __placed_code_start__;
+    ro_metadata_size = SIZEOF(.EventMetadata.et.msdata) + SIZEOF(.ProviderMetadata.et.msdata) + SIZEOF(.EventMetadata.Test.et.msdata) + SIZEOF(.ProviderMetadata.Test.et.msdata);
+
+    /* Calculate how much was used and how much is allocated to ro use cases */
+    ro_total_used_size = SIZEOF(@RODATA_SECTION@) + ro_metadata_size;
+    ro_total_size = LENGTH(@RODATA_REGION@) - (__placed_rodata_start__ - ORIGIN(@RODATA_REGION@));
 }

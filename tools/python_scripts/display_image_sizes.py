@@ -16,38 +16,35 @@ import subprocess
 
 READELF_FORMAT = "\.{}[\s]+[a-zA-Z]+[\s]+[0-9a-f]+[\s]+[0-9a-f]+[\s]+([0-9a-f]+)"
 READELF_PATH = f"{os.environ['REPO_APP_PATH_gcc.arm.eabi.aarch-win64']}/bin/arm-none-eabi-readelf.exe"
-FW_PATH_FORMAT = os.environ['REPO_APP_TARGET_BUILD_DIR'] + "/bin/{core}/"
+FW_PATH_FORMAT = os.environ["REPO_APP_TARGET_BUILD_DIR"] + "/bin/{core}/"
 FW_CORES = ["scp", "mcp"]
-ELF_SECTIONS = ["text", "rodata.itcm", "rodata.rmss", "placed.code", "data", "bss", "stack", "heap"]
-LINKER_VARS = ["RMSS_DATA_size", "RMSS_DATA_used", "RMSS_DATA_code"]
+ELF_SECTIONS = [
+    "text",
+    "rodata.itcm",
+    "rodata.rmss",
+    "placed.code",
+    "data",
+    "bss",
+    "stack",
+    "heap",
+]
+LINKER_VARS = [
+    "ro_data_size",
+    "ro_code_size",
+    "ro_metadata_size",
+    "ro_total_used_size",
+    "ro_total_size",
+]
 
 comment_string = ""
 for core in FW_CORES:
     # get paths to fw images
-    elf_path = (
-        FW_PATH_FORMAT.format(core=core)
-        + f"{core}_fw.elf"
-    )
-    embed_path = (
-        FW_PATH_FORMAT.format(core=core)
-        + f"{core}_fw.elf.embed"
-    )
-    dtcm_path = (
-        FW_PATH_FORMAT.format(core=core)
-        + f"{core}_fw.elf.dtcm.bin"
-    )
-    itcm_path = (
-        FW_PATH_FORMAT.format(core=core)
-        + f"{core}_fw.elf.itcm.bin"
-    )
-    dtcm_gz_path = (
-        FW_PATH_FORMAT.format(core=core)
-        + f"{core}_fw.elf.dtcm.bin.gz"
-    )
-    itcm_gz_path = (
-        FW_PATH_FORMAT.format(core=core)
-        + f"{core}_fw.elf.itcm.bin.gz"
-    )
+    elf_path = FW_PATH_FORMAT.format(core=core) + f"{core}_fw.elf"
+    embed_path = FW_PATH_FORMAT.format(core=core) + f"{core}_fw.elf.embed"
+    dtcm_path = FW_PATH_FORMAT.format(core=core) + f"{core}_fw.elf.dtcm.bin"
+    itcm_path = FW_PATH_FORMAT.format(core=core) + f"{core}_fw.elf.itcm.bin"
+    dtcm_gz_path = FW_PATH_FORMAT.format(core=core) + f"{core}_fw.elf.dtcm.bin.gz"
+    itcm_gz_path = FW_PATH_FORMAT.format(core=core) + f"{core}_fw.elf.itcm.bin.gz"
 
     # get size information
     compressed_size = os.path.getsize(embed_path)
@@ -62,9 +59,7 @@ for core in FW_CORES:
 
     section_sizes = {}
     for section in ELF_SECTIONS:
-        section_desc = re.search(
-            READELF_FORMAT.format(section), readelf_output
-        )
+        section_desc = re.search(READELF_FORMAT.format(section), readelf_output)
         if not section_desc:
             continue
 
@@ -73,17 +68,21 @@ for core in FW_CORES:
         section_sizes[section] = section_size
 
     variable_values = {}
-    for vairable in LINKER_VARS:
-        print ({READELF_PATH}, "-s", {elf_path}, "| Select-String", {vairable})
-        command = f'powershell "{READELF_PATH} -s {elf_path} | Select-String {vairable}"'
-        readelf_var_string = subprocess.run(command, capture_output=True, text=True, shell=True)
+    for variable in LINKER_VARS:
+        print({READELF_PATH}, "-s", {elf_path}, "| Select-String", {variable})
+        command = (
+            f'powershell "{READELF_PATH} -s {elf_path} | Select-String {variable}"'
+        )
+        readelf_var_string = subprocess.run(
+            command, capture_output=True, text=True, shell=True
+        )
 
         if not readelf_var_string.stdout.strip():
             continue
 
         hex_value = readelf_var_string.stdout.strip().split()[1]
         decimal_value = int(hex_value, 16)
-        variable_values[vairable] = decimal_value
+        variable_values[variable] = decimal_value
 
     # Define the widths for the columns
     image_column_width = 25
@@ -103,9 +102,9 @@ for core in FW_CORES:
 |{'-' * (image_column_width+2)}|{'-' * (size_column_width+2)}|
 """
     for section in section_sizes.keys():
-        comment_string += f"| {section.ljust(image_column_width)} | {str(section_sizes[section]).rjust(size_column_width)} |\n" 
+        comment_string += f"| {section.ljust(image_column_width)} | {str(section_sizes[section]).rjust(size_column_width)} |\n"
 
-#display linker variables
+    # display linker variables
     comment_string += f"""
 | {'Variables'.ljust(image_column_width)} | {'Value'.rjust(size_column_width)} |
 |{'-' * (image_column_width+2)}|{'-' * (size_column_width+2)}|
@@ -128,7 +127,7 @@ if os.getenv("TF_BUILD") and os.getenv("SYSTEM_PULLREQUEST_PULLREQUESTID"):
                 os.environ["SYSTEM_PULLREQUEST_PULLREQUESTID"],
                 comment_string,
                 "--status",
-                "closed"
+                "closed",
             ]
         )
     except Exception as e:

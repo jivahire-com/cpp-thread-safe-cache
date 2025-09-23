@@ -1,4 +1,6 @@
 #
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
 # Generates the payload portion of the bootloader
 #
 # Creates build rules to:
@@ -57,6 +59,23 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
         message(FATAL_ERROR "Python is needed to build embedded image.")
     endif()
 
+    # Event trace metadata sections
+    set(EVENT_TRACE_SECTIONS
+        --only-section .EventMetadata.et.msdata
+        --only-section .ProviderMetadata.et.msdata
+        --only-section .ProviderMetadata.Test.et.msdata
+        --only-section .EventMetadata.Test.et.msdata
+    )
+
+    # Decide which bin command gets the event trace sections
+    set(ITCM_EXTRA_SECTIONS "")
+    set(RMSS_EXTRA_SECTIONS "${EVENT_TRACE_SECTIONS}")
+
+    if(FW_BLOCK STREQUAL "mcp")
+        set(ITCM_EXTRA_SECTIONS "${EVENT_TRACE_SECTIONS}")
+        set(RMSS_EXTRA_SECTIONS "")
+    endif()
+
     add_custom_command(
         OUTPUT "${ITCM_BIN_PATH}"
         COMMAND ${OBJCOPY}
@@ -65,11 +84,8 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
             --only-section .text 
             --only-section .rodata.itcm
             --only-section .BuildBinaryVersion
-            --only-section .EventMetadata.et.msdata
-            --only-section .ProviderMetadata.et.msdata
-            --only-section .ProviderMetadata.Test.et.msdata
-            --only-section .EventMetadata.Test.et.msdata
             --only-section .note.gnu.build-id
+            ${ITCM_EXTRA_SECTIONS}
             "${FW_IMAGE_PATH}"
             "${ITCM_BIN_PATH}"
         DEPENDS "${FW_IMAGE_PATH}"
@@ -96,6 +112,7 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
         COMMAND ${OBJCOPY}
         ARGS -O binary 
             --only-section .rodata.rmss
+            ${RMSS_EXTRA_SECTIONS}
             "${FW_IMAGE_PATH}"
             "${RMSS_BIN_PATH}"
         DEPENDS "${FW_IMAGE_PATH}"

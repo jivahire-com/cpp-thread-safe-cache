@@ -448,6 +448,16 @@
           "Name": "KNG_HM_PCIE_GENERIC",
           "Value": 28,
           "Description": "Generic PCIe Error placeholder"
+        },
+        {
+          "Name": "KNG_HM_SYSFUSE_TAG_CE",
+          "Value": 29,
+          "Description": "Correctable Error in System Fuse"
+        },
+        {
+          "Name": "KNG_HM_SYSFUSE_TAG_UE",
+          "Value": 30,
+          "Description": "Uncorrectable Error in System Fuse"
         }
       ]
     }

@@ -15,6 +15,7 @@
 #include <bug_check.h>
 #include <cper.h>
 #include <error_domain_i.h>
+#include <fuses_csr_regs.h>
 #include <health_monitor.h>
 #include <idsw_kng.h>
 #include <mscp_error_domain.h>
@@ -24,6 +25,7 @@
 #include <scp_exp_csr_regs.h>
 #include <scp_exp_top_regs.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
+#include <fuses_top_regs.h>
 #include <scp_top_regs.h>
 #include <shared_sram_ecc_ras_registers_regs.h>
 
@@ -40,6 +42,8 @@
 #define RMSS_RAM0_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS)
 #define RMSS_RAM1_ADDRESS (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS)
 #define DTC_RAM_ADDRESS   (SCP_TOP_SCP_DATA_RAM_ADDRESS)
+#define FUSES_RAM_ADDRESS \
+    (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_FUSE_ADDRESS + FUSES_TOP_FUSE_RAM_SPACE_ADDRESS)
 
 /*-------- Function Prototypes -----------*/
 
@@ -50,6 +54,8 @@ static vptr_scp_exp_csr_reg scp_exp_csr_regs =
     (vptr_scp_exp_csr_reg)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS);
 static vptr_mscp_ras_and_init_ctrl_registers_reg scp_ras_and_init_ctrl_registers_reg =
     (vptr_mscp_ras_and_init_ctrl_registers_reg)(SCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS);
+static vptr_fuses_csr_reg scp_exp_fuses_regs =
+    (vptr_fuses_csr_reg)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_FUSE_ADDRESS + FUSES_TOP_FUSES_CSR_ADDRESS);
 /*-------------- Functions ---------------*/
 
 acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
@@ -299,7 +305,25 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
             FPFW_DBGPRINT_WARNING("SCP_ERROR_TYPE_RSM_RAM_UE is not supported on FPGA.\n");
         }
         break;
-
+    case SCP_ERROR_TYPE_FUSE_CE: {
+        MMIO_UPDATE32(&scp_exp_fuses_regs->sfcram_errctrl, FUSES_CSR_SFCRAM_ERRCTRL_INJECT_ERROR_MASK, MASK_CE);
+        inject_err_by_access(FUSES_RAM_ADDRESS);
+        break;
+    }
+    case SCP_ERROR_TYPE_FUSE_UE: {
+        MMIO_UPDATE32(&scp_exp_fuses_regs->sfcram_errctrl, FUSES_CSR_SFCRAM_ERRCTRL_INJECT_ERROR_MASK, MASK_UE);
+        inject_err_by_access(FUSES_RAM_ADDRESS);
+        break;
+    }
+    case SCP_ERROR_TYPE_FUSE_OVERFLOW: {
+        nvic_global_disable();
+        MMIO_UPDATE32(&scp_exp_fuses_regs->sfcram_errctrl, FUSES_CSR_SFCRAM_ERRCTRL_INJECT_ERROR_MASK, MASK_CE);
+        inject_err_by_access(FUSES_RAM_ADDRESS);
+        MMIO_UPDATE32(&scp_exp_fuses_regs->sfcram_errctrl, FUSES_CSR_SFCRAM_ERRCTRL_INJECT_ERROR_MASK, MASK_CE);
+        inject_err_by_access(FUSES_RAM_ADDRESS);
+        nvic_global_enable();
+        break;
+    }
     default:
         FPFW_DBGPRINT_ERROR("Invalid/Unsupported SCP error type(%d)\n", einj_payload->param_type.error_type);
         return ACPI_EINJ_INVALID_ACCESS;

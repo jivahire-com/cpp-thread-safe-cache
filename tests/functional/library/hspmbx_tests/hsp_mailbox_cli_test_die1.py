@@ -69,9 +69,11 @@ class hsp_mailbox_cli_test_die1(EchoFallsBaseTest):
         core_com_channel.open()
         assert core_com_channel.is_open()
         
+        # Restriction: this needs to be run from a cold boot 
         try:
-            self.log.info("Waiting for Heartbeat Msg")
-            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=1800)
+            self.log.info("Waiting for Boot complete / Heartbeat Msg")
+            core_com_channel.read_until(key="SOS boot completed", timeout_seconds=1800)
+            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=120)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.secondary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)

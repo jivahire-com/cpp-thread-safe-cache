@@ -70,6 +70,7 @@ target_link_libraries(${TARGET}
         ms::lib::cortex_m7::atomics
         ms::lib::event_trace::trace
         ms::lib::crash_dump
+        ms::lib::ift
         ms::lib::error_codes
         ms::lib::fuse_artifacts_lib
         ms::lib::gtimer

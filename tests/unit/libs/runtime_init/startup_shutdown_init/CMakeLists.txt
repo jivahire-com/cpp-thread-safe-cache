@@ -18,6 +18,7 @@ function(create_sos_init_test TARGET_NAME RUNTIME_INIT_DEFINE)
             ms::client_interface::startup_shutdown
             ms::cmocka::testrunner
             ms::lib::boot_status
+            ms::lib::ift
             ms::lib::threadx
             ms::service::scp_startup_shutdown
             ms::lib::hsp_firmware_headers
@@ -57,6 +58,7 @@ function(create_sos_init_test TARGET_NAME RUNTIME_INIT_DEFINE)
             ${COMMON_MOCKS}
             FpFwLockInitialize
             fpfw_icc_base_recv
+            ift_is_enabled
         )
     elseif(${RUNTIME_INIT_DEFINE} STREQUAL "MCP_RUNTIME_INIT")
         mock_target(${TARGET_NAME}

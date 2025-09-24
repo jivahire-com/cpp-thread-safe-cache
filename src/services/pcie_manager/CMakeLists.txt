@@ -29,6 +29,7 @@ target_link_libraries(
         kng_silibs_platform
         ms::driver::pcie
         ms::lib::debug
+        ms::lib::ift
         ms::lib::threadx
         ms::lib::variable_services
         ms::lib::error_codes

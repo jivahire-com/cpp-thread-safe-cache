@@ -62,6 +62,7 @@ static pcie_ss_entity_t mock_pcie_ent;
 bool memcpy_mock = false;
 static jmp_buf mock_jump_buf;
 static bool should_return;
+static bool ift_enabled = false;
 
 /*------------- Functions ----------------*/
 extern "C" {
@@ -80,6 +81,11 @@ void __wrap_crash_dump_bug_check(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t
     {
         longjmp(mock_jump_buf, 1);
     }
+}
+
+bool __wrap_ift_is_enabled(void)
+{
+    return ift_enabled;
 }
 }
 

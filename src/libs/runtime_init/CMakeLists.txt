@@ -47,6 +47,7 @@ add_library(${TARGET}
         icc_d2dmbx_init.c
         icc_hspmbx_init.c
         icc_mhu_init.c
+        ift_init.c
         ioss_init.c
         mesh_init.c
         mesh_scp_cli_init.c
@@ -136,6 +137,7 @@ target_link_libraries(
         ms::lib::i3c_controller::cli
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
+        ms::lib::ift
         ms::lib::interface::mhu_icc_payloads
         ms::lib::ioss_ini
         ms::lib::mesh

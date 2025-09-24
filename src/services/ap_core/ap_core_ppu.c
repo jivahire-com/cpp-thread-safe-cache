@@ -17,6 +17,7 @@
 #include <core_clusters_common.h>
 #include <corebits.h>
 #include <idhw.h>
+#include <ift_fw.h>
 #include <kng_error.h>
 #include <pik_clock_lib.h>
 #include <ppu_v1.h>
@@ -49,6 +50,7 @@
 void ap_core_ppu_init(ap_core_service_context_t* p_context)
 {
     FPFW_RUNTIME_ASSERT(p_context != NULL);
+
     for (unsigned int core_idx = 0; core_idx < p_context->p_config->platform_die_core_count; ++core_idx)
     {
         // only initialize cores that are enabled (present/fused)
@@ -71,6 +73,12 @@ void ap_core_ppu_init(ap_core_service_context_t* p_context)
 // function to set the power state of a single cluster
 static void cluster_set_power_state(ap_core_service_context_t* p_context, unsigned cluster_idx, bool power_state_on, uint32_t timeout_ms)
 {
+    // Skip cluster PPU ON transition if IFT is enabled
+    if (ift_is_enabled())
+    {
+        return;
+    }
+
     // TODO: timeout_ms is now being interpreted as us - Need to update and also provide an appropriate timeout in us
     uintptr_t cluster_ppu_addr =
         (p_context->p_config->cluster_pex_base + (cluster_idx * p_context->p_config->cluster_stride) +
@@ -191,6 +199,13 @@ void ap_core_ppu_cores_off(ap_core_service_context_t* p_context, uint32_t timeou
 // function to set the core power state of a single core
 void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsigned core_idx, bool power_state_on, uint32_t timeout_ms)
 {
+
+    // Skip cluster PPU ON transition if IFT is enabled
+    if (ift_is_enabled())
+    {
+        return;
+    }
+
     FPFW_RUNTIME_ASSERT(p_context != NULL);
     // only act on cores that are enabled (present/fused)
     if (!corebits_is_bit_set(&p_context->enabled_cores, core_idx))

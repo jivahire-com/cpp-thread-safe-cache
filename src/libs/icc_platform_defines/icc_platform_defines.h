@@ -149,6 +149,7 @@ typedef enum _rmss_d2d_mailbox_msg_command_code {
 	RMSS_D2D_MAILBOX_PWR_CLI_REQ,
 	RMSS_D2D_MAILBOX_PWR_CLI_RSP,
 	RMSS_D2D_MAILBOX_MSG_CPER_TRANSFER_REQ,
+	RMSS_D2D_MAILBOX_MSG_IFT_BIN_TRANSFER_DONE_REQ,
     RMSS_D2D_MAILBOX_MSG_MAX
 }rmss_d2d_mailbox_msg_command_code;
 
@@ -197,6 +198,15 @@ typedef union _rmss_d2d_mailbox_msg {
 	rmss_d2d_mailbox_msg_rsp rsp;	        /**< outgoing mailbox message from handler to protocol. */
     uint32_t as_uint32[D2D_MBOX_FIFO_DEPTH];
 } rmss_d2d_mailbox_msg;
+
+typedef union _rmss_d2d_mailbox_ift_tx_msg {
+	struct {
+		rmss_d2d_mailbox_msg_header header;
+		uint32_t ift_intent_type;
+		uint32_t ift_fw_size;
+	};
+	uint32_t as_uint32[D2D_MBOX_FIFO_DEPTH];
+} rmss_d2d_mailbox_ift_tx_msg;
 
 //! @todo Move these to a shared header file for MSCP & SDM/CDED in cortex m7 repository
 //! All large fifo defines must live in a shared header file. This is a temporary location.

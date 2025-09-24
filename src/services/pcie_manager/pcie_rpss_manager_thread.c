@@ -12,6 +12,7 @@
 #include <DfwkClient.h>
 #include <bug_check.h>
 #include <idsw_kng.h>
+#include <ift_fw.h>
 #include <pcie_async_requests_i.h>
 #include <pcie_config_variable.h>
 #include <pcie_link_management_i.h>
@@ -71,6 +72,12 @@ static void send_full_pciess_init(pcie_manager_context_t* ctx)
      */
     tx_thread_sleep(PRE_RPSS_INIT_WORKER_YIELD_TICKS);
 
+    /* Pre and Post RPSS Init should be skipped if IFT is enabled */
+    if (ift_is_enabled())
+    {
+        return;
+    }
+
     /*
      * Send pre root port initialization request to setup the RPSS.
      *
@@ -120,6 +127,14 @@ void rpss_service_thread_fn(ULONG thread_input)
     /* Initialize and open the interface for this root port subsystem */
     pcie_dfwk_interface_init(d, iface);
     DfwkClientInterfaceOpen(&(iface->header));
+
+    /* PCIE Link training and PCIE PHY training should be skipped incase of IFT */
+    if (ift_is_enabled())
+    {
+        /* Start Initial PCIESS/RP Init */
+        send_full_pciess_init(ctx);
+        return;
+    }
 
     /* Wait for the PCIe phy firmware load event - set within the AP core firmware load module */
     FPFW_DBGPRINT_INFO("RPSS[%d]: Waiting for phy firmware load\n", ctx->rpss_idx);

@@ -16,6 +16,7 @@ extern "C" {
 #include <FpFwUtils.h>       // for FPFW_UNUSED
 #include <fpfw_init.h>       // for fpfw_init_result_t, fpfw_init_component_t
 #include <hsp_firmware_headers.h>
+#include <ift_fw.h>
 #include <startup_shutdown.h>
 #include <startup_shutdown_init.h>
 #include <startup_shutdown_ssi.h>
@@ -104,6 +105,11 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
 
     return mock_type(fpfw_status_t);
 }
+
+bool __wrap_ift_is_enabled(void)
+{
+    return mock_type(bool);
+}
 }
 
 //
@@ -167,6 +173,10 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
     // now handle unit test of phase start requests
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
     expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_start_phase_request_t));
+
+    // Check if IFT is enabled
+    will_return(__wrap_ift_is_enabled, false);
+
     // sos_start_phase calls
     // synchronous
     expect_any(__wrap_sos_start_phase, p_interface);
@@ -190,6 +200,59 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
 }
+
+TEST_FUNCTION(sos_init_sos_ift_enabled_int, nullptr, nullptr)
+{
+    // Set up expectations
+    sos_device_t sos_device = {};
+
+    will_return(__wrap_fpfw_init_get_handle, &sos_device);
+    expect_value(__wrap_sos_interface_init, p_device, &sos_device);
+    expect_value(__wrap_sos_interface_init, shared, true);
+
+    // interface init is called twice
+    will_return(__wrap_fpfw_init_get_handle, &sos_device);
+    expect_value(__wrap_sos_interface_init, p_device, &sos_device);
+    expect_value(__wrap_sos_interface_init, shared, false);
+
+    will_return(__wrap_fpfw_init_get_handle, &sos_device);
+
+    // now the ssi registration
+    expect_not_value(__wrap_sos_register_ssi, p_interface, NULL);
+    // p_registration and p_ssi_interface come from static allocations in the function
+    expect_any(__wrap_sos_register_ssi, p_registration);
+    expect_any(__wrap_sos_register_ssi, p_ssi_interface);
+    will_return(__wrap_sos_register_ssi, FPFW_INIT_STATUS_SUCCESS);
+
+    // intercore communication init (sos_icc_init)
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x1111); // icc_hspmbx
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x2222); // icc_die2die
+    will_return(__wrap_fpfw_init_get_handle, (void*)0x3333); // icc_sdm_mbx
+    expect_function_call(__wrap_FpFwLockInitialize);
+
+    expect_any(__wrap_fpfw_icc_base_recv, icc_ctx);
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    expect_any(__wrap_fpfw_icc_base_recv, icc_ctx);
+    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
+    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
+
+    // now handle unit test of phase start requests
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_start_phase_request_t));
+
+    // Check if IFT is enabled
+    will_return(__wrap_ift_is_enabled, true);
+
+    //! Call the function under test
+    fpfw_init_result_t result = _fpfw_component_sos_int.init_fn();
+
+    //! Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+    assert_non_null(result.associated_handle);
+}
+
 #endif
 
 #ifdef MCP_RUNTIME_INIT

@@ -47,6 +47,7 @@ set(SILIB_LIST
     i2c
     icc_mhu
     idhw
+    ift
     intu
     ioss
     ioss_init

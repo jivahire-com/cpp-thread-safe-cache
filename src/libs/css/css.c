@@ -15,6 +15,7 @@
 #include <clocks_sequence_knobs.h>
 #include <css.h>
 #include <fpfw_cfg_mgr.h>
+#include <ift_fw.h>
 #include <kng_soc_constants.h>
 #include <ppu_v1.h>
 #include <silibs_ap_top_regs.h>
@@ -89,7 +90,9 @@ void css_configure_system_tower(uint8_t die_num)
 void css_post_mesh_init()
 {
     clocks_sequence_css_post_mesh_init_t scp_clocks_post_mesh_param = {};
+
     scp_clocks_post_mesh_param.skip_periph_pcr_init = false;
+    scp_clocks_post_mesh_param.ift_mode_en = ift_is_enabled();
     sys_counter_delay_cfg_t sys_counter_delay_cfg = config_get_clock_seq_knobs().sys_counter_delay_cfg;
     scp_clocks_post_mesh_param.sys_counter_delay = &sys_counter_delay_cfg;
     int sts = clocks_sequence_css_post_mesh_init(&scp_clocks_post_mesh_param);

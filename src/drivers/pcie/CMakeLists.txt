@@ -35,6 +35,7 @@ target_link_libraries(${TARGET}
     silibs::tower_rpss
     ms::driver::vab
     ms::lib::crash_dump
+    ms::lib::ift
     ms::lib::scp_interrupts
     ms::lib::system_info
     ms::lib::threadx

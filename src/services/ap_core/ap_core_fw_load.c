@@ -23,6 +23,7 @@
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_send, fpfw_icc_base...
 #include <fpfw_status.h>          // for fpfw_init_get_handle, FPFW_INIT_S...
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#include <ift_fw.h>
 #include <in_band_telemetry_ddr.h>
 #define __NO_CSR_TYPEDEFS__
 #include <mcp_top_regs.h>
@@ -34,12 +35,66 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 // https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/_layouts/15/Doc.aspx?sourcedoc={F8844B94-FFCC-4B46-8043-7D75085AEC0B}&file=KG
 // FW Architecture.docx&action=default&mobileredirect=true Section 6.7
 #define KMP_LOAD_ADDRESS  0XFFFFFF0480000
 #define KMP_START_ADDRESS 0x00080080
+
+enum
+{
+    HSP_FIRMWARE_ID_IFT_MEM_TEST = 0,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST0 = 1,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST1 = 2,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST2 = 3,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST3 = 4,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST4 = 5,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST5 = 6,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST6 = 7,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST7 = 8,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST8 = 9,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST9 = 10,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST10 = 11,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST11 = 12,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST12 = 13,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST13 = 14,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST14 = 15,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST15 = 16,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST16 = 17,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST17 = 18,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST18 = 19,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST19 = 20,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST20 = 21,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST21 = 22,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST22 = 23,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST23 = 24,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST24 = 25,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST25 = 26,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST26 = 27,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST27 = 28,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST28 = 29,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST29 = 30,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST30 = 31,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST31 = 32,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST32 = 33,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST33 = 34,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST34 = 35,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST35 = 36,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST36 = 37,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST37 = 38,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST38 = 39,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST39 = 40,
+    HSP_FIRMWARE_ID_IFT_CORE_TEST40 = 41,
+};
+
+struct kng_hsp_mailbox_cmd_load_fw_64bit_ift_rsp
+{
+    struct kng_hsp_mailbox_msg_header header; /**< msg header containing cmd, seq,context and flags. */
+    uint32_t status;                          /**< return status code. */
+    uint32_t ift_fw_size;                     /**< firmware size. */
+};
 
 /*------------- Typedefs -----------------*/
 // The fpfw_icc_base_send needs a total of 16 bytes in payload buffer and the start request struct is not
@@ -450,4 +505,71 @@ void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t 
     status = fpfw_icc_base_send(icc_hspmbx_ctx, &send_params);
     BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, fw_id);
     APCORE_LOG_INFO("Request FW load initiated (%d)", fw_id);
+}
+
+static void request_ap_ift_load_recv_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(output_size_bytes);
+    struct kng_hsp_mailbox_cmd_load_fw_64bit_ift_rsp* recv_ift_resp = (void*)&recv_payload_buffer;
+
+    BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(recv_ift_resp->header.cmd == HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_RSP,
+                     recv_ift_resp->header.cmd,
+                     HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_RSP);
+    BUG_ASSERT(recv_ift_resp->status == 0);
+    BUG_ASSERT_PARAM(recv_ift_resp->ift_fw_size > 0, recv_ift_resp->ift_fw_size, 0);
+    BUG_ASSERT_PARAM(recv_ift_resp->ift_fw_size % BYTES_IN_WORD32 == 0, recv_ift_resp->ift_fw_size, 0);
+
+    ap_ift_fw_id_t fw_id = (ap_ift_fw_id_t)(uintptr_t)context;
+    ift_set_current_fw_size(recv_ift_resp->ift_fw_size);
+
+    DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
+    APCORE_LOG_TRACE("IFT FW[%d] load response received", (int)fw_id);
+}
+
+void ap_core_request_load_ift_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_ift_fw_id_t fw_id)
+{
+    static fpfw_icc_base_recv_req_t recv_params = {};
+
+    recv_params.recv_cmd_code = HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_RSP;
+    recv_params.payload_buffer = &recv_payload_buffer;
+    recv_params.buffer_size = sizeof(recv_payload_buffer);
+    recv_params.cb = request_ap_ift_load_recv_complete_notify;
+    recv_params.cb_ctx = (void*)(uintptr_t)fw_id;
+
+    fpfw_status_t status = fpfw_icc_base_recv(icc_hspmbx_ctx, &recv_params);
+    BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, 0);
+
+    static kng_hsp_mailbox_cmd_load_fw_64bit_req send_request = {};
+
+    send_request.header.cmd = HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_REQ;
+
+    switch (fw_id)
+    {
+    case AP_IFT_FW_ID_IFT_MEM_TEST:
+        send_request.id = HSP_FIRMWARE_ID_IFT_MEM_TEST;
+        send_request.load_addr_low = ift_get_ift_fw_addr();
+        send_request.load_addr_high = 0;
+        break;
+    case AP_IFT_FW_ID_IFT_CORE_TEST:
+        send_request.id = HSP_FIRMWARE_ID_IFT_CORE_TEST0 + ift_get_core_test_fw_idx();
+        send_request.load_addr_low = ift_get_ift_fw_addr();
+        send_request.load_addr_high = 0;
+        break;
+    default:
+        BUG_ASSERT(false);
+        break;
+    }
+
+    static fpfw_icc_base_send_req_t send_params = {
+        .payload_buffer = &send_request,
+        .cb = request_send_complete_cb,
+        .cb_ctx = NULL,
+        .buffer_size = sizeof(send_request),
+    };
+
+    status = fpfw_icc_base_send(icc_hspmbx_ctx, &send_params);
+    BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    APCORE_LOG_TRACE("Request IFT FW load sent for FW ID: [%d]", fw_id);
 }

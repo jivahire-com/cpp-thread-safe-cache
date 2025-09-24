@@ -239,6 +239,7 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
         {
         case COLD_BOOT:
         case WARM_BOOT_ACCEL:
+        case IFT_BOOT:
             break;
         case WARM_BOOT_POST_AP:
             switch (ssi_request->stage)
@@ -461,6 +462,26 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
             else
             {
                 FPFW_DBGPRINT_INFO("KMP not loaded, either is isolated or in a safe state");
+                DfwkAsyncRequestComplete(p_request);
+            }
+            break;
+        case STARTUP_IFT_MEM_TEST_LOAD:
+            if (system_info_is_hsp_present())
+            {
+                ap_core_request_load_ift_fw(s_icc_base_ctx, AP_IFT_FW_ID_IFT_MEM_TEST);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+            break;
+        case STARTUP_IFT_CORE_TEST_LOAD:
+            if (system_info_is_hsp_present())
+            {
+                ap_core_request_load_ift_fw(s_icc_base_ctx, AP_IFT_FW_ID_IFT_CORE_TEST);
+            }
+            else
+            {
                 DfwkAsyncRequestComplete(p_request);
             }
             break;

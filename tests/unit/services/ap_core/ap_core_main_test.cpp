@@ -27,6 +27,7 @@ extern "C" {
 #include <fpfw_timer_port.h>      // for _fpfw_timer_t
 #include <fuse_init.h>            // for write_fuse_info_to_ap
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
+#include <ift_fw.h>
 #define __NO_CSR_TYPEDEFS__
 #include <mcp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
@@ -49,6 +50,13 @@ extern "C" {
 
 /*------------- Typedefs -----------------*/
 
+struct kng_hsp_mailbox_cmd_load_fw_64bit_ift_rsp
+{
+    struct kng_hsp_mailbox_msg_header header; /**< msg header containing cmd, seq,context and flags. */
+    uint32_t status;                          /**< return status code. */
+    uint32_t ift_fw_size;                     /**< firmware size. */
+};
+
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
@@ -60,6 +68,7 @@ static pap_core_service_context_t s_ap_core_ctx = NULL;
 static icc_base_recv_complete_notify fw_load_cb = NULL;
 static uint32_t icc_hspmbx_ctx;
 static void* cb_ctx = NULL;
+static void* fw_load_recv_msg_buf = NULL;
 
 /*------------- Functions ----------------*/
 //
@@ -198,6 +207,7 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     check_expected(params->recv_cmd_code);
     fw_load_cb = params->cb;
     cb_ctx = params->cb_ctx;
+    fw_load_recv_msg_buf = params->payload_buffer;
     ((kng_hsp_mailbox_msg*)(params->payload_buffer))->header.cmd = mock_type(int);
 
     return mock_type(fpfw_status_t);
@@ -1094,6 +1104,108 @@ AP_CORE_TEST(dispatch_accel_manifest_load_hsp_not_present, setup, NULL)
     // In ap_core_dispatch()
     will_return(__wrap_system_info_is_hsp_present, false);
     expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_ift_mem_test_load, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_IFT_MEM_TEST_LOAD;
+    test_request.boot_type = IFT_BOOT;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, true);
+
+    // In ap_core_request_load_ift_fw()
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+    expect_any(__wrap_fpfw_icc_base_send, params->payload_buffer);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+
+    // Call the callback to simulate the response
+    struct kng_hsp_mailbox_cmd_load_fw_64bit_ift_rsp* rsp =
+        (struct kng_hsp_mailbox_cmd_load_fw_64bit_ift_rsp*)(fw_load_recv_msg_buf);
+    rsp->ift_fw_size = 0x80000;
+    rsp->status = 0;
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
+AP_CORE_TEST(dispatch_ift_mem_test_hsp_not_present, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_IFT_MEM_TEST_LOAD;
+    test_request.boot_type = IFT_BOOT;
+
+    // Set up expectations
+    will_return(__wrap_system_info_is_hsp_present, false);
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_ift_core_test_load, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_IFT_CORE_TEST_LOAD;
+    test_request.boot_type = IFT_BOOT;
+
+    // Set up expectations
+    // In ap_core_dispatch()
+    will_return(__wrap_system_info_is_hsp_present, true);
+
+    // In ap_core_request_load_ift_fw()
+    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_RSP);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_SUCCESS);
+    expect_any(__wrap_fpfw_icc_base_send, params->payload_buffer);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+
+    // Call the callback to simulate the response
+    struct kng_hsp_mailbox_cmd_load_fw_64bit_ift_rsp* rsp =
+        (struct kng_hsp_mailbox_cmd_load_fw_64bit_ift_rsp*)(fw_load_recv_msg_buf);
+    rsp->ift_fw_size = 0x80000;
+    rsp->status = 0;
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
+}
+
+AP_CORE_TEST(dispatch_ift_core_test_hsp_not_present, setup, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_IFT_CORE_TEST_LOAD;
+    test_request.boot_type = IFT_BOOT;
+
+    // Set up expectations
+    will_return(__wrap_system_info_is_hsp_present, false);
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
     s_dispatch_routine(&test_request.header, &test_device.header);
 }
 

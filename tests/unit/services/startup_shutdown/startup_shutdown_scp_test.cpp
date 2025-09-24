@@ -168,10 +168,14 @@ SOS_TEST(sos_core_shutdown_stage_count, NULL, NULL)
 // test for sos_core_boot_stages
 SOS_TEST(sos_core_boot_stages, NULL, NULL)
 {
-    LargestIntegralType expected_phases[] = {STARTUP_PHASE_MSCP_ASYNC,
-                                             STARTUP_PHASE_AP_ASYNC,
-                                             STARTUP_WARM_BOOT_SDM_ASYNC,
-                                             STARTUP_WARM_BOOT_CDED_ASYNC};
+    LargestIntegralType expected_phases[] = {
+        STARTUP_PHASE_MSCP_ASYNC,
+        STARTUP_PHASE_AP_ASYNC,
+        STARTUP_WARM_BOOT_SDM_ASYNC,
+        STARTUP_WARM_BOOT_CDED_ASYNC,
+        STARTUP_PHASE_IFT_MEM_TEST_LOAD,
+        STARTUP_PHASE_IFT_CORE_TEST_LOAD,
+    };
     const startup_shutdown_boot_stage_t* p_stages = __real_sos_core_boot_stages();
     const unsigned int stage_count = __real_sos_core_boot_stage_count();
     // ensure the boot stages & their count are returned

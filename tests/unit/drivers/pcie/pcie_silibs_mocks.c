@@ -114,6 +114,12 @@ silibs_status_t __wrap_pciess_config_ss_for_bifur(pcie_ss_entity_t* ss)
     return mock_type(silibs_status_t);
 }
 
+silibs_status_t __wrap_pciess_config_ss_for_ift(pcie_ss_entity_t* ss)
+{
+    assert_non_null(ss);
+    return mock_type(silibs_status_t);
+}
+
 silibs_status_t __wrap_pciess_phys_toggle_clocks(pcie_ss_entity_t* ss)
 {
     assert_non_null(ss);

@@ -9,11 +9,14 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
-#include <DfwkCommon.h>            // for DfwkAsyncRequestInitialize, PDFW...
-#include <FpFwAssert.h>            // for FPFW_RUNTIME_ASSERT
-#include <FpFwUtils.h>             // for FPFW_UNUSED
-#include <boot_status.h>           // for post_led_status
-#include <fpfw_init.h>             // for fpfw_init_get_handle, FPFW_INIT_C...
+#include <DfwkCommon.h>  // for DfwkAsyncRequestInitialize, PDFW...
+#include <FpFwAssert.h>  // for FPFW_RUNTIME_ASSERT
+#include <FpFwUtils.h>   // for FPFW_UNUSED
+#include <boot_status.h> // for post_led_status
+#include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_C...
+#ifdef SCP_RUNTIME_INIT
+    #include <ift_fw.h> // for ift_run_tests
+#endif
 #include <startup_shutdown.h>      // for sos_start_phase, sos_register_ssi
 #include <startup_shutdown_init.h> // for sos_interface_init, sos_init, sos...
 #include <startup_shutdown_ssi.h>  // for COLD_BOOT, MSCP_SUBSYS_RESET, STA...
@@ -46,7 +49,8 @@ void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_cont
 
 #ifdef SCP_RUNTIME_INIT
 
-FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "icc_sdm_mbx", "icc_cded_mbx", "sysinfo"))
+FPFW_INIT_COMPONENT(sos_int,
+                    FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift"))
 {
     static sos_interface_t sos_interface;
     sos_interface_init(fpfw_init_get_handle("sos_svc"), &sos_interface, true);
@@ -69,18 +73,22 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "ic
     static startup_start_phase_request_t startup_phase_request;
     DfwkAsyncRequestInitialize((void*)&startup_phase_request.header.async, sizeof(startup_phase_request));
 
-    // Determine the boot type based on the system_info_is_warm_start() API
-    if (!system_info_is_warm_start())
+    // Skip the normal boot process if IFT is enabled
+    if (!ift_is_enabled())
     {
-        // queue the boot phases for this reset type
-        sos_start_phase((void*)&sos_interface, NULL, COLD_BOOT, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
-        sos_start_phase((void*)&sos_interface, &startup_phase_request, COLD_BOOT, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous
-    }
-    else
-    {
-        // queue the boot phases for this reset type
-        sos_start_phase((void*)&sos_interface, NULL, WARM_BOOT_POST_AP, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
-        sos_start_phase((void*)&sos_interface, &startup_phase_request, WARM_BOOT_POST_AP, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous
+        // Determine the boot type based on the system_info_is_warm_start() API
+        if (!system_info_is_warm_start())
+        {
+            // queue the boot phases for this reset type
+            sos_start_phase((void*)&sos_interface, NULL, COLD_BOOT, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
+            sos_start_phase((void*)&sos_interface, &startup_phase_request, COLD_BOOT, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous
+        }
+        else
+        {
+            // queue the boot phases for this reset type
+            sos_start_phase((void*)&sos_interface, NULL, WARM_BOOT_POST_AP, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
+            sos_start_phase((void*)&sos_interface, &startup_phase_request, WARM_BOOT_POST_AP, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous
+        }
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &sos_interface};

@@ -13,6 +13,7 @@ target_link_libraries(${TARGET}
         fwlib.service.iccBase
         ms::cmocka::testrunner
         ms::lib::hsp_firmware_headers
+        ms::lib::ift
         ms::lib::scp_avs
         ms::lib::system_info
         ms::lib::threadx
@@ -68,6 +69,8 @@ mock_target(${TARGET}
     fpfw_icc_base_send
     fpfw_icc_base_recv
     fpfw_timer_enable
+
+    ift_is_enabled
 
     mmio_read32
     mmio_write32

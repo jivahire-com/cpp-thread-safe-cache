@@ -9,6 +9,7 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
     fwlib.lib.cfg_mgr
+    ms::lib::ift
     ms::lib::register_headers
     silibs_platform
     silibs::atu

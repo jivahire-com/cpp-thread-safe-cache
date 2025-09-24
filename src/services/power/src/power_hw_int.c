@@ -25,6 +25,7 @@
 #include <dvfs.h>       // for dvfs_get_cppc_from_pstate, dvfs_pll_g...
 #include <dvfs_regs.h>  // for (anonymous union)::(anonymous), dvfs_...
 #include <fgpll_regs.h> // for fgpll_pll_error_mask_cr, (anonymous u...
+#include <ift_fw.h>     // for ift_is_enabled
 #include <kng_error.h>
 #include <odcm.h>         // for odcm_init, odcm_telemetry_config, ODC...
 #include <pex_regs.h>     // for PEX_CORE_PLL_ADDRESS
@@ -915,6 +916,16 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
         {
             power_init_update_dvfs_cfg_disable(&dvfs_cfg);
         }
+
+        /**
+         * Set the software boot mode if IFT is enabled
+         * This turns on the LDO and PLL without waiting for a PPU handshake
+         */
+        if (ift_is_enabled())
+        {
+            dvfs_cfg.init_cfg.sw_boot_mode = true;
+        }
+
         return_value = dvfs_init(cluster_pex_base_addr, &dvfs_cfg);
         if (return_value != DVFS_SUCCESS)
         {

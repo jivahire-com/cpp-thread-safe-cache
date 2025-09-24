@@ -75,6 +75,7 @@ mock_target(${TARGET}
 
     # Silibs mocks
     idsw_get_die_id
+    ift_is_enabled
     ras_print_record
 
     # Driver mocks

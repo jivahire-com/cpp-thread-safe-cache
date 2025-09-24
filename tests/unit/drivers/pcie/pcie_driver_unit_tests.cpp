@@ -72,6 +72,7 @@ static pcie_async_request_t r;
 static jmp_buf mock_jump_buf;
 static bool should_return;
 uint8_t mock_buf[2048];
+static bool ift_enabled = false;
 
 /* mock entity*/
 pcie_ss_entity_t mock_pcie_ent;
@@ -93,6 +94,11 @@ void __wrap_crash_dump_bug_check(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t
     {
         longjmp(mock_jump_buf, 1);
     }
+}
+
+bool __wrap_ift_is_enabled(void)
+{
+    return ift_enabled;
 }
 }
 
@@ -1335,6 +1341,110 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
     assert_int_equal(rb_configs[0].flags.is_enabled, true);
     assert_int_equal(rb_configs[0].flags.is_cxl, true);
     assert_int_equal(rb_configs[0].flags.is_secondary_soc, 0b1);
+}
+
+/* Test case for initial pciess init sync. request for non-mirrored configurations successful path with IFT enabled */
+TEST_FUNCTION(test_pcie_rpss_init_soc1_ift_success, test_setup, test_teardown)
+{
+    // Setup Enabled IFT
+    ift_enabled = true;
+
+    /*Setup the mock interface and device*/
+    pcie_root_bridge_config rb_configs[4];
+    pciess_device_t dev;
+    dev.rb_configs = rb_configs;
+    pciess_device_interface_t iface;
+    iface.dev = &dev;
+
+    /* Setup silibs expectations */
+    /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    for (uint8_t i = 0; i < NUM_RPSS; i++)
+    {
+        /* Setup the request for an rpss */
+        pcie_sync_request_t r;
+        r.header.RequestType = INITIAL_CONFIG_REQUEST;
+        r.req_type = INITIAL_CONFIG_REQUEST;
+        r.rpss_index = (RPSS_INSTANCE)i;
+        r.rp_index = 0;
+
+        /* Set the owning interface*/
+        auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+        req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+
+        mock_pcie_ent.id = r.rpss_index;
+        will_return(__wrap_get_rpss_resolved_base, 0xDEADBEEF);
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        will_return(__wrap_system_info_get_soc_position, 0x00);
+        expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
+        expect_value(__wrap_pciess_config_entity, enable_apu, true);
+        will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
+        will_return(__wrap_pciess_config_ss_for_ift, SILIBS_SUCCESS);
+        will_return(__wrap_idsw_get_die_id, DIE_0);
+
+        cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
+        will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
+
+        int32_t ret = pcie_sched_sync_op(&(r.header));
+        assert_int_equal(ret, 0);
+        assert_int_equal(r.status, SILIBS_SUCCESS);
+    }
+
+    // Cleanup IFT disabled
+    ift_enabled = false;
+}
+
+/* Test case for initial pciess init sync. request for non-mirrored configurations successful path with IFT enabled */
+TEST_FUNCTION(test_pcie_rpss_init_soc1_ift_fail, test_setup, test_teardown)
+{
+    // Setup Enabled IFT
+    ift_enabled = true;
+
+    /*Setup the mock interface and device*/
+    pcie_root_bridge_config rb_configs[4];
+    pciess_device_t dev;
+    dev.rb_configs = rb_configs;
+    pciess_device_interface_t iface;
+    iface.dev = &dev;
+
+    /* Setup silibs expectations */
+    /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+
+    if (!bugcheck_mock_return())
+    {
+        /* Setup the request for an rpss */
+        pcie_sync_request_t r;
+        r.header.RequestType = INITIAL_CONFIG_REQUEST;
+        r.req_type = INITIAL_CONFIG_REQUEST;
+        r.rpss_index = RPSS0;
+        r.rp_index = 0;
+
+        /* Set the owning interface*/
+        auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+        req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+
+        mock_pcie_ent.id = r.rpss_index;
+        will_return(__wrap_get_rpss_resolved_base, 0xDEADBEEF);
+        expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS0);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        will_return(__wrap_system_info_get_soc_position, 0x00);
+        expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
+        expect_value(__wrap_pciess_config_entity, enable_apu, true);
+        will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
+        will_return(__wrap_pciess_config_ss_for_ift, SILIBS_E_ACCESS);
+        will_return(__wrap_idsw_get_die_id, DIE_0);
+
+        cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
+        will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
+
+        pcie_sched_sync_op(&(r.header));
+    }
+
+    // Cleanup IFT disabled
+    ift_enabled = false;
 }
 
 TEST_FUNCTION(test_get_config, test_setup, test_teardown)

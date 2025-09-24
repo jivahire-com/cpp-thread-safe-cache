@@ -58,6 +58,9 @@ static startup_shutdown_boot_stage_t scp_boot_stages[] = {
     {STARTUP_WARM_BOOT_SDM_ASYNC, STARTUP_SDM_DTCM_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_WARM_BOOT_CDED_ASYNC, STARTUP_CDED_ITCM_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_WARM_BOOT_CDED_ASYNC, STARTUP_CDED_DTCM_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
+    // IFT FW binaries load
+    {STARTUP_PHASE_IFT_MEM_TEST_LOAD, STARTUP_IFT_MEM_TEST_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
+    {STARTUP_PHASE_IFT_CORE_TEST_LOAD, STARTUP_IFT_CORE_TEST_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
 };
 
 static startup_shutdown_shutdown_stage_t scp_shutdown_stages[] = {{SHUTDOWN, DEFAULT_SOS_TIMEOUT_MS, false},

@@ -79,6 +79,7 @@ mock_target(${TARGET}
     atu_map
     atu_unmap
     idsw_get_die_id
+    ift_is_enabled
     pciess_rp_get_link_train_done
     intu_get_interrupt_status
     idsw_get_platform_sdv
@@ -90,6 +91,7 @@ mock_target(${TARGET}
     pciess_get_entity
     pciess_config_entity
     pciess_config_ss_for_bifur
+    pciess_config_ss_for_ift
     pciess_deassert_por_reset
     pciess_rp_clear_intus
     pcie_rp_ide_disable_all_streams

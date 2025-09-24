@@ -59,6 +59,7 @@ target_link_libraries(${TARGET}
         ms::lib::debug
         ms::lib::error_codes
         ms::lib::hsp_firmware_headers
+        ms::lib::ift
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::mesh
         ms::lib::system_info

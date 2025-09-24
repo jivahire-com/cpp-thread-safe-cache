@@ -17,6 +17,7 @@
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
+#include <ift_fw.h>
 #include <kng_soc_constants.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <oi_pcie.h>
@@ -79,18 +80,26 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
     /* Override settings based on the platform we are running on */
     plat_overrides_pre_pciess_config_ss_for_bifur(rpss);
 
-    sts = pciess_config_ss_for_bifur(rpss);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+    if (!ift_is_enabled())
+    {
+        sts = pciess_config_ss_for_bifur(rpss);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
-    sts = pciess_deassert_por_reset(rpss);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+        sts = pciess_deassert_por_reset(rpss);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
-    sts = pciess_phys_toggle_clocks(rpss);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+        sts = pciess_phys_toggle_clocks(rpss);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
-    pciess_device_interface_t* iface = (pciess_device_interface_t*)(req->OwningInterface);
-    pciess_device_t* dev = (pciess_device_t*)(iface->dev);
-    populate_rb_configs_from_rpss_entity(rpss, dev->rb_configs);
+        pciess_device_interface_t* iface = (pciess_device_interface_t*)(req->OwningInterface);
+        pciess_device_t* dev = (pciess_device_t*)(iface->dev);
+        populate_rb_configs_from_rpss_entity(rpss, dev->rb_configs);
+    }
+    else
+    {
+        sts = pciess_config_ss_for_ift(rpss);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+    }
 
     /* Do not unmap ATU entries as they are required for runtime handling */
     return sts;

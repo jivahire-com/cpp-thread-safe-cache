@@ -197,9 +197,9 @@ UINT __wrap_pcie_phyfw_wait_load_event(TX_EVENT_FLAGS_GROUP* pcie_phyfw_load_com
     return TX_SUCCESS;
 }
 
-int32_t __wrap_DfwkClientInterfaceOpen(PDFWK_INTERFACE_HEADER Interface)
+int32_t __wrap_DfwkClientInterfaceOpen(PDFWK_INTERFACE_HEADER InterfaceHeader)
 {
-    check_expected_ptr(Interface);
+    check_expected_ptr(InterfaceHeader);
     return mock_type(int32_t);
 }
 

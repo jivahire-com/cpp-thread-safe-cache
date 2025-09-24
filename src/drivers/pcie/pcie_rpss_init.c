@@ -12,6 +12,7 @@
 #define __NO_ADDRMAP_TYPEDEFS__ // Needed to avoid huge buffers in ap_top_regs.h
 #include <DbgPrint.h>
 #include <DfwkDriver.h>
+#include <DfwkPtrTypes.h>
 #include <ap_top_regs.h>
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
@@ -128,7 +129,7 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     return sts;
 }
 
-int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
+int get_rpss_ready(PDFWK_SYNC_REQUEST_HEADER req)
 {
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
     silibs_status_t sts = SILIBS_SUCCESS;
@@ -137,7 +138,17 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     BUG_ASSERT(rpss != NULL);
 
     sts = pciess_rps_ready(rpss);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+
+    return sts;
+}
+
+int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
+{
+    pcie_sync_request_t* r = (pcie_sync_request_t*)req;
+    silibs_status_t sts = SILIBS_SUCCESS;
+
+    pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
+    BUG_ASSERT(rpss != NULL);
 
     sts = pciess_rps_post_rp_ready_init(rpss);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);

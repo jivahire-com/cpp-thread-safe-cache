@@ -78,6 +78,9 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
             r->status = SILIBS_SUCCESS;
         }
         break;
+    case (GET_RPSS_READY_REQUEST):
+        sts = get_rpss_ready(incoming);
+        break;
     case (GET_RP_READY_REQUEST):
         sts = get_rp_ready(incoming);
         break;

@@ -94,6 +94,11 @@ silibs_status_t send_sync_rpss_inject_pcie_error(PDFWK_INTERFACE_HEADER iface, R
     return send_generic_ss_sync_req(iface, rpss_idx, INJECT_PCIE_ERROR, einj_payload, true);
 }
 
+silibs_status_t send_sync_rpss_get_ready_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx)
+{
+    return send_generic_ss_sync_req(iface, rpss_idx, GET_RPSS_READY_REQUEST, NULL, true);
+}
+
 /*--------------- Root port (RP) level synchronous requests -----------------*/
 silibs_status_t send_generic_rp_sync_req(PDFWK_INTERFACE_HEADER iface,
                                          RPSS_INSTANCE rpss_idx,

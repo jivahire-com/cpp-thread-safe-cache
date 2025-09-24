@@ -18,7 +18,7 @@
 #include <tx_api.h>           // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define LINK_TRAINING_SETTLE_TICKS (1000)
+#define LINK_TRAINING_SETTLE_TICKS (100) /* = 1 second */
 
 inline uint32_t CLEAR_BIT(uint32_t number, unsigned bit_pos)
 {

@@ -374,7 +374,6 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, test_setup, test_teardo
 
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
     will_return_always(__wrap_oi_pcie_ss_set_laattr_rp_overrides, SILIBS_SUCCESS);
@@ -403,7 +402,6 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_hide_dpc, test_setup, test_teard
 
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
     will_return_always(__wrap_oi_pcie_ss_set_laattr_rp_overrides, SILIBS_SUCCESS);
@@ -441,7 +439,6 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_force_allocation, test_setup, te
 
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
-    will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_post_rp_ready_init, SILIBS_SUCCESS);
     will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
     expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << r.rpss_index));
@@ -476,6 +473,46 @@ TEST_FUNCTION(test_get_rp_ready_success, test_setup, test_teardown)
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_get_rpss_ready_success, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = GET_RPSS_READY_REQUEST;
+    r.req_type = GET_RPSS_READY_REQUEST;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_pciess_rps_ready, SILIBS_SUCCESS);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_get_rpss_ready_not_ready, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    pcie_sync_request_t r;
+    r.header.RequestType = GET_RPSS_READY_REQUEST;
+    r.req_type = GET_RPSS_READY_REQUEST;
+    r.rpss_index = RPSS1;
+    r.rp_index = 0;
+
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS1);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+
+    /* Simulate RPSS not ready by returning a SILIBS_E_BUSY status */
+    will_return(__wrap_pciess_rps_ready, SILIBS_E_BUSY);
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_BUSY);
 }
 
 TEST_FUNCTION(test_begin_rp_post_link_up_init, test_setup, test_teardown)

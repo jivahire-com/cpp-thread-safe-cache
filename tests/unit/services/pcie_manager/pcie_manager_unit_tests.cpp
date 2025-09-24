@@ -607,7 +607,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
     will_return(__wrap_system_info_get_soc_position, 0);
     will_return(__wrap_config_get_overlake_rpss_index_primary_soc, 1); // not this RPSS
-    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 100);
 
     process_wait_for_event_data(&ctx, &cmpl_req);
 
@@ -621,7 +621,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 100);
 
     process_wait_for_event_data(&ctx, &cmpl_req);
 }
@@ -647,7 +647,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 100);
     expect_value(__wrap__tx_thread_sleep, timer_ticks, 1);
 
     expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, CLEAR_SECONDARY_BUS_RESET_REQUEST);
@@ -676,7 +676,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkup_overlake_failure, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
 
-    expect_value(__wrap__tx_thread_sleep, timer_ticks, 1000);
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 100);
     expect_value(__wrap__tx_thread_sleep, timer_ticks, 1);
 
     expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, CLEAR_SECONDARY_BUS_RESET_REQUEST);
@@ -825,6 +825,32 @@ TEST_FUNCTION(test_send_sync_rpss_post_rp_init_request_silibs_fail, NULL, NULL)
     {
         send_sync_rpss_post_rp_init_request((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx);
     }
+}
+
+TEST_FUNCTION(test_send_sync_rpss_get_ready_request_pass, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_READY_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    silibs_status_t sts = send_sync_rpss_get_ready_request((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_send_sync_rpss_get_ready_request_not_ready, NULL, NULL)
+{
+    ctx.rpss_idx = (RPSS_INSTANCE)0x01;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_READY_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_BUSY);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    silibs_status_t sts = send_sync_rpss_get_ready_request((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx);
+    assert_int_equal(sts, SILIBS_E_BUSY);
 }
 
 TEST_FUNCTION(test_send_sync_rp_is_ready_pass, NULL, NULL)
@@ -1497,4 +1523,191 @@ TEST_FUNCTION(test_ltssm_ssi_events, NULL, NULL)
 
     ltssm_en_set = scp_is_pcie_ltssm_en_set();
     assert_int_equal(ltssm_en_set, true);
+}
+
+TEST_FUNCTION(test_rpss_service_thread_fn_success, NULL, NULL)
+{
+    // Setup test context
+    pcie_manager_context_t test_ctx;
+    memset(&test_ctx, 0, sizeof(test_ctx));
+    pciess_device_t test_dev;
+    memset(&test_dev, 0, sizeof(test_dev));
+    pciess_device_interface_t test_iface;
+    memset(&test_iface, 0, sizeof(test_iface));
+    TX_EVENT_FLAGS_GROUP test_event_group;
+    memset(&test_event_group, 0, sizeof(test_event_group));
+    TX_EVENT_FLAGS_GROUP test_phyfw_event;
+    memset(&test_phyfw_event, 0, sizeof(test_phyfw_event));
+    TX_QUEUE test_work_queue;
+    memset(&test_work_queue, 0, sizeof(test_work_queue));
+
+    test_ctx.rpss_idx = RPSS0;
+    test_ctx.dev = &test_dev;
+    test_ctx.iface = &test_iface;
+    test_ctx.event_ptr = &test_event_group;
+    test_ctx.phyfw_load_event_ptr = &test_phyfw_event;
+    test_ctx.work_queue = test_work_queue;
+
+    /* Mock DfwkClientInterfaceOpen */
+    expect_value(__wrap_DfwkClientInterfaceOpen, InterfaceHeader, &(test_iface.header));
+    will_return(__wrap_DfwkClientInterfaceOpen, DFWK_SUCCESS);
+
+    /* Mock initial config request */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INITIAL_CONFIG_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock tx_event_flags_set */
+    expect_value(__wrap__txe_event_flags_set, group_ptr, &test_event_group);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, (1 << RPSS0));
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    /* Mock tx_thread_sleep for PRE_RPSS_INIT_WORKER_YIELD_TICKS */
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 500);
+
+    /* Mock pre rp init request */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PRE_RP_INIT_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock rpss ready check - return success immediately */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_READY_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock post rp init request */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, POST_RP_INIT_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock init_wait_for_event_queue_on_rpss */
+    mock_pcie_ent.id = RPSS0;
+    mock_pcie_ent.rps[0].enabled = true;
+    mock_pcie_ent.rps[1].enabled = false;
+    mock_pcie_ent.rps[2].enabled = false;
+    mock_pcie_ent.rps[3].enabled = false;
+
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_ENTITY_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, &mock_pcie_ent);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, rpss_req_completion_cb);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, &test_ctx);
+    expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &test_ctx.iface->header);
+    expect_any(__wrap_DfwkInterfaceSendAsync, Request);
+
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_any(__wrap_DfwkAsyncRequestSetCompletionRoutine, Request);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionRoutine, rpss_req_completion_cb);
+    expect_value(__wrap_DfwkAsyncRequestSetCompletionRoutine, CompletionContext, &test_ctx);
+    expect_value(__wrap_DfwkInterfaceSendAsync, Interface, &test_ctx.iface->header);
+    expect_any(__wrap_DfwkInterfaceSendAsync, Request);
+
+    /* Mock initiate_link_training_on_rpss */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_ENTITY_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, &mock_pcie_ent);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mocks for initiate_link_training_for_rp */
+    will_return(__wrap__txe_timer_delete, TX_SUCCESS);
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INITIATE_LINK_TRAINING);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock tx_queue_receive - first call succeeds with data, second call returns error to exit */
+    pciess_completion_request_t test_cmpl_req;
+    test_cmpl_req.op = WAIT_FOR_EVENT;
+    test_cmpl_req.rp_index = 0;
+    test_cmpl_req.async_data.int_mask = 0; // No interrupts to process
+
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &test_ctx.work_queue);
+    expect_any(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    rpss_service_thread_fn((ULONG)&test_ctx);
+}
+
+TEST_FUNCTION(test_rpss_service_thread_fn_rpss_not_ready_timeout, NULL, NULL)
+{
+    // Setup test context
+    pcie_manager_context_t test_ctx;
+    memset(&test_ctx, 0, sizeof(test_ctx));
+    pciess_device_t test_dev;
+    memset(&test_dev, 0, sizeof(test_dev));
+    pciess_device_interface_t test_iface;
+    memset(&test_iface, 0, sizeof(test_iface));
+    TX_EVENT_FLAGS_GROUP test_event_group;
+    memset(&test_event_group, 0, sizeof(test_event_group));
+    TX_EVENT_FLAGS_GROUP test_phyfw_event;
+    memset(&test_phyfw_event, 0, sizeof(test_phyfw_event));
+    TX_QUEUE test_work_queue;
+    memset(&test_work_queue, 0, sizeof(test_work_queue));
+
+    test_ctx.rpss_idx = RPSS0;
+    test_ctx.dev = &test_dev;
+    test_ctx.iface = &test_iface;
+    test_ctx.event_ptr = &test_event_group;
+    test_ctx.phyfw_load_event_ptr = &test_phyfw_event;
+    test_ctx.work_queue = test_work_queue;
+
+    /* Mock DfwkClientInterfaceOpen */
+    expect_value(__wrap_DfwkClientInterfaceOpen, InterfaceHeader, &(test_iface.header));
+    will_return(__wrap_DfwkClientInterfaceOpen, DFWK_SUCCESS);
+
+    /* Mock initial config request */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INITIAL_CONFIG_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock tx_event_flags_set */
+    expect_value(__wrap__txe_event_flags_set, group_ptr, &test_event_group);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, (1 << RPSS0));
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    /* Mock tx_thread_sleep for PRE_RPSS_INIT_WORKER_YIELD_TICKS */
+    expect_value(__wrap__tx_thread_sleep, timer_ticks, 500);
+
+    /* Mock pre rp init request */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, PRE_RP_INIT_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock rpss ready check - always return busy to simulate not ready
+     * The loop will iterate 80 times (8000 ticks / 100 ticks per iteration)
+     */
+    for (int i = 0; i < 80; i++)
+    {
+        expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RPSS_READY_REQUEST);
+        will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+        will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_BUSY);
+        will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+        /* Mock tx_thread_sleep for WORKER_YIELD_TICKS */
+        expect_value(__wrap__tx_thread_sleep, timer_ticks, 100);
+    }
+
+    /* Expect BUG_ASSERT_PARAM to be called with SILIBS_E_BUSY status and rpss_idx */
+    expect_function_calls(__wrap_crash_dump_bug_check, 1);
+    should_return = false;
+
+    /* Call the function under test */
+    if (!bugcheck_mock_return())
+    {
+        rpss_service_thread_fn((ULONG)&test_ctx);
+    }
 }

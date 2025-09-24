@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <DfwkClient.h>
+#include <bug_check.h>
 #include <idsw_kng.h>
 #include <pcie_async_requests_i.h>
 #include <pcie_config_variable.h>
@@ -22,6 +23,7 @@
 #include <pciess.h>
 #include <scp_pcie_manager.h>
 #include <silibs_kng_soc.h>
+#include <silibs_status.h>
 #include <stdbool.h> // for true
 #include <stdint.h>  // for uint8_t
 #include <stdio.h>   // for fflush, printf, stdout
@@ -33,9 +35,9 @@
  * they are waiting for phy sram load and reset events to complete
  * within an rpss.
  */
-#define PRE_SI_WORKER_YIELD_TICKS        (2)
 #define PRE_RPSS_INIT_WORKER_YIELD_TICKS (500)
-#define POST_SI_WORKER_YIELD_TICKS       (8000)
+#define WORKER_YIELD_TICKS               (100)  /* = 1 second  */
+#define PCIESS_RPSS_READY_TIMEOUT_TICKS  (8000) /* = 8 seconds */
 
 /*------------- Typedefs -----------------*/
 
@@ -46,8 +48,8 @@
 /*------------- Functions ----------------*/
 static void send_full_pciess_init(pcie_manager_context_t* ctx)
 {
-    unsigned long worker_yield_ticks =
-        (idsw_get_platform_sdv() >= PLATFORM_RVP_EVT_SILICON) ? POST_SI_WORKER_YIELD_TICKS : PRE_SI_WORKER_YIELD_TICKS;
+    unsigned long elapsed_ticks = 0;
+    silibs_status_t status = SILIBS_SUCCESS;
 
     /*
      * Send initial configuration request - this is the first step in pcie init.
@@ -76,7 +78,33 @@ static void send_full_pciess_init(pcie_manager_context_t* ctx)
      * initial rpss configuration is complete.
      */
     send_sync_rpss_pre_rp_init_request((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx);
-    tx_thread_sleep(worker_yield_ticks);
+
+    /* Wait for the rpss to get ready */
+    do
+    {
+        status = send_sync_rpss_get_ready_request((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx);
+        if (status != SILIBS_SUCCESS)
+        {
+            FPFW_DBGPRINT_INFO("RPSS[%d]: not ready yet, status (%d), waiting..\n", ctx->rpss_idx, status);
+            tx_thread_sleep(WORKER_YIELD_TICKS);
+            elapsed_ticks += WORKER_YIELD_TICKS;
+        }
+    } while ((status != SILIBS_SUCCESS) && (elapsed_ticks < PCIESS_RPSS_READY_TIMEOUT_TICKS));
+
+    /*
+     * If an RPSS never becomes ready, we need to crash the system, this is
+     * not expected to happen on an healthy RPSS with all PHYs configured
+     * correctly.
+     */
+    if (status != SILIBS_SUCCESS)
+    {
+        FPFW_DBGPRINT_ERROR("RPSS[%d]: Timed out waiting for RPSS to get ready!\n", ctx->rpss_idx);
+        BUG_ASSERT_PARAM((status == SILIBS_SUCCESS), status, ctx->rpss_idx);
+    }
+    else
+    {
+        FPFW_DBGPRINT_INFO("RPSS[%d]: RPSS is ready! Elapsed ticks: %lu\n", ctx->rpss_idx, elapsed_ticks);
+    }
 
     /* RPSS is ready, initialize all enabled root ports on it */
     send_sync_rpss_post_rp_init_request((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx);
@@ -124,5 +152,10 @@ void rpss_service_thread_fn(ULONG thread_input)
 
         process_wait_for_event_data(ctx, &cmpl_req);
         fflush(stdout);
+
+/* Break out of the loop for unit tests */
+#ifdef _WIN32
+        break;
+#endif
     }
 }

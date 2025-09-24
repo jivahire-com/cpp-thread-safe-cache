@@ -79,6 +79,17 @@ silibs_status_t send_sync_rpss_post_rp_init_request(PDFWK_INTERFACE_HEADER iface
  */
 silibs_status_t send_sync_rpss_inject_pcie_error(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx, ras_einj_info_t* einj_payload);
 
+/**
+ * @brief Send a synchronous request to check if the RPSS is ready.
+ *
+ * @param[in] iface     - Pointer to the driver interface header for this RPSS.
+ * @param[in] rpss_idx  - The RPSS instance index.
+ *
+ * @retval SILIBS_SUCCESS: RPSS is ready.
+ * @retval SILIBS_E_BUSY:  RPSS is not ready or an error occurred.
+ */
+silibs_status_t send_sync_rpss_get_ready_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx);
+
 /*--------------- Root port (RP) level synchronous requests -----------------*/
 /**
  * @brief Send a synchronous request to check if the RP is ready.

@@ -51,6 +51,19 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req);
 int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req);
 
 /**
+ *  @brief Get ready status for all rpss on a given RPSS.
+ *         Used to ascertain if we are ready to start post RP-ready init.
+ *
+ *  @param[in] req  Synchronous request packet received by the pciess
+ *                  driver which contains information about this pciess
+ *                  instance.
+ *
+ *  @return silibs_success: The RPSS is ready
+ *          silibs_e_busy:  The RPSS is not ready yet.
+ */
+int get_rpss_ready(PDFWK_SYNC_REQUEST_HEADER req);
+
+/**
  *  @brief This routine ensures that RP sub-blocks are ready for
  *         configuration and programs each sub-block by calling the
  *         top-level silibs API responsible.

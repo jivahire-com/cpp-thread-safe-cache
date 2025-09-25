@@ -24,6 +24,7 @@
         <package name="echofalls.rp_exe.build" version="1.80.1.23" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.rp_data.build" version="1.80.1.23" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="pcie.phy.bin" version="1.50.0.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
+        <package name="1psfw.diagnosticdecoder.windows" version="1.1.256" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.Dependency/nuget/v3/index.json"/>
     </nuget_packages>
 
     <pip_packages>

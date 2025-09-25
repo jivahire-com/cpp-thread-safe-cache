@@ -1,20 +1,17 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 import logging
-from pathlib import Path
 import os
 import sys
-
-
+import subprocess
 import time
-from fpfw_automation_primitives.serial.telnet import (
-    Telnet_,
-)
-
 from enum import IntEnum
+from fpfw_automation_primitives.serial.telnet import Telnet_  # noqa: F401
+from pathlib import Path
 
 
 # Add paths for both package and direct imports
 mts_dir = str(Path(__file__).parent.parent / "mts_tests")
+icc_dir = str(Path(__file__).parent.parent / "icc_mhu_tests")
 current_dir = os.path.dirname(os.path.abspath(__file__))
 pylibs_dir = os.path.dirname(current_dir)
 # Only add paths if they're not already present
@@ -27,13 +24,23 @@ for path in paths_to_add:
 try:
     from .dcp_protocol import data_collection_protocol
     from .dcp_commands import dcp_commands
-    from .trp_lib import trp_endpoint, mts_cli_trp_endpoint
+    from .icc_mhu_ap_lib import ApCore, IccMhuAp
+    from .trp_lib import (  # noqa: F401
+        trp_endpoint,
+        mts_cli_trp_endpoint,
+        mts_ap_endpoint,
+    )
     from .trp_protocol import transfer_relay_protocol
 
 except ImportError:
     from dcp_protocol import data_collection_protocol
     from dcp_commands import dcp_commands
-    from trp_lib import trp_endpoint, mts_cli_trp_endpoint
+    from icc_mhu_ap_lib import ApCore, IccMhuAp
+    from trp_lib import (  # noqa: F401
+        trp_endpoint,
+        mts_cli_trp_endpoint,
+        mts_ap_endpoint,
+    )
     from trp_protocol import transfer_relay_protocol
 
 logger = logging.getLogger(__name__)
@@ -225,7 +232,7 @@ class power_tlm_lib:
         # Using element enum value as event_id, with ENABLE state
         event_tuple = []
         enable_state = (
-            data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_ENABLE
+            data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_ENABLE  # noqa: E501
         )
 
         for element in elements:
@@ -302,7 +309,7 @@ class power_tlm_lib:
         # Using element enum value as event_id, with DISABLE state
         event_tuple = []
         disable_state = (
-            data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_DISABLE
+            data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_DISABLE  # noqa: E501
         )
 
         for element in elements:
@@ -381,7 +388,7 @@ class power_tlm_lib:
         # Using element enum value as event_id, with ENABLE state
         event_tuple = []
         enable_state = (
-            data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_ENABLE
+            data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_ENABLE  # noqa: E501
         )
 
         for element in elements:
@@ -461,7 +468,7 @@ class power_tlm_lib:
         # Using element enum value as event_id, with DISABLE state
         event_tuple = []
         disable_state = (
-            data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_DISABLE
+            data_collection_protocol.client_events_enable_disable_msg.dcp_events_enable_state_t.DCP_EVENTS_ENABLE_STATE_DISABLE  # noqa: E501
         )
 
         for element in elements:
@@ -668,6 +675,29 @@ class power_tlm_lib:
             filename_prefix, max_packages=num_packages, duration_sec=timeout_sec
         )
 
+    def decode_to_file(
+        self, manifest_path, payload_path, output_path, capture_output=True, check=True
+    ):
+        exe_path = f"{os.environ['REPO_APP_PATH_1psfw.diagnosticdecoder.windows']}/tools/x64/diagdecoder.exe"
+        cmd = [
+            exe_path,
+            manifest_path,
+            payload_path,
+            output_path,
+        ]
+
+        result = subprocess.run(cmd, capture_output=capture_output, check=check)
+        if result.returncode != 0:
+            logger.error(
+                f"DiagnosticDecoder failed: {result.stderr.decode() if result.stderr else f'Unknown error - stdout: {result.stdout}'}"  # noqa: E501
+            )
+            logger.error(
+                "Ensure that the latest MSCV C++ Redistributable is installed: https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-microsoft-visual-c-redistributable-version"  # noqa: E501
+            )
+            raise subprocess.CalledProcessError(
+                result.returncode, cmd, output=result.stdout, stderr=result.stderr
+            )
+
     def decode_packages(self):
         """
         Decode telemetry packages using the manifest file.
@@ -700,12 +730,13 @@ class power_tlm_lib:
             base_name = os.path.splitext(package_filepath)[0]
             output_file = f"{base_name}.json"
 
-            # TODO: Implement actual decoding logic here
-            # call this: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2881329
-            # This is a stub for the decoding process
             logger.info(f"Processing file: {package_filepath} -> {output_file}")
-            # Placeholder for actual decoding implementation
-            # decode_result = decode_telemetry_data(package_filepath, self.manifest_file, output_file)
+
+            self.decode_to_file(
+                manifest_path=self.manifest_file,
+                payload_path=package_filepath,
+                output_path=output_file,
+            )
 
     def _read_dcp_package(
         self, output_file: str
@@ -883,7 +914,7 @@ class power_tlm_lib:
 
 
 # to run the main functionality below from a repo environment
-# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/power_telemetry_tests/pwr_tlm_lib.py
+# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/power_telemetry_tests/pwr_tlm_lib.py  # noqa: E501
 #
 def main():
     logging.basicConfig(
@@ -899,43 +930,46 @@ def main():
 
     # Keep our application loggers at detailed level
     logging.getLogger(__name__).setLevel(logging.DEBUG)
-    logging.getLogger("dcp_protocol").setLevel(logging.DEBUG)
-    logging.getLogger("trp_lib").setLevel(logging.DEBUG)
     logging.getLogger("dcp_commands").setLevel(logging.DEBUG)
+    logging.getLogger("dcp_protocol").setLevel(logging.DEBUG)
+    logging.getLogger("icc_mhu_ap_lib").setLevel(logging.DEBUG)
+    logging.getLogger("trp_lib").setLevel(logging.DEBUG)
 
-    # die 0, SCP
-    telnet_port = Telnet_(host="localhost", port="4257", encoding="UTF-8")
-    telnet_port.open()
+    # Telnet Endpoint - Die 0 SCP - Uncomment if using SVP
+    # telnet_port = Telnet_(host="localhost", port="4257", encoding="UTF-8")
+    # telnet_port.open()
 
-    die0_scp_trp_endpoint = mts_cli_trp_endpoint(
-        telnet_port, 0, transfer_relay_protocol.cpu_type.CPU_SCP
-    )
+    # mts_endpoint = mts_cli_trp_endpoint(
+    #     telnet_port, 0, transfer_relay_protocol.cpu_type.CPU_SCP
+    # )
 
-    pwr_tlm = power_tlm_lib(die0_scp_trp_endpoint, "C:/scratch/lib")
+    # ICC MHU Endpoint - Die 0 AP 0 - Comment out if not using Trace32
+    mts_endpoint = mts_ap_endpoint()
 
-    # exception_occurred = False
+    pwr_tlm = power_tlm_lib(mts_endpoint, "C:/scratch/lib")
+
+    exception_occurred = False
 
     try:
         pwr_tlm.reset()
-        # pwr_tlm.read_manifest("manifest.bin")
+        pwr_tlm.read_manifest("manifest.bin")
 
-        # Enable specific power telemetry elements
-        inst_elements_to_enable = [
-            instantaneous_telemetry_element_id_t.INST_TELEMETRY_ELEMENT_CORE,
-            instantaneous_telemetry_element_id_t.INST_TELEMETRY_ELEMENT_SOC_MAX_TEMP,
+        # # Enable specific power telemetry elements
+        pwr_elements_to_enable = [
+            pwr_telemetry_element_id_t.POWER_TELEMETRY_ELEMENT_CORE_CURRENT,
+            pwr_telemetry_element_id_t.POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE,
         ]
-        pwr_tlm.enable_instantaneous_package_records(inst_elements_to_enable)
+        pwr_tlm.enable_power_package_records(pwr_elements_to_enable)
 
         pwr_tlm.start_dcp_client()
 
         state = pwr_tlm.get_client_state()
         logger.info(f"Current DCP client state: {state.name} ({state.value})")
 
-        pwr_tlm.read_n_packages(2, "inst_records", 120)
-
+        pwr_tlm.read_n_packages(6, "pwr_records", 65 * 10)
     except Exception as e:
         logger.error(f"Exception occurred during telemetry operations: {e}")
-        # exception_occurred = True
+        exception_occurred = True
         raise
     finally:
         # Always attempt to stop the DCP client
@@ -946,12 +980,12 @@ def main():
             logger.error(f"Failed to stop DCP client: {stop_e}")
 
     # Only decode packages if no exceptions occurred
-    # if not exception_occurred:
-    #     try:
-    #         pwr_tlm.decode_packages()
-    #     except Exception as decode_e:
-    #         logger.error(f"Failed to decode packages: {decode_e}")
-    #         raise
+    if not exception_occurred:
+        try:
+            pwr_tlm.decode_packages()
+        except Exception as decode_e:
+            logger.error(f"Failed to decode packages: {decode_e}")
+            raise
 
 
 if __name__ == "__main__":

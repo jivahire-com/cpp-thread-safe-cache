@@ -1,17 +1,17 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 
 # to  run from repo environment
-# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/pythia/pylibs/mts_tests/trp_lib.py
+# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/pythia/pylibs/mts_tests/trp_lib.py  # noqa: E501
 import os
 import sys
-import time
 import ctypes
 import logging
+from abc import ABC, abstractmethod
+from typing import Optional
 
 # Add paths for both package and direct imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
 pylibs_dir = os.path.dirname(current_dir)
-# Add the icc_mhu_tests directory to access icc_mhu_ap_lib
 icc_mhu_tests_dir = os.path.join(pylibs_dir, "icc_mhu_tests")
 sys.path.extend(
     [
@@ -23,23 +23,22 @@ sys.path.extend(
 
 logger = logging.getLogger(__name__)
 
-from fpfw_automation_primitives.serial.telnet import (
-    Telnet_,
-)
-
-from dcp_protocol import (
-    data_collection_protocol,
-    struct_to_hex_string,
-    byte_list_to_hex_string,
-)
-from trp_protocol import transfer_relay_protocol
-
-# Import ICC MHU AP library
-from icc_mhu_ap_lib import IccMhuAp, CoreMemoryMapInterface, IccMhu
-
-from typing import Optional
-from abc import ABC, abstractmethod
-from enum import Enum
+try:
+    from .dcp_protocol import (
+        data_collection_protocol,
+        struct_to_hex_string,
+        byte_list_to_hex_string,
+    )
+    from .trp_protocol import transfer_relay_protocol
+    from .icc_mhu_ap_lib import IccCommandId, IccMhu
+except ImportError:
+    from dcp_protocol import (
+        data_collection_protocol,
+        struct_to_hex_string,
+        byte_list_to_hex_string,
+    )
+    from trp_protocol import transfer_relay_protocol
+    from icc_mhu_ap_lib import ApCore, IccCommandId, IccMhu, IccMhuAp
 
 
 class CoreMemoryMapAccess(ABC):
@@ -190,7 +189,7 @@ class trp_endpoint(ABC):
                 return f"UNKNOWN_DCP_MSG_ID_{msg_id_value:x}"
 
         # Log the TRP header fields
-        logger.debug(f"Response TRP Header")
+        logger.debug("Response TRP Header")
         logger.debug(f"TRP Header - Source Die ID: {trp_msg_hdr.src_node.die_id}")
         logger.debug(
             f"TRP Header - Source Core ID: {trp_msg_hdr.src_node.core_id} "
@@ -220,12 +219,12 @@ class trp_endpoint(ABC):
             transfer_relay_protocol.trp_msg_hdr_t
         ) + ctypes.sizeof(data_collection_protocol.dcp_msg_hdr_t):
             dcp_msg_bytes = response_bytes[
-                ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t) :
+                ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t) :  # noqa: E203
             ]
             dcp_msg_hdr = data_collection_protocol.dcp_msg_hdr_t.from_buffer_copy(
                 dcp_msg_bytes
             )
-            logger.debug(f"Response DCP Header")
+            logger.debug("Response DCP Header")
             logger.debug(
                 f"DCP Header - Client ID: {get_mts_client_id_name(dcp_msg_hdr.client_id)}"
             )
@@ -295,7 +294,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
         if rsp_index == -1:
             raise ValueError(f"TRP Response not found in {response}")
 
-        response_str = response[rsp_index + 4 :].strip()
+        response_str = response[rsp_index + 4 :].strip()  # noqa: E203
         response_str = response_str.split("\n")[
             0
         ]  # Take only the part before the newline
@@ -322,7 +321,7 @@ class mts_cli_trp_endpoint(trp_endpoint):
 
         # Extract DCP response (skip TRP header)
         dcp_msg_bytes = response_bytes[
-            ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t):
+            ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t) :  # noqa: E203
         ]
         return dcp_msg_bytes
 
@@ -461,3 +460,75 @@ class mts_icc_mhu_trp_endpoint(trp_endpoint, CoreMemoryMapAccess):
             else:
                 # Wrap other exceptions in RuntimeError
                 raise RuntimeError(f"Failed to read memory to file: {e}") from e
+
+
+class mts_ap_endpoint(mts_icc_mhu_trp_endpoint):
+    """
+    The AP Core does not send TRP messages, only DCP.
+    This class utilizes the existing base classes, but overrides
+    the necessary functions to not send the TRP Header.
+    """
+
+    def __init__(self):
+        super().__init__(
+            IccMhuAp(memory_interface=ApCore()),
+            0,
+            transfer_relay_protocol.cpu_type.CPU_AP,
+        )
+
+    def send_trp_message(self) -> str:
+        raise NotImplementedError("The AP Core does not send TRP messages.")
+
+    def send_dcp_message(
+        self,
+        dest_die: ctypes.c_uint8,
+        dest_cpu: transfer_relay_protocol.cpu_type,
+        client_id: data_collection_protocol.mts_client_id_t,
+        dcp_msg: list[int],
+        timeout_sec: Optional[int] = None,
+    ) -> bytearray:
+
+        # Following parameters are required for TRP messages / polymorphism, but not
+        # needed for the AP Core since it does not add the TRP Header:
+        # dest_die, dest_cpu, client_id
+
+        # However we can validate the dest_die and dest_cpu match the AP Die 0
+        if dest_die != 0 or dest_cpu != transfer_relay_protocol.cpu_type.CPU_AP:
+            raise Exception(
+                f"Destination Die [{dest_die}] or Destination CPU [{dest_cpu}] does not match AP Core Die 0"
+            )
+
+        # Convert the message into a byte array to write to memory
+        packet = bytearray(dcp_msg)
+
+        logger.debug("Sending DCP message via ICC MHU:")
+        logger.debug(f"DCP Payload: {' '.join(f'{b:02X}' for b in dcp_msg)}")
+
+        try:
+            cmd_timeout_sec = (
+                timeout_sec if timeout_sec is not None else self.default_timeout_sec
+            )
+
+            # Use ICC MHU send_packet with DCP packet
+            self.icc_mhu.send_packet(
+                command=IccCommandId.ICC_COMMAND_DCP_MSG.value,
+                packet=packet,
+                timeout_sec=cmd_timeout_sec,
+            )
+
+            # Wait for response using ICC MHU get_packet
+            response_bytes = self.icc_mhu.get_packet(timeout_sec=cmd_timeout_sec)
+            logger.debug(f"Raw DCP response bytes: {response_bytes}")
+
+            if response_bytes:
+                logger.debug(
+                    f"DCP response received: {' '.join(f'{b:02X}' for b in response_bytes)}"
+                )
+                return response_bytes
+            else:
+                raise TimeoutError(
+                    f"No response received within {cmd_timeout_sec} seconds"
+                )
+        except Exception as e:
+            logger.error(f"Error while sending DCP message via ICC MHU: {e}")
+            raise RuntimeError(f"Failed to send DCP message via ICC MHU: {e}")

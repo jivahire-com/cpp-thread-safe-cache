@@ -11,6 +11,7 @@ import re
 import sys
 import tempfile
 from abc import ABC, abstractmethod
+from enum import Enum
 from pathlib import Path
 from typing import Optional, Tuple
 from fpfw_automation_trace32.trace32 import trace32 as FpFwTrace32Debugger
@@ -30,6 +31,9 @@ sys.path.extend(
 
 logger = logging.getLogger(__name__)
 
+
+class IccCommandId(Enum):
+    ICC_COMMAND_DCP_MSG = 0x00020001
 
 class CoreMemoryMapInterface(ABC):
     """Abstract base class for memory interface implementations"""
@@ -141,8 +145,11 @@ class Trace32ApCore(Trace32):
     def __del__(self):
         # attempt to disconnect cleanly, but ignore any errors and quit
         logger.debug(f"Destructor called - cleaning up {self.__str__()}")
+        logger.debug("Attempting to disconnect cleanly from T32 instance")
         self.execute_command("sys.d")
+        logger.debug("Attempting to quit from T32 Instance")
         self.execute_command("quit")
+        logger.debug("Attempting to the process")
         self.quit()
 
     def __str__(self):
@@ -512,11 +519,13 @@ class IccMhu:
             logger.error(f"Failed to get packet: {e}")
             return None
 
-    def send_packet(self, packet: bytearray, timeout_sec: int = 5) -> None:
+    def send_packet(self, command: int, packet: bytearray, timeout_sec: int = 5) -> None:
         """
         Send a packet with the specified data.
 
         Args:
+            command: ICC Command ID
+                     https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs?_a=contents&version=GBdev_a0&path=/libraries/kng_silibs_platform/include/kng_icc_shared.h
             packet: Packet data as bytearray
             timeout_sec: Timeout in seconds to wait for send channel availability
 
@@ -554,6 +563,11 @@ class IccMhu:
             # Write packet size
             self._write_memory(
                 self.SEND_PAYLOAD_ADDR + self.PAYLOAD_SIZE_OFFSET, packet_size, 2
+            )
+
+            # Write the command
+            self._write_memory(
+                self.SEND_PAYLOAD_ADDR + self.COMMAND_OFFSET, command, 4
             )
 
             # Write packet data

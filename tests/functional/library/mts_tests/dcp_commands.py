@@ -19,8 +19,13 @@ sys.path.extend(
     ]
 )
 
-from dcp_protocol import data_collection_protocol
-from trp_protocol import transfer_relay_protocol
+try:
+    from .dcp_protocol import data_collection_protocol
+    from .trp_protocol import transfer_relay_protocol
+
+except ImportError:
+    from dcp_protocol import data_collection_protocol
+    from trp_protocol import transfer_relay_protocol
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +227,8 @@ class dcp_commands:
 
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(
-                f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} "
+                f"Message Error: {msg_status.name} for command "
+                f"{data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} "
             )
 
     @staticmethod
@@ -248,7 +254,7 @@ class dcp_commands:
         )
 
         # Log raw message for debugging
-        logger.debug(f"Sending client_get_state message")
+        logger.debug("Sending client_get_state message")
 
         byte_response = src_endpoint.send_dcp_message(
             dest_die=dest_die,
@@ -264,11 +270,12 @@ class dcp_commands:
 
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(
-                f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} "
+                f"Message Error: {msg_status.name} for command "
+                f"{data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name}"
             )
 
         client_payload = data_collection_protocol.client_get_state_msg.dcp_msg_get_client_state_t.from_buffer_copy(
-            byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]
+            byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]  # noqa: E203
         )
 
         dcp_commands._log_response_fields(client_payload, "client_get_state")
@@ -325,11 +332,12 @@ class dcp_commands:
 
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(
-                f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} "
+                f"Message Error: {msg_status.name} for command "
+                f"{data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name}"
             )
 
         manifest_rsp = data_collection_protocol.client_get_manifest_msg.dcp_msg_get_manifest_t.from_buffer_copy(
-            byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]
+            byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]  # noqa: E203
         )
         dcp_commands._log_response_fields(manifest_rsp, "client_get_manifest")
 
@@ -341,10 +349,10 @@ class dcp_commands:
                 try:
                     # Use the physical start address and manifest size from the response
                     memory_address = (
-                        manifest_rsp.physical_start_addr.value
-                        + manifest_rsp.start_addr_offset.value
+                        manifest_rsp.physical_start_addr
+                        + manifest_rsp.start_addr_offset
                     )
-                    manifest_size = manifest_rsp.manifest_size.value
+                    manifest_size = manifest_rsp.total_size
                     src_endpoint.read_to_file(
                         memory_address,
                         manifest_size,
@@ -413,12 +421,13 @@ class dcp_commands:
 
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(
-                f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} "
+                f"Message Error: {msg_status.name} for command "
+                f"{data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name}"
             )
 
         platform_rsp = (
             data_collection_protocol.dcp_msg_get_plat_info_t.from_buffer_copy(
-                byte_response[ctypes.sizeof(dcp_msg_hdr_t):]
+                byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]  # noqa: E203
             )
         )
         dcp_commands._log_response_fields(
@@ -484,7 +493,7 @@ class dcp_commands:
         # Parse capabilities response
         capabilities_response = (
             data_collection_protocol.dcp_msg_get_caps_t.from_buffer_copy(
-                byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]
+                byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]  # noqa: E203
             )
         )
 
@@ -521,7 +530,7 @@ class dcp_commands:
         )
 
         # Log raw message for debugging
-        logger.debug(f"Sending client_read_data message")
+        logger.debug("Sending client_read_data message")
 
         byte_response = src_endpoint.send_dcp_message(
             dest_die=dest_die,
@@ -537,7 +546,10 @@ class dcp_commands:
 
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(
-                f"Message Error: {data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} "
+                f"Message Error: "
+                f"{data_collection_protocol.dcp_status_t(response_dcp_msg_hdr.msg_status).name} "
+                f"for command "
+                f"{data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name}"
             )
 
         read_data_rsp = None
@@ -548,7 +560,7 @@ class dcp_commands:
             == data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_LAST
         ):
             read_data_rsp = data_collection_protocol.client_read_data_msg.dcp_msg_read_data_t.from_buffer_copy(
-                byte_response[ctypes.sizeof(dcp_msg_hdr_t):]
+                byte_response[ctypes.sizeof(dcp_msg_hdr_t) :]  # noqa: E203
             )
 
             dcp_commands._log_response_fields(read_data_rsp, "client_read_data")
@@ -561,17 +573,19 @@ class dcp_commands:
                     try:
                         # Calculate the memory address to read from
                         memory_address = (
-                            read_data_rsp.physical_start_addr.value
-                            + read_data_rsp.rd_data_addr_offset.value
+                            read_data_rsp.physical_start_addr
+                            + read_data_rsp.rd_data_addr_offset
                         )
                         # Use rd_data_size for the amount of data to read
                         src_endpoint.read_to_file(
                             memory_address,
-                            read_data_rsp.rd_data_size.value,
+                            read_data_rsp.rd_data_size,
                             output_file,
                         )
                         logger.debug(
-                            f"Response data written to {output_file} using read_to_file API (addr: 0x{memory_address:x}, size: {read_data_rsp.rd_data_size.value})"
+                            f"Response data written to {output_file} using read_to_file API "
+                            f"(addr: 0x{memory_address:x}, "
+                            f"size: {read_data_rsp.rd_data_size})"
                         )
                     except Exception as e:
                         logger.debug(
@@ -621,7 +635,7 @@ class dcp_commands:
         dcp_msg_bytes.extend(payload)
 
         # Log raw message for debugging
-        logger.debug(f"Sending client_send_read_data_complete message")
+        logger.debug("Sending client_send_read_data_complete message")
 
         byte_response = src_endpoint.send_dcp_message(
             dest_die=dest_die,
@@ -637,7 +651,8 @@ class dcp_commands:
 
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(
-                f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} "
+                f"Message Error: {msg_status.name} for command "
+                f"{data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name}"
             )
 
         return msg_status
@@ -665,7 +680,7 @@ class dcp_commands:
         )
 
         # Log raw message for debugging
-        logger.debug(f"Sending client_reset message")
+        logger.debug("Sending client_reset message")
 
         byte_response = src_endpoint.send_dcp_message(
             dest_die=dest_die,
@@ -682,7 +697,8 @@ class dcp_commands:
 
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(
-                f"Message Error: {msg_status.name} for command {data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name} "
+                f"Message Error: {msg_status.name} for command "
+                f"{data_collection_protocol.dcp_msg_id_t(response_dcp_msg_hdr.msg_id).name}"
             )
 
         return msg_status

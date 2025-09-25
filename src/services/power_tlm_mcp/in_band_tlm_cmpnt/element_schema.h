@@ -155,7 +155,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, max_mA),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, min_mA),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, average_mA),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mv),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, min_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, average_mV),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, max_dC),
@@ -231,7 +231,8 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      pwr_soc_element_mpam_core_power,
                      FPFW_ET_LEVEL_DEBUG,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, max_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, average_mW))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, average_mW),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, mpam_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE,
@@ -249,7 +250,8 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      pwr_soc_element_mpam_memory_power,
                      FPFW_ET_LEVEL_DEBUG,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, max_mW),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, average_mW))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, average_mW),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, mpam_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,
                      INST_TELEMETRY_ELEMENT_CORE,

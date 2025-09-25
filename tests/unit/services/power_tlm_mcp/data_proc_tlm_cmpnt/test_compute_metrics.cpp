@@ -876,7 +876,7 @@ TEST_FUNCTION(test_comp_metrics_for_mpam_data, test_setup, test_teardown)
     {
         test_mpam_data[i].latest_total_pwr_mW = (i + 1) * 100; // 100, 200, 300, etc.
         test_mpam_data[i].latest_pstate = i % 8;               // Vary pstate 0-7
-        test_mpam_data[i].active = (i % 2) == 0;               // Alternate active/inactive
+        test_mpam_data[i].active = (i < 5);                    // First 5 MPAMs active for testing
         test_mpam_data[i].throttling = (i % 3) == 0;           // Every 3rd MPAM throttling
     }
 
@@ -884,50 +884,75 @@ TEST_FUNCTION(test_comp_metrics_for_mpam_data, test_setup, test_teardown)
     comp_metrics_for_mpam_data(&test_mpam_data);
 
     // Verify that the computed metrics were updated correctly for first few MPAMs
-    // Test MPAM 0: power = 100mW
+    // Test MPAM 0: power = 100mW, pstate = 0
     assert_int_equal(computed_metrics_2_mins.mpam[0].core_power.min, 100);
     assert_int_equal(computed_metrics_2_mins.mpam[0].core_power.max, 100);
     assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.mpam[0].core_power.running_avg), 100);
     assert_int_equal(computed_metrics_2_mins.mpam[0].core_power.running_avg.num_samples, 1);
+    assert_int_equal(computed_metrics_2_mins.mpam[0].active_pstate.min, 0);
+    assert_int_equal(computed_metrics_2_mins.mpam[0].active_pstate.max, 0);
+    assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.mpam[0].active_pstate.running_avg), 0);
+    assert_int_equal(computed_metrics_2_mins.mpam[0].active_pstate.running_avg.num_samples, 1);
 
-    // Test MPAM 1: power = 200mW
+    // Test MPAM 1: power = 200mW, pstate = 1
     assert_int_equal(computed_metrics_2_mins.mpam[1].core_power.min, 200);
     assert_int_equal(computed_metrics_2_mins.mpam[1].core_power.max, 200);
     assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.mpam[1].core_power.running_avg), 200);
     assert_int_equal(computed_metrics_2_mins.mpam[1].core_power.running_avg.num_samples, 1);
+    assert_int_equal(computed_metrics_2_mins.mpam[1].active_pstate.min, 1);
+    assert_int_equal(computed_metrics_2_mins.mpam[1].active_pstate.max, 1);
+    assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.mpam[1].active_pstate.running_avg), 1);
+    assert_int_equal(computed_metrics_2_mins.mpam[1].active_pstate.running_avg.num_samples, 1);
 
-    // Test MPAM 2: power = 300mW
+    // Test MPAM 2: power = 300mW, pstate = 2
     assert_int_equal(computed_metrics_2_mins.mpam[2].core_power.min, 300);
     assert_int_equal(computed_metrics_2_mins.mpam[2].core_power.max, 300);
     assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.mpam[2].core_power.running_avg), 300);
     assert_int_equal(computed_metrics_2_mins.mpam[2].core_power.running_avg.num_samples, 1);
+    assert_int_equal(computed_metrics_2_mins.mpam[2].active_pstate.min, 2);
+    assert_int_equal(computed_metrics_2_mins.mpam[2].active_pstate.max, 2);
+    assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.mpam[2].active_pstate.running_avg), 2);
+    assert_int_equal(computed_metrics_2_mins.mpam[2].active_pstate.running_avg.num_samples, 1);
 
     // Test calling the function again with different values to verify accumulation
-    // Update test data with new power values
+    // Update test data with new power values and different pstates
     for (uint8_t i = 0; i < 3; i++) // Test first 3 MPAMs for accumulation
     {
         test_mpam_data[i].latest_total_pwr_mW = (i + 1) * 150; // 150, 300, 450
+        test_mpam_data[i].latest_pstate = (i + 3);             // 3, 4, 5 (different from first call)
     }
 
     comp_metrics_for_mpam_data(&test_mpam_data);
 
-    // Verify accumulation for MPAM 0: first=100, second=150
+    // Verify accumulation for MPAM 0: first=100, second=150; first_pstate=0, second_pstate=3
     assert_int_equal(computed_metrics_2_mins.mpam[0].core_power.min, 100); // min unchanged
     assert_int_equal(computed_metrics_2_mins.mpam[0].core_power.max, 150); // new max
     assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.mpam[0].core_power.running_avg), 125); // (100+150)/2
     assert_int_equal(computed_metrics_2_mins.mpam[0].core_power.running_avg.num_samples, 2);
+    assert_int_equal(computed_metrics_2_mins.mpam[0].active_pstate.min, 0); // min unchanged
+    assert_int_equal(computed_metrics_2_mins.mpam[0].active_pstate.max, 3); // new max
+    assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.mpam[0].active_pstate.running_avg), 2); // (0+3)/2 = 1.5 rounded up
+    assert_int_equal(computed_metrics_2_mins.mpam[0].active_pstate.running_avg.num_samples, 2);
 
-    // Verify accumulation for MPAM 1: first=200, second=300
+    // Verify accumulation for MPAM 1: first=200, second=300; first_pstate=1, second_pstate=4
     assert_int_equal(computed_metrics_2_mins.mpam[1].core_power.min, 200); // min unchanged
     assert_int_equal(computed_metrics_2_mins.mpam[1].core_power.max, 300); // new max
     assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.mpam[1].core_power.running_avg), 250); // (200+300)/2
     assert_int_equal(computed_metrics_2_mins.mpam[1].core_power.running_avg.num_samples, 2);
+    assert_int_equal(computed_metrics_2_mins.mpam[1].active_pstate.min, 1); // min unchanged
+    assert_int_equal(computed_metrics_2_mins.mpam[1].active_pstate.max, 4); // new max
+    assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.mpam[1].active_pstate.running_avg), 3); // (1+4)/2 = 2.5 rounded up
+    assert_int_equal(computed_metrics_2_mins.mpam[1].active_pstate.running_avg.num_samples, 2);
 
-    // Verify accumulation for MPAM 2: first=300, second=450
+    // Verify accumulation for MPAM 2: first=300, second=450; first_pstate=2, second_pstate=5
     assert_int_equal(computed_metrics_2_mins.mpam[2].core_power.min, 300); // min unchanged
     assert_int_equal(computed_metrics_2_mins.mpam[2].core_power.max, 450); // new max
     assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.mpam[2].core_power.running_avg), 375); // (300+450)/2
     assert_int_equal(computed_metrics_2_mins.mpam[2].core_power.running_avg.num_samples, 2);
+    assert_int_equal(computed_metrics_2_mins.mpam[2].active_pstate.min, 2); // min unchanged
+    assert_int_equal(computed_metrics_2_mins.mpam[2].active_pstate.max, 5); // new max
+    assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.mpam[2].active_pstate.running_avg), 4); // (2+5)/2 = 3.5 rounded up
+    assert_int_equal(computed_metrics_2_mins.mpam[2].active_pstate.running_avg.num_samples, 2);
 }
 
 TEST_FUNCTION(test_comp_metrics_for_mpam_data_null_pointer, test_setup, test_teardown)
@@ -963,4 +988,92 @@ TEST_FUNCTION(test_comp_metrics_for_mpam_data_null_pointer, test_setup, test_tea
     assert_int_equal(computed_metrics_2_mins.mpam[2].core_power.max, 0);
     assert_int_equal(computed_metrics_2_mins.mpam[2].core_power.running_avg.summation, 0);
     assert_int_equal(computed_metrics_2_mins.mpam[2].core_power.running_avg.num_samples, 0);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_mpam_throttling, test_setup, test_teardown)
+{
+    // Test the comp_metrics_for_mpam_throttling function which accumulates MPAM throttling residency and pstate data
+
+    // Test Case 1: Basic functionality with valid MPAM ID
+    uint8_t test_mpam_id = 5;
+    uint32_t initial_residency_uS = 15000;
+    uint8_t test_nominal_pstate = 12;
+
+    // Verify initial state is cleared
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].residency_uS, 0);
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].nominal_pstate, 0);
+
+    // Call the function under test
+    comp_metrics_for_mpam_throttling(test_mpam_id, initial_residency_uS, test_nominal_pstate);
+
+    // Verify the first call updates both residency and nominal pstate
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].residency_uS, 15000);
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].nominal_pstate, 12);
+
+    // Test Case 2: Accumulation of residency values with subsequent calls
+    uint32_t additional_residency_uS = 8000;
+    uint8_t new_nominal_pstate = 10;
+
+    comp_metrics_for_mpam_throttling(test_mpam_id, additional_residency_uS, new_nominal_pstate);
+
+    // Verify residency accumulates but nominal_pstate gets overwritten with latest value
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].residency_uS, 23000); // 15000 + 8000
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].nominal_pstate, 10);  // Updated to new value
+
+    // Test Case 3: Multiple accumulations to verify continuous summing
+    comp_metrics_for_mpam_throttling(test_mpam_id, 12000, 8);
+    comp_metrics_for_mpam_throttling(test_mpam_id, 5000, 6);
+
+    // Verify total accumulation: 23000 + 12000 + 5000 = 40000
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].residency_uS, 40000);
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].nominal_pstate, 6); // Latest value
+
+    // Test Case 4: Different MPAM ID to verify no cross-contamination
+    uint8_t different_mpam_id = 15;
+    comp_metrics_for_mpam_throttling(different_mpam_id, 25000, 14);
+
+    // Verify the different MPAM has independent values
+    assert_int_equal(computed_metrics_2_mins.mpam[different_mpam_id].residency_uS, 25000);
+    assert_int_equal(computed_metrics_2_mins.mpam[different_mpam_id].nominal_pstate, 14);
+
+    // Verify original MPAM values are unchanged
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].residency_uS, 40000);
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].nominal_pstate, 6);
+
+    // Test Case 5: Zero residency values (valid scenario)
+    uint8_t zero_test_mpam_id = 20;
+    comp_metrics_for_mpam_throttling(zero_test_mpam_id, 0, 5);
+
+    assert_int_equal(computed_metrics_2_mins.mpam[zero_test_mpam_id].residency_uS, 0);
+    assert_int_equal(computed_metrics_2_mins.mpam[zero_test_mpam_id].nominal_pstate, 5);
+
+    // Test Case 6: in_band_publishing_active = false should not update metrics
+    in_band_publishing_active = false;
+    uint8_t inactive_test_mpam_id = 25;
+
+    // Verify initial state
+    assert_int_equal(computed_metrics_2_mins.mpam[inactive_test_mpam_id].residency_uS, 0);
+    assert_int_equal(computed_metrics_2_mins.mpam[inactive_test_mpam_id].nominal_pstate, 0);
+
+    // Call function with publishing inactive
+    comp_metrics_for_mpam_throttling(inactive_test_mpam_id, 30000, 16);
+
+    // Verify no updates occurred
+    assert_int_equal(computed_metrics_2_mins.mpam[inactive_test_mpam_id].residency_uS, 0);
+    assert_int_equal(computed_metrics_2_mins.mpam[inactive_test_mpam_id].nominal_pstate, 0);
+
+    // Test Case 7: Invalid MPAM ID (boundary condition)
+    // Reset publishing to active for final test
+    in_band_publishing_active = true;
+
+    // Store initial values of a valid MPAM to ensure they don't get corrupted
+    uint32_t valid_mpam_residency = computed_metrics_2_mins.mpam[test_mpam_id].residency_uS;
+    uint8_t valid_mpam_pstate = computed_metrics_2_mins.mpam[test_mpam_id].nominal_pstate;
+
+    // Call with invalid MPAM ID (should be handled gracefully by range check)
+    comp_metrics_for_mpam_throttling(NUMBER_OF_MPAMS, 50000, 20);
+
+    // Verify valid MPAM data is unchanged (function should return early on invalid ID)
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].residency_uS, valid_mpam_residency);
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].nominal_pstate, valid_mpam_pstate);
 }

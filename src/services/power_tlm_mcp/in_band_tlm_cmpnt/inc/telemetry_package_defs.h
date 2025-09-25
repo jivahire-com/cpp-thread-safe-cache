@@ -490,7 +490,11 @@ typedef struct {
 } pwr_soc_record_max_soc_temp_t, *p_pwr_soc_record_max_soc_temp_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_CORE_POWER----------------
-typedef total_power_t pwr_soc_element_mpam_core_power_t, *p_pwr_soc_element_mpam_core_power_t;
+typedef struct {
+    uint32_t max_mW;
+    uint32_t average_mW;
+    uint8_t  mpam_id;
+} pwr_soc_element_mpam_core_power_t, *p_pwr_soc_element_mpam_core_power_t;
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
@@ -510,6 +514,7 @@ typedef struct {
     uint16_t max_pstate_frequency_Mhz;
     uint16_t avg_pstate_frequency_Mhz;
     uint16_t throttle_extent_centipct;
+    uint8_t  mpam_id;
 } pwr_soc_element_mpam_throttle_t, *p_pwr_soc_element_mpam_throttle_t;
 
 typedef struct {
@@ -524,7 +529,11 @@ typedef struct {
 
 //----------------POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER----------------
 
-typedef total_power_t pwr_soc_element_mpam_memory_power_t, *p_pwr_soc_element_mpam_memory_power_t;
+typedef struct {
+    uint32_t max_mW;
+    uint32_t average_mW;
+    uint8_t  mpam_id;
+} pwr_soc_element_mpam_memory_power_t, *p_pwr_soc_element_mpam_memory_power_t;
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;

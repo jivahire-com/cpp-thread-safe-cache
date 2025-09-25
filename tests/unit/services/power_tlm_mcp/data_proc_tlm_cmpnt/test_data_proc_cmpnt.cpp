@@ -142,6 +142,12 @@ TEST_FUNCTION(test_data_smpl_reset_residency_timestamps, test_setup, test_teardo
         }
     }
 
+    // Initialize MPAM residency timestamps with non-zero values
+    for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+    {
+        mpam_rt[mpam_id].residency_timestamp_uS = 6000;
+    }
+
     // Test Case 1: CState and PState validity (original test case)
     core_rt[3].status_flags.pkt_cstate_is_valid = true;
     core_rt[4].status_flags.pkt_pstate_is_valid = true;
@@ -218,4 +224,10 @@ TEST_FUNCTION(test_data_smpl_reset_residency_timestamps, test_setup, test_teardo
     assert_int_equal(core_rt[0].pstate_res_timestamp_uS, 3000);
     assert_int_equal(core_rt[0].throttle_res_timestamp_uS[THROTTLE_SOURCE_CURRENT], 4000);
     assert_int_equal(core_rt[0].rack_pri_res_timestamp_uS[0], 5000);
+
+    // Test MPAM timestamp updates - all MPAM entries should be updated unconditionally
+    for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+    {
+        assert_int_equal(mpam_rt[mpam_id].residency_timestamp_uS, 10000);
+    }
 }

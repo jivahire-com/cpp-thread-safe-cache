@@ -104,6 +104,7 @@ void package_create_enable_disable_pwr_record(pwr_telemetry_element_id_t element
     else
     {
         power_pkg_element_enable[element_id] = enable_record;
+        FPFW_ET_LOG(PwrPkgRecordEnable, element_id, enable_record);
     }
 }
 
@@ -116,6 +117,7 @@ void package_create_enable_disable_inst_record(instantaneous_telemetry_element_i
     else
     {
         inst_pkg_element_enable[element_id] = enable_record;
+        FPFW_ET_LOG(InstPkgRecordEnable, element_id, enable_record);
     }
 }
 
@@ -161,60 +163,70 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
         pkg_location += package_create_pwr_core_pstate_record(pstate_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_CSTATE])
     {
         p_pwr_core_record_cstate_t cstate_record = (p_pwr_core_record_cstate_t)pkg_location;
         pkg_location += package_create_pwr_core_cstate_record(cstate_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_THROTTLE])
     {
         p_pwr_core_record_throttle_t throttle_record = (p_pwr_core_record_throttle_t)pkg_location;
         pkg_location += package_create_pwr_core_throttle_record(throttle_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_RACK_PRIORITIES])
     {
         p_pwr_core_record_rack_priorities_t rack_priority_record = (p_pwr_core_record_rack_priorities_t)pkg_location;
         pkg_location += package_create_pwr_core_rack_priority_record(rack_priority_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_VOLTAGE])
     {
         p_pwr_core_record_voltage_t voltage_record = (p_pwr_core_record_voltage_t)pkg_location;
         pkg_location += package_create_pwr_core_voltage_record(voltage_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_CURRENT])
     {
         p_pwr_core_record_current_t current_record = (p_pwr_core_record_current_t)pkg_location;
         pkg_location += package_create_pwr_core_current_record(current_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_TEMPERATURE])
     {
         p_pwr_core_record_temperature_t temperature_record = (p_pwr_core_record_temperature_t)pkg_location;
         pkg_location += package_create_pwr_core_temperature_record(temperature_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_POWER])
     {
         p_pwr_core_record_power_t power_record = (p_pwr_core_record_power_t)pkg_location;
         pkg_location += package_create_pwr_core_power_record(power_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_DROOPS])
     {
         p_pwr_core_record_droop_count_t droop_count_record = (p_pwr_core_record_droop_count_t)pkg_location;
         pkg_location += package_create_pwr_core_droop_count_record(droop_count_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VR_RAILS])
     {
         p_pwr_soc_record_vr_rail_t vr_rail_record = (p_pwr_soc_record_vr_rail_t)pkg_location;
         pkg_location += package_create_pwr_soc_vr_rail_record(vr_rail_record);
         package_hdr->payload_header.number_of_records++;
     }
+
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE])
     {
         p_pwr_soc_record_dimm_temp_t dimm_temp_record = (p_pwr_soc_record_dimm_temp_t)pkg_location;

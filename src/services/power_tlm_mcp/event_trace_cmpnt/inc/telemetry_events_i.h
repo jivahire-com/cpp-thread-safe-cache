@@ -75,6 +75,11 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, pkg_available_size))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                     18,
+                     MpamThrottleUnderflow,
+                     FPFW_ET_LEVEL_ERROR)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                      20,
                      TelemetryDataCleared,
                      FPFW_ET_LEVEL_INFO)
@@ -183,6 +188,20 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     MtsMgrClientUnexpectedTrpMsg,
                     FPFW_ET_LEVEL_WARNING,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, trp_msg_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    36,
+                    PwrPkgRecordEnable,
+                    FPFW_ET_LEVEL_INFO,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, record),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, enable))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    37,
+                    InstPkgRecordEnable,
+                    FPFW_ET_LEVEL_INFO,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, record),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, enable))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     38,
@@ -471,7 +490,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     87,
                     CompMetricsMpamPwrNullPointer,
                     FPFW_ET_LEVEL_ERROR)
-                   
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     88,
                     AgingCountrInValidCounterID,
@@ -489,7 +508,13 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     90,
                     AgingCounterNotArmed,
                     FPFW_ET_LEVEL_ERROR,
-                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id)) 
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, core_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    91,
+                    CompMetricsMpamIdOutOfRange,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, mpam_id))
 
 /*--------- Function Prototypes ----------*/
 

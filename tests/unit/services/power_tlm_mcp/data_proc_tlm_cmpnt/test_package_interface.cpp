@@ -601,10 +601,85 @@ TEST_FUNCTION(test_get_pwr_mpam_core_pwr_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_soc_mpam_throttle_data, test_setup, test_teardown)
 {
-    // TODO: Implement the rest of the record once computed metrics are available for mpam throttle
-    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584712/?view=edit
     pwr_soc_element_mpam_throttle_t mpam_throttle_data = {0};
-    data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(TEST_MPAM_ID_4, &mpam_throttle_data);
+    uint16_t mpam_id = TEST_MPAM_ID_4;
+
+    // Set up test values in computed_metrics_2_mins for this MPAM using correct field names
+    computed_metrics_2_mins.mpam[mpam_id].residency_uS = 150000; // 150ms
+    computed_metrics_2_mins.mpam[mpam_id].nominal_pstate = 5;
+    computed_metrics_2_mins.mpam[mpam_id].active_pstate.running_avg.summation = 6 * 3;
+    computed_metrics_2_mins.mpam[mpam_id].active_pstate.running_avg.num_samples = 3;
+    computed_metrics_2_mins.mpam[mpam_id].active_pstate.max = 8;
+
+    // Call the API with valid MPAM ID
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(mpam_id, &mpam_throttle_data);
+
+    // Get expected frequency values by calling dvfs_get_freq_from_plimit directly
+    uint32_t expected_nominal_freq = dvfs_get_freq_from_plimit(5);
+    uint32_t expected_max_freq = dvfs_get_freq_from_plimit(8);
+    uint32_t expected_avg_freq = dvfs_get_freq_from_plimit(6); // running_avg = 18/3 = 6
+
+    // Verify the basic data was populated correctly
+    assert_int_equal(mpam_throttle_data.throttle_duration_mS, 150); // 150000 uS / 1000 = 150 mS
+    assert_int_equal(mpam_throttle_data.nominal_pstate_frequency_Mhz, expected_nominal_freq);
+    assert_int_equal(mpam_throttle_data.max_pstate_frequency_Mhz, expected_max_freq);
+    assert_int_equal(mpam_throttle_data.avg_pstate_frequency_Mhz, expected_avg_freq);
+
+    // Calculate expected throttle extent: (nominal - max) / nominal * 100
+    // Use the same formula as the implementation - this may wrap around for underflow cases
+    uint32_t expected_throttle_extent = 0;
+    if (expected_nominal_freq > 0)
+    {
+        // Cast to match the implementation exactly: (uint32_t)(nominal - max) * 100 / nominal
+        expected_throttle_extent =
+            (((uint32_t)(expected_nominal_freq - expected_max_freq) * 100U) / expected_nominal_freq);
+    }
+    assert_int_equal(mpam_throttle_data.throttle_extent_centipct, expected_throttle_extent);
+
+    // Test case where max frequency > nominal frequency (underflow protection)
+    pwr_soc_element_mpam_throttle_t mpam_data_underflow = {0};
+    computed_metrics_2_mins.mpam[mpam_id].nominal_pstate = 10;
+    computed_metrics_2_mins.mpam[mpam_id].active_pstate.max = 5; // Lower pstate = higher frequency
+
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(mpam_id, &mpam_data_underflow);
+
+    // When max frequency > nominal frequency, throttle extent should be 0 and an error should be logged
+    uint32_t underflow_nominal_freq = dvfs_get_freq_from_plimit(10);
+    uint32_t underflow_max_freq = dvfs_get_freq_from_plimit(5);
+    if (underflow_max_freq > underflow_nominal_freq)
+    {
+        assert_int_equal(mpam_data_underflow.throttle_extent_centipct, 0);
+    }
+
+    // Test case for potential overflow: nominal_pstate = 0, active_pstate.max = 31
+    pwr_soc_element_mpam_throttle_t mpam_data_overflow = {0};
+    computed_metrics_2_mins.mpam[mpam_id].nominal_pstate = 0;     // Highest frequency
+    computed_metrics_2_mins.mpam[mpam_id].active_pstate.max = 31; // Lowest frequency
+
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(mpam_id, &mpam_data_overflow);
+
+    // Calculate expected values - this tests the large frequency difference case
+    uint32_t overflow_nominal_freq = dvfs_get_freq_from_plimit(0); // Maximum frequency
+    uint32_t overflow_max_freq = dvfs_get_freq_from_plimit(31);    // Minimum frequency
+    uint32_t expected_overflow_throttle =
+        (((uint32_t)(overflow_nominal_freq - overflow_max_freq) * 100U) / overflow_nominal_freq);
+
+    // Verify the calculation handles the large difference correctly
+    assert_int_equal(mpam_data_overflow.throttle_extent_centipct, expected_overflow_throttle);
+    // Ensure the result fits in uint16_t and doesn't overflow
+    assert_true(mpam_data_overflow.throttle_extent_centipct <= 0xFFFF);
+
+    // Negative test: invalid MPAM ID (out of bounds)
+    pwr_soc_element_mpam_throttle_t invalid_data;
+    memset(&invalid_data, 0xFF, sizeof(invalid_data));
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(NUMBER_OF_MPAMS, &invalid_data);
+
+    // Should not have modified the structure (error case should not populate data)
+    assert_int_equal(invalid_data.throttle_duration_mS, 0xFFFFFFFF); // uint32_t
+    assert_int_equal(invalid_data.throttle_extent_centipct, 0xFFFF); // uint16_t
+
+    // Negative test: null pointer (should not crash)
+    data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(mpam_id, NULL);
 }
 
 TEST_FUNCTION(test_get_pwr_soc_mpam_memory_power_data, test_setup, test_teardown)

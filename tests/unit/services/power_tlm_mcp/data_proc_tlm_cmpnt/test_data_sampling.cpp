@@ -624,6 +624,9 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
     will_return(__wrap_sensor_fifo_svc_poll_core_current, &invalid_current_entry);
     will_return(__wrap_sensor_fifo_svc_poll_core_current, core_id_3);
 
+    // Mock for exec_tlm_cmpnt_get_timestamp_microseconds - called by data_smpl_calculate_mpam_data_from_cores
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10000);
+
     // Call the function under test
     data_smpl_process_core_current_sensor_fifo();
 
@@ -1944,6 +1947,57 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
             assert_int_equal(computed_metrics_2_mins.cores[i].droop_count, expected_droop_counts[i]);
         }
     }
+
+    // Test Case 7: MPAM throttling active - tests the MPAM throttling loop
+    memset(core_rt, 0, sizeof(core_rt));
+    memset(mpam_rt, 0, sizeof(mpam_rt));
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    uint8_t mpam_id_1 = 0;
+    uint8_t mpam_id_2 = 2;
+    uint8_t nominal_pstate_1 = 3;
+    uint8_t nominal_pstate_2 = 5;
+
+    // Set up MPAM 0 with active throttling
+    mpam_rt[mpam_id_1].status_flags.active = true;
+    mpam_rt[mpam_id_1].status_flags.throttling = true;
+    mpam_rt[mpam_id_1].residency_timestamp_uS = 2000;
+    mpam_rt[mpam_id_1].nominal_pstate = nominal_pstate_1;
+    computed_metrics_2_mins.mpam[mpam_id_1].residency_uS = 1000;
+
+    // Set up MPAM 2 with active throttling (different initial values)
+    mpam_rt[mpam_id_2].status_flags.active = true;
+    mpam_rt[mpam_id_2].status_flags.throttling = true;
+    mpam_rt[mpam_id_2].residency_timestamp_uS = 1500;
+    mpam_rt[mpam_id_2].nominal_pstate = nominal_pstate_2;
+    computed_metrics_2_mins.mpam[mpam_id_2].residency_uS = 800;
+
+    // Set up MPAM 1 with active=true but throttling=false (should be skipped)
+    mpam_rt[1].status_flags.active = true;
+    mpam_rt[1].status_flags.throttling = false;
+    mpam_rt[1].residency_timestamp_uS = 3000;
+    mpam_rt[1].nominal_pstate = 2;
+    computed_metrics_2_mins.mpam[1].residency_uS = 500;
+
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 7000);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+
+    data_smpl_finalize_pwr_pkg_metrics();
+
+    // MPAM 0: Should have called comp_metrics_for_mpam_throttling with residency_diff = 7000 - 2000 = 5000
+    // and updated timestamp to 7000
+    assert_int_equal(mpam_rt[mpam_id_1].residency_timestamp_uS, 7000);
+    // The comp_metrics_for_mpam_throttling function should have been called with mpam_id=0, residency_diff_uS=5000, nominal_pstate=3
+
+    // MPAM 2: Should have called comp_metrics_for_mpam_throttling with residency_diff = 7000 - 1500 = 5500
+    // and updated timestamp to 7000
+    assert_int_equal(mpam_rt[mpam_id_2].residency_timestamp_uS, 7000);
+    // The comp_metrics_for_mpam_throttling function should have been called with mpam_id=2, residency_diff_uS=5500, nominal_pstate=5
+
+    // MPAM 1: Should NOT have been processed (throttling=false), so timestamp should remain unchanged
+    assert_int_equal(mpam_rt[1].residency_timestamp_uS, 3000);
+    // The computed_metrics_2_mins.mpam[1].residency_uS should remain unchanged at 500
+    assert_int_equal(computed_metrics_2_mins.mpam[1].residency_uS, 500);
 }
 
 TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_throttling_metrics, test_setup, test_teardown)
@@ -3157,6 +3211,9 @@ TEST_FUNCTION(test_data_smpl_calculate_mpam_data_from_cores, test_setup, test_te
     // Mock the die_2_die_exch_ib_write_pwr_pkg_mpam_data function for secondary die
     // Note: die_2_die_exch functions are included in test build, not mocked
 
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10000);
+
     data_smpl_calculate_mpam_data_from_cores();
 
     // Verify MPAM staging data was populated correctly for secondary die
@@ -3214,6 +3271,9 @@ TEST_FUNCTION(test_data_smpl_calculate_mpam_data_from_cores, test_setup, test_te
     // Note: die_2_die_exch functions are included in test build, not mocked
     // This will read actual secondary die data (which should be empty/zero for this test)
 
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 20000);
+
     data_smpl_calculate_mpam_data_from_cores();
 
     // Verify MPAM staging data for primary die cores
@@ -3237,6 +3297,9 @@ TEST_FUNCTION(test_data_smpl_calculate_mpam_data_from_cores, test_setup, test_te
     core_rt[invalid_core].latest_pstate = 5;
     core_rt[invalid_core].status_flags.throttle_is_active = true;
     core_is_active[invalid_core] = true;
+
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 30000);
 
     data_smpl_calculate_mpam_data_from_cores();
 
@@ -3264,6 +3327,9 @@ TEST_FUNCTION(test_data_smpl_calculate_mpam_data_from_cores, test_setup, test_te
     core_rt[boundary_core].latest_pstate = 20;
     core_rt[boundary_core].status_flags.throttle_is_active = false;
     core_is_active[boundary_core] = true;
+
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 40000);
 
     data_smpl_calculate_mpam_data_from_cores();
 
@@ -3304,6 +3370,9 @@ TEST_FUNCTION(test_data_smpl_calculate_mpam_data_from_cores, test_setup, test_te
     core_rt[2].status_flags.throttle_is_active = false;
     core_is_active[2] = true;
 
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 50000);
+
     data_smpl_calculate_mpam_data_from_cores();
 
     // Verify power accumulation and throttling OR logic
@@ -3329,6 +3398,9 @@ TEST_FUNCTION(test_data_smpl_calculate_mpam_data_from_cores, test_setup, test_te
         core_is_active[core_id] = false; // All inactive
     }
 
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 60000);
+
     data_smpl_calculate_mpam_data_from_cores();
 
     // Verify that inactive cores don't contribute to MPAM data
@@ -3339,4 +3411,228 @@ TEST_FUNCTION(test_data_smpl_calculate_mpam_data_from_cores, test_setup, test_te
         assert_int_equal(mpam_staging[mpam_id].latest_total_pwr_mW, 0);
         assert_int_equal(mpam_staging[mpam_id].latest_pstate, 0);
     }
+}
+
+TEST_FUNCTION(test_data_smpl_calculate_mpam_throttling_transitions, test_setup, test_teardown)
+{
+    // Test the MPAM throttling transition detection logic added to data_smpl_calculate_mpam_data_from_cores
+    // This test verifies both throttling start and end detection with proper metrics calls
+
+    // Clear all data structures for clean test state
+    memset(&mpam_staging, 0, sizeof(mpam_staging));
+    memset(&mpam_rt, 0, sizeof(mpam_rt));
+    memset(core_rt, 0, sizeof(core_rt));
+    memset(core_is_active, 0, sizeof(core_is_active));
+
+    // Initialize as primary die for MPAM transition testing (secondary die doesn't do transition logic)
+    die_2_die_exch_init(0);
+
+    // Test Case 1: Active+Throttling End Detection (active+throttling→inactive transition)
+    // Set up MPAM runtime state showing previous active+throttling state
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+    uint8_t test_mpam_id = 10;
+    mpam_rt[test_mpam_id].status_flags.active = true;     // Previous state: active
+    mpam_rt[test_mpam_id].status_flags.throttling = true; // Previous state: throttling
+    mpam_rt[test_mpam_id].residency_timestamp_uS = 5000;  // Set initial throttling start time
+    mpam_rt[test_mpam_id].nominal_pstate = 12;            // Set nominal pstate for metrics
+
+    // Set up core that will create inactive MPAM staging state
+    // (no active cores with this MPAM ID means mpam_staging will remain inactive)
+    uint8_t test_core = 0;
+    core_rt[test_core].latest_mpam_id = test_mpam_id + 1; // Different MPAM ID
+    core_rt[test_core].latest_power_mW = 1000;
+    core_rt[test_core].latest_pstate = 10;
+    core_rt[test_core].status_flags.throttle_is_active = false;
+    core_is_active[test_core] = true;
+
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    // Residency = 15000 - 5000 = 10000 microseconds
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 15000);
+
+    data_smpl_calculate_mpam_data_from_cores();
+
+    // Verify active+throttling end transition was detected
+    // mpam_staging[test_mpam_id].active should be false (no cores with this MPAM ID)
+    assert_false(mpam_staging[test_mpam_id].active);
+    assert_false(mpam_staging[test_mpam_id].throttling);
+
+    // Verify mpam_rt was synchronized with mpam_staging after transition handling
+    assert_false(mpam_rt[test_mpam_id].status_flags.active);
+    assert_false(mpam_rt[test_mpam_id].status_flags.throttling);
+
+    // Verify comp_metrics_for_mpam_throttling was called for the active+throttling→inactive transition
+    // Expected: residency_uS = 15000 - 5000 = 10000, nominal_pstate = 12
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].residency_uS, 10000);
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].nominal_pstate, 12);
+
+    // Test Case 2: Throttling Start Detection (non-throttling→throttling transition)
+    // Reset state for next test
+    memset(&mpam_staging, 0, sizeof(mpam_staging));
+    memset(&mpam_rt, 0, sizeof(mpam_rt));
+    memset(core_rt, 0, sizeof(core_rt));
+
+    uint8_t test_mpam_id2 = 15;
+    // Set up MPAM runtime state showing previous non-throttling state
+    mpam_rt[test_mpam_id2].status_flags.active = true;      // Previous state: active
+    mpam_rt[test_mpam_id2].status_flags.throttling = false; // Previous state: not throttling
+
+    // Set up core that will create throttling MPAM staging state
+    core_rt[0].latest_mpam_id = test_mpam_id2;
+    core_rt[0].latest_power_mW = 1500;
+    core_rt[0].latest_pstate = 12;
+    core_rt[0].status_flags.throttle_is_active = true; // This core is throttling
+    core_is_active[0] = true;
+
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 25000);
+
+    data_smpl_calculate_mpam_data_from_cores();
+
+    // Verify throttling start transition was detected
+    assert_true(mpam_staging[test_mpam_id2].active);
+    assert_true(mpam_staging[test_mpam_id2].throttling);
+
+    // Verify mpam_rt was synchronized with mpam_staging after transition handling
+    assert_true(mpam_rt[test_mpam_id2].status_flags.active);
+    assert_true(mpam_rt[test_mpam_id2].status_flags.throttling);
+
+    // Test Case 3: Throttling End Detection (throttling→non-throttling transition)
+    // Reset state for next test
+    memset(&mpam_staging, 0, sizeof(mpam_staging));
+    memset(&mpam_rt, 0, sizeof(mpam_rt));
+    memset(core_rt, 0, sizeof(core_rt));
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    uint8_t test_mpam_id3 = 20;
+    // Set up MPAM runtime state showing previous throttling state
+    mpam_rt[test_mpam_id3].status_flags.active = true;     // Previous state: active
+    mpam_rt[test_mpam_id3].status_flags.throttling = true; // Previous state: throttling
+    mpam_rt[test_mpam_id3].residency_timestamp_uS = 10000; // Set initial throttling start time
+    mpam_rt[test_mpam_id3].nominal_pstate = 5;             // Set nominal pstate for metrics
+
+    // Set up core that will create non-throttling MPAM staging state
+    core_rt[0].latest_mpam_id = test_mpam_id3;
+    core_rt[0].latest_power_mW = 800;
+    core_rt[0].latest_pstate = 8;
+    core_rt[0].nominal_pstate = 5;                      // Set core's nominal_pstate to match MPAM's
+    core_rt[0].status_flags.throttle_is_active = false; // This core is not throttling
+    core_is_active[0] = true;
+
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    // Residency = 35000 - 10000 = 25000 microseconds
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 35000);
+
+    data_smpl_calculate_mpam_data_from_cores();
+
+    // Verify throttling end transition was detected
+    assert_true(mpam_staging[test_mpam_id3].active);
+    assert_false(mpam_staging[test_mpam_id3].throttling);
+
+    // Verify mpam_rt was synchronized with mpam_staging after transition handling
+    assert_true(mpam_rt[test_mpam_id3].status_flags.active);
+    assert_false(mpam_rt[test_mpam_id3].status_flags.throttling);
+
+    // Verify comp_metrics_for_mpam_throttling was called and updated metrics correctly
+    // Expected: residency_uS = 25000, nominal_pstate = 5
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id3].residency_uS, 25000);
+    assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id3].nominal_pstate, 5);
+
+    // Test Case 4: No Transition (steady state)
+    // Reset state for next test
+    memset(&mpam_staging, 0, sizeof(mpam_staging));
+    memset(&mpam_rt, 0, sizeof(mpam_rt));
+    memset(core_rt, 0, sizeof(core_rt));
+
+    uint8_t test_mpam_id4 = 25;
+    // Set up MPAM runtime state showing previous throttling state
+    mpam_rt[test_mpam_id4].status_flags.active = true;     // Previous state: active
+    mpam_rt[test_mpam_id4].status_flags.throttling = true; // Previous state: throttling
+
+    // Set up core that will maintain throttling MPAM staging state
+    core_rt[0].latest_mpam_id = test_mpam_id4;
+    core_rt[0].latest_power_mW = 1200;
+    core_rt[0].latest_pstate = 14;
+    core_rt[0].status_flags.throttle_is_active = true; // This core is still throttling
+    core_is_active[0] = true;
+
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 45000);
+
+    data_smpl_calculate_mpam_data_from_cores();
+
+    // Verify no transition was detected (steady state)
+    assert_true(mpam_staging[test_mpam_id4].active);
+    assert_true(mpam_staging[test_mpam_id4].throttling);
+
+    // Verify mpam_rt was synchronized with mpam_staging (should remain the same)
+    assert_true(mpam_rt[test_mpam_id4].status_flags.active);
+    assert_true(mpam_rt[test_mpam_id4].status_flags.throttling);
+
+    // Test Case 5: Multiple MPAM IDs with mixed transitions
+    // Reset state for comprehensive test
+    memset(&mpam_staging, 0, sizeof(mpam_staging));
+    memset(&mpam_rt, 0, sizeof(mpam_rt));
+    memset(core_rt, 0, sizeof(core_rt));
+    memset(core_is_active, 0, sizeof(core_is_active));
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    // MPAM 5: throttling→non-throttling (end)
+    mpam_rt[5].status_flags.active = true;
+    mpam_rt[5].status_flags.throttling = true;
+    mpam_rt[5].residency_timestamp_uS = 20000; // Set initial throttling start time
+    mpam_rt[5].nominal_pstate = 8;             // Set nominal pstate for metrics
+
+    // MPAM 6: non-throttling→throttling (start)
+    mpam_rt[6].status_flags.active = true;
+    mpam_rt[6].status_flags.throttling = false;
+
+    // MPAM 7: active→inactive (end)
+    mpam_rt[7].status_flags.active = true;
+    mpam_rt[7].status_flags.throttling = false; // Set up cores for mixed transitions
+    // Core 0: MPAM 5, not throttling (was throttling)
+    core_rt[0].latest_mpam_id = 5;
+    core_rt[0].latest_power_mW = 900;
+    core_rt[0].latest_pstate = 9;
+    core_rt[0].nominal_pstate = 8; // Set core's nominal_pstate to match MPAM's
+    core_rt[0].status_flags.throttle_is_active = false;
+    core_is_active[0] = true;
+
+    // Core 1: MPAM 6, throttling (was not throttling)
+    core_rt[1].latest_mpam_id = 6;
+    core_rt[1].latest_power_mW = 1100;
+    core_rt[1].latest_pstate = 11;
+    core_rt[1].status_flags.throttle_is_active = true;
+    core_is_active[1] = true;
+
+    // No core for MPAM 7 (becomes inactive)
+
+    // Mock timestamp for exec_tlm_cmpnt_get_timestamp_microseconds call
+    // MPAM 5 residency = 55000 - 20000 = 35000 microseconds
+    will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 55000);
+
+    data_smpl_calculate_mpam_data_from_cores();
+
+    // Verify mixed transitions were handled correctly
+    // MPAM 5: throttling end detected
+    assert_true(mpam_staging[5].active);
+    assert_false(mpam_staging[5].throttling);
+    assert_true(mpam_rt[5].status_flags.active);
+    assert_false(mpam_rt[5].status_flags.throttling);
+
+    // MPAM 6: throttling start detected
+    assert_true(mpam_staging[6].active);
+    assert_true(mpam_staging[6].throttling);
+    assert_true(mpam_rt[6].status_flags.active);
+    assert_true(mpam_rt[6].status_flags.throttling);
+
+    // MPAM 7: active end detected
+    assert_false(mpam_staging[7].active);
+    assert_false(mpam_staging[7].throttling);
+    assert_false(mpam_rt[7].status_flags.active);
+    assert_false(mpam_rt[7].status_flags.throttling);
+
+    // Verify comp_metrics_for_mpam_throttling was called for MPAM 5 throttling end
+    // Expected: residency_uS = 55000 - 20000 = 35000, nominal_pstate = 8
+    assert_int_equal(computed_metrics_2_mins.mpam[5].residency_uS, 35000);
+    assert_int_equal(computed_metrics_2_mins.mpam[5].nominal_pstate, 8);
 }

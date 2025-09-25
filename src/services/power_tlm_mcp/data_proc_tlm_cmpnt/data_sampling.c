@@ -52,6 +52,7 @@ core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE] = {0};
 tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE] = {0};
 soc_runtime_info_t soc_rt = {0};
 dimm_runtime_info_t dimm_rt = {0};
+mpam_runtime_info_t mpam_rt[NUMBER_OF_MPAMS] = {0};
 mpam_data_t mpam_staging[NUMBER_OF_MPAMS] = {0};
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
 
@@ -564,6 +565,16 @@ void data_smpl_finalize_pwr_pkg_metrics(void)
 
         core_ptr++;
     }
+
+    for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+    {
+        if (mpam_rt[mpam_id].status_flags.active == true && mpam_rt[mpam_id].status_flags.throttling == true)
+        {
+            uint64_t residency_diff_uS = this_pwr_pkg_timestamp_uS - mpam_rt[mpam_id].residency_timestamp_uS;
+            mpam_rt[mpam_id].residency_timestamp_uS = this_pwr_pkg_timestamp_uS;
+            comp_metrics_for_mpam_throttling(mpam_id, residency_diff_uS, mpam_rt[mpam_id].nominal_pstate);
+        }
+    }
     // read and update cores droop counts data
     comp_metrics_for_cores_droop_counts();
 }
@@ -602,6 +613,11 @@ void data_smpl_reset_residency_timestamps(void)
             core_ptr->rack_pri_res_timestamp_uS[core_ptr->latest_rack_throttle_priority] = enable_pwr_pkg_timestamp_uS;
         }
         core_ptr++;
+    }
+
+    for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+    {
+        mpam_rt[mpam_id].residency_timestamp_uS = enable_pwr_pkg_timestamp_uS;
     }
 }
 
@@ -1269,6 +1285,8 @@ void data_smpl_calculate_mpam_data_from_cores()
     // calculate totals and write to comp_metrics.  that means mpam comp_metrics is not used on secondary dies
     core_runtime_info_t* current_core;
 
+    uint64_t current_timestamp_uS = exec_tlm_cmpnt_get_timestamp_microseconds();
+
     if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
     {
         memset(mpam_staging, 0, sizeof(mpam_staging));
@@ -1294,6 +1312,8 @@ void data_smpl_calculate_mpam_data_from_cores()
                 mpam_staging[current_core->latest_mpam_id].throttling |= current_core->status_flags.throttle_is_active;
                 mpam_staging[current_core->latest_mpam_id].latest_total_pwr_mW += current_core->latest_power_mW;
                 mpam_staging[current_core->latest_mpam_id].latest_pstate = current_core->latest_pstate;
+
+                mpam_rt[current_core->latest_mpam_id].nominal_pstate = current_core->nominal_pstate;
             }
         }
         else
@@ -1311,6 +1331,33 @@ void data_smpl_calculate_mpam_data_from_cores()
     else
     {
         comp_metrics_for_mpam_data(&mpam_staging);
+
+        for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
+        {
+            bool was_active = mpam_rt[mpam_id].status_flags.active;
+            bool is_active = mpam_staging[mpam_id].active;
+            bool was_throttling = mpam_rt[mpam_id].status_flags.throttling;
+            bool is_throttling = mpam_staging[mpam_id].throttling;
+
+            // Add logic for mpam throttling when ending throttling (either going inactive or stopping throttling)
+            if ((was_active && was_throttling) && (!is_active || !is_throttling))
+            {
+                uint64_t residency_diff_uS = current_timestamp_uS - mpam_rt[mpam_id].residency_timestamp_uS;
+                comp_metrics_for_mpam_throttling(mpam_id, residency_diff_uS, mpam_rt[mpam_id].nominal_pstate);
+            }
+
+            // Add logic for mpam throttling when starting throttling
+            // is_throttling will not be true unless is_active is also true
+            if (!was_throttling && is_throttling)
+            {
+                // Initialize throttling timestamp for the new throttling period
+                mpam_rt[mpam_id].residency_timestamp_uS = current_timestamp_uS;
+            }
+
+            // Update mpam_rt to match mpam_staging for next iteration
+            mpam_rt[mpam_id].status_flags.active = is_active;
+            mpam_rt[mpam_id].status_flags.throttling = is_throttling;
+        }
     }
 }
 

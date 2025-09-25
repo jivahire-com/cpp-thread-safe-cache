@@ -413,15 +413,41 @@ void data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data(uint16_t mpam_id, p_pwr_
             data_util_running_avg_u32_get(&computed_metrics_2_mins.mpam[mpam_id].core_power.running_avg);
 
         mpam_core_pwr_data->max_mW = computed_metrics_2_mins.mpam[mpam_id].core_power.max;
+        mpam_core_pwr_data->mpam_id = mpam_id;
     }
 }
 
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_soc_element_mpam_throttle_t mpam_throttle_data)
 {
-    // TODO: Implement the rest of the record once computed metrics are available for mpam throttle
-    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584712/?view=edit
-    FPFW_UNUSED(mpam_id);
-    memset(mpam_throttle_data, 0, sizeof(pwr_soc_element_mpam_throttle_t));
+    if ((mpam_id >= NUMBER_OF_MPAMS) || mpam_throttle_data == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE);
+    }
+    else
+    {
+        mpam_throttle_data->throttle_duration_mS = ROUND_USEC_TO_MSEC(computed_metrics_2_mins.mpam[mpam_id].residency_uS);
+        mpam_throttle_data->nominal_pstate_frequency_Mhz =
+            dvfs_get_freq_from_plimit(computed_metrics_2_mins.mpam[mpam_id].nominal_pstate);
+        mpam_throttle_data->max_pstate_frequency_Mhz =
+            dvfs_get_freq_from_plimit(computed_metrics_2_mins.mpam[mpam_id].active_pstate.max);
+        mpam_throttle_data->avg_pstate_frequency_Mhz = dvfs_get_freq_from_plimit(
+            data_util_running_avg_u16_get(&computed_metrics_2_mins.mpam[mpam_id].active_pstate.running_avg));
+
+        // Calculate throttle extent as (nominal - max) / nominal * 100
+        // Check for underflow: if max frequency > nominal frequency, this indicates an error condition
+        if (mpam_throttle_data->max_pstate_frequency_Mhz > mpam_throttle_data->nominal_pstate_frequency_Mhz)
+        {
+            FPFW_ET_LOG(MpamThrottleUnderflow);
+            mpam_throttle_data->throttle_extent_centipct = 0;
+        }
+        else
+        {
+            mpam_throttle_data->throttle_extent_centipct =
+                (((uint32_t)(mpam_throttle_data->nominal_pstate_frequency_Mhz - mpam_throttle_data->max_pstate_frequency_Mhz) * 100U) /
+                 mpam_throttle_data->nominal_pstate_frequency_Mhz);
+        }
+        mpam_throttle_data->mpam_id = mpam_id;
+    }
 }
 
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(uint16_t mpam_id, p_pwr_soc_element_mpam_memory_power_t mpam_memory_power_data)

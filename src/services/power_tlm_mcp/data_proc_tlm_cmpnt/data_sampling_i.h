@@ -80,6 +80,7 @@ typedef struct {
     uint8_t pkt_cstate_is_valid : 1; // true if cstate is valid in the current packet
     uint8_t throttle_is_active : 1; // true if 1 or more throttling types are active, including rack throttling
     uint8_t rack_throttle_is_active : 1; // only true if rack throttling is active
+    uint8_t reserved : 3;
 } core_status_flags_t;
 
 typedef struct {
@@ -127,6 +128,18 @@ typedef struct {
     uint32_t latest_dimm_total_pwr_mW;
     uint16_t latest_max_dimm_temp_dC;
 } dimm_runtime_info_t;
+
+typedef struct {
+    uint8_t active : 1; // true if the mpam is currently active
+    uint8_t throttling : 1; // set if the mpam is actively throttling
+    uint8_t reserved : 6;
+} mpam_status_flags_t;
+
+typedef struct {
+    uint64_t residency_timestamp_uS; // timestamp of last cstate residency metrics update
+    uint8_t nominal_pstate;
+    mpam_status_flags_t status_flags;
+} mpam_runtime_info_t;
 
 /**
  *  @brief Enum for Pstate message throttle status codes
@@ -180,6 +193,7 @@ extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_rt;
 extern dimm_runtime_info_t dimm_rt;
+extern mpam_runtime_info_t mpam_rt[NUMBER_OF_MPAMS];
 extern mpam_data_t mpam_staging[NUMBER_OF_MPAMS];
 
 /*--------- Function Prototypes ----------*/

@@ -437,9 +437,30 @@ void comp_metrics_for_mpam_data(mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS])
 
         for (uint8_t mpam_id = 0; mpam_id < NUMBER_OF_MPAMS; mpam_id++)
         {
-            data_util_calc_mma_u32(&computed_metrics_2_mins.mpam[mpam_id].core_power,
-                                   (*mpam_data_array)[mpam_id].latest_total_pwr_mW);
+            if ((*mpam_data_array)[mpam_id].active)
+            {
+                data_util_calc_mma_u32(&computed_metrics_2_mins.mpam[mpam_id].core_power,
+                                       (*mpam_data_array)[mpam_id].latest_total_pwr_mW);
+
+                data_util_calc_mma_u16(&computed_metrics_2_mins.mpam[mpam_id].active_pstate,
+                                       (*mpam_data_array)[mpam_id].latest_pstate);
+            }
         }
+    }
+}
+
+void comp_metrics_for_mpam_throttling(uint8_t mpam_id, uint32_t residency_uS, uint8_t nominal_pstate)
+{
+    if (in_band_publishing_active)
+    {
+        if (mpam_id >= NUMBER_OF_MPAMS)
+        {
+            FPFW_ET_LOG(CompMetricsMpamIdOutOfRange, mpam_id);
+            return;
+        }
+
+        computed_metrics_2_mins.mpam[mpam_id].residency_uS += residency_uS;
+        computed_metrics_2_mins.mpam[mpam_id].nominal_pstate = nominal_pstate;
     }
 }
 

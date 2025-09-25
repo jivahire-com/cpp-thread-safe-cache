@@ -56,7 +56,61 @@ static vptr_mscp_ras_and_init_ctrl_registers_reg scp_ras_and_init_ctrl_registers
     (vptr_mscp_ras_and_init_ctrl_registers_reg)(SCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS);
 static vptr_fuses_csr_reg scp_exp_fuses_regs =
     (vptr_fuses_csr_reg)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_FUSE_ADDRESS + FUSES_TOP_FUSES_CSR_ADDRESS);
+
 /*-------------- Functions ---------------*/
+static uint32_t get_error_injection_address(ras_einj_info_t* einj_payload, atu_map_entry_t* atu_entry, atu_map_entry_t* atu_recover_entry)
+{
+    uint32_t err_addr = 0;
+
+    switch (einj_payload->param_type.error_type)
+    {
+    case SCP_ERROR_TYPE_S_ARSM_CE:
+    case SCP_ERROR_TYPE_S_ARSM_UE:
+    case SCP_ERROR_TYPE_S_ARSM_OVERFLOW: {
+        atu_entry_attr_t attributes = {ATU_BUS_ATTR_S};
+        err_addr = get_arsm_attr_address(attributes.as_uint32, atu_entry, atu_recover_entry);
+    }
+    break;
+    case SCP_ERROR_TYPE_NS_ARSM_CE:
+    case SCP_ERROR_TYPE_NS_ARSM_UE:
+    case SCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
+        // Non-secure ARSM is always mapped in MSCP with NS attribute
+        err_addr = ((idsw_get_die_id() == DIE_0) ? MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR
+                                                 : MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR);
+        break;
+    case SCP_ERROR_TYPE_RT_ARSM_CE:
+    case SCP_ERROR_TYPE_RT_ARSM_UE:
+    case SCP_ERROR_TYPE_RT_ARSM_OVERFLOW: {
+        atu_entry_attr_t attributes = {ATU_BUS_ATTR_ROOT};
+        err_addr = get_arsm_attr_address(attributes.as_uint32, atu_entry, atu_recover_entry);
+    }
+    break;
+    case SCP_ERROR_TYPE_RL_ARSM_CE:
+    case SCP_ERROR_TYPE_RL_ARSM_UE:
+    case SCP_ERROR_TYPE_RL_ARSM_OVERFLOW: {
+        atu_entry_attr_t attributes = {ATU_BUS_ATTR_REALM};
+        err_addr = get_arsm_attr_address(attributes.as_uint32, atu_entry, atu_recover_entry);
+    }
+    break;
+    default:
+        FPFW_DBGPRINT_ERROR("Invalid SCP error type(%d)\n", einj_payload->param_type.error_type);
+        break;
+    }
+
+    return err_addr;
+}
+
+static void trigger_arsm_fault(ras_einj_info_t* einj_payload, mscp_arsm_ram_type_t type, uint32_t err_mask)
+{
+    atu_map_entry_t arsm_atu_entry;
+    atu_map_entry_t arsm_atu_recover_entry;
+    trigger_shared_sram_arsm_fault(type, get_error_injection_address(einj_payload, &arsm_atu_entry, &arsm_atu_recover_entry), err_mask);
+    BUG_ASSERT(atu_unmap(ATU_ID_MSCP, &arsm_atu_entry) == SILIBS_SUCCESS);
+    if (arsm_atu_recover_entry.mscp_start_address != 0)
+    {
+        BUG_ASSERT(atu_map(ATU_ID_MSCP, &arsm_atu_recover_entry) == SILIBS_SUCCESS);
+    }
+}
 
 acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
@@ -69,12 +123,6 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
     }
 
     // ARSM RAM error injection address
-    uint32_t arsm_addr = ((idsw_get_die_id() == DIE_0) ? MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR
-                                                       : MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR);
-    arsm_addr = (einj_payload->param_type.address_64 == 0)
-                    ? arsm_addr + ARSM_RAM_DEFAULT_OFFSET
-                    : arsm_addr + (uint32_t)(uintptr_t)einj_payload->param_type.address_64;
-
     switch (einj_payload->param_type.error_type)
     {
     case SCP_ERROR_TYPE_SCF_RAM_CE:
@@ -194,12 +242,12 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         trigger_mscp_watchdog_fault();
         break;
     case SCP_ERROR_TYPE_S_ARSM_CE:
-        trigger_shared_sram_arsm_fault(MSCP_S_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+        trigger_arsm_fault(einj_payload, MSCP_S_ARSM_RAM, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         break;
     case SCP_ERROR_TYPE_S_ARSM_UE:
         if (!IS_PLATFORM_FPGA())
         {
-            trigger_shared_sram_arsm_fault(MSCP_S_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+            trigger_arsm_fault(einj_payload, MSCP_S_ARSM_RAM, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
         }
         else
         {
@@ -209,7 +257,7 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
     case SCP_ERROR_TYPE_S_ARSM_OVERFLOW:
         if (!IS_PLATFORM_FPGA())
         {
-            trigger_shared_sram_arsm_fault(MSCP_S_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+            trigger_arsm_fault(einj_payload, MSCP_S_ARSM_RAM, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
         }
         else
         {
@@ -217,12 +265,16 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         }
         break;
     case SCP_ERROR_TYPE_NS_ARSM_CE:
-        trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+        trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM,
+                                       get_error_injection_address(einj_payload, NULL, NULL),
+                                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         break;
     case SCP_ERROR_TYPE_NS_ARSM_UE:
         if (!IS_PLATFORM_FPGA())
         {
-            trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+            trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM,
+                                           get_error_injection_address(einj_payload, NULL, NULL),
+                                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
         }
         else
         {
@@ -232,7 +284,9 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
     case SCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
         if (!IS_PLATFORM_FPGA())
         {
-            trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+            trigger_shared_sram_arsm_fault(MSCP_NS_ARSM_RAM,
+                                           get_error_injection_address(einj_payload, NULL, NULL),
+                                           SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
         }
         else
         {
@@ -240,12 +294,12 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         }
         break;
     case SCP_ERROR_TYPE_RT_ARSM_CE:
-        trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+        trigger_arsm_fault(einj_payload, MSCP_RT_ARSM_RAM, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         break;
     case SCP_ERROR_TYPE_RT_ARSM_UE:
         if (!IS_PLATFORM_FPGA())
         {
-            trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+            trigger_arsm_fault(einj_payload, MSCP_RT_ARSM_RAM, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
         }
         else
         {
@@ -255,7 +309,7 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
     case SCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
         if (!IS_PLATFORM_FPGA())
         {
-            trigger_shared_sram_arsm_fault(MSCP_RT_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+            trigger_arsm_fault(einj_payload, MSCP_RT_ARSM_RAM, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
         }
         else
         {
@@ -263,12 +317,12 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         }
         break;
     case SCP_ERROR_TYPE_RL_ARSM_CE:
-        trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+        trigger_arsm_fault(einj_payload, MSCP_RL_ARSM_RAM, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
         break;
     case SCP_ERROR_TYPE_RL_ARSM_UE:
         if (!IS_PLATFORM_FPGA())
         {
-            trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+            trigger_arsm_fault(einj_payload, MSCP_RL_ARSM_RAM, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
         }
         else
         {
@@ -278,7 +332,7 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
     case SCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
         if (!IS_PLATFORM_FPGA())
         {
-            trigger_shared_sram_arsm_fault(MSCP_RL_ARSM_RAM, arsm_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+            trigger_arsm_fault(einj_payload, MSCP_RL_ARSM_RAM, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
         }
         else
         {

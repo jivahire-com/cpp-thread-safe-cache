@@ -349,6 +349,20 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     return 0;
 }
 
+int __wrap_atu_find_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    assert_true(atu_id == ATU_ID_MSCP);
+    assert_non_null(atu_map_entry);
+
+    atu_map_entry->ap_base_address = 0x80000000;
+    atu_map_entry->mscp_start_address = 0x00010000;
+    atu_map_entry->mscp_end_address = 0x0001FFFF;
+
+    function_called();
+
+    return 0;
+}
+
 idsw_die_id_t __wrap_idsw_get_die_id(void)
 {
     return 0; // DIE0 for testing purposes
@@ -773,32 +787,62 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
         case MCP_ERROR_TYPE_WATCHDOG:
             test_watchdog_handler();
             break;
-        case MCP_ERROR_TYPE_S_ARSM_CE:
         case MCP_ERROR_TYPE_NS_ARSM_CE:
-        case MCP_ERROR_TYPE_RT_ARSM_CE:
-        case MCP_ERROR_TYPE_RL_ARSM_CE:
             will_return(__wrap_is_cached_space, false);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
-                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
             break;
-        case MCP_ERROR_TYPE_S_ARSM_UE:
+        case MCP_ERROR_TYPE_S_ARSM_CE:
+        case MCP_ERROR_TYPE_RT_ARSM_CE:
+        case MCP_ERROR_TYPE_RL_ARSM_CE:
+            expect_function_call(__wrap_atu_find_map);
+            expect_function_call(__wrap_atu_unmap);
+            expect_function_call(__wrap_atu_map);
+            will_return(__wrap_is_cached_space, false);
+            test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
+                                                (uint32_t)&mapped_region);
+            expect_function_call(__wrap_atu_unmap);
+            expect_function_call(__wrap_atu_map);
+            break;
         case MCP_ERROR_TYPE_NS_ARSM_UE:
-        case MCP_ERROR_TYPE_RT_ARSM_UE:
-        case MCP_ERROR_TYPE_RL_ARSM_UE:
             will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
             will_return(__wrap_is_cached_space, false);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
-                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
             break;
-        case MCP_ERROR_TYPE_S_ARSM_OVERFLOW:
+        case MCP_ERROR_TYPE_S_ARSM_UE:
+        case MCP_ERROR_TYPE_RT_ARSM_UE:
+        case MCP_ERROR_TYPE_RL_ARSM_UE:
+            expect_function_call(__wrap_atu_find_map);
+            expect_function_call(__wrap_atu_unmap);
+            expect_function_call(__wrap_atu_map);
+            will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
+            will_return(__wrap_is_cached_space, false);
+            test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
+                                                (uint32_t)&mapped_region);
+            expect_function_call(__wrap_atu_unmap);
+            expect_function_call(__wrap_atu_map);
+            break;
         case MCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
-        case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
-        case MCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
             will_return(__wrap_is_cached_space, false);
             will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
             will_return(__wrap_is_cached_space, false);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK,
-                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
+            break;
+        case MCP_ERROR_TYPE_S_ARSM_OVERFLOW:
+        case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
+        case MCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
+            expect_function_call(__wrap_atu_find_map);
+            expect_function_call(__wrap_atu_unmap);
+            expect_function_call(__wrap_atu_map);
+            will_return(__wrap_is_cached_space, false);
+            will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
+            will_return(__wrap_is_cached_space, false);
+            test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK,
+                                                (uint32_t)&mapped_region);
+            expect_function_call(__wrap_atu_unmap);
+            expect_function_call(__wrap_atu_map);
             break;
         case MCP_ERROR_TYPE_RSM_RAM_CE: {
             uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;

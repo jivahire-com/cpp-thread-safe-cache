@@ -382,3 +382,43 @@ void set_mhu_handle(fpfw_icc_base_ctx_t* icc_ctx)
 {
     mhu_handle = icc_ctx;
 }
+
+uint32_t get_arsm_attr_address(uint32_t attributes, atu_map_entry_t* atu_entry, atu_map_entry_t* atu_recover_entry)
+{
+    BUG_ASSERT(atu_entry != NULL);
+    BUG_ASSERT(atu_recover_entry != NULL);
+
+    // Map the ARSM into MSCP with the requested attributes
+    *atu_entry = (atu_map_entry_t){
+        .ap_base_address = AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS,
+        .mscp_start_address = 0,
+        .mscp_end_address = ALIGN_UP(AP_TOP_D0_ARSM_SHARED_SRAM_SIZE, ATU_PAGE_SIZE) - 1,
+        .attribute.as_uint32 = attributes,
+    };
+    if (idsw_get_die_id() == DIE_1)
+    {
+        atu_entry->ap_base_address = AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS;
+        atu_entry->mscp_end_address = ALIGN_UP(AP_TOP_D1_ARSM_SHARED_SRAM_SIZE, ATU_PAGE_SIZE) - 1;
+    }
+
+    // Unmap if already mapped
+    *atu_recover_entry = *atu_entry;
+    uint32_t sts = atu_find_map(ATU_ID_MSCP, atu_recover_entry);
+    FPFW_DBGPRINT("atu_find_map status: %d (0x%08lx)\n", sts, atu_recover_entry->mscp_start_address);
+    if (sts == SILIBS_SUCCESS)
+    {
+        // Already mapped, unmap it.
+        BUG_ASSERT(atu_unmap(ATU_ID_MSCP, atu_recover_entry) == SILIBS_SUCCESS);
+    }
+    else
+    {
+        // Not mapped, clear the recover entry
+        *atu_recover_entry = (atu_map_entry_t){0};
+        atu_recover_entry->mscp_start_address = 0;
+    }
+
+    // Map with new attributes
+    BUG_ASSERT(atu_map(ATU_ID_MSCP, atu_entry) == SILIBS_SUCCESS);
+
+    return atu_entry->mscp_start_address;
+}

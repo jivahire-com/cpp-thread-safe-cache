@@ -761,6 +761,7 @@ PVTTILE_TEST_TEL(volt_telem_entry_size, 0x3);
                                                                                  \
         PVTSOC_##type##_CFG_SET(cfgname1, cfgname2, cfgvalue);                   \
         will_return(__wrap_soc_pvt_init, PVT_SUCCESS);                           \
+        will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);     \
         power_init_soc(&s_runconfig);                                            \
         validate_soc_pvt_dts();                                                  \
         validate_soc_pvt_vm();                                                   \
@@ -1237,6 +1238,7 @@ POWER_TEST(hwi_init_soc__pvt_fail, setup, teardown)
 {
 
     will_return(__wrap_soc_pvt_init, PVT_NULL_PARAM);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     expect_value(__wrap_CrashDumpBugCheck, errorCode, (uint32_t)CC_SC_SOC_PVT_INIT);
 
@@ -1255,6 +1257,7 @@ POWER_TEST(hwi_init_soc, setup, teardown)
 {
 
     will_return(__wrap_soc_pvt_init, PVT_SUCCESS);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     // run soc init
     power_init_soc(&s_runconfig);

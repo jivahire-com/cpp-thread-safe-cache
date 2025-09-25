@@ -802,6 +802,11 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
 
     /* Base tile PVT config - Single config for all instances */
     pvt_setting_config_t tile_pvt_settings = PVT_TILE_SETTING_DEFAULT;
+    if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
+    {
+        tile_pvt_settings.target_dts_clk_freq_khz = TILE_PVT_TARGET_DTS_FREQ_KHZ_POR;
+        tile_pvt_settings.target_vm_clk_freq_khz = TILE_PVT_TARGET_VM_FREQ_KHZ_POR;
+    }
     tile_pvt_telem_setting_config_t tile_pvt_telem_settings = PVT_TILE_TELEM_DEFAULT_CONFIG;
     power_init_update_tilepvt_cfg(p_runconfig, &tile_pvt_settings);
 
@@ -982,6 +987,11 @@ void power_init_soc(const power_runconfig_t* p_runconfig)
     }
 
     pvt_setting_config_t soc_pvt_settings = PVT_SOC_SETTING_DEFAULT;
+    if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
+    {
+        soc_pvt_settings.target_dts_clk_freq_khz = SOC_PVT_TARGET_DTS_FREQ_KHZ_POR;
+        soc_pvt_settings.target_vm_clk_freq_khz = SOC_PVT_TARGET_VM_FREQ_KHZ_POR;
+    }
     power_init_update_socpvt_cfg(p_runconfig, &soc_pvt_settings);
 
     int status = soc_pvt_init(p_config->soc_pvt_base, &soc_pvt_settings);

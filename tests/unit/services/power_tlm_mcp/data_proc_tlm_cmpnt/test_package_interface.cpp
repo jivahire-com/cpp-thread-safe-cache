@@ -618,6 +618,10 @@ TEST_FUNCTION(test_get_pwr_soc_mpam_memory_power_data, test_setup, test_teardown
 TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
 {
     inst_core_element_summary_t core_summary_data = {0};
+
+    // Test case 1: Active core (core_is_active[core_id] == true)
+    core_is_active[TEST_CORE_ID_5] = true;
+
     // pstate
     core_rt[TEST_CORE_ID_5].pstate_from_pstate_pkt = 10;
     uint8_t pstate_index = core_rt[TEST_CORE_ID_5].latest_pstate;
@@ -653,15 +657,115 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     assert_int_equal(core_summary_data.temperature_dC, core_rt[TEST_CORE_ID_5].latest_max_value_dC);
     assert_int_equal(core_summary_data.throttling_type, 0x7f);
     assert_int_equal(core_summary_data.throttling_rack_priority, core_rt[TEST_CORE_ID_5].latest_rack_throttle_priority);
+
+    // Test case 2: Inactive core (core_is_active[core_id] == false)
+    core_is_active[TEST_CORE_ID_5] = false;
+
+    // Fill core_summary_data with non-zero values to verify they get cleared
+    memset(&core_summary_data, 0xFF, sizeof(inst_core_element_summary_t));
+
+    data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(TEST_CORE_ID_5, &core_summary_data);
+
+    // Verify that all fields are zeroed out for inactive core
+    assert_int_equal(core_summary_data.pstate, 0);
+    assert_int_equal(core_summary_data.cstate, 0);
+    assert_int_equal(core_summary_data.plimit, 0);
+    assert_int_equal(core_summary_data.power_mW, 0);
+    assert_int_equal(core_summary_data.frequency_Mhz, 0);
+    assert_int_equal(core_summary_data.voltage_mV, 0);
+    assert_int_equal(core_summary_data.current_mA, 0);
+    assert_int_equal(core_summary_data.temperature_dC, 0);
+    assert_int_equal(core_summary_data.throttling_type, 0);
+    assert_int_equal(core_summary_data.throttling_rack_priority, 0);
+    assert_int_equal(core_summary_data.mpam_id, 0);
+    assert_int_equal(core_summary_data.cstate_entry_latency_uS, 0);
+    assert_int_equal(core_summary_data.cstate_exit_latency_uS, 0);
+    assert_int_equal(core_summary_data.velocity_boost_priority, 0);
+
+    // Test case 3: Invalid parameters - test with invalid core_id
+    memset(&core_summary_data, 0xFF, sizeof(inst_core_element_summary_t));
+    data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(NUMBER_OF_CORES_PER_DIE, &core_summary_data);
+    // Data should remain unchanged when core_id is invalid
+    assert_int_equal(core_summary_data.pstate, 0xFF);
+
+    // Test case 4: Invalid parameters - test with NULL pointer
+    data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(TEST_CORE_ID_5, NULL);
+    // Function should handle NULL gracefully (no crash expected)
 }
 
 TEST_FUNCTION(test_get_inst_soc_rail_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     inst_soc_element_rail_t rail_data = {0};
+
+    // Test case 1: Valid rail data on primary die (die ID 0)
+    die_2_die_exch_init(0); // PRIMARY_DIE_ID = 0
+
+    // Set up test data in soc_rt for a valid rail
+    soc_rt.latest_rail_current_mA[TEST_RAIL_ID_2] = 1500;
+    soc_rt.latest_rail_temperature_dC[TEST_RAIL_ID_2] = 65;
+    soc_rt.latest_rail_voltage_mV[TEST_RAIL_ID_2] = 1200;
+
     data_proc_tlm_cmpnt_get_inst_soc_rail_data(TEST_RAIL_ID_2, &rail_data);
+
+    // Verify that valid rail data is populated correctly
+    assert_int_equal(rail_data.current_mA, 1500);
+    assert_int_equal(rail_data.temperature_dC, 65);
+    assert_int_equal(rail_data.voltage_mV, 1200);
+
+    // Test case 2: Valid rail data on secondary die (die ID 1)
+    die_2_die_exch_init(1); // Secondary die
+
+    // Set up test data for a rail valid on secondary die (rail_id < NUM_DIE1_VR_RAILS = 2)
+    uint16_t valid_rail_die1 = 1; // This should be < NUM_DIE1_VR_RAILS (2)
+    soc_rt.latest_rail_current_mA[valid_rail_die1] = 800;
+    soc_rt.latest_rail_temperature_dC[valid_rail_die1] = 55;
+    soc_rt.latest_rail_voltage_mV[valid_rail_die1] = 900;
+
+    data_proc_tlm_cmpnt_get_inst_soc_rail_data(valid_rail_die1, &rail_data);
+
+    // Verify that valid rail data is populated correctly on secondary die
+    assert_int_equal(rail_data.current_mA, 800);
+    assert_int_equal(rail_data.temperature_dC, 55);
+    assert_int_equal(rail_data.voltage_mV, 900);
+
+    // Test case 3: Rail ID out of bounds for secondary die
+    // NUM_DIE1_VR_RAILS = 2, so rail_id = 2 should be out of bounds for die 1
+    uint16_t invalid_rail_die1 = 2;
+    memset(&rail_data, 0xFF, sizeof(inst_soc_element_rail_t)); // Fill with non-zero values
+
+    data_proc_tlm_cmpnt_get_inst_soc_rail_data(invalid_rail_die1, &rail_data);
+
+    // Verify that data is zeroed when rail_id >= num_rails for the die
+    assert_int_equal(rail_data.current_mA, 0);
+    assert_int_equal(rail_data.temperature_dC, 0);
+    assert_int_equal(rail_data.voltage_mV, 0);
+
+    // Test case 4: Invalid parameters - rail_id >= MAX_NUM_OF_VR_RAILS
+    memset(&rail_data, 0xFF, sizeof(inst_soc_element_rail_t));
     data_proc_tlm_cmpnt_get_inst_soc_rail_data(MAX_NUM_OF_VR_RAILS, &rail_data);
+    // Data should remain unchanged when rail_id is invalid
+    assert_int_equal(rail_data.current_mA, 0xFFFFFFFF); // current_mA is uint32_t
+    assert_int_equal(rail_data.voltage_mV, 0xFFFF);     // voltage_mV is uint16_t
+    assert_int_equal(rail_data.temperature_dC, 0xFFFF); // temperature_dC is uint16_t
+
+    // Test case 5: Invalid parameters - NULL pointer
+    data_proc_tlm_cmpnt_get_inst_soc_rail_data(TEST_RAIL_ID_2, NULL);
+    // Function should handle NULL gracefully (no crash expected)
+
+    // Test case 6: Edge case - rail_id at boundary for primary die
+    // On primary die, NUM_DIE0_VR_RAILS = MAX_NUM_OF_VR_RAILS, so this tests the boundary
+    die_2_die_exch_init(0); // PRIMARY_DIE_ID = 0
+    uint16_t boundary_rail = MAX_NUM_OF_VR_RAILS - 1;
+    soc_rt.latest_rail_current_mA[boundary_rail] = 2000;
+    soc_rt.latest_rail_temperature_dC[boundary_rail] = 70;
+    soc_rt.latest_rail_voltage_mV[boundary_rail] = 1100;
+
+    data_proc_tlm_cmpnt_get_inst_soc_rail_data(boundary_rail, &rail_data);
+
+    // Verify boundary rail works on primary die
+    assert_int_equal(rail_data.current_mA, 2000);
+    assert_int_equal(rail_data.temperature_dC, 70);
+    assert_int_equal(rail_data.voltage_mV, 1100);
 }
 
 TEST_FUNCTION(test_get_inst_soc_dimm_runtime_data, test_setup, test_teardown)
@@ -691,7 +795,9 @@ TEST_FUNCTION(test_get_inst_soc_sensor_temp_data, test_setup, test_teardown)
     inst_soc_element_max_temp_t read_data = {0};
 
     soc_rt.latest_max_die_temp_dC = 200;
+    die_2_die_exch_init(1);
     die_2_die_exch_ib_write_inst_max_die_temp(400);
+
     data_proc_tlm_cmpnt_get_inst_soc_max_temp_data(&read_data);
 
     assert_int_equal(read_data.die0_max_temperature_dC, 200);

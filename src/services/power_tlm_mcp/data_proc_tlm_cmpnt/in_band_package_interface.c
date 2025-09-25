@@ -441,42 +441,59 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
     }
     else
     {
-        core_summary_data->pstate = core_rt[core_id].latest_pstate;
-        core_summary_data->cstate = core_rt[core_id].latest_cstate;
-        core_summary_data->frequency_Mhz = dvfs_get_freq_from_plimit(core_rt[core_id].latest_pstate);
-        core_summary_data->power_mW = core_rt[core_id].latest_power_mW;
-        core_summary_data->voltage_mV = core_rt[core_id].latest_voltage_mV;
-        core_summary_data->current_mA = core_rt[core_id].latest_current_mA;
-        core_summary_data->temperature_dC = core_rt[core_id].latest_max_value_dC;
-        core_summary_data->plimit = core_rt[core_id].latest_plimit;
-        core_summary_data->mpam_id = core_rt[core_id].latest_mpam_id;
+        if (core_is_active[core_id])
+        {
+            core_summary_data->pstate = core_rt[core_id].latest_pstate;
+            core_summary_data->cstate = core_rt[core_id].latest_cstate;
+            core_summary_data->frequency_Mhz = dvfs_get_freq_from_plimit(core_rt[core_id].latest_pstate);
+            core_summary_data->power_mW = core_rt[core_id].latest_power_mW;
+            core_summary_data->voltage_mV = core_rt[core_id].latest_voltage_mV;
+            core_summary_data->current_mA = core_rt[core_id].latest_current_mA;
+            core_summary_data->temperature_dC = core_rt[core_id].latest_max_value_dC;
+            core_summary_data->plimit = core_rt[core_id].latest_plimit;
+            core_summary_data->mpam_id = core_rt[core_id].latest_mpam_id;
 
-        // TODO :Below items need to be updated, when corresponding records will have implementation.
+            // TODO :Below items need to be updated, when corresponding records will have implementation.
 
-        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584924
-        core_summary_data->cstate_entry_latency_uS = 0;
+            // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584924
+            core_summary_data->cstate_entry_latency_uS = 0;
 
-        // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584925
-        core_summary_data->cstate_exit_latency_uS = 0;
-        core_summary_data->velocity_boost_priority = 0;
+            // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584925
+            core_summary_data->cstate_exit_latency_uS = 0;
+            core_summary_data->velocity_boost_priority = 0;
 
-        /* Note : Every bit represt an active throttling*/
-        // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2684261
-        core_summary_data->throttling_type = data_smpl_get_active_throttle_sources(core_id);
-        /* Note:  latest rack priority id*/
-        core_summary_data->throttling_rack_priority = core_rt[core_id].latest_rack_throttle_priority;
+            /* Note : Every bit represt an active throttling*/
+            // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2684261
+            core_summary_data->throttling_type = data_smpl_get_active_throttle_sources(core_id);
+            /* Note:  latest rack priority id*/
+            core_summary_data->throttling_rack_priority = core_rt[core_id].latest_rack_throttle_priority;
+        }
+        else
+        {
+            memset(core_summary_data, 0, sizeof(inst_core_element_summary_t));
+        }
     }
 }
 
 void data_proc_tlm_cmpnt_get_inst_soc_rail_data(uint16_t rail_id, p_inst_soc_element_rail_t rail_data)
 {
-    // parameter check: core_id, check if correct
+    // parameter check: rail_id, check if correct
     if (rail_id >= MAX_NUM_OF_VR_RAILS || rail_data == NULL)
     {
         FPFW_ET_LOG(DataPackageInstRecordError, INST_TELEMETRY_ELEMENT_SOC_VOLTAGE_RAILS);
     }
     else
     {
+        uint16_t num_rails = NUM_DIE0_VR_RAILS;
+        if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+        {
+            num_rails = NUM_DIE1_VR_RAILS;
+        }
+        if (rail_id >= num_rails)
+        {
+            memset(rail_data, 0, sizeof(inst_soc_element_rail_t));
+            return;
+        }
         // Create Voltage, Current and Temperature Information
         rail_data->current_mA = soc_rt.latest_rail_current_mA[rail_id];
         rail_data->temperature_dC = soc_rt.latest_rail_temperature_dC[rail_id];

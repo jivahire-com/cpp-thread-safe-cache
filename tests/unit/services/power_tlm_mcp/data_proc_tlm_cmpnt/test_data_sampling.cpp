@@ -2928,23 +2928,51 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry, test_setup, test_teardown)
     assert_true(entry_data.throttling_state_change);
     assert_false(entry_data.rack_throttling_state_change);
 
-    // Test Case 14: Default case in switch statement (should do nothing special)
+    // Test Case 14: SYS_FRC_PMIN_THROTTLING_START (VR HOT throttling start)
     memset(&core_rt[core_id], 0, sizeof(core_runtime_info_t));
     memset(&entry_data, 0, sizeof(entry_data));
 
-    pstate_entry.data.throttle_status = SYS_FRC_PMIN_THROTTLING_START; // Valid enum but not handled in switch
+    pstate_entry.data.throttle_status = SYS_FRC_PMIN_THROTTLING_START;
     core_rt[core_id].latest_cstate = CSTATE_C0;
 
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000); // 1MHz for easy conversion
 
     data_smpl_parse_core_states_entry(&pstate_entry, &entry_data);
 
-    // Should reach the end without error (default case does nothing)
+    // Should have called data_smpl_handle_throttle_source_start - verify expected state
+    assert_true(core_rt[core_id].throttle_source_tracker[THROTTLE_SOURCE_VR_HOT]);
     // Should have called data_smpl_parse_cstate
     assert_true(entry_data.valid_entry_cstate);
-    // No other state changes for default case
-    assert_false(entry_data.valid_entry_pstate);
-    assert_false(entry_data.throttling_state_change);
+    // complete previous pstate residency on transition to throttle start
+    assert_true(entry_data.valid_entry_pstate);
+    // Should have throttling state change but not rack throttling
+    assert_true(entry_data.throttling_state_change);
+    assert_false(entry_data.rack_throttling_state_change);
+
+    // Test Case 15: SYS_FRC_PMIN_THROTTLING_END (VR HOT throttling end)
+    memset(&core_rt[core_id], 0, sizeof(core_runtime_info_t));
+    memset(&entry_data, 0, sizeof(entry_data));
+
+    // Set up as currently VR HOT throttling
+    core_rt[core_id].latest_cstate = CSTATE_C0;
+    core_rt[core_id].status_flags.throttle_is_active = true;
+    core_rt[core_id].throttle_source_tracker[THROTTLE_SOURCE_VR_HOT] = true;
+    core_rt[core_id].throttle_res_timestamp_uS[THROTTLE_SOURCE_VR_HOT] = 500; // Earlier timestamp
+
+    pstate_entry.data.throttle_status = SYS_FRC_PMIN_THROTTLING_END;
+    pstate_entry.timestamp = 1000;
+
+    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000); // 1MHz for easy conversion
+
+    data_smpl_parse_core_states_entry(&pstate_entry, &entry_data);
+
+    assert_false(core_rt[core_id].throttle_source_tracker[THROTTLE_SOURCE_VR_HOT]);
+    // Should have called data_smpl_parse_cstate
+    assert_true(entry_data.valid_entry_cstate);
+    // start tracking pstate now
+    assert_true(entry_data.valid_entry_pstate);
+    // Should have throttling state change but not rack throttling
+    assert_true(entry_data.throttling_state_change);
     assert_false(entry_data.rack_throttling_state_change);
 }
 

@@ -959,6 +959,14 @@ void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_entry, core_state_
         data_smpl_handle_throttle_source_end(core_id, THROTTLE_SOURCE_CURRENT, entry_data);
         break;
 
+    case SYS_FRC_PMIN_THROTTLING_START:
+        data_smpl_handle_throttle_source_start(core_id, THROTTLE_SOURCE_VR_HOT, entry_data);
+        break;
+
+    case SYS_FRC_PMIN_THROTTLING_END:
+        data_smpl_handle_throttle_source_end(core_id, THROTTLE_SOURCE_VR_HOT, entry_data);
+        break;
+
     default:
         break;
     }

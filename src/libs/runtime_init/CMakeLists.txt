@@ -290,7 +290,6 @@ add_library(${TARGET}
         mts_init.c
         nvic_init.c
         pdr_repo_init.c
-        pdr_dummy_init.c
         power_pldm_mcp_init.c
         tlm_fuses_init.c
         pwr_tlm_svc_mcp_init.c

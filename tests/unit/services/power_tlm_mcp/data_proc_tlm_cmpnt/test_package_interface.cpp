@@ -690,6 +690,58 @@ TEST_FUNCTION(test_get_pwr_soc_mpam_memory_power_data, test_setup, test_teardown
     data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(TEST_MPAM_ID_4, &mpam_memory_power_data);
 }
 
+TEST_FUNCTION(test_get_pwr_soc_memory_throttle_data, test_setup, test_teardown)
+{
+    pwr_soc_element_memory_throttle_t memory_throttle_data = {0};
+    uint16_t dimm_idx = TEST_DIMM_MOD_ID_3;
+
+    // Set up test values in computed_metrics_2_mins for this DIMM
+    computed_metrics_2_mins.soc.dimm[dimm_idx].entry_counts = 25;
+    computed_metrics_2_mins.soc.dimm[dimm_idx].duration_mS = 1500;
+    computed_metrics_2_mins.soc.dimm[dimm_idx].throttle_source = 3; // Some throttle source value
+
+    // Call the API with valid DIMM index
+    data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data(dimm_idx, &memory_throttle_data);
+
+    // Verify the data was populated correctly (dimm_id is set by the caller, not this function)
+    assert_int_equal(memory_throttle_data.entry_counts, 25);
+    assert_int_equal(memory_throttle_data.total_duration_mS, 1500);
+    assert_int_equal(memory_throttle_data.throttle_source, 3);
+
+    // Test boundary case - DIMM index 5 (last valid index for per-die) to verify array access
+    uint16_t last_dimm_idx = NUMBER_OF_DIMMS_PER_DIE - 1; // 5
+    computed_metrics_2_mins.soc.dimm[last_dimm_idx].entry_counts = 0x12345;
+    computed_metrics_2_mins.soc.dimm[last_dimm_idx].duration_mS = 0x6789;
+    computed_metrics_2_mins.soc.dimm[last_dimm_idx].throttle_source = 7;
+
+    pwr_soc_element_memory_throttle_t memory_throttle_last_data = {0};
+    data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data(last_dimm_idx, &memory_throttle_last_data);
+
+    // Verify array position 5 works correctly (dimm_id is set by the caller, not this function)
+    assert_int_equal(memory_throttle_last_data.entry_counts, 0x12345);
+    assert_int_equal(memory_throttle_last_data.total_duration_mS, 0x6789);
+    assert_int_equal(memory_throttle_last_data.throttle_source, 7);
+
+    // Negative test: invalid DIMM index (out of bounds)
+    pwr_soc_element_memory_throttle_t memory_throttle_invalid_data;
+    // Pre-fill with distinctive known values to verify function doesn't modify them on error
+    memory_throttle_invalid_data.entry_counts = 0xDEADBEEF;
+    memory_throttle_invalid_data.total_duration_mS = 0xCAFEBABE;
+    memory_throttle_invalid_data.throttle_source = 0xAB;
+    memory_throttle_invalid_data.dimm_id = 0xCD;
+
+    data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data(NUMBER_OF_DIMMS_PER_DIE, &memory_throttle_invalid_data);
+
+    // Should not have modified the structure (error case should not populate data)
+    assert_int_equal(memory_throttle_invalid_data.entry_counts, 0xDEADBEEF);
+    assert_int_equal(memory_throttle_invalid_data.total_duration_mS, 0xCAFEBABE);
+    assert_int_equal(memory_throttle_invalid_data.throttle_source, 0xAB);
+    // Note: dimm_id is set by the caller, not by this function, so we don't test it here
+
+    // Negative test: null pointer (should not crash)
+    data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data(dimm_idx, NULL);
+}
+
 TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
 {
     inst_core_element_summary_t core_summary_data = {0};

@@ -486,7 +486,10 @@ bool data_smpl_process_dimm_sensor_fifo(void)
                 comp_metrics_for_single_soc_dimm(dimm_info_entry->dimm_id,
                                                  dimm_info_entry->dimm_temp_s0_dC,
                                                  dimm_info_entry->dimm_temp_s1_dC,
-                                                 dimm_info_entry->dimm_power_mW);
+                                                 dimm_info_entry->dimm_power_mW,
+                                                 dimm_info_entry->dimm_mr4_throttle_count,
+                                                 dimm_info_entry->dimm_throttle_duration_ms,
+                                                 dimm_info_entry->dimm_throttling);
             }
         }
     } while (status.more_entries == true);
@@ -836,12 +839,10 @@ bool data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info_entry)
         {
             dimm_rt.latest_max_dimm_temp_dC = dimm_rt.latest_dimm[dimm_info_entry->dimm_id].temperature_dC;
         }
-
-        dimm_rt.latest_dimm[dimm_info_entry->dimm_id].power_mW = dimm_info_entry->dimm_power_mW;
         dimm_rt.latest_dimm_total_pwr_mW += dimm_info_entry->dimm_power_mW;
-
+        dimm_rt.latest_dimm[dimm_info_entry->dimm_id].power_mW = dimm_info_entry->dimm_power_mW;
         dimm_rt.latest_dimm[dimm_info_entry->dimm_id].memory_freq_id = dimm_info_entry->dimm_memory_frequency_id;
-        dimm_rt.latest_dimm[dimm_info_entry->dimm_id].throttling_flags = dimm_info_entry->dimm_throttling;
+        dimm_rt.latest_dimm[dimm_info_entry->dimm_id].throttle_source = dimm_info_entry->dimm_throttling;
 
         // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592610
         dimm_rt.latest_dimm[dimm_info_entry->dimm_id].threshold_dC = 0;

@@ -66,6 +66,7 @@ typedef enum
     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_CORE_POWER,
     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_THROTTLE,
     POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER,
+    POWER_TELEMETRY_ELEMENT_SOC_MEMORY_THROTTLE,
     POWER_TELEMETRY_ELEMENT_ID_MAX
 } pwr_telemetry_element_id_t;
 
@@ -545,6 +546,25 @@ typedef struct {
     pwr_soc_collection_mpam_memory_power_t mpam_memory_power_collection[NUMBER_OF_MPAMS];
 } pwr_soc_record_mpam_memory_power_t, *p_pwr_soc_record_mpam_memory_power_t;
 
+//----------------POWER_TELEMETRY_ELEMENT_SOC_MEMORY_THROTTLE----------------
+
+typedef struct {
+    uint32_t total_duration_mS;
+    uint32_t entry_counts;
+    uint8_t throttle_source;  // dimm_throttle_source_t
+    uint8_t dimm_id;
+} pwr_soc_element_memory_throttle_t, *p_pwr_soc_element_memory_throttle_t;
+
+typedef struct {
+    telemetry_collection_hdr_t collection_header;
+    pwr_soc_element_memory_throttle_t memory_throttle_element;
+} pwr_soc_collection_memory_throttle_t, *p_pwr_soc_collection_memory_throttle_t;
+
+typedef struct {
+    telemetry_record_hdr_t record_header;
+    pwr_soc_collection_memory_throttle_t memory_throttle_collection[NUMBER_OF_DIMMS_PER_DIE];
+} pwr_soc_record_memory_throttle_t, *p_pwr_soc_record_memory_throttle_t;
+
 //----------------INST_TELEMETRY_ELEMENT_CORE----------------
 
 typedef struct {
@@ -599,7 +619,7 @@ typedef struct {
     uint16_t threshold_dC;
     uint16_t power_mW;
     uint8_t memory_freq_id;
-    uint8_t throttling_flags;
+    uint8_t throttle_source;
 } inst_soc_element_dimm_runtime_t, *p_inst_soc_element_dimm_runtime_t;
 
 typedef struct {

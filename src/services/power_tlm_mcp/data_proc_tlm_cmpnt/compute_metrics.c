@@ -352,7 +352,13 @@ void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC)
     }
 }
 
-void comp_metrics_for_single_soc_dimm(uint8_t dimm_idx, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC, uint16_t latest_dimm_power_mW)
+void comp_metrics_for_single_soc_dimm(uint8_t dimm_idx,
+                                      uint16_t latest_dimm_temp_s0_dC,
+                                      uint16_t latest_dimm_temp_s1_dC,
+                                      uint16_t latest_dimm_power_mW,
+                                      uint16_t entry_count,
+                                      uint8_t throttle_duration_mS,
+                                      uint8_t throttle_source)
 {
     // update in-band metrics
     if (in_band_publishing_active)
@@ -360,6 +366,16 @@ void comp_metrics_for_single_soc_dimm(uint8_t dimm_idx, uint16_t latest_dimm_tem
         data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s0_dC, latest_dimm_temp_s0_dC);
         data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_idx].temperature_s1_dC, latest_dimm_temp_s1_dC);
         data_util_calc_mma_u16(&computed_metrics_2_mins.soc.dimm[dimm_idx].power_mW, latest_dimm_power_mW);
+
+        if (computed_metrics_2_mins.soc.dimm[dimm_idx].entry_counts <= UINT32_MAX - entry_count)
+        {
+            computed_metrics_2_mins.soc.dimm[dimm_idx].entry_counts += entry_count;
+        }
+        if (computed_metrics_2_mins.soc.dimm[dimm_idx].duration_mS <= UINT32_MAX - throttle_duration_mS)
+        {
+            computed_metrics_2_mins.soc.dimm[dimm_idx].duration_mS += throttle_duration_mS;
+        }
+        computed_metrics_2_mins.soc.dimm[dimm_idx].throttle_source = throttle_source;
     }
 
     // update out-of-band metrics

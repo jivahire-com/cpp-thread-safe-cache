@@ -1154,7 +1154,7 @@ TEST_FUNCTION(test_data_smpl_parse_dimm_entry, test_setup, test_teardown)
     // Verify power and other data are stored correctly
     assert_int_equal(dimm_rt.latest_dimm[0].power_mW, 1500);
     assert_int_equal(dimm_rt.latest_dimm[0].memory_freq_id, 3);
-    assert_int_equal(dimm_rt.latest_dimm[0].throttling_flags, 1);
+    assert_int_equal(dimm_rt.latest_dimm[0].throttle_source, 1);
 
     // Verify maximum temperature tracking
     assert_int_equal(dimm_rt.latest_max_dimm_temp_dC, 85);

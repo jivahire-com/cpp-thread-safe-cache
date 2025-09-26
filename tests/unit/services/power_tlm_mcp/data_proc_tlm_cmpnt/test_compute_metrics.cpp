@@ -388,19 +388,25 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm, test_setup, test_teardown)
 {
 
     uint8_t dimm_id = 0;
-    uint16_t test_values_dC[5][3] = {
-        {180, 300, 400},
-        {220, 340, 500},
-        {200, 320, 420},
-        {210, 330, 440},
-        {190, 180, 490},
+    uint16_t test_values_dC[5][6] = {
+        {180, 300, 400, 1, 10, 1}, // temp_s0, temp_s1, power, entry_count, duration_mS, throttle_source
+        {220, 340, 500, 2, 15, 2},
+        {200, 320, 420, 1, 20, 1},
+        {210, 330, 440, 3, 25, 3},
+        {190, 180, 490, 2, 30, 2},
     };
 
     die_2_die_exch_init(0);
 
     for (uint8_t i = 0; i < 5; i++)
     {
-        comp_metrics_for_single_soc_dimm(dimm_id, test_values_dC[i][0], test_values_dC[i][1], test_values_dC[i][2]);
+        comp_metrics_for_single_soc_dimm(dimm_id,
+                                         test_values_dC[i][0],  // temp_s0
+                                         test_values_dC[i][1],  // temp_s1
+                                         test_values_dC[i][2],  // power
+                                         test_values_dC[i][3],  // entry_count
+                                         test_values_dC[i][4],  // duration_mS
+                                         test_values_dC[i][5]); // throttle_source
     }
 
     // Check the results
@@ -417,8 +423,13 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm, test_setup, test_teardown)
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.max, 500);
     assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.dimm[0].power_mW.running_avg), 450);
 
+    // Check new fields: entry_counts and duration_mS
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].entry_counts, 9);    // 1+2+1+3+2 = 9
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].duration_mS, 100);   // 10+15+20+25+30 = 100
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[0].throttle_source, 2); // Last value set
+
     die_2_die_exch_init(1);
-    comp_metrics_for_single_soc_dimm(dimm_id, 20, 10, 30);
+    comp_metrics_for_single_soc_dimm(dimm_id, 20, 10, 30, 5, 40, 4);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s0_dC.min, 20);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].temperature_s1_dC.min, 10);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[0].power_mW.min, 30);
@@ -427,8 +438,32 @@ TEST_FUNCTION(test_comp_metrics_for_single_soc_dimm, test_setup, test_teardown)
     in_band_publishing_active = false;
     dimm_id = 1;
     computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s0_dC.min = 150;
-    comp_metrics_for_single_soc_dimm(dimm_id, 250, 300, 350);
+    comp_metrics_for_single_soc_dimm(dimm_id, 250, 300, 350, 10, 50, 5);
     assert_int_equal(computed_metrics_2_mins.soc.dimm[dimm_id].temperature_s0_dC.min, 150);
+
+    // Test overflow protection
+    in_band_publishing_active = true;
+    dimm_id = 2;
+
+    // Test entry_counts overflow protection
+    computed_metrics_2_mins.soc.dimm[dimm_id].entry_counts = UINT32_MAX - 5;
+    comp_metrics_for_single_soc_dimm(dimm_id, 100, 100, 100, 10, 10, 1); // entry_count=10 would overflow
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[dimm_id].entry_counts, UINT32_MAX - 5); // Should remain unchanged
+
+    // Test successful addition when no overflow
+    computed_metrics_2_mins.soc.dimm[dimm_id].entry_counts = UINT32_MAX - 10;
+    comp_metrics_for_single_soc_dimm(dimm_id, 100, 100, 100, 5, 10, 1); // entry_count=5 won't overflow
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[dimm_id].entry_counts, UINT32_MAX - 5); // Should be updated
+
+    // Test duration_mS overflow protection
+    computed_metrics_2_mins.soc.dimm[dimm_id].duration_mS = UINT32_MAX - 5;
+    comp_metrics_for_single_soc_dimm(dimm_id, 100, 100, 100, 1, 10, 1); // duration_mS=10 would overflow
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[dimm_id].duration_mS, UINT32_MAX - 5); // Should remain unchanged
+
+    // Test successful addition when no overflow
+    computed_metrics_2_mins.soc.dimm[dimm_id].duration_mS = UINT32_MAX - 10;
+    comp_metrics_for_single_soc_dimm(dimm_id, 100, 100, 100, 1, 5, 1); // duration_mS=5 won't overflow
+    assert_int_equal(computed_metrics_2_mins.soc.dimm[dimm_id].duration_mS, UINT32_MAX - 5); // Should be updated
 }
 
 TEST_FUNCTION(test_comp_metrics_for_single_core_power_per_pstate, test_setup, test_teardown)

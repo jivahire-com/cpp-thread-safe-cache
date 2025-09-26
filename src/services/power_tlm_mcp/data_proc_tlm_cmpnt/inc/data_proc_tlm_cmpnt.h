@@ -295,6 +295,16 @@ void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(uint16_t mpam_id, p_pwr_soc_element_mpam_memory_power_t mpam_memory_power_data);
 
 /**
+ * @brief Get the memory throttle data for the specified dimm.
+ *
+ * @param[in] dimm_idx - The dimm to get the data for. 0 .. NUMBER_OF_DIMMS_PER_DIE-1
+ * @param[out] memory_throttle_data - Pointer to the location to store the memory throttle data in.
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data(uint16_t dimm_idx, p_pwr_soc_element_memory_throttle_t memory_throttle_data);
+
+/**
  * @brief Get the core summary instantaneous data for the specified core.
  *
  * @param[in] core_id - The core id to get the data for. 0 .. NUMBER_OF_CORES_PER_DIE-1

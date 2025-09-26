@@ -168,7 +168,7 @@ uint32_t package_create_pwr_core_histogram_record(p_pwr_core_record_histogram_t 
 
 /**
  * @brief Create a 24hr core aging record
- * @param[out] aging_record - location where the record will be stored 
+ * @param[out] aging_record - location where the record will be stored
  * @return uint32_t - Number of bytes in the record
  */
 uint32_t package_create_pwr_core_aging_record(p_pwr_core_record_aging_t aging_record);
@@ -263,6 +263,13 @@ uint32_t package_create_pwr_mpam_throttle_record(p_pwr_soc_record_mpam_throttle_
  * @return uint32_t - Number of bytes in the record
  */
 uint32_t package_create_pwr_mpam_memory_power_record(p_pwr_soc_record_mpam_memory_power_t mpam_memory_power_record);
+
+/**
+ * @brief   Create a power soc memory throttle record
+ * @param[out] memory_throttle_record - location where the record will be stored
+ * @return uint32_t - Number of bytes in the record
+ */
+uint32_t package_create_pwr_soc_memory_throttle_record(p_pwr_soc_record_memory_throttle_t memory_throttle_record);
 
 /**
  * @brief   Create a instantaneous core summary record

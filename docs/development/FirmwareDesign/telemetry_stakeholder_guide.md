@@ -68,6 +68,7 @@ NOTE: These values are pending final specification approval and are subject to c
 |          | 0x14   | SOC_VM_MPAM_CORE_POWER   |
 |          | 0x15   | SOC_VM_MPAM_THROTTLE     |
 |          | 0x16   | SOC_VM_MPAM_MEMORY_POWER |
+|          | 0x17   | SOC_SOC_MEMORY_THROTTLING|
 
 | Provider ID | Event ID | Record / Event Name |
 |-------------|----------|---------------------|

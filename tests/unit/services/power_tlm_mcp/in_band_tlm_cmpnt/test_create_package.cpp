@@ -765,6 +765,38 @@ TEST_FUNCTION(test_get_pwr_mpam_memory_power_pkg_create_data, test_setup, test_t
     }
 }
 
+TEST_FUNCTION(test_get_pwr_soc_memory_throttle_pkg_create_data, test_setup, test_teardown)
+{
+    pwr_soc_record_memory_throttle_t record = {{0}};
+
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data, NUMBER_OF_DIMMS_PER_DIE);
+    uint32_t record_size = package_create_pwr_soc_memory_throttle_record(&record);
+
+    assert_int_equal(record_size, sizeof(pwr_soc_record_memory_throttle_t));
+    assert_int_not_equal(record.record_header.timestamp_uS, 0);
+    assert_int_not_equal(record.record_header.record_number, 0);
+    assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_DIMMS_PER_DIE);
+    assert_int_equal(record.record_header.record_payload_size,
+                     (sizeof(pwr_soc_record_memory_throttle_t) - sizeof(telemetry_record_hdr_t)));
+
+    for (uint16_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_DIE; dimm_idx++)
+    {
+        assert_int_equal(record.memory_throttle_collection[dimm_idx].collection_header.provider_id,
+                         EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA);
+        assert_int_equal(record.memory_throttle_collection[dimm_idx].collection_header.element_id,
+                         POWER_TELEMETRY_ELEMENT_SOC_MEMORY_THROTTLE);
+        assert_int_equal(record.memory_throttle_collection[dimm_idx].collection_header.collection_id, dimm_idx);
+        assert_int_equal(record.memory_throttle_collection[dimm_idx].collection_header.number_of_elements, 1);
+        assert_int_equal(record.memory_throttle_collection[dimm_idx].collection_header.collection_payload_size,
+                         sizeof(pwr_soc_collection_memory_throttle_t) - sizeof(telemetry_collection_hdr_t));
+
+        // event data ranges are initialized to 0, the mock Get Api sets them to 0xFF
+        // This verifies that the correct data ranges are passed to the data processing component get data api's
+        assert_memset_to_ff((uint8_t*)&record.memory_throttle_collection[dimm_idx].memory_throttle_element,
+                            sizeof(pwr_soc_element_memory_throttle_t));
+    }
+}
+
 TEST_FUNCTION(test_get_inst_core_summary_data, test_setup, test_teardown)
 {
     inst_core_record_summary_t record = {{0}};
@@ -954,6 +986,7 @@ TEST_FUNCTION(test_package_create_power_pkg_all_enabled, test_setup, test_teardo
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data, NUMBER_OF_MPAMS);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data, NUMBER_OF_MPAMS);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data, NUMBER_OF_MPAMS);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data, NUMBER_OF_DIMMS_PER_DIE);
 
     uint32_t pkg_size = package_create_power_pkg((uintptr_t)cr_max_package_mem, POWER_PKG_MAX_SIZE);
 

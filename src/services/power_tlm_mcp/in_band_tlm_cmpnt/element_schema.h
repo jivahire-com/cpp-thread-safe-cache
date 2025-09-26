@@ -253,6 +253,15 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, average_mW),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, mpam_id))
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
+                     POWER_TELEMETRY_ELEMENT_SOC_MEMORY_THROTTLE,
+                     pwr_soc_element_memory_throttle,
+                     FPFW_ET_LEVEL_DEBUG,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, total_duration_mS),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, entry_counts),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, throttle_source),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, dimm_id))
+
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,
                      INST_TELEMETRY_ELEMENT_CORE,
                      inst_core_element_summary,
@@ -289,7 +298,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, threshold_dC),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, power_mW),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, memory_freq_id),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, throttling_flags))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, throttle_source))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA,
                      INST_TELEMETRY_ELEMENT_SOC_DIE_TEMP,

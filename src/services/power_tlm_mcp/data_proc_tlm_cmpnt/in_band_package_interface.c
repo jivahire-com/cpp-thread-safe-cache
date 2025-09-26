@@ -458,6 +458,21 @@ void data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(uint16_t mpam_id, p_
     memset(mpam_memory_power_data, 0, sizeof(pwr_soc_element_mpam_memory_power_t));
 }
 
+void data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data(uint16_t dimm_idx, p_pwr_soc_element_memory_throttle_t memory_throttle_data)
+{
+    // parameter check: dimm_idx, check if correct
+    if (dimm_idx >= NUMBER_OF_DIMMS_PER_DIE || memory_throttle_data == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_MEMORY_THROTTLE);
+    }
+    else
+    {
+        memory_throttle_data->entry_counts = computed_metrics_2_mins.soc.dimm[dimm_idx].entry_counts;
+        memory_throttle_data->total_duration_mS = computed_metrics_2_mins.soc.dimm[dimm_idx].duration_mS;
+        memory_throttle_data->throttle_source = computed_metrics_2_mins.soc.dimm[dimm_idx].throttle_source;
+    }
+}
+
 void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst_core_element_summary_t core_summary_data)
 {
     // parameter check: core_id, check if correct
@@ -538,7 +553,7 @@ void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_idx, p_ins
     {
         /* Note : DIMM Temperatures obtained shall be the max of the two sensors in each DIMM. Each DIMM has two temperature sensors.  */
         dimm_data->temperature_dC = dimm_rt.latest_dimm[dimm_idx].temperature_dC;
-        dimm_data->throttling_flags = dimm_rt.latest_dimm[dimm_idx].throttling_flags;
+        dimm_data->throttle_source = dimm_rt.latest_dimm[dimm_idx].throttle_source;
         dimm_data->memory_freq_id = dimm_rt.latest_dimm[dimm_idx].memory_freq_id;
         dimm_data->power_mW = dimm_rt.latest_dimm[dimm_idx].power_mW;
 

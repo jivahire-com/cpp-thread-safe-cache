@@ -310,6 +310,13 @@ uint32_t package_create_power_pkg(uintptr_t pkg_location, size_t pkg_available_s
         }
     }
 
+    if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_MEMORY_THROTTLE])
+    {
+        p_pwr_soc_record_memory_throttle_t memory_throttle_record = (p_pwr_soc_record_memory_throttle_t)pkg_location;
+        pkg_location += package_create_pwr_soc_memory_throttle_record(memory_throttle_record);
+        package_hdr->payload_header.number_of_records++;
+    }
+
     uint32_t pkg_size = pkg_location - (uintptr_t)package_hdr;
     if (pkg_size == sizeof(telemetry_package_hdr_t))
     {
@@ -921,6 +928,31 @@ uint32_t package_create_pwr_mpam_memory_power_record(p_pwr_soc_record_mpam_memor
             &mpam_memory_power_record->mpam_memory_power_collection[mpam_id].mpam_memory_power_element);
     }
     return sizeof(pwr_soc_record_mpam_memory_power_t);
+}
+
+uint32_t package_create_pwr_soc_memory_throttle_record(p_pwr_soc_record_memory_throttle_t memory_throttle_record)
+{
+    populate_record_hdr(&memory_throttle_record->record_header,
+                        ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_MEMORY_THROTTLE],
+                        NUMBER_OF_DIMMS_PER_DIE,
+                        sizeof(pwr_soc_record_memory_throttle_t));
+
+    for (uint16_t dimm_idx = 0; dimm_idx < NUMBER_OF_DIMMS_PER_DIE; dimm_idx++)
+    {
+        populate_pwr_collection_hdr(&memory_throttle_record->memory_throttle_collection[dimm_idx].collection_header,
+                                    POWER_TELEMETRY_ELEMENT_SOC_MEMORY_THROTTLE,
+                                    DIMM_ID_WITH_DIE_OFFSET(dimm_idx),
+                                    1,
+                                    sizeof(pwr_soc_collection_memory_throttle_t));
+
+        memory_throttle_record->memory_throttle_collection[dimm_idx].memory_throttle_element.dimm_id =
+            DIMM_ID_WITH_DIE_OFFSET(dimm_idx);
+
+        data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data(
+            dimm_idx,
+            &memory_throttle_record->memory_throttle_collection[dimm_idx].memory_throttle_element);
+    }
+    return sizeof(pwr_soc_record_memory_throttle_t);
 }
 
 uint32_t package_create_inst_core_summary_record(p_inst_core_record_summary_t summary_record)

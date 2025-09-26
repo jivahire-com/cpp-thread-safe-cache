@@ -91,6 +91,9 @@ typedef struct
     mma_u16_t temperature_s0_dC;
     mma_u16_t temperature_s1_dC;
     mma_u16_t power_mW;
+    uint32_t duration_mS;
+    uint32_t entry_counts;
+    uint8_t throttle_source;
 } computed_per_dimm_metrics_t;
 
 typedef struct
@@ -307,8 +310,11 @@ void comp_metrics_for_soc_max_temp(uint16_t latest_max_soc_temp_dC);
  * @param[in] latest_dimm_temp_s0_dC - latest temp for S0 in dC
  * @param[in] latest_dimm_temp_s1_dC - latest temp for S1 in dC
  * @param[in] latest_dimm_power_mW - latest dimm power in mW
+ * @param[in] entry_count - number of throttle entries since last dimm packet
+ * @param[in] throttle_duration_mS - total throttle duration since last dimm packet
+ * @param[in] throttle_source - latest memory throttle source
  */
-void comp_metrics_for_single_soc_dimm(uint8_t dimm_idx, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC, uint16_t latest_dimm_power_mW);
+void comp_metrics_for_single_soc_dimm(uint8_t dimm_idx, uint16_t latest_dimm_temp_s0_dC, uint16_t latest_dimm_temp_s1_dC, uint16_t latest_dimm_power_mW, uint16_t entry_count, uint8_t throttle_duration_mS, uint8_t throttle_source);
 
 /**
  * @brief  This API used to update the maximum DIMM temperature in dC.

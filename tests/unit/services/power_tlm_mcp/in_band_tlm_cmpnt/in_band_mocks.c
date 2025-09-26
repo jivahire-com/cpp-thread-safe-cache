@@ -263,6 +263,14 @@ void data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(uint16_t mpam_id, p_
     function_called();
 }
 
+void data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data(uint16_t dimm_idx, p_pwr_soc_element_memory_throttle_t memory_throttle_data)
+{
+    FPFW_UNUSED(dimm_idx);
+    memset(memory_throttle_data, 0xFF, sizeof(pwr_soc_element_memory_throttle_t));
+
+    function_called();
+}
+
 void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst_core_element_summary_t core_summary_data)
 {
     FPFW_UNUSED(core_id);

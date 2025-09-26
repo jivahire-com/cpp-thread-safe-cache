@@ -8,12 +8,16 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
+#include <atu_api.h>
+#include <atu_lib.h>
 #include <cmsdk_wd.h>
 #include <error_domain_i.h>
 #include <nvic.h>
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
 #include <mcp_top_regs.h>
 #include <scp_top_regs.h>
+#include <tx_api.h> // for tx_thread_sleep
 
 /*-- Symbolic Constant Macros (defines) --*/
 #if defined(SCP_RUNTIME_INIT)
@@ -67,4 +71,34 @@ void trigger_mscp_watchdog_fault()
     // The minimum valid value for WDOGLOAD is 1
     wdog_cmsdk_apb_disable();
     wdog_cmsdk_apb_init(1, true);
+}
+
+void trigger_lockup(void)
+{
+    /* The processor enters a lockup state if a fault occurs when executing the NMI or HardFault handlers.*/
+    // Set the usage and hardfault handlers to our fake ones
+    NVIC_SetVector(UsageFault_IRQn, (uint32_t)trigger_usage_fault);
+    NVIC_SetVector(HardFault_IRQn, (uint32_t)trigger_usage_fault);
+
+    trigger_usage_fault();
+}
+
+void trigger_atu_error(void)
+{
+    uint64_t atu_error_addr = 0;
+    uint32_t atu_translate_addr = 0;
+
+    atu_error_addr = SCP_TOP_ATU_AP_WINDOW_MEM_ADDRESS + SCP_TOP_ATU_AP_WINDOW_MEM_SIZE - (8 * SL_1KB);
+
+    int status = atu_translate_address(ATU_ID_MSCP, atu_error_addr, &atu_translate_addr);
+    if (status == 0)
+    {
+        FPFW_DBGPRINT_ERROR("Inject ATU error test fail, status: %d\n", status);
+    }
+    else
+    {
+        // Accessing unmap regions trigger ATU error
+        FPFW_DBGPRINT_INFO("Inject ATU error success, status: %d\n", status);
+        MMIO_READ32(atu_error_addr);
+    }
 }

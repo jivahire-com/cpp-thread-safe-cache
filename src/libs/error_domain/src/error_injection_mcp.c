@@ -384,6 +384,13 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
                     FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_RSM_RAM_UE is not supported on FPGA.\n");
                 }
                 break;
+            case MCP_ERROR_TYPE_M7_LOCKUP:
+                trigger_lockup();
+                break;
+
+            case MCP_ERROR_TYPE_ATU_ERR:
+                trigger_atu_error();
+                break;
 
             default:
                 FPFW_DBGPRINT_ERROR("Invalid/Unsupported MCP error type(%d)\n",

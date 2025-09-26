@@ -378,6 +378,14 @@ acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payloa
         nvic_global_enable();
         break;
     }
+    case SCP_ERROR_TYPE_M7_LOCKUP:
+        trigger_lockup();
+        break;
+
+    case SCP_ERROR_TYPE_ATU_ERR:
+        trigger_atu_error();
+        break;
+
     default:
         FPFW_DBGPRINT_ERROR("Invalid/Unsupported SCP error type(%d)\n", einj_payload->param_type.error_type);
         return ACPI_EINJ_INVALID_ACCESS;

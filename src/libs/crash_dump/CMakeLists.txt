@@ -7,7 +7,6 @@ set (SOURCES
         src/crash_dump_cli.c
         src/crash_dump_context.c
         src/crash_dump_dfwk.c
-        src/crash_dump_diagnostics_lockup.c
         src/crash_dump_gpio.c
         src/crash_dump_icc.c
         src/crash_dump_init.c

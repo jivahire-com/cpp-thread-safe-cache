@@ -47,6 +47,8 @@ void trigger_bus_fault();
 void trigger_usage_fault();
 void trigger_mmu_fault();
 void trigger_mscp_watchdog_fault();
+void trigger_lockup(void);
+void trigger_atu_error(void);
 void register_scp_ecc_isr_with_param(uint32_t irq_num, isr_callback_fn_with_params_t isr, void* isr_param);
 void inject_err_by_access(uint32_t addr);
 void trigger_shared_sram_fault(bool arsm, int type, uint32_t target_addr, uint32_t err_mask);

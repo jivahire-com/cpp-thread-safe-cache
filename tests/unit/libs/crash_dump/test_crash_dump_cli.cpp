@@ -15,7 +15,6 @@
 #endif
 
 extern "C" {
-#include <../src/crash_dump_diagnostics_lockup.h>
 #include <../src/crash_dump_overrides.h> // for inMemoryOverride
 #include <FpFwCli.h>                     // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
 #include <crash_dump.h>                  // for crash_dump_cli_init
@@ -299,28 +298,5 @@ TEST_FUNCTION(test_cli_cd_stack_overflow, test_setup, test_teardown)
         printf("Exception caught (0x%08lx)\n", GetExceptionCode());
     }
 #endif
-}
-
-TEST_FUNCTION(test_cli_cd_diagnostics_lockup, test_setup, test_teardown)
-{
-    int argc = 1;
-    const char* argv[] = {"lockup"};
-
-    // Get CLI handler
-    CLI_COMMAND_FN handler = get_command_handler("lockup");
-    assert_non_null(handler);
-
-    expect_any(NVIC_SetVector, isr);
-    expect_function_call(NVIC_SetVector);
-
-    expect_any(NVIC_SetVector, isr);
-    expect_function_call(NVIC_SetVector);
-
-    FPFW_CLI_STATUS status = handler(argc, argv);
-    assert_true(status == CLI_SUCCESS);
-
-    // trigger usage fault and hard fault
-    lockup_usage_fault_handler();
-    lockup_hardfault_handler();
 }
 }

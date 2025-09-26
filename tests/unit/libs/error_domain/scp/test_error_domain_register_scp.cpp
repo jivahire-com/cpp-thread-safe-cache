@@ -91,6 +91,8 @@ void test_icache_tag_ce_isr();
 void test_hard_fault_handler();
 void test_bus_fault_handler();
 void test_watchdog_handler();
+void test_lockup_handler();
+void test_atu_error_handler();
 void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offset);
 void test_trigger_shared_sram_rsm_fault(uint32_t err_mask, uint32_t access_offset);
 
@@ -1256,6 +1258,12 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
 
             expect_function_call(__wrap_nvic_global_enable);
             break;
+        case SCP_ERROR_TYPE_M7_LOCKUP:
+            test_lockup_handler();
+            break;
+        case SCP_ERROR_TYPE_ATU_ERR:
+            test_atu_error_handler();
+            break;
         default:
             expected_status = ACPI_EINJ_INVALID_ACCESS;
             break;
@@ -1312,6 +1320,8 @@ TEST_FUNCTION(test_scp_error_injection_handler, test_setup, nullptr)
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_FUSE_CE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_FUSE_UE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_FUSE_OVERFLOW);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_M7_LOCKUP);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_ATU_ERR);
 
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_COUNT);
 }
@@ -1891,6 +1901,23 @@ void test_watchdog_handler()
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
     expect_value(__wrap_wdog_cmsdk_apb_init, reload_timeout, 1);
     expect_function_call(__wrap_wdog_cmsdk_apb_init);
+}
+
+void test_lockup_handler()
+{
+    expect_any(NVIC_SetVector, isr);
+    expect_function_call(NVIC_SetVector);
+    expect_any(NVIC_SetVector, isr);
+    expect_function_call(NVIC_SetVector);
+}
+
+void test_atu_error_handler()
+{
+    expect_value(__wrap_mmio_read32,
+                 addr,
+                 (uint32_t)(SCP_TOP_ATU_AP_WINDOW_MEM_ADDRESS + SCP_TOP_ATU_AP_WINDOW_MEM_SIZE - (8 * SL_1KB)));
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
 }
 
 TEST_FUNCTION(test_shared_sram_ecc_isr_ue, test_setup, nullptr)

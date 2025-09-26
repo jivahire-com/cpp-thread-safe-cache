@@ -58,6 +58,8 @@ void test_icache_tag_ce_isr();
 void test_hard_fault_handler();
 void test_bus_fault_handler();
 void test_watchdog_handler();
+void test_lockup_handler();
+void test_atu_error_handler();
 void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offset);
 void test_trigger_shared_sram_rsm_fault(uint32_t err_mask, uint32_t access_offset);
 
@@ -863,6 +865,14 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_atu_unmap);
             break;
         }
+        case MCP_ERROR_TYPE_M7_LOCKUP: {
+            test_lockup_handler();
+            break;
+        }
+        case MCP_ERROR_TYPE_ATU_ERR: {
+            test_atu_error_handler();
+            break;
+        }
 
         default:
             break;
@@ -983,6 +993,16 @@ TEST_FUNCTION(test_mcp_error_injection_handler_21, test_setup, nullptr)
 TEST_FUNCTION(test_mcp_error_injection_handler_22, test_setup, nullptr)
 {
     test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_RSM_RAM_UE);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_23, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_M7_LOCKUP);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_24, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_ATU_ERR);
 }
 
 TEST_FUNCTION(test_start_mcp_error_injection_listener, nullptr, nullptr)
@@ -1313,6 +1333,23 @@ void test_watchdog_handler()
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
     expect_value(__wrap_wdog_cmsdk_apb_init, reload_timeout, 1);
     expect_function_call(__wrap_wdog_cmsdk_apb_init);
+}
+
+void test_lockup_handler()
+{
+    expect_any(NVIC_SetVector, isr);
+    expect_function_call(NVIC_SetVector);
+    expect_any(NVIC_SetVector, isr);
+    expect_function_call(NVIC_SetVector);
+}
+
+void test_atu_error_handler()
+{
+    expect_value(__wrap_mmio_read32,
+                 addr,
+                 (uint32_t)(SCP_TOP_ATU_AP_WINDOW_MEM_ADDRESS + SCP_TOP_ATU_AP_WINDOW_MEM_SIZE - (8 * SL_1KB)));
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
 }
 
 TEST_FUNCTION(test_rsm_ecc_isr_ce, test_setup, nullptr)

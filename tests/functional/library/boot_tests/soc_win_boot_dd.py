@@ -99,7 +99,6 @@ class soc_win_boot_dd(EchoFallsBaseTest):
             return False
 
         rscm_helper.rscm_set_profile("General")
-        rscm_helper.rscm_set_boot_option("ConfApp")
 
         self.log.info("Reading APNS UART for SAC")
 

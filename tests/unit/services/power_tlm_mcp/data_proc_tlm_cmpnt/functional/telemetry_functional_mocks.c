@@ -332,3 +332,20 @@ void __wrap_pwr_tlm_core_exch_mcp_read_droop_counts(uint64_t* droop_counts)
         }
     }
 }
+
+// Mock storage for die1 max temperature
+static uint16_t mock_die1_max_temp = 0;
+
+void __wrap_die_2_die_exch_ib_write_inst_max_die_temp(uint16_t temp)
+{
+    printf("MOCK: __wrap_die_2_die_exch_ib_write_inst_max_die_temp called with temp=%u\n", temp);
+    mock_die1_max_temp = temp;
+}
+
+uint16_t __wrap_die_2_die_exch_ib_read_inst_max_die_temp_dC(uint8_t die)
+{
+    printf("MOCK: __wrap_die_2_die_exch_ib_read_inst_max_die_temp_dC called for die=%u, returning %u\n", die, mock_die1_max_temp);
+    uint16_t temp = mock_die1_max_temp;
+    mock_die1_max_temp = 0; // Simulate clearing after read
+    return temp;
+}

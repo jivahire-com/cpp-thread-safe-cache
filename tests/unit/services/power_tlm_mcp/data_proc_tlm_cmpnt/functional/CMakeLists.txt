@@ -17,6 +17,7 @@ set(SOURCES
     test_droop_count.cpp
     test_core_throttling_data.cpp
     log_core_instantaneous_data_integration_test.cpp
+    test_soc_max_temperature.cpp
     )
 
 add_executable(${TARGET} ${SOURCES})
@@ -75,4 +76,6 @@ mock_target(${TARGET}
     read_semaphore
     wait_for_semaphore
     release_semaphore
+    die_2_die_exch_ib_write_inst_max_die_temp
+    die_2_die_exch_ib_read_inst_max_die_temp_dC
 )

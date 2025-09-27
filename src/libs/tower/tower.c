@@ -225,6 +225,8 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
     FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
 
+    bool is_warm_start = system_info_is_warm_start();
+
     tower_sequence_soc_init_params_t tower_sequence_params = {0};
 
     tower_sequence_knobs_t tower_cfg = config_get_tower_knobs().tower_mode_cfg;
@@ -235,14 +237,14 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     tower_sequence_params.vab_configure_msi_attr = true;
 
     // Fabric Tower
-    tower_sequence_params.tower_configure_fabric_apu = true;
+    tower_sequence_params.tower_configure_fabric_apu = !is_warm_start;
     tower_sequence_params.tower_configure_fabric_fmu = true;
     atu_map_entry_t atu_fabric_tower_map = ATU_MAPPING_FABRIC_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
     FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_fabric_tower_map));
     tower_sequence_params.tower_fabric_tower_resolved_addr = atu_fabric_tower_map.mscp_start_address;
 
     // Peripheral Tower
-    tower_sequence_params.tower_configure_periph_apu = true;
+    tower_sequence_params.tower_configure_periph_apu = !is_warm_start;
     tower_sequence_params.tower_configure_periph_fmu = true;
     atu_map_entry_t atu_peripheral_tower_map = ATU_MAPPING_PERIPHERAL_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
     FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_peripheral_tower_map));
@@ -257,7 +259,7 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     ASSERT_FAIL(!atu_map(ATU_ID_MSCP, &atu_d2d_cfg1_tower_map));
     tower_sequence_params.tower_d2dss_cfg1_tower_resolved_addr = atu_d2d_cfg1_tower_map.mscp_start_address;
 
-    tower_sequence_params.tower_configure_d2dss_apu = true;
+    tower_sequence_params.tower_configure_d2dss_apu = !is_warm_start;
     tower_sequence_params.tower_configure_d2dss_fmu = true;
 
     // VAB Towers
@@ -281,8 +283,8 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     }
     if (vab_instances_to_init != 0)
     {
-        tower_sequence_params.tower_configure_vab_sam = true;
-        tower_sequence_params.tower_configure_vab_apu = true;
+        tower_sequence_params.tower_configure_vab_sam = !is_warm_start;
+        tower_sequence_params.tower_configure_vab_apu = !is_warm_start;
         tower_sequence_params.tower_configure_vab_fmu = true;
     }
 
@@ -302,8 +304,8 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     }
     if (rpss_instances_to_init != 0)
     {
-        tower_sequence_params.tower_configure_rpss_sam = true;
-        tower_sequence_params.tower_configure_rpss_apu = true;
+        tower_sequence_params.tower_configure_rpss_sam = !is_warm_start;
+        tower_sequence_params.tower_configure_rpss_apu = !is_warm_start;
         tower_sequence_params.tower_configure_rpss_fmu = true;
     }
 
@@ -312,8 +314,8 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     atu_map_entry_t sdmss_tower_map = ATU_MAPPING_SDMSS_TOWER((die_num == 0 ? D0_SDMSS : D1_SDMSS));
     FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &sdmss_tower_map));
     tower_sequence_params.tower_sdmss_tower_resolved_addr = sdmss_tower_map.mscp_start_address;
-    tower_sequence_params.tower_configure_sdmss_sam = true;
-    tower_sequence_params.tower_configure_sdmss_apu = true;
+    tower_sequence_params.tower_configure_sdmss_sam = !is_warm_start;
+    tower_sequence_params.tower_configure_sdmss_apu = !is_warm_start;
     tower_sequence_params.tower_configure_sdmss_fmu = true;
 
     if (accel_is_isolation_enabled(ACCEL_ID_SDM))
@@ -350,8 +352,8 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     atu_map_entry_t ioss_tower_map = ATU_MAPPING_IOSS_TOWER((die_num == 0 ? D0_IOSS : D1_IOSS));
     FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &ioss_tower_map));
     tower_sequence_params.tower_ioss_tower_resolved_addr = ioss_tower_map.mscp_start_address;
-    tower_sequence_params.tower_configure_ioss_sam = true;
-    tower_sequence_params.tower_configure_ioss_apu = true;
+    tower_sequence_params.tower_configure_ioss_sam = !is_warm_start;
+    tower_sequence_params.tower_configure_ioss_apu = !is_warm_start;
     tower_sequence_params.tower_configure_ioss_fmu = true;
 
     tower_sequence_params.die_id = die_num;

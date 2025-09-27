@@ -3,6 +3,7 @@
 path_classifiers:
   library:
     - "tests/functional/library/kng_pythia_libs/BmcHelperLibrary.py"
+    - "tests/functional/library/kng_pythia_libs/RscmHelperLibrary.py"
 
   generated:
-    - ".build/**"
+    - ".build/"

@@ -183,7 +183,6 @@ int32_t platform_read_fuse(const uint32_t* target_addr, const uint32_t fuse_bit_
     // number of valid bytes to copy from fuse_data
     size_t fuse_size = ((fuse_bit_size + (BITS_PER_BYTE - 1)) / BITS_PER_BYTE);
     memcpy((void*)target_addr, (void*)&fuse_data, fuse_size);
-    POWER_LOG_INFO("Success: Requested Fuse of byte size:%d copied to 0x%X", fuse_size, (unsigned int)target_addr);
     // FUSE_ET_READ(FUSE_STATUS_INVALID_SIZE, fuse_bit_offset, fuse_bit_size, 0);
 
     // Always return Success.

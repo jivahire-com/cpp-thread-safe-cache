@@ -28,7 +28,8 @@
  * 7. test_core_multiple_adaptive_clocking_throttling_cycles: Tests adaptive clocking with duplicates
  * 8. test_core_multiple_rack_throttling_cycles: Tests rack throttling with priorities
  * 9. test_core_simultaneous_rack_and_current_throttling: Tests rack and current concurrent throttling
- * 10. test_core_multiple_sys_frc_pmin_throttling_cycles: Tests SYS_FRC_PMIN throttling
+ * 10. test_core_multiple_current_overrun_cycles: Tests current overrun throttling
+ * 11. test_core_multiple_adaptive_clocking_overrun_cycles: Tests adaptive clocking overrun throttling
  *
  * Throttling Types Available:
  * ===========================
@@ -38,9 +39,9 @@
  * - THROTTLE_SOURCE_TEMPERATURE = 1          Covered
  * - THROTTLE_SOURCE_RACK_LIMIT = 2           Covered
  * - THROTTLE_SOURCE_ADAPTIVE_CLK = 4         Covered
- * - THROTTLE_SOURCE_CURRENT_OVERRUN = 5      Available
- * - THROTTLE_SOURCE_ADAPTIVE_CLK_OVERRUN = 6 Available
- * - THROTTLE_SOURCE_VR_HOT = 3               Available
+ * - THROTTLE_SOURCE_CURRENT_OVERRUN = 5      Covered
+ * - THROTTLE_SOURCE_ADAPTIVE_CLK_OVERRUN = 6 Covered
+ * - THROTTLE_SOURCE_VR_HOT = 3               Deferred
  *
  * Notes:
  * - Throttling status comes from PSTATE telemetry packets
@@ -52,6 +53,8 @@
  * - Multiple throttling types can be active simultaneously
  * - Duplicate START events are ignored for entry_count but contribute to residency
  * - Tests validate functional scenarios, multiple cycles, concurrent operation
+ * - For overrun scenarios, only overrun_count is being validated and asserted.
+ * - VR_HOT is deferred.
  */
 
 // @SSI_integration_Test
@@ -1637,7 +1640,170 @@ TEST_FUNCTION(test_core_simultaneous_rack_and_current_throttling, test_setup, te
     }
 }
 
-// To-Do
-//  VR_HOT = 3
-//  CURRENT_OVERRUN = 5
-//  ADAPTIVE_CLK_OVERRUN = 6
+// Test multiple CURRENT_OVERRUN cycles: 3 events, finalize, check overrun count
+//
+// Test Flow Summary:
+// ==================
+// T1: NO_THROTTLING (baseline)
+// T2: CURRENT_OVERRUN event #1
+// T3: CURRENT_OVERRUN event #2
+// T4: CURRENT_OVERRUN event #3
+// --- FINAL CHECK: overrun_count=3 (Multiple Overrun Events, No Residency or Entry Count)
+// All other throttle_element fields (entry_count, residency_mS, max_pstate, avg_pstate) are asserted to be zero.
+TEST_FUNCTION(test_core_multiple_current_overrun_cycles, test_setup, test_teardown)
+{
+    if (g_print_logs)
+    {
+        printf("***\n");
+        printf("--- START test_core_multiple_current_overrun_cycles ---\n");
+    }
+    uint8_t core_index = 0;
+    uint64_t T1_us = 1000000, T2_us = 2000000, T3_us = 3000000, T4_us = 4000000, T5_finalize_us = 5000000;
+    setup_mock_gtimer_frequency();
+
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return_always(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
+
+    // Step 1: Initial NO_THROTTLING state
+    pstate_telem_t pstate_initial = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_initial, core_index, 10, 20, NO_THROTTLING, 0, T1_us);
+    data_smpl_process_pstate_sensor_fifo();
+
+    // Step 2: CURRENT_OVERRUN event #1
+    pstate_telem_t pstate_current_overrun1 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_current_overrun1, core_index, 10, 20, CURRENT_THROTTLING_OVERRUN, 0, T2_us);
+    data_smpl_process_pstate_sensor_fifo();
+
+    // Step 3: CURRENT_OVERRUN event #2
+    pstate_telem_t pstate_current_overrun2 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_current_overrun2, core_index, 10, 20, CURRENT_THROTTLING_OVERRUN, 0, T3_us);
+    data_smpl_process_pstate_sensor_fifo();
+
+    // Step 4: CURRENT_OVERRUN event #3
+    pstate_telem_t pstate_current_overrun3 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_current_overrun3, core_index, 10, 20, CURRENT_THROTTLING_OVERRUN, 0, T4_us);
+    data_smpl_process_pstate_sensor_fifo();
+
+    // Finalize timestamp for package boundary, Not being used for any calculation as we are only validating current_overrun_count
+    set_next_finalize_timestamp(T5_finalize_us);
+    data_smpl_finalize_pwr_pkg_metrics();
+    uint32_t T_finalize_pkg_us = time_t0;
+    if (g_print_logs)
+        printf("Finalize timestamp used for overrun count: %u us\n", T_finalize_pkg_us);
+
+    // Get final results
+    pwr_core_record_throttle_t throttle_record = {{0}};
+    package_create_pwr_core_throttle_record(&throttle_record);
+    pwr_core_element_throttle_t* throttle_array =
+        &throttle_record.throttle_collection[core_index].throttle_element[THROTTLE_SOURCE_CURRENT_OVERRUN];
+
+    uint16_t expected_current_overrun_count = 3;
+
+    if (g_print_logs)
+    {
+        printf("\n=== Results (Multiple CURRENT_OVERRUN Cycles) ===\n");
+        printf("CURRENT_OVERRUN overrun_count: %d (expected=%d)\n", throttle_array->overrun_count, expected_current_overrun_count);
+        printf("CURRENT_OVERRUN entry_count: %d (expected=0)\n", throttle_array->entry_count);
+        printf("CURRENT_OVERRUN residency_mS: %d (expected=0)\n", throttle_array->residency_mS);
+        printf("CURRENT_OVERRUN max_pstate: %d (expected=0)\n", throttle_array->max_pstate);
+        printf("CURRENT_OVERRUN avg_pstate: %d (expected=0)\n", throttle_array->avg_pstate);
+    }
+
+    // Verify overrun_count
+    assert_int_equal(expected_current_overrun_count, throttle_array->overrun_count);
+    // Verify all other fields including max_pstate and avg_pstate are zero especially for overrun events
+    assert_int_equal(0, throttle_array->entry_count);
+    assert_int_equal(0, throttle_array->residency_mS);
+    assert_int_equal(0, throttle_array->max_pstate);
+    assert_int_equal(0, throttle_array->avg_pstate);
+
+    if (g_print_logs)
+    {
+        printf("--- END test_core_multiple_current_overrun_cycles ---\n");
+        printf("***\n");
+    }
+}
+
+// Test multiple ADPT_CLK_THROTTLING_OVERRUN cycles: 3 events, check overrun count
+//
+// Test Flow Summary:
+// ==================
+// T1: NO_THROTTLING (baseline)
+// T2: ADAPTIVE_CLK_OVERRUN event #1
+// T3: ADPT_CLK_THROTTLING_OVERRUN event #2
+// T4: ADPT_CLK_THROTTLING_OVERRUN event #3
+// --- FINAL CHECK: overrun_count=3 (Multiple Overrun Events, No Residency or Entry Count)
+// All other throttle_element fields (entry_count, residency_mS, max_pstate, avg_pstate) are asserted to be zero.
+TEST_FUNCTION(test_core_multiple_adaptive_clocking_overrun_cycles, test_setup, test_teardown)
+{
+    if (g_print_logs)
+    {
+        printf("***\n");
+        printf("--- START test_core_multiple_adaptive_clocking_overrun_cycles ---\n");
+    }
+
+    uint8_t core_index = 0;
+    uint64_t T1_us = 1000000, T2_us = 2000000, T3_us = 3000000, T4_us = 4000000, T5_finalize_us = 5000000;
+    setup_mock_gtimer_frequency();
+
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return_always(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
+
+    // Step 1: Initial NO_THROTTLING state
+    pstate_telem_t pstate_initial = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_initial, core_index, 10, 20, NO_THROTTLING, 0, T1_us);
+    data_smpl_process_pstate_sensor_fifo();
+
+    // Step 2: ADPT_CLK_THROTTLING_OVERRUN event #1
+    pstate_telem_t pstate_adaptive_overrun1 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_adaptive_overrun1, core_index, 10, 20, ADPT_CLK_THROTTLING_OVERRUN, 0, T2_us);
+    data_smpl_process_pstate_sensor_fifo();
+
+    // Step 3: ADPT_CLK_THROTTLING_OVERRUN event #2
+    pstate_telem_t pstate_adaptive_overrun2 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_adaptive_overrun2, core_index, 10, 20, ADPT_CLK_THROTTLING_OVERRUN, 0, T3_us);
+    data_smpl_process_pstate_sensor_fifo();
+
+    // Step 4: ADPT_CLK_THROTTLING_OVERRUN event #3
+    pstate_telem_t pstate_adaptive_overrun3 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_adaptive_overrun3, core_index, 10, 20, ADPT_CLK_THROTTLING_OVERRUN, 0, T4_us);
+    data_smpl_process_pstate_sensor_fifo();
+
+    // Set finalize timestamp and finalize metrics before package creation
+    set_next_finalize_timestamp(T5_finalize_us);
+    data_smpl_finalize_pwr_pkg_metrics();
+
+    // Get final results
+    pwr_core_record_throttle_t throttle_record = {{0}};
+    package_create_pwr_core_throttle_record(&throttle_record);
+    pwr_core_element_throttle_t* throttle_array =
+        &throttle_record.throttle_collection[core_index].throttle_element[THROTTLE_SOURCE_ADAPTIVE_CLK_OVERRUN];
+
+    uint16_t expected_adaptive_overrun_count = 3;
+
+    if (g_print_logs)
+    {
+        printf("\n=== Results (Multiple ADAPTIVE_CLK_OVERRUN Cycles) ===\n");
+        printf("ADAPTIVE_CLK_OVERRUN overrun_count: %d (expected=%d)\n", throttle_array->overrun_count, expected_adaptive_overrun_count);
+        printf("ADAPTIVE_CLK_OVERRUN entry_count: %d (expected=0)\n", throttle_array->entry_count);
+        printf("ADAPTIVE_CLK_OVERRUN residency_mS: %d (expected=0)\n", throttle_array->residency_mS);
+        printf("ADAPTIVE_CLK_OVERRUN max_pstate: %d (expected=0)\n", throttle_array->max_pstate);
+        printf("ADAPTIVE_CLK_OVERRUN avg_pstate: %d (expected=0)\n", throttle_array->avg_pstate);
+    }
+
+    // Verify overrun_count
+    assert_int_equal(expected_adaptive_overrun_count, throttle_array->overrun_count);
+    // Verify all other fields including max_pstate and avg_pstate are zero especially for overrun events
+    assert_int_equal(0, throttle_array->entry_count);
+    assert_int_equal(0, throttle_array->residency_mS);
+    assert_int_equal(0, throttle_array->max_pstate);
+    assert_int_equal(0, throttle_array->avg_pstate);
+
+    if (g_print_logs)
+    {
+        printf("--- END test_core_multiple_adaptive_clocking_overrun_cycles ---\n");
+        printf("***\n");
+    }
+}

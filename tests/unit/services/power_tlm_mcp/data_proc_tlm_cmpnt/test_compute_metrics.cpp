@@ -580,7 +580,7 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_throttle_overrun, test_setup, te
     uint8_t core_id = TEST_CORE_ID;
     core_is_active[core_id] = false;
 
-    uint8_t throttle_source = THROTTLE_SOURCE_CURRENT;
+    uint8_t throttle_source = THROTTLE_SOURCE_CURRENT_OVERRUN;
 
     comp_metrics_for_single_core_throttle_overrun(core_id, throttle_source);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].overrun_count, 0);
@@ -590,7 +590,7 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_throttle_overrun, test_setup, te
     comp_metrics_for_single_core_throttle_overrun(core_id, throttle_source);
 
     assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].overrun_count, 1);
-    throttle_source = THROTTLE_SOURCE_ADAPTIVE_CLK;
+    throttle_source = THROTTLE_SOURCE_ADAPTIVE_CLK_OVERRUN;
     comp_metrics_for_single_core_throttle_overrun(core_id, throttle_source);
 
     assert_int_equal(computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].overrun_count, 1);

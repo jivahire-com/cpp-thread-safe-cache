@@ -192,7 +192,7 @@ void comp_metrics_for_single_core_throttle_overrun(uint8_t core_id, uint8_t thro
 {
     if (comp_metrics_core_and_inband_publishing_active(core_id))
     {
-        if (throttle_source == THROTTLE_SOURCE_ADAPTIVE_CLK || throttle_source == THROTTLE_SOURCE_CURRENT)
+        if (throttle_source == THROTTLE_SOURCE_ADAPTIVE_CLK_OVERRUN || throttle_source == THROTTLE_SOURCE_CURRENT_OVERRUN)
         {
             computed_metrics_2_mins.cores[core_id].throttle_info[throttle_source].overrun_count += 1;
         }

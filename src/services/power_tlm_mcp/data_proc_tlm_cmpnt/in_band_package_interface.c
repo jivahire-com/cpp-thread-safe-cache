@@ -494,13 +494,14 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
             core_summary_data->plimit = core_rt[core_id].latest_plimit;
             core_summary_data->mpam_id = core_rt[core_id].latest_mpam_id;
 
-            // TODO :Below items need to be updated, when corresponding records will have implementation.
-
-            // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584924
-            core_summary_data->cstate_entry_latency_uS = 0;
-
+            core_summary_data->cstate_entry_latency_uS = core_rt[core_id].latest_cstate_entry_latency_uS;
+            // clear  after packaging
+            core_rt[core_id].latest_cstate_entry_latency_uS = 0;
+            // TODO :Below items link need to be removed, when corresponding records will have implementation.
             // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584925
-            core_summary_data->cstate_exit_latency_uS = 0;
+            core_summary_data->cstate_exit_latency_uS = core_rt[core_id].latest_cstate_exit_latency_uS;
+            // clear after packaging
+            core_rt[core_id].latest_cstate_exit_latency_uS = 0;
             core_summary_data->velocity_boost_priority = 0;
 
             /* Note : Every bit represt an active throttling*/

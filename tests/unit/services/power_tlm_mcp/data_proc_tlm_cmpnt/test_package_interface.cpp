@@ -765,7 +765,10 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     core_rt[TEST_CORE_ID_5].latest_max_value_dC = 400;
     // plimit
     core_rt[TEST_CORE_ID_5].latest_plimit = 1;
+    core_rt[TEST_CORE_ID_5].latest_cstate_entry_latency_uS = 100;
 
+    // store for later comparison, because we clear latency at the end of the data_proc_tlm_cmpnt_get_inst_soc_core_summary_data
+    uint32_t cstate_entry_latency_uS = core_rt[TEST_CORE_ID_5].latest_cstate_entry_latency_uS;
     uint8_t core_id = TEST_CORE_ID_5;
     for (uint8_t i = 0; i < NUMBER_OF_THROTTLE_SOURCES; i++)
     { // make all active
@@ -784,6 +787,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     assert_int_equal(core_summary_data.temperature_dC, core_rt[TEST_CORE_ID_5].latest_max_value_dC);
     assert_int_equal(core_summary_data.throttling_type, 0x7f);
     assert_int_equal(core_summary_data.throttling_rack_priority, core_rt[TEST_CORE_ID_5].latest_rack_throttle_priority);
+    assert_int_equal(core_summary_data.cstate_entry_latency_uS, cstate_entry_latency_uS);
 
     // Test case 2: Inactive core (core_is_active[core_id] == false)
     core_is_active[TEST_CORE_ID_5] = false;

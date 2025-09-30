@@ -8,6 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include "data_proc_mock.h"
+
 #include "telemetry_ut.h"
 
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
@@ -28,9 +30,14 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-
+cstate_instr_timestamp_t test_cstate_buf[(128 * 1024) / sizeof(cstate_instr_timestamp_t)];
 /*------------- Functions ----------------*/
+void setup_cstate_tfa_mock_buffer()
+{
 
+    memset(test_cstate_buf, 0, sizeof(test_cstate_buf));
+    cstate_tfa_timestamp_base = test_cstate_buf;
+}
 void __wrap_sensor_fifo_svc_is_empty(bool (*is_empty)[SENSOR_FIFO_MAX_ID])
 {
     bool(*mock_data)[SENSOR_FIFO_MAX_ID] = mock_ptr_type(bool(*)[SENSOR_FIFO_MAX_ID]);

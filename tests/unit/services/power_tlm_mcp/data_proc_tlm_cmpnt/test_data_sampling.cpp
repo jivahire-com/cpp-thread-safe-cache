@@ -11,6 +11,8 @@
 // @SSI_Unit_Test:telemetry
 
 /*------------- Includes -----------------*/
+#include "data_proc_mock.h"
+
 #include <CMockaWrapper.h> // for assert_int_equal, Cmock...
 
 extern "C" {
@@ -22,8 +24,9 @@ extern "C" {
 #include <data_sampling_i.h>
 #include <die_2_die_exchange_i.h>
 #include <dvfs.h>
-#include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
-#include <stdint.h>              // for uint32_t, uint64_t, int32_t
+#include <mcp_telemetry_shared.h> //for cstate_instr_timestamp_t
+#include <sensor_fifo_service.h>  // for QUADWORD_SIZE, sensor_ram_...
+#include <stdint.h>               // for uint32_t, uint64_t, int32_t
 #include <telemetry_package_defs.h>
 #include <tlm_fuses.h>
 }
@@ -66,6 +69,7 @@ static int test_setup(void** pContext)
     comp_metrics_init_active_cores();
 
     in_band_publishing_active = true;
+    setup_cstate_tfa_mock_buffer();
 
     return 0;
 }
@@ -1578,7 +1582,7 @@ TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
     memset(&core_entry_data, 0, sizeof(core_entry_data));
     core_entry_data.packet_timestamp_uS = 5000;
     cstate_data.data.cstate = 1; // C1 state
-
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
     data_smpl_parse_cstate(&cstate_data, &core_entry_data);
 
     // Verify cstate change
@@ -1592,6 +1596,7 @@ TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
     memset(&core_entry_data, 0, sizeof(core_entry_data));
     core_entry_data.packet_timestamp_uS = 7000;
     cstate_data.data.cstate = 0; // Back to C0
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
 
     data_smpl_parse_cstate(&cstate_data, &core_entry_data);
 
@@ -1605,6 +1610,7 @@ TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
     memset(&core_entry_data, 0, sizeof(core_entry_data));
     core_entry_data.packet_timestamp_uS = 8000;
     cstate_data.data.cstate = 2; // C2 state
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
 
     data_smpl_parse_cstate(&cstate_data, &core_entry_data);
 
@@ -1617,6 +1623,7 @@ TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
     memset(&core_entry_data, 0, sizeof(core_entry_data));
     core_entry_data.packet_timestamp_uS = 10000;
     cstate_data.data.cstate = 2; // Same C2 state
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
 
     data_smpl_parse_cstate(&cstate_data, &core_entry_data);
 
@@ -1668,11 +1675,11 @@ TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
     assert_true(core_entry_data.valid_entry_cstate);
     assert_true(core_entry_data.cstate_change);
     assert_int_equal(core_rt[1].latest_cstate, 3);
-
     // C3 back to C0
     memset(&core_entry_data, 0, sizeof(core_entry_data));
     core_entry_data.packet_timestamp_uS = 2500;
     cstate_data.data.cstate = 0;
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
 
     data_smpl_parse_cstate(&cstate_data, &core_entry_data);
     assert_true(core_entry_data.valid_entry_cstate);
@@ -1683,6 +1690,7 @@ TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
     memset(&core_entry_data, 0, sizeof(core_entry_data));
     core_entry_data.packet_timestamp_uS = 3000;
     cstate_data.data.cstate = 1;
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
 
     data_smpl_parse_cstate(&cstate_data, &core_entry_data);
     assert_true(core_entry_data.valid_entry_cstate);
@@ -1693,7 +1701,7 @@ TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
     memset(&core_entry_data, 0, sizeof(core_entry_data));
     core_entry_data.packet_timestamp_uS = 3000; // Same timestamp
     cstate_data.data.cstate = 0;
-
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, false);
     data_smpl_parse_cstate(&cstate_data, &core_entry_data);
 
     // Should process normally (timestamp >= is allowed)
@@ -1703,6 +1711,65 @@ TEST_FUNCTION(test_data_smpl_parse_cstate, test_setup, test_teardown)
     assert_int_equal(core_rt[1].latest_cstate, 0);
 }
 
+TEST_FUNCTION(test_data_smpl_parse_cstate_with_entry_latency, test_setup, test_teardown)
+{
+    // Test the processing of C-state entry latency in case of a change and read timesstamps from TFA
+    uint8_t core_id = 0;
+    // Initialize the tfa buffer
+    uint8_t cstate_timestamp_id = 0;
+    die_2_die_exch_init(0);
+    //  init temp timestamp for each cstate entry/exit point
+    uint64_t timestamp_cstate_uS[CSTATE_MAX_ID] = {1000, 1010, 1020, 1030, 1040, 1050};
+    cstate_instr_timestamp_t* core_entry = &cstate_tfa_timestamp_base[core_id];
+    core_entry->timestamp[cstate_timestamp_id] = timestamp_cstate_uS[cstate_timestamp_id] * 1000; // Convert to nS
+
+    // Clear core runtime info for clean test state
+    memset(&core_rt[0], 0, sizeof(core_rt[0]));
+    core_state_entry_data_t core_entry_data = {0};
+    // Test case 1: First cstate packet (pkt_cstate_is_valid = false)
+    pstate_telem_t cstate_data = {
+        .timestamp = 1000,
+        .data =
+            {
+                .pstate = 12,
+                .throttle_status = 0,
+                .vm_throttle_pri = 0,
+                .max_pstate = 0,
+                .cstate = 0, // C0 state
+                .plimit = 5,
+                .core = 0,
+                .mpam_low = 0,
+                .mpam_high = 0,
+                .boost_priority = 0,
+            },
+    };
+
+    core_entry_data.packet_timestamp_uS = 2000;
+
+    data_smpl_parse_cstate(&cstate_data, &core_entry_data);
+
+    // Verify first packet behavior
+    assert_true(core_rt[0].status_flags.pkt_cstate_is_valid);
+    assert_true(core_entry_data.valid_entry_cstate);
+    assert_true(core_entry_data.cstate_change);               // Always true for first packet
+    assert_int_equal(core_entry_data.cstate_time_diff_uS, 0); // No residency for first packet
+    assert_int_equal(core_rt[0].latest_cstate, 0);            // C0
+    assert_int_equal(core_rt[0].cstate_res_timestamp_uS, 2000);
+
+    memset(&core_entry_data, 0, sizeof(core_entry_data));
+
+    core_entry_data.packet_timestamp_uS = 5000;
+    cstate_data.data.cstate = 2;                                        // Change to C2 state
+    will_return(__wrap_in_band_tlm_cmpnt_is_inst_record_enabled, true); // to make sure we have a valid entry latency
+    data_smpl_parse_cstate(&cstate_data, &core_entry_data);
+
+    // Verify cstate latency update
+    assert_true(core_entry_data.valid_entry_cstate);
+    assert_true(core_entry_data.cstate_change); // Different cstate
+    assert_int_equal(core_rt[core_id].latest_cstate, 2);
+    // Calculate expected latency: packet timestamp - cstate entry timestamp from TFA
+    assert_int_equal(core_rt[core_id].latest_cstate_entry_latency_uS, core_entry_data.packet_timestamp_uS - 1000);
+}
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_24hr_pkg_completed, test_setup, test_teardown)
 {
 
@@ -3411,6 +3478,115 @@ TEST_FUNCTION(test_data_smpl_calculate_mpam_data_from_cores, test_setup, test_te
         assert_int_equal(mpam_staging[mpam_id].latest_total_pwr_mW, 0);
         assert_int_equal(mpam_staging[mpam_id].latest_pstate, 0);
     }
+}
+
+TEST_FUNCTION(test_data_smpl_get_cstate_tfa_timestamp, test_setup, test_teardown)
+{
+    // Test the function to retrieve C-state TFA timestamps for cores
+
+    // Test 1 : for Die 0 (Primary)
+    uint8_t core_id = 0;
+    uint8_t cstate_timestamp_id = 0;
+    die_2_die_exch_init(0);
+    uint8_t die_offset = die_2_die_exch_get_this_die_id() * NUMBER_OF_CORES_PER_DIE;
+    // init temp timestamp for each cstate entry/exit point
+    uint64_t timestamp_cstate_uS[CSTATE_MAX_ID] = {1000, 1010, 1020, 1030, 1040, 1050};
+
+    // write these timestamp on the cstate tfa buffers.
+    for (cstate_timestamp_id = 0; cstate_timestamp_id < CSTATE_MAX_ID; cstate_timestamp_id++)
+    {
+
+        // Each core has a structure of cstate_instr_timestamp_t laid out consecutively
+        // Size is sizeof(cstate_instr_timestamp_t) (packed) so use pointer arithmetic
+        cstate_instr_timestamp_t* core_entry = &cstate_tfa_timestamp_base[core_id];
+
+        core_entry->timestamp[cstate_timestamp_id] = timestamp_cstate_uS[cstate_timestamp_id] * 1000; // Convert to nS
+    }
+
+    uint64_t timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_ENTER_PSCI);
+
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_ENTER_PSCI]);
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_EXIT_PSCI);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_EXIT_PSCI]);
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_ENTER_HW_LOW_PWR);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_ENTER_HW_LOW_PWR]);
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_EXIT_HW_LOW_PWR);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_EXIT_HW_LOW_PWR]);
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_ENTER_CFLUSH);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_ENTER_CFLUSH]);
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_EXIT_CFLUSH);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_EXIT_CFLUSH]);
+
+    // Test 2 : for Die 1 (Secondary)
+    core_id = 0;
+    die_2_die_exch_init(1);
+    die_offset = die_2_die_exch_get_this_die_id() * NUMBER_OF_CORES_PER_DIE;
+    // init temp timestamp for each cstate entry/exit point
+    memset(timestamp_cstate_uS, 0, sizeof(timestamp_cstate_uS));
+    for (uint8_t i = 0; i < CSTATE_MAX_ID; i++)
+    {
+        timestamp_cstate_uS[i] = 2000 + i * 10;
+    }
+    // write these timestamp on the cstate tfa buffers.
+    for (cstate_timestamp_id = 0; cstate_timestamp_id < CSTATE_MAX_ID; cstate_timestamp_id++)
+    {
+
+        // Each core has a structure of cstate_instr_timestamp_t laid out consecutively
+        // Size is sizeof(cstate_instr_timestamp_t) (packed) so use pointer arithmetic
+        cstate_instr_timestamp_t* core_entry = &cstate_tfa_timestamp_base[core_id + die_offset];
+
+        core_entry->timestamp[cstate_timestamp_id] = timestamp_cstate_uS[cstate_timestamp_id] * 1000; // Convert to nS
+    }
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_ENTER_PSCI);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_ENTER_PSCI]);
+
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_EXIT_PSCI);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_EXIT_PSCI]);
+
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_ENTER_HW_LOW_PWR);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_ENTER_HW_LOW_PWR]);
+
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_EXIT_HW_LOW_PWR);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_EXIT_HW_LOW_PWR]);
+
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_ENTER_CFLUSH);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_ENTER_CFLUSH]);
+
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_EXIT_CFLUSH);
+    assert_int_equal(timestamp, timestamp_cstate_uS[CSTATE_EXIT_CFLUSH]);
+
+    // Test 3 : Invalid core ID
+    timestamp = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_MAX_ID);
+    assert_int_equal(timestamp, 0);
+}
+
+TEST_FUNCTION(test_data_smpl_process_cstate_entry_latency, test_setup, test_teardown)
+{
+    // Test the processing of C-state entry latency in case of a change and read timesstamps from TFA
+    uint8_t core_id = 0;
+    // Initialize the tfa buffer
+    uint8_t cstate_timestamp_id = 0;
+    die_2_die_exch_init(0);
+    //  init temp timestamp for each cstate entry/exit point
+    uint64_t timestamp_cstate_uS[CSTATE_MAX_ID] = {1000, 1010, 1020, 1030, 1040, 1050};
+    cstate_instr_timestamp_t* core_entry = &cstate_tfa_timestamp_base[core_id];
+    core_entry->timestamp[cstate_timestamp_id] = timestamp_cstate_uS[cstate_timestamp_id] * 1000; // Convert to nS
+
+    // Clear all core runtime info for clean testing
+    memset(&core_rt[core_id], 0, sizeof(core_runtime_info_t));
+    core_rt[core_id].latest_cstate = 2;
+    // Log the entry latency for the cstate we are entering
+    uint64_t packet_timestamp_uS = 5000; // Example packet timestamp in microseconds
+    data_smpl_process_cstate_entry_latency(core_id, core_rt[core_id].latest_cstate, packet_timestamp_uS);
+
+    // Calculate expected latency: packet timestamp - cstate entry timestamp from TFA
+    assert_int_equal(core_rt[core_id].latest_cstate_entry_latency_uS, packet_timestamp_uS - 1000);
+}
+
+TEST_FUNCTION(test_data_smpl_process_cstate_exit_latency, test_setup, test_teardown)
+{
+    // Test the processing of C-state exit latency in case of a change and read timesstamps from TFA
+    // TODO:add check once latency is logged in
 }
 
 TEST_FUNCTION(test_data_smpl_calculate_mpam_throttling_transitions, test_setup, test_teardown)

@@ -45,6 +45,7 @@
 #endif
 
 #define ROUND_USEC_TO_MSEC(usec) ((usec + 500) / 1000)
+#define ROUND_NSEC_TO_USEC(nsec) ((nsec + 500) / 1000)//nano to micro second rounding
 
 #define CSTATE_C0 (0)
 #define CSTATE_C1 (1)
@@ -88,6 +89,8 @@ typedef struct {
     uint64_t pstate_res_timestamp_uS; // timestamp of last pstate residency metrics update
     uint64_t throttle_res_timestamp_uS[NUMBER_OF_THROTTLE_SOURCES];
     uint64_t rack_pri_res_timestamp_uS[NUMBER_OF_RACK_THROTTLE_PRIORITIES];
+    uint64_t latest_cstate_entry_latency_uS;
+    uint64_t latest_cstate_exit_latency_uS;
     uint16_t latest_voltage_mV;
     uint16_t latest_vcpu_voltage_mV; // for droop count record
     uint16_t latest_current_mA;
@@ -187,6 +190,18 @@ typedef struct {
     bool throttle_start;
     bool rack_priority_start;
 } core_state_entry_data_t;
+//ref :https://dev.azure.com/ms-tsd/Kingsgate/_git/silibs?path=/soc_fw_shared/include/mcp_telemetry_shared.h&version=GBdev_a0&line=22&lineEnd=22&lineStartColumn=5&lineEndColumn=102&lineStyle=plain&_a=contents
+typedef enum
+{
+    CSTATE_ENTER_PSCI = 0,   // First thing done when entering Sleep (C2/C3) - ENTER Cstate (1)
+    CSTATE_EXIT_PSCI,        // Last thing done from Wake up (C2/C3)         - EXIT Cstate  (2)
+    CSTATE_ENTER_HW_LOW_PWR, // Last thing done when entering Sleep          - ENTER Cstate (4)
+    CSTATE_EXIT_HW_LOW_PWR,  // First thing done when exiting sleep (HW wakes core, FW starts) - EXIT State (1)
+    CSTATE_ENTER_CFLUSH, // Only when entering Cstate, in between ENTER_PSCI & ENTER_LOW_PWR  - ENTER Cstate (2)
+    CSTATE_EXIT_CFLUSH,  // Only when exiting Cstate,  in between ENTER_PSCI & ENTER_LOW_PWR  - EXIT Cstate  (3)
+
+    CSTATE_MAX_ID
+} cstate_tfa_timestamp_id_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -479,3 +494,20 @@ void data_smpl_update_metrics_for_cores_aging_counters(void);
  * @return none
  */
 void data_smpl_calculate_mpam_data_from_cores();
+
+/**
+ * @brief Get the TFA timestamp for a specific core and timestamp ID.
+ *
+ * @param[in] core_id - The ID of the core.
+ * @param[in] timestamp_id - The ID of the timestamp to retrieve.
+ * @return The TFA timestamp in microseconds.
+ */
+uint64_t data_smpl_get_cstate_tfa_timestamp(uint8_t core_id, cstate_tfa_timestamp_id_t timestamp_id);
+/**
+ * @brief Process the C-state entry latency for a specific core and C-state.
+ *
+ * @param[in] core_id - The ID of the core.
+ * @param[in] packet_cstate - The C-state from the packet.
+ * @param[in] packet_timestamp_uS - The timestamp from the packet in microseconds.
+ */
+void data_smpl_process_cstate_entry_latency(uint8_t core_id, uint8_t packet_cstate, uint64_t packet_timestamp_uS);

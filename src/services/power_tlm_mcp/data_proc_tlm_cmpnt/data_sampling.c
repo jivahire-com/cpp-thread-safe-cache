@@ -17,15 +17,17 @@
 
 #include <FpFwAssert.h>
 #include <assert.h> // IWYU pragma: keep for static_assert
+#include <atu_api.h>
 #include <dvfs.h>
 #include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCEEDED, fpf...
 #include <in_band_tlm_cmpnt.h>
-#include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
-#include <stdbool.h>             // for false, true
-#include <stddef.h>              // for size_t
-#include <stdint.h>              // for uint8_t, uint16_t
-#include <string.h>              // for memset
+#include <mcp_telemetry_shared.h> //for cstate_instr_timestamp_t
+#include <sensor_fifo_service.h>  // for QUADWORD_SIZE, sensor_ram_...
+#include <stdbool.h>              // for false, true
+#include <stddef.h>               // for size_t
+#include <stdint.h>               // for uint8_t, uint16_t
+#include <string.h>               // for memset
 #include <telemetry_package_defs.h>
 #include <tlm_fuses.h>
 
@@ -55,6 +57,9 @@ dimm_runtime_info_t dimm_rt = {0};
 mpam_runtime_info_t mpam_rt[NUMBER_OF_MPAMS] = {0};
 mpam_data_t mpam_staging[NUMBER_OF_MPAMS] = {0};
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
+// cstate TFA timestamp data  base pointer
+cstate_instr_timestamp_t* cstate_tfa_timestamp_base =
+    (cstate_instr_timestamp_t*)MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_BASE_ADDR;
 
 /*------------- Functions ----------------*/
 void data_smpl_init(void)
@@ -1014,6 +1019,25 @@ void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_entry, core_state_
     }
 }
 
+void data_smpl_process_cstate_entry_latency(uint8_t core_id, uint8_t packet_cstate, uint64_t packet_timestamp_uS)
+{
+
+    // Log the entry latency for the cstate we are entering
+    if (packet_cstate > CSTATE_C1)
+    {
+        // get the timestamp written by TFA when we entered the cstate at earlier stage then sensor fifo packet
+        uint64_t cstate_tfa_timestamp_uS = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_ENTER_PSCI);
+        // only log if the packet_timestamp_uS is after the last recorded TFA timestamp
+        // coming from active state, so log entry latency
+        if (packet_timestamp_uS > cstate_tfa_timestamp_uS)
+        {
+            uint64_t entry_latency_uS = packet_timestamp_uS - cstate_tfa_timestamp_uS;
+            // per entry latency per core per cstate
+            core_rt[core_id].latest_cstate_entry_latency_uS = entry_latency_uS;
+        }
+    }
+}
+
 void data_smpl_parse_cstate(pstate_telem_t* cstate_telemetry, core_state_entry_data_t* entry_data)
 {
     uint8_t core_id = cstate_telemetry->data.core; // already bounds checked against NUMBER_OF_CORES_PER_DIE
@@ -1031,6 +1055,11 @@ void data_smpl_parse_cstate(pstate_telem_t* cstate_telemetry, core_state_entry_d
     if (core_rt[core_id].status_flags.pkt_cstate_is_valid)
     {
         entry_data->cstate_change = packet_cstate != core_rt[core_id].latest_cstate;
+        if (entry_data->cstate_change && in_band_tlm_cmpnt_is_inst_record_enabled(INST_TELEMETRY_ELEMENT_CORE))
+        {
+            // Log the entry latency for the cstate we are entering
+            data_smpl_process_cstate_entry_latency(core_id, packet_cstate, entry_data->packet_timestamp_uS);
+        }
     }
     else
     {
@@ -1379,4 +1408,21 @@ void data_proc_tlm_cmpnt_24hr_pkg_completed(void)
 {
     comp_metrics_reset_24_hrs_metrics();
     aging_counter_reset();
+}
+
+uint64_t data_smpl_get_cstate_tfa_timestamp(uint8_t core_id, cstate_tfa_timestamp_id_t timestamp_id)
+{
+    // Get the die ID to calculate the offset
+    uint8_t die_offset = die_2_die_exch_get_this_die_id() * NUMBER_OF_CORES_PER_DIE;
+
+    if (timestamp_id >= CSTATE_MAX_ID)
+    {
+        FPFW_ET_LOG(LogInvalidTFACstateTimestampId, core_id, timestamp_id);
+        return 0ULL; // Invalid timestamp id
+    }
+    // Each core has a structure of cstate_instr_timestamp_t laid out consecutively
+    // Size is sizeof(cstate_instr_timestamp_t) (packed) so use pointer arithmetic
+    const cstate_instr_timestamp_t* core_entry = &cstate_tfa_timestamp_base[core_id + die_offset];
+    uint64_t timestamp_uS = ROUND_NSEC_TO_USEC(core_entry->timestamp[timestamp_id]);
+    return timestamp_uS;
 }

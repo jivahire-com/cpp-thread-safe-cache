@@ -162,6 +162,13 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_UART_NS_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
+    // Cstate timestamps region
+    {
+        .ap_base_address = AP_CSTATE_BUFFER_DDR_DIE_AP_BASE_ADDR,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
     {0},
 };
 
@@ -275,6 +282,13 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_UART_NS_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
+    // Cstate timestamps region
+    {
+        .ap_base_address = AP_CSTATE_BUFFER_DDR_DIE_AP_BASE_ADDR,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
     {0},
 };
 
@@ -354,6 +368,13 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .ap_base_address = AP_TOP_D0_GIC_ADDRESS,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_GIC_GICD_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // Cstate timestamps region
+    {
+        .ap_base_address = AP_CSTATE_BUFFER_DDR_DIE_AP_BASE_ADDR,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},
@@ -460,6 +481,13 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .ap_base_address = AP_TOP_D0_GIC_ADDRESS,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_GIC_GICD_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // Cstate timestamps region
+    {
+        .ap_base_address = AP_CSTATE_BUFFER_DDR_DIE_AP_BASE_ADDR,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},

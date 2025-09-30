@@ -68,7 +68,6 @@ extern "C" {
 // Declare external variables
 extern int g_enable_mock_pstate; // Declare the external variable for PSTATE mock control
 #define NO_OF_ITERATIONS 8       // Increased from 5 to 8 to add more C-state transitions
-
 // Define the test info structure
 struct cstate_test_info
 {
@@ -116,7 +115,6 @@ static int32_t test_setup(void** state)
     comp_metrics_reset_local_2_min_metrics();
     // reset 24 hrs metrics
     comp_metrics_reset_24_hrs_metrics();
-
     // Reset core state for clean test
     for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
     {

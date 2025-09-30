@@ -7,6 +7,9 @@
 ## Single Die Heartbeat Tests
 ./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
 
+## Commit_id validation tests
+./../../../tests/functional/test_suites/boot_tests/scp_mcp_commit_id_test.robot
+
 ## AVS Die 0 Tests
 ./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die0.robot
 ./../../../tests/functional/test_suites/avs_tests/avs_write_tests_die0.robot

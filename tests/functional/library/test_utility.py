@@ -5,6 +5,7 @@
 -This module provides test case utilities for verifying the multiple functionality.
 """
 
+import re
 import sys, os
 from pathlib import Path
 import time
@@ -316,3 +317,105 @@ class test_utility(EchoFallsBaseTest):
         time.sleep(5)
         reset_monitor_file.unlink()
         self.log.info(f"Reset file deleted at: {reset_monitor_file}")
+
+
+    @keyword("Compare Commit ID")
+    def compare_commit_id(self, connection_types: list):
+        """
+        Compare firmware commit SHA ID between build_data.h and `fw_info whoami` output over UART.
+
+        :param connection_types: List of connection types (e.g. ["scp0", "mcp0", "scp1", "mcp1"])
+        """
+
+        # Resolve build_data.h location dynamically
+        relative_path = os.path.join(".build", "Debug", "arm-eabi-aarch", "src", "libs", "build_data", "build_data.h")
+
+        # Try local logic first (for developer machines)
+        try:
+            build_path = os.path.join(os.getcwd().split('Kingsgate.MSCP')[0], f"Kingsgate.MSCP\\{relative_path}")
+            build_data_path = Path(build_path)
+        except Exception:
+            build_data_path = None
+
+        # Fallback for CI environments
+        if not build_data_path or not build_data_path.exists():
+            current = Path(os.getcwd()).resolve()
+            for parent in [current] + list(current.parents):
+                candidate = parent / relative_path
+                if candidate.exists():
+                    build_data_path = candidate
+                    break
+
+        if not build_data_path or not build_data_path.exists():
+            self.log.error(f"build_data.h file does not exist in known paths.")
+            return False
+
+        self.log.info(f"Reading firmware version from: {build_data_path}")
+
+        # Extract expected commit SHA from build_data.h
+        git_commit_sha = None
+        try:
+            with open(build_data_path, 'r') as file:
+                for line in file:
+                    match = re.search(r'#define\s+GIT_COMMIT_SHA\s+"([a-fA-F0-9]+)"', line)
+                    if match:
+                        git_commit_sha = match.group(1)
+                        break
+        except Exception as e:
+            self.log.error(f"Failed to read build_data.h: {e}")
+            return False
+
+        if not git_commit_sha:
+            self.log.error("Failed to extract GIT_COMMIT_SHA from build_data.h")
+            return False
+
+        self.log.info(f"Expected Git Commit SHA: {git_commit_sha}")
+
+        def extract_sha_from_output(output: str):
+            for line in output.splitlines():
+                if "commit" in line.lower() and ":" in line:
+                    return line.split(":")[-1].strip()
+            return None
+
+        def check_connection(conn_type):
+            self.log.info(f"Checking {conn_type} firmware version...")
+
+            connection_attr = f"{conn_type}_connection"
+            connection_obj = getattr(self, connection_attr, None)
+
+            if not connection_obj:
+                self.log.error(f"Connection type '{conn_type}' not available.")
+                return False
+
+            try:
+                channel = connection_obj.get_current_channel()
+                channel.open()
+                if not channel.is_open():
+                    self.log.error(f"{conn_type} channel failed to open.")
+                    return False
+
+                channel.read_until(key="ScpHeartBeat", timeout_seconds=900)
+                channel.write_line(write_string="build_info")
+                channel.write_line(write_string="whoami")
+                response = channel.read_until(key="SoC Mission Mode", timeout_seconds=30)
+                received_sha = extract_sha_from_output(response)
+
+                if not received_sha:
+                    self.log.error(f"Could not parse commit SHA from {conn_type} output.")
+                    return False
+                elif received_sha != git_commit_sha:
+                    self.log.error(f"{conn_type} commit SHA mismatch! Expected: {git_commit_sha}, Got: {received_sha}")
+                    return False
+                else:
+                    self.log.info(f"{conn_type} commit SHA matches expected. ({received_sha})")
+                    return True
+
+            except Exception as e:
+                self.log.error(f"Error communicating with {conn_type}: {e}")
+                return False
+            finally:
+                if channel and channel.is_open():
+                    channel.close()
+
+        results = [check_connection(conn) for conn in connection_types]
+        return all(results)

@@ -7,3 +7,4 @@ path_classifiers:
 
   generated:
     - ".build/"
+    - ".externs/"

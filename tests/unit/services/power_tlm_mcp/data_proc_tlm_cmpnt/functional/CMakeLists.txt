@@ -18,6 +18,7 @@ set(SOURCES
     test_core_throttling_data.cpp
     log_core_instantaneous_data_integration_test.cpp
     test_soc_max_temperature.cpp
+    test_core_vm_throttling_priorities.cpp
     )
 
 add_executable(${TARGET} ${SOURCES})

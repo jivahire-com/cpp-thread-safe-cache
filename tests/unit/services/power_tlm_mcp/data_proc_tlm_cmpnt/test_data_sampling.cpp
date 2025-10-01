@@ -3095,6 +3095,32 @@ TEST_FUNCTION(test_data_smpl_parse_core_states_entry, test_setup, test_teardown)
     // Should have throttling state change but not rack throttling
     assert_true(entry_data.throttling_state_change);
     assert_false(entry_data.rack_throttling_state_change);
+
+    // Test Case 16: Inactive core (should return early)
+    memset(&core_rt[core_id], 0, sizeof(core_runtime_info_t));
+    memset(&entry_data, 0, sizeof(entry_data));
+
+    pstate_entry.data.core = core_id;
+    pstate_entry.data.cstate = CSTATE_C0;
+    pstate_entry.data.pstate = 5;
+    pstate_entry.data.throttle_status = NO_THROTTLING;
+    pstate_entry.timestamp = 1000;
+
+    core_is_active[core_id] = false; // Set core as inactive
+
+    data_smpl_parse_core_states_entry(&pstate_entry, &entry_data);
+
+    // Should return early, entry_data fields should remain 0
+    assert_int_equal(entry_data.packet_timestamp_uS, 0);
+    assert_false(entry_data.valid_entry_pstate);
+    assert_false(entry_data.valid_entry_cstate);
+    assert_false(entry_data.throttling_state_change);
+    assert_false(entry_data.rack_throttling_state_change);
+    assert_false(entry_data.pstate_change);
+    assert_false(entry_data.cstate_change);
+
+    // Reset core_is_active for other tests
+    core_is_active[core_id] = true;
 }
 
 TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo, test_setup, test_teardown)

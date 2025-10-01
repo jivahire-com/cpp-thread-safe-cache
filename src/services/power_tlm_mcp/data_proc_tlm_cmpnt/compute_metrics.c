@@ -226,10 +226,9 @@ void comp_metrics_for_single_core_single_rack_priority(uint8_t core_id,
         {
             computed_metrics_2_mins.cores[core_id].rack_priorities[new_priority].entry_count += 1;
         }
-        else
-        {
-            computed_metrics_2_mins.cores[core_id].rack_priorities[current_priority].residency_uS += timestamp_diff_uS;
-        }
+
+        // timestamp_diff_uS will be zero if there was no previous priority throttling in progress
+        computed_metrics_2_mins.cores[core_id].rack_priorities[current_priority].residency_uS += timestamp_diff_uS;
     }
 }
 

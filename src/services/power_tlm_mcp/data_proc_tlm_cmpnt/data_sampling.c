@@ -880,6 +880,12 @@ void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_entry, core_state_
         return;
     }
 
+    if (core_is_active[core_id] == false)
+    {
+        // core is disabled, ignore the entry
+        return;
+    }
+
     entry_data->packet_timestamp_uS = data_util_convert_systick_to_microseconds(pstate_entry->timestamp);
 
     // no need to range check pstate_entry->data.pstate against NUMBER_OF_PSTATES because it is a bitfield of

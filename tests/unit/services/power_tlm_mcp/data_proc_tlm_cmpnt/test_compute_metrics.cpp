@@ -40,6 +40,8 @@ static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
 
+    memset(core_rt, 0, sizeof(core_rt));
+
     comp_metrics_reset_local_2_min_metrics();
 
     comp_metrics_reset_24_hrs_metrics();
@@ -641,7 +643,8 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_single_rack_priority, test_setup
 
     // Test case: Core is active, throttle priority start
     core_is_active[core_id] = true;
-    comp_metrics_for_single_core_single_rack_priority(core_id, current_priority, timestamp_diff_uS, new_priority, rack_throttle_priority_start);
+    // time diff is 0 for throttle start event with no previous priority, handled by the caller
+    comp_metrics_for_single_core_single_rack_priority(core_id, current_priority, 0, new_priority, rack_throttle_priority_start);
 
     assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[new_priority].entry_count, 1);
     assert_int_equal(computed_metrics_2_mins.cores[core_id].rack_priorities[current_priority].residency_uS, 0);

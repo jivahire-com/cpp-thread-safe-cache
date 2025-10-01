@@ -253,6 +253,15 @@ void update_error_record_section(uint16_t error_domain_idx,
         HM_ET_INFO(HM_ET_TYPE_GHES_GET_CONFIG);
         BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
+        // update common heder part of error record section if vendor specific
+        if ((error_domain_idx != ACPI_ERROR_DOMAIN_STD_PROCESSOR) &&
+            (error_domain_idx != ACPI_ERROR_DOMAIN_STD_MEMORY) && (error_domain_idx != ACPI_ERROR_DOMAIN_STD_PCIE) &&
+            (error_domain_idx != ACPI_ERROR_DOMAIN_STD_PLATFORM) && (error_domain_idx != ACPI_ERROR_DOMAIN_DDR))
+        {
+            cper_common_section_header_t* common_header = (cper_common_section_header_t*)err_record_section;
+            common_header->instance = hm_config->is_primary ? 0 : 1;
+        }
+
         // locate the GHES base of current error domain
         volatile acpi_ghes_t* current_error_domain_ghes_base = hm_config->mscp_ghes_base;
         current_error_domain_ghes_base += error_domain_idx;

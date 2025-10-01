@@ -80,8 +80,7 @@ typedef struct {
     uint16_t error_domain_idx;
     uint16_t reserved;
     uint32_t section_size;
-    acpi_error_severity_t err_severity; // ToDo: sizeof acpi_error_severity_t is 1 byte which can make misalignment issues
-                                        //       Consider makeing it 2 bytes in silibs cper.h
+    uint32_t err_severity;
     acpi_cper_section_t cper_section;
 } hm_error_record_t;
 

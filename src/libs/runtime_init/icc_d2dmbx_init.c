@@ -7,9 +7,9 @@
 #include <DfwkHost.h>        // for DfwkDeviceInitialize
 #include <DfwkStatus.h>      // for DFWK_SUCCESS
 #include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
-#include <FpFwAssert.h>
-#include <MboxPrimitives.h>          // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
-#include <MboxReg.h>                 // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
+#include <MboxPrimitives.h>  // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
+#include <MboxReg.h>         // for FPFW_MBX_FIFO_DEPTH, FPFW_MBX_I...
+#include <bug_check.h>
 #include <fpfw_icc_base.h>           // for fpfw_icc_base_init, fpfw_icc_ba...
 #include <fpfw_icc_base_i.h>         // for fpfw_icc_base_ctx_t
 #include <fpfw_icc_dispatcher.h>     // for fpfw_icc_dispatcher_start
@@ -60,7 +60,7 @@ static void SpiControllerWrite32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regOffs
 {
     uint32_t mbx_reg_addr = baseAddr + regOffset;
     int status = spi_controller_write_direct_instruction((uintptr_t)D2D_MBOX_SPI_CTRL_BASE_ADDR, mbx_reg_addr, 9, value);
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, mbx_reg_addr);
 }
 
 /**
@@ -79,7 +79,7 @@ static uint32_t SpiControllerRead32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regO
     uint32_t readData = 0;
     uint32_t mbx_reg_addr = baseAddr + regOffset;
     int status = spi_controller_read_direct_instruction((uintptr_t)D2D_MBOX_SPI_CTRL_BASE_ADDR, mbx_reg_addr, 8, &readData);
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, mbx_reg_addr);
     return readData;
 }
 

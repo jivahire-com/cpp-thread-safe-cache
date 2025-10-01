@@ -9,11 +9,11 @@
 
 /*------------- Includes -----------------*/
 
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
-#include <FpFwUtils.h>  // for knowing how big 1k is
+#include <FpFwUtils.h> // for knowing how big 1k is
 #include <ap_core_init.h>
-#include <atu_api.h>               // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
-#include <atu_lib.h>               // for atu_map_entry_t, atu_entry_attr_t
+#include <atu_api.h> // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
+#include <atu_lib.h> // for atu_map_entry_t, atu_entry_attr_t
+#include <bug_check.h>
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <core_info.h>
 #include <corebits.h>
@@ -36,7 +36,7 @@ static void setup_ap_loop_to_self(uint64_t rvbaraddr)
     // find SCP address for the rvbar
     uint32_t translated_rvbar;
     // expect that there is a global translation for rvbar
-    FPFW_RUNTIME_ASSERT(!atu_translate_address(ATU_ID_MSCP, rvbaraddr, &translated_rvbar));
+    BUG_ASSERT(!atu_translate_address(ATU_ID_MSCP, rvbaraddr, &translated_rvbar));
     // write a loop to self instruction at the entry point to enable side-load of FW when HSP not present, etc
     *(volatile uint32_t*)translated_rvbar = ARM64_LOOP;
 }
@@ -88,7 +88,7 @@ FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int"
     static startup_ssi_registration_t ssi_registration;
     int32_t status =
         sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &ap_core_ssi_interface.header);
-    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
     /*=========== End code for SSI registration ==========*/
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &ap_core_interface};

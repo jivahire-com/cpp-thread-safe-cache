@@ -21,6 +21,7 @@ set(LIBRARIES
     fwlib.service.iccBase
     ms::cmocka::testrunner
     ms::driver::icc_mhu_trans
+    ms::lib::crash_dump
     ms::lib::threadx
     ms::lib::scp_interrupts
     ms::lib::icc_platform_defines

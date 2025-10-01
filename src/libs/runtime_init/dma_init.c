@@ -5,7 +5,6 @@
 
 /*------------- Includes -----------------*/
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
-#include <FpFwAssert.h>      // for FPFW_RUNTIME_ASSERT
 #include <dma_dfwk.h>        // for dma_device_init, dma_interface_init
 #include <dmac.h>            // for dma_init
 #include <fpfw_init.h>       // for FPFW_INIT_COMPONENT

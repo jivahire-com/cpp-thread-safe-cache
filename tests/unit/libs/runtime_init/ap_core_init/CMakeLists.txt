@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
         fwlib.service.iccBase
         ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
+        ms::lib::crash_dump
         ms::lib::threadx
         ms::lib::core_info
         ms::lib::utils

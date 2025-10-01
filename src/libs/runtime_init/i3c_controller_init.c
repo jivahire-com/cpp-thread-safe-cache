@@ -4,7 +4,7 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>
 #include <fpfw_init.h>
 #include <i3c_controller.h>
 #include <idsw_kng.h>
@@ -30,7 +30,7 @@ FPFW_INIT_COMPONENT(i3c_controller,
         DEBUG_PRINT("I3C Controller init Error status: [0x%x]\n", status);
         if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
         {
-            FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+            BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, die_num);
         }
     }
 

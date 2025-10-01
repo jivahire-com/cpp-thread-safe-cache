@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         idhw
         ms::cmocka::testrunner
+        ms::lib::crash_dump
         ms::lib::register_headers
         ms::lib::scp_interrupts
         ms::lib::i3c_controller

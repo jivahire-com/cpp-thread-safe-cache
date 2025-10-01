@@ -4,8 +4,8 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwAssert.h>
 #include <atu_lib.h>
+#include <bug_check.h>
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <idsw.h>
@@ -52,7 +52,7 @@ FPFW_INIT_COMPONENT(hw_ver, FPFW_INIT_DEPENDENCIES("mpu"))
     };
 
     // Init the lib to fill in ATU CSR regs
-    FPFW_RUNTIME_ASSERT(SILIBS_SUCCESS == atu_init(ATU_ID_MSCP, sid_registers_atu_map, 1));
+    BUG_ASSERT_PARAM(SILIBS_SUCCESS == atu_init(ATU_ID_MSCP, sid_registers_atu_map, 1), 0, 0);
 
     /* Set System ID Register base Address */
     idhw_set_sid_base((uintptr_t)MCP_TOP_MCP_TO_AP_ADMAP_MEM_ADDRESS);

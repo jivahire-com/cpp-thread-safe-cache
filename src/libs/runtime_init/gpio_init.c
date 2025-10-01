@@ -10,7 +10,7 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
-#include <FpFwAssert.h>      // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h> // for FPFW_INIT_COMPONENT
 #include <gpio.h>      // for gpio_device_init, gpio_interface_init
@@ -81,12 +81,12 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
     }
     // Initialize GPIO
     status = gpio_afm_init(NULL, 0);
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
 
     int i3c_config_table_size = ARRAY_SIZE(fpga_config_gpio_table_afm);
     // update i3c AFM gpio setting.
     status = gpio_afm_init(fpga_config_gpio_table_afm, i3c_config_table_size);
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
 
     if (idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE || idsw_get_platform_sdv() == PLATFORM_FPGA_LARGE_RVP)
     {
@@ -102,7 +102,7 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
         gpio_init_config.table_size = ARRAY_SIZE(def_gpio_config_table_grp);
     }
 
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
 
     if (die_id == SOC_D0)
     {
@@ -131,7 +131,7 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
                                    config_get_uart_die_cfg().uart_die_sel[1]);
     }
 
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &gpio_init_config};
 }
 

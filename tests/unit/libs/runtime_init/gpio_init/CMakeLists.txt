@@ -22,6 +22,7 @@ target_link_libraries(${TARGET}
         fwlib.service.cli
         ms::cmocka::testrunner
         ms::driver::gpio
+        ms::lib::crash_dump
         ms::lib::interrupts
         ms::lib::scp_interrupts
         ms::lib::threadx

@@ -3,8 +3,8 @@
 //
 
 /**
- * @file test_arsm_init.cpp
- * ARSM init tests
+ * @file test_shared_mem_init.cpp
+ * Shared Memory init tests
  */
 
 /*------------- Includes -----------------*/
@@ -16,11 +16,13 @@
 extern "C" {
 #include <FpFwUtils.h>
 #include <atu_api.h>
+#include <atu_lib.h>
 #include <fpfw_init.h>
 #include <idsw_kng.h>
 #include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define VOYAGER_RSM_SIZE (0x10000)
 
 /*------------- Typedefs -----------------*/
 
@@ -30,8 +32,9 @@ void* __real_memset(void* __a, int __b, size_t __c);
 
 /*-- Declarations (Statics and globals) --*/
 
-extern fpfw_init_component_t _fpfw_component_arsm;
+extern fpfw_init_component_t _fpfw_component_shared_mem;
 static bool s_test_enabled = false;
+static uint32_t mapped_rsm_addr = 0x12345678;
 
 /*------------- Functions ----------------*/
 
@@ -67,6 +70,27 @@ void* __wrap_memset(void* __a, int __b, size_t __c)
     return __real_memset(__a, __b, __c);
 }
 
+int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    check_expected(atu_id);
+    assert_non_null(atu_map_entry);
+
+    atu_map_entry->mscp_start_address = (uint32_t)mapped_rsm_addr;
+
+    function_called();
+
+    return 0;
+}
+
+int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    check_expected(atu_id);
+    assert_non_null(atu_map_entry);
+    function_called();
+
+    return 0;
+}
+
 static int test_setup(void** ctx)
 {
     FPFW_UNUSED(ctx);
@@ -89,14 +113,14 @@ static int test_teardown(void** ctx)
 //
 // Tests
 //
-TEST_FUNCTION(test_arsm_init_warm_boot, test_setup, test_teardown)
+TEST_FUNCTION(test_shared_mem_init_warm_boot, test_setup, test_teardown)
 {
     // Set up expectations
     will_return(__wrap_system_info_is_warm_start, true);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_arsm.init_fn();
+    fpfw_init_result_t result = _fpfw_component_shared_mem.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -107,14 +131,27 @@ TEST_FUNCTION(test_arsm_init_cold_boot_d0, test_setup, test_teardown)
 {
     // Set up expectations
     will_return(__wrap_system_info_is_warm_start, false);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
+    // ARSM memset expectations
     expect_value(__wrap_memset, __a, (void*)MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
     expect_value(__wrap_memset, __b, 0);
     expect_value(__wrap_memset, __c, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_SIZE);
 
+    // RSM memset expectations
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_map);
+
+    expect_value(__wrap_memset, __a, (void*)mapped_rsm_addr);
+    expect_value(__wrap_memset, __b, 0);
+    expect_value(__wrap_memset, __c, VOYAGER_RSM_SIZE);
+
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_arsm.init_fn();
+    fpfw_init_result_t result = _fpfw_component_shared_mem.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -125,14 +162,25 @@ TEST_FUNCTION(test_arsm_init_cold_boot_d1, test_setup, test_teardown)
 {
     // Set up expectations
     will_return(__wrap_system_info_is_warm_start, false);
-    will_return(__wrap_idsw_get_die_id, DIE_1);
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_value(__wrap_memset, __a, (void*)MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR);
     expect_value(__wrap_memset, __b, 0);
     expect_value(__wrap_memset, __c, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_SIZE);
 
+    // RSM memset expectations
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_map);
+
+    expect_value(__wrap_memset, __a, (void*)mapped_rsm_addr);
+    expect_value(__wrap_memset, __b, 0);
+    expect_value(__wrap_memset, __c, VOYAGER_RSM_SIZE);
+
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_arsm.init_fn();
+    fpfw_init_result_t result = _fpfw_component_shared_mem.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -145,7 +193,7 @@ TEST_FUNCTION(test_arsm_init_svp_bypass, test_setup, test_teardown)
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
     // Call the function under test
-    fpfw_init_result_t result = _fpfw_component_arsm.init_fn();
+    fpfw_init_result_t result = _fpfw_component_shared_mem.init_fn();
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);

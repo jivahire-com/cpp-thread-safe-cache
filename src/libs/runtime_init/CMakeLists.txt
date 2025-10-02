@@ -11,7 +11,7 @@ add_library(${TARGET}
         accel_intr_client_init.c
         accel_intr_service_init.c
         ap_core_init.c
-        arsm_init.c
+        shared_mem_init.c
         atu_init.c
         avs_scp_init.c
         avs_scp_cli_init.c

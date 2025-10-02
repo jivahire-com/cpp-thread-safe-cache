@@ -1,8 +1,8 @@
 set(TARGET arsm_init.test)
 
 set(SOURCES
-    test_arsm_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/arsm_init.c
+    test_shared_mem_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/shared_mem_init.c
 )
 
 # Compile test
@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         silibs_platform
         silibs::idsw
+        silibs::atu
         silibs::idsw_kng
 )
 
@@ -35,4 +36,6 @@ mock_target(${TARGET}
     idsw_get_die_id
     idsw_get_platform_sdv
     memset
+    atu_map
+    atu_unmap
 )

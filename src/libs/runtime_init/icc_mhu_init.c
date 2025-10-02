@@ -65,7 +65,8 @@
 //
 
 #ifdef SCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "mesh_stg_2", "arsm", "sysinfo"))
+FPFW_INIT_COMPONENT(icc_mscp2tfa_if,
+                    FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "mesh_stg_2", "shared_mem", "sysinfo"))
 #else
 FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "sysinfo"))
 #endif

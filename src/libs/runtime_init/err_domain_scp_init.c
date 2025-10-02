@@ -20,7 +20,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*-------------- Functions ---------------*/
-FPFW_INIT_COMPONENT(scp_ras, FPFW_INIT_DEPENDENCIES("hm_svc", "nvic", "icc_mscp2mscp"))
+FPFW_INIT_COMPONENT(scp_ras, FPFW_INIT_DEPENDENCIES("hm_svc", "nvic", "icc_mscp2mscp", "shared_mem"))
 {
     mcp_error_injection_setup_listener(fpfw_init_get_handle("icc_mscp2mscp"));
     register_scp_error_domain(fpfw_init_get_handle("icc_mscp2mscp"));

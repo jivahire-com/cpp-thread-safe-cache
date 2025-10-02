@@ -37,20 +37,13 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define PEX_FRU "PEX"
-#define ACPI_ERROR_TYPE_PEX                                \
-    {                                                      \
-        0x3f9d6b20, 0x482e, 0x4c3f,                        \
-        {                                                  \
-            0xa1, 0x72, 0x8b, 0x5c, 0xf4, 0x92, 0x6e, 0xd8 \
-        }                                                  \
-    }
 
 /*-------- Function Prototypes -----------*/
 
 /*-------------- Typedefs ----------------*/
 
 /*-- Declarations (Statics and globals) --*/
-static guid_t PEX_GUID = ACPI_ERROR_TYPE_PEX;
+static guid_t PEX_GUID = ACPI_ERROR_TYPE_VENDOR_PEX;
 static vptr_scp_pwr_ctrl_reg scp_pwr_ctrl_regs = (vptr_scp_pwr_ctrl_reg)(SCP_TOP_SCP_PWR_CTRL_ADDRESS);
 static TX_TIMER pex_poll_timer;
 static pex_rng_config_t* g_rng_cfg = NULL;
@@ -148,7 +141,9 @@ static void pex_poll_timer_callback(ULONG timer_input)
 
         if ((scp_irq & 0x1) != 0)
         {
-            FPFW_DBGPRINT_INFO("rng_error occurred");
+            FPFW_DBGPRINT_INFO("rng_error occurred\n");
+            FPFW_DBGPRINT_INFO("Reset RNG IP\n");
+
             // Reset the RNG IP by disabling and re-enabling it
             reset_pex_rng(ap_rng_base);
 
@@ -232,7 +227,7 @@ void register_pex_error_domain(pex_rng_config_t* pex_config)
     g_rng_cfg = pex_config;
 
     //  Register the error domain
-    hm_register_error_domain(ACPI_ERROR_DOMAIN_PEX, &PEX_GUID, PEX_FRU, mscp_error_injection_handler, NULL);
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_PEX, &PEX_GUID, PEX_FRU, pex_error_injection_handler, NULL);
 
     // Register the error polling instead of interrupt handlers
     // ADO: 2885632

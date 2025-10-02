@@ -11,6 +11,7 @@ set (SOURCES
         src/error_domain_smmu.c
         src/error_injection_scp.c
         src/error_injection_smmu.c
+        src/error_injection_pex.c
         src/exception_trigger.c
         src/error_domain_gic.c
         src/error_injection_gic.c

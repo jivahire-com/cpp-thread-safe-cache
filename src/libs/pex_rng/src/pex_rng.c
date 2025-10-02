@@ -129,6 +129,7 @@ void reset_pex_rng(uintptr_t ap_rng_base)
     rng_disable_r(ap_rng_base);
     rng_enable_r(ap_rng_base, 0xC0);
     FPFW_RUNTIME_ASSERT(rng_wait_for_rng_complete_r(ap_rng_base) == 0x0);
+    FPFW_DBGPRINT_INFO("RNG reset complete\n");
 }
 
 // Adding dummy implementations for static declarations in rng.h
@@ -146,8 +147,7 @@ static uint32_t rng_read_ctrl()
     /* dummy function, do nothing */
     return 0;
 }
-
-void unused_functions()
+void unused_functions_pex()
 {
     FPFW_UNUSED(rng_write_ctrl);
     FPFW_UNUSED(rng_read_ctrl);

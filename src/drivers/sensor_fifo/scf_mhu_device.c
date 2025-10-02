@@ -19,7 +19,7 @@
 #include "telemetry_config_struct.h"        // for scf_base_config, telem
 
 #include <DfwkHost.h>    // for DfwkDeviceInitialize
-#include <FpFwAssert.h>  // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>   // for BUG_ASSERT
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCESS, fpf...
 #include <scf_mhu_regs.h>
 #include <sensor_ram_bridge.h>
@@ -193,7 +193,7 @@ void scf_mhu_device_initialize(pscf_mhu_device_t scf_mhu_device,
                                size_t property_table_array_size,
                                pscf_mhu_device_config_t scf_mhu_device_cfg)
 {
-    FPFW_RUNTIME_ASSERT(property_table_array_size == DEVICE_FIFO_MAX_ID);
+    BUG_ASSERT_PARAM(property_table_array_size == DEVICE_FIFO_MAX_ID, property_table_array_size, 0);
 
     DfwkDeviceInitialize(&(scf_mhu_device->sensor_fifo_device.base_device), schedule);
     scf_mhu_device->sensor_fifo_device.initialized = true;
@@ -290,8 +290,7 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
 
     case SENSOR_FIFO_SYNC_WRITE_ENTRY: {
         psensor_fifo_drv_inf_write_entry write_entry_req = (psensor_fifo_drv_inf_write_entry)request;
-        FPFW_RUNTIME_ASSERT(write_entry_req->input.fifo_id <
-                            DEVICE_FIFO_MAX_ID); // check here on entry, not necessary to repeat on static functions
+        BUG_ASSERT_PARAM(write_entry_req->input.fifo_id < DEVICE_FIFO_MAX_ID, write_entry_req->input.fifo_id, 0); // check here on entry, not necessary to repeat on static functions
         status = hw_fifo_write_entry(write_entry_req->input.fifo_id,
                                      write_entry_req->input.src_data,
                                      write_entry_req->input.entry_size,
@@ -302,7 +301,7 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
 
     case SENSOR_FIFO_SYNC_READ_ENTRY: {
         psensor_fifo_drv_inf_read_entry read_entry_req = (psensor_fifo_drv_inf_read_entry)request;
-        FPFW_RUNTIME_ASSERT(read_entry_req->input.fifo_id < DEVICE_FIFO_MAX_ID); // check here on entry, not necessary to repeat on static functions
+        BUG_ASSERT_PARAM(read_entry_req->input.fifo_id < DEVICE_FIFO_MAX_ID, read_entry_req->input.fifo_id, 0); // check here on entry, not necessary to repeat on static functions
         status = hw_fifo_read_entry(read_entry_req->input.fifo_id,
                                     read_entry_req->input.entry_size,
                                     read_entry_req->output.dest_data,
@@ -314,8 +313,7 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
 
     case SENSOR_FIFO_SYNC_SET_FIFO_ENABLE: {
         psensor_fifo_drv_inf_fifo_enable fifo_enable_req = (psensor_fifo_drv_inf_fifo_enable)request;
-        FPFW_RUNTIME_ASSERT(fifo_enable_req->input.fifo_id <
-                            DEVICE_FIFO_MAX_ID); // check here on entry, not necessary to repeat on static functions
+        BUG_ASSERT_PARAM(fifo_enable_req->input.fifo_id < DEVICE_FIFO_MAX_ID, fifo_enable_req->input.fifo_id, 0); // check here on entry, not necessary to repeat on static functions
         if (fifo_enable_req->input.enable)
         {
             hw_fifo_enable(fifo_enable_req->input.fifo_id);
@@ -356,8 +354,9 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
 
     case SENSOR_FIFO_SYNC_UPDATE_WRITE_PTR: {
         psensor_fifo_drv_inf_update_write_stride update_stride_req = (psensor_fifo_drv_inf_update_write_stride)request;
-        FPFW_RUNTIME_ASSERT(update_stride_req->input.fifo_id <
-                            DEVICE_FIFO_MAX_ID); // check here on entry, not necessary to repeat on static functions
+        BUG_ASSERT_PARAM(update_stride_req->input.fifo_id < DEVICE_FIFO_MAX_ID,
+                         update_stride_req->input.fifo_id,
+                         0); // check here on entry, not necessary to repeat on static functions
         hw_fifo_update_write_ptr_by_stride_size(update_stride_req->input.fifo_id);
         break;
     }
@@ -390,7 +389,7 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
     default:
         // No other types of requests are supported
         status = FPFW_STATUS_INVALID_ARGS;
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
         break;
     }
     return status;

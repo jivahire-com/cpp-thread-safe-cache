@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::lib::arm_intrinsic
         ms::lib::cortex_m7::nvic
+        ms::lib::crash_dump
         silibs::kng_silibs_platform
 )
 

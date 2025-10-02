@@ -10,9 +10,9 @@
 /*------------- Includes -----------------*/
 #include <DfwkDriver.h>    // for DfwkInterfaceInitialize, DfwkQueueInitialize
 #include <DfwkHost.h>      // for DfwkDeviceInitialize
-#include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>     // for FPFW_UNUSED
 #include <arm_intrinsic.h> // for __DSB
+#include <bug_check.h>     // for BUG_ASSERT
 #include <fpfw_init.h>     // for fpfw_init_get_handle
 #include <gpio.h>          // for gpio_device_t, pgpio_device_t, gpio_interface_t, ...
 #include <gpio_lib.h>      // for GPIO_CTRL_PIN_MSK_FLAG
@@ -43,7 +43,7 @@ void gpio_isr(void* context)
     uint32_t gpio_level = 0;
 
     nvic_status_t nvic_status = nvic_get_current_irq(&irq_num);
-    FPFW_RUNTIME_ASSERT(nvic_status == NVIC_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(nvic_status == NVIC_STATUS_SUCCESS, nvic_status, irq_num);
 
     // Find matching GPIO controller ID from irq number.
     for (uint32_t i = 0; i < dev->IrqConfigCount; i++)
@@ -63,11 +63,11 @@ void gpio_isr(void* context)
 
     // Get GPIO pin mask.
     int silib_status = gpio_get_interrupt_status(GPIO_CTRL_PIN_MSK(gpio_ctrl_id, 0xFF), &gpio_pin_mask);
-    FPFW_RUNTIME_ASSERT(silib_status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(silib_status == SILIBS_SUCCESS, silib_status, gpio_pin_mask);
 
     // Get GPIO level.
     silib_status = gpio_get_input(GPIO_CTRL_PIN_MSK(gpio_ctrl_id, gpio_pin_mask), &gpio_level);
-    FPFW_RUNTIME_ASSERT(silib_status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(silib_status == SILIBS_SUCCESS, silib_status, gpio_level);
 
     bool barrierAdded = false;
     PDFWK_ASYNC_REQUEST_HEADER pending_request = NULL;
@@ -81,7 +81,7 @@ void gpio_isr(void* context)
             break;
         }
 
-        FPFW_RUNTIME_ASSERT(pending_request->RequestType == GPIO_REQUEST_ISR_ASYNC);
+        BUG_ASSERT_PARAM(pending_request->RequestType == GPIO_REQUEST_ISR_ASYNC, pending_request->RequestType, 0);
         pgpio_request_t gpio_request = (pgpio_request_t)pending_request;
         uint8_t request_ctrl_id = GET_GPIO_CTRL_ID(gpio_request->gpio_pin_id);
         uint8_t request_pin_mask = 0;
@@ -126,7 +126,7 @@ void gpio_isr(void* context)
 
     // Clear interrupt status.
     silib_status = gpio_clear_interrupt_status(GPIO_CTRL_PIN_MSK(gpio_ctrl_id, gpio_pin_mask));
-    FPFW_RUNTIME_ASSERT(silib_status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(silib_status == SILIBS_SUCCESS, silib_status, gpio_ctrl_id);
 
     __DSB();
 }
@@ -178,15 +178,15 @@ void gpio_device_init(pgpio_device_t dev, PDFWK_SCHEDULE schedule)
     {
         // Register ISR for each GPIO controller.
         nvic_status = nvic_irq_set_isr_with_param(dev->IrqConfig[i].nvic_irq, gpio_isr, dev);
-        FPFW_RUNTIME_ASSERT(nvic_status == NVIC_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM(nvic_status == NVIC_STATUS_SUCCESS, nvic_status, dev->IrqConfig[i].nvic_irq);
 
         // Clear any pending interrupt.
         nvic_status = nvic_irq_clear_pending(dev->IrqConfig[i].nvic_irq);
-        FPFW_RUNTIME_ASSERT(nvic_status == NVIC_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM(nvic_status == NVIC_STATUS_SUCCESS, nvic_status, dev->IrqConfig[i].nvic_irq);
 
         // Enable the interrupt.
         nvic_status = nvic_irq_enable(dev->IrqConfig[i].nvic_irq);
-        FPFW_RUNTIME_ASSERT(nvic_status == NVIC_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM(nvic_status == NVIC_STATUS_SUCCESS, nvic_status, dev->IrqConfig[i].nvic_irq);
     }
 }
 

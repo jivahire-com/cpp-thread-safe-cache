@@ -11,7 +11,6 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwAssert.h>
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <kng_soc_constants.h>

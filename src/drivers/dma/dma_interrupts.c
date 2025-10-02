@@ -15,7 +15,7 @@
 
 #include <DfwkDriver.h>   // for DfwkInterfaceInitialize, DfwkQueueInitialize
 #include <ErrorHandler.h> // for FPFwErrorRaise
-#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <FpFwUtils.h>    // for FPFW_UNUSED
 #include <arm_intrinsic.h>
 #include <dw_axi_dmac_regs.h>
 #include <interrupts.h>

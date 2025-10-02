@@ -21,6 +21,7 @@ target_link_libraries(${TARGET_DRIVER}
     fwlib.lib.interface.platform.errorhandler
     fwlib.lib.utils
     kng.device.scf_mhu
+    ms::lib::crash_dump
     ms::lib::threadx
 )
 
@@ -58,6 +59,7 @@ target_link_libraries(${TARGET_DEVICE}
     fwlib.lib.utils
     kng_silibs_platform
     ms::lib::threadx
+    ms::lib::crash_dump
     silibs_platform
     silibs::sensor_ram_bridge
     utils

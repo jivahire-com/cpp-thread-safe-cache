@@ -116,7 +116,7 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     phyfw.loaded = true;
     phyfw.base = (uintptr_t)SCP_EXP_PCIE_PHY_FW_BASE;
 
-    BUG_ASSERT(rpss != NULL);
+    BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
     if (plat_get_phy_programming_support() == true)
     {
@@ -144,7 +144,7 @@ int get_rpss_ready(PDFWK_SYNC_REQUEST_HEADER req)
     silibs_status_t sts = SILIBS_SUCCESS;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    BUG_ASSERT(rpss != NULL);
+    BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
     sts = pciess_rps_ready(rpss);
 
@@ -157,7 +157,7 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     silibs_status_t sts = SILIBS_SUCCESS;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    BUG_ASSERT(rpss != NULL);
+    BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
     sts = pciess_rps_post_rp_ready_init(rpss);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
@@ -264,7 +264,7 @@ void begin_link_training(PDFWK_SYNC_REQUEST_HEADER req)
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    BUG_ASSERT(rpss != NULL);
+    BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
     pciess_rp_initiate_link_training(&(rpss->rps[r->rp_index]));
 }
@@ -280,7 +280,7 @@ int begin_rp_post_link_up_init(PDFWK_SYNC_REQUEST_HEADER req)
     }
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    BUG_ASSERT(rpss != NULL);
+    BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
     sts = pciess_rp_post_link_up_init(&(rpss->rps[r->rp_index]));
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
@@ -300,7 +300,7 @@ int get_rp_ready(PDFWK_SYNC_REQUEST_HEADER req)
     silibs_status_t sts = SILIBS_SUCCESS;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    BUG_ASSERT(rpss != NULL);
+    BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
     sts = pciess_rp_ready(&(rpss->rps[r->rp_index]));
 
@@ -313,7 +313,7 @@ int get_rp_link_status(PDFWK_SYNC_REQUEST_HEADER req)
     silibs_status_t sts = SILIBS_SUCCESS;
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
-    BUG_ASSERT(rpss != NULL);
+    BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
     sts = pciess_rp_get_link_train_done(&(rpss->rps[r->rp_index]));
 

@@ -14,7 +14,7 @@
 #include "sensor_fifo_driver_interface_i.h" // for sensor_fifo_drv_inf_read...
 
 #include <DfwkDriver.h>  // for DfwkInterfaceSendSync
-#include <FpFwAssert.h>  // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>   // for BUG_ASSERT
 #include <fpfw_status.h> // for fpfw_status_t, FPFW_STAT...
 #include <stdbool.h>     // for true
 #include <stddef.h>      // for NULL
@@ -32,9 +32,9 @@
 
 void sensor_fifo_driver_inf_init(sensor_fifo_driver_interface_t* driver_interface, sensor_fifo_device_t* device)
 {
-    FPFW_RUNTIME_ASSERT(device != NULL);
-    FPFW_RUNTIME_ASSERT(device->initialized == true);
-    FPFW_RUNTIME_ASSERT(device->dispatch_sync != NULL);
+    BUG_ASSERT_PARAM(device != NULL, device, 0);
+    BUG_ASSERT_PARAM(device->initialized == true, device->initialized, 0);
+    BUG_ASSERT_PARAM(device->dispatch_sync != NULL, device->dispatch_sync, 0);
 
     DfwkInterfaceInitialize(&(driver_interface->base_interface), &(device->base_device), NULL, device->dispatch_sync);
     driver_interface->device = device;

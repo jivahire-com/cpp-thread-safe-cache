@@ -15,9 +15,10 @@
 
 #include <DfwkDriver.h>   // for DfwkInterfaceInitialize, DfwkQueueInitialize
 #include <ErrorHandler.h> // for FPFwErrorRaise
-#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <FpFwUtils.h>    // for FPFW_UNUSED
 #include <atu_lib.h>      // for atu_map
-#include <idsw_kng.h>     // for idsw_get_cpu_type
+#include <bug_check.h>
+#include <idsw_kng.h> // for idsw_get_cpu_type
 #include <silibs_mcp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <stdbool.h> // for bool
@@ -90,7 +91,7 @@ void dma_main_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER dfwk_request, void* cont
         break;
     default:
         // Unsupported request type.
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
         break;
     }
 }
@@ -125,7 +126,7 @@ void dma_channel_0_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER dfwk_request, void*
     pdma_device_t device = (pdma_device_t)context;
 
     // Double check that the channel is free
-    FPFW_RUNTIME_ASSERT(device->Channel[CH_0].current_request == NULL);
+    BUG_ASSERT_PARAM(device->Channel[CH_0].current_request == NULL, device->Channel[CH_0].current_request, 0);
 
     switch (dfwk_request->RequestType)
     {
@@ -135,7 +136,7 @@ void dma_channel_0_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER dfwk_request, void*
         break;
     default:
         // Unsupported request type.
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
         break;
     }
 
@@ -147,7 +148,7 @@ void dma_channel_1_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER dfwk_request, void*
     pdma_device_t device = (pdma_device_t)context;
 
     // Double check that the channel is free
-    FPFW_RUNTIME_ASSERT(device->Channel[CH_1].current_request == NULL);
+    BUG_ASSERT_PARAM(device->Channel[CH_1].current_request == NULL, device->Channel[CH_1].current_request, 0);
 
     switch (dfwk_request->RequestType)
     {
@@ -157,7 +158,7 @@ void dma_channel_1_queue_dispatch(PDFWK_ASYNC_REQUEST_HEADER dfwk_request, void*
         break;
     default:
         // Unsupported request type.
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
         break;
     }
 

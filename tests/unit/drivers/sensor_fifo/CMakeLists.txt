@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
 )
 
 # Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
 
 # Get private includes for module under test
@@ -37,6 +38,7 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
+    crash_dump_bug_check
     FpFwAssert
     DfwkDeviceInitialize
     DfwkInterfaceInitialize

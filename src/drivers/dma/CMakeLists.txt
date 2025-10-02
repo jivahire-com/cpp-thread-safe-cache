@@ -44,6 +44,7 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
         ms::lib::arm_intrinsic
         ms::lib::cortex_m7::nvic
+        ms::lib::crash_dump
         ms::lib::scp_interrupts
         register_headers
 )
@@ -104,6 +105,7 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
         ms::lib::arm_intrinsic
         ms::lib::cortex_m7::nvic
+        ms::lib::crash_dump
         ms::lib::mcp_interrupts
         register_headers
 )

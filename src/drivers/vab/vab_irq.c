@@ -10,8 +10,8 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <FPFwInterrupts.h>
-#include <FpFwAssert.h>
 #include <atu_lib.h>
+#include <bug_check.h>
 #include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -207,7 +207,7 @@ static void map_and_get_vab_ctx(SUBSYSTEM_WITH_VAB_ID vab, vab_isr_ctx_t** vab_i
     default:
         *vab_isr_ctxt = NULL;
         printf("Failed to enable VAB ISR for invalid vab index - [%d]!\n", vab);
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
         break;
     }
 }
@@ -257,10 +257,10 @@ void enable_vab_isrs(uint16_t vab_instances_to_init)
             uint32_t irqnum = vab_isr_ctxt->vab_irq_num;
 
             uint32_t status = FPFwCoreInterruptRegisterCallback(irqnum, vab_isr, (void*)(vab_isr_ctxt));
-            FPFW_RUNTIME_ASSERT(status == 0);
+            BUG_ASSERT_PARAM(status == 0, status, 0);
 
             status = FPFwCoreInterruptEnableVector(irqnum);
-            FPFW_RUNTIME_ASSERT(status == 0);
+            BUG_ASSERT_PARAM(status == 0, status, 0);
         }
     }
 }

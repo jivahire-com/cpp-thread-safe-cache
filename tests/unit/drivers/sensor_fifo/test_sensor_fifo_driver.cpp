@@ -34,10 +34,12 @@ extern "C" {
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define BUGCHECK_MOCK_RETURN   (setjmp(mock_jump_buf))
+#define bugcheck_mock_return() BUGCHECK_MOCK_RETURN
+#define SCF_EXP_CSR_BASE_ADDR  (0x3000)
+#define SCF_MHU_BASE_ADDR      (0x4000)
 
 /*------------- Typedefs -----------------*/
-#define SCF_EXP_CSR_BASE_ADDR (0x3000)
-#define SCF_MHU_BASE_ADDR     (0x4000)
 
 /*-------- Function Prototypes -----------*/
 
@@ -46,6 +48,8 @@ extern "C" {
 scf_mhu_device_t scf_mhu_device;
 DFWK_SCHEDULE schedule;
 scf_mhu_device_config_t config;
+static jmp_buf mock_jump_buf;
+static bool should_return;
 
 extern "C" {
 extern pscf_mhu_device_config_t sp_scf_mhu_device_cfg;
@@ -59,6 +63,23 @@ fpfw_status_t test_dispatch_sync_function(PDFWK_SYNC_REQUEST_HEADER request)
 {
     FPFW_UNUSED(request);
     return FPFW_STATUS_SUCCESS;
+}
+
+void __wrap_crash_dump_bug_check(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    FPFW_UNUSED(p0);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
+
+    function_called();
+
+    /* Handle noreturn, allowing control to return to test */
+    if (!should_return)
+    {
+        longjmp(mock_jump_buf, 1);
+    }
 }
 }
 
@@ -111,7 +132,6 @@ TEST_FUNCTION(test_scf_device_init, nullptr, nullptr)
     config.scf_mhu_base_address = SCF_MHU_BASE_ADDR;
 
     will_return_count(__wrap_mmio_read32, 0xFFFFFFFF, -1); // value and number is not pertinent for this
-    expect_value(__wrap_FpFwAssert, expression, true);
     expect_value(__wrap_DfwkDeviceInitialize, Device, &scf_mhu_device);
     expect_value(__wrap_DfwkDeviceInitialize, Schedule, &schedule);
 
@@ -121,7 +141,6 @@ TEST_FUNCTION(test_scf_device_init, nullptr, nullptr)
     assert_true(scf_mhu_device.sensor_fifo_device.fifo_property_table == test_fifo_properties);
 
     config.is_scp = true;
-    expect_value(__wrap_FpFwAssert, expression, true);
     expect_value(__wrap_DfwkDeviceInitialize, Device, &scf_mhu_device);
     expect_value(__wrap_DfwkDeviceInitialize, Schedule, &schedule);
     expect_value(__wrap_scf_trigger_stop, scp_exp_csr_base_address, SCF_EXP_CSR_BASE_ADDR);
@@ -212,7 +231,6 @@ TEST_FUNCTION(test_request_dispatch_write_read_entry, fw_fifo_setup, fw_fifo_tea
     write_entry_req.header.RequestType = SENSOR_FIFO_SYNC_WRITE_ENTRY;
 
     hw_fifo_enable(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD);
-    expect_value_count(__wrap_FpFwAssert, expression, true, 5);
 
     fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&write_entry_req);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
@@ -238,8 +256,6 @@ TEST_FUNCTION(test_request_dispatch_write_read_entry, fw_fifo_setup, fw_fifo_tea
 
     read_entry_req.header.RequestType = SENSOR_FIFO_SYNC_READ_ENTRY;
 
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
-
     status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&read_entry_req);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 
@@ -258,15 +274,11 @@ TEST_FUNCTION(test_request_dispatch_set_fifo_enable, fw_fifo_setup, fw_fifo_tear
 
     assert_false(hw_fifo_is_enabled(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
 
-    expect_value_count(__wrap_FpFwAssert, expression, true, 1);
-
     fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&fifo_enable_req);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
 
     assert_true(hw_fifo_is_enabled(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
     fifo_enable_req.input.enable = false;
-
-    expect_value_count(__wrap_FpFwAssert, expression, true, 1);
 
     status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&fifo_enable_req);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
@@ -317,8 +329,6 @@ TEST_FUNCTION(test_request_dispatch_update_write_ptr, fw_fifo_setup, fw_fifo_tea
     update_stride_req.input.fifo_id = DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD;
 
     pvt_temp_fifo_write_reg = (uint32_t)(fifo_mem.pvt_temp_fifo);
-
-    expect_value_count(__wrap_FpFwAssert, expression, true, 1);
 
     fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&update_stride_req);
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
@@ -428,10 +438,14 @@ TEST_FUNCTION(test_request_dispatch_sync_bad, nullptr, nullptr)
     write_request.input.value = 0x72;
     write_request.header.RequestType = 200;
 
-    expect_value(__wrap_FpFwAssert, expression, false);
-    fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&write_request);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    should_return = false;
+    if (!bugcheck_mock_return())
+    {
+        fpfw_status_t status = scf_mhu_request_dispatch_sync((PDFWK_SYNC_REQUEST_HEADER)&write_request);
 
-    assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
+        assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
+    }
 }
 
 TEST_FUNCTION(test_driver_inf_init, nullptr, nullptr)
@@ -441,10 +455,6 @@ TEST_FUNCTION(test_driver_inf_init, nullptr, nullptr)
 
     device.dispatch_sync = test_dispatch_sync_function;
     device.initialized = true;
-
-    expect_value(__wrap_FpFwAssert, expression, true);
-    expect_value(__wrap_FpFwAssert, expression, true);
-    expect_value(__wrap_FpFwAssert, expression, true);
 
     expect_value(__wrap_DfwkInterfaceInitialize, Interface, &driver_inf);
     expect_value(__wrap_DfwkInterfaceInitialize, Device, &device);

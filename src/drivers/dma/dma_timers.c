@@ -12,7 +12,6 @@
 #include "dma_private.h"
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
-#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT
 #include <stdio.h>        // for DMA_LOG_INFO
 #include <tx_api.h>       // for TX_NO_TIME_SLICE, TX_SUCCESS, TX_WAIT_FOREVER, ...
 

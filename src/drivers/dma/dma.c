@@ -13,7 +13,7 @@
 #include <DfwkHost.h>     // for DfwkDeviceInitialize
 #include <ErrorHandler.h> // for FPFwErrorRaise
 #include <FPFwInterrupts.h>
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>
 #include <dma_dfwk.h>
 #include <dma_private.h>
 #include <dmac.h> // for Silicon Libs DMAC library
@@ -95,7 +95,7 @@ void dma_device_init(dma_device_t* device, dma_config_t* pconfig, DFWK_SCHEDULE*
     }
     default:
         // No other configuration type is supported
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
     }
 
     if (pconfig->stall_timeout_ms > 0)
@@ -180,6 +180,6 @@ void dma_enable_nvic_interrupts(dma_device_t* device)
             DMA_LOG_INFO("Failed to enable interrupt %d\n", (int)interrupt_id);
         }
 
-        FPFW_RUNTIME_ASSERT(intr_status == 0);
+        BUG_ASSERT_PARAM(intr_status == 0, intr_status, 0);
     }
 }

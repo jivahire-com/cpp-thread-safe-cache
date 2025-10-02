@@ -12,7 +12,7 @@
 #include "dma_private.h"
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
-#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>    // for BUG_ASSERT
 #include <dmac.h>         // for dmac_init
 #include <stdio.h>        // for DMA_LOG_INFO
 #include <tx_api.h>       // for TX_NO_TIME_SLICE, TX_SUCCESS, TX_WAIT_FOREVER, ...
@@ -33,7 +33,7 @@ bool dma_is_channel_free(dma_device_t* device, uint32_t channel)
 
 void dma_start_transfer(dma_device_t* device, uint32_t channel, PDFWK_ASYNC_REQUEST_HEADER dfwk_request)
 {
-    FPFW_RUNTIME_ASSERT(device != NULL && dfwk_request != NULL);
+    BUG_ASSERT_PARAM(device != NULL && dfwk_request != NULL, device, 0);
 
     pdma_async_request_t request = (pdma_async_request_t)dfwk_request;
     device->Channel[channel].current_request = request;

@@ -104,7 +104,7 @@ void ap_core_power_response(int32_t status)
 void ap_core_power_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
-    FPFW_RUNTIME_ASSERT(request != NULL);
+    BUG_ASSERT_PARAM(request != NULL, request, 0);
 
     if (request->RequestType == APCORE_CORE_POWER_ON_ASYNC)
     {
@@ -122,7 +122,7 @@ void ap_core_power_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_comple
 void ap_core_power(uint32_t power_domain, uint32_t power_state)
 {
     // ensure the apcore interface was set
-    FPFW_RUNTIME_ASSERT(p_apcore_interface != NULL);
+    BUG_ASSERT_PARAM(p_apcore_interface != NULL, p_apcore_interface, 0);
 
     DfwkAsyncRequestInitialize(&apcore_request.header, sizeof(apcore_request));
     if ((power_state & SCMI_PD_CORE_STATE_MASK) == (SCMI_PD_CORE_STATE_OFF))
@@ -349,7 +349,7 @@ void ap_core_reset_addr_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_c
 void ap_core_reset_addr_set(uint64_t reset_address)
 {
     // ensure the apcore interface was set
-    FPFW_RUNTIME_ASSERT(p_apcore_interface != NULL);
+    BUG_ASSERT_PARAM(p_apcore_interface != NULL, p_apcore_interface, 0);
 
     DfwkAsyncRequestInitialize(&apcore_request.header, sizeof(apcore_request));
     ap_core_set_rvbaraddr(p_apcore_interface, &apcore_request, reset_address, ap_core_reset_addr_completion, NULL);
@@ -501,7 +501,7 @@ void scmi_set_apcore_interface(DFWK_INTERFACE_HEADER* p_interface)
 static void scmi_async_recv_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 {
     FPFW_UNUSED(Context);
-    FPFW_RUNTIME_ASSERT(NULL != Request);
+    BUG_ASSERT_PARAM(NULL != Request, Request, 0);
 
     PFPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST request = (PFPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST)Request;
     volatile scmi_transport_message_t* recv_msg = (volatile scmi_transport_message_t*)request->Input.PayloadBuffer;
@@ -510,7 +510,7 @@ static void scmi_async_recv_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void*
     SCMI_LOG_INFO("SCMI Async Recv Completion Raised!\n");
     //! Ensure that the channel is busy here, tfa marks the scmi channel busy
     //! before it sends icc message to scp
-    FPFW_RUNTIME_ASSERT(!SCMI_SMT_IS_CHANNEL_FREE(local_packet->smt_header.status));
+    BUG_ASSERT_PARAM(!SCMI_SMT_IS_CHANNEL_FREE(local_packet->smt_header.status), local_packet->smt_header.status, 0);
 
     //! Check if the request was successful & received some bytes
     if ((request->Output.Status == FPFW_ICC_TRANSPORT_STATUS_SUCCESS) && (request->Output.ReceivedBytes > 0))
@@ -543,13 +543,13 @@ static void scmi_async_recv_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void*
         else
         {
             //! Unexpected! Only SCMI message command expected on scp tfa icc interface!
-            FPFW_RUNTIME_ASSERT(0);
+            BUG_ASSERT_PARAM(0, recv_msg->header.msg_header.command, 0);
         }
     }
     else
     {
         //! Unexpected! Status failed or no bytes received
-        FPFW_RUNTIME_ASSERT(0);
+        BUG_ASSERT_PARAM(0, request->Output.Status, request->Output.ReceivedBytes);
     }
 
     //! respawn a new async recv request, always keep an async recv request alive
@@ -559,13 +559,13 @@ static void scmi_async_recv_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void*
                                                              sizeof(scmi_transport_message_t),
                                                              scmi_async_recv_completion,
                                                              NULL);
-    FPFW_RUNTIME_ASSERT(status == FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == FPFW_ICC_TRANSPORT_STATUS_SUCCESS, status, 0);
 }
 
 void scmi_drv_init(DFWK_INTERFACE_HEADER* p_scp_tfa_interface)
 {
     //! Initialize the scp_tfa interface & scmi send/recv buffer
-    FPFW_RUNTIME_ASSERT(p_scp_tfa_interface != NULL);
+    BUG_ASSERT_PARAM(p_scp_tfa_interface != NULL, p_scp_tfa_interface, 0);
     s_icc_mscp2tfa = (mhu_icc_transport_intrf_t*)p_scp_tfa_interface;
     scmi_recv_message = (volatile scmi_transport_message_t*)s_icc_mscp2tfa->device->recv_channel.ch_shared_mem_addr;
     scmi_send_message = (volatile scmi_transport_message_t*)s_icc_mscp2tfa->device->send_channel.ch_shared_mem_addr;
@@ -585,5 +585,5 @@ void scmi_drv_init(DFWK_INTERFACE_HEADER* p_scp_tfa_interface)
                                                              sizeof(scmi_transport_message_t),
                                                              scmi_async_recv_completion,
                                                              NULL);
-    FPFW_RUNTIME_ASSERT(status == FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == FPFW_ICC_TRANSPORT_STATUS_SUCCESS, status, 0);
 }

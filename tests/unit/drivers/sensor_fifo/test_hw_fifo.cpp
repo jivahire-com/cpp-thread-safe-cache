@@ -353,8 +353,6 @@ TEST_FUNCTION(test_hw_fifo_write_single_entry, fw_fifo_setup, fw_fifo_teardown)
 
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
 
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
-
     hw_fifo_enable(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD);
 
     fpfw_status_t status =
@@ -368,8 +366,6 @@ TEST_FUNCTION(test_hw_fifo_write_single_entry, fw_fifo_setup, fw_fifo_teardown)
     uint16_t num_entries_read = 0;
     uint16_t num_entries_remaining = 0;
     uint16_t stride_index = 0;
-
-    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
 
     status = hw_fifo_read_entry(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD,
                                 PVT_TEMP_FIFO_ENTRY_SIZE_BYTES,
@@ -420,8 +416,6 @@ TEST_FUNCTION(test_hw_fifo_write_multiple_entry_wrap_read_one, fw_fifo_setup, fw
 
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
 
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
-
     hw_fifo_enable(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD);
 
     fpfw_status_t status = hw_fifo_write_entry(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD,
@@ -443,8 +437,6 @@ TEST_FUNCTION(test_hw_fifo_write_multiple_entry_wrap_read_one, fw_fifo_setup, fw
 
     do
     {
-        expect_value_count(__wrap_FpFwAssert, expression, true, 3);
-
         status = hw_fifo_read_entry(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD,
                                     PVT_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                     read_ptr,
@@ -497,7 +489,6 @@ TEST_FUNCTION(test_hw_fifo_write_stride, fw_fifo_setup, fw_fifo_teardown)
         (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
 
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD));
-    expect_value_count(__wrap_FpFwAssert, expression, true, 5);
     hw_fifo_enable(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD);
 
     fpfw_status_t status = hw_fifo_write_entry(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD,
@@ -522,7 +513,6 @@ TEST_FUNCTION(test_hw_fifo_write_stride, fw_fifo_setup, fw_fifo_teardown)
     uint16_t expected_stride_index = 0;
     do
     {
-        expect_value_count(__wrap_FpFwAssert, expression, true, 3);
         status = hw_fifo_read_entry(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD,
                                     TILE_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                     read_ptr,
@@ -566,8 +556,6 @@ TEST_FUNCTION(test_hw_fifo_write_fail_cases, fw_fifo_setup, fw_fifo_teardown)
     // will return FPFW_STATUS_DISABLED
     hw_fifo_disable(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD);
 
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
-
     fpfw_status_t status = hw_fifo_write_entry(DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD,
                                                src_data,
                                                TILE_TEMP_FIFO_ENTRY_SIZE_BYTES,
@@ -589,8 +577,6 @@ TEST_FUNCTION(test_hw_fifo_write_fail_cases, fw_fifo_setup, fw_fifo_teardown)
         (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
     tile_temp_fifo_write_reg =
         (uint32_t)(fifo_mem.tile_temp_fifo + FIFO_TIMESTAMP_SIZE + (TILE_TEMP_FIFO_STRIDE_SIZE_BYTES));
-
-    expect_value_count(__wrap_FpFwAssert, expression, true, 5);
 
     test_hw_fifo_control[DEVICE_FIFO_TILE_TEMP_TLM_HW_PROD].write_errors = 5;
 
@@ -617,8 +603,6 @@ TEST_FUNCTION(test_hw_fifo_write_fail_2, fw_fifo_setup, fw_fifo_teardown)
     pvt_temp_fifo_write_reg = (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + PVT_TEMP_FIFO_ENTRY_SIZE_BYTES);
 
     assert_true(hw_fifo_is_empty(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
-
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
 
     hw_fifo_enable(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD);
 
@@ -654,8 +638,6 @@ TEST_FUNCTION(test_hw_fifo_read_fail, fw_fifo_setup, fw_fifo_teardown)
     uint16_t num_entries_remaining = 0;
     uint16_t stride_index = 0;
 
-    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
-
     fpfw_status_t status = hw_fifo_read_entry(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD,
                                               PVT_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                               read_data,
@@ -670,7 +652,6 @@ TEST_FUNCTION(test_hw_fifo_read_fail, fw_fifo_setup, fw_fifo_teardown)
 
     // test empty
     hw_fifo_enable(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD);
-    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
     status = hw_fifo_read_entry(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD,
                                 PVT_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                 read_data,
@@ -692,7 +673,6 @@ TEST_FUNCTION(test_hw_fifo_read_fail, fw_fifo_setup, fw_fifo_teardown)
     pvt_temp_fifo_write_reg =
         (uint32_t)(fifo_mem.pvt_temp_fifo + FIFO_TIMESTAMP_SIZE + (PVT_TEMP_FIFO_ENTRY_SIZE_BYTES * 2));
 
-    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
     status = hw_fifo_read_entry(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD,
                                 PVT_TEMP_FIFO_ENTRY_SIZE_BYTES,
                                 read_data,

@@ -46,15 +46,15 @@ static atu_map_entry_t atu_vabss_map[MAX_VAB_INSTANCES] = {
 /*------------- Functions ----------------*/
 silibs_status_t map_vab_instance(uint16_t vab_id)
 {
-    BUG_ASSERT(vab_id < MAX_VAB_INSTANCES);
+    BUG_ASSERT_PARAM(vab_id < MAX_VAB_INSTANCES, vab_id, 0);
     return atu_map(ATU_ID_MSCP, &atu_vabss_map[vab_id]);
 }
 
 uintptr_t get_vab_resolved_base(uint16_t vab_id)
 {
 
-    BUG_ASSERT(vab_id < MAX_VAB_INSTANCES);
-    BUG_ASSERT(atu_vabss_map[vab_id].mscp_start_address != 0);
+    BUG_ASSERT_PARAM(vab_id < MAX_VAB_INSTANCES, vab_id, 0);
+    BUG_ASSERT_PARAM(atu_vabss_map[vab_id].mscp_start_address != 0, atu_vabss_map[vab_id].mscp_start_address, 0);
 
     return (uintptr_t)(atu_vabss_map[vab_id].mscp_start_address);
 }
@@ -63,7 +63,7 @@ uintptr_t get_rpss_resolved_base(RPSS_INSTANCE rpss_id)
 {
     uint32_t rpss_resolved_base = 0;
 
-    BUG_ASSERT(rpss_id < NUM_RPSS);
+    BUG_ASSERT_PARAM(rpss_id < NUM_RPSS, rpss_id, 0);
 
     switch (rpss_id)
     {
@@ -95,6 +95,6 @@ uintptr_t get_rpss_resolved_base(RPSS_INSTANCE rpss_id)
         break;
     }
 
-    BUG_ASSERT(rpss_resolved_base != 0);
+    BUG_ASSERT_PARAM(rpss_resolved_base != 0, rpss_resolved_base, 0);
     return (uintptr_t)(rpss_resolved_base);
 }

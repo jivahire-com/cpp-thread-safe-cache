@@ -13,7 +13,7 @@
 #include "sensor_fifo_driver_interface.h" // for (anonymous), psensor_fifo_...
 #include "telemetry_defines.h"            // for QUADWORD_ADDRESS_SIZE
 
-#include <FpFwAssert.h>        // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>         // for BUG_ASSERT
 #include <fpfw_status.h>       // for fpfw_status_t, FPFW_STATUS...
 #include <sensor_ram_bridge.h> // for scf_ram_read_entry, scf_ra...
 #include <silibs_platform.h>   // for MMIO_READ32, MMIO_WRITE32
@@ -98,10 +98,10 @@ void hw_fifo_get_enabled_from_hw(void)
 
 fpfw_status_t hw_fifo_write_entry(DEVICE_FIFO_ID fifo_id, uint8_t* src_data, size_t entry_size, uint16_t num_entries, uint16_t stride_index)
 {
-    FPFW_RUNTIME_ASSERT(src_data != NULL);
-    FPFW_RUNTIME_ASSERT((entry_size % QUADWORD_ADDRESS_SIZE) == 0);
-    FPFW_RUNTIME_ASSERT(entry_size == s_hw_fifo_prop_table[fifo_id].entry_size_bytes);
-    FPFW_RUNTIME_ASSERT(num_entries > 0);
+    BUG_ASSERT_PARAM(src_data != NULL, src_data, 0);
+    BUG_ASSERT_PARAM((entry_size % QUADWORD_ADDRESS_SIZE) == 0, entry_size, 0);
+    BUG_ASSERT_PARAM(entry_size == s_hw_fifo_prop_table[fifo_id].entry_size_bytes, entry_size, 0);
+    BUG_ASSERT_PARAM(num_entries > 0, num_entries, 0);
 
     if (hw_fifo_is_enabled(fifo_id) == false)
     {
@@ -117,7 +117,7 @@ fpfw_status_t hw_fifo_write_entry(DEVICE_FIFO_ID fifo_id, uint8_t* src_data, siz
     if (number_of_entries_per_stride > 1)
     {
         // writing to current stride, no wrap around
-        FPFW_RUNTIME_ASSERT(stride_index + num_entries <= number_of_entries_per_stride);
+        BUG_ASSERT_PARAM(stride_index + num_entries <= number_of_entries_per_stride, stride_index + num_entries, 0);
         curr_fifo_write_addr += (stride_index * entry_size);
 
         status = hw_fifo_write_helper(curr_fifo_write_addr, src_data, entry_size, num_entries);
@@ -221,9 +221,9 @@ fpfw_status_t hw_fifo_read_entry(DEVICE_FIFO_ID fifo_id,
                                  uint16_t* num_entries_remaining,
                                  uint16_t* stride_index)
 {
-    FPFW_RUNTIME_ASSERT(dest_loc != NULL);
-    FPFW_RUNTIME_ASSERT((entry_size % QUADWORD_ADDRESS_SIZE) == 0);
-    FPFW_RUNTIME_ASSERT(entry_size == s_hw_fifo_prop_table[fifo_id].entry_size_bytes);
+    BUG_ASSERT_PARAM(dest_loc != NULL, dest_loc, 0);
+    BUG_ASSERT_PARAM((entry_size % QUADWORD_ADDRESS_SIZE) == 0, entry_size, 0);
+    BUG_ASSERT_PARAM(entry_size == s_hw_fifo_prop_table[fifo_id].entry_size_bytes, entry_size, 0);
 
     fpfw_status_t status = FPFW_STATUS_SUCCESS;
 

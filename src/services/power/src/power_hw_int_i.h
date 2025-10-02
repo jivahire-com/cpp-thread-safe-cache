@@ -26,6 +26,7 @@
 #define SVP_CORES ((corebits_t)COREBITS_INIT_UINT32(0xFF, 0x0, 0x0))
 #define SVP_MIN_CORES (corebits_t)COREBITS_INIT_UINT32(0x01, 0x0, 0x0)
 #define PLATFORM_CORES (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF)
+#define ZEBU_PLATFORM_CORES (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0x3)
 
 /*-------------- Typedefs ----------------*/
 /**

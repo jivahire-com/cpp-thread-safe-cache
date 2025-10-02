@@ -834,7 +834,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
     case PLATFORM_EMU:
     case PLATFORM_EMU_1D:
     case PLATFORM_EMU_2D:
-        platform_cores = PLATFORM_CORES;
+        platform_cores = ZEBU_PLATFORM_CORES;
         break;
     case PLATFORM_RVP_EVT_SILICON:
         platform_cores = PLATFORM_CORES;

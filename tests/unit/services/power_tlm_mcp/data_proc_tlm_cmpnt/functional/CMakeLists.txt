@@ -17,6 +17,7 @@ set(SOURCES
     test_droop_count.cpp
     test_core_throttling_data.cpp
     log_core_instantaneous_data_integration_test.cpp
+    test_log_dimm_instantaneous_telemetry.cpp
     test_soc_max_temperature.cpp
     test_core_vm_throttling_priorities.cpp
     )

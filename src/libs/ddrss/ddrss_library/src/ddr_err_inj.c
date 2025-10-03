@@ -43,7 +43,7 @@ ddr_err_inj_syndrome_t named_syndrome[] = {DDR_ERR_INJ_SYNDROME_LIST(NAMED_SYNDR
 bool ddr_ecc_err_inj_validation(uint32_t mc, uint16_t BIT)
 {
     bool ret = true;
-    if (mc >= DDRSS_MAX_SS_NUM)
+    if (mc >= DDRSS_MAX_MC_NUM)
     {
         ret = false;
     }

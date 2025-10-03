@@ -33,7 +33,7 @@
     <!-- Die 0 Config: Retain Default Config -->
     <Knob name="uart_afm_cfg_die0" type="uart_afm_cfg_prod_t" default="{D0_U0_HSP, D0_U1_SCP, D0_U2_MCTP, D0_U3_MCP}" help="UART AFM config knobs for Die 0"/>
     <!-- Die 1 Config: Routing UART5 to MCP Die 1 to enable routing Die 1 connections to UART2. Updating Die 1 AFM 2 to CDED to prevent double routing of MCP Die1 PL011 -->
-    <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_d1_prod_t" default="{D1_U0_MCP, D1_U1_SCP, D1_U2_SDM, 0}" help="UART AFM config knobs for Die 1"/>
+    <Knob name="uart_afm_cfg_die1" type="uart_afm_cfg_d1_prod_t" default="{D1_U0_HSP, D1_U1_SCP, D1_U2_SDM, 0}" help="UART AFM config knobs for Die 1"/>
 
     <Knob name="uart_die_cfg" type="uart_die_sel_t" help="Die Config for Shared UARTs (UART1 and UART2 respectively)"/>
     <Knob name="uart_mcp_reassign" type="bool" default="true" help="When true, reassigns MCP Die 0 CLI to use AP-NS UART" />

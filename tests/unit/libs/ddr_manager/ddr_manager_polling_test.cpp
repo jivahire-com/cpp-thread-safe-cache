@@ -13,13 +13,17 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
+#include "ddr_mocks.h"
+
 #include <FpFwUtils.h>
 #include <ddr_i3c.h>
 #include <ddr_manager_bwl.h>
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <ddrss_intu.h>
+#include <ddrss_lib.h>
 #include <error_handler.h> // for set_error_handler_return
 #include <idhw.h>
+#include <interrupts.h>
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -30,7 +34,6 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-bool in_setup_teardown = false;
 
 /*------------- Functions ----------------*/
 //
@@ -141,4 +144,144 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
     {
         check_dimm_temp_thresholds();
     }
+}
+
+TEST_FUNCTION(test_poll_ecc_ce_errors_already_enabled, NULL, NULL)
+{
+    // Arrange Die0
+    KNG_DIE_ID die_num = DIE_0;
+    uint32_t ddrss_mask = 0xFFF; // DDRSS 0 - 11 present (all)
+    g_should_wrap_ddrss_get_ddrss_mask = true;
+    uint32_t base_mc = (die_num == DIE_1) ? DDRSS_MAX_MC_NUM_PER_DIE : 0;
+
+    will_return(__wrap_idsw_get_die_id, die_num);
+    will_return_always(__wrap_ddrss_get_ddrss_mask, ddrss_mask);
+
+    for (uint32_t mc = base_mc; mc < base_mc + DDRSS_MAX_MC_NUM_PER_DIE; mc++)
+    {
+        if (!(ddrss_mask & (1 << DDRSS_MC_TO_DDRSS(mc))))
+        {
+            continue;
+        }
+
+        will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, true); // *enable
+        will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, SILIBS_SUCCESS);
+    }
+
+    // Act
+    ddr_poll_ecc_ce_errors();
+
+    // Arrange Die1
+    die_num = DIE_1;
+    base_mc = (die_num == DIE_1) ? DDRSS_MAX_MC_NUM_PER_DIE : 0;
+    will_return(__wrap_idsw_get_die_id, die_num);
+
+    for (uint32_t mc = base_mc; mc < base_mc + DDRSS_MAX_MC_NUM_PER_DIE; mc++)
+    {
+        if (!(ddrss_mask & (1 << DDRSS_MC_TO_DDRSS(mc))))
+        {
+            continue;
+        }
+
+        will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, true); // *enable
+        will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, SILIBS_SUCCESS);
+    }
+
+    // Act
+    ddr_poll_ecc_ce_errors();
+
+    // Cleanup
+    g_should_wrap_ddrss_get_ddrss_mask = false;
+}
+
+TEST_FUNCTION(test_poll_ecc_ce_errors_one_mc_disabled, NULL, NULL)
+{
+    // Arrange Die0
+    KNG_DIE_ID die_num = DIE_0;
+    uint32_t ddrss_mask = 0xFFF; // DDRSS 0 - 11 present (all)
+    g_should_wrap_ddrss_get_ddrss_mask = true;
+    uint32_t base_mc = (die_num == DIE_1) ? DDRSS_MAX_MC_NUM_PER_DIE : 0;
+
+    will_return(__wrap_idsw_get_die_id, die_num);
+    will_return_always(__wrap_ddrss_get_ddrss_mask, ddrss_mask);
+
+    for (uint32_t mc = base_mc; mc < base_mc + DDRSS_MAX_MC_NUM_PER_DIE; mc++)
+    {
+        if (!(ddrss_mask & (1 << DDRSS_MC_TO_DDRSS(mc))))
+        {
+            continue;
+        }
+
+        if (mc == 2) // MC2 RAS CE interrupt disabled
+        {
+            will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, false); // *enable
+            will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, SILIBS_SUCCESS);
+
+            expect_value(__wrap_FPFwCoreInterruptIsEnabled, irqnum, HW_INT_DDRSS0_COMBINED_SCP_INT + DDRSS_MC_TO_DDRSS(mc));
+            will_return(__wrap_FPFwCoreInterruptIsEnabled, true); // ddr_irq_en
+
+            // Since ddr_irq_en is true, expect Disable/Enable calls
+            expect_value(__wrap_FPFwCoreInterruptDisableVector, irqnum, HW_INT_DDRSS0_COMBINED_SCP_INT + DDRSS_MC_TO_DDRSS(mc));
+            will_return(__wrap_FPFwCoreInterruptDisableVector, 0); // return value not used
+
+            expect_value(__wrap_prod_ddrss_set_ras_erg_ce_interrupt_enable, enable, true);
+            will_return(__wrap_prod_ddrss_set_ras_erg_ce_interrupt_enable, SILIBS_SUCCESS);
+
+            // Since ddr_irq_en is true, expect Disable/Enable calls
+            expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, HW_INT_DDRSS0_COMBINED_SCP_INT + DDRSS_MC_TO_DDRSS(mc));
+            will_return(__wrap_FPFwCoreInterruptEnableVector, 0); // return value not used
+        }
+        else
+        {
+            will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, true); // *enable
+            will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, SILIBS_SUCCESS);
+        }
+    }
+
+    // Act
+    ddr_poll_ecc_ce_errors();
+
+    // Arrange Die1
+    die_num = DIE_1;
+    base_mc = (die_num == DIE_1) ? DDRSS_MAX_MC_NUM_PER_DIE : 0;
+    will_return(__wrap_idsw_get_die_id, die_num);
+
+    for (uint32_t mc = base_mc; mc < base_mc + DDRSS_MAX_MC_NUM_PER_DIE; mc++)
+    {
+        if (!(ddrss_mask & (1 << DDRSS_MC_TO_DDRSS(mc))))
+        {
+            continue;
+        }
+
+        if (mc == 12) // MC2 RAS CE interrupt disabled
+        {
+            will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, false); // *enable
+            will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, SILIBS_SUCCESS);
+
+            expect_value(__wrap_FPFwCoreInterruptIsEnabled, irqnum, HW_INT_DDRSS0_COMBINED_SCP_INT + DDRSS_MC_TO_DDRSS(mc));
+            will_return(__wrap_FPFwCoreInterruptIsEnabled, true); // ddr_irq_en
+
+            // Since ddr_irq_en is true, expect Disable/Enable calls
+            expect_value(__wrap_FPFwCoreInterruptDisableVector, irqnum, HW_INT_DDRSS0_COMBINED_SCP_INT + DDRSS_MC_TO_DDRSS(mc));
+            will_return(__wrap_FPFwCoreInterruptDisableVector, 0); // return value not used
+
+            expect_value(__wrap_prod_ddrss_set_ras_erg_ce_interrupt_enable, enable, true);
+            will_return(__wrap_prod_ddrss_set_ras_erg_ce_interrupt_enable, SILIBS_SUCCESS);
+
+            // Since ddr_irq_en is true, expect Disable/Enable calls
+            expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, HW_INT_DDRSS0_COMBINED_SCP_INT + DDRSS_MC_TO_DDRSS(mc));
+            will_return(__wrap_FPFwCoreInterruptEnableVector, 0); // return value not used
+        }
+        else
+        {
+            will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, true); // *enable
+            will_return(__wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable, SILIBS_SUCCESS);
+        }
+    }
+
+    // Act
+    ddr_poll_ecc_ce_errors();
+
+    // Cleanup
+    g_should_wrap_ddrss_get_ddrss_mask = false;
 }

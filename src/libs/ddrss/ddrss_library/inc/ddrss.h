@@ -23,7 +23,7 @@
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define DDRSS_PRINT(lvl, statement)  
+#define DDRSS_PRINT(lvl, statement)
 #define DDRSS_ERROR(...) DDRSS_PRINT(DDRSS_DEBUG_LEVEL_CRITICAL, CRITICAL_PRINT("ERROR: " __VA_ARGS__))
 
 // ddrMcUpTop
@@ -74,6 +74,10 @@ bool prod_ddrss_interrupt_pending(void* context);
 void prod_ddrss_interrupt_handler(void *context);
 uintptr_t ddrss_get_top_base(uint32_t mc);
 int prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_sec_mem_vendor_t *ddr_cper);
+int prod_ddrss_get_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NODE_ID erg_id,  bool *enable);
+int prod_ddrss_set_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NODE_ID erg_id,  bool enable);
+
+bool prod_ddrss_interrupt_pending(void* context);
 
 void prod_ddrss_convert_rh_rec_to_rh_cper(uint32_t mc,
                                           rh_tlm_sample_type sample_type,
@@ -82,7 +86,7 @@ void prod_ddrss_convert_rh_rec_to_rh_cper(uint32_t mc,
 
 /**
  * @brief Function to initialize DDRSS PCR
- * 
+ *
  * @param die_num - die number
  */
 void prod_ddrss_pcr_init(KNG_DIE_ID die_num);

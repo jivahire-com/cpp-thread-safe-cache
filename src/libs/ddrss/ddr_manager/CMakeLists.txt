@@ -45,6 +45,7 @@ target_link_libraries(${TARGET}
         ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller
         ms::lib::icc_platform_defines
+        ms::lib::scp_interrupts
         ms::lib::system_info
         ms::service::sds_service
     PUBLIC
@@ -54,6 +55,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.cfg_mgr
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.interface.platform.interrupts
         fwlib.lib.interface.platform.threadx
         fwlib.service.iccBase
 )

@@ -87,12 +87,28 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr", "bwl_force", ddr_manager_bwl_force, "Control BWL forced throttling state", "Usage: bwl_force <0|1>"},
 };
 
+STATIC PLACED_CODE uint32_t get_default_error_injection_mc()
+{
+    KNG_DIE_ID die_id = idsw_get_die_id();
+    return (die_id == DIE_0) ? 0 : DDRSS_MAX_MC_NUM_PER_DIE;
+}
+
+STATIC PLACED_CODE uint64_t get_default_error_injection_address()
+{
+    KNG_DIE_ID die_id = idsw_get_die_id();
+    DDRSS_NUMA_CFG numa_cfg = ddrss_get_numa_cfg();
+    uint64_t p_addr;
+    p_addr = ((die_id == DIE_0) || (numa_cfg == DDRSS_NUMA_CFG_UMA)) ? DDR_MEMORY_NUMA_DOMAIN0_START + DDR_MEMORY_BELOW_4GB_START
+                                                                     : DDR_MEMORY_NUMA_DOMAIN1_START;
+    return p_addr;
+}
+
 // ecc_ce_err (mc) (phy_add) {error bit}
 STATIC PLACED_CODE FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv)
 {
     KNG_DIE_ID die_id = idsw_get_die_id();
-    uint32_t mc = 0;
-    uint64_t p_addr = 0x20080000000ULL;
+    uint32_t mc = get_default_error_injection_mc();
+    uint64_t p_addr = get_default_error_injection_address();
     uint8_t bit = 0;
     uint16_t BIT_Value;
     bool check_null = true;
@@ -148,8 +164,8 @@ STATIC PLACED_CODE FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char**
 STATIC PLACED_CODE FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv)
 {
     KNG_DIE_ID die_id = idsw_get_die_id();
-    uint32_t mc = 0;
-    uint64_t p_addr = 0x20080000000ULL;
+    uint32_t mc = get_default_error_injection_mc();
+    uint64_t p_addr = get_default_error_injection_address();
     uint16_t BIT_Value = BIT0 | BIT1;
     bool check_null = false;
 

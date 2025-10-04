@@ -49,6 +49,7 @@ mock_target(${TARGET}
     atu_unmap
     config_get_fips_kat_en
     cmn800_generate_ddr_mc_map_from_cached_config
+    crash_dump_bug_check
     ddrss_atu_map_cfg_space
     ddrss_atu_unmap_cfg_space
     ddrss_atu_map_fips_ns_space

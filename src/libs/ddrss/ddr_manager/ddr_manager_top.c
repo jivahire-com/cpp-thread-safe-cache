@@ -89,6 +89,10 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                     DDR_LOG_INFO("Enabling DDR BWL polling timer\n");
                     enable_i3c_dimm_polling_timer();
                 }
+
+                // Begin the HW Bug workaround for ECC CE polling
+                DDR_LOG_CRIT("Enabling ECC CE polling timer\n");
+                enable_ecc_ce_polling_timer();
                 break;
 
             case DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT:
@@ -100,6 +104,10 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                 ddr_poll_dimms();
                 check_dimm_temp_thresholds();
                 ddr_telemetry_report();
+                break;
+
+            case DDR_POLL_ECC_CE_EVENT:
+                ddr_poll_ecc_ce_errors();
                 break;
 
             case DDR_I3C_DATA_READY_EVENT:
@@ -117,14 +125,14 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 void enable_i3c_dimm_polling_timer(void)
 {
     idsw_plat_id_t plat_id = idsw_get_platform_sdv();
-    ULONG reschedule_ticks = ((TX_TIMER_TICKS_PER_SECOND * config_get_ddrmanager_bwl_polling_period_ms()) / 1000UL);
+    ULONG reschedule_ticks = ((TX_TIMER_TICKS_PER_SECOND * config_get_ddrmanager_bwl_polling_period_ms() + 999) / 1000UL);
 
-    if (plat_id == PLATFORM_RVP_EVT_SILICON)
+    if ((plat_id == PLATFORM_RVP_EVT_SILICON) && (reschedule_ticks != 0))
     {
         ddr_service_context_t* pddr_service_ctx = ddr_get_service_context();
 
-        int status = tx_timer_create((TX_TIMER*)&pddr_service_ctx->ddr_polling_timer, /* TX_TIMER *timer_ptr */
-                                     (char*)DDR_TIMER_NAME,                           /* CHAR *name_ptr */
+        int status = tx_timer_create((TX_TIMER*)&pddr_service_ctx->ddr_i3c_polling_timer, /* TX_TIMER *timer_ptr */
+                                     (char*)DDR_I3C_TIMER_NAME,                           /* CHAR *name_ptr */
                                      ddr_timer_cb,            /* VOID (*expiration_function)(ULONG input) */
                                      (ULONG)pddr_service_ctx, /* ULONG expiration_input */
                                      (ULONG)DDR_TIMER_INITIAL_TICKS, /* ULONG initial_ticks >= 1 */
@@ -140,6 +148,33 @@ void enable_i3c_dimm_polling_timer(void)
     }
 }
 
+void enable_ecc_ce_polling_timer(void)
+{
+    idsw_plat_id_t plat_id = idsw_get_platform_sdv();
+    ULONG reschedule_ticks =
+        ((TX_TIMER_TICKS_PER_SECOND * config_get_ddrmanager_ecc_ce_polling_timer_ms() + 999) / 1000UL);
+
+    if ((plat_id == PLATFORM_RVP_EVT_SILICON) && (reschedule_ticks != 0))
+    {
+        ddr_service_context_t* pddr_service_ctx = ddr_get_service_context();
+
+        int status = tx_timer_create((TX_TIMER*)&pddr_service_ctx->ecc_ce_polling_timer, /* TX_TIMER *timer_ptr */
+                                     (char*)DDR_ECC_CE_TIMER_NAME,                       /* CHAR *name_ptr */
+                                     ecc_ce_timer_cb,         /* VOID (*expiration_function)(ULONG input) */
+                                     (ULONG)pddr_service_ctx, /* ULONG expiration_input */
+                                     (ULONG)DDR_TIMER_INITIAL_TICKS, /* ULONG initial_ticks >= 1 */
+                                     reschedule_ticks,               /* ULONG reschedule_ticks */
+                                     TX_AUTO_ACTIVATE);              /* UINT auto_activate) */
+
+        if (status != TX_SUCCESS)
+        {
+            DDR_LOG_INFO("ECC CE Polling Timer creation failed with status: %d", status);
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
+        }
+    }
+}
+
 // Timer CB for DIMM temperature sensors & PMIC power register polling
 void ddr_timer_cb(ULONG pddr_service_ctx)
 {
@@ -147,6 +182,15 @@ void ddr_timer_cb(ULONG pddr_service_ctx)
     uint32_t msg_dimm_polling = DDR_POLL_DIMMS_I3C_EVENT;
 
     tx_queue_send(&ddr_service_ctx->work_queue, &msg_dimm_polling, TX_NO_WAIT);
+}
+
+// Timer CB for ECC CE polling
+void ecc_ce_timer_cb(ULONG pddr_service_ctx)
+{
+    ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
+    uint32_t msg_ecc_ce_polling = DDR_POLL_ECC_CE_EVENT;
+
+    tx_queue_send(&ddr_service_ctx->work_queue, &msg_ecc_ce_polling, TX_NO_WAIT);
 }
 
 static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)

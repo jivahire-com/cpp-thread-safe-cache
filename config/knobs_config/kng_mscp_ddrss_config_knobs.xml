@@ -22,6 +22,8 @@
     <Knob name="ddrmanager_dimm_temp_low" type="uint32_t" default="80" help="Integer value representing low temperature to disengage BWL (80°C)" />
     <Knob name="ddrmanager_dimm_temp_high" type="uint32_t" default="85" help="Integer value representing high temperature to engage BWL (85°C)" />
     <Knob name="ddrmanager_dimm_temp_crit" type="uint32_t" default="95" help="Integer value representing critical DIMM temperature where bad things happen (95°C)" />
+    <!-- DDR ECC CE HW Bug Workaround -->
+    <Knob name="ddrmanager_ecc_ce_polling_timer_ms" type="uint32_t" default="5000" help="Milliseconds for checking DDR RAS ERG interrupt enabling for each MC - HW Workaround" />
 
     <!-- DDRSS knobs -->
     <Knob name="ddrss_init" type="uint8_t" default="0" help="DDRSS init enable. Used by DV only, ignored by silibs. 0 - Disable, 1 - Enable" />
@@ -252,7 +254,7 @@
     <!-- Extra DDR internal knobs from silibs -->
     <Knob name="ddr_debug_level" type="uint8_t" default="2" help="Control DDR debug print level. 0: None; 1: Critical; 2: Info; 3: Debug; 4:Trace. (0 ~ 4)" />
     <Knob name="parallel_phy_train_en" type="uint8_t" default="1" help="Run DDR PHY training FW in parallel. 0 - Disable, 1 - Enable" />
-    <Knob name="media_scrambling_en" type="uint8_t" default="1" help="DDR media scrambling eanble. 0 - Disable, 1 - Enable" />
+    <Knob name="media_scrambling_en" type="uint8_t" default="1" help="DDR media scrambling eanble. 0 - Disable, 1 - Enable without Data Bus Inversion, 2 - Enable with Data Bus Inversion" />
     <!-- Validation ONLY knobs -->
     <Knob name="borgens_1gb_ddr_reserve_enable" type="bool" default="false" />
   </Knobs>

@@ -29,6 +29,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 bool g_should_wrap_idsw_get_platform_sdv = false;
+bool g_should_wrap_ddrss_get_ddrss_mask = false;
 
 /*------------- Functions ----------------*/
 
@@ -221,5 +222,54 @@ int __wrap_ddrss_bandwidth_limiter_config(uint32_t mc, bool enable, uint32_t max
     FPFW_UNUSED(max_acc_cost);
     FPFW_UNUSED(rd_wr_cost);
     return mock_type(int);
+}
+
+uint16_t __wrap_ddrss_get_ddrss_mask(void)
+{
+    if (g_should_wrap_ddrss_get_ddrss_mask)
+    {
+        return mock_type(uint16_t);
+    }
+    else
+    {
+        return __real_ddrss_get_ddrss_mask();
+    }
+}
+
+int __wrap_prod_ddrss_get_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NODE_ID erg_id, bool* enable)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(erg_id);
+    assert_true(enable != NULL);
+
+    *enable = mock_type(bool);
+    return mock_type(int);
+}
+
+int __wrap_prod_ddrss_set_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NODE_ID erg_id, bool enable)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(erg_id);
+    check_expected(enable);
+
+    return mock_type(int);
+}
+
+bool __wrap_FPFwCoreInterruptIsEnabled(uint32_t irqnum)
+{
+    check_expected(irqnum);
+    return mock_type(bool);
+}
+
+uint32_t __wrap_FPFwCoreInterruptDisableVector(uint32_t irqnum)
+{
+    check_expected(irqnum);
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum)
+{
+    check_expected(irqnum);
+    return mock_type(uint32_t);
 }
 } // extern "C"

@@ -25,6 +25,7 @@ typedef enum
     DDR_CREATE_SMBIOS_TABLES_EVENT,
     DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT,
     DDR_POLL_DIMMS_I3C_EVENT,
+    DDR_POLL_ECC_CE_EVENT,
     DDR_I3C_DATA_READY_EVENT,
 } DDR_MANAGER_MESSAGE_TYPE;
 
@@ -49,7 +50,8 @@ typedef struct
 {
     TX_THREAD work_thread;
     TX_QUEUE work_queue;
-    TX_TIMER ddr_polling_timer;
+    TX_TIMER ddr_i3c_polling_timer;
+    TX_TIMER ecc_ce_polling_timer;
 } ddr_service_context_t;
 
 /*-- Declarations (Statics and globals) --*/

@@ -20,13 +20,16 @@
 #include "ddr_manager_i3c.h"
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
+#include <FPFwInterrupts.h>
 #include <bug_check.h>
 #include <cper.h>
 #include <ddr_manager_events.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
+#include <ddrss_lib.h>
 #include <fpfw_cfg_mgr.h>
 #include <health_monitor.h>
+#include <interrupts.h>
 #include <stdio.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -158,4 +161,51 @@ void init_thresholds(ddr_dimm_temp_thresholds_t* thresholds)
     thresholds->low = config_get_ddrmanager_dimm_temp_low();
     thresholds->high = config_get_ddrmanager_dimm_temp_high();
     thresholds->crit = config_get_ddrmanager_dimm_temp_crit();
+}
+
+// Poll for reenabling ECC CE interrupts that were disabled in the RAS ISR handler
+// after a CE error was detected.  This is to avoid interrupt storms if there are
+// many CE errors occurring in a short period of time (HW bug workaround).
+void ddr_poll_ecc_ce_errors()
+{
+    KNG_DIE_ID die_num = idsw_get_die_id();
+    uint32_t ddrss_mask = ddrss_get_ddrss_mask();
+    uint32_t base_mc = (die_num == DIE_1) ? DDRSS_MAX_MC_NUM_PER_DIE : 0;
+    uint32_t irq_num;
+    uint32_t mc;
+    bool ddr_irq_en;
+    bool ras_ce_irq_en;
+
+    for (mc = base_mc; mc < base_mc + DDRSS_MAX_MC_NUM_PER_DIE; mc++)
+    {
+        if (!(ddrss_mask & (1 << DDRSS_MC_TO_DDRSS(mc))))
+        {
+            continue;
+        }
+
+        ras_ce_irq_en = false;
+        prod_ddrss_get_ras_erg_ce_interrupt_enable(mc, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_ce_irq_en);
+        if (ras_ce_irq_en)
+        {
+            continue;
+        }
+
+        // The RAS CE interrupt is disabled currently,  re-enable it.
+        DDR_LOG_INFO("Enabling RAS CE interrupt for MC%u\n", mc);
+        irq_num = HW_INT_DDRSS0_COMBINED_SCP_INT + DDRSS_MC_TO_DDRSS(mc);
+        ddr_irq_en = FPFwCoreInterruptIsEnabled(irq_num);
+        if (ddr_irq_en)
+        {
+            // Diable DDR RAS interrupt to prevent race condition on
+            // prod_ddrss_set_ras_erg_ce_interrupt_enable() in RAS ISR handler
+            FPFwCoreInterruptDisableVector(irq_num);
+        }
+        // Re-enabling RAS CE interrupt
+        prod_ddrss_set_ras_erg_ce_interrupt_enable(mc, DDRSS_RAS_NODE_ID_MC_ERG0, true);
+        if (ddr_irq_en)
+        {
+            // Restore the original DDR RAS interrupt state
+            FPFwCoreInterruptEnableVector(irq_num);
+        }
+    }
 }

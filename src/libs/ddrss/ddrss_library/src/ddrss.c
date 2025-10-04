@@ -108,8 +108,8 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.die_id = (DIE_INSTANCE)die_num;
     ddrss_cfgs.debug_level = config_get_ddr_debug_level();
     ddrss_cfgs.parallel_phy_train_en = config_get_parallel_phy_train_en();
-    ddrss_cfgs.media_scramble.enable = config_get_media_scrambling_en();
 
+    ddrss_cfgs.ext_knobs.media_scrambling_en = config_get_media_scrambling_en();
     ddrss_cfgs.ext_knobs.addr_err_report = config_get_addr_err_report();
     ddrss_cfgs.ext_knobs.address_hashing_mode = config_get_address_hashing_mode();
     ddrss_cfgs.ext_knobs.address_map_mode = config_get_address_map_mode();

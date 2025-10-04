@@ -23,6 +23,10 @@ extern "C" {
 #include <silibs_ap_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+#ifndef ERG0
+    #define ERG0 0
+    #define ERG1 1
+#endif
 
 /*------------- Typedefs -----------------*/
 
@@ -40,6 +44,7 @@ extern uint32_t g_mc_intu_sts;
 extern uint32_t g_mc_intu_dest_enable;
 extern bool g_mmio_read32_mocktype;
 extern bool g_should_check_cper_section;
+extern bool g_should_check_ras_agent_entity_id;
 
 /*------------- Functions ----------------*/
 static int setup(void** state)
@@ -767,10 +772,18 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC0_CRI_INT, setup, teardown)
     // Test MC0_CRI_INT
     g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_CRI_INT);
     g_intu_enable = 0xFFFFFFFF; // This is a mask
+    g_should_check_ras_agent_entity_id = true;
+
+    ras_agent_entity_t local_ras_agent = {0};
+    local_ras_agent.flags = RAS_AGENT_FLAG_LIVE;
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG1);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+
     expect_function_call(__wrap_ras_arm_agent_probe);
     expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+    expect_function_call(__wrap_crash_dump_bug_check);
 
     // Std. CPER
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
@@ -779,8 +792,8 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC0_CRI_INT, setup, teardown)
     // Vendor CPER
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
-
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC0_CRI_INT));
+
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
 }
 
@@ -789,14 +802,47 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC1_CRI_INT, setup, teardown)
     // Test MC1_CRI_INT
     g_ddr_intu_sts = (1 << DDRSS_INTU_MC1_CRI_INT);
     g_intu_enable = 0xFFFFFFFF; // This is a mask
-    will_return(__wrap_ddrss_get_ras_agent, SILIBS_E_PARAM);
-    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC1_CRI_INT));
-    prod_ddrss_interrupt_handler((void*)&ddrss_num[5]);
+    g_should_check_ras_agent_entity_id = true;
 
-    // Test MC1_CRI_INT
-    g_ddr_intu_sts = (1 << DDRSS_INTU_MC1_CRI_INT);
-    g_intu_enable = 0xFFFFFFFF; // This is a mask
+    ras_agent_entity_t local_ras_agent = {0};
+    local_ras_agent.flags = RAS_AGENT_FLAG_LIVE;
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG1);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+
+    expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC1_CRI_INT));
+
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[5]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teardown)
+{
+    // Test DDRSS_INTU_SRA_ERI
+    g_mmio_read32_mocktype = true;
+    g_should_check_ras_agent_entity_id = true;
+    g_ddr_intu_sts = (1 << DDRSS_INTU_SRA_ERI);
+    g_intu_enable = 0xFFFFFFFF; // This is a mask
+
+    will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the MMIO_READ32
+
+    ras_agent_entity_t local_ras_agent = {0};
+    local_ras_agent.flags = RAS_AGENT_FLAG_LIVE;
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
+    will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+
     expect_function_call(__wrap_ras_arm_agent_probe);
     expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
@@ -809,22 +855,23 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC1_CRI_INT, setup, teardown)
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
-    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC1_CRI_INT));
-    prod_ddrss_interrupt_handler((void*)&ddrss_num[5]);
-}
-
-TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teardown)
-{
-    g_mmio_read32_mocktype = true;
-
-    // Test DDRSS_INTU_SRA_ERI
-    g_ddr_intu_sts = (1 << DDRSS_INTU_SRA_ERI);
-    g_intu_enable = 0xFFFFFFFF; // This is a mask
-
-    will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the MMIO_READ32
-    will_return(__wrap_ddrss_get_ras_agent, SILIBS_E_PARAM);
     will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the second MMIO_READ32
-    will_return(__wrap_ddrss_get_ras_agent, SILIBS_E_PARAM);
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
+    will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+
+    expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_SRA_ERI));
     prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
 
@@ -833,7 +880,10 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     g_intu_enable = 0xFFFFFFFF; // This is a mask
 
     will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the MMIO_READ32
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+
     expect_function_call(__wrap_ras_arm_agent_probe);
     expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
@@ -847,6 +897,9 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
     will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the second MMIO_READ32
+
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
     expect_function_call(__wrap_ras_arm_agent_probe);
     expect_function_call(__wrap_ras_print_record);

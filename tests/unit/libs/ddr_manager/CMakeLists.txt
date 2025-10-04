@@ -72,6 +72,7 @@ mock_target(${TARGET}
     ddr_i3c_interface_get_instance
     ddr_manager_platform_is_polling_supported
     ddrss_bandwidth_limiter_config
+    ddrss_get_ddrss_mask
     ddrss_get_system_mem_region
     ddrss_get_training_margin_base
     ddrss_is_valid_local_mc
@@ -93,6 +94,8 @@ mock_target(${TARGET}
     mmio_write16
     mmio_write32
     mscp_exp_spi_synchronize_dies
+    prod_ddrss_get_ras_erg_ce_interrupt_enable
+    prod_ddrss_set_ras_erg_ce_interrupt_enable
     prod_ddrss_lib_init
     sds_block_creation
     sds_block_write
@@ -101,6 +104,9 @@ mock_target(${TARGET}
     sensor_fifo_svc_add_dimm_info
     prod_ddrss_get_intr_event_cper
     hm_submit_cper
+    FPFwCoreInterruptIsEnabled
+    FPFwCoreInterruptEnableVector
+    FPFwCoreInterruptDisableVector
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

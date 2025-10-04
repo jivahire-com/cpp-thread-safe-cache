@@ -249,7 +249,9 @@ acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, voi
     }
 
     // Check for valid mc value
-    if (einj_payload->status_operation.value >= DDRSS_MAX_MC_NUM_PER_DIE)
+    uint32_t base_mc = (idsw_get_die_id() == DIE_1) ? DDRSS_MAX_MC_NUM_PER_DIE : 0;
+    if ((einj_payload->status_operation.value < base_mc) ||
+        (einj_payload->status_operation.value >= base_mc + DDRSS_MAX_MC_NUM_PER_DIE))
     {
         printf("Error: Invalid memory controller index (%d) in EINJ payload\n", einj_payload->status_operation.value);
         return ACPI_EINJ_INVALID_ACCESS;

@@ -19,10 +19,12 @@
 #include <ddrss.h>
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
+#include <ddrss_runtime_api.h>
 #include <nvic.h>
 #include <silibs_status.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -79,6 +81,16 @@ bool g_should_check_ddrss_err_inj_function_ptrs = false;
 //
 // Mocks
 //
+void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    FPFW_UNUSED(errorCode);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
+    function_called();
+}
+
 KNG_DIE_ID __wrap_idsw_get_die_id()
 {
     return mock_type(KNG_DIE_ID);
@@ -227,10 +239,11 @@ int __wrap_ddrss_ddr_intu_clear_interrupt(uint32_t mc, uint32_t intr_mask)
 
 bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* record)
 {
-    FPFW_UNUSED(agent);
-    FPFW_UNUSED(record);
-    FPFW_UNUSED(record);
     function_called();
+
+    // Make record->reporting_agent non-NULL for later dereferencing
+    record->reporting_agent = agent;
+
     return SILIBS_SUCCESS;
 }
 int __wrap_ddrss_convert_ras_rec_to_cper(uint32_t mc,

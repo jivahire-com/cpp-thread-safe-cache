@@ -928,7 +928,7 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_0, NULL, NULL)
     ddr_create_smbios_tables();
 }
 
-TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_timer, NULL, NULL)
+TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_and_ecc_ce_timer, NULL, NULL)
 {
     int callback_param = DDR_CREATE_SMBIOS_TABLES_EVENT;
     will_return(tx_queue_copy_parameter, callback_param);
@@ -1009,8 +1009,11 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_timer, NULL
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     // end of ddr_create_smbios_tables()
 
-    // Check that timer is created/started
+    // Check that I3C polling timer is created/started
     will_return(__wrap_config_get_ddrmanager_bwl_polling_en, true);
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
+
+    // Check that ECC CE HW workaround timer is created/started
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
     // Exit the while (1) loop

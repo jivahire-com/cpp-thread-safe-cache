@@ -17,6 +17,7 @@
 
 #include <FpFwAssert.h>
 #include <arm_intrinsic.h>
+#include <bug_check.h>
 #include <cper.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
@@ -28,6 +29,8 @@
 #include <silibs_status.h>
 #include <stdint.h>
 #include <stdio.h>
+
+volatile uint8_t prod_ddrss_mc_ras_ce_en[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_RAS_NODE_ID_MC_ERG_MAX];
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -66,23 +69,36 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agen
             hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, severity, &vendor_cper_section, sizeof(vendor_cper_section));
         }
 
+        // For ER0/ER2 and ER4/ER6 of ERG0, need to reset the CEC threshold.
+        DDRSS_RAS_NODE_ID erg_id = DDRSS_IS_RAS_ERG(record.reporting_agent, DDRSS_RAS_NODE_ID_MC_ERG0)
+                                       ? DDRSS_RAS_NODE_ID_MC_ERG0
+                                       : DDRSS_RAS_NODE_ID_MC_ERG1;
+        if ((erg_id == DDRSS_RAS_NODE_ID_MC_ERG0) && record.ce_count_valid && (record.ce_count > 0))
+        {
+            ddrss_ras_update_ce_threshold(mc, 1 << record.position, true);
+        }
+
         if (record.handler)
         {
             if (record.handler(&record))
             {
                 printf("Error encountered while handling record!\n");
             }
-
-            // For ER0/ER2 and ER4/ER6 of ERG0, need to reset the CEC threshold.
-            if ((ras_agent_entity_id == DDRSS_RAS_NODE_ID_MC_ERG0) &&
-                ((record.position == 0) || (record.position == 2) || (record.position == 4) || (record.position == 6)))
-            {
-                ddrss_ras_update_ce_threshold(mc, 1 << record.position, false);
-            }
         }
         else
         {
             printf("Record was marked invalid! No further handling will be done.\n");
+        }
+
+        if ((erg_id == DDRSS_RAS_NODE_ID_MC_ERG0) && record.status_valid && (record.status & DDR_ERG0_ERR0STATUS_LO_CE_MASK))
+        {
+            // It is CE, needs to disable CE RAS interrupt.
+            // A polling thread ddr_poll_ecc_ce_errors() will enable it again after a configurable interval.
+            sub_sts = prod_ddrss_set_ras_erg_ce_interrupt_enable(mc, erg_id, false);
+            if (sub_sts != SILIBS_SUCCESS)
+            {
+                printf("Error in disabling CE RAS interrupt!\n");
+            }
         }
     }
     return sub_sts;
@@ -203,7 +219,7 @@ void prod_ddrss_interrupt_handler(void* context)
     uint32_t mc = ddrss * 2;
     uint32_t ddr_intu_sts = 0;
     uintptr_t ddrss_base = 0;
-    ras_agent_entity_t* ras_agent[2];
+    ras_agent_entity_t* ras_agent[2] = {0};
     int sts = SILIBS_SUCCESS;
     int sub_sts = SILIBS_SUCCESS;
 
@@ -401,6 +417,15 @@ void prod_ddrss_interrupt_handler(void* context)
     {
         sts = SILIBS_E_DEVICE;
         printf("DDR int handler failed for INTU mask 0x%08x\n", (unsigned int)ddr_intu_err);
+    }
+
+    // If DDR RAS CRI is active, trigger crash dump since it is fatal.
+    bool is_cri = (ddr_intu_clr_sts & ((1 << DDRSS_INTU_MC0_CRI_INT) | (1 << DDRSS_INTU_MC1_CRI_INT))) ? true : false;
+    if (is_cri)
+    {
+        uint32_t mc_cri = mc + ((ddr_intu_clr_sts & (1 << DDRSS_INTU_MC0_CRI_INT)) ? 0 : 1);
+        printf("Force CD due to fatal DDR CRI from MC%d\n", (unsigned int)mc_cri);
+        BUG_CHECK(KNG_E_FAIL, mc_cri, ddr_intu_sts);
     }
 
     printf("DDRSS %d ISR Exit with sts=%d\n\n", (int)ddrss, sts);
@@ -738,4 +763,44 @@ int prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_se
     ddr_cper->valid_vendor_err_info = 1;
 
     return SILIBS_SUCCESS;
+}
+
+int prod_ddrss_get_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NODE_ID erg_id, bool* enable)
+{
+    if ((erg_id >= DDRSS_RAS_NODE_ID_MC_ERG_MAX) || (mc >= DDRSS_MAX_MC_NUM) || (!enable))
+    {
+        return SILIBS_E_PARAM;
+    }
+    uint32_t local_mc = DDRSS_GET_LOCAL_MC(mc);
+    *enable = prod_ddrss_mc_ras_ce_en[local_mc][erg_id];
+    return SILIBS_SUCCESS;
+}
+
+int prod_ddrss_set_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NODE_ID erg_id, bool enable)
+{
+    int sts;
+
+    ras_agent_entity_t* ddrss_ras_agent = NULL;
+    if ((erg_id >= DDRSS_RAS_NODE_ID_MC_ERG_MAX) || (mc >= DDRSS_MAX_MC_NUM))
+    {
+        return SILIBS_E_PARAM;
+    }
+
+    uint32_t local_mc = DDRSS_GET_LOCAL_MC(mc);
+    sts = ddrss_get_ras_agent(mc, erg_id, &ddrss_ras_agent);
+    if (sts == SILIBS_SUCCESS)
+    {
+        printf("MC%d: %s DDR CE INT\n", (unsigned int)mc, enable ? "Enable" : "Disable");
+        if (enable)
+        {
+            prod_ddrss_mc_ras_ce_en[local_mc][erg_id] = 1;
+            sts = ras_arm_agent_enable_signaling_by_type(ddrss_ras_agent, RAS_ARM_CNTRL_CI | RAS_ARM_CNTRL_CED | RAS_ARM_ON_READ_WRITE);
+        }
+        else
+        {
+            prod_ddrss_mc_ras_ce_en[local_mc][erg_id] = 0;
+            sts = ras_arm_agent_disable_signaling_by_type(ddrss_ras_agent, RAS_ARM_CNTRL_CI | RAS_ARM_CNTRL_CED | RAS_ARM_ON_READ_WRITE);
+        }
+    }
+    return sts;
 }

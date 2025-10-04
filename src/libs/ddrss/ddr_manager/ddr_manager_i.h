@@ -22,7 +22,8 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define DDR_WORK_QUEUE_NAME ("ddr-work-queue")
 #define DDR_WORK_THREAD_NAME ("ddr-work_thread")
-#define DDR_TIMER_NAME ("ddr-timer")
+#define DDR_I3C_TIMER_NAME ("ddr-i3c-timer")
+#define DDR_ECC_CE_TIMER_NAME ("ddr-ecc-ce-timer")
 #define NUM_DIMM_PER_DIE  (6) // Each die will address 6 DIMMs
 #define NUM_DIMM_TEMP_SENSORS (2) // Each DIMM will have 2 temperature sensors
 
@@ -150,3 +151,13 @@ bool platform_supports_phy_bin_loading();
  * This function publishes the address translation configuration for DDRSS that OS will use.
  */
 void ddr_publish_prm_addr_trans_cfg();
+
+/**
+ * @brief  Enable the DDR ECC CE polling timer
+ *
+ * \b Description:
+ * This function enables the ECC CE polling timer to periodically check for ECC CE errors.
+ */
+void enable_ecc_ce_polling_timer();
+void ecc_ce_timer_cb(ULONG pddr_service_ctx);
+void ddr_poll_ecc_ce_errors();

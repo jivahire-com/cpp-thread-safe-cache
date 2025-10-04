@@ -26,7 +26,7 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-bool in_setup_teardown = false;
+static bool in_setup_teardown = false;
 
 /*------------- Functions ----------------*/
 //

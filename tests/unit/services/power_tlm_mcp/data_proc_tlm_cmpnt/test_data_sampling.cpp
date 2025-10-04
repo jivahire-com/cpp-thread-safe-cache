@@ -3612,7 +3612,26 @@ TEST_FUNCTION(test_data_smpl_process_cstate_entry_latency, test_setup, test_tear
 TEST_FUNCTION(test_data_smpl_process_cstate_exit_latency, test_setup, test_teardown)
 {
     // Test the processing of C-state exit latency in case of a change and read timesstamps from TFA
-    // TODO:add check once latency is logged in
+    uint8_t core_id = 0;
+    // Initialize the tfa buffer
+    uint8_t cstate_timestamp_id = CSTATE_EXIT_PSCI;
+    // Clear all core runtime info for clean testing
+    memset(&core_rt[core_id], 0, sizeof(core_runtime_info_t));
+
+    core_rt[core_id].latest_cstate_exit_timestamp_uS = 2000;
+    die_2_die_exch_init(0);
+    //  init temp timestamp for each cstate entry/exit point
+    uint64_t timestamp_cstate_uS[CSTATE_MAX_ID] = {3000, 3010, 3020, 3030, 3040, 3050};
+    cstate_instr_timestamp_t* core_entry = &cstate_tfa_timestamp_base[core_id];
+    core_entry->timestamp[cstate_timestamp_id] = timestamp_cstate_uS[cstate_timestamp_id] * 1000; // Convert to nS
+
+    core_rt[core_id].latest_cstate = 1; // exited the previus deep cstate  and going to either C0 or C1.
+    // Log the entry latency for the cstate we are entering
+    data_smpl_process_cstate_exit_latency(core_id);
+
+    // Calculate expected latency: packet timestamp - cstate entry timestamp from TFA
+    assert_int_equal(core_rt[core_id].latest_cstate_exit_latency_uS,
+                     timestamp_cstate_uS[CSTATE_EXIT_PSCI] - core_rt[core_id].latest_cstate_exit_timestamp_uS);
 }
 
 TEST_FUNCTION(test_data_smpl_calculate_mpam_throttling_transitions, test_setup, test_teardown)

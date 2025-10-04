@@ -497,8 +497,9 @@ void data_proc_tlm_cmpnt_get_inst_soc_core_summary_data(uint16_t core_id, p_inst
             core_summary_data->cstate_entry_latency_uS = core_rt[core_id].latest_cstate_entry_latency_uS;
             // clear  after packaging
             core_rt[core_id].latest_cstate_entry_latency_uS = 0;
-            // TODO :Below items link need to be removed, when corresponding records will have implementation.
-            // https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584925
+
+            // update cstate exit latency
+            data_smpl_process_cstate_exit_latency(core_id);
             core_summary_data->cstate_exit_latency_uS = core_rt[core_id].latest_cstate_exit_latency_uS;
             // clear after packaging
             core_rt[core_id].latest_cstate_exit_latency_uS = 0;

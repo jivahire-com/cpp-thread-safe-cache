@@ -17,6 +17,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <data_proc_tlm_cmpnt.h>
+#include <mcp_telemetry_shared.h> //for cstate_instr_timestamp_t
 #include <sensor_fifo_service.h>
 #include <event_trace_providers.h>
 #include <telemetry_package_defs.h>
@@ -42,7 +43,7 @@ extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_rt;
 extern bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID];
-
+extern cstate_instr_timestamp_t* cstate_tfa_timestamp_base;
 /*--------- Function Prototypes ----------*/
 
 // Wrapper declarations for sensor services
@@ -55,6 +56,7 @@ sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_vr_current(vr_current_t* vr
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_soc_pvt_temperature(soc_pvt_temp_t* pvt_temperature);
 sensor_ram_poll_status_t __wrap_sensor_fifo_svc_poll_dimm_info(sensor_ram_dimm_info_t* dimm_info);
 
+void setup_cstate_tfa_functional_mock_buffer(void);
 void reset_pwr_tlm_data(void);
 void setup_snsr_fifo_is_empty(void);
 void update_stats(stats_t* stats, uint16_t latest_value);

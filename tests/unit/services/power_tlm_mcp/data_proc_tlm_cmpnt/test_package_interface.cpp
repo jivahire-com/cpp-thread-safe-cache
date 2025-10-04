@@ -11,6 +11,8 @@
 // @SSI_Unit_Test:telemetry
 
 /*------------- Includes -----------------*/
+#include "data_proc_mock.h"
+
 #include <CMockaWrapper.h> // for assert_int_equal, Cmock...
 
 extern "C" {
@@ -21,9 +23,10 @@ extern "C" {
 #include <data_sampling_i.h>
 #include <die_2_die_exchange_i.h>
 #include <dvfs.h>
-#include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
-#include <stdint.h>              // for uint32_t, uint64_t, int32_t
-#include <string.h>              // for memcmp
+#include <mcp_telemetry_shared.h> //for cstate_instr_timestamp_t
+#include <sensor_fifo_service.h>  // for QUADWORD_SIZE, sensor_ram_...
+#include <stdint.h>               // for uint32_t, uint64_t, int32_t
+#include <string.h>               // for memcmp
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -53,6 +56,7 @@ static int test_setup(void** pContext)
 
     comp_metrics_reset_local_2_min_metrics();
     comp_metrics_reset_24_hrs_metrics();
+    setup_cstate_tfa_mock_buffer();
     return 0;
 }
 static int test_teardown(void** pContext)
@@ -755,7 +759,7 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
 
     // core_rt[TEST_CORE_ID_5].pstate[pstate_index].frequency_Mhz = 150;
     //  cstate
-    core_rt[TEST_CORE_ID_5].latest_cstate = 2;
+    core_rt[TEST_CORE_ID_5].latest_cstate = 1;
     uint16_t cstate_index = core_rt[TEST_CORE_ID_5].latest_cstate;
 
     // core voltage
@@ -766,6 +770,17 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     // plimit
     core_rt[TEST_CORE_ID_5].latest_plimit = 1;
     core_rt[TEST_CORE_ID_5].latest_cstate_entry_latency_uS = 100;
+
+    // setup for the cstate exit latency
+    core_rt[TEST_CORE_ID_5].latest_cstate_exit_latency_uS = 0;
+    core_rt[TEST_CORE_ID_5].latest_cstate_exit_timestamp_uS = 1000;
+
+    uint8_t cstate_timestamp_id = CSTATE_EXIT_PSCI;
+    die_2_die_exch_init(0);
+    //  init temp timestamp for each cstate entry/exit point
+    uint64_t timestamp_cstate_uS[CSTATE_MAX_ID] = {3000, 3010, 3020, 3030, 3040, 3050};
+    cstate_instr_timestamp_t* core_entry = &cstate_tfa_timestamp_base[TEST_CORE_ID_5];
+    core_entry->timestamp[cstate_timestamp_id] = timestamp_cstate_uS[cstate_timestamp_id] * 1000; // Convert to nS
 
     // store for later comparison, because we clear latency at the end of the data_proc_tlm_cmpnt_get_inst_soc_core_summary_data
     uint32_t cstate_entry_latency_uS = core_rt[TEST_CORE_ID_5].latest_cstate_entry_latency_uS;
@@ -788,6 +803,8 @@ TEST_FUNCTION(test_get_inst_soc_core_summary_data, test_setup, test_teardown)
     assert_int_equal(core_summary_data.throttling_type, 0x7f);
     assert_int_equal(core_summary_data.throttling_rack_priority, core_rt[TEST_CORE_ID_5].latest_rack_throttle_priority);
     assert_int_equal(core_summary_data.cstate_entry_latency_uS, cstate_entry_latency_uS);
+    assert_int_equal(core_summary_data.cstate_exit_latency_uS,
+                     (core_entry->timestamp[cstate_timestamp_id] / 1000) - core_rt[TEST_CORE_ID_5].latest_cstate_exit_timestamp_uS);
 
     // Test case 2: Inactive core (core_is_active[core_id] == false)
     core_is_active[TEST_CORE_ID_5] = false;

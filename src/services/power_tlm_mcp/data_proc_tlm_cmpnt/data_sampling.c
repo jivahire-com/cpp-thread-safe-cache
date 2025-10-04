@@ -1025,6 +1025,27 @@ void data_smpl_parse_core_states_entry(pstate_telem_t* pstate_entry, core_state_
     }
 }
 
+void data_smpl_process_cstate_exit_latency(uint8_t core_id)
+{
+    // Note:  Exit latency is calculated when we package the data , it uses the latest cstate exit timestamp recorded when we entered a new cstate,
+    // when we enter one cstate we exit previous one,  so exiting timestamp is used with TFA timestamp to calculate exit latency.
+    // TFA exit time stamp read only at the time of packaging the data, so we read it here to update the latest exit latency for the core.
+
+    if (core_rt[core_id].latest_cstate < CSTATE_C2)
+    {
+        // Log the exit latency for the cstate
+        // get the timestamp from TFA, written by TFA later than the packet timestamp of cstate exit.
+        uint64_t cstate_tfa_timestamp_uS = data_smpl_get_cstate_tfa_timestamp(core_id, CSTATE_EXIT_PSCI);
+        // only log if the packet_timestamp_uS is after the last recorded TFA timestamp
+        uint64_t latest_cstate_exit_timestamp = core_rt[core_id].latest_cstate_exit_timestamp_uS;
+        if (cstate_tfa_timestamp_uS > latest_cstate_exit_timestamp && (latest_cstate_exit_timestamp != 0))
+        {
+            // per exit latency per core per cstate
+            core_rt[core_id].latest_cstate_exit_latency_uS = cstate_tfa_timestamp_uS - latest_cstate_exit_timestamp;
+        }
+    }
+}
+
 void data_smpl_process_cstate_entry_latency(uint8_t core_id, uint8_t packet_cstate, uint64_t packet_timestamp_uS)
 {
 
@@ -1065,6 +1086,8 @@ void data_smpl_parse_cstate(pstate_telem_t* cstate_telemetry, core_state_entry_d
         {
             // Log the entry latency for the cstate we are entering
             data_smpl_process_cstate_entry_latency(core_id, packet_cstate, entry_data->packet_timestamp_uS);
+            // Log last cstate exit time stamp, if you are changing cstate, you must have exited the previous cstate
+            core_rt[core_id].latest_cstate_exit_timestamp_uS = entry_data->packet_timestamp_uS;
         }
     }
     else

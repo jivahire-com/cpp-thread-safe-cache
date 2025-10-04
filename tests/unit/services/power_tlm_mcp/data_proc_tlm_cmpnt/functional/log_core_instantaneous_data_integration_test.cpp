@@ -97,7 +97,7 @@ static int32_t test_setup(void** state)
 {
     FPFW_UNUSED(state);
     reset_pwr_tlm_data();
-
+    setup_cstate_tfa_functional_mock_buffer();
     // Enable all cores for instantaneous data collection
     for (unsigned int core = 0; core < NUMBER_OF_CORES_PER_DIE; ++core)
     {

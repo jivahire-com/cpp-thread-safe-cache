@@ -29,6 +29,14 @@
 
 int g_enable_mock_pstate = 0;
 bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
+cstate_instr_timestamp_t test_cstate_buf[(128 * 1024) / sizeof(cstate_instr_timestamp_t)];
+
+void setup_cstate_tfa_functional_mock_buffer()
+{
+
+    memset(test_cstate_buf, 0, sizeof(test_cstate_buf));
+    cstate_tfa_timestamp_base = test_cstate_buf;
+}
 
 void update_stats(stats_t* stats, uint16_t latest_value)
 {

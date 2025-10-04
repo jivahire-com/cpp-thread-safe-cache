@@ -91,6 +91,7 @@ typedef struct {
     uint64_t rack_pri_res_timestamp_uS[NUMBER_OF_RACK_THROTTLE_PRIORITIES];
     uint64_t latest_cstate_entry_latency_uS;
     uint64_t latest_cstate_exit_latency_uS;
+    uint64_t latest_cstate_exit_timestamp_uS;
     uint16_t latest_voltage_mV;
     uint16_t latest_vcpu_voltage_mV; // for droop count record
     uint16_t latest_current_mA;
@@ -511,3 +512,10 @@ uint64_t data_smpl_get_cstate_tfa_timestamp(uint8_t core_id, cstate_tfa_timestam
  * @param[in] packet_timestamp_uS - The timestamp from the packet in microseconds.
  */
 void data_smpl_process_cstate_entry_latency(uint8_t core_id, uint8_t packet_cstate, uint64_t packet_timestamp_uS);
+
+/**
+ * @brief Process the C-state exit latency for a specific core.
+ *
+ * @param[in] core_id - The ID of the core.
+ */
+void data_smpl_process_cstate_exit_latency(uint8_t core_id);

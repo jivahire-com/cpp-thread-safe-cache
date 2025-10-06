@@ -364,24 +364,44 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
                     FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_RL_ARSM_OVERFLOW is not supported on FPGA.\n");
                 }
                 break;
-            case MCP_ERROR_TYPE_RSM_RAM_CE:
+            case MCP_ERROR_TYPE_S_RSM_CE:
                 atu_map_entry_t rsm_atu_entry;
-                uint32_t read_addr = map_rsm_address(&rsm_atu_entry);
+                uint32_t read_addr = map_rsm_address(MSCP_S_RSM_RAM, &rsm_atu_entry);
                 trigger_shared_sram_rsm_fault(MSCP_S_RSM_RAM, read_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
                 unmap_rsm_address(&rsm_atu_entry);
                 break;
 
-            case MCP_ERROR_TYPE_RSM_RAM_UE:
+            case MCP_ERROR_TYPE_S_RSM_UE:
                 if (!IS_PLATFORM_FPGA())
                 {
                     atu_map_entry_t rsm_atu_entry;
-                    uint32_t read_addr = map_rsm_address(&rsm_atu_entry);
+                    uint32_t read_addr = map_rsm_address(MSCP_S_RSM_RAM, &rsm_atu_entry);
                     trigger_shared_sram_rsm_fault(MSCP_S_RSM_RAM, read_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
                     unmap_rsm_address(&rsm_atu_entry);
                 }
                 else
                 {
-                    FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_RSM_RAM_UE is not supported on FPGA.\n");
+                    FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_S_RSM_UE is not supported on FPGA.\n");
+                }
+                break;
+            case MCP_ERROR_TYPE_NS_RSM_CE: {
+                atu_map_entry_t rsm_atu_entry;
+                uint32_t read_addr = map_rsm_address(MSCP_NS_RSM_RAM, &rsm_atu_entry);
+                trigger_shared_sram_rsm_fault(MSCP_NS_RSM_RAM, read_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+                unmap_rsm_address(&rsm_atu_entry);
+                break;
+            }
+            case MCP_ERROR_TYPE_NS_RSM_UE:
+                if (!IS_PLATFORM_FPGA())
+                {
+                    atu_map_entry_t rsm_atu_entry;
+                    uint32_t read_addr = map_rsm_address(MSCP_NS_RSM_RAM, &rsm_atu_entry);
+                    trigger_shared_sram_rsm_fault(MSCP_NS_RSM_RAM, read_addr, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+                    unmap_rsm_address(&rsm_atu_entry);
+                }
+                else
+                {
+                    FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_NS_RSM_UE is not supported on FPGA.\n");
                 }
                 break;
             case MCP_ERROR_TYPE_M7_LOCKUP:

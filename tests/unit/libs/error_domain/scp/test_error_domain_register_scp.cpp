@@ -1188,7 +1188,7 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_atu_unmap);
             expect_function_call(__wrap_atu_map);
             break;
-        case SCP_ERROR_TYPE_RSM_RAM_CE: {
+        case SCP_ERROR_TYPE_S_RSM_CE: {
             uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;
             will_return(__wrap_is_cached_space, false);
             expect_function_call(__wrap_atu_map);
@@ -1197,10 +1197,28 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_atu_unmap);
             break;
         }
-        case SCP_ERROR_TYPE_RSM_RAM_UE: {
+        case SCP_ERROR_TYPE_S_RSM_UE: {
             uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;
             will_return(__wrap_is_cached_space, false);
             will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+            expect_function_call(__wrap_atu_map);
+            test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
+                                               mapped_rsm_addr + RSM_RAM_DEFAULT_OFFSET);
+            expect_function_call(__wrap_atu_unmap);
+            break;
+        }
+        case SCP_ERROR_TYPE_NS_RSM_CE: {
+            uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_atu_map);
+            test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
+                                               mapped_rsm_addr + RSM_RAM_DEFAULT_OFFSET);
+            expect_function_call(__wrap_atu_unmap);
+            break;
+        }
+        case SCP_ERROR_TYPE_NS_RSM_UE: {
+            uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;
+            will_return(__wrap_is_cached_space, false);
             expect_function_call(__wrap_atu_map);
             test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
                                                mapped_rsm_addr + RSM_RAM_DEFAULT_OFFSET);
@@ -1314,8 +1332,10 @@ TEST_FUNCTION(test_scp_error_injection_handler, test_setup, nullptr)
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RL_ARSM_UE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RL_ARSM_OVERFLOW);
 
-    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RSM_RAM_CE);
-    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_RSM_RAM_UE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_S_RSM_CE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_S_RSM_UE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_NS_RSM_CE);
+    test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_NS_RSM_UE);
 
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_FUSE_CE);
     test_scp_error_injection_handler(ACPI_ERROR_DOMAIN_SCP_PROC, SCP_ERROR_TYPE_FUSE_UE);

@@ -162,6 +162,7 @@ void trigger_shared_sram_fault(bool arsm, int type, uint32_t target_addr, uint32
         MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK,
                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK);
+
         inject_err_by_access(target_addr);
     }
     else if (err_mask & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK)
@@ -203,12 +204,11 @@ void shared_sram_ecc_isr(void* ctx)
     KNG_STATUS err_code = KNG_SUCCESS;
     acpi_error_severity_t severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
     atu_map_entry_t atu_entry = *(atu_map_entry_t*)ctx;
+    KNG_DIE_ID die_id = idsw_get_die_id();
 
-    // check ctx is one of the item in s_hm_rsm_atu_entries
-    for (mscp_rsm_ram_type_t i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
+    for (int rsm_idx = 0; rsm_idx < MSCP_RSM_RAM_COUNT; ++rsm_idx)
     {
-        const atu_map_entry_t* rsm_entry = &s_hm_rsm_atu_entries[idsw_get_die_id()][i];
-        if (ctx == rsm_entry)
+        if (atu_entry.ap_base_address == s_hm_rsm_atu_entries[die_id][rsm_idx].ap_base_address)
         {
             is_rsm = true;
             break;
@@ -294,12 +294,23 @@ void shared_sram_ecc_isr(void* ctx)
     }
 }
 
-uint32_t map_rsm_address(atu_map_entry_t* atu_entry)
+uint32_t map_rsm_address(mscp_rsm_ram_type_t type, atu_map_entry_t* atu_entry)
 {
     BUG_ASSERT(atu_entry != NULL);
     KNG_DIE_ID die_id = idsw_get_die_id();
 
     *atu_entry = (atu_map_entry_t)ATU_MAPPING_RSM_RAM(die_id);
+
+    if (type == MSCP_S_RSM_RAM)
+    {
+        atu_entry_attr_t attributes = {ATU_BUS_ATTR_S};
+        atu_entry->attribute.as_uint32 = attributes.as_uint32;
+    }
+    else
+    {
+        atu_entry_attr_t attributes = {ATU_BUS_ATTR_NS};
+        atu_entry->attribute.as_uint32 = attributes.as_uint32;
+    }
 
     int status = atu_map(ATU_ID_MSCP, atu_entry);
     BUG_ASSERT(status == SILIBS_SUCCESS);

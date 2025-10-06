@@ -231,12 +231,14 @@ static PLACED_CODE FPFW_CLI_STATUS hm_inject_err_raw_cli(int argc, const char** 
     hm_config_t* hm_config = get_hm_config();
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
+    hm_map_error_injection_payload();
     volatile ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
 
     for (uint32_t i = 0; i < sizeof(ras_einj_info_t); i++)
     {
         ((volatile uint8_t*)einj_payload)[i] = ((const uint8_t*)&input_einj_payload)[i];
     }
+    hm_unmap_error_injection_payload();
 
     acpi_einj_cmd_status_t einj_result = ACPI_EINJ_UNKNOWN_FAILURE;
     einj_result = hm_inject_error();
@@ -257,9 +259,11 @@ static PLACED_CODE FPFW_CLI_STATUS hm_dump_einj_cli(int argc, const char** argv)
     hm_config_t* hm_config = get_hm_config();
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
+    hm_map_error_injection_payload();
     ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
-
     print_einj_payload(einj_payload);
+    hm_unmap_error_injection_payload();
+
     return CLI_SUCCESS;
 }
 

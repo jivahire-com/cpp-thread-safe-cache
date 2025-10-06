@@ -233,12 +233,12 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
         test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK,
                                             MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
         break;
-    case MCP_ERROR_TYPE_RSM_RAM_CE:
+    case MCP_ERROR_TYPE_S_RSM_CE:
         test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
         break;
 
-    case MCP_ERROR_TYPE_RSM_RAM_UE:
+    case MCP_ERROR_TYPE_S_RSM_UE:
         test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
         break;
@@ -846,7 +846,7 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_atu_unmap);
             expect_function_call(__wrap_atu_map);
             break;
-        case MCP_ERROR_TYPE_RSM_RAM_CE: {
+        case MCP_ERROR_TYPE_S_RSM_CE: {
             uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;
             will_return(__wrap_is_cached_space, false);
             expect_function_call(__wrap_atu_map);
@@ -855,7 +855,26 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_atu_unmap);
             break;
         }
-        case MCP_ERROR_TYPE_RSM_RAM_UE: {
+        case MCP_ERROR_TYPE_S_RSM_UE: {
+            uint32_t mapped_rsm_addr2 = (uint32_t)(uintptr_t)mapped_region;
+            will_return(__wrap_is_cached_space, false);
+            will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
+            expect_function_call(__wrap_atu_map);
+            test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
+                                               mapped_rsm_addr2 + RSM_RAM_DEFAULT_OFFSET);
+            expect_function_call(__wrap_atu_unmap);
+            break;
+        }
+        case MCP_ERROR_TYPE_NS_RSM_CE: {
+            uint32_t mapped_rsm_addr = (uint32_t)(uintptr_t)mapped_region;
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_atu_map);
+            test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
+                                               mapped_rsm_addr + RSM_RAM_DEFAULT_OFFSET);
+            expect_function_call(__wrap_atu_unmap);
+            break;
+        }
+        case MCP_ERROR_TYPE_NS_RSM_UE: {
             uint32_t mapped_rsm_addr2 = (uint32_t)(uintptr_t)mapped_region;
             will_return(__wrap_is_cached_space, false);
             will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
@@ -987,20 +1006,30 @@ TEST_FUNCTION(test_mcp_error_injection_handler_20, test_setup, nullptr)
 
 TEST_FUNCTION(test_mcp_error_injection_handler_21, test_setup, nullptr)
 {
-    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_RSM_RAM_CE);
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_S_RSM_CE);
 }
 
 TEST_FUNCTION(test_mcp_error_injection_handler_22, test_setup, nullptr)
 {
-    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_RSM_RAM_UE);
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_S_RSM_UE);
 }
 
 TEST_FUNCTION(test_mcp_error_injection_handler_23, test_setup, nullptr)
 {
-    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_M7_LOCKUP);
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_NS_RSM_CE);
 }
 
 TEST_FUNCTION(test_mcp_error_injection_handler_24, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_NS_RSM_UE);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_25, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_M7_LOCKUP);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_26, test_setup, nullptr)
 {
     test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_ATU_ERR);
 }

@@ -18,6 +18,7 @@ extern "C" {
 #include <FpFwUtils.h>
 #include <ddr_i3c.h>
 #include <ddr_manager_bwl.h>
+#include <ddr_manager_events.h>
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
@@ -139,7 +140,8 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
     // Act
     ddr_poll_dimms();
 
-    expect_value(FPFwErrorRaise, error, (uint32_t)TX_NO_MEMORY); // DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD
+    expect_value(FPFwErrorRaise, error, (uint32_t)DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD);
+    // DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD
     if (!set_error_handler_return())
     {
         check_dimm_temp_thresholds();

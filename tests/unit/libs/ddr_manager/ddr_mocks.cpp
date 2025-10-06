@@ -111,6 +111,11 @@ bool __wrap_config_get_ddrmanager_bwl_polling_en()
     return mock_type(bool);
 }
 
+bool __wrap_config_get_ras_init_en()
+{
+    return mock_type(bool);
+}
+
 bool __wrap_config_get_borgens_1gb_ddr_reserve_enable()
 {
     return mock_type(bool);

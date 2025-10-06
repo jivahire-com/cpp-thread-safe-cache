@@ -325,6 +325,23 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_SMBIOS_TABLES_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
 
+    // tx queue send DDR_START_POLLING_TIMER_EVENT fails
+    will_return(__wrap__txe_queue_send, TX_QUEUE_ERROR); // DDR_START_POLLING_TIMER_EVENT
+    expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_ERROR);
+
+    if (!set_error_handler_return())
+    {
+        ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
+    }
+
+    will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    will_return(__wrap_system_info_is_warm_start, false);
+    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_MEMORY_MAP_EVENT
+    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
+    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_SMBIOS_TABLES_EVENT
+    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
+    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_START_POLLING_TIMER_EVENT
+
     // tx thread create fails
     expect_any_always(__wrap__txe_thread_create, thread_ptr);
     expect_any_always(__wrap__txe_thread_create, name_ptr);
@@ -351,6 +368,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_SMBIOS_TABLES_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
+    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_START_POLLING_TIMER_EVENT
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
     // Inside ddr_manager_i3c_init()
@@ -411,6 +429,12 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
     // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
+    expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx.work_queue);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_send, TX_SUCCESS);
+
+    // DDR_START_POLLING_TIMER_EVENT
     expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx.work_queue);
     expect_any(__wrap__txe_queue_send, source_ptr);
     expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
@@ -478,6 +502,12 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
     // Do not expect DDR_CREATE_SMBIOS_TABLES_EVENT
 
     // Do not expect DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
+
+    // DDR_START_POLLING_TIMER_EVENT
+    expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx.work_queue);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
     expect_value(__wrap__txe_thread_create, thread_ptr, &ddr_service_ctx.work_thread);
     expect_value(__wrap__txe_thread_create, name_ptr, DDR_WORK_THREAD_NAME);
@@ -928,7 +958,7 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_0, NULL, NULL)
     ddr_create_smbios_tables();
 }
 
-TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_and_ecc_ce_timer, NULL, NULL)
+TEST_FUNCTION(ddr_create_smbios_tables_test_die_1, NULL, NULL)
 {
     int callback_param = DDR_CREATE_SMBIOS_TABLES_EVENT;
     will_return(tx_queue_copy_parameter, callback_param);
@@ -1009,11 +1039,43 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1_and_will_start_i3c_and_ecc_ce_
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     // end of ddr_create_smbios_tables()
 
+    // Exit the while (1) loop
+    callback_param = 0xFF;
+    will_return(tx_queue_copy_parameter, callback_param);
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
+    expect_any(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    // Expect the error
+    expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_EMPTY);
+
+    if (!set_error_handler_return())
+    {
+        ddr_worker_thread_func((ULONG)&ddr_service_ctx);
+    }
+}
+
+TEST_FUNCTION(ddr_start_i3c_and_ecc_ce_timer, NULL, NULL)
+{
+    int callback_param = DDR_START_POLLING_TIMER_EVENT;
+    will_return(tx_queue_copy_parameter, callback_param);
+    set_txe_queue_receive_callback_func(tx_queue_copy_parameter);
+
+    ddr_service_context_t ddr_service_ctx = {};
+    ddr_service_ctx.work_queue.tx_queue_start = (ULONG*)0x1234;
+
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
+    expect_any(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
     // Check that I3C polling timer is created/started
     will_return(__wrap_config_get_ddrmanager_bwl_polling_en, true);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
     // Check that ECC CE HW workaround timer is created/started
+    will_return(__wrap_config_get_ras_init_en, true);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
     // Exit the while (1) loop

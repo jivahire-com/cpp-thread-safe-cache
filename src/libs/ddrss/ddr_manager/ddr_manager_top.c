@@ -83,7 +83,9 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
             case DDR_CREATE_SMBIOS_TABLES_EVENT:
                 ddr_create_smbios_tables();
+                break;
 
+            case DDR_START_POLLING_TIMER_EVENT:
                 if (config_get_ddrmanager_bwl_polling_en())
                 {
                     DDR_LOG_INFO("Enabling DDR BWL polling timer\n");
@@ -91,8 +93,11 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                 }
 
                 // Begin the HW Bug workaround for ECC CE polling
-                DDR_LOG_CRIT("Enabling ECC CE polling timer\n");
-                enable_ecc_ce_polling_timer();
+                if (config_get_ras_init_en())
+                {
+                    DDR_LOG_CRIT("Enabling ECC CE polling timer\n");
+                    enable_ecc_ce_polling_timer();
+                }
                 break;
 
             case DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT:
@@ -288,6 +293,15 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     else
     {
         DEBUG_PRINT("DDR warm start, skipping tables/memory map creation\n");
+    }
+
+    // I3C polling timer and ECC CE polling timer need to be started on both cold/warm reset path.
+    work_queue_msg = DDR_START_POLLING_TIMER_EVENT;
+    status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
+    if (status != TX_SUCCESS)
+    {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_START_POLLING_TIMER, status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
     status = tx_thread_create((TX_THREAD*)&pddr_service_ctx->work_thread, /* TX_THREAD *thread_ptr */

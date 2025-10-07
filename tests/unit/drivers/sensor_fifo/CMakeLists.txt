@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
     fwlib.dfwk
     fwlib.lib.assert
     fwlib.platform.dfwkhost.threadx
+    ms::client_interface::startup_shutdown
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::error_handler
@@ -40,9 +41,11 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     crash_dump_bug_check
     FpFwAssert
+    DfwkAsyncRequestComplete
     DfwkDeviceInitialize
     DfwkInterfaceInitialize
     DfwkInterfaceSendSync
+    DfwkQueueInitialize
     mmio_read32
     mmio_write32
     mmio_update32

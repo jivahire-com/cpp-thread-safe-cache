@@ -65,30 +65,31 @@ bool wait_for_local_core_boot_stage(startup_shutdown_boot_stage_t current_boot_s
     LOCAL_CORE_ET_START_INFO_PARAM(current_boot_stage.stage);
 
     // We want to:
-    // 1. Update the exp ram with local core's stage
-    // 2. Read the exp ram for the remote core's stage
-    // 3. If the remote core's stage matches the current stage, we can proceed, otherwise go back to step 2
-    // 4. Return success on local core sync
+    // 1. Determine who updates their local stage first (SCP or MCP)
+    // 2. Loop until the remote core has updated its stage to match the current stage
+    // 3. Update our local stage to the current stage (if we are the core that updates second)
 
     uint32_t semaphore_key = STARTUP_SHUTDOWN_LOCAL_SYNC_SEMAPHORE_KEY(CPU_SCP);
 
     uintptr_t rmss_exp_ram_sync_local_addr = RMSS_EXP_RAM_SYNC_ADDR(CPU_SCP);
     uintptr_t rmss_exp_ram_sync_remote_addr = RMSS_EXP_RAM_SYNC_ADDR(CPU_MCP);
 
-    // Swap the above if on MCP
-    if (idsw_get_cpu_type() == CPU_MCP)
-    {
-        semaphore_key = STARTUP_SHUTDOWN_LOCAL_SYNC_SEMAPHORE_KEY(CPU_MCP);
+    idsw_cpu_type_t cpu_type = idsw_get_cpu_type();
 
+    if (cpu_type == CPU_MCP)
+    {
+        // Swap the keys and addresses
+        semaphore_key = STARTUP_SHUTDOWN_LOCAL_SYNC_SEMAPHORE_KEY(CPU_MCP);
         rmss_exp_ram_sync_local_addr = RMSS_EXP_RAM_SYNC_ADDR(CPU_MCP);
         rmss_exp_ram_sync_remote_addr = RMSS_EXP_RAM_SYNC_ADDR(CPU_SCP);
-    }
 
-    // Acquire the semaphore and update the local core's stage
-    wait_for_semaphore(STARTUP_SHUTDOWN_RMSS_EXP_SEMAPHORE_ID, semaphore_key);
-    *((volatile uint32_t*)rmss_exp_ram_sync_local_addr) = (uint32_t)current_boot_stage.stage;
-    __DSB();
-    release_semaphore(STARTUP_SHUTDOWN_RMSS_EXP_SEMAPHORE_ID);
+        // Have the MCP update its local stage first, before reading the SCP's stage
+        // The SCP will update at the end of the sync
+        wait_for_semaphore(STARTUP_SHUTDOWN_RMSS_EXP_SEMAPHORE_ID, semaphore_key);
+        *((volatile uint32_t*)rmss_exp_ram_sync_local_addr) = (uint32_t)current_boot_stage.stage;
+        __DSB();
+        release_semaphore(STARTUP_SHUTDOWN_RMSS_EXP_SEMAPHORE_ID);
+    }
 
     // Wait for the remote core to update its stage
     uint32_t iteration = 0;
@@ -113,8 +114,19 @@ bool wait_for_local_core_boot_stage(startup_shutdown_boot_stage_t current_boot_s
         // ensure that we can:
         //   1. Not complete this stage until the local core has reached same stage
         //   2. Allow other tasks to run while waiting for the remote core to reach that stage
-        // So we sleep for a short duration to yield the CPU and allow other tasks to run
+        //
+
         tx_thread_sleep(1);
+    }
+
+    if (cpu_type == CPU_SCP)
+    {
+        // Have the SCP update its local stage after reading the MCP's stage
+        // The MCP will update at the beginning of the sync
+        wait_for_semaphore(STARTUP_SHUTDOWN_RMSS_EXP_SEMAPHORE_ID, semaphore_key);
+        *((volatile uint32_t*)rmss_exp_ram_sync_local_addr) = (uint32_t)current_boot_stage.stage;
+        __DSB();
+        release_semaphore(STARTUP_SHUTDOWN_RMSS_EXP_SEMAPHORE_ID);
     }
 
     REMOTE_CORE_ET_END_INFO_PARAM(current_boot_stage.stage, iteration);

@@ -36,7 +36,10 @@ void sensor_fifo_driver_inf_init(sensor_fifo_driver_interface_t* driver_interfac
     BUG_ASSERT_PARAM(device->initialized == true, device->initialized, 0);
     BUG_ASSERT_PARAM(device->dispatch_sync != NULL, device->dispatch_sync, 0);
 
-    DfwkInterfaceInitialize(&(driver_interface->base_interface), &(device->base_device), NULL, device->dispatch_sync);
+    DfwkInterfaceInitialize(&(driver_interface->base_interface),
+                            &(device->base_device),
+                            &device->dispatch_async_queue,
+                            device->dispatch_sync);
     driver_interface->device = device;
 }
 

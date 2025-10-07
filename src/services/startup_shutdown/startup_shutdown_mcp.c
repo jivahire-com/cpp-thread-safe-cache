@@ -28,6 +28,7 @@ static startup_shutdown_boot_stage_t mcp_boot_stages[] = {
     // On the MCP this stage needs to sync with the die local SCP, but does not need to sync with the other
     // die MCP.
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_AP_SOC_POWER_INIT_POST_SYNC, DEFAULT_SOS_TIMEOUT_MS, true, false},
+    {STARTUP_PHASE_MSCP_ASYNC, STARTUP_AP_SOC_POWER_INIT_POST_SYNC_SCF, DEFAULT_SOS_TIMEOUT_MS, true, false},
 };
 
 /*------------- Functions ----------------*/

@@ -26,6 +26,7 @@ extern "C" {
 #include <sensor_fifo_driver_interface.h>   // for sensor_fifo_driver_inf_r...
 #include <sensor_fifo_driver_interface_i.h> // for scf_mhu_request_dispatch...
 #include <sensor_ram_bridge.h>
+#include <startup_shutdown_ssi.h>
 #include <stddef.h>                  // for NULL
 #include <stdint.h>                  // for uint32_t
 #include <string.h>                  // for memset
@@ -134,6 +135,11 @@ TEST_FUNCTION(test_scf_device_init, nullptr, nullptr)
     will_return_count(__wrap_mmio_read32, 0xFFFFFFFF, -1); // value and number is not pertinent for this
     expect_value(__wrap_DfwkDeviceInitialize, Device, &scf_mhu_device);
     expect_value(__wrap_DfwkDeviceInitialize, Schedule, &schedule);
+    expect_value(__wrap_DfwkQueueInitialize, Queue, &scf_mhu_device.sensor_fifo_device.dispatch_async_queue);
+    expect_value(__wrap_DfwkQueueInitialize, Device, &scf_mhu_device.sensor_fifo_device.base_device);
+    expect_value(__wrap_DfwkQueueInitialize, DispatchRoutine, scf_mhu_request_dispatch_async);
+    expect_value(__wrap_DfwkQueueInitialize, DispatchContext, &scf_mhu_device);
+    expect_value(__wrap_DfwkQueueInitialize, QueueType, DfwkQueueType_SerializedDispatch);
 
     scf_mhu_device_initialize(&scf_mhu_device, &schedule, test_fifo_properties, DEVICE_FIFO_MAX_ID, &config);
 
@@ -143,6 +149,11 @@ TEST_FUNCTION(test_scf_device_init, nullptr, nullptr)
     config.is_scp = true;
     expect_value(__wrap_DfwkDeviceInitialize, Device, &scf_mhu_device);
     expect_value(__wrap_DfwkDeviceInitialize, Schedule, &schedule);
+    expect_value(__wrap_DfwkQueueInitialize, Queue, &scf_mhu_device.sensor_fifo_device.dispatch_async_queue);
+    expect_value(__wrap_DfwkQueueInitialize, Device, &scf_mhu_device.sensor_fifo_device.base_device);
+    expect_value(__wrap_DfwkQueueInitialize, DispatchRoutine, scf_mhu_request_dispatch_async);
+    expect_value(__wrap_DfwkQueueInitialize, DispatchContext, &scf_mhu_device);
+    expect_value(__wrap_DfwkQueueInitialize, QueueType, DfwkQueueType_SerializedDispatch);
     expect_value(__wrap_scf_trigger_stop, scp_exp_csr_base_address, SCF_EXP_CSR_BASE_ADDR);
     expect_function_call(__wrap_init_scf_mhu);
 
@@ -458,7 +469,7 @@ TEST_FUNCTION(test_driver_inf_init, nullptr, nullptr)
 
     expect_value(__wrap_DfwkInterfaceInitialize, Interface, &driver_inf);
     expect_value(__wrap_DfwkInterfaceInitialize, Device, &device);
-    expect_value(__wrap_DfwkInterfaceInitialize, DispatchQueue, NULL);
+    expect_value(__wrap_DfwkInterfaceInitialize, DispatchQueue, &device.dispatch_async_queue);
     expect_value(__wrap_DfwkInterfaceInitialize, DispatchSync, test_dispatch_sync_function);
 
     sensor_fifo_driver_inf_init(&driver_inf, &device);
@@ -778,4 +789,35 @@ TEST_FUNCTION(test_driver_inf_reset, nullptr, nullptr)
     fpfw_status_t status = sensor_fifo_driver_reset(&driver_inf);
 
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_driver_async_request, nullptr, nullptr)
+{
+
+    // Send a request with a request type the driver does not handle
+    DFWK_ASYNC_REQUEST_HEADER async_request;
+    async_request.RequestType = 0xFFFF;
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &async_request);
+
+    scf_mhu_request_dispatch_async(&async_request, &scf_mhu_device);
+
+    // Send a valid request but of an invalid stage
+    ssi_startup_notification_request_t startup_request;
+    startup_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    startup_request.stage = STARTUP_BL31_LOAD;
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &startup_request);
+
+    scf_mhu_request_dispatch_async((DFWK_ASYNC_REQUEST_HEADER*)&startup_request, &scf_mhu_device);
+
+    // Send a valid request and stage
+    startup_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    startup_request.stage = STARTUP_AP_SOC_POWER_INIT_POST_SYNC_SCF;
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &startup_request);
+
+    // Setup the HW FIFO Sync (have them as enabled)
+    // Setup the FW FIFO disable/enable transition check
+    will_return_count(__wrap_mmio_read32, 0x1, LAST_HW_PROD_FIFO_ID + 1);
+    will_return_count(__wrap_mmio_read32, 0x1, (DEVICE_FIFO_MAX_ID - FIRST_FW_PROD_FIFO_ID) * 2);
+
+    scf_mhu_request_dispatch_async((DFWK_ASYNC_REQUEST_HEADER*)&startup_request, &scf_mhu_device);
 }

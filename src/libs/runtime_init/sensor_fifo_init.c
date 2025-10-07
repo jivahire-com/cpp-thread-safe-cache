@@ -27,6 +27,7 @@
 #include <silibs_mcp_top_regs.h>     // IWYU pragma: keep
 #include <silibs_scp_exp_top_regs.h> // IWYU pragma: keep
 #include <silibs_scp_top_regs.h>     // IWYU pragma: keep
+#include <startup_shutdown.h>
 #include <stddef.h>              // for NULL
 #include <stdint.h>
 #include <stdio.h>
@@ -415,6 +416,15 @@ FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"
     static scf_mhu_device_t scf_mhu_device = {0};
     scf_mhu_device_initialize(&scf_mhu_device, &drvfwk->Schedule, s_fifo_properties, ARRAY_SIZE(s_fifo_properties), &s_scf_mhu_device_cfg);
 
+    // Initialize the driver interface used by the startup shutdown service
+    // Use a new instance of the interface here as each use case will Open the interface,
+    // which can allows interface ref counting / etc... We don't do that for the sensor
+    // fifo driver interfaces, but if we need to this follows the pattern. See DFWK
+    // interface documentation for more details on multiple interfaces per device.
+    static sensor_fifo_driver_interface_t sensor_fifo_driver_interface_others;
+    sensor_fifo_driver_inf_init(&sensor_fifo_driver_interface_others, (sensor_fifo_device_t*)&scf_mhu_device);
+
+    // Initialize the driver interface used by the sensor fifo service
     static sensor_fifo_driver_interface_t sensor_fifo_driver_interface;
     sensor_fifo_driver_inf_init(&sensor_fifo_driver_interface, (sensor_fifo_device_t*)&scf_mhu_device);
 
@@ -426,5 +436,23 @@ FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk","hw_ver","std_io"
 
     sensor_fifo_cli_svc_initialize(&sensor_fifo_driver_interface);
 
-    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    // Return the driver interface for use by others while keeping the original static instance private to the sensor fifo service
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &sensor_fifo_driver_interface_others};
 }
+
+#ifdef MCP_RUNTIME_INIT
+FPFW_INIT_COMPONENT(sensor_fifo_ssi, FPFW_INIT_DEPENDENCIES("sensor_fifo", "sos_int"))
+{
+
+  // Get the shared interface to the sensor fifo driver created in the component above
+  sensor_fifo_driver_interface_t *snsr_fifo_drv_interface = (sensor_fifo_driver_interface_t *)fpfw_init_get_handle("sensor_fifo");
+  FPFW_RUNTIME_ASSERT(snsr_fifo_drv_interface != NULL);
+
+  // static data for SSI registration
+  static startup_ssi_registration_t snsr_fifo_ssi_registration;
+  int32_t status = sos_register_ssi(fpfw_init_get_handle("sos_int"), &snsr_fifo_ssi_registration, &(snsr_fifo_drv_interface->base_interface));
+  FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+
+  return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+#endif

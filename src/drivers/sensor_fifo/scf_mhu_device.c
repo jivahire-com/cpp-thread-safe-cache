@@ -18,16 +18,18 @@
 #include "sensor_fifo_driver_interface_i.h" // for (anonymous struct)::(ano...
 #include "telemetry_config_struct.h"        // for scf_base_config, telem
 
+#include <DfwkDriver.h>
 #include <DfwkHost.h>    // for DfwkDeviceInitialize
 #include <bug_check.h>   // for BUG_ASSERT
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCESS, fpf...
 #include <scf_mhu_regs.h>
 #include <sensor_ram_bridge.h>
 #include <silibs_platform.h> // for MMIO_READ32, MMIO_WRITE32
-#include <stdbool.h>         // for false, true
-#include <stddef.h>          // for size_t
-#include <stdint.h>          // for UINT32_MAX, uintptr_t
-#include <utils.h>           // for sleep_ms
+#include <startup_shutdown_ssi.h>
+#include <stdbool.h> // for false, true
+#include <stddef.h>  // for size_t
+#include <stdint.h>  // for UINT32_MAX, uintptr_t
+#include <utils.h>   // for sleep_ms
 
 /*-- Symbolic Constant Macros (defines) --*/
 // clang-format off
@@ -196,6 +198,11 @@ void scf_mhu_device_initialize(pscf_mhu_device_t scf_mhu_device,
     BUG_ASSERT_PARAM(property_table_array_size == DEVICE_FIFO_MAX_ID, property_table_array_size, 0);
 
     DfwkDeviceInitialize(&(scf_mhu_device->sensor_fifo_device.base_device), schedule);
+    DfwkQueueInitialize(&(scf_mhu_device->sensor_fifo_device.dispatch_async_queue),
+                        &(scf_mhu_device->sensor_fifo_device.base_device),
+                        scf_mhu_request_dispatch_async,
+                        scf_mhu_device,
+                        DfwkQueueType_SerializedDispatch);
     scf_mhu_device->sensor_fifo_device.initialized = true;
     scf_mhu_device->sensor_fifo_device.dispatch_sync = scf_mhu_request_dispatch_sync;
     scf_mhu_device->sensor_fifo_device.fifo_property_table = property_table;
@@ -393,4 +400,43 @@ fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request)
         break;
     }
     return status;
+}
+
+void scf_mhu_request_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
+{
+    FPFW_UNUSED(Context);
+    switch (Request->RequestType)
+    {
+    case SSI_STARTUP_STAGE_START_ASYNC: {
+        pssi_startup_notification_request_t ssi_request = (pssi_startup_notification_request_t)Request;
+        switch (ssi_request->stage)
+        {
+        case STARTUP_AP_SOC_POWER_INIT_POST_SYNC_SCF:
+            // The FIFOs have now been initialized and enabled by SCP.
+            // Repeat the enablement to ensure the FIFO enablement state is correct
+
+            // Read the registers for the HW FIFOs to see which are enabled.
+            hw_fifo_get_enabled_from_hw();
+
+            // Enable all of the FW FIFOs that the Power Management Service enables.
+            // NOTE: Only enable the FIFOs that the Power Management Service uses. See
+            //       power_telemetry_enable() and ensure that any changes are reflected
+            //       there as well.
+            hw_fifo_enable(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD);
+            hw_fifo_enable(DEVICE_FIFO_PVT_VOLT_TLM_FW_PROD);
+            hw_fifo_enable(DEVICE_FIFO_DIMM_TEMP_TLM_FW_PROD);
+            hw_fifo_enable(DEVICE_FIFO_VR_TEMP_TLM_FW_PROD);
+            hw_fifo_enable(DEVICE_FIFO_VR_CURRENT_TLM_FW_PROD);
+            break;
+        default:
+            break;
+        }
+    }
+    break;
+    default:
+        break;
+    }
+
+    // Always complete the request
+    DfwkAsyncRequestComplete(Request);
 }

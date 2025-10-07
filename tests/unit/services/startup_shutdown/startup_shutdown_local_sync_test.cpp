@@ -44,6 +44,8 @@ extern "C" {
 
 extern uint32_t test_memory[2];
 
+uint32_t remote_value = 0;
+
 idsw_cpu_type_t __wrap_idsw_get_cpu_type()
 {
     return mock_type(idsw_cpu_type_t);
@@ -78,7 +80,7 @@ UINT __wrap__tx_thread_sleep(ULONG timer_ticks)
     if (update_remote_core_on_sleep)
     {
         // Simulate a remote core update on sleep
-        test_memory[1] = test_memory[0];
+        test_memory[1] = remote_value;
     }
 
     return mock_type(UINT);
@@ -175,6 +177,7 @@ SOS_TEST(wait_for_local_core_boot_stage_needed_scp_sleep_needed, test_setup, tes
 
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
     will_return(__wrap__tx_thread_sleep, TX_SUCCESS);
+    remote_value = STARTUP_AP_SOC_POWER_INIT_POST_SYNC;
     update_remote_core_on_sleep = true;
 
     startup_shutdown_boot_stage_t stage = {

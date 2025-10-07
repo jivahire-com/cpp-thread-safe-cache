@@ -306,6 +306,11 @@ void initialize_mock_fifos(void)
     }
 }
 
+void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
+{
+    check_expected_ptr(Request);
+}
+
 void __wrap_DfwkInterfaceInitialize(PDFWK_INTERFACE_HEADER Interface,
                                     PDFWK_DEVICE_HEADER Device,
                                     PDFWK_QUEUE DispatchQueue,
@@ -323,6 +328,19 @@ void __wrap_DfwkDeviceInitialize(PDFWK_DEVICE_HEADER Device, PDFWK_SCHEDULE Sche
 {
     check_expected_ptr(Device);
     check_expected_ptr(Schedule);
+}
+
+void __wrap_DfwkQueueInitialize(PDFWK_QUEUE Queue,
+                                PDFWK_DEVICE_HEADER Device,
+                                DFWK_ASYNC_REQUEST_DISPATCH DispatchRoutine,
+                                void* DispatchContext,
+                                DFWK_QUEUE_TYPE QueueType)
+{
+    check_expected_ptr(Queue);
+    check_expected_ptr(Device);
+    check_expected(DispatchRoutine);
+    check_expected_ptr(DispatchContext);
+    check_expected(QueueType);
 }
 
 int32_t __wrap_DfwkInterfaceSendSync(PDFWK_INTERFACE_HEADER Interface, PDFWK_SYNC_REQUEST_HEADER Request)

@@ -34,6 +34,7 @@ typedef struct {
 
 typedef struct __attribute__((aligned(4))) {
     DFWK_DEVICE_HEADER base_device;
+    DFWK_QUEUE dispatch_async_queue;
     DFWK_REQUEST_DISPATCH_SYNC dispatch_sync;
     bool initialized;
 

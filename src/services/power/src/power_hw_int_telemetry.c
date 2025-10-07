@@ -70,6 +70,9 @@ void power_telemetry_enable()
     sensor_fifo_svc_enable_fifo(SENSOR_FIFO_TILE_TEMPERATURE_TELEMETRY_HW);
     sensor_fifo_svc_enable_fifo(SENSOR_FIFO_TILE_VOLTAGE_TELEMETRY_HW);
     // sw fifos
+    // These are also enabled by the MCP FW, in the next boot stage, to ensure that the SCP and MCP
+    // are synchronized, even if an ICC Message is lost. If making any changes here please see
+    // scf_mhu_request_dispatch_async() and make the appropriate changes there as well.
     sensor_fifo_svc_enable_fifo(SENSOR_FIFO_PVT_TEMP_FW);
     sensor_fifo_svc_enable_fifo(SENSOR_FIFO_PVT_VOLTAGE_FW);
     sensor_fifo_svc_enable_fifo(SENSOR_FIFO_VR_TEMP_FW);

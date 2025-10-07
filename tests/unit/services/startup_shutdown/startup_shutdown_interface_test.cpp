@@ -109,6 +109,8 @@ SOS_TEST(sos_register_ssi, NULL, NULL)
     startup_ssi_registration_t test_registration;
     sos_interface_t test_interface;
 
+    // Add in a dispatch queue to validate the interface can handle an async request
+    test_interface.header.DispatchQueue = (PDFWK_QUEUE)0x1234;
     expect_value(__wrap_DfwkInterfaceSendSync, Interface, &test_interface.header);
     expect_any(__wrap_DfwkInterfaceSendSync, Request);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);

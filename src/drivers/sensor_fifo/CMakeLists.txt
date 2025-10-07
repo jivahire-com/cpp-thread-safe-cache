@@ -1,4 +1,8 @@
-# the driver is separated into two separate cmake libs
+#
+# Copyright (C) Microsoft Corporation. All rights reserved.
+#
+
+# The driver is separated into two separate cmake libs
 #  1. For future code re-use, a simple cmake variable could be set to select a variant of the device
 #  2. This ensures, there are no silicon dependencies in sensor_fifo_driver_inf which ensures it is portable to
 #     future devices
@@ -12,17 +16,17 @@ add_library(${TARGET_DRIVER}
 
 target_link_libraries(${TARGET_DRIVER}
     PUBLIC
-    fwlib.lib.status
+       fwlib.lib.status
 
     PRIVATE
-    fwlib.dfwk
-    fwlib.platform.dfwkhost.threadx
-    fwlib.lib.assert
-    fwlib.lib.interface.platform.errorhandler
-    fwlib.lib.utils
-    kng.device.scf_mhu
-    ms::lib::crash_dump
-    ms::lib::threadx
+        fwlib.dfwk
+        fwlib.platform.dfwkhost.threadx
+        fwlib.lib.assert
+        fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.utils
+        kng.device.scf_mhu
+        ms::lib::crash_dump
+        ms::lib::threadx
 )
 
 target_include_directories(${TARGET_DRIVER}
@@ -49,20 +53,21 @@ add_library(${TARGET_DEVICE}
 
 target_link_libraries(${TARGET_DEVICE}
     PUBLIC
-    fwlib.lib.status
+        fwlib.lib.status
 
     PRIVATE
-    fwlib.lib.assert
-    fwlib.dfwk
-    fwlib.lib.interface.platform.errorhandler
-    fwlib.platform.dfwkhost.threadx
-    fwlib.lib.utils
-    kng_silibs_platform
-    ms::lib::threadx
-    ms::lib::crash_dump
-    silibs_platform
-    silibs::sensor_ram_bridge
-    utils
+        fwlib.lib.assert
+        fwlib.dfwk
+        fwlib.lib.interface.platform.errorhandler
+        fwlib.platform.dfwkhost.threadx
+        fwlib.lib.utils
+        kng_silibs_platform
+        ms::client_interface::startup_shutdown
+        ms::lib::crash_dump
+        ms::lib::threadx
+        silibs_platform
+        silibs::sensor_ram_bridge
+        utils
 )
 
 target_include_directories(${TARGET_DEVICE}

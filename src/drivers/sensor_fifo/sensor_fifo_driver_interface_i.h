@@ -191,4 +191,19 @@ typedef struct
 
 /*--------- Function Prototypes ----------*/
 
-fpfw_status_t   scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request);
+/**
+ * @brief Dispatch a synchronous request to the SCF MHU device from DFWK
+ *
+ * @param[in] request Input request to process
+ * @return FPFW_STATUS_SUCCESS or an error code
+ */
+fpfw_status_t scf_mhu_request_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER request);
+
+/**
+ * @brief Dispatch an asynchronous request to the SCF MHU Device from DFWK
+ * 
+ * @param[in] Request Input request to process
+ * @param[in] Context Context for the asynchronous request
+ * @return None
+ */
+void scf_mhu_request_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context);

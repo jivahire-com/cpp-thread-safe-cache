@@ -44,6 +44,8 @@ static startup_shutdown_boot_stage_t scp_boot_stages[] = {
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_AP_SOC_POWER_INIT, DEFAULT_SOS_TIMEOUT_MS, false, false},
     // This stage is synced across dies (SCP <-> SCP) and across die local MSCP cores.
     {STARTUP_PHASE_MSCP_ASYNC, STARTUP_AP_SOC_POWER_INIT_POST_SYNC, DEFAULT_SOS_TIMEOUT_MS, true, true},
+    // This stage is synced across die local MSCP cores
+    {STARTUP_PHASE_MSCP_ASYNC, STARTUP_AP_SOC_POWER_INIT_POST_SYNC_SCF, DEFAULT_SOS_TIMEOUT_MS, true, false},
     {STARTUP_PHASE_AP_ASYNC, STARTUP_BL31_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_AP_ASYNC, STARTUP_STMM_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},
     {STARTUP_PHASE_AP_ASYNC, STARTUP_BL33_LOAD, DEFAULT_SOS_TIMEOUT_MS, false, false},

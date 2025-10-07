@@ -32,6 +32,7 @@ int32_t sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface, pstartup_ssi_regist
     FPFW_RUNTIME_ASSERT(p_interface != NULL);
     FPFW_RUNTIME_ASSERT(p_registration != NULL);
     FPFW_RUNTIME_ASSERT(p_ssi_interface != NULL);
+    FPFW_RUNTIME_ASSERT(p_ssi_interface->DispatchQueue != NULL); // must be a valid async interface
     startup_register_ssi_request request;
     request.header.RequestType = STARTUP_REGISTER_SSI_SYNC;
     request.p_registration = p_registration;

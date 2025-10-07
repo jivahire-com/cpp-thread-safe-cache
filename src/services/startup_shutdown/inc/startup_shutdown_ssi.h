@@ -52,6 +52,7 @@ typedef enum _ssi_startup_stage
     STARTUP_CLUSTER_CORE_INIT,
     STARTUP_AP_SOC_POWER_INIT,
     STARTUP_AP_SOC_POWER_INIT_POST_SYNC,
+    STARTUP_AP_SOC_POWER_INIT_POST_SYNC_SCF,
     STARTUP_PHASE_AP_ASYNC = 0x100, /* Phase included in cold boot and AP warm reset */
     STARTUP_BL31_LOAD,
     STARTUP_STMM_LOAD,

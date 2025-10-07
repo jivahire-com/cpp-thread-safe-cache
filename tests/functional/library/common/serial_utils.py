@@ -133,7 +133,7 @@ class SerialUtility:
                 dut_type = self.dut.get_dut_type()
             else:
                 raise ValueError("DUT instance is None")
-            if dut_type in [DeviceType.BIGFPGA, DeviceType.SVP]:
+            if dut_type in [DeviceType.BIGFPGA, DeviceType.SVP, DeviceType.RVP]:
                 if self.log:
                     self.log.info(f"Testing and opening channel for {dut_type}")
                 self.scp_channel.open()

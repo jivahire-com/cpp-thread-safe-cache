@@ -142,6 +142,8 @@ TEST_FUNCTION(test_soc_max_temperature_tile_peak, test_setup, test_teardown)
 
     setup_tile_temp_fifo(tile_temps_C);
     setup_soc_top_temp_fifo(soc_top_temps_C);
+    // Provide mock value for die1 temp read
+    will_return(__wrap_die_2_die_exch_ib_read_inst_max_die_temp_dC, expected_die1_peak_dC);
 
     // --- Execution ---
     data_proc_tlm_cmpnt_process_input_data();
@@ -194,6 +196,8 @@ TEST_FUNCTION(test_soc_max_temperature_top_sensor_peak, test_setup, test_teardow
 
     setup_tile_temp_fifo(tile_temps_C);
     setup_soc_top_temp_fifo(soc_top_temps_C);
+    // Provide mock value for die1 temp read
+    will_return(__wrap_die_2_die_exch_ib_read_inst_max_die_temp_dC, expected_die1_peak_dC);
 
     // --- Execution ---
     data_proc_tlm_cmpnt_process_input_data();
@@ -246,6 +250,8 @@ TEST_FUNCTION(test_soc_max_temperature_die1_peak, test_setup, test_teardown)
 
     setup_tile_temp_fifo(tile_temps_C);
     setup_soc_top_temp_fifo(soc_top_temps_C);
+    // Provide mock value for die1 temp read
+    will_return(__wrap_die_2_die_exch_ib_read_inst_max_die_temp_dC, expected_die1_peak_dC);
 
     // --- Execution ---
     data_proc_tlm_cmpnt_process_input_data();

@@ -19,6 +19,7 @@ set(SOURCES
     log_core_instantaneous_data_integration_test.cpp
     test_log_dimm_instantaneous_telemetry.cpp
     test_soc_max_temperature.cpp
+    test_log_inst_die_max_temp.cpp
     test_core_vm_throttling_priorities.cpp
     )
 

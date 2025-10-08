@@ -9,6 +9,7 @@
 extern "C"{
 extern bool in_setup_teardown;
 extern bool g_should_wrap_idsw_get_platform_sdv;
+extern bool g_should_wrap_ddr_create_memory_map;
 extern bool g_should_wrap_ddrss_get_ddrss_mask;
 
 int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry);
@@ -33,6 +34,8 @@ int __wrap_prod_ddrss_set_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NOD
 int __wrap_prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_sec_mem_vendor_t* ddr_cper);
 void __wrap_hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size);
 int __wrap_ddrss_bandwidth_limiter_config(uint32_t mc, bool enable, uint32_t max_acc_cost, uint32_t rd_wr_cost);
+void __wrap_ddr_create_memory_map();
+void __real_ddr_create_memory_map();
 
 bool __wrap_FPFwCoreInterruptIsEnabled(uint32_t irqnum);
 uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum);

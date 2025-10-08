@@ -66,6 +66,7 @@ mock_target(${TARGET}
     atu_unmap
     config_get_borgens_1gb_ddr_reserve_enable
     config_get_ddrmanager_bwl_polling_en
+    ddr_create_memory_map
     config_get_ras_init_en
     ddr_i3c_interface_read_spd_nvm_data
     ddr_i3c_interface_read_temp_sensor_mr_reg

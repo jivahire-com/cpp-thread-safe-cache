@@ -278,7 +278,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
 
-    // tx queue send DDR MEMORY MAP EVENT fails
+    // tx queue send DDR CREATE BDAT EVENT fails
     expect_any_always(__wrap__txe_queue_send, queue_ptr);
     expect_any_always(__wrap__txe_queue_send, source_ptr);
     expect_any_always(__wrap__txe_queue_send, wait_option);
@@ -290,7 +290,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
 
-    // tx queue send DDR MEMORY MAP EVENT passes
+    // tx queue send DDR BDAT CREATE EVENT passes
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
@@ -306,7 +306,6 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
 
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
-    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_MEMORY_MAP_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
 
     // tx queue send DDR SMBIOS EVENT fails
@@ -320,7 +319,6 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
 
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
-    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_MEMORY_MAP_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_SMBIOS_TABLES_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
@@ -336,7 +334,6 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
 
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
-    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_MEMORY_MAP_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_SMBIOS_TABLES_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
@@ -364,7 +361,6 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
 
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
-    will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_MEMORY_MAP_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_SMBIOS_TABLES_EVENT
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
@@ -374,15 +370,16 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     // Inside ddr_manager_i3c_init()
     will_return(__wrap_idhw_get_die_id, 0);
 
+    // will_return(__wrap_system_info_is_warm_start, false);
+
+    g_should_wrap_ddr_create_memory_map = true;
+    expect_function_call(__wrap_ddr_create_memory_map);
+
+    // hsp_send_ddr_init_notify()
+    will_return(__wrap_system_info_is_warm_start, true); // Skip fpfw_icc_base_send_recv_sync
+
     // Telemetry init
     expect_function_call(__wrap__txe_mutex_create);
-
-    size_t output_recv_bytes = 0;
-    kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY}};
-    will_return(__wrap_system_info_is_warm_start, false);
-    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &msg, sizeof(msg));
-    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     // Crash dump pre-dump callback init
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
@@ -392,6 +389,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     {
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
+    g_should_wrap_ddr_create_memory_map = false;
 }
 
 TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
@@ -409,12 +407,6 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
 
     will_return(__wrap_system_info_is_warm_start, false);
-
-    // DDR_CREATE_MEMORY_MAP_EVENT
-    expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx.work_queue);
-    expect_any(__wrap__txe_queue_send, source_ptr);
-    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
-    will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
     // DDR_CREATE_BDAT_EVENT
     expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx.work_queue);
@@ -456,6 +448,12 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     // Inside ddr_manager_i3c_init()
     will_return(__wrap_idhw_get_die_id, 0);
 
+    g_should_wrap_ddr_create_memory_map = true;
+    expect_function_call(__wrap_ddr_create_memory_map);
+
+    // hsp_send_ddr_init_notify()
+    will_return(__wrap_system_info_is_warm_start, true); // Skip fpfw_icc_base_send_recv_sync for unit test
+
     // Telemetry init
     expect_function_call(__wrap__txe_mutex_create);
 
@@ -463,14 +461,8 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     crash_dump_init(&context);
 
-    size_t output_recv_bytes = 0;
-    kng_hsp_mailbox_msg msg = {.header = {.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY}};
-    will_return(__wrap_system_info_is_warm_start, false);
-    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &msg, sizeof(msg));
-    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes, &output_recv_bytes, sizeof(output_recv_bytes));
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
+    g_should_wrap_ddr_create_memory_map = false;
 }
 
 void tx_queue_copy_parameter(void* p)
@@ -494,8 +486,6 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
 
     will_return(__wrap_system_info_is_warm_start, true);
-
-    // Do not expect DDR_CREATE_MEMORY_MAP_EVENT
 
     // Do not expect DDR_CREATE_BDAT_EVENT
 
@@ -525,17 +515,21 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
     // will_return(__wrap__txe_timer_create, TX_SUCCESS);
     will_return(__wrap_idhw_get_die_id, DIE_0);
 
+    g_should_wrap_ddr_create_memory_map = true;
+    expect_function_call(__wrap_ddr_create_memory_map);
+
+    // hsp_send_ddr_init_notify()
+    will_return(__wrap_system_info_is_warm_start, true); // Skip fpfw_icc_base_send_recv_sync
+
     // Telemetry init
     expect_function_call(__wrap__txe_mutex_create);
-
-    // Do not expect hsp_send_ddr_init_notify
-    will_return(__wrap_system_info_is_warm_start, true);
 
     // Crash dump pre-dump callback init
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     crash_dump_init(&context);
 
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
+    g_should_wrap_ddr_create_memory_map = false;
 }
 
 TEST_FUNCTION(ddr_timer_cb_success, NULL, NULL)

@@ -34,12 +34,15 @@
 
 /*-------- Function Prototypes -----------*/
 static void crash_dump_predump_cb(void* ctx);
+static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx);
 
 /*-- Declarations (Statics and globals) --*/
 static uint32_t ddrss_interrupt_id[6] = {0, 1, 2, 3, 4, 5};
 static void enable_i3c_dimm_polling_timer(void);
 ddr_service_context_t* ddr_service_ctx;
 ddr_service_config_t* ddr_service_config;
+fpfw_icc_base_ctx_t* ddr_icc_ctx = NULL;
+fpfw_icc_base_send_recv_req_t icc_params;
 
 /*-------------- Functions ---------------*/
 ddr_service_context_t* ddr_get_service_context(void)
@@ -73,10 +76,6 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
             switch ((DDR_MANAGER_MESSAGE_TYPE)received_message)
             {
-            case DDR_CREATE_MEMORY_MAP_EVENT:
-                ddr_create_memory_map();
-                break;
-
             case DDR_CREATE_BDAT_EVENT:
                 ddr_create_bdat();
                 break;
@@ -204,18 +203,27 @@ static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)
     kng_hsp_mailbox_msg msg = {
         .header.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY,
     };
-    //! Send the message to HSP & get response, blocking call
-    DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_SENDING_DDR_MESSAGE_TO_HSP);
 
-    fpfw_status_t icc_status =
-        fpfw_icc_base_send_recv_sync(icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+    if ((system_info_is_hsp_present() && !system_info_is_warm_start()))
+    {
+        printf("Sending DDR init done notify to HSP...\n");
+        //! Send the message to HSP & get response, blocking call
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_SENDING_DDR_MESSAGE_TO_HSP);
 
-    //! Verify sync return status & response message
-    BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
-    BUG_ASSERT(recv_msg_size_bytes > 0);
-    BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY_RSP);
-    BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
-    DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_DDR_MESSAGE_TO_HSP_SENT);
+        fpfw_status_t icc_status =
+            fpfw_icc_base_send_recv_sync(icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+
+        //! Verify sync return status & response message
+        BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+        BUG_ASSERT(recv_msg_size_bytes > 0);
+        BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY_RSP);
+        BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_DDR_MESSAGE_TO_HSP_SENT);
+    }
+    else
+    {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_NO_HSP_DETECTED, ET_NOPARAM);
+    }
 }
 
 /**
@@ -257,14 +265,6 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     if (!system_info_is_warm_start())
     {
-        work_queue_msg = DDR_CREATE_MEMORY_MAP_EVENT;
-        status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
-        if (status != TX_SUCCESS)
-        {
-            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_CREATE_MMAP, status);
-            FPFwErrorRaise(status, 0, 0, 0, 0);
-        }
-
         work_queue_msg = DDR_CREATE_BDAT_EVENT;
         status = tx_queue_send((TX_QUEUE*)&pddr_service_ctx->work_queue, &work_queue_msg, TX_NO_WAIT);
 
@@ -326,15 +326,10 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     DDR_LOG_CRIT("DDR init, die_num: [%u]\n", die_id);
     prod_ddrss_lib_init(die_id);
 
+    ddr_create_memory_map(); // Includes publishing the memory map to SDS
+    hsp_send_ddr_init_notify(icc_ctx);
+
     ddr_init_telemetry();
-    if (system_info_is_hsp_present() && (!system_info_is_warm_start()))
-    {
-        hsp_send_ddr_init_notify(icc_ctx);
-    }
-    else
-    {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_NO_HSP_DETECTED, ET_NOPARAM);
-    }
 
     // Add crash dump pre-dump callback to check DDR RAS for UE
     crash_dump_register_pre_dump_callback(crash_dump_predump_cb, NULL, CRASH_DUMP_TYPE_FULL);

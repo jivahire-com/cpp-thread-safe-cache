@@ -20,7 +20,6 @@
 /*-------------- Typedefs ----------------*/
 typedef enum
 {
-    DDR_CREATE_MEMORY_MAP_EVENT,
     DDR_CREATE_BDAT_EVENT,
     DDR_CREATE_SMBIOS_TABLES_EVENT,
     DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT,

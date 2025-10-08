@@ -29,6 +29,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 bool g_should_wrap_idsw_get_platform_sdv = false;
+bool g_should_wrap_ddr_create_memory_map = false;
 bool g_should_wrap_ddrss_get_ddrss_mask = false;
 
 /*------------- Functions ----------------*/
@@ -227,6 +228,19 @@ int __wrap_ddrss_bandwidth_limiter_config(uint32_t mc, bool enable, uint32_t max
     FPFW_UNUSED(max_acc_cost);
     FPFW_UNUSED(rd_wr_cost);
     return mock_type(int);
+}
+
+void __wrap_ddr_create_memory_map()
+{
+    if (g_should_wrap_ddr_create_memory_map)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ddr_create_memory_map();
+    }
+    return;
 }
 
 uint16_t __wrap_ddrss_get_ddrss_mask(void)

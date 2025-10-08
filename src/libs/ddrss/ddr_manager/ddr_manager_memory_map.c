@@ -157,7 +157,8 @@ void ddr_create_memory_map()
         DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 1);
     }
 
-    // Pass to TF-A in Shared SRAM via SDS structure service
+    // Pass to TF-A in Shared SRAM via SDS structure service.
+    // This is a prterequisite before notifying HSP that DDR init is complete.
     if (MemoryMapPassToTFA(p_outgoing_memory_map) != DFWK_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_USING_SDS_STRUCTURE, ET_NOPARAM);

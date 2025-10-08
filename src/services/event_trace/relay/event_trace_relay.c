@@ -587,7 +587,7 @@ fpfw_status_t decode_validate_buffer_metadata(etr_service_request_t* p_request)
 
     /* Extract Buffer Address and Size from the Core Buffer Header */
     PFPFW_ET_CORE_BUFFER_HEADER p_etc_header = (PFPFW_ET_CORE_BUFFER_HEADER)p_request->buffer_addr;
-    p_request->buffer_size_bytes = p_etc_header->BufferSize;
+    p_request->buffer_size_bytes = p_etc_header->UsedBytes;
 
     /* Print the Event Trace Buffer Header metadata */
     FPFW_DBGPRINT_VERBOSE("[ETR] Event Trace Buffer Header Metadata:\n \

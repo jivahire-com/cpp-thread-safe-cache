@@ -346,7 +346,7 @@ FPFW_ET_CORE_BUFFER_HEADER fake_core_buffer = {
     .ControllerId = 0,
     .BufferId = 0,
     .BufferSize = 1024,
-    .UsedBytes = 0,
+    .UsedBytes = 1000,
     .LostEvents = 0,
 };
 
@@ -527,7 +527,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup,
 
     // Fake out the active buffer to be full
     ddr_buffer_info_t* p_old_asic_buffer = s_test_context.p_active_asic_buffer;
-    p_old_asic_buffer->buffer.asic.asic_header.UsedBytes = ASIC_BUFFER_PAYLOAD_SIZE - sizeof(asic_buffer_info_t);
+    p_old_asic_buffer->buffer.asic.asic_header.UsedBytes = p_old_asic_buffer->buffer.asic.asic_header.BufferSize;
 
     fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
 
@@ -578,7 +578,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup,
 
     // Fake out the active buffer to be full
     ddr_buffer_info_t* p_old_asic_buffer = s_test_context.p_active_asic_buffer;
-    p_old_asic_buffer->buffer.asic.asic_header.UsedBytes = ASIC_BUFFER_PAYLOAD_SIZE - sizeof(asic_buffer_info_t);
+    p_old_asic_buffer->buffer.asic.asic_header.UsedBytes = p_old_asic_buffer->buffer.asic.asic_header.BufferSize;
 
     fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
 
@@ -635,7 +635,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
     {
         s_test_context.ddr_buffers[i].state = ETR_DDR_BUFFER_STATE_PENDING;
         s_test_context.ddr_buffers[i].buffer.asic.asic_header.UsedBytes =
-            ASIC_BUFFER_PAYLOAD_SIZE - sizeof(asic_buffer_info_t);
+            s_test_context.ddr_buffers[i].buffer.asic.asic_header.BufferSize;
     }
 
     // Setup the active buffer to be active

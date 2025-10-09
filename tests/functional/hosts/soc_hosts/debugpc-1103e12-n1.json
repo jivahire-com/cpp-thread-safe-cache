@@ -2,6 +2,15 @@
     "id": "DEBUGPC-1103E12-N1",
     "ip": "DEBUGPC-1103E12-N1",
     "type": "rvp",
+    "node_id": 25,
+    "rack_scm": {
+        "host": "172.29.89.33",
+        "credential": {
+            "service": "account",
+            "username": "root",
+            "keyring_name": "rack_manager_host_pwd"
+        }
+    },
     "connections": {
         "mb": {
             "node_0": {
@@ -97,7 +106,35 @@
                     }
                 },
                 "dcscm": {
-                    "is_present": false
+                    "is_present": true,
+                    "bmc": {
+                        "ssh": {
+                            "host": "172.17.0.97",
+                            "port": 8391,
+                            "credential": {
+                                "service": "account",
+                                "username": "admin",
+                                "keyring_name": "bmc_admin_password"
+                            },
+                            "forwarding": {
+                                "host": "172.29.89.33",
+                                "credential": {
+                                    "service": "account",
+                                    "username": "root",
+                                    "keyring_name": "rack_manager_host_pwd"
+                                },
+                                "remote_port": 2200
+                            },
+                            "privilege_mode": {
+                                "enabled": true,
+                                "credential": {
+                                    "service": "account",
+                                    "username": "admin",
+                                    "keyring_name": "bmc_privmode_password"
+                                }
+                            }
+                        }
+                    }
                 },
                 "comport_uart_mapping": {
                     "COM24": 0,

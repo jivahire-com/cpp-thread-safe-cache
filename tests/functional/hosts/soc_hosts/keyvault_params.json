@@ -1,0 +1,21 @@
+{
+    "keyring_vars": [],
+    "keyvault_secrets": [
+        {
+            "keyring_name": "rack_manager_host_pwd",
+            "keyvault_name": "rack-manager-host-pwd"
+        },
+        {
+            "keyring_name": "redmond\\chie-1pfw-automation",
+            "keyvault_name": "chie-1pfw-service-account-pwd"
+        },
+        {
+            "keyring_name": "bmc_admin_password",
+            "keyvault_name": "bmc-admin-password"
+        },
+        {
+            "keyring_name": "bmc_privmode_password",
+            "keyvault_name": "bmc-privmode-password"
+        }
+    ]
+}

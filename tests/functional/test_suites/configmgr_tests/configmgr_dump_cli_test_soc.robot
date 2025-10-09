@@ -14,7 +14,7 @@ Library     library.configmgr_tests.configmgr_dump_cli_test
 ...         workspace_config=${WORKSPACE_CONFIG}
 ...         default_log_home=${LOG_DIR}
 ...         fw_payload_path=${PAYLOAD_DIR}
-...         host_config=${HOST_CONFIG_DIR}/debugpc-1103e12-n1.json
+...         host_config=${HOST_CONFIG_DIR}/${HOST_FILE_NAME}
 ...         WITH NAME    configmgr_dump_cli_test_lib
 
 *** Test Cases ***

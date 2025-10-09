@@ -10,7 +10,7 @@ Library     library.avs_tests.scp_avs_read_test_die0
 ...         workspace_config=${WORKSPACE_CONFIG}
 ...         default_log_home=${LOG_DIR}
 ...         fw_payload_path=${PAYLOAD_DIR}
-...         host_config=${HOST_CONFIG_DIR}/debugpc-1103e12-n1.json
+...         host_config=${HOST_CONFIG_DIR}/${HOST_FILE_NAME}
 ...         WITH NAME    avs_read_test_lib
 
 *** Test Cases ***

@@ -11,6 +11,18 @@ variables:
 - name: OfficialBuild
   value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
 
+- name: tdk_repo_name
+  value: pythia_tdks
+- name: azure_subscription
+  value: "Test Firmware Central 2-Woodinville"
+- name: nuget_service_connections
+  value: ""
+- name: keyvault_name
+  value: "chie-1pfw"
+- name: tdk_repo_name
+  value: "$(System.DefaultWorkingDirectory)/"
+
+
 # Build stage
 stages:
 - stage: Build_Arm_EABI_AARCH_Debug
@@ -104,6 +116,11 @@ stages:
       TestPlan: .\tests\functional\test_plan\soc_dual_die_test_plan.args
       TestVehicleCapability: 'SocDualDie'
       Pool: '1pfw-kingsgate-soc'
+      tdk_repo_name: ${{ variables.tdk_repo_name }}
+      azure_subscription: ${{ variables.azure_subscription }}
+      nuget_service_connections: ${{ variables.nuget_service_connections }}
+      keyvault_name: ${{ variables.keyvault_name }}
+
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote

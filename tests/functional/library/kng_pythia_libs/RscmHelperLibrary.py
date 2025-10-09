@@ -3,7 +3,7 @@ import paramiko
 from robot.api.deco import keyword
 
 class RscmHelperLibrary:
-    def __init__(self, rm_host, rm_user, rm_password, bmc_host, bmc_user, bmc_password, node=25, port=2200):
+    def __init__(self, rm_host, rm_user, rm_password, bmc_host, bmc_user, bmc_password, node, port=2200):
         self.rm_host = rm_host
         self.rm_username = rm_user
         self.rm_password = rm_password

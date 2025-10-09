@@ -13,6 +13,17 @@ parameters:
 variables:
 - group: ef-pipeline-config-azurekv    # Centralized PAT Library Group
 
+- name: tdk_repo_name
+  value: pythia_tdks
+- name: azure_subscription
+  value: "Test Firmware Central 2-Woodinville"
+- name: nuget_service_connections
+  value: ""
+- name: keyvault_name
+  value: "chie-1pfw"
+- name: tdk_repo_name
+  value: "$(System.DefaultWorkingDirectory)/"
+
 # One Branch Variables
 - name: system.debug
   value: ${{ parameters.debug }}
@@ -116,6 +127,10 @@ extends:
           TestPlan: .\tests\functional\test_plan\soc_dual_die_test_plan.args
           TestVehicleCapability: 'SocDualDie'
           Pool: '1pfw-kingsgate-soc'
+          tdk_repo_name: ${{ variables.tdk_repo_name }}
+          azure_subscription: ${{ variables.azure_subscription }}
+          nuget_service_connections: ${{ variables.nuget_service_connections }}
+          keyvault_name: ${{ variables.keyvault_name }}
 
     - stage: Build_Unit_Test_x86
       dependsOn: []

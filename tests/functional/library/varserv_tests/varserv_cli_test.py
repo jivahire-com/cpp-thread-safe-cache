@@ -7,6 +7,7 @@
 import time
 import sys, os
 import subprocess
+import json
 from pathlib import Path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs'))
@@ -81,7 +82,7 @@ class varserv_cli_test(EchoFallsBaseTest):
             self.log.warning("Device type is RVP. Performing SoC Reset ...")
             cred_path = os.environ.get('SECURE_FILE_PATH')
             creds = self.load_credentials_from_yaml(cred_path)
-            rscm_helper = RscmHelperLibrary(rm_host="172.29.89.33", bmc_host="172.17.0.97", rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'])  # Fill in real host if available
+            rscm_helper = RscmHelperLibrary(rm_host=self.host_config.rack_scm.host, bmc_host=self.dut.mb.node_0.dcscm.bmc.ip, rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'], node=self.host_config.node_id)
             rscm_helper.rscm_soc_reset()
             
         scp_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()

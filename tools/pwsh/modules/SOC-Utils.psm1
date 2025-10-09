@@ -11,7 +11,8 @@ Get-SOCSshIp 'A15-R3'
 #>
 function Get-SOCSshIp {
     param (
-        [string]$PCName
+        [string]$PCName,
+        [switch]$AsJson
     )
 
     # Define an array of hashtables with PC Name and DC-SCM IP
@@ -21,7 +22,9 @@ function Get-SOCSshIp {
         @{ "PC Name" = "B20-B2";  "IsRM" = $false; "DC-SCM IP" = "M1120-SCM-393.svceng.com" },
         @{ "PC Name" = "G10-B2";  "IsRM" = $false; "DC-SCM IP" = "M1120-SCM-351.svceng.com" },
         @{ "PC Name" = "J10-R5";  "IsRM" = $false; "DC-SCM IP" = "M1120-SCM-392.svceng.com" },
-        @{ "PC Name" = "E12-N1";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.97";  "RM IP" = "172.29.89.33"; "Node ID" = "25"}
+        @{ "PC Name" = "DEBUGPC-1103E12-N1";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.97";  "RM IP" = "172.29.89.33"; "Node ID" = "25"},
+        @{ "PC Name" = "K03-N1";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.17";  "RM IP" = "10.127.114.140"; "Node ID" = "5"},
+        @{ "PC Name" = "C41431157B0204A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.21";  "RM IP" = "172.29.131.24"; "Node ID" = "6"}
     )
 
     # Find the matching PC Name and return both IsRM and IP
@@ -29,14 +32,14 @@ function Get-SOCSshIp {
 
     if ($entry) {
         if ($entry."IsRM") {
-            return @{
+            $return = @{
                 IsRm  = $true
                 RmIp  = $entry."RM IP"
                 BmcIp = $entry."DC-SCM IP"
                 NodeID = $entry."Node ID"
             }
         } else {
-            return @{
+            $return = @{
                 IsRM = $false
                 RmIp  = "na"
                 BmcIp = $entry."DC-SCM IP"
@@ -44,13 +47,19 @@ function Get-SOCSshIp {
             }
         }
     } else {
-        return @{
+        $return = @{
             IsRM  = $false
             RmIp  = "na"
             BmcIp = "na"
             NodeID = "na"
         }
     }
+    if ($AsJson) {
+        Write-Output ($return | ConvertTo-Json -Compress)
+    } else {
+        return $return
+    }
+
 }
 
 <#
@@ -119,7 +128,6 @@ Function Write-SOCFlash(
 
     $is_rm = $result.IsRM
     $nodeid = $result.NodeID
-
     $bmcip = $result.BmcIp
     $bmcuser = $cred.BMC_USER
     $bmcpw = $cred.BMC_PASSWORD
@@ -190,7 +198,7 @@ Function Write-SOCFlash(
             Write-Host -ForegroundColor Blue "Dest  : ${rmip}:$rmdest"
             Write-host ""
 
-            # Check if Posh-SSH module is available
+            # Try installing Posh-SSH
             if (-not (Get-InstalledModule -Name Posh-SSH -ErrorAction SilentlyContinue)) {
                 Write-Host -ForegroundColor Yellow "Posh-SSH module not found. Installing..."
                 try {

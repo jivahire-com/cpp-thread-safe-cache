@@ -47,6 +47,7 @@ Function Invoke-Pythia(
     [Parameter(Mandatory=$true)] [string] $test,
     [Parameter(Mandatory=$true)] [ValidateSet('svp', 'fpga', 'soc')] [string] $platform = "svp",
     [Parameter(Mandatory=$false)] [string] $ifwi = "$env:REPO_APP_BUILD_DIR/Debug/arm-eabi-aarch/bin/flash/kingsgate.ifwi.svp.debug.custom.dat",
+    [Parameter(Mandatory=$false)] [string] $TrimmedAgentName,
     [Parameter(Mandatory=$false)] [string] $hostjson = "hsp_scp_bl_embed_fw.json"
 )
 {
@@ -84,6 +85,18 @@ Function Invoke-Pythia(
         }
     } elseif ($platform -eq "fpga") {
         $env:IFWI_TEST_FILE = "Applicable for SVP only. For FPGA, the IFWI is pre-programmed."
+    }
+
+    # Check whether agent with Node1 or Node2 is used if SoC
+    if ($platform -eq "soc") {
+        Write-Host "SoC Agent Name: $TrimmedAgentName"
+        if ($TrimmedAgentName -match 'DEBUGPC-1103E12-N1') {
+            $hostfilename = "debugpc-1103e12-n1.json"
+        } elseif ($TrimmedAgentName -match 'C41431157B0204A') {
+            $hostfilename = "C41431157B0204A.json"
+        } else {
+            Write-Error "Invalid Node for SoC platform: $TrimmedAgentName"
+        }
     }
 
     # Read include/exclude tags from JSON if CLI parameter is empty
@@ -179,6 +192,7 @@ Function Invoke-Pythia(
         --variable LOG_DIR:"$test_results_dir" `
         --variable PAYLOAD_DIR:"$recipe_payload_dir" `
         --variable HOST_CONFIG_DIR:"$test_results_dir" `
+        --variable HOST_FILE_NAME:"$hostfilename" `
         --debugfile rlog.txt  `
         --outputdir $test_results_dir `
         --listener "${env:REPO_APP_PATH_python.win64}\tools\Lib\site-packages\pythia\tdk\rrm\listener\listener_verbosity.py;Debug"  `
@@ -196,6 +210,7 @@ Function Invoke-Pythia(
         --variable LOG_DIR:"$test_results_dir" `
         --variable PAYLOAD_DIR:"$recipe_payload_dir" `
         --variable HOST_CONFIG_DIR:"$test_results_dir" `
+        --variable HOST_FILE_NAME:"$hostfilename" `
         --debugfile rlog.txt  `
         --outputdir $test_results_dir `
         --listener "${env:REPO_APP_PATH_python.win64}\tools\Lib\site-packages\pythia\tdk\rrm\listener\listener_verbosity.py;Debug"  `

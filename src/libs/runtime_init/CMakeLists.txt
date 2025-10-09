@@ -375,6 +375,7 @@ target_link_libraries(
         ms::service::event_trace::relay
         ms::service::event_trace::etc_etd
         ms::service::event_trace::et_mts_clnt
+        ms::service::afm::cli
         ms::service::gpio::cli
         ms::service::mem::cli
         ms::service::mts

@@ -1,21 +1,17 @@
-# UART CLI Command Reference
+# UART AFM CLI Command Reference
 
 This document provides detailed usage, background, and examples for all UART-related CLI commands available in the firmware. It is intended to answer common questions and eliminate confusion about AFM, die assignment, and ownership APIs.
 
 There are some new APIs added to support check for invalid configs and get config, set single UART etc. but exisitng uart_afm and uart_die support basic AFM select and die switching.
 
-Switch to MCP from HSP for both Die (UART0), use MCP CLI to switch Die for UART1 and UART2 to avoid losing access to SCP shared UART CLI.
+All commands are to be run on MCP Die 0. MCP Die 1 also supports all commands as backup.
 
 ```
 Value x, y, z as per valid combinations list (at the end of this page)
-uart_afm 1 x y z in Die 0 to switch from HSP to MCP
-uart_afm 1 x y z in Die 1
-uart_die 1 0 in Die 0 CLI
-uart_die 1 0 in Die 1 CLI
+uart_afm 0 1 x y z in to switch from HSP Die 0 to MCP Die 0 on UART 0
+uart_afm 1 1 x y z in to switch from HSP Die 1 to MCP Die 1 on UART 5
+uart_die 0 1 1 to route UART1 and UART2 to Die 1
 ```
-
-
-This will enable UART2 to Die 0 and UART1 to Die 1.
 
 ---
 
@@ -58,30 +54,34 @@ Possible Configurations :
 
 ## Command Summary
 
-| Command            | Description                                 | Usage Example        |
-|--------------------|---------------------------------------------|----------------------|
-| uart_afm           | Set UART AFM (all UARTs)                    | `uart_afm 0 2 x x`   |
-| uart_die           | Set UART die configuration                  | `uart_die 0 1`       |
-| uart_get_ownership | Get UART ownership                          | `get_uart_ownership` |
-| uart_get_afm       | Get UART AFM                                | `get_uart_afm`       |
-| get_mux_table      | Print the UART Mux Table                    | `get_mux_table`      |
+| Command            | Description                                 | Usage Example          |
+|--------------------|---------------------------------------------|------------------------|
+| uart_afm           | Set UART AFM (all UARTs)                    | `uart_afm 0 0 2 x x`   |
+| uart_die           | Set UART die configuration                  | `uart_die 0 1`         |
+| uart_get_ownership | Get UART ownership                          | `get_uart_ownership`   |
+| uart_get_afm       | Get UART AFM                                | `get_uart_afm`         |
+| get_mux_table      | Print the UART Mux Table                    | `get_mux_table`        |
 
 ---
 
 ## Command Details and Usage
 
 ### uart_afm
+
 Set the AFM (Alternate Function Mapping) for all UARTs. This determines which core/function is mapped to each UART. **This update is temporary and is lost on reset**
-- **Usage:** `uart_afm <afm_u0> <afm_u1> <afm_u2> <afm_u3>`
-- **Arguments:** Each argument is a mux value (0-3), mapping to a core. Refer the MUX table for reference. 
-- **Example:** `uart_afm 0 2 1 x`
+
+- **Usage:** `uart_afm <die_num> <afm_u0> <afm_u1> <afm_u2> <afm_u3>`
+- **Arguments:** Each afm argument is a mux value (0-3), mapping to a core. Refer the MUX table for reference.
+- **Example:** `uart_afm 0 0 2 1 x`
 - **Notes:**
   - Invalid or conflicting mappings will be rejected. This is to ensure 2 UARTs are not mapped to the same Core, which will cause CLI input to freeze.
-  - This API takes `x` as a positional input if you wish to leave a mux value unchanged.
+  - This API takes `x` as a positional input if you wish to leave a mux value unchanged. However, there is a mandatory value for `die_num`, either `0` or `1`.
   - Use `get_uart_afm` to verify the new mapping.
 
 ### uart_die
+
 Set the die assignment for UART1 and UART2. This controls which die owns each shared UART. **This update is temporary and is lost on reset**
+
 - **Usage:** `uart_die <die_id_u1> <die_id_u2>`
 - **Arguments:** Each argument is a die ID (0 or 1 for KNG).
 - **Example:** `uart_die 0 1` (UART1 routed to die 0, UART2 to die 1)
@@ -90,21 +90,17 @@ Set the die assignment for UART1 and UART2. This controls which die owns each sh
   - Only shared UARTs can have their die assignment changed (UART 1 and UART 2).
   - Use `get_uart_ownership` to verify ownership after setting, if needed.
 
-### uart_ownership
-Set the ownership for UART1 and UART2 in one command. **This is a temporary change.**
-- **Usage:** `uart_ownership <uart1_own> <uart2_own>`
-- **Arguments:** 0 or 1 for each UART (die ID)
-- **Example:** `uart_ownership 1 0`, Current Die owns UART1 but not UART2
-- **Notes:**
-  - Use this in other Die as well to set uart_ownership 0 1, to release the UART
-
 ### get_uart_ownership
+
 Query the die routing for UART1 and UART2.
+
 - **Usage:** `get_uart_ownership`
 - **Output:** Shows which die is currently routed to each shared UART.
 
 ### get_uart_afm
+
 Query the current AFM settings for all UARTs.
+
 - **Usage:** `get_uart_afm`
 - **Output:** Shows the AFM value for each UART (0-3).
 
@@ -119,9 +115,9 @@ Query the current AFM settings for all UARTs.
 - **What happens if I set an invalid or conflicting mapping?**
   - The command will fail and print an error.
 - **Are changes persistent?**
-  - No. All changes via gpio CLI commands are temporary. Use `cfg_mgr_set` to update knobs for persistent changes.
+  - No. All changes via afm CLI commands are temporary. Use `cfg_mgr_set` to update knobs for persistent changes.
 - **How do I restore defaults?**
-  - For changes made via the gpio CLI, reset the SoC to restore defaults.
+  - For changes made via the afm CLI, reset the SoC to restore defaults.
 - **How do I debug if a UART is not responding?**
   - Use `uart_get_afm` and `get_uart_ownership` to check current settings. Use `get_mux_table` to fetch the mux table for reference.
 
@@ -129,10 +125,13 @@ Query the current AFM settings for all UARTs.
 
 ## Example Scenarios
 
-- **Change all UART AFM mappings:**
-  ```
-  uart_afm 0 2 1 1
-  ```
+- **Change all UART AFM mappings on a die:**
+  
+```
+  uart_afm 0 0 2 1 1 // For die 0
+  uart_afm 1 0 2 1 1 // For die 1
+```
+
 - **Change only UART2 AFM:**
   ```
   uart_afm x x 2 x
@@ -154,6 +153,7 @@ Query the current AFM settings for all UARTs.
 ---
 
 ## Additional References
+
 - Silicon debug user guide (for core/die/AFM mapping tables)
 - Firmware release notes (for any changes to CLI API or mapping rules)
 - Contact the firmware team for edge cases or advanced debug scenarios.

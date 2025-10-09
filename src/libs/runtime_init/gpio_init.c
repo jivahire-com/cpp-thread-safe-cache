@@ -10,6 +10,11 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
+
+#ifdef MCP_RUNTIME_INIT
+    #include <afm_cli.h>
+#endif
+
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h> // for FPFW_INIT_COMPONENT
@@ -170,6 +175,16 @@ FPFW_INIT_COMPONENT(gpio_cli, FPFW_INIT_DEPENDENCIES("gpio_dev", "cli"))
     gpio_interface_init(&gpio_interface);
 
     gpio_cli_init(&gpio_interface);
+
+#ifdef MCP_RUNTIME_INIT
+    /**
+     * Initialize the remote GPIO CLI for MCP.
+     * This is performed only on MCP because:
+     * 1. MCP Die 0 has a persistent connection on UART3 to the debug PC, unmuxed with any other core.
+     * 2. Saves precious code space on SCP
+     */
+    afm_cli_init();
+#endif
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

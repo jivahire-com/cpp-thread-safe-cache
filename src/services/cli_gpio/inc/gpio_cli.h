@@ -19,4 +19,13 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
+
+/**
+ * @brief Initialize GPIO CLI on both SCP and MCP
+ * 
+ * This function should be called after gpio is initialized.
+ * @param gpio_iface The GPIO interface to use for CLI commands
+ * 
+ * @return void
+ */
 void gpio_cli_init(pgpio_interface_t gpio_iface);

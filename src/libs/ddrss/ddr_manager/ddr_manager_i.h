@@ -69,11 +69,11 @@ ddrss_memory_region_t* ddr_manager_get_outgoing_memory_map();
 void ddr_init_telemetry(void);
 
 /**
- * @brief Polls the DIMMs for telemetry data.
+ * @brief Reads the DIMMs temperature sensors.
  * 
- * This function polls the DIMMs to retrieve telemetry data.
+ * This function polls the DIMMs to retrieve temperature sensor data.
  */
-void ddr_poll_dimms(void);
+void ddr_read_dimm_temperatures(void);
 
 /**
  * @brief Checks the DIMM temperature thresholds.
@@ -100,6 +100,10 @@ void ddr_telemetry_update_dimm_temp(uint8_t dimm_idx, uint8_t ts_idx, ddr_manage
  * @return The temperature of the DIMM.
  */
 ddr_manager_i3c_temperature_t ddr_telemetry_get_dimm_temp(uint8_t dimm_idx, uint8_t ts_idx);
+
+void ddr_read_dimm_power(void);
+void ddr_telemetry_update_dimm_power(uint8_t dimm_idx, uint16_t power_mW);
+uint16_t ddr_telemetry_get_dimm_power(uint8_t dimm_idx);
 
 /**
  * @brief Reports the telemetry data for DIMMs.
@@ -161,3 +165,10 @@ void ddr_publish_prm_addr_trans_cfg();
 void enable_ecc_ce_polling_timer();
 void ecc_ce_timer_cb(ULONG pddr_service_ctx);
 void ddr_poll_ecc_ce_errors();
+
+void ddr_bwl_residency_add_ticks(uint32_t ticks);
+uint32_t ddr_bwl_residency_get_ticks(void);
+uint16_t gtimer_ticks_to_ms(uint32_t ticks);
+void ddr_bwl_residency_reset(void);
+void set_last_gtimer_count(uint64_t count);
+uint64_t get_last_gtimer_count(void);

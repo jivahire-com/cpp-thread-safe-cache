@@ -104,18 +104,20 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                 ddr_publish_prm_addr_trans_cfg();
                 break;
 
-            case DDR_POLL_DIMMS_I3C_EVENT:
-                ddr_poll_dimms();
+            case DDR_POLL_DIMMS_I3C_TEMPERATURE_AND_POWER_EVENT:
+                ddr_read_dimm_temperatures();
                 check_dimm_temp_thresholds();
+                ddr_read_dimm_power();
+                ddr_telemetry_report();
+                break;
+
+            case DDR_POLL_DIMMS_I3C_POWER_EVENT:
+                ddr_read_dimm_power();
                 ddr_telemetry_report();
                 break;
 
             case DDR_POLL_ECC_CE_EVENT:
                 ddr_poll_ecc_ce_errors();
-                break;
-
-            case DDR_I3C_DATA_READY_EVENT:
-                // This should be triggered by an async. completion notification from the DDR I3C driver / dfwk
                 break;
 
             default:
@@ -182,10 +184,25 @@ void enable_ecc_ce_polling_timer(void)
 // Timer CB for DIMM temperature sensors & PMIC power register polling
 void ddr_timer_cb(ULONG pddr_service_ctx)
 {
-    ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
-    uint32_t msg_dimm_polling = DDR_POLL_DIMMS_I3C_EVENT;
+    static int every_other = 0;
+    uint32_t ddr_msg = DDR_POLL_DIMMS_I3C_POWER_EVENT;
 
-    tx_queue_send(&ddr_service_ctx->work_queue, &msg_dimm_polling, TX_NO_WAIT);
+    ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
+
+    if (every_other)
+    {
+        // Poll temperatures every other interval
+        ddr_msg = DDR_POLL_DIMMS_I3C_TEMPERATURE_AND_POWER_EVENT;
+        tx_queue_send(&ddr_service_ctx->work_queue, &ddr_msg, TX_NO_WAIT);
+    }
+    else
+    {
+        // Poll DIMM power every interval
+        ddr_msg = DDR_POLL_DIMMS_I3C_POWER_EVENT;
+        tx_queue_send(&ddr_service_ctx->work_queue, &ddr_msg, TX_NO_WAIT);
+    }
+
+    every_other ^= 1;
 }
 
 // Timer CB for ECC CE polling

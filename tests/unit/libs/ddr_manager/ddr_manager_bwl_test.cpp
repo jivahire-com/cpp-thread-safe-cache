@@ -38,6 +38,7 @@ static int setup_disengaged_all(void** state)
     FPFW_UNUSED(state);
     will_return_maybe(__wrap_idsw_get_die_id, DIE_0);
     will_return_maybe(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS);
+    will_return_maybe(__wrap_gtimer_prodfw_get_counter, 200);
 
     ddr_manager_disable_bwl_i3c();
     ddr_manager_disable_bwl_force();
@@ -53,6 +54,7 @@ static int setup_engaged_i3c(void** state)
     FPFW_UNUSED(state);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_maybe(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS);
+    will_return_maybe(__wrap_gtimer_prodfw_get_counter, 200);
 
     ddr_manager_enable_bwl_i3c();
 
@@ -66,6 +68,7 @@ static int setup_engaged_force(void** state)
     FPFW_UNUSED(state);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_maybe(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS);
+    will_return_maybe(__wrap_gtimer_prodfw_get_counter, 200);
 
     ddr_manager_enable_bwl_force();
 
@@ -79,6 +82,7 @@ static int setup_engaged_mr4(void** state)
     FPFW_UNUSED(state);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_maybe(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS);
+    will_return_maybe(__wrap_gtimer_prodfw_get_counter, 200);
 
     ddr_manager_enable_bwl_mr4();
 
@@ -101,6 +105,7 @@ TEST_FUNCTION(test_ddr_manager_enable_bwl_i3c, setup_disengaged_all, setup_disen
     expect_function_call(__wrap_mmio_write32);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // Act
     ddr_manager_enable_bwl_i3c();
@@ -120,6 +125,7 @@ TEST_FUNCTION(test_ddr_manager_disable_bwl_i3c, setup_engaged_i3c, setup_disenga
     expect_function_call(__wrap_mmio_write32);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // Act
     ddr_manager_disable_bwl_i3c();
@@ -137,6 +143,7 @@ TEST_FUNCTION(test_ddr_manager_enable_bwl_mr4, setup_disengaged_all, setup_disen
     expect_function_call(__wrap_mmio_write32);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // Act
     ddr_manager_enable_bwl_mr4();
@@ -154,6 +161,7 @@ TEST_FUNCTION(test_ddr_manager_disable_bwl_mr4, setup_engaged_mr4, setup_disenga
     expect_function_call(__wrap_mmio_write32);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // Act
     ddr_manager_disable_bwl_mr4();
@@ -171,6 +179,7 @@ TEST_FUNCTION(test_ddr_manager_enable_bwl_force, setup_disengaged_all, setup_dis
     expect_function_call(__wrap_mmio_write32);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // Act
     ddr_manager_enable_bwl_force();
@@ -188,6 +197,7 @@ TEST_FUNCTION(test_ddr_manager_disable_bwl_force, setup_engaged_force, setup_dis
     expect_function_call(__wrap_mmio_write32);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // Act
     ddr_manager_disable_bwl_force();
@@ -205,6 +215,7 @@ TEST_FUNCTION(test_ddr_manager_enable_i3c_bwl_enable_mr4_disable_mr4, setup_dise
     expect_function_call(__wrap_mmio_write32);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // Act & Assert
     ddr_manager_enable_bwl_i3c();
@@ -226,6 +237,7 @@ TEST_FUNCTION(test_ddr_manager_enable_mr4_bwl_enable_i3c_disable_mr4, setup_dise
     expect_function_call(__wrap_mmio_write32);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // enable_bwl_i3c won't touch GPIO since bwl is already engaged
     // Arrange disable_bwl_mr4()
@@ -245,6 +257,8 @@ TEST_FUNCTION(test_ddr_manager_enable_mr4_bwl_enable_i3c_disable_mr4, setup_dise
     assert_int_equal(ddr_manager_get_bwl_state(), DIMM_THROTTLE_SOURCE_EXT_TEMP_SENSOR);
 
     // This one does not touch GPIOs since BWL is already disengaged
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
+    // Act
     ddr_manager_disable_bwl_i3c();
 
     assert_false(ddr_manager_get_bwl_engaged());
@@ -259,6 +273,7 @@ TEST_FUNCTION(test_ddr_manager_enable_mr4_bwl_enable_i3c_disable_i3c, setup_dise
     expect_function_call(__wrap_mmio_write32);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // enable_bwl_i3c and disable_bwl_i3c won't touch GPIO since bwl is already engaged and still engaged due
     // to mr4 reason Arrange disable_bwl_mr4()
@@ -268,6 +283,7 @@ TEST_FUNCTION(test_ddr_manager_enable_mr4_bwl_enable_i3c_disable_i3c, setup_dise
     will_return(__wrap_mmio_read32, 0);
     expect_function_call(__wrap_mmio_write32);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // Act
     ddr_manager_enable_bwl_mr4();
@@ -292,6 +308,7 @@ TEST_FUNCTION(test_ddr_manager_enable_i3c_force_disable_i3c, setup_disengaged_al
     expect_function_call(__wrap_mmio_write32);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // enable_bwl_force won't touch GPIO since bwl is already engaged
     // disable_bwl_i3c won't touch GPIO since bwl is still engaged due to force reason
@@ -301,6 +318,7 @@ TEST_FUNCTION(test_ddr_manager_enable_i3c_force_disable_i3c, setup_disengaged_al
     will_return(__wrap_mmio_read32, 0);
     expect_function_call(__wrap_mmio_write32);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 100);
 
     // Act
     ddr_manager_enable_bwl_i3c();

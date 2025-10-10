@@ -44,7 +44,7 @@ ddr_manager_i3c_temperature_t ts0_temp;
 ddr_manager_i3c_temperature_t ts1_temp;
 
 /*------------- Functions ----------------*/
-void ddr_poll_dimms()
+void ddr_read_dimm_temperatures()
 {
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {
@@ -66,6 +66,24 @@ void ddr_poll_dimms()
         {
             DDR_LOG_CRIT("Error reading DIMM %d TS1\n", dimm_idx);
             DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_READ_TEMPERATURE_SENSOR_1, dimm_idx);
+        }
+    }
+}
+
+void ddr_read_dimm_power()
+{
+    uint16_t power_mW = 0;
+
+    for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
+    {
+        if (ddr_manager_power_mw_read(dimm_idx, &power_mW) == DDR_MANAGER_I3C_SUCCESS)
+        {
+            ddr_telemetry_update_dimm_power(dimm_idx, power_mW);
+        }
+        else
+        {
+            DDR_LOG_CRIT("Error reading DIMM %d power\n", dimm_idx);
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PMIC_POWER_READ, dimm_idx);
         }
     }
 }
@@ -115,9 +133,8 @@ void check_dimm_temp_thresholds()
         if ((ts0_temp.is_positive && ts0_temp.temp_int > thresholds.crit) ||
             (ts1_temp.is_positive && ts1_temp.temp_int > thresholds.crit))
         {
-            DDR_LOG_WARN("DIMM %d exceeded critical temperature threshold: %d\n", dimm_idx, thresholds.crit);
+            DDR_LOG_CRIT("DIMM %d  %dC is above crit. threshold (%dC)\n", dimm_idx, max_dimm_temp, thresholds.crit);
             DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD, dimm_idx);
-            DDR_LOG_WARN("DIMM %d exceeded critical temperature threshold: %d\n", dimm_idx, max_dimm_temp);
 
             memset(&ddr_cper, 0x0, sizeof(ddr_cper));
             prod_ddrss_get_intr_event_cper(dimm_idx * 2, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED, &ddr_cper);

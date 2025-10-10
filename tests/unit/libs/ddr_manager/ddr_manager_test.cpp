@@ -379,7 +379,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     will_return(__wrap_system_info_is_warm_start, true); // Skip fpfw_icc_base_send_recv_sync
 
     // Telemetry init
-    expect_function_call(__wrap__txe_mutex_create);
+    expect_function_calls(__wrap__txe_mutex_create, 2);
 
     // Crash dump pre-dump callback init
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
@@ -455,7 +455,7 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     will_return(__wrap_system_info_is_warm_start, true); // Skip fpfw_icc_base_send_recv_sync for unit test
 
     // Telemetry init
-    expect_function_call(__wrap__txe_mutex_create);
+    expect_function_calls(__wrap__txe_mutex_create, 2);
 
     // Crash dump pre-dump callback init
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
@@ -522,7 +522,7 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
     will_return(__wrap_system_info_is_warm_start, true); // Skip fpfw_icc_base_send_recv_sync
 
     // Telemetry init
-    expect_function_call(__wrap__txe_mutex_create);
+    expect_function_calls(__wrap__txe_mutex_create, 2);
 
     // Crash dump pre-dump callback init
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
@@ -1097,6 +1097,7 @@ TEST_FUNCTION(ddr_telemetry_report_verify_temps, NULL, NULL)
     const int POWER_SCALING_FACTOR = 125;
 
     will_return(__wrap_gtimer_prodfw_get_counter, 0);
+    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000); // 1MHz for easy conversion
 
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {

@@ -15,6 +15,7 @@
 
 #include <ddr_manager_events.h>
 #include <fpfw_cfg_mgr.h>
+#include <gtimer_prodfw.h>
 #include <idsw_kng.h>
 #include <sensor_fifo_service.h>
 #include <stdio.h>
@@ -61,6 +62,10 @@ static void ddr_manager_control_bwl(int action)
             }
         }
 
+        // Record the time of engagement for residency tracking
+        set_last_gtimer_count(gtimer_prodfw_get_counter());
+
+        // Set the MEMHOT GPIO to indicate to the platform that memory is hot and throttling is active
         ddr_manager_set_memhot_gpio();
         s_bwlEngaged = true;
         printf("DDR BWL+\n");
@@ -73,7 +78,6 @@ static void ddr_manager_control_bwl(int action)
             return;
         }
 
-        // TODO #2675040: add config knob to throttle single DIMM or all DIMMs on local die
         for (int mc = mc_start; mc < (mc_start + DDRSS_MAX_SS_NUM); mc++)
         {
             // Configure the bandwidth limiter for this MC
@@ -84,19 +88,29 @@ static void ddr_manager_control_bwl(int action)
             }
         }
 
+        // Add the time since last engagement to the residency counter
+        uint64_t current_gtimer_count = gtimer_prodfw_get_counter();
+        if (current_gtimer_count < get_last_gtimer_count())
+        {
+            // Handle potential timer wrap-around
+            set_last_gtimer_count(current_gtimer_count);
+        }
+
+        uint32_t delta_ticks = (uint32_t)(current_gtimer_count - get_last_gtimer_count());
+        ddr_bwl_residency_add_ticks(delta_ticks);
+        set_last_gtimer_count(0); // Reset the last_gtimer_count for next engagement
+
         ddr_manager_clear_memhot_gpio();
         s_bwlEngaged = false;
         printf("DDR BWL-\n");
     }
 }
 
-// TODO #2675040: add config knob to throttle single DIMM or all DIMMs on local die
 bool ddr_manager_get_bwl_engaged()
 {
     return s_bwlEngaged;
 }
 
-// TODO #2675040: add config knob to throttle single DIMM or all DIMMs on local die ... (and so on)
 uint8_t ddr_manager_get_bwl_state()
 {
     return (uint8_t)bwl_state;

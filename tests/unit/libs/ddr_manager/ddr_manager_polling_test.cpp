@@ -64,12 +64,14 @@ TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, setup_disengaged_a
     expect_function_call(__wrap_mmio_write32);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 300);
 
     // Arrange disable_bwl_i3c()
     expect_function_call(__wrap_mmio_read32);
     will_return(__wrap_mmio_read32, 0);
     expect_function_call(__wrap_mmio_write32);
     will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+    will_return(__wrap_gtimer_prodfw_get_counter, 300);
 
     // High temp (> 85C): 88
     for (uint8_t sens_idx = 0; sens_idx < NUM_SENSORS_PER_DIMM; sens_idx++)
@@ -86,7 +88,7 @@ TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, setup_disengaged_a
     }
 
     // Act on 88 degrees C
-    ddr_poll_dimms();
+    ddr_read_dimm_temperatures();
     check_dimm_temp_thresholds();
     assert_true(ddr_manager_get_bwl_engaged());
 
@@ -103,7 +105,7 @@ TEST_FUNCTION(test_ddr_manager_poll_below_high_to_low_thresh, setup_disengaged_a
     }
 
     // Act on 67 degrees C
-    ddr_poll_dimms();
+    ddr_read_dimm_temperatures();
     check_dimm_temp_thresholds();
     assert_false(ddr_manager_get_bwl_engaged());
 }
@@ -138,7 +140,7 @@ TEST_FUNCTION(test_ddr_manager_poll_crit_thresh, NULL, NULL)
     expect_function_call(__wrap_mmio_write32);
 
     // Act
-    ddr_poll_dimms();
+    ddr_read_dimm_temperatures();
 
     expect_value(FPFwErrorRaise, error, (uint32_t)DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD); // DDR_MANAGER_ET_TYPE_DIMM_EXCEEDED_CRITICAL_TEMPERATURE_THRESHOLD
     if (!set_error_handler_return())

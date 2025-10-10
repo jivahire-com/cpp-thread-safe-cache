@@ -85,6 +85,7 @@ mock_target(${TARGET}
     get_dimm_serial_number_string
     get_i3c_dimm_detected
     gtimer_prodfw_get_counter
+    gtimer_prodfw_get_frequency
     idhw_get_die_id
     idhw_is_single_die_boot_en
     idsw_get_die_id

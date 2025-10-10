@@ -1825,8 +1825,8 @@ TEST_FUNCTION(test_data_smpl_process_aging_data, test_setup, test_teardown)
     data_smpl_process_aging_data(core_id, this_pwr_pkg_timestamp_uS);
 
     assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS, 2000);
-    assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter, 30);
-    assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter, 28);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter, 28);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].unaged_counter, 30);
     assert_int_equal(computed_metrics_24_hrs.cores[0].core_aging_counters[counter_id].voltage_mV, 100);
     assert_int_equal(computed_metrics_24_hrs.cores[0].core_aging_counters[counter_id].temperature_dC, 20);
 }

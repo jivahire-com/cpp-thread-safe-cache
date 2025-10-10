@@ -66,8 +66,6 @@ void data_smpl_init(void)
 {
     // Initialize dts coeff data at startup
     data_smpl_init_dts_coefficients();
-    // Note:  Enable first counter pair id for each core
-    aging_counter_init();
 }
 
 void data_smpl_init_dts_coefficients(void)
@@ -181,7 +179,7 @@ void data_smpl_process_aging_data(uint8_t core_id, uint64_t this_pwr_pkg_timesta
             {
                 uint32_t latest_aged_counter;
                 uint32_t latest_unaged_counter;
-                if (aging_counter_read(core_id, &latest_aged_counter, &latest_unaged_counter) == true)
+                if (aging_counter_read(core_id, &latest_unaged_counter, &latest_aged_counter) == true)
                 {
                     uint8_t counter_id = core_aging[core_id].measurement_index;
                     comp_metrics_for_single_core_aging_counters(core_id,
@@ -191,8 +189,9 @@ void data_smpl_process_aging_data(uint8_t core_id, uint64_t this_pwr_pkg_timesta
                                                                 latest_aged_counter,
                                                                 latest_unaged_counter,
                                                                 counter_id);
+                    core_aging[core_id].measurement_index += 1;
                     // Armed next counter, measurement_index get updated after aging_counter_read on a successful read.
-                    aging_counter_enable_sensor_measurement(core_id, core_aging[core_id].measurement_index++);
+                    aging_counter_enable_sensor_measurement(core_id, core_aging[core_id].measurement_index);
                 }
             }
         }

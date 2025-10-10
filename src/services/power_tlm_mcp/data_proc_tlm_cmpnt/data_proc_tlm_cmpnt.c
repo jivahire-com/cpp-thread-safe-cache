@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include "data_proc_tlm_cmpnt.h"
 
+#include "aging_counters_i.h"
 #include "compute_metrics_i.h"
 #include "data_sampling_i.h" // internal APIs
 #include "die_2_die_exchange_i.h"
@@ -50,6 +51,9 @@ void data_proc_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mo
         comp_metrics_reset_local_2_min_metrics();
         comp_metrics_reset_d2d_2_min_metrics();
         comp_metrics_reset_24_hrs_metrics();
+
+        // Note:  Enable first counter pair id for each core
+        aging_counter_init();
 
         in_band_publishing_active = true;
     }

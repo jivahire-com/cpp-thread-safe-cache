@@ -104,6 +104,16 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_tlm_mode_enter_actions, test_setup, test_
 {
     die_2_die_exch_init(1);
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
+
+    will_return(__wrap_core_info_get_enable_cores_result, 0xffffffff);
+    will_return(__wrap_core_info_get_enable_cores_result, 0xffffffff);
+    will_return(__wrap_core_info_get_enable_cores_result, 0xffffffff);
+    uint8_t core_id = 0;
+    for (core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        expect_function_call(__wrap_dvfs_c2_pcm_enable_aging_sensor_measurement);
+    }
+
     data_proc_tlm_cmpnt_tlm_mode_enter_actions(TLM_OP_MODE_PUBLISHING);
 
     data_proc_tlm_cmpnt_tlm_mode_enter_actions(TLM_OP_MODE_DISABLED);

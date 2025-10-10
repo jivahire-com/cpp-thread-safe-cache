@@ -14,7 +14,7 @@
 #include <DfwkDriver.h>      // for DfwkInterfaceInitialize, DfwkQueueInitialize
 #include <DfwkHost.h>        // for DfwkDeviceInitialize
 #include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
-#include <FpFwAssert.h>      // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>
 #include <core_cluster_top_regs.h>
 #include <corebits.h>
 #include <dvfs.h>              // for dvfs_get_pex_scp_irq, dvfs_clr_pex_scp_irq
@@ -76,7 +76,7 @@ void pex_async_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context)
 
 void init_pex_rng(pex_rng_config_t* rng_config)
 {
-    FPFW_RUNTIME_ASSERT(rng_config != NULL);
+    BUG_ASSERT(rng_config != NULL);
 
     memset(&g_pex_device, 0, sizeof(pex_rng_device_t));
     memset(&g_pex_interface, 0, sizeof(pex_rng_interface_t));
@@ -95,7 +95,7 @@ void init_pex_rng(pex_rng_config_t* rng_config)
         uint32_t ap_rng_base = cluster_pex_base_addr + PEX_RNG_ADDRESS;
         // Clk divider initially set to 1 with CPU at 50MHz was too fast for Si TODO: div value still needs to be optimized based on characterization
         rng_enable_r(ap_rng_base, 0xC0);
-        FPFW_RUNTIME_ASSERT(rng_wait_for_rng_complete_r(ap_rng_base) == 0x0);
+        BUG_ASSERT_PARAM(rng_wait_for_rng_complete_r(ap_rng_base) == 0x0, ap_rng_base, 0);
     }
     // Initialize DFWK structures
     DfwkDeviceInitialize(&g_pex_device.header, &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule);
@@ -128,7 +128,7 @@ void reset_pex_rng(uintptr_t ap_rng_base)
 {
     rng_disable_r(ap_rng_base);
     rng_enable_r(ap_rng_base, 0xC0);
-    FPFW_RUNTIME_ASSERT(rng_wait_for_rng_complete_r(ap_rng_base) == 0x0);
+    BUG_ASSERT_PARAM(rng_wait_for_rng_complete_r(ap_rng_base) == 0x0, ap_rng_base, 0);
     FPFW_DBGPRINT_INFO("RNG reset complete\n");
 }
 

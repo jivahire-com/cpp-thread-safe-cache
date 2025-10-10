@@ -29,7 +29,6 @@ target_link_libraries(
             silibs::icc_mhu
             ms::lib::icc_platform_defines
         PRIVATE
-            fwlib.lib.assert
             fwlib.lib.interface.platform.dbgprint
             fwlib.lib.init
             ms::lib::arm_intrinsic

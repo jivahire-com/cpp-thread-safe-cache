@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::cmocka::testrunner
         ms::service::wdog
+        ms::lib::crash_dump
         ms::lib::config_manager
         ms::lib::threadx
         silibs::idhw

@@ -9,7 +9,6 @@
 
 /*------------- Includes -----------------*/
 #include <DfwkThreadXHost.h>    // for DFWK_THREADX_HOST
-#include <FpFwAssert.h>         // for FPFW_RUNTIME_ASSERT
 #include <accelerator_ip.h>     // for accel_is_isolation_enabled
 #include <addressblock0_regs.h> // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
 #include <bug_check.h>          // for BUG_CHECK
@@ -196,11 +195,11 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib"))
 
     // Enable mini dump
     KNG_STATUS status = crash_dump_register_dump(&mini_dump_ctx);
-    FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
+    BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, 0);
 
     // Initialize the exception handler
     status = exception_handler_init();
-    FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
+    BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, 0);
 
     // Try to configure the crash dump ICC contexts if available.
     // If ICC contexts are not available yet, it will be configured later.
@@ -234,7 +233,7 @@ FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk", "sos_int")
     static startup_ssi_registration_t ssi_registration;
     int32_t status =
         sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &crash_dump_interface.Header);
-    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &crash_dump_interface};
 }
@@ -292,7 +291,7 @@ FPFW_INIT_COMPONENT(cd_pomesh, FPFW_INIT_DEPENDENCIES("cd_init", "ddr", "hw_sem"
     full_dump_ctx.semaphore.key = CRASH_DUMP_PROCESSOR_ID(context->die_index, context->core_index) + 1;
 
     KNG_STATUS status = crash_dump_register_dump(&full_dump_ctx);
-    FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
+    BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, 0);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

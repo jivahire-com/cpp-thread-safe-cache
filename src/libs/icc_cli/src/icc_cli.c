@@ -13,10 +13,10 @@
 #include "icc_rmss_d2d_mbox_cli.h" // for d2d_mbox_send, d2d_mbox_recv, d2d_sync_test, d2d_mbox_echo
 
 #include <DfwkStatus.h>     // for DFWK_SUCCESS
-#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
 #include <FpFwCli.h>        // for FpFwCliPrint, FPFW_CLI_STATUS
 #include <FpFwLinkedList.h> // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>      // for FPFW_UNUSED, FPFW_ARRAY_SIZE
+#include <bug_check.h>      // for BUG_ASSERT_PARAM
 #include <fpfw_icc_base.h>  // for fpfw_icc_base_recv_req_t
 #include <icc_cli.h>        // for ICC_CLI_HSP_MBX, icc_cli_i...
 #include <idhw.h>           // for idhw_is_single_die_boot_en
@@ -111,7 +111,7 @@ static FPFW_CLI_COMMAND s_icc_cded_large_fifo_mbx_cmd_list[] = {
 
 PLACED_CODE void icc_cli_init(icc_cli_init_params_t* params)
 {
-    FPFW_RUNTIME_ASSERT(params != NULL);
+    BUG_ASSERT_PARAM(params != NULL, params, 0);
     icc_cli_ctx = params;
 
     //! Set the current die id

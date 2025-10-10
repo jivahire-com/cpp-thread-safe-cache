@@ -8,8 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
-#include <DbgPrint.h>     // for FPFW_DBGPRINT_INFO
-#include <FpFwAssert.h>   // for FPFW_RUNTIME_ASSERT
+#include <DbgPrint.h> // for FPFW_DBGPRINT_INFO
+#include <bug_check.h>
 #include <fpfw_cfg_mgr.h> // for knobs
 #include <fpfw_init.h>    // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <idhw.h>         // for idhw_get_cpu_type, idhw_get_die_id
@@ -38,7 +38,7 @@ FPFW_INIT_COMPONENT(wdog, FPFW_INIT_DEPENDENCIES("hw_ver", "cfg_mgr"))
         const uint32_t wdog_freq_hz = config_get_wdog_counter_freq_Mhz() * MHz;
 
         KNG_STATUS status = wdog_service_init(wdog_timeout_s, wdog_freq_hz);
-        FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
+        BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, 0);
 
         FPFW_DBGPRINT_INFO("Wdog init with timeout %d s and freq %d Hz\n", wdog_timeout_s, wdog_freq_hz);
     }

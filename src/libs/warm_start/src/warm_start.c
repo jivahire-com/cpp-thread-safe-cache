@@ -11,7 +11,6 @@
 #include "warm_start_events.h"
 #include "warm_start_i.h"
 
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>
 #include <fpfw_status.h>
 #include <mscp_exp_rmss_memory_map.h>
@@ -249,7 +248,7 @@ void warm_start_init(void)
     p_ws_list = (void*)SCP_EXP_SCP_WARM_START_DATA_BASE;
     ws_size = SCP_EXP_SCP_WARM_START_DATA_SIZE;
 
-    FPFW_RUNTIME_ASSERT(tx_mutex_create(&ws_data_mutex, "ws data mutex", TX_NO_INHERIT) == TX_SUCCESS);
+    BUG_ASSERT(tx_mutex_create(&ws_data_mutex, "ws data mutex", TX_NO_INHERIT) == TX_SUCCESS);
 
     WS_LOG_INFO("[WARM_START] Init done");
     WS_ET_INFO(WS_ET_TYPE_INIT_DONE);

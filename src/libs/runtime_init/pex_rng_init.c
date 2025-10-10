@@ -11,7 +11,6 @@
 /*------------- Includes -----------------*/
 
 #include <DbgPrint.h>
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>
 #include <atu_api.h>               // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
 #include <atu_lib.h>               // for atu_map_entry_t, atu_entry_attr_t

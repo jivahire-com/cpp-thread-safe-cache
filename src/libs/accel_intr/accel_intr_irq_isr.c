@@ -18,7 +18,6 @@
 #include <DfwkDriver.h>         // for DfwkInterfaceInitialize, DfwkQueueInitia...
 #include <DfwkHost.h>           // for DfwkDeviceInitialize
 #include <FPFwInterrupts.h>     // for FPFwCoreInterruptDisableVector,...
-#include <FpFwAssert.h>         // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>          // for FPFW_UNUSED
 #include <accel_intr_client.h>  // for send_fatal_intr_async_request
 #include <accelerator_ip.h>     // for ACCELERATOR_CDEDSS, ACCELERATOR_SDMSS
@@ -529,11 +528,11 @@ uint32_t accel_intr_process_fatal_interrupts(uint32_t IRQnum, uint32_t ext_cfg_a
 {
     // Read Level 1 status register address
     uint32_t interrupt_reg_addr = sdm_ext_get_category_status_reg_addr(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR);
-    FPFW_RUNTIME_ASSERT(interrupt_reg_addr != SDM_EXT_INVALID_INTERRUPT_INPUT);
+    BUG_ASSERT_PARAM(interrupt_reg_addr != SDM_EXT_INVALID_INTERRUPT_INPUT, interrupt_reg_addr, 0);
 
     // Read Level 1 mask/control register values
     uint32_t interrupt_mask_addr = sdm_ext_get_category_mask_reg_addr(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR);
-    FPFW_RUNTIME_ASSERT(interrupt_mask_addr != SDM_EXT_INVALID_INTERRUPT_INPUT);
+    BUG_ASSERT_PARAM(interrupt_mask_addr != SDM_EXT_INVALID_INTERRUPT_INPUT, interrupt_mask_addr, 0);
 
     // Mask interrupt value with mask bits
     uint32_t interrupt_reg_value =

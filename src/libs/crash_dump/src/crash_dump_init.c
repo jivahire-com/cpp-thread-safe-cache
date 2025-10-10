@@ -14,7 +14,7 @@
 #include "crash_dump_payload.h"   // for crash_dump_register_core_registers
 #include "crash_dump_status.h"    // for crash_dump_update_state, crash_dump_update_core_state
 
-#include <FpFwAssert.h>               // for FPFW_RUNTIME_ASSERT
+#include <bug_check.h>
 #include <crash_dump.h>               // for crash_dump_init
 #include <crash_dump_events.h>        // for CRASH_DUMP_ET
 #include <idsw_kng.h>                 // for DIE_0, DIE_1
@@ -126,7 +126,9 @@ KNG_STATUS crash_dump_register_dump(crash_dump_type_context_t* type_context)
 static void init_mem_pool(crash_dump_type_context_t* type_context)
 {
     // Initialize crash dump memory pool
-    FPFW_RUNTIME_ASSERT(FPFwCDInitMemoryPool(&type_context->mem_ctx, type_context->mem_pool_addr, type_context->mem_pool_size));
+    BUG_ASSERT_PARAM(FPFwCDInitMemoryPool(&type_context->mem_ctx, type_context->mem_pool_addr, type_context->mem_pool_size),
+                     type_context->mem_pool_addr,
+                     type_context->mem_pool_size);
     (void)FPFwCDMemPoolOverrideCacheFlush(&type_context->mem_ctx, &cacheFlushOverride);
     (void)FPFwCDMemPoolOverrideCacheInvalidate(&type_context->mem_ctx, &cacheInvalidateOverride);
 }
@@ -138,12 +140,12 @@ static void init_mem_pool(crash_dump_type_context_t* type_context)
 static void init_dump_desc(crash_dump_type_context_t* type_context)
 {
     // Create Tx mutex for descriptor set
-    FPFW_RUNTIME_ASSERT(tx_mutex_create(&type_context->desc_mutex,
-                                        type_context->type == CRASH_DUMP_TYPE_MINI ? "cd mini mutex" : "cd full mutex",
-                                        TX_NO_INHERIT) == TX_SUCCESS);
+    BUG_ASSERT(tx_mutex_create(&type_context->desc_mutex,
+                               type_context->type == CRASH_DUMP_TYPE_MINI ? "cd mini mutex" : "cd full mutex",
+                               TX_NO_INHERIT) == TX_SUCCESS);
 
     // Create crash dump descriptor
-    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpDescriptor(&type_context->desc_ctx, type_context->desc_list, CRASH_DUMP_NUM_DESCRIPTORS));
+    BUG_ASSERT(FPFwCDInitDumpDescriptor(&type_context->desc_ctx, type_context->desc_list, CRASH_DUMP_NUM_DESCRIPTORS));
 
     (void)FPFwCDDumpDescriptorSetMutexCtx(&type_context->desc_ctx, (void*)&type_context->desc_mutex);
     (void)FPFwCDDumpDescriptorOverrideMutexLock(&type_context->desc_ctx, &mutexLockOverride);
@@ -156,7 +158,7 @@ static void init_dump_desc(crash_dump_type_context_t* type_context)
  */
 static void init_dump_file(crash_dump_type_context_t* type_context)
 {
-    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpFile(&type_context->file_ctx));
+    BUG_ASSERT(FPFwCDInitDumpFile(&type_context->file_ctx));
     (void)FPFwCDDumpFileOverrideInValidMemory(&type_context->file_ctx, &inMemoryOverride);
     (void)FPFwCDDumpFileOverrideInValidCsrMemory(&type_context->file_ctx, &inMemoryOverride);
     (void)FPFwCDDumpFileOverrideInValidGlobalMemory(&type_context->file_ctx, &inGlobalMemoryOverride);
@@ -169,12 +171,14 @@ static void init_dump_file(crash_dump_type_context_t* type_context)
  */
 static void init_dump_manager(crash_dump_type_context_t* type_context)
 {
-    FPFW_RUNTIME_ASSERT(FPFwCDInitDumpManager(&type_context->crash_dump_ctx,
-                                              &type_context->mem_ctx,
-                                              &type_context->desc_ctx,
-                                              &type_context->file_ctx,
-                                              NULL, // No state manager
-                                              type_context->mem_pool_size));
+    BUG_ASSERT_PARAM(FPFwCDInitDumpManager(&type_context->crash_dump_ctx,
+                                           &type_context->mem_ctx,
+                                           &type_context->desc_ctx,
+                                           &type_context->file_ctx,
+                                           NULL, // No state manager
+                                           type_context->mem_pool_size),
+                     type_context->mem_pool_size,
+                     0);
     FPFwCDOverridePrintf(&crash_dump_printf);
     (void)FPFwCDDumpManagerSetPreDumpCallback(&type_context->crash_dump_ctx, &preDumpCallbackOverride, type_context);
     (void)FPFwCDDumpManagerSetPostDumpCallback(&type_context->crash_dump_ctx, &postDumpCallbackOverride, type_context);

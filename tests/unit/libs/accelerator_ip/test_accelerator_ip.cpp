@@ -573,9 +573,13 @@ TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_test, nullptr, nullpt
 
     // Check boot status code ACCEL FAILED
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
-    expect_value(__wrap_FpFwAssert, expression, false);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    should_return = false;
 
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+    if (!bugcheck_mock_return())
+    {
+        assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+    }
 }
 
 TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_die1_test, nullptr, nullptr)
@@ -597,9 +601,13 @@ TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_die1_test, nullptr, n
 
     // Check boot status code ACCEL FAILED
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
-    expect_value(__wrap_FpFwAssert, expression, false);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    should_return = false;
 
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+    if (!bugcheck_mock_return())
+    {
+        assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+    }
 }
 
 TEST_FUNCTION(test_scp_accelerators_init_invalid_accel, nullptr, nullptr)
@@ -618,7 +626,8 @@ TEST_FUNCTION(test_scp_accelerators_init_invalid_accel, nullptr, nullptr)
 
     // Check boot status code ACCEL FAILED
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
-    expect_value(__wrap_FpFwAssert, expression, false);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    should_return = false;
 
     // Update config with Invalid values
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
@@ -627,7 +636,10 @@ TEST_FUNCTION(test_scp_accelerators_init_invalid_accel, nullptr, nullptr)
     p_ss_ctxt[0].accelip_metadata.accel_type = NUM_ACCELIP_SS_INSTANCES;
     p_ss_ctxt[1].accelip_metadata.accel_type = NUM_ACCELIP_SS_INSTANCES;
 
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+    if (!bugcheck_mock_return())
+    {
+        assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+    }
 
     // Update config with original values
     p_ss_ctxt[0].accelip_metadata.accel_type = old_sdm_d0_type;
@@ -655,9 +667,13 @@ TEST_FUNCTION(test_scp_accelerators_init_intr_init_failed, nullptr, nullptr)
 
     // Check boot status code ACCEL FAILED
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
-    expect_value(__wrap_FpFwAssert, expression, false);
 
-    assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    should_return = false;
+    if (!bugcheck_mock_return())
+    {
+        assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+    }
 }
 
 TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
@@ -749,7 +765,6 @@ TEST_FUNCTION(accelip_emcpu_reset_send_invalid_accel, nullptr, nullptr)
 TEST_FUNCTION(accelip_isolation_control_test, nullptr, nullptr)
 {
     will_return_count(__wrap_idsw_get_die_id, SOC_D0, 3);
-    expect_any_always(__wrap_FpFwAssert, expression);
     will_return_count(__wrap_atu_map, SILIBS_SUCCESS, 2);
     accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
     will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
@@ -762,7 +777,6 @@ TEST_FUNCTION(accelip_isolation_control_test, nullptr, nullptr)
 TEST_FUNCTION(mcp_accelerators_init_test_die0_pass, nullptr, nullptr)
 {
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
-    expect_value(__wrap_FpFwAssert, expression, true);
 
     accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
     will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
@@ -770,7 +784,6 @@ TEST_FUNCTION(mcp_accelerators_init_test_die0_pass, nullptr, nullptr)
 
     // init accelertor
     will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_SUCCESS, 2);
-    expect_value_count(__wrap_FpFwAssert, expression, true, 2);
 
     assert_int_equal(mcp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
@@ -778,7 +791,6 @@ TEST_FUNCTION(mcp_accelerators_init_test_die0_pass, nullptr, nullptr)
 TEST_FUNCTION(mcp_accelerators_init_test_die1_pass, nullptr, nullptr)
 {
     will_return_always(__wrap_idsw_get_die_id, SOC_D1);
-    expect_value(__wrap_FpFwAssert, expression, true);
 
     accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
     will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
@@ -786,7 +798,6 @@ TEST_FUNCTION(mcp_accelerators_init_test_die1_pass, nullptr, nullptr)
 
     // init accelertor
     will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_SUCCESS, 2);
-    expect_value_count(__wrap_FpFwAssert, expression, true, 2);
 
     assert_int_equal(mcp_accelerators_init(), ACCEL_RET_SUCCESS);
 }
@@ -794,7 +805,6 @@ TEST_FUNCTION(mcp_accelerators_init_test_die1_pass, nullptr, nullptr)
 TEST_FUNCTION(mcp_accelerators_init_test_isolation_pass, nullptr, nullptr)
 {
     will_return_always(__wrap_idsw_get_die_id, SOC_D1);
-    expect_value(__wrap_FpFwAssert, expression, true);
 
     accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {true, true}};
     will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
@@ -816,12 +826,13 @@ TEST_FUNCTION(mcp_accelerators_init_test_fail1, nullptr, nullptr)
     p_ss_ctxt[1].accelip_metadata.accel_type = NUM_ACCELIP_SS_INSTANCES;
 
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
-    expect_value(__wrap_FpFwAssert, expression, true);
 
-    expect_value(__wrap_FpFwAssert, expression, false);
-    expect_value(__wrap_FpFwAssert, expression, false);
-
-    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_FAIL_INVALID_PARAMS);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    should_return = false;
+    if (!bugcheck_mock_return())
+    {
+        assert_int_equal(mcp_accelerators_init(), ACCEL_RET_FAIL_INVALID_PARAMS);
+    }
 
     p_ss_ctxt[0].accelip_metadata.accel_type = og_val0;
     p_ss_ctxt[1].accelip_metadata.accel_type = og_val1;
@@ -830,17 +841,19 @@ TEST_FUNCTION(mcp_accelerators_init_test_fail1, nullptr, nullptr)
 TEST_FUNCTION(mcp_accelerators_init_test_fail3, nullptr, nullptr)
 {
     will_return_always(__wrap_idsw_get_die_id, SOC_D0);
-    expect_value(__wrap_FpFwAssert, expression, true);
 
     accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
     will_return(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
-    will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     // init accelertor
-    will_return_count(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_FAIL_INTR_INIT, 2);
-    expect_value_count(__wrap_FpFwAssert, expression, false, 2);
+    will_return_always(__wrap_accel_mcp_intr_init, ACCEL_INTR_RET_FAIL_INTR_INIT);
 
-    assert_int_equal(mcp_accelerators_init(), ACCEL_RET_FAIL_INTR_INIT);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    should_return = false;
+    if (!bugcheck_mock_return())
+    {
+        assert_int_equal(mcp_accelerators_init(), ACCEL_RET_FAIL_INTR_INIT);
+    }
 }
 
 TEST_FUNCTION(accel_disable_cpu_wait_test, nullptr, nullptr)
@@ -1169,12 +1182,10 @@ TEST_FUNCTION(notify_accelerators_uefi_boot_test, nullptr, nullptr)
     will_return(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
 
     will_return(__wrap_fpfw_init_get_handle, 0xDEADDEED);
-    expect_value(__wrap_FpFwAssert, expression, true);
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
     s_icc_send_resp_cb(s_icc_send_resp_ctx, FPFW_STATUS_SUCCESS);
 
     will_return(__wrap_fpfw_init_get_handle, 0xDEADDEED);
-    expect_value(__wrap_FpFwAssert, expression, true);
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
     s_icc_send_resp_cb(s_icc_send_resp_ctx, FPFW_STATUS_SUCCESS);
 

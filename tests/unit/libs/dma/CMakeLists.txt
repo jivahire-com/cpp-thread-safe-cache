@@ -78,7 +78,6 @@ mock_target(${TARGET}
     DfwkQueueEnqueueRequest
     FpFwLockAcquire
     FpFwLockRelease
-    # FpFwAssert
     atu_translate_address
     dmac_start_single_block_transfer
     idsw_get_cpu_type

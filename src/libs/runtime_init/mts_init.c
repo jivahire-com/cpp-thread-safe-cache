@@ -9,9 +9,9 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h> // for FPFW_DBGPRINT_INFO
-#include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <accelerator_ip.h> // for accel_is_isolation_enabled()
+#include <bug_check.h>
 #include <fpfw_init.h>
 #include <icc_mhu.h>
 #include <icc_platform_defines.h>
@@ -110,7 +110,7 @@ FPFW_INIT_COMPONENT(mts_svc,
 
         s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx =
             (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_mscp2apns");
-        FPFW_RUNTIME_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
+        BUG_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
         s_trp_icc_endpoint_table[num_icc_endpoints].icc_payload_protocol = ICC_COMMAND_DCP_MSG;
 
         s_trp_routing_table[number_of_routes].dest.die_id = DIE_0;
@@ -173,8 +173,8 @@ FPFW_INIT_COMPONENT(mts_svc,
                 continue;
             }
 
-            FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
-            FPFW_RUNTIME_ASSERT(num_icc_endpoints < TRP_MAX_ENDPOINTS);
+            BUG_ASSERT_PARAM(number_of_routes < TRP_MAX_ROUTES, number_of_routes, 0);
+            BUG_ASSERT_PARAM(num_icc_endpoints < TRP_MAX_ENDPOINTS, num_icc_endpoints, 0);
 
             p_trp_icc_ep->base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_LARGE_MBOX;
             p_trp_icc_ep->base_endpt.async_recv_buffer = p_trp_ep_subset->p_async_recv_buffer;
@@ -189,7 +189,7 @@ FPFW_INIT_COMPONENT(mts_svc,
 
             p_trp_icc_ep->icc_base_ctx =
                 (fpfw_icc_base_ctx_t*)fpfw_init_get_handle(p_trp_ep_subset->p_fpfw_init_handle_name);
-            FPFW_RUNTIME_ASSERT(p_trp_icc_ep->icc_base_ctx != NULL);
+            BUG_ASSERT(p_trp_icc_ep->icc_base_ctx != NULL);
 
             p_trp_icc_ep->icc_payload_protocol = LARGE_FIFO_MAILBOX_MSG_TRP;
 
@@ -207,8 +207,8 @@ FPFW_INIT_COMPONENT(mts_svc,
 
     // ---------------------------------------------------------------------------------------------
     // add local mscp trp endpoint
-    FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
-    FPFW_RUNTIME_ASSERT(num_icc_endpoints < TRP_MAX_ENDPOINTS);
+    BUG_ASSERT_PARAM(number_of_routes < TRP_MAX_ROUTES, number_of_routes, 0);
+    BUG_ASSERT_PARAM(num_icc_endpoints < TRP_MAX_ENDPOINTS, num_icc_endpoints, 0);
 
     s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_ARM_MHU;
     s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer = s_local_mscp_icc_endpt_rx_buffer;
@@ -223,7 +223,7 @@ FPFW_INIT_COMPONENT(mts_svc,
 
     s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx =
         (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_mscp2mscp");
-    FPFW_RUNTIME_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
+    BUG_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
     s_trp_icc_endpoint_table[num_icc_endpoints].icc_payload_protocol = ICC_COMMAND_TRP_MSG;
 
     s_trp_routing_table[number_of_routes].dest.die_id =
@@ -239,8 +239,8 @@ FPFW_INIT_COMPONENT(mts_svc,
     // add die to die trp endpoint if dual die
     if (s_config.trp_general_config.is_dual_die)
     {
-        FPFW_RUNTIME_ASSERT(number_of_routes < TRP_MAX_ROUTES);
-        FPFW_RUNTIME_ASSERT(num_icc_endpoints < TRP_MAX_ENDPOINTS);
+        BUG_ASSERT_PARAM(number_of_routes < TRP_MAX_ROUTES, number_of_routes, 0);
+        BUG_ASSERT_PARAM(num_icc_endpoints < TRP_MAX_ENDPOINTS, num_icc_endpoints, 0);
 
         s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_ARM_MHU;
         s_trp_icc_endpoint_table[num_icc_endpoints].base_endpt.async_recv_buffer = s_d2d_mscp_icc_endpt_rx_buffer;
@@ -256,7 +256,7 @@ FPFW_INIT_COMPONENT(mts_svc,
 
         s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx =
             (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_die2die");
-        FPFW_RUNTIME_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
+        BUG_ASSERT(s_trp_icc_endpoint_table[num_icc_endpoints].icc_base_ctx != NULL);
         s_trp_icc_endpoint_table[num_icc_endpoints].icc_payload_protocol = ICC_COMMAND_TRP_MSG;
 
         s_trp_routing_table[number_of_routes].dest.die_id = s_config.trp_general_config.this_die_id ^ 1;

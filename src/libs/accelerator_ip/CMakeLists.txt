@@ -37,7 +37,6 @@ target_link_libraries(
         silibs::sdm_init
     PRIVATE
         fwlib.dfwk
-        fwlib.lib.assert
         fwlib.driver.mboxIccTransport
         fwlib.lib.cfg_mgr
         fwlib.lib.init

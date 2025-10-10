@@ -10,7 +10,6 @@
 /*------------- Includes -----------------*/
 #include "exception_handler_i.h"
 
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <atu_api.h>
 #include <atu_lib.h>
 #include <bug_check.h> // for BUG_CHECK

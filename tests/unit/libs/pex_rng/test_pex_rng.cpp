@@ -106,6 +106,7 @@ void __wrap_hm_submit_cper(uint16_t error_domain, uint8_t severity, void* cper_s
     check_expected(cper_section);
     check_expected(section_size);
 }
+
 //
 // Tests
 //
@@ -117,14 +118,10 @@ TEST_FUNCTION(test_init_pex_rng_success, nullptr, nullptr)
                                     .platform_cores_in_die = &test_platform_cores,
                                     .core_count = 1};
 
-    // Assert for non-null parameters
-    expect_value(__wrap_FpFwAssert, expression, 1); // rng_config != NULL
-
     expect_value(__wrap_rng_enable_r, base, PEX_RNG_ADDRESS);
     expect_value(__wrap_rng_enable_r, div, 0xC0);
     expect_value(__wrap_rng_wait_for_rng_complete_r, base, PEX_RNG_ADDRESS);
     will_return(__wrap_rng_wait_for_rng_complete_r, 0x0);
-    expect_value(__wrap_FpFwAssert, expression, 1); // wait complete success
 
     // DFWK initialization mocks
     expect_value(__wrap_fpfw_init_get_handle, name, (void*)"dfwk");
@@ -157,7 +154,6 @@ TEST_FUNCTION(test_reset_pex_rng, nullptr, nullptr)
     expect_value(__wrap_rng_enable_r, div, 0xC0);
     expect_value(__wrap_rng_wait_for_rng_complete_r, base, PEX_RNG_ADDRESS);
     will_return(__wrap_rng_wait_for_rng_complete_r, 0x0);
-    expect_value(__wrap_FpFwAssert, expression, 1);
 
     reset_pex_rng(PEX_RNG_ADDRESS);
 }

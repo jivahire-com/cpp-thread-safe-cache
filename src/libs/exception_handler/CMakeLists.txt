@@ -12,7 +12,6 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.lib.assert
         ms::lib::cortex_m7::nvic
         ms::lib::crash_dump
         ms::lib::error_codes
@@ -56,7 +55,6 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
-        fwlib.lib.assert
         ms::lib::cortex_m7::nvic
         ms::lib::crash_dump
         ms::lib::error_codes

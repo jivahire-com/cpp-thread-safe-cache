@@ -9,7 +9,6 @@
 
 /*------------- Includes -----------------*/
 #include <FPFwInterrupts.h>
-#include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
 #include <MboxPrimitives.h> // for FPFW_MBX_PAYLOAD, FpFwMailbox...
 #include <bug_check.h>
 #include <ddr_i3c.h>
@@ -145,7 +144,7 @@ uint32_t get_i3c_dimm_detected(void)
 
 uint32_t get_i3c_dimm_cap_in_gb(void)
 {
-    FPFW_RUNTIME_ASSERT(g_dimm_cap_per_ch < DIMM_CMN800_NUM_SUPPORTED_DRAM_SIZES);
+    BUG_ASSERT_PARAM(g_dimm_cap_per_ch < DIMM_CMN800_NUM_SUPPORTED_DRAM_SIZES, g_dimm_cap_per_ch, 0);
 
     switch (g_dimm_cap_per_ch)
     {
@@ -296,7 +295,7 @@ int i3c_controller(uint8_t die_num)
     int status = 0;
     bool cold_reset = true;
 
-    FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+    BUG_ASSERT_PARAM(die_num < NUM_DIE, die_num, 0);
     FPFW_DBGPRINT_ALWAYS(MOD_NAME "%s Start, die_num: [%u]\n", __func__, die_num);
 
     KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
@@ -331,7 +330,7 @@ int i3c_controller(uint8_t die_num)
         {
             i3c_dev_table = i3c_dev_table_0_2;
         }
-        FPFW_RUNTIME_ASSERT(i3c_dev_table != NULL);
+        BUG_ASSERT_PARAM(i3c_dev_table != NULL, i3c_dev_table, 0);
 
         // Initialize I3C Config Struct to Pass into I3C Library
         i3c_config_t i3c_config0 = {
@@ -376,7 +375,7 @@ int i3c_controller(uint8_t die_num)
                                                             (FPFwCoreInterruptHandler)i3c_irq_handlers[i],
                                                             (void*)&unused_parameter_not_null);
             intr_status |= FPFwCoreInterruptEnableVector(i3c_irqnums[i]);
-            FPFW_RUNTIME_ASSERT(intr_status == 0);
+            BUG_ASSERT_PARAM(intr_status == 0, intr_status, 0);
 
             // Configure the Device Address Table (DAT)
             status = i3c_master_dat_config(i3c_instance[i], i3c_dev_table, plat_num_of_target_devices);

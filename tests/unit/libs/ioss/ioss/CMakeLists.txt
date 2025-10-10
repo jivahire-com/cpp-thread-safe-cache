@@ -40,6 +40,7 @@ mock_target(${TARGET}
     atu_map
     ioss_init
     atu_unmap
+    crash_dump_bug_check
     variable_service_initialize_ctx
     variable_service_sync_set_variable
 )

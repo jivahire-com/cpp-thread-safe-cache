@@ -9,7 +9,6 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <cper.h>
@@ -221,7 +220,7 @@ static void enable_pex_polling()
 
 void register_pex_error_domain(pex_rng_config_t* pex_config)
 {
-    FPFW_RUNTIME_ASSERT(pex_config != NULL);
+    BUG_ASSERT_PARAM(pex_config != NULL, pex_config, 0);
 
     // Store the configuration for use in callbacks
     g_rng_cfg = pex_config;

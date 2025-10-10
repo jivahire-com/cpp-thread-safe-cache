@@ -10,7 +10,6 @@ set(SRC
 
 set(LIBS
         PRIVATE
-            fwlib.lib.assert
             fwlib.service.iccBase
             fwlib.service.icc_dispatcher
             fwlib.service.cli
@@ -18,6 +17,7 @@ set(LIBS
             fwlib.lib.mboxPrimitives
             fwlib.lib.interface.platform.interrupts
             ms::driver::icc_mhu_trans
+            ms::lib::crash_dump
             ms::lib::icc_platform_defines
             ms::lib::interface::mhu_icc_payloads
             ms::lib::hsp_firmware_headers

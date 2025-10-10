@@ -14,7 +14,6 @@
 
 #include <DfwkStatus.h> // for DFWK_SUCCESS
 #include <FPFwInterrupts.h>
-#include <FpFwAssert.h>           // for FPFW_RUNTIME_ASSERT
 #include <FpFwCli.h>              // for FpFwCliPrint, FPFW_CLI_STATUS
 #include <FpFwUtils.h>            // for FPFW_UNUSED, FPFW_ARRAY_SIZE
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_recv_req_t

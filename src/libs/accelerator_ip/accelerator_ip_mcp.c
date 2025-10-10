@@ -17,11 +17,11 @@
 #include "accelerator_ip_priv.h"
 
 #include <DbgPrint.h>      // for FPFW_DBGPRINT_INFO
-#include <FpFwAssert.h>    // for FPFW_RUNTIME_ASSERT
 #include <accel_intr.h>    // for accel_intr_mcp_init
 #include <accelip_id.h>    // NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <atu_init.h>      // for atu_svc_accel_atu_addr
 #include <atu_lib.h>       // for atu_map, atu_unmap, atu_map...
+#include <bug_check.h>     // for BUG_ASSERT_PARAM
 #include <idsw.h>          // for idsw_get_die_id
 #include <idsw_kng.h>      // for IS_PLATFORM_FPGA
 #include <silibs_status.h> // for SILIBS_SUCCESS
@@ -71,7 +71,7 @@ int32_t mcp_accelerators_init(void)
 
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
 
-    FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
+    BUG_ASSERT_PARAM(p_ss_ctxt != NULL, p_ss_ctxt, 0);
 
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
@@ -87,7 +87,7 @@ int32_t mcp_accelerators_init(void)
                                    p_ss_ctxt[index].accelip_metadata.accel_type,
                                    p_ss_ctxt[index].accelip_metadata.accel_instance,
                                    ret);
-                FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+                BUG_ASSERT_PARAM(ret == ACCEL_RET_SUCCESS, ret, 0);
             }
             else
             {

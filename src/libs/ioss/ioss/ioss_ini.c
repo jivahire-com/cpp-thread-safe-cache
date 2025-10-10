@@ -10,8 +10,8 @@
 /*------------- Includes -----------------*/
 #include "ioss_ini.h"
 
-#include <FpFwAssert.h>
 #include <atu_lib.h>
+#include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <ioss_init.h>
 #include <kng_atu_mappings.h>
@@ -51,7 +51,7 @@ void ioss_ini()
     silibs_status_t sts = SILIBS_SUCCESS;
 
     sts = atu_map(ATU_ID_MSCP, &atu_ioss_map);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     uint32_t resolved_ioss_base_addr = atu_ioss_map.mscp_start_address;
 
@@ -71,7 +71,7 @@ void ioss_ini()
     if (variable_service_initialize_ctx(&req_ctx, &mem_ctx) != KNG_SUCCESS)
     {
         printf("Variable_service_initialize_ctx failed");
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
     }
 
     // Prepare the set variable request
@@ -101,8 +101,8 @@ void ioss_ini()
 
     // Enable IOSS IPs
     sts = ioss_init(D0_IOSS, &init);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     sts = atu_unmap(ATU_ID_MSCP, &atu_ioss_map);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 }

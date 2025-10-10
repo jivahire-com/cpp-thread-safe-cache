@@ -12,8 +12,8 @@
 #include "power_dfwk.h"      // for power_service_interface_t, power_...
 #include "power_runconfig.h" // for VM_FLAGS_NONE, VM_FLAGS_DIV2, pow...
 
-#include <FpFwAssert.h>            // for FPFW_RUNTIME_ASSERT
-#include <atu_api.h>               // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
+#include <atu_api.h> // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
+#include <bug_check.h>
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <core_info.h>
 #include <corebits.h>
@@ -226,7 +226,7 @@ FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc", "sos_int"))
     // static data for SSI registration
     static startup_ssi_registration_t ssi_registration;
     int32_t status = sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &power_ssi_interface.header);
-    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
     /*=========== End code for SSI registration ==========*/
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &power_interface};

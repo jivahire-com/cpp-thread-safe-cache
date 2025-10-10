@@ -10,7 +10,6 @@
 /*------------- Includes -----------------*/
 #include <DfwkClient.h>         // for DfwkClientInterfaceOpen
 #include <DfwkThreadXHost.h>    // for DFWK_THREADX_HOST
-#include <FpFwAssert.h>         // for FPFW_RUNTIME_ASSERT
 #include <addressblock0_regs.h> // for ADDRESSBLOCK0_WDOGLOAD_ADDRESS, ADDRESSBLOCK0_WDOGRIS_ADDRESS
 #include <bug_check.h>          // for BUG_CHECK
 #include <crash_dump.h>         // for crash_dump_init
@@ -160,11 +159,11 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib", "hw_se
 
     // Enable full dump
     KNG_STATUS status = crash_dump_register_dump(&full_dump_ctx);
-    FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
+    BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, 0);
 
     // Initialize the exception handler
     status = exception_handler_init();
-    FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
+    BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, 0);
 
     // Try to configure the crash dump ICC contexts if available.
     // If ICC contexts are not available yet, it will be configured later.
@@ -195,7 +194,7 @@ FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk", "sos_int")
     static startup_ssi_registration_t ssi_registration;
     int32_t status =
         sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &crash_dump_interface.Header);
-    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &crash_dump_interface};
 }
@@ -220,7 +219,7 @@ FPFW_INIT_COMPONENT(cd_gpio, FPFW_INIT_DEPENDENCIES("cd_drv", "gpio_dev"))
     // Register ISR for GPIO CD request from BMC
     uint32_t status =
         gpio_register_deferred_isr(&gpio_interface, &isr_request, GPIO_CD_REQUEST, gpio_cd_req_callback, NULL);
-    FPFW_RUNTIME_ASSERT(status == KNG_SUCCESS);
+    BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, 0);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
@@ -244,7 +243,7 @@ FPFW_INIT_COMPONENT(cd_pldm, FPFW_INIT_DEPENDENCIES("cd_drv", "pldm"))
         };
 
         fpfw_status_t status = fpfw_pldm_service_register_platform_event_ready_notification(&ready_notification);
-        FPFW_RUNTIME_ASSERT(status == FPFW_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM(status == FPFW_STATUS_SUCCESS, status, 0);
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.interface.platform.dbgprint
     fwlib.service.iccBase
     ms::cmocka::testrunner
+    ms::lib::crash_dump
     ms::lib::tower
     ms::lib::hsp_firmware_headers
     ms::lib::system_info

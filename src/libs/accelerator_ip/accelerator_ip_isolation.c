@@ -12,8 +12,8 @@
 /*-------------------------------- Includes ---------------------------------*/
 #include "accelerator_ip.h"
 
-#include <FpFwAssert.h>          // for FPFW_RUNTIME_ASSERT
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt
+#include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <idsw.h>   // for idsw_get_platform_sdv, idsw...
 #include <string.h> // for memcpy, strlen
@@ -64,7 +64,7 @@ int32_t scp_accelerators_isolation_control(void)
 
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
 
-    FPFW_RUNTIME_ASSERT(p_ss_ctxt != NULL);
+    BUG_ASSERT_PARAM(p_ss_ctxt != NULL, p_ss_ctxt, 0);
 
     // Init all available Accelerator instances
     for (uint32_t index = 0; index < accel_ctxt_size; index++)
@@ -76,16 +76,16 @@ int32_t scp_accelerators_isolation_control(void)
             memcpy((void*)&atu_map_entry, (void*)p_ss_ctxt[index].p_accelip_atu_map, sizeof(atu_map_entry_t));
 
             ret = atu_map(ATU_ID_MSCP, &atu_map_entry);
-            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+            BUG_ASSERT_PARAM(ret == ACCEL_RET_SUCCESS, ret, 0);
 
             ret = accelip_ss_enable_ip_isolation(
                 atu_map_entry.mscp_start_address,
                 p_ss_ctxt[index].accelip_metadata.accel_type,
                 accel_is_isolation_enabled(get_accelip_type(p_ss_ctxt[index].accelip_metadata.accel_type)));
-            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+            BUG_ASSERT_PARAM(ret == ACCEL_RET_SUCCESS, ret, 0);
 
             ret = atu_unmap(ATU_ID_MSCP, &atu_map_entry);
-            FPFW_RUNTIME_ASSERT(ret == ACCEL_RET_SUCCESS);
+            BUG_ASSERT_PARAM(ret == ACCEL_RET_SUCCESS, ret, 0);
         }
     }
 

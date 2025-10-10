@@ -8,7 +8,6 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.lib.assert
     fwlib.lib.cfg_mgr
     fwlib.lib.interface.platform.dbgprint
     fwlib.service.iccBase

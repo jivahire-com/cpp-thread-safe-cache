@@ -12,7 +12,6 @@ target_link_libraries(
         PUBLIC
             fwlib.lib.status
         PRIVATE
-            fwlib.lib.assert
             ms::lib::cortex_m7::nvic
             ms::lib::crash_dump
             ms::lib::error_codes

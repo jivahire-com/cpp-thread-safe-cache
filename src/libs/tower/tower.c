@@ -9,7 +9,6 @@
 
 /*------------- Includes -----------------*/
 
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <accelerator_ip.h>
 #include <atu_lib.h> // for atu_map, atu_unmap, atu_map_entry_t
 #include <bug_check.h>
@@ -58,7 +57,7 @@
 
 static uint16_t tower_vab_instances_to_be_enabled(uint8_t die_num)
 {
-    FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+    BUG_ASSERT_PARAM(die_num < NUM_DIE, die_num, 0);
     uint16_t vab_instances_to_init = 0;
     KNG_PLAT_ID plat = idsw_get_platform_sdv();
     switch (plat)
@@ -112,7 +111,7 @@ static uint16_t tower_vab_instances_to_be_enabled(uint8_t die_num)
 
 static uint16_t tower_rpss_instances_to_be_enabled(uint8_t die_num)
 {
-    FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+    BUG_ASSERT_PARAM(die_num < NUM_DIE, die_num, 0);
     uint16_t rpss_instances_to_init = 0;
     KNG_PLAT_ID plat = idsw_get_platform_sdv();
     switch (plat)
@@ -223,7 +222,7 @@ static void hsp_send_recv_post_scp_init_tower_config(fpfw_icc_base_ctx_t* icc_ct
 
 void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
-    FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+    BUG_ASSERT_PARAM(die_num < NUM_DIE, die_num, 0);
 
     bool is_warm_start = system_info_is_warm_start();
 
@@ -240,14 +239,14 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     tower_sequence_params.tower_configure_fabric_apu = !is_warm_start;
     tower_sequence_params.tower_configure_fabric_fmu = true;
     atu_map_entry_t atu_fabric_tower_map = ATU_MAPPING_FABRIC_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
-    FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_fabric_tower_map));
+    BUG_ASSERT(!atu_map(ATU_ID_MSCP, &atu_fabric_tower_map));
     tower_sequence_params.tower_fabric_tower_resolved_addr = atu_fabric_tower_map.mscp_start_address;
 
     // Peripheral Tower
     tower_sequence_params.tower_configure_periph_apu = !is_warm_start;
     tower_sequence_params.tower_configure_periph_fmu = true;
     atu_map_entry_t atu_peripheral_tower_map = ATU_MAPPING_PERIPHERAL_TOWER((die_num == 0 ? SOC_D0 : SOC_D1));
-    FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_peripheral_tower_map));
+    BUG_ASSERT(!atu_map(ATU_ID_MSCP, &atu_peripheral_tower_map));
     tower_sequence_params.tower_periph_tower_resolved_addr = atu_peripheral_tower_map.mscp_start_address;
 
     // D2DSS towers
@@ -272,7 +271,7 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         if ((vab_instances_to_init & (0x1 << vab_id)) != 0)
         {
             printf("Configure VAB ATU map for VAB: 0x%x\n", vab_id);
-            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vab_maps[vab_id]));
+            BUG_ASSERT(!atu_map(ATU_ID_MSCP, &atu_vab_maps[vab_id]));
             tower_sequence_params.tower_vab_resolved_addr[vab_id] = atu_vab_maps[vab_id].mscp_start_address;
             tower_sequence_params.vab_smmu_l0gpt_size[vab_id] = 0;
             // GPT enable / disable would be a knob controlled by TF-A. This param here doesn't enable GPT
@@ -298,7 +297,7 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         if ((rpss_instances_to_init & (0x1 << rpss_id)) != 0)
         {
             printf("Configure RPSS Tower ATU map for RPSS: 0x%x\n", rpss_id);
-            FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &atu_rpss_tower_maps[rpss_id]));
+            BUG_ASSERT(!atu_map(ATU_ID_MSCP, &atu_rpss_tower_maps[rpss_id]));
             tower_sequence_params.tower_rpss_tower_resolved_addr[rpss_id] = atu_rpss_tower_maps[rpss_id].mscp_start_address;
         }
     }
@@ -312,7 +311,7 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     // SDMSS tower
     printf("Configure SDMSS Tower ATU map\n");
     atu_map_entry_t sdmss_tower_map = ATU_MAPPING_SDMSS_TOWER((die_num == 0 ? D0_SDMSS : D1_SDMSS));
-    FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &sdmss_tower_map));
+    BUG_ASSERT(!atu_map(ATU_ID_MSCP, &sdmss_tower_map));
     tower_sequence_params.tower_sdmss_tower_resolved_addr = sdmss_tower_map.mscp_start_address;
     tower_sequence_params.tower_configure_sdmss_sam = !is_warm_start;
     tower_sequence_params.tower_configure_sdmss_apu = !is_warm_start;
@@ -350,7 +349,7 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     // IOSS tower
     printf("Configure IOSS tower ATU map\n");
     atu_map_entry_t ioss_tower_map = ATU_MAPPING_IOSS_TOWER((die_num == 0 ? D0_IOSS : D1_IOSS));
-    FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &ioss_tower_map));
+    BUG_ASSERT(!atu_map(ATU_ID_MSCP, &ioss_tower_map));
     tower_sequence_params.tower_ioss_tower_resolved_addr = ioss_tower_map.mscp_start_address;
     tower_sequence_params.tower_configure_ioss_sam = !is_warm_start;
     tower_sequence_params.tower_configure_ioss_apu = !is_warm_start;
@@ -371,35 +370,35 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     }
 
     printf("Configure all towers\n");
-    FPFW_RUNTIME_ASSERT(!tower_sequence_configure_towers(&tower_sequence_params));
+    BUG_ASSERT(!tower_sequence_configure_towers(&tower_sequence_params));
     printf("Towers configured\n");
 
     // Un-map towers
     printf("Unmap towers\n");
-    FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_peripheral_tower_map));
-    FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_fabric_tower_map));
+    BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_peripheral_tower_map));
+    BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_fabric_tower_map));
 
     if (!(IS_PLATFORM_SVP()))
     {
-        FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_d2d_cfg0_tower_map));
-        FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_d2d_cfg1_tower_map));
+        BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_d2d_cfg0_tower_map));
+        BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_d2d_cfg1_tower_map));
     }
 
     for (uint16_t vab_id = 0; vab_id < MAX_VAB_INSTANCES; vab_id++)
     {
         if ((vab_instances_to_init & (0x1 << vab_id)) != 0)
         {
-            FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_vab_maps[vab_id]));
+            BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_vab_maps[vab_id]));
         }
     }
     for (uint8_t rpss_id = 0; rpss_id < NUM_RPSS; rpss_id++)
     {
         if ((rpss_instances_to_init & (0x1 << rpss_id)) != 0)
         {
-            FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_rpss_tower_maps[rpss_id]));
+            BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &atu_rpss_tower_maps[rpss_id]));
         }
     }
-    FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &sdmss_tower_map));
-    FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &ioss_tower_map));
+    BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &sdmss_tower_map));
+    BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &ioss_tower_map));
     printf("Towers unmapped\n");
 }

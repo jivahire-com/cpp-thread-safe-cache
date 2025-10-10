@@ -13,9 +13,9 @@
 #include <DfwkDriver.h>
 #include <DfwkHost.h> // for DfwkDeviceInitialize
 #include <DfwkThreadXHost.h>
-#include <FpFwAssert.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <arm_intrinsic.h>
+#include <bug_check.h>
 #include <fpfw_init.h>
 #include <nvic.h>
 #include <padring_southeast_regs.h>
@@ -85,7 +85,7 @@ avs_error_t scp_avs_status_error(uint32_t resp_data)
 
 void avs_get_error_counts(scp_avs_error_count_t* error_count_resp)
 {
-    FPFW_RUNTIME_ASSERT(error_count_resp != NULL);
+    BUG_ASSERT(error_count_resp != NULL);
 
     // for CLI - grab the error count
     *error_count_resp = avs_error_count;
@@ -108,7 +108,7 @@ void scp_avs_isr(void* context)
 
     uint32_t intr_status = 0;
     int status = avs_get_interrupt_status(device->avs_bus_num, &intr_status);
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
 
     // Note - the AVS_IRQ_CMD_DONE is also set with the AVS_IRQ_SLV_STATUS_CRC_ERR.
     if ((intr_status & (AVS_IRQ_SLV_STATUS_CRC_ERR)))
@@ -116,7 +116,7 @@ void scp_avs_isr(void* context)
         AVS_LOG_WARN("CRC error detected on AVS bus %d", device->avs_bus_num);
         device->isr_request.avs_crc_error = true;
         status = avs_clear_interrupt_status(device->avs_bus_num, AVS_IRQ_SLV_STATUS_CRC_ERR);
-        FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+        BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
     }
 
     if ((intr_status & (AVS_IRQ_CMD_DONE)))
@@ -126,7 +126,7 @@ void scp_avs_isr(void* context)
     }
 
     status = avs_clear_interrupt_status(device->avs_bus_num, AVS_IRQ_CMD_DONE);
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
 
     __DSB();
 }
@@ -235,11 +235,11 @@ void scp_avs_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         break;
 
     default:
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
         break;
     }
 
-    FPFW_RUNTIME_ASSERT(status == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
 }
 
 void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
@@ -419,7 +419,7 @@ int32_t scp_avs_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
         // TODO: (https://azurecsi.visualstudio.com/Dev/_workitems/edit/1484968) Get error counts for the client.
         break;
     default:
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
         break;
     }
 
@@ -505,7 +505,7 @@ Per AVS SPEC Sec 5.6, need 34 1's to sync slave
         break;
 
     default:
-        FPFW_RUNTIME_ASSERT(false);
+        BUG_ASSERT(false);
         break;
     }
 
@@ -515,16 +515,16 @@ Per AVS SPEC Sec 5.6, need 34 1's to sync slave
 
     // Configure the NVIC Handling
     nvic_status_t status = nvic_irq_set_isr_with_param(Device->config.avs_irq, scp_avs_isr, Device);
-    FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == NVIC_STATUS_SUCCESS, status, 0);
 
     status = nvic_irq_clear_pending(Device->config.avs_irq);
-    FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == NVIC_STATUS_SUCCESS, status, 0);
 
     status = nvic_irq_enable(Device->config.avs_irq);
-    FPFW_RUNTIME_ASSERT(status == NVIC_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == NVIC_STATUS_SUCCESS, status, 0);
 
     // Configure the AVS HW to fire the ISR only on CMD DONE
-    FPFW_RUNTIME_ASSERT(avs_enable_interrupt(Device->avs_bus_num, AVS_IRQ_CMD_DONE) == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(avs_enable_interrupt(Device->avs_bus_num, AVS_IRQ_CMD_DONE) == SILIBS_SUCCESS, status, 0);
 }
 
 void scp_avs_interface_initialize(pscp_avs_device Device, pscp_avs_interface_t Interface)

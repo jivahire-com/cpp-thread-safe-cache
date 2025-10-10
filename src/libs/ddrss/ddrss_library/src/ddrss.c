@@ -11,9 +11,9 @@
 #include "ddr_atu_map.h"
 
 #include <FPFwInterrupts.h>
-#include <FpFwAssert.h>
 #include <atu_lib.h>
 #include <boot_status.h>
+#include <bug_check.h>
 #include <cmn800.h>
 #include <cmsdk_wd.h> // for wdog_cmsdk_apb_disable
 #include <ddr_err_inj.h>
@@ -81,12 +81,12 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
                                                         (void*)&ddrss_interrupt_id[interrupt_idx]);
         intr_status |= FPFwCoreInterruptEnableVector(ddrss_int);
 
-        FPFW_RUNTIME_ASSERT(intr_status == 0);
+        BUG_ASSERT_PARAM(intr_status == 0, intr_status, 0);
     }
 
     // Get the default DDRSS cfgs
     sts = ddrss_get_config(&ddrss_cfgs);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     if (idhw_is_single_die_boot_en())
     {
@@ -425,11 +425,11 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ddrss_base_die[SOC_D0] = d0_start;
     ddrss_cfgs.ddrss_base_die[SOC_D1] = d1_start;
 
-    FPFW_RUNTIME_ASSERT(ddrss_set_die_base(die_num, die_num == DIE_0 ? d0_start : d1_start) == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(ddrss_set_die_base(die_num, die_num == DIE_0 ? d0_start : d1_start) == SILIBS_SUCCESS, die_num, 0);
 
     // Sync up with mesh config on NUMA, address hash and MC mapping cfgs
     cmn800_snf_to_mc_config_t* mc_config = cmn800_generate_ddr_mc_map_from_cached_config();
-    FPFW_RUNTIME_ASSERT(mc_config != NULL);
+    BUG_ASSERT_PARAM(mc_config != NULL, die_num, 0);
     ddrss_cfgs.numa_cfg = mc_config->is_numa_enabled ? DDRSS_NUMA_CFG_NUMA : DDRSS_NUMA_CFG_UMA;
     ddrss_cfgs.hash_addr_bits_sel = mc_config->hash_select;
     memcpy(ddrss_cfgs.mc_mapping_order, mc_config->ddr_mc_map, sizeof(ddrss_cfgs.mc_mapping_order));
@@ -499,7 +499,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
          */
         post_led_status(&bsc_req_mem, bsc_status);
 
-        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
     }
 
     if (ddrss_cfgs.ext_knobs.fips_kat_en)
@@ -548,7 +548,7 @@ void prod_ddrss_pcr_init(KNG_DIE_ID die_num)
     uint32_t ddrss_mask = idhw_is_single_die_boot_en() ? 0x03F : 0xFFF;
 
     uintptr_t start_addr = ddrss_atu_map_cfg_space(die_num);
-    FPFW_RUNTIME_ASSERT(ddrss_set_die_base(die_num, start_addr) == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(ddrss_set_die_base(die_num, start_addr) == SILIBS_SUCCESS, die_num, 0);
     pcr_ddrss_configure_clock_and_pcr_reset(ddrss_mask, die_num);
     ddrss_atu_unmap_cfg_space(die_num);
 }
@@ -578,7 +578,7 @@ int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
     fpfw_status_t icc_status = {0};
 
     fpfw_icc_base_ctx_t* icc_ctx = (fpfw_icc_base_ctx_t*)fpfw_init_get_handle("icc_hspmbx");
-    FPFW_RUNTIME_ASSERT(icc_ctx != NULL);
+    BUG_ASSERT_PARAM(icc_ctx != NULL, icc_ctx, 0);
 
     if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP) ||
         (platform_id == PLATFORM_RVP_EVT_SILICON))
@@ -612,10 +612,10 @@ int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
             icc_status = fpfw_icc_base_send_recv_sync(icc_ctx, &mailbox_msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
 
             //! Verify sync return status & response message
-            FPFW_RUNTIME_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
-            FPFW_RUNTIME_ASSERT(recv_msg_size_bytes > 0);
-            FPFW_RUNTIME_ASSERT(mailbox_msg.header.cmd == rsp_cmd);
-            FPFW_RUNTIME_ASSERT(mailbox_msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+            BUG_ASSERT_PARAM(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_status, 0);
+            BUG_ASSERT_PARAM(recv_msg_size_bytes > 0, recv_msg_size_bytes, 0);
+            BUG_ASSERT_PARAM(mailbox_msg.header.cmd == rsp_cmd, mailbox_msg.header.cmd, rsp_cmd);
+            BUG_ASSERT_PARAM(mailbox_msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS, mailbox_msg.rsp.status, 0);
 
             if (req_cmd == HSP_MAILBOX_CMD_DDRSS_DEPLOY_PROD_KEYS_REQ)
             {
@@ -638,7 +638,7 @@ int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
             icc_status = fpfw_icc_base_send_sync(icc_ctx, &mailbox_msg, sizeof(kng_hsp_mailbox_msg));
 
             //! Verify sync return status
-            FPFW_RUNTIME_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+            BUG_ASSERT_PARAM(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_status, 0);
 
             ddrss_key_loading_req |= DDRSS_PROD_FW_FIPS_TEST_NOTIFIED;
         }

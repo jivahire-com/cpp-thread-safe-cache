@@ -13,9 +13,9 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.dfwk
     fwlib.lib.init
-    fwlib.lib.assert
     fwlib.lib.interface.platform.dbgprint
     fwlib.platform.dfwkhost.threadx
+    ms::lib::crash_dump
     ms::lib::threadx
     silibs_platform
     silibs::idsw

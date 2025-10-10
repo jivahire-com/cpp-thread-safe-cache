@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::threadx
         ms::lib::core_info
+        ms::lib::crash_dump
         ms::lib::utils
         ms::service::power
         ms::service::atu_service

@@ -9,7 +9,6 @@
 
 /*------------- Includes -----------------*/
 #include <FPFwInterrupts.h> // for FPFwCoreInterruptRegisterCallback, FPFwCoreInterruptHandler, FPFwCoreInterruptEnableVector
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <bug_check.h>
 #include <cml.h>
 #include <cmn800.h>
@@ -715,7 +714,7 @@ void mesh_check_ddrss_from_config(uint32_t* ddrss_en, uint32_t cmn_config_enum)
 
 void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
-    FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+    BUG_ASSERT_PARAM(die_num < NUM_DIE, die_num, 0);
     uint32_t test32 = 0x0;
     s_mbx_icc_ctx = icc_ctx;
 
@@ -755,7 +754,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
                 if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
                 {
                     MESH_CRIT("Cannot Proceed with Boot\n");
-                    FPFW_RUNTIME_ASSERT(0);
+                    BUG_ASSERT(0);
                 }
                 else
                 {
@@ -766,7 +765,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         else
         {
             MESH_CRIT("ddrss_mask_from_mesh is 0x%x, Cannot Proceed with Boot\n", ddrss_mask_from_mesh);
-            FPFW_RUNTIME_ASSERT(0);
+            BUG_ASSERT(0);
         }
         cmn800_set_i3c_dimm_params(dimm_sku, test32);
         cmn800_sequence_param.DRAM_SIZE = get_i3c_dimm_cap_per_ch();
@@ -780,11 +779,11 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
     sts = cmn800_sequence_svp_updates(cmn800_sequence_param);
     MESH_INFO("cmn800_sequence_svp_updates sts 0x%x\n", sts);
-    FPFW_RUNTIME_ASSERT(sts == 0);
+    BUG_ASSERT_PARAM(sts == 0, sts, 0);
 
     sts = cmn800_sequence(cmn800_sequence_param);
     MESH_INFO("cmn800_sequence sts 0x%x\n", sts);
-    FPFW_RUNTIME_ASSERT(sts == 0);
+    BUG_ASSERT_PARAM(sts == 0, sts, 0);
 
     if (system_info_is_hsp_present())
     {
@@ -797,7 +796,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 
 void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
 {
-    FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+    BUG_ASSERT_PARAM(die_num < NUM_DIE, die_num, 0);
     s_mbx_icc_ctx = icc_ctx;
 
     int sts = 0x0;
@@ -824,7 +823,7 @@ void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         {
             sts = d2dss_sequence(cmn800_sequence_param);
             MESH_INFO("d2dss_sequence sts 0x%x\n", sts);
-            FPFW_RUNTIME_ASSERT(sts == 0);
+            BUG_ASSERT_PARAM(sts == 0, sts, 0);
         }
         // Setup the D2D RAS Agents for Interrupt Handling
         d2d_ras_init();
@@ -844,25 +843,25 @@ void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
                                                     (FPFwCoreInterruptHandler)mesh_fault_isr,
                                                     (void*)&unused_parameter_not_null);
     intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQFAULTS);
-    FPFW_RUNTIME_ASSERT(intr_status == 0);
+    BUG_ASSERT_PARAM(intr_status == 0, intr_status, 0);
 
     intr_status = FPFwCoreInterruptRegisterCallback(HW_INT_INTREQERRS,
                                                     (FPFwCoreInterruptHandler)mesh_error_isr,
                                                     (void*)&unused_parameter_not_null);
     intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQERRS);
-    FPFW_RUNTIME_ASSERT(intr_status == 0);
+    BUG_ASSERT_PARAM(intr_status == 0, intr_status, 0);
 
     intr_status = FPFwCoreInterruptRegisterCallback(HW_INT_INTREQFAULTNS,
                                                     (FPFwCoreInterruptHandler)mesh_ns_fault_isr,
                                                     (void*)&unused_parameter_not_null);
     intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQFAULTNS);
-    FPFW_RUNTIME_ASSERT(intr_status == 0);
+    BUG_ASSERT_PARAM(intr_status == 0, intr_status, 0);
 
     intr_status = FPFwCoreInterruptRegisterCallback(HW_INT_INTREQERRNS,
                                                     (FPFwCoreInterruptHandler)mesh_ns_error_isr,
                                                     (void*)&unused_parameter_not_null);
     intr_status |= FPFwCoreInterruptEnableVector(HW_INT_INTREQERRNS);
-    FPFW_RUNTIME_ASSERT(intr_status == 0);
+    BUG_ASSERT_PARAM(intr_status == 0, intr_status, 0);
 
     // Publish NUMA info regardless of single or dual die boot
     // This is required for the OS to be able to read the NUMA info from the SPI flash

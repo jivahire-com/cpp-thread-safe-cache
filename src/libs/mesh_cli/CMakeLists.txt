@@ -14,7 +14,6 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
             fwlib.service.cli
-            fwlib.lib.assert
             fwlib.service.iccBase
             ms::lib::hsp_firmware_headers
             silibs_platform

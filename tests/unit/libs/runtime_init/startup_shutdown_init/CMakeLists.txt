@@ -18,6 +18,7 @@ function(create_sos_init_test TARGET_NAME RUNTIME_INIT_DEFINE)
             ms::client_interface::startup_shutdown
             ms::cmocka::testrunner
             ms::lib::boot_status
+            ms::lib::crash_dump
             ms::lib::ift
             ms::lib::threadx
             ms::service::scp_startup_shutdown

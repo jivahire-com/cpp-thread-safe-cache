@@ -27,7 +27,6 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    FpFwAssert
     rng_enable_r
     rng_disable_r
     rng_wait_for_rng_complete_r

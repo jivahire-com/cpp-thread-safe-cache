@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <FpFwAssert.h>
 #include <atu_api.h>
+#include <bug_check.h>
 #include <cxl.h>
 #include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
@@ -68,10 +69,10 @@ static uint8_t get_rp_port_number_from_cxl_port(CXL_PORT port)
 
 uint64_t set_cxl_mem_region_base_and_size(cxl_hdm_decoder_region_t* hdm_decoder, uint64_t* base, uint8_t num_targets)
 {
-    FPFW_RUNTIME_ASSERT(hdm_decoder != NULL);
-    FPFW_RUNTIME_ASSERT(base != NULL);
-    FPFW_RUNTIME_ASSERT(num_targets > 0);
-    FPFW_RUNTIME_ASSERT(num_targets <= INTERLEAVE_4_WAYS);
+    BUG_ASSERT_PARAM(hdm_decoder != NULL, hdm_decoder, 0);
+    BUG_ASSERT_PARAM(base != NULL, base, 0);
+    BUG_ASSERT_PARAM(num_targets > 0, num_targets, 0);
+    BUG_ASSERT_PARAM(num_targets <= INTERLEAVE_4_WAYS, num_targets, INTERLEAVE_4_WAYS);
 
     hdm_decoder->base_low.base_low = (uint32_t)((*base >> 28) & 0xF); // bits 31:28 of the base address
     hdm_decoder->base_high.base_high = (uint32_t)((*base >> 32) & UINT32_MAX); // bits 63:32 of the base address

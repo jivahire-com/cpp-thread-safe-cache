@@ -15,7 +15,6 @@
 /*-------------------------------- Includes ---------------------------------*/
 
 #include <FPFwInterrupts.h>
-#include <FpFwAssert.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <accel_intr.h>
 #include <accel_intr_virt_irq.h>
@@ -89,11 +88,11 @@ static void accel_intr_virt_irq_level1_wrapper_isr(void* irq_num)
 
     // Read Level 1 status register address
     uint32_t interrupt_reg_addr = sdm_ext_get_category_status_reg_addr(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR);
-    FPFW_RUNTIME_ASSERT(interrupt_reg_addr != SDM_EXT_INVALID_INTERRUPT_INPUT);
+    BUG_ASSERT_PARAM(interrupt_reg_addr != SDM_EXT_INVALID_INTERRUPT_INPUT, interrupt_reg_addr, 0);
 
     // Read Level 1 mask/control register values
     uint32_t interrupt_mask_addr = sdm_ext_get_category_mask_reg_addr(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR);
-    FPFW_RUNTIME_ASSERT(interrupt_mask_addr != SDM_EXT_INVALID_INTERRUPT_INPUT);
+    BUG_ASSERT_PARAM(interrupt_mask_addr != SDM_EXT_INVALID_INTERRUPT_INPUT, interrupt_mask_addr, 0);
 
     // Mask interrupt value with mask bits
     uint32_t interrupt_reg_value =

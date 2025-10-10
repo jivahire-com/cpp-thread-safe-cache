@@ -9,8 +9,8 @@
 
 /*------------- Includes -----------------*/
 
-#include <FpFwAssert.h>
 #include <atu_lib.h>
+#include <bug_check.h>
 #include <clocks_sequence.h>
 #include <clocks_sequence_knobs.h>
 #include <css.h>
@@ -52,7 +52,7 @@ atu_map_entry_t atu_system_tower_map[MAX_SYSTEM_TOWER_INSTANCES] = {
 // TODO: WI 1726113 Create a component initialization library for these APIs
 void css_pre_mesh_init(uint8_t die_num)
 {
-    FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+    BUG_ASSERT_PARAM(die_num < NUM_DIE, die_num, 0);
 
     intclk_cfg_t intclk_knobs = config_get_clock_seq_knobs().clocks_intclk_cfg;
 
@@ -67,24 +67,24 @@ void css_pre_mesh_init(uint8_t die_num)
     scp_clocks_pre_mesh_param.system_smmu_l0gptsz = 0;
     scp_clocks_pre_mesh_param.intclk_cfg = &intclk_knobs;
     int sts = clocks_sequence_css_pre_mesh_init(&scp_clocks_pre_mesh_param);
-    FPFW_RUNTIME_ASSERT(sts == 0);
+    BUG_ASSERT_PARAM(sts == 0, sts, 0);
 }
 
 void css_configure_system_tower(uint8_t die_num)
 {
     // System tower should be configured by the HSP in two stages - presystop and post-systop bringup
     // Since this function is running on SCP after systop de-assertion, we can configure system tower in one-shot
-    FPFW_RUNTIME_ASSERT(die_num < NUM_DIE);
+    BUG_ASSERT_PARAM(die_num < NUM_DIE, die_num, 0);
 
     int sts = atu_map(ATU_ID_MSCP, &atu_system_tower_map[die_num]);
-    FPFW_RUNTIME_ASSERT(sts == 0);
+    BUG_ASSERT_PARAM(sts == 0, sts, 0);
     tower_system_control_configure_apu_aon(atu_system_tower_map[die_num].mscp_start_address, die_num, false);
     tower_system_control_configure_aon_sam(atu_system_tower_map[die_num].mscp_start_address, die_num);
 
     tower_system_control_configure_apu_systop(atu_system_tower_map[die_num].mscp_start_address, die_num, false);
     tower_system_control_configure_systop_sam(atu_system_tower_map[die_num].mscp_start_address, die_num);
     sts = atu_unmap(ATU_ID_MSCP, &atu_system_tower_map[die_num]);
-    FPFW_RUNTIME_ASSERT(sts == 0);
+    BUG_ASSERT_PARAM(sts == 0, sts, 0);
 }
 
 void css_post_mesh_init()
@@ -96,5 +96,5 @@ void css_post_mesh_init()
     sys_counter_delay_cfg_t sys_counter_delay_cfg = config_get_clock_seq_knobs().sys_counter_delay_cfg;
     scp_clocks_post_mesh_param.sys_counter_delay = &sys_counter_delay_cfg;
     int sts = clocks_sequence_css_post_mesh_init(&scp_clocks_post_mesh_param);
-    FPFW_RUNTIME_ASSERT(sts == 0);
+    BUG_ASSERT_PARAM(sts == 0, sts, 0);
 }

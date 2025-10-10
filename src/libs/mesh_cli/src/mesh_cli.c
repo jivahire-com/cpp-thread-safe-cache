@@ -10,7 +10,6 @@
 
 /*------------- Includes -----------------*/
 #include <DfwkClient.h> // for DfwkAsyncRequestInititalize, PDFWK_INTER...
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwCli.h>
 #include <FpFwLinkedList.h>
 #include <FpFwUtils.h>

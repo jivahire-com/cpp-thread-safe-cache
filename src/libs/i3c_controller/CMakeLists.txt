@@ -14,7 +14,6 @@ target_link_libraries(${TARGET}
     PRIVATE
     fwlib.driver.mboxIccTransport
     fwlib.lib.cfg_mgr
-    fwlib.lib.assert
     fwlib.lib.interface.platform.interrupts
     fwlib.lib.mboxPrimitives
     fwlib.service.iccBase

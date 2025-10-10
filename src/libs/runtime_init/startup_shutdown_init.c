@@ -10,10 +10,10 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <DfwkCommon.h>  // for DfwkAsyncRequestInitialize, PDFW...
-#include <FpFwAssert.h>  // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>   // for FPFW_UNUSED
 #include <boot_status.h> // for post_led_status
-#include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_C...
+#include <bug_check.h>
+#include <fpfw_init.h> // for fpfw_init_get_handle, FPFW_INIT_C...
 #ifdef SCP_RUNTIME_INIT
     #include <ift_fw.h> // for ift_run_tests
 #endif
@@ -61,7 +61,7 @@ FPFW_INIT_COMPONENT(sos_int,
     // static data for SSI registration
     static startup_ssi_registration_t ssi_registration;
     int32_t status = sos_register_ssi((void*)&sos_interface, &ssi_registration, &ssi_interface.header);
-    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
 
     // initialize the intercore communication
     sos_icc_init(fpfw_init_get_handle("icc_hspmbx"),
@@ -112,7 +112,7 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx"))
     // Register the against the private interface
     static startup_ssi_registration_t ssi_registration;
     int32_t status = sos_register_ssi((void*)&sos_interface, &ssi_registration, &ssi_interface.header);
-    FPFW_RUNTIME_ASSERT(status == FPFW_INIT_STATUS_SUCCESS);
+    BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
 
     // Build and queue the request for the MCP boot phase, to be handled by the SOS service
     static startup_start_phase_request_t startup_phase_request;

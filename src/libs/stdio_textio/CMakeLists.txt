@@ -8,9 +8,9 @@ set(SRC
 
 set(LIBS
         PRIVATE
-            fwlib.lib.assert
             fwlib.driver.interface.text_io
             fwlib.lib.utils
+            ms::lib::crash_dump
 )
 
 add_library(${TARGET} STATIC ${SRC})

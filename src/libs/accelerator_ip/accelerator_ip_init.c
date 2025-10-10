@@ -14,12 +14,12 @@
 #include "accelerator_ip.h" // for get_accelip_type, scp_accelerators_init
 
 #include <DbgPrint.h>            // for FPFW_DBGPRINT_INFO
-#include <FpFwAssert.h>          // for FPFW_RUNTIME_ASSERT
 #include <accel_intr.h>          // for accel_scp_intr_init
 #include <accelerator_ip_priv.h> // for get_accelerator_ctxt, accel_send_led_boot_status
 #include <accelip_id.h>          // for NUM_VALID_ACCEL_ID, ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <atu_init.h>            // for atu_svc_accel_atu_addr
 #include <boot_status.h>         // for LED_STATUS_CODE_SCP_ACCEL_FAILED
+#include <bug_check.h>           // for BUG_ASSERT_PARAM
 #include <cdedss_config_regs.h>  // for CDED_PCI_DEVICE_ID
 #include <fpfw_cfg_mgr.h>        // for config_get_sdm_*, config_get_cded_*
 #include <fpfw_init.h>           // for fpfw_init_get_handle
@@ -250,7 +250,7 @@ int32_t scp_accelerators_init(void)
 
 accel_init_failed:
     accel_send_led_boot_status(LED_STATUS_CODE_SCP_ACCEL_FAILED);
-    FPFW_RUNTIME_ASSERT(false);
+    BUG_ASSERT(false);
     return ACCEL_RET_FAIL_GENERAL;
 }
 
@@ -289,7 +289,7 @@ int32_t notify_accelerators_uefi_boot(void)
         if (accel_type == ACCEL_ID_SDM)
         {
             icc_ctx = fpfw_init_get_handle("icc_sdm_mbx");
-            FPFW_RUNTIME_ASSERT(icc_ctx != NULL);
+            BUG_ASSERT_PARAM(icc_ctx != NULL, icc_ctx, 0);
 
             payload_sdm.hdr.cmd = LARGE_FIFO_MAILBOX_MSG_UEFI_READY;
 
@@ -302,7 +302,7 @@ int32_t notify_accelerators_uefi_boot(void)
         else
         {
             icc_ctx = fpfw_init_get_handle("icc_cded_mbx");
-            FPFW_RUNTIME_ASSERT(icc_ctx != NULL);
+            BUG_ASSERT_PARAM(icc_ctx != NULL, icc_ctx, 0);
 
             payload_cded.hdr.cmd = LARGE_FIFO_MAILBOX_MSG_UEFI_READY;
 

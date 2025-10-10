@@ -43,7 +43,6 @@ target_link_libraries(${TARGET}
         silibs::sdm_command_desc
         silibs::semaphore
     PRIVATE
-        fwlib.lib.assert
         fwlib.lib.cfg_mgr
         fwlib.lib.init
         fwlib.lib.pldm.protocol

@@ -10,8 +10,8 @@
 /*------------- Includes -----------------*/
 #include "crash_dump_overrides.h"
 
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <bug_check.h>  // for BUG_ASSERT_PARAM
 #include <crash_dump.h> // for GetCrashDumpConfig
 #include <stdarg.h>     // for va_list, va_start, va_end
 #include <stdbool.h>    // for bool
@@ -30,7 +30,7 @@
 /*------------- Functions ----------------*/
 void crash_dump_register_pre_dump_callback(void cb(void*), void* ctx, crash_dump_type_t dump_type)
 {
-    FPFW_RUNTIME_ASSERT(cb != NULL);
+    BUG_ASSERT_PARAM(cb != NULL, cb, 0);
     crash_dump_context_t* cd_ctx = crash_dump_context();
 
     for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
@@ -38,7 +38,7 @@ void crash_dump_register_pre_dump_callback(void cb(void*), void* ctx, crash_dump
         if (dump_type == CRASH_DUMP_TYPE_ALL || dump_type == i)
         {
             crash_dump_type_callback_t* callback = &cd_ctx->callbacks[i];
-            FPFW_RUNTIME_ASSERT(callback->pre_dump_cb_count < PRE_DUMP_CB_MAX - 1);
+            BUG_ASSERT_PARAM(callback->pre_dump_cb_count < PRE_DUMP_CB_MAX - 1, callback->pre_dump_cb_count, PRE_DUMP_CB_MAX - 1);
 
             callback->pre_dump_callbacks[callback->pre_dump_cb_count].callback_fn = cb;
             callback->pre_dump_callbacks[callback->pre_dump_cb_count].callback_ctx = ctx;
@@ -49,7 +49,7 @@ void crash_dump_register_pre_dump_callback(void cb(void*), void* ctx, crash_dump
 
 void crash_dump_register_post_dump_callback(void cb(void*), void* ctx, crash_dump_type_t dump_type)
 {
-    FPFW_RUNTIME_ASSERT(cb != NULL);
+    BUG_ASSERT_PARAM(cb != NULL, cb, 0);
     crash_dump_context_t* cd_ctx = crash_dump_context();
 
     for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
@@ -57,7 +57,9 @@ void crash_dump_register_post_dump_callback(void cb(void*), void* ctx, crash_dum
         if (dump_type == CRASH_DUMP_TYPE_ALL || dump_type == i)
         {
             crash_dump_type_callback_t* callback = &cd_ctx->callbacks[i];
-            FPFW_RUNTIME_ASSERT(callback->post_dump_cb_count < POST_DUMP_CB_MAX - 1);
+            BUG_ASSERT_PARAM(callback->post_dump_cb_count < POST_DUMP_CB_MAX - 1,
+                             callback->post_dump_cb_count,
+                             POST_DUMP_CB_MAX - 1);
 
             callback->post_dump_callbacks[callback->post_dump_cb_count].callback_fn = cb;
             callback->post_dump_callbacks[callback->post_dump_cb_count].callback_ctx = ctx;

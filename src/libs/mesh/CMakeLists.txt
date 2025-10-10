@@ -12,7 +12,6 @@ target_link_libraries(${TARGET}
     ms::service::health_monitor
     PRIVATE
     fwlib.lib.cfg_mgr
-    fwlib.lib.assert
     fwlib.lib.interface.platform.interrupts
     fwlib.service.iccBase
     silibs_platform

@@ -10,7 +10,6 @@
 /*------------- Includes -----------------*/
 
 #include <DbgPrint.h>
-#include <FpFwAssert.h>
 #include <bug_check.h>
 #include <cper.h>
 #include <health_monitor.h>
@@ -123,7 +122,7 @@ static bool tower_get_map(TOWER_INSTANCE tower_id, DIE_INSTANCE die)
     {
         return false;
     }
-    FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &map));
+    BUG_ASSERT(!atu_map(ATU_ID_MSCP, &map));
     return true;
 }
 
@@ -316,6 +315,6 @@ acpi_einj_cmd_status_t tower_error_injection_cb(ras_einj_info_t* einj_payload, v
 
 exit:
     map.ap_base_address = UINT64_MAX;
-    FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &map));
+    BUG_ASSERT_PARAM(!atu_unmap(ATU_ID_MSCP, &map), status, 0);
     return ret;
 }

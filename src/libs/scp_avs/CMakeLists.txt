@@ -19,6 +19,7 @@ target_link_libraries(
     ${TARGET}
         PRIVATE
             silibs::avs
+            ms::lib::crash_dump
             ms::lib::arm_intrinsic
             ms::lib::cortex_m7::nvic
             ms::service::power
@@ -26,7 +27,6 @@ target_link_libraries(
             scp_avs_cli
         PUBLIC
             ms::lib::debug
-            fwlib.lib.assert
             fwlib.dfwk
             fwlib.lib.init
             fwlib.lib.linkedlist

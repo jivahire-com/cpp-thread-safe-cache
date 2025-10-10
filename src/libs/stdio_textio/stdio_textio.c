@@ -12,8 +12,8 @@
 #include "stdio_textio.h"
 
 #include <DfwkClient.h>
-#include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <bug_check.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -51,7 +51,7 @@ int _write_r(struct _reent* reent, int fh, const unsigned char* buf, unsigned le
                                                                .byte_count = len,
                                                            }};
         int32_t status = DfwkInterfaceSendSync(s_textio_interface, &write_request.header);
-        FPFW_RUNTIME_ASSERT(status == DFWK_SUCCESS);
+        BUG_ASSERT_PARAM(status == DFWK_SUCCESS, status, 0);
         bytes_written += write_request.output.written_bytes;
     }
 

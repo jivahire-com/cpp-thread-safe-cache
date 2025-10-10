@@ -27,6 +27,8 @@ extern "C" {
     #define ERG0 0
     #define ERG1 1
 #endif
+#define BUGCHECK_MOCK_RETURN   (setjmp(cd_mock_jump_buf))
+#define bugcheck_mock_return() BUGCHECK_MOCK_RETURN
 
 /*------------- Typedefs -----------------*/
 
@@ -45,6 +47,8 @@ extern uint32_t g_mc_intu_dest_enable;
 extern bool g_mmio_read32_mocktype;
 extern bool g_should_check_cper_section;
 extern bool g_should_check_ras_agent_entity_id;
+
+jmp_buf cd_mock_jump_buf;
 
 /*------------- Functions ----------------*/
 static int setup(void** state)
@@ -542,7 +546,8 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure, setup, teardown)
     will_return(__wrap_ddrss_get_phy_training_failure, mc);
     will_return(__wrap_ddrss_get_phy_training_failure, SILIBS_SUCCESS);
     expect_function_call(__wrap_post_led_status);
-    expect_value(__wrap_FpFwAssert, expression, false);
+
+    expect_function_call(__wrap_crash_dump_bug_check);
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
@@ -609,7 +614,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure2, setup, teardown)
     }
 
     expect_function_call(__wrap_post_led_status);
-    expect_value(__wrap_FpFwAssert, expression, false);
+    expect_function_call(__wrap_crash_dump_bug_check);
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
@@ -678,7 +683,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure_max_mc, setup, teardown)
     will_return(__wrap_ddrss_get_phy_training_failure, mc);
     will_return(__wrap_ddrss_get_phy_training_failure, SILIBS_SUCCESS);
     expect_function_call(__wrap_post_led_status);
-    expect_value(__wrap_FpFwAssert, expression, false);
+    expect_function_call(__wrap_crash_dump_bug_check);
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
@@ -747,7 +752,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
     will_return(__wrap_ddrss_get_phy_training_failure, mc);
     will_return(__wrap_ddrss_get_phy_training_failure, SILIBS_E_SUPPORT);
     expect_function_call(__wrap_post_led_status);
-    expect_value(__wrap_FpFwAssert, expression, false);
+    expect_function_call(__wrap_crash_dump_bug_check);
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 

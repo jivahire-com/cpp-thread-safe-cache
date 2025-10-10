@@ -10,6 +10,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         silibs::idsw
         silibs::idsw_kng
+        ms::lib::crash_dump
         ms::service::atu_service
         fwlib.lib.cfg_mgr
 )

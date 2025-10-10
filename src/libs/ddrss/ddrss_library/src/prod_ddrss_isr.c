@@ -15,7 +15,6 @@
 #include "ras_arm_agent.h"
 #include "ras_common.h"
 
-#include <FpFwAssert.h>
 #include <arm_intrinsic.h>
 #include <bug_check.h>
 #include <cper.h>
@@ -174,15 +173,15 @@ bool prod_ddrss_interrupt_pending(void* context)
 
     // Read DDRSS INTU status
     sts = ddrss_get_component_base(ddrss, DDRSS_COMP_ID_DDRINTU, &ddrss_base);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     sts = intu_get_interrupt_status(ddrss_base, &ddr_intu_sts);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     // Only check enabled interrupts
     uint32_t intu_enable = 0;
     sts = ddrss_ddr_intu_get_interrupt_dest_enable(mc, DDRSS_INTU_SCP_INT, &intu_enable);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     ddr_intu_sts = ddr_intu_sts & intu_enable;
     if (ddr_intu_sts == 0)
@@ -227,16 +226,16 @@ void prod_ddrss_interrupt_handler(void* context)
     printf("DDRSS %d ISR Enter\n", (unsigned int)ddrss);
 
     sts = ddrss_get_component_base(ddrss, DDRSS_COMP_ID_DDRINTU, &ddrss_base);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     sts = intu_get_interrupt_status(ddrss_base, &ddr_intu_sts);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
     printf("SS%d INTU STS: 0x%08x\n", (unsigned int)ddrss, (unsigned int)ddr_intu_sts);
 
     // Only check enabled interrupts
     uint32_t intu_enable = 0;
     sts = ddrss_ddr_intu_get_interrupt_dest_enable(mc, DDRSS_INTU_SCP_INT, &intu_enable);
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     ddr_intu_sts = ddr_intu_sts & intu_enable;
     printf("SS%d INTU STS after filtering on enabled: 0x%08x\n", (unsigned int)ddrss, (unsigned int)ddr_intu_sts);
@@ -303,7 +302,7 @@ void prod_ddrss_interrupt_handler(void* context)
     {
         printf("DDR ERI/FHI int\n");
         sts = ddrss_get_component_base(ddrss, DDRSS_COMP_ID_MC0, &ddrss_base);
-        FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
         grp_sts = MMIO_READ32(PROD_DDRSS_MC0_RASERG_REG_ADDR(ddrss_base, errgsr_lo));
         if (grp_sts)
         {
@@ -551,7 +550,7 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
     {
         printf("Failed to clear PHY interrupt status.  Retval = %d\n", sts);
     }
-    FPFW_RUNTIME_ASSERT(sts == SILIBS_SUCCESS);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     return sts;
 }

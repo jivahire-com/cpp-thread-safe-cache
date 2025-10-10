@@ -9,11 +9,11 @@ target_link_libraries(${TARGET}
     PRIVATE
         kng_silibs_platform
         silibs_platform
-        fwlib.lib.assert
         fwlib.lib.cfg_mgr
         silibs::atu
         silibs::ioss_init
         silibs::usb_init
+        ms::lib::crash_dump
         ms::lib::variable_services
         ms::lib::error_codes
 )

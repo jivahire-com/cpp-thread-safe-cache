@@ -8,7 +8,6 @@
  */
 
 /*------------- Includes -----------------*/
-#include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <atu_lib.h>
 #include <bug_check.h>
 #include <cmn800.h>
@@ -337,11 +336,13 @@ uint32_t d2d_set_atu_map(uint8_t d2d_subsystem, bool* d2d_atu_unmap_required)
     }
     else
     {
-        FPFW_RUNTIME_ASSERT(!atu_map(ATU_ID_MSCP, &temp_atu_map_entry));
+        BUG_ASSERT(!atu_map(ATU_ID_MSCP, &temp_atu_map_entry));
         *d2d_atu_unmap_required = true;
     }
 
-    FPFW_RUNTIME_ASSERT(!atu_translate_address(ATU_ID_MSCP, temp_atu_map_entry.ap_base_address, &translated_addr_ras2));
+    BUG_ASSERT_PARAM(!atu_translate_address(ATU_ID_MSCP, temp_atu_map_entry.ap_base_address, &translated_addr_ras2),
+                     temp_atu_map_entry.ap_base_address,
+                     0);
 
     MESH_CRIT("D2D2:: d2d2_ras_address 0x%08x_%08x, translated_addr_ras2 = 0x%x \n",
               (uint32_t)(temp_atu_map_entry.ap_base_address >> 32),
@@ -361,7 +362,7 @@ void d2d_clear_atu_map(uint8_t d2d_subsystem, uint32_t translated_addr_ras2)
                                           .attribute = atu_d2d2_map[d2d_subsystem].attribute};
 
     // Call ATU Unmap
-    FPFW_RUNTIME_ASSERT(!atu_unmap(ATU_ID_MSCP, &temp_atu_map_entry));
+    BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &temp_atu_map_entry));
 
     MESH_CRIT("D2D2:: Clearing ATU Map for D2D Subsystem %d End\n", d2d_subsystem);
 }
@@ -647,7 +648,7 @@ void d2d_ras_error_inj(uint8_t d2d_subsystem, uint32_t err_inj, uint32_t err_cnt
         {.addr = D2DSS_TEST_RAS_DUMMY_ADDRESS, .inj_counter = D2DSS_TEST_RAS_INJ_COUNTER, .valid = 1}};
     d2dss2_agent[d2d_subsystem].syn = syn;
     d2dss2_agent[d2d_subsystem].syn->inj_counter = err_cnt_down;
-    FPFW_RUNTIME_ASSERT(!ras_arm_agent_trigger_by_type(&d2dss2_agent[d2d_subsystem], (uint64_t)err_inj));
+    BUG_ASSERT_PARAM(!ras_arm_agent_trigger_by_type(&d2dss2_agent[d2d_subsystem], (uint64_t)err_inj), err_inj, d2d_subsystem);
 
 d2d_ras_error_inj_exit:
     if (d2d_atu_unmap_required)

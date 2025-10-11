@@ -21,6 +21,7 @@ set(SOURCES
     test_soc_max_temperature.cpp
     test_log_inst_die_max_temp.cpp
     test_core_vm_throttling_priorities.cpp
+    test_core_aging_counter_data.cpp
     )
 
 add_executable(${TARGET} ${SOURCES})
@@ -75,6 +76,15 @@ mock_target(${TARGET}
     pwr_tlm_core_exch_mcp_read_droop_counts
     exec_tlm_cmpnt_get_timestamp_microseconds
     gtimer_prodfw_get_frequency
+    # Aging counter mocks (DVFS register-level hardware interface)
+    dvfs_c2_pcm_aging_get_sensor_status
+    dvfs_c2_pcm_enable_aging_sensor_measurement
+    dvfs_c2_get_pcm_bank_sensor_data
+    # Multi-die communication mocks
+    die_2_die_exch_get_this_die_id
+    in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg
+    in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg
+    # Semaphore mocks
     initialize_semaphore
     read_semaphore
     wait_for_semaphore

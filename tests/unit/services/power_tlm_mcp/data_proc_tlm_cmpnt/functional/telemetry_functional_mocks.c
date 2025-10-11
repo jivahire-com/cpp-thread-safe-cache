@@ -28,6 +28,7 @@
 // Droop count mock globals (shared for tests)
 
 int g_enable_mock_pstate = 0;
+int g_enable_mock_die_id = 0; // Enable/disable mocking for die_2_die_exch_get_this_die_id
 bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
 cstate_instr_timestamp_t test_cstate_buf[(128 * 1024) / sizeof(cstate_instr_timestamp_t)];
 
@@ -354,4 +355,29 @@ uint16_t __wrap_die_2_die_exch_ib_read_inst_max_die_temp_dC(uint8_t die)
     FPFW_UNUSED(die);
     uint16_t temp = mock_type(uint16_t);
     return temp;
+}
+
+uint8_t __wrap_die_2_die_exch_get_this_die_id(void)
+{
+    // Conditional mocking: only use mock_type if g_enable_mock_die_id is set
+    // This allows aging counter tests to mock the die ID without breaking other tests
+    if (g_enable_mock_die_id)
+    {
+        return mock_type(uint8_t);
+    }
+    else
+    {
+        // Default behavior: return PRIMARY_DIE_ID (0)
+        return 0;
+    }
+}
+
+void __wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg(void)
+{
+    function_called();
+}
+
+void __wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg(void)
+{
+    function_called();
 }

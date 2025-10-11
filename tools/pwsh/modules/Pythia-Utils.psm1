@@ -94,6 +94,8 @@ Function Invoke-Pythia(
             $hostfilename = "debugpc-1103e12-n1.json"
         } elseif ($TrimmedAgentName -match 'C41431157B0204A') {
             $hostfilename = "C41431157B0204A.json"
+        } elseif ($TrimmedAgentName -match 'C41431157B0204B') {
+            $hostfilename = "C41431157B0204B.json"
         } else {
             Write-Error "Invalid Node for SoC platform: $TrimmedAgentName"
         }

@@ -23,7 +23,7 @@ function Get-SOCSshIp {
         @{ "PC Name" = "G10-B2";  "IsRM" = $false; "DC-SCM IP" = "M1120-SCM-351.svceng.com" },
         @{ "PC Name" = "J10-R5";  "IsRM" = $false; "DC-SCM IP" = "M1120-SCM-392.svceng.com" },
         @{ "PC Name" = "DEBUGPC-1103E12-N1";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.97";  "RM IP" = "172.29.89.33"; "Node ID" = "25"},
-        @{ "PC Name" = "K03-N1";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.17";  "RM IP" = "10.127.114.140"; "Node ID" = "5"},
+        @{ "PC Name" = "C41431157B0204B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.117";  "RM IP" = "172.29.131.24"; "Node ID" = "30"},
         @{ "PC Name" = "C41431157B0204A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.21";  "RM IP" = "172.29.131.24"; "Node ID" = "6"}
     )
 

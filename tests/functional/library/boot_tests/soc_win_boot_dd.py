@@ -85,15 +85,6 @@ class soc_win_boot_dd(EchoFallsBaseTest):
         creds = self.load_credentials_from_yaml(cred_path)
         rscm_helper = RscmHelperLibrary(rm_host=self.host_config.rack_scm.host, bmc_host=self.dut.mb.node_0.dcscm.bmc.ip, rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'], node=self.host_config.node_id)
         rscm_helper.rscm_soc_reset()
-        node=self.host_config.node_id
-        print(f"Running BMC call to set GPIO")
-        command = f"set system cmd -i {node} -c gpioset gpiochip6 6=0"
-        stdout, stderr = rscm_helper.execute_rm_command(command)
-        if stderr:
-            print(f"Error during GPIOSET: {stderr}")
-            raise AssertionError
-        else:
-            print("GPIOSET command executed successfully in BMC.")
         
         scp_connection.get_current_channel().open()
         if not scp_connection.get_current_channel().is_open():

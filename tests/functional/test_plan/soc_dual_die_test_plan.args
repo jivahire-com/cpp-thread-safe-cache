@@ -7,7 +7,7 @@
 ##./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_mcp_scp_sync_soc.robot
 
 ## Heartbeat Tests
-##./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_hsp_boot.robot
+./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_dd_soc.robot
 
 ## AVS Tests
 ./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die0_soc.robot

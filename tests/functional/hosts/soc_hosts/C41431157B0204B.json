@@ -43,6 +43,15 @@
                                 },
                                 "default": "serialssh"
                             }
+                        },
+                        "mcp": {
+                            "channels": {
+                                "serialssh": {
+                                    "com_id": 2202,
+                                    "recovery_window": 999999
+                                },
+                                "default": "serialssh"
+                            }
                         }
                     }
                 },

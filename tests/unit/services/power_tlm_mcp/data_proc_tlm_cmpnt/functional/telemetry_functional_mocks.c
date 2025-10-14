@@ -359,15 +359,15 @@ uint16_t __wrap_die_2_die_exch_ib_read_inst_max_die_temp_dC(uint8_t die)
 
 uint8_t __wrap_die_2_die_exch_get_this_die_id(void)
 {
-    // Conditional mocking: only use mock_type if g_enable_mock_die_id is set
-    // This allows aging counter tests to mock the die ID without breaking other tests
+    // only use mock if g_enable_mock_die_id is set in the test.
+    // Doing this instead of direct mocking as was introduced in the aging counter tests and shouldn't impact other tests.
     if (g_enable_mock_die_id)
     {
         return mock_type(uint8_t);
     }
     else
     {
-        // Default behavior: return PRIMARY_DIE_ID (0)
+        // Default behavior: return PRIMARY_DIE_ID (0), so that other existing tests who calls data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg already doesn't get impacted.
         return 0;
     }
 }

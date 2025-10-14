@@ -22,6 +22,7 @@ set(SOURCES
     test_log_inst_die_max_temp.cpp
     test_core_vm_throttling_priorities.cpp
     test_core_aging_counter_data.cpp
+    log_vm_throttling_integration_test.cpp
     )
 
 add_executable(${TARGET} ${SOURCES})
@@ -91,4 +92,5 @@ mock_target(${TARGET}
     release_semaphore
     die_2_die_exch_ib_write_inst_max_die_temp
     die_2_die_exch_ib_read_inst_max_die_temp_dC
-)
+    die_2_die_exch_get_this_die_id
+    )

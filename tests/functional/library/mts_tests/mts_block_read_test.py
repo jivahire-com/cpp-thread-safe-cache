@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
 import logging
 import ctypes
 from fpfw_automation_primitives.serial.telnet import Telnet_
@@ -61,7 +63,7 @@ class mts_read_intercore_block:
 
         # Send the command
         send_str = (
-            f"mts trp_send "
+            "mts trp_send "
             + struct_to_hex_string(trp_msg_hdr)
             + struct_to_hex_string(block_read_req)
         )
@@ -72,7 +74,7 @@ class mts_read_intercore_block:
         response = self.source_comm_channel.read_until(
             key="TrpRx", timeout_seconds=self.default_timeout_sec
         )
-        logger.debug(f"Parsed TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE:")
+        logger.debug("Parsed TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE:")
         rsp_index = response.find("Rsp: ")
         if rsp_index == -1:
             raise ValueError("TRP Response not found in {response}")
@@ -112,7 +114,7 @@ class mts_read_intercore_block:
         )
 
         # Log the parsed response fields
-        logger.debug(f"Parsed TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE:")
+        logger.debug("Parsed TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE:")
         logger.debug(f"client ID: {header.mts_client_id}")
         logger.debug(f"Message ID: {header.trp_msg_id}")
         logger.debug(f"Address offset: {payload.addr_offset}")
@@ -143,7 +145,7 @@ class mts_read_intercore_block:
 
         # Send the command
         send_str = (
-            f"mts trp_send "
+            "mts trp_send "
             + struct_to_hex_string(trp_msg_hdr)
             + struct_to_hex_string(block_read_req)
         )
@@ -158,7 +160,7 @@ class mts_read_intercore_block:
 
 
 # to run the main functionality below from a repo environment
-# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/mts_tests/mts_block_read_test.py
+# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/mts_tests/mts_block_read_test.py # noqa: E501
 #
 def main():
     logging.basicConfig(level=logging.DEBUG, handlers=[logging.StreamHandler()])

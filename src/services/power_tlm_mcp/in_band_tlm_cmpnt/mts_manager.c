@@ -202,9 +202,17 @@ void mts_manager_handle_dcp_msg(p_trp_msg_t trp_msg)
     case DCP_MSG_ID_READ_DATA:
         if (primary_instance)
         {
-            response_dcp_payload_size = sizeof(dcp_msg_read_data_t);
             // trp_msg->payload.dcp_msg.hdr.msg_status is set in the function below
             mts_manager_handle_read_msg(trp_msg);
+
+            if (trp_msg->payload.dcp_msg.hdr.msg_status >= DATA_COLLECTION_RD_DATA_VALID_LAST)
+            {
+                response_dcp_payload_size = sizeof(dcp_msg_read_data_t);
+            }
+            else
+            {
+                response_dcp_payload_size = 0;
+            }
         }
         break;
 
@@ -466,15 +474,14 @@ void mts_manager_handle_read_msg(p_trp_msg_t trp_msg)
         return;
     }
 
-    if (in_flight_tlm_pkg != NULL)
+    // if not in flight, get the next package from the active list
+    // if it's not null, it could be that the host didn't send a read complete,
+    // or that our read response failed to send.  In either case, we will resend the same package
+    if (in_flight_tlm_pkg == NULL)
     {
-        // already processing a read, return busy
-        trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_BUSY;
-        return;
+        PFPFW_LIST_ENTRY entry = FpFwListRemoveHead(&pkg_active_list);
+        in_flight_tlm_pkg = CONTAINING_RECORD(entry, tlm_package_t, list_entry);
     }
-
-    PFPFW_LIST_ENTRY entry = FpFwListRemoveHead(&pkg_active_list);
-    in_flight_tlm_pkg = CONTAINING_RECORD(entry, tlm_package_t, list_entry);
 
     trp_msg->payload.dcp_msg.payload.read_data.physical_start_addr = IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR;
     trp_msg->payload.dcp_msg.payload.read_data.physical_buffer_size = IB_TELEMETRY_DDR_TOTAL_SIZE;

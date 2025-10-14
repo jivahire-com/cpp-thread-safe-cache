@@ -17,7 +17,6 @@ sys.path.extend(
 )
 
 
-
 class trp_node_t(ctypes.LittleEndianStructure):
     _pack_ = 1  # Force no padding
     _fields_ = [("die_id", ctypes.c_ubyte, 4), ("core_id", ctypes.c_ubyte, 4)]

@@ -24,7 +24,6 @@ for path in paths_to_add:
 try:
     from .dcp_protocol import data_collection_protocol
     from .dcp_commands import dcp_commands
-    from .icc_mhu_ap_lib import ApCore, IccMhuAp
     from .trp_lib import (  # noqa: F401
         trp_endpoint,
         mts_cli_trp_endpoint,
@@ -35,7 +34,6 @@ try:
 except ImportError:
     from dcp_protocol import data_collection_protocol
     from dcp_commands import dcp_commands
-    from icc_mhu_ap_lib import ApCore, IccMhuAp
     from trp_lib import (  # noqa: F401
         trp_endpoint,
         mts_cli_trp_endpoint,
@@ -50,8 +48,11 @@ logger = logging.getLogger(__name__)
 POWER_PKG_TELEMETRY_PROVIDER_ID = 0x0201
 INST_PKG_TELEMETRY_PROVIDER_ID = 0x0202
 
-# Polling sleep duration in seconds (5 milliseconds)
-READ_PACKAGE_DURATION_SEC = 0.005
+# Polling sleep duration in seconds (1 second default)
+POWER_PKG_READ_INTERVAL_SEC = 1.0
+
+# Fast polling duration for instantaneous telemetry (20 milliseconds)
+INST_PKG_READ_INTERVAL_SEC = 0.02
 
 
 class pwr_telemetry_element_id_t(IntEnum):
@@ -150,6 +151,59 @@ class power_tlm_lib:
         self.file_location = file_location
         self.manifest_file = ""
         self.tlm_packages = []
+        self.current_read_duration_sec = POWER_PKG_READ_INTERVAL_SEC
+
+    def __enter__(self):
+        """Context manager entry - return self for use in with statement."""
+        try:
+            self.reset()
+        except Exception as e:
+            # If reset fails (e.g., during T32 initialization), ensure cleanup happens
+            logger.error(f"Failed to reset during __enter__, cleaning up: {e}")
+            try:
+                self.close()
+            except Exception as cleanup_error:
+                logger.error(
+                    f"Failed to cleanup after __enter__ error: {cleanup_error}"
+                )
+            # Re-raise the original exception
+            raise
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - ensure cleanup always happens."""
+        # Log if we're exiting due to an exception
+        if exc_type is not None:
+            logger.error(
+                f"Exiting power_tlm_lib context due to exception: {exc_type.__name__}: {exc_val}"
+            )
+
+        # Use try-finally to absolutely guarantee self.close() is called
+        try:
+            # Always attempt to reset the DCP client (safe to call even if not started)
+            try:
+                self.reset()
+            except Exception as e:
+                logger.error(f"Failed to reset DCP client during cleanup: {e}")
+        finally:
+            # Always close the underlying resources, no matter what happens above
+            try:
+                self.close()
+            except Exception as e:
+                logger.error(f"Failed to close power_tlm_lib during cleanup: {e}")
+
+        # Return False to propagate any exception that occurred in the with block
+        return False
+
+    def close(self):
+        """
+        Close the power telemetry library and clean up resources.
+
+        This method closes the underlying TRP endpoint connection to ensure
+        proper cleanup of resources.
+        """
+        if self.src_endpoint is not None:
+            self.src_endpoint.close()
 
     def reset(self):
         """
@@ -422,6 +476,12 @@ class power_tlm_lib:
             events=event_tuple,
         )
 
+        # Switch to faster polling interval for instantaneous telemetry
+        self.current_read_duration_sec = INST_PKG_READ_INTERVAL_SEC
+        logger.info(
+            f"Switched to fast polling interval: {self.current_read_duration_sec}s"
+        )
+
     def enable_all_instantaneous_package_records(self):
         """
         Enable instantaneous package recording for all available telemetry elements.
@@ -522,6 +582,12 @@ class power_tlm_lib:
 
         # Disable all elements using the existing method
         self.disable_instantaneous_package_records(all_elements)
+
+        # Revert to normal polling interval when all instantaneous telemetry is disabled
+        self.current_read_duration_sec = POWER_PKG_READ_INTERVAL_SEC
+        logger.info(
+            f"Reverted to normal polling interval: {self.current_read_duration_sec}s"
+        )
 
     def get_client_state(
         self,
@@ -709,6 +775,14 @@ class power_tlm_lib:
             FileNotFoundError: If the manifest file doesn't exist
             ValueError: If no telemetry packages are available for decoding
         """
+        # Check if the endpoint supports read_to_file functionality
+        # CoreMemoryMapAccess is the interface that indicates read_to_file support
+        if not hasattr(self.src_endpoint, "read_to_file"):
+            logger.warning(
+                "  ⚠️  read_to_file API not supported by endpoint, skipping decode_packages"
+            )
+            return
+
         # Check if manifest file exists
         if not self.manifest_file or not os.path.exists(self.manifest_file):
             raise FileNotFoundError(f"Manifest file not found: {self.manifest_file}")
@@ -738,9 +812,7 @@ class power_tlm_lib:
                 output_path=output_file,
             )
 
-    def _read_dcp_package(
-        self, output_file: str
-    ) -> data_collection_protocol.dcp_status_t:
+    def _read_dcp_package(self, output_file: str) -> bool:
         """
         Private helper function to read a single data package from the DCP client.
 
@@ -754,7 +826,7 @@ class power_tlm_lib:
             output_file (str): The file path where the DCP data package will be written
 
         Returns:
-            data_collection_protocol.dcp_status_t: The DCP status indicating data availability
+            bool: True if a package was successfully read, False otherwise
 
         Raises:
             Exception: If the DCP command fails or communication with the endpoint fails
@@ -777,7 +849,7 @@ class power_tlm_lib:
             data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_LAST,
             data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_MORE,
         ]:
-            return status
+            return False
 
         # Send read data complete acknowledgment
         complete_status = dcp_commands.client_send_read_data_complete(
@@ -789,17 +861,46 @@ class power_tlm_lib:
             rd_data_size=response.rd_data_size,
         )
 
-        # Handle edge cases: If complete_status is NONE, we know a package was read
-        # (since client_read_data succeeded), so return VALID_LAST. Otherwise trust complete_status.
-        if (
-            complete_status
-            == data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_NONE
-        ):
-            return (
-                data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_LAST
+        # Handle client_send_read_data_complete response with retry logic
+        # Successful responses are DATA_COLLECTION_RD_DATA_NONE and DATA_COLLECTION_RD_DATA_VALID_MORE
+        successful_statuses = [
+            data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_NONE,
+            data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_MORE,
+        ]
+
+        if complete_status in successful_statuses:
+            # Success - package was read successfully
+            return True
+
+        # If not successful, retry up to 5 times with delay
+        max_retries = 5
+
+        for retry_count in range(max_retries):
+            logger.debug(
+                f"Retry {retry_count + 1}/{max_retries} for read_data_complete, got status: {complete_status}"
+            )
+            time.sleep(self.current_read_duration_sec)
+
+            complete_status = dcp_commands.client_send_read_data_complete(
+                src_endpoint=self.src_endpoint,
+                dest_die=0,
+                dest_cpu=transfer_relay_protocol.cpu_type.CPU_MCP,
+                client_id=data_collection_protocol.mts_client_id_t.MTS_CLIENT_ID_PWR_INST_TELEM,
+                rd_data_addr_offset=response.rd_data_addr_offset,
+                rd_data_size=response.rd_data_size,
             )
 
-        return complete_status
+            if complete_status in successful_statuses:
+                logger.debug(
+                    f"Retry {retry_count + 1} succeeded with status: {complete_status}"
+                )
+                return True
+
+        # All retries failed
+        logger.error(
+            f"Failed to complete read_data after {max_retries} retries, final status: {complete_status}"
+        )
+        return False
 
     def _read_packages_loop(
         self,
@@ -881,24 +982,19 @@ class power_tlm_lib:
                     )
 
                 # Read the package
-                status = self._read_dcp_package(package_filepath)
+                package_read_success = self._read_dcp_package(package_filepath)
 
                 # Check if the package was successfully read
-                if status in [
-                    data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_LAST,
-                    data_collection_protocol.dcp_status_t.DATA_COLLECTION_RD_DATA_VALID_MORE,
-                ]:
+                if package_read_success:
                     created_files.append(package_filepath)
                     # Add to the instance's tlm_packages list
                     self.tlm_packages.append(package_filepath)
-                    logger.debug(
-                        f"Successfully read package {package_index}: {status.name}"
-                    )
+                    logger.debug(f"Successfully read package {package_index}")
                     # Only increment package_index when we successfully read a package
                     package_index += 1
 
                 # Sleep briefly between iterations to avoid excessive polling
-                time.sleep(READ_PACKAGE_DURATION_SEC)
+                time.sleep(self.current_read_duration_sec)
 
             logger.info(
                 f"Completed reading {len(created_files)} packages in {time.time() - start_time:.2f} seconds"
@@ -919,6 +1015,8 @@ class power_tlm_lib:
 def main():
     logging.basicConfig(
         level=logging.DEBUG,  # Set the logging level (DEBUG, INFO, etc.)
+        format="%(asctime)s.%(msecs)03d - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],  # Redirect to stdout
     )
 
@@ -935,30 +1033,34 @@ def main():
     logging.getLogger("icc_mhu_ap_lib").setLevel(logging.DEBUG)
     logging.getLogger("trp_lib").setLevel(logging.DEBUG)
 
-    # Telnet Endpoint - Die 0 SCP - Uncomment if using SVP
-    # telnet_port = Telnet_(host="localhost", port="4257", encoding="UTF-8")
-    # telnet_port.open()
+    # Telnet Endpoint - Die 0 SCP - Comment out if using Trace32
+    telnet_port = Telnet_(host="localhost", port="4257", encoding="UTF-8")
+    telnet_port.open()
 
-    # mts_endpoint = mts_cli_trp_endpoint(
-    #     telnet_port, 0, transfer_relay_protocol.cpu_type.CPU_SCP
-    # )
+    mts_endpoint = mts_cli_trp_endpoint(
+        telnet_port, 0, transfer_relay_protocol.cpu_type.CPU_SCP
+    )
 
-    # ICC MHU Endpoint - Die 0 AP 0 - Comment out if not using Trace32
-    mts_endpoint = mts_ap_endpoint()
+    # ICC MHU Endpoint - Die 0 AP 0 - Comment out if using SVP
+    # mts_endpoint = mts_ap_endpoint()
 
-    pwr_tlm = power_tlm_lib(mts_endpoint, "C:/scratch/lib")
+    # ALWAYS Use context manager (with statement) to ensure guaranteed cleanup regardless of how block exits:
+    # - Entry always resets power telemetry to known state
+    # - Normal completion: cleanup happens in __exit__
+    # - Exception raised: logger.error is called with exception(ensures test failure), cleanup happens,
+    #    then exception propagates
+    # - Early return/break: cleanup still happens
+    # This eliminates manual try/finally blocks and ensures resources are always released
+    with power_tlm_lib(mts_endpoint, "C:/test") as pwr_tlm:
 
-    exception_occurred = False
-
-    try:
-        pwr_tlm.reset()
         pwr_tlm.read_manifest("manifest.bin")
 
-        # # Enable specific power telemetry elements
+        # Enable specific power telemetry elements
         pwr_elements_to_enable = [
             pwr_telemetry_element_id_t.POWER_TELEMETRY_ELEMENT_CORE_CURRENT,
             pwr_telemetry_element_id_t.POWER_TELEMETRY_ELEMENT_SOC_DIMM_TEMPERATURE,
         ]
+
         pwr_tlm.enable_power_package_records(pwr_elements_to_enable)
 
         pwr_tlm.start_dcp_client()
@@ -966,26 +1068,12 @@ def main():
         state = pwr_tlm.get_client_state()
         logger.info(f"Current DCP client state: {state.name} ({state.value})")
 
-        pwr_tlm.read_n_packages(6, "pwr_records", 65 * 10)
-    except Exception as e:
-        logger.error(f"Exception occurred during telemetry operations: {e}")
-        exception_occurred = True
-        raise
-    finally:
-        # Always attempt to stop the DCP client
-        try:
-            pwr_tlm.stop_dcp_client()
-            logger.info("DCP client stopped successfully")
-        except Exception as stop_e:
-            logger.error(f"Failed to stop DCP client: {stop_e}")
+        pwr_tlm.read_n_packages(2, "pwr_records", 65 * 10)
 
-    # Only decode packages if no exceptions occurred
-    if not exception_occurred:
-        try:
-            pwr_tlm.decode_packages()
-        except Exception as decode_e:
-            logger.error(f"Failed to decode packages: {decode_e}")
-            raise
+        # Decode packages - this runs if we get here without exceptions
+        pwr_tlm.decode_packages()
+
+    # Cleanup happens automatically in __exit__
 
 
 if __name__ == "__main__":

@@ -8,10 +8,10 @@ import sys
 from typing import Optional
 from fpfw_automation_primitives.serial.telnet import (
     Telnet_,
-)
+)  # noqa: F401
 from fpfw_automation_primitives.serial.direct import (
     DirectSerial,
-)
+)  # noqa: F401
 from serial_utils import SerialChannelBase
 
 logger = logging.getLogger(__name__)
@@ -356,7 +356,7 @@ class UefiShell(SerialChannelBase):
 # /KingsgateSVP/DIE_0/CSS/HndBaseElement/AP_NS_UART0, right click, and select 'Connect Terminal to Uart'
 #
 # to run the main functionality below from a repo environment
-# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/common/uefi_shell.py
+# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/common/uefi_shell.py # noqa: E501
 #
 def main():
     print("This is the main entry point of uefi_shell.py")

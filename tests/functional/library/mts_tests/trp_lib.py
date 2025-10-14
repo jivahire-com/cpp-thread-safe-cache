@@ -6,6 +6,7 @@ import os
 import sys
 import ctypes
 import logging
+import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -38,7 +39,7 @@ except ImportError:
         byte_list_to_hex_string,
     )
     from trp_protocol import transfer_relay_protocol
-    from icc_mhu_ap_lib import ApCore, IccCommandId, IccMhu, IccMhuAp
+    from icc_mhu_ap_lib import ApCoreMemoryInterface, IccCommandId, IccMhu, IccMhuAp
 
 
 class CoreMemoryMapAccess(ABC):
@@ -73,14 +74,20 @@ class trp_endpoint(ABC):
         self.sequence_number = 0
         self.default_timeout_sec = 60
 
+    def close(self):
+        pass
+
     @abstractmethod
     def send_dcp_message(
         self,
+        *,
         dest_die: ctypes.c_uint8,
         dest_cpu: transfer_relay_protocol.cpu_type,
         client_id: data_collection_protocol.mts_client_id_t,
         dcp_msg: list[int],
         timeout_sec: Optional[int] = None,
+        max_retries: int = 3,
+        retry_delay_sec: float = 0.05,
     ) -> bytearray:
         pass
 
@@ -154,13 +161,13 @@ class trp_endpoint(ABC):
             except ValueError:
                 return f"UNKNOWN_TRP_STATUS_{status_value:x}"
 
-        # Helper function to get DCP status name
-        def get_dcp_status_name(status_value: int) -> str:
+        # Helper function to get TRP message ID name
+        def get_trp_msg_id_name(msg_id_value: int) -> str:
             try:
-                dcp_status = data_collection_protocol.dcp_status_t(status_value)
-                return f"{dcp_status.name} ({status_value:x})"
+                trp_msg_id = transfer_relay_protocol.trp_msg_id_t(msg_id_value)
+                return f"{trp_msg_id.name} ({msg_id_value:x})"
             except ValueError:
-                return f"UNKNOWN_DCP_STATUS_{status_value:x}"
+                return f"UNKNOWN_TRP_MSG_ID_{msg_id_value:x}"
 
         # Helper function to get MTS client ID name
         def get_mts_client_id_name(client_id_value: int) -> str:
@@ -171,22 +178,6 @@ class trp_endpoint(ABC):
                 return f"{mts_client_id.name} ({client_id_value})"
             except ValueError:
                 return f"UNKNOWN_MTS_CLIENT_ID_{client_id_value}"
-
-        # Helper function to get TRP message ID name
-        def get_trp_msg_id_name(msg_id_value: int) -> str:
-            try:
-                trp_msg_id = transfer_relay_protocol.trp_msg_id_t(msg_id_value)
-                return f"{trp_msg_id.name} ({msg_id_value:x})"
-            except ValueError:
-                return f"UNKNOWN_TRP_MSG_ID_{msg_id_value:x}"
-
-        # Helper function to get DCP message ID name
-        def get_dcp_msg_id_name(msg_id_value: int) -> str:
-            try:
-                dcp_msg_id = data_collection_protocol.dcp_msg_id_t(msg_id_value)
-                return f"{dcp_msg_id.name} ({msg_id_value:x})"
-            except ValueError:
-                return f"UNKNOWN_DCP_MSG_ID_{msg_id_value:x}"
 
         # Log the TRP header fields
         logger.debug("Response TRP Header")
@@ -221,8 +212,50 @@ class trp_endpoint(ABC):
             dcp_msg_bytes = response_bytes[
                 ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t) :  # noqa: E203
             ]
+            self.log_dcp_response_header(dcp_msg_bytes)
+        else:
+            logger.debug(
+                f"Response too short to contain DCP header: {len(response_bytes)} bytes"
+            )
+
+    def log_dcp_response_header(self, response_bytes: bytearray) -> None:
+        """
+        Log DCP response header for debugging (without TRP wrapper).
+
+        Args:
+            response_bytes: The response bytes containing just the DCP response
+        """
+
+        # Helper function to get DCP status name
+        def get_dcp_status_name(status_value: int) -> str:
+            try:
+                dcp_status = data_collection_protocol.dcp_status_t(status_value)
+                return f"{dcp_status.name} ({status_value:x})"
+            except ValueError:
+                return f"UNKNOWN_DCP_STATUS_{status_value:x}"
+
+        # Helper function to get MTS client ID name
+        def get_mts_client_id_name(client_id_value: int) -> str:
+            try:
+                mts_client_id = data_collection_protocol.mts_client_id_t(
+                    client_id_value
+                )
+                return f"{mts_client_id.name} ({client_id_value})"
+            except ValueError:
+                return f"UNKNOWN_MTS_CLIENT_ID_{client_id_value}"
+
+        # Helper function to get DCP message ID name
+        def get_dcp_msg_id_name(msg_id_value: int) -> str:
+            try:
+                dcp_msg_id = data_collection_protocol.dcp_msg_id_t(msg_id_value)
+                return f"{dcp_msg_id.name} ({msg_id_value:x})"
+            except ValueError:
+                return f"UNKNOWN_DCP_MSG_ID_{msg_id_value:x}"
+
+        # Log the DCP header fields if response is large enough
+        if len(response_bytes) >= ctypes.sizeof(data_collection_protocol.dcp_msg_hdr_t):
             dcp_msg_hdr = data_collection_protocol.dcp_msg_hdr_t.from_buffer_copy(
-                dcp_msg_bytes
+                response_bytes
             )
             logger.debug("Response DCP Header")
             logger.debug(
@@ -252,43 +285,30 @@ class mts_cli_trp_endpoint(trp_endpoint):
         super().__init__(source_die, source_cpu)
         self.source_comm_channel = source_comm_channel
 
-    def send_trp_message(self) -> str:
-        self.source_comm_channel.write(write_string="?\n")
-        response = self.source_comm_channel.read_until(key="hm", timeout_seconds=2)
-        return response
+    def close(self):
+        pass
 
-    def send_dcp_message(
-        self,
-        dest_die: ctypes.c_uint8,
-        dest_cpu: transfer_relay_protocol.cpu_type,
-        client_id: data_collection_protocol.mts_client_id_t,
-        dcp_msg: list[int],
-        timeout_sec: Optional[int] = None,
-    ) -> bytearray:
+    def _read_channel_response(self, cmd_timeout_sec: float) -> bytearray:
+        """
+        Helper method to read and parse a TRP response from the communication channel.
 
-        trp_msg_hdr = self.create_dcp_forward_trp_header(
-            dest_die, dest_cpu, client_id, len(dcp_msg)
-        )
+        Args:
+            cmd_timeout_sec: Timeout in seconds for the channel read
 
-        send_str = (
-            "mts trp_send "
-            + struct_to_hex_string(trp_msg_hdr)
-            + byte_list_to_hex_string(dcp_msg)
-        )
+        Returns:
+            Parsed response as bytearray
 
-        logger.debug(f"\nSending DCP in TRP message: {send_str}\n")
-        self.source_comm_channel.write_line(write_string=send_str)
+        Raises:
+            ValueError: If TRP response format is invalid
+        """
         try:
-            cmd_timeout_sec = (
-                timeout_sec if timeout_sec is not None else self.default_timeout_sec
-            )
             logger.debug(f"Waiting for TRP response for {cmd_timeout_sec} seconds")
             response = self.source_comm_channel.read_until(
                 key="TrpRx", timeout_seconds=cmd_timeout_sec
             )
         except Exception as e:
             logger.error(f"Error while reading response: {e}")
-            response = ""  # or handle as appropriate
+            response = ""
 
         rsp_index = response.find("Rsp: ")
         if rsp_index == -1:
@@ -298,32 +318,113 @@ class mts_cli_trp_endpoint(trp_endpoint):
         response_str = response_str.split("\n")[
             0
         ]  # Take only the part before the newline
-
-        # Split the string into individual components and convert to list of integers
         response_list = [int(x) for x in response_str.split()]
+        return bytearray(response_list)
 
-        # Convert response_list to byte array
-        response_bytes = bytearray(response_list)
-        logger.debug(
-            f"\nDCP in TRP response: {' '.join(f'{b:02X}' for b in response_bytes)}\n"
+    def send_trp_message(self) -> str:
+        self.source_comm_channel.write(write_string="?\n")
+        response = self.source_comm_channel.read_until(key="hm", timeout_seconds=2)
+        return response
+
+    def send_dcp_message(
+        self,
+        *,
+        dest_die: ctypes.c_uint8,
+        dest_cpu: transfer_relay_protocol.cpu_type,
+        client_id: data_collection_protocol.mts_client_id_t,
+        dcp_msg: list[int],
+        timeout_sec: Optional[int] = None,
+        max_retries: int = 3,
+        retry_delay_sec: float = 0.05,
+    ) -> bytearray:
+        """Send a DCP message wrapped in TRP via Telnet/CLI interface with retry logic"""
+
+        cmd_timeout_sec = (
+            timeout_sec if timeout_sec is not None else self.default_timeout_sec
         )
+        timeout_per_attempt = cmd_timeout_sec / max_retries
 
-        # Log response headers using common method
-        self.log_trp_response_headers(trp_msg_hdr, response_bytes)
+        for attempt in range(max_retries):
+            try:
+                trp_msg_hdr = self.create_dcp_forward_trp_header(
+                    dest_die, dest_cpu, client_id, len(dcp_msg)
+                )
 
-        if len(response_bytes) < (
-            ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t)
-            + ctypes.sizeof(data_collection_protocol.dcp_msg_hdr_t)
-        ):
-            raise ValueError(
-                "Response is too short to contain trp_msg_hdr_t and dcp_msg_hdr_t, {response_bytes}"
-            )
+                send_str = (
+                    "mts trp_send "
+                    + struct_to_hex_string(trp_msg_hdr)
+                    + byte_list_to_hex_string(dcp_msg)
+                )
 
-        # Extract DCP response (skip TRP header)
-        dcp_msg_bytes = response_bytes[
-            ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t) :  # noqa: E203
-        ]
-        return dcp_msg_bytes
+                logger.debug(
+                    f"\nSending DCP in TRP message (attempt {attempt + 1}/{max_retries}): {send_str}\n"
+                )
+                self.source_comm_channel.write_line(write_string=send_str)
+
+                # Get first response - might be a notification
+                response_bytes = self._read_channel_response(timeout_per_attempt)
+
+                # Check if this is a notification, if so retry once
+                if len(response_bytes) > ctypes.sizeof(
+                    transfer_relay_protocol.trp_msg_hdr_t
+                ):
+                    dcp_response = response_bytes[
+                        ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t) :
+                    ]
+                    if len(dcp_response) >= ctypes.sizeof(
+                        data_collection_protocol.dcp_msg_hdr_t
+                    ):
+                        dcp_hdr = (
+                            data_collection_protocol.dcp_msg_hdr_t.from_buffer_copy(
+                                dcp_response
+                            )
+                        )
+                        if (
+                            dcp_hdr.msg_id
+                            == data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_NOTIFICATION.value
+                        ):
+                            logger.info(
+                                "Received asynchronous notification message, retrying for command response"
+                            )
+                            # Retry for the real command response
+                            response_bytes = self._read_channel_response(
+                                timeout_per_attempt
+                            )
+                logger.debug(
+                    f"\nDCP in TRP response: {' '.join(f'{b:02X}' for b in response_bytes)}\n"
+                )
+
+                # Log response headers using common method
+                self.log_trp_response_headers(trp_msg_hdr, response_bytes)
+
+                if len(response_bytes) < (
+                    ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t)
+                    + ctypes.sizeof(data_collection_protocol.dcp_msg_hdr_t)
+                ):
+                    raise ValueError(
+                        "Response is too short to contain trp_msg_hdr_t and dcp_msg_hdr_t, {response_bytes}"
+                    )
+
+                # Extract DCP response (skip TRP header)
+                dcp_msg_bytes = response_bytes[
+                    ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t) :  # noqa: E203
+                ]
+                return dcp_msg_bytes
+
+            except TimeoutError as e:
+                if attempt == max_retries - 1:
+                    raise TimeoutError(
+                        f"DCP message via Telnet failed after {max_retries} retries: {e}"
+                    )
+                delay = retry_delay_sec * (attempt + 1)
+                logger.info(
+                    f"DCP Telnet attempt {attempt + 1}/{max_retries} timed out, "
+                    f"retrying in {delay:.2f}s..."
+                )
+                time.sleep(delay)
+
+        # Should never reach here due to exception propagation
+        raise TimeoutError(f"DCP message via CLI failed after {max_retries} retries")
 
 
 class mts_icc_mhu_trp_endpoint(trp_endpoint, CoreMemoryMapAccess):
@@ -338,6 +439,9 @@ class mts_icc_mhu_trp_endpoint(trp_endpoint, CoreMemoryMapAccess):
         super().__init__(source_die, source_cpu)
         self.icc_mhu = icc_mhu
 
+    def close(self):
+        self.icc_mhu.close()
+
     def send_trp_message(self) -> str:
         """Send a simple TRP message via ICC MHU interface"""
         logger.debug("Sending TRP message via ICC MHU interface")
@@ -345,10 +449,14 @@ class mts_icc_mhu_trp_endpoint(trp_endpoint, CoreMemoryMapAccess):
         try:
             # Send a simple status query command
             status_packet = bytearray([0x53, 0x54, 0x41, 0x54])
-            self.icc_mhu.send_packet(status_packet, timeout_sec=5)
+            self.icc_mhu.send_packet(
+                command=IccCommandId.ICC_COMMAND_DCP_MSG.value,
+                packet=status_packet,
+                timeout_sec=5,
+            )
 
             # Get response
-            response = self.icc_mhu.get_packet(timeout_sec=5)
+            response = self.icc_mhu.get_packet(timeout_sec=5.0)
             if response:
                 return f"TRP message sent via ICC MHU, response: {' '.join(f'{b:02X}' for b in response)}"
             else:
@@ -360,62 +468,124 @@ class mts_icc_mhu_trp_endpoint(trp_endpoint, CoreMemoryMapAccess):
 
     def send_dcp_message(
         self,
+        *,
         dest_die: ctypes.c_uint8,
         dest_cpu: transfer_relay_protocol.cpu_type,
         client_id: data_collection_protocol.mts_client_id_t,
         dcp_msg: list[int],
         timeout_sec: Optional[int] = None,
+        max_retries: int = 3,
+        retry_delay_sec: float = 0.05,
     ) -> bytearray:
-        """Send a DCP message wrapped in TRP via ICC MHU interface"""
+        """Send a DCP message wrapped in TRP via ICC MHU interface with retry logic"""
 
-        # Create TRP message header using common method
-        trp_msg_hdr = self.create_dcp_forward_trp_header(
-            dest_die, dest_cpu, client_id, len(dcp_msg)
+        cmd_timeout_sec = (
+            timeout_sec if timeout_sec is not None else self.default_timeout_sec
         )
+        timeout_per_attempt = cmd_timeout_sec / max_retries
 
-        # Convert TRP header to bytes and combine with DCP payload
-        trp_header_bytes = bytearray(trp_msg_hdr)
-        packet = trp_header_bytes + bytearray(dcp_msg)
+        for attempt in range(max_retries):
+            try:
+                # Create TRP message header using common method
+                trp_msg_hdr = self.create_dcp_forward_trp_header(
+                    dest_die, dest_cpu, client_id, len(dcp_msg)
+                )
 
-        logger.debug("Sending DCP in TRP message via ICC MHU:")
-        logger.debug(f"TRP Header: {' '.join(f'{b:02X}' for b in trp_header_bytes)}")
-        logger.debug(f"DCP Payload: {' '.join(f'{b:02X}' for b in dcp_msg)}")
+                # Convert TRP header to bytes and combine with DCP payload
+                trp_header_bytes = bytearray(trp_msg_hdr)
+                packet = trp_header_bytes + bytearray(dcp_msg)
 
-        try:
-            cmd_timeout_sec = (
-                timeout_sec if timeout_sec is not None else self.default_timeout_sec
-            )
-
-            # Use ICC MHU send_packet with combined TRP+DCP packet
-            self.icc_mhu.send_packet(packet, timeout_sec=cmd_timeout_sec)
-
-            # Wait for response using ICC MHU get_packet
-            response_bytes = self.icc_mhu.get_packet(timeout_sec=cmd_timeout_sec)
-
-            if response_bytes:
                 logger.debug(
-                    f"DCP in TRP response received: {' '.join(f'{b:02X}' for b in response_bytes)}"
+                    f"Sending DCP in TRP message via ICC MHU (attempt {attempt + 1}/{max_retries}):"
+                )
+                logger.debug(
+                    f"TRP Header: {' '.join(f'{b:02X}' for b in trp_header_bytes)}"
+                )
+                logger.debug(f"DCP Payload: {' '.join(f'{b:02X}' for b in dcp_msg)}")
+
+                # Use ICC MHU send_packet with combined TRP+DCP packet
+                self.icc_mhu.send_packet(
+                    command=IccCommandId.ICC_COMMAND_DCP_MSG.value,
+                    packet=packet,
+                    timeout_sec=timeout_per_attempt,
                 )
 
-                # Log response headers using common method
-                self.log_trp_response_headers(trp_msg_hdr, response_bytes)
+                # Get first response - might be a notification
+                response_bytes = self.icc_mhu.get_packet(
+                    timeout_sec=float(timeout_per_attempt)
+                )
 
-                # The response should contain TRP header + DCP response
-                # Extract DCP response (skip TRP header)
-                trp_header_size = ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t)
-                if len(response_bytes) > trp_header_size:
-                    dcp_response = response_bytes[trp_header_size:]
-                    return dcp_response
+                # Check if this is a notification, if so retry once
+                if response_bytes and len(response_bytes) > ctypes.sizeof(
+                    transfer_relay_protocol.trp_msg_hdr_t
+                ):
+                    dcp_response = response_bytes[
+                        ctypes.sizeof(transfer_relay_protocol.trp_msg_hdr_t) :
+                    ]
+                    if len(dcp_response) >= ctypes.sizeof(
+                        data_collection_protocol.dcp_msg_hdr_t
+                    ):
+                        dcp_hdr = (
+                            data_collection_protocol.dcp_msg_hdr_t.from_buffer_copy(
+                                dcp_response
+                            )
+                        )
+                        if (
+                            dcp_hdr.msg_id
+                            == data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_NOTIFICATION.value
+                        ):
+                            logger.info(
+                                "Received asynchronous notification message, retrying for command response"
+                            )
+                            # Retry for the real command response
+                            response_bytes = self.icc_mhu.get_packet(
+                                timeout_sec=float(timeout_per_attempt)
+                            )
+
+                if response_bytes:
+                    logger.debug(
+                        f"DCP in TRP response received: {' '.join(f'{b:02X}' for b in response_bytes)}"
+                    )
+
+                    # Log response headers using common method
+                    self.log_trp_response_headers(trp_msg_hdr, response_bytes)
+
+                    # The response should contain TRP header + DCP response
+                    # Extract DCP response (skip TRP header)
+                    trp_header_size = ctypes.sizeof(
+                        transfer_relay_protocol.trp_msg_hdr_t
+                    )
+                    if len(response_bytes) > trp_header_size:
+                        dcp_response = response_bytes[trp_header_size:]
+                        return dcp_response
+                    else:
+                        raise ValueError(
+                            f"Response too short: {len(response_bytes)} bytes"
+                        )
                 else:
-                    raise ValueError(f"Response too short: {len(response_bytes)} bytes")
-            else:
-                raise TimeoutError(
-                    f"No response received within {cmd_timeout_sec} seconds"
-                )
+                    raise TimeoutError(
+                        f"No response received within {timeout_per_attempt} seconds"
+                    )
 
-        except Exception as e:
-            logger.error(f"Error while sending DCP message via ICC MHU: {e}")
-            raise RuntimeError(f"Failed to send DCP message via ICC MHU: {e}")
+            except TimeoutError as e:
+                if attempt == max_retries - 1:
+                    raise TimeoutError(
+                        f"DCP message via ICC MHU TRP failed after {max_retries} retries: {e}"
+                    )
+                delay = retry_delay_sec * (attempt + 1)
+                logger.info(
+                    f"DCP ICC MHU TRP attempt {attempt + 1}/{max_retries} timed out, "
+                    f"retrying in {delay:.2f}s..."
+                )
+                time.sleep(delay)
+            except Exception as e:
+                logger.error(f"Error while sending DCP message via ICC MHU: {e}")
+                raise RuntimeError(f"Failed to send DCP message via ICC MHU: {e}")
+
+        # Should never reach here due to exception propagation
+        raise TimeoutError(
+            f"DCP message via ICC MHU TRP failed after {max_retries} retries"
+        )
 
     def read_to_file(self, address: int, size: int, filename: str) -> None:
         """
@@ -471,64 +641,119 @@ class mts_ap_endpoint(mts_icc_mhu_trp_endpoint):
 
     def __init__(self):
         super().__init__(
-            IccMhuAp(memory_interface=ApCore()),
+            IccMhuAp(memory_interface=ApCoreMemoryInterface()),
             0,
             transfer_relay_protocol.cpu_type.CPU_AP,
         )
+
+    def close(self):
+        super().close()
 
     def send_trp_message(self) -> str:
         raise NotImplementedError("The AP Core does not send TRP messages.")
 
     def send_dcp_message(
         self,
+        *,
         dest_die: ctypes.c_uint8,
         dest_cpu: transfer_relay_protocol.cpu_type,
         client_id: data_collection_protocol.mts_client_id_t,
         dcp_msg: list[int],
         timeout_sec: Optional[int] = None,
+        max_retries: int = 3,
+        retry_delay_sec: float = 0.05,
     ) -> bytearray:
+        """Send a DCP message via ICC MHU interface (AP-specific) with retry logic"""
 
         # Following parameters are required for TRP messages / polymorphism, but not
         # needed for the AP Core since it does not add the TRP Header:
         # dest_die, dest_cpu, client_id
 
         # However we can validate the dest_die and dest_cpu match the AP Die 0
-        if dest_die != 0 or dest_cpu != transfer_relay_protocol.cpu_type.CPU_AP:
+        if dest_die != 0 or dest_cpu != transfer_relay_protocol.cpu_type.CPU_MCP:
             raise Exception(
-                f"Destination Die [{dest_die}] or Destination CPU [{dest_cpu}] does not match AP Core Die 0"
+                f"Destination Die [{dest_die}] or Destination CPU [{dest_cpu}] does not match MCP Core Die 0"
             )
 
-        # Convert the message into a byte array to write to memory
-        packet = bytearray(dcp_msg)
+        cmd_timeout_sec = (
+            timeout_sec if timeout_sec is not None else self.default_timeout_sec
+        )
+        timeout_per_attempt = cmd_timeout_sec / max_retries
 
-        logger.debug("Sending DCP message via ICC MHU:")
-        logger.debug(f"DCP Payload: {' '.join(f'{b:02X}' for b in dcp_msg)}")
+        for attempt in range(max_retries):
+            try:
+                # Convert the message into a byte array to write to memory
+                packet = bytearray(dcp_msg)
 
-        try:
-            cmd_timeout_sec = (
-                timeout_sec if timeout_sec is not None else self.default_timeout_sec
-            )
-
-            # Use ICC MHU send_packet with DCP packet
-            self.icc_mhu.send_packet(
-                command=IccCommandId.ICC_COMMAND_DCP_MSG.value,
-                packet=packet,
-                timeout_sec=cmd_timeout_sec,
-            )
-
-            # Wait for response using ICC MHU get_packet
-            response_bytes = self.icc_mhu.get_packet(timeout_sec=cmd_timeout_sec)
-            logger.debug(f"Raw DCP response bytes: {response_bytes}")
-
-            if response_bytes:
                 logger.debug(
-                    f"DCP response received: {' '.join(f'{b:02X}' for b in response_bytes)}"
+                    f"Sending DCP message via ICC MHU (attempt {attempt + 1}/{max_retries}):"
                 )
-                return response_bytes
-            else:
-                raise TimeoutError(
-                    f"No response received within {cmd_timeout_sec} seconds"
+                logger.debug(f"DCP Payload: {' '.join(f'{b:02X}' for b in dcp_msg)}")
+
+                # Use ICC MHU send_packet with DCP packet
+                self.icc_mhu.send_packet(
+                    command=IccCommandId.ICC_COMMAND_DCP_MSG.value,
+                    packet=packet,
+                    timeout_sec=timeout_per_attempt,
                 )
-        except Exception as e:
-            logger.error(f"Error while sending DCP message via ICC MHU: {e}")
-            raise RuntimeError(f"Failed to send DCP message via ICC MHU: {e}")
+
+                # Get first response - might be a notification
+                response_bytes = self.icc_mhu.get_packet(
+                    timeout_sec=float(timeout_per_attempt)
+                )
+
+                # Check if this is a notification, if so get the actual response
+                if response_bytes and len(response_bytes) >= ctypes.sizeof(
+                    data_collection_protocol.dcp_msg_hdr_t
+                ):
+                    dcp_hdr = data_collection_protocol.dcp_msg_hdr_t.from_buffer_copy(
+                        response_bytes
+                    )
+                    if (
+                        dcp_hdr.msg_id
+                        == data_collection_protocol.dcp_msg_id_t.DCP_MSG_ID_NOTIFICATION.value
+                    ):
+                        logger.info(
+                            "Received asynchronous notification message, checking for actual command response"
+                        )
+                        # Get the actual command response with same timeout
+                        response_bytes = self.icc_mhu.get_packet(
+                            timeout_sec=float(timeout_per_attempt)
+                        )
+
+                if response_bytes:
+                    logger.debug(
+                        f"DCP response received: {' '.join(f'{b:02X}' for b in response_bytes)}"
+                    )
+
+                    # Log DCP header if response is large enough
+                    if len(response_bytes) >= ctypes.sizeof(
+                        data_collection_protocol.dcp_msg_hdr_t
+                    ):
+                        self.log_dcp_response_header(response_bytes)
+
+                    return response_bytes
+                else:
+                    raise TimeoutError(
+                        f"No response received within {timeout_per_attempt} seconds"
+                    )
+
+            except TimeoutError as e:
+                if attempt == max_retries - 1:
+                    raise TimeoutError(
+                        f"DCP message via ICC MHU AP failed after {max_retries} retries: {e}"
+                    )
+                delay = retry_delay_sec * (attempt + 1)
+                logger.info(
+                    f"DCP ICC MHU AP attempt {attempt + 1}/{max_retries} timed out, "
+                    f"retrying in {delay:.2f}s..."
+                )
+                time.sleep(delay)
+            except Exception as e:
+                logger.error(f"Error while sending DCP message via ICC MHU: {e}")
+                raise RuntimeError(f"Failed to send DCP message via ICC MHU: {e}")
+
+        # Should never reach here due to exception propagation
+        raise TimeoutError(
+            f"DCP message via ICC MHU AP failed after {max_retries} retries"
+        )

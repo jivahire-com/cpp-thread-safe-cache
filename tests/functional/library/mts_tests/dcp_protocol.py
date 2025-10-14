@@ -317,7 +317,8 @@ class data_collection_protocol:
             self.reserved = reserved
 
 
-# these are required to be defined outside of the class definition because it references the class itself before it is fully constructed
+# these are required to be defined outside of the class definition because it references
+# the class itself before it is fully constructed
 data_collection_protocol.client_events_enable_disable_msg.dcp_msg_events_enable_disable_t._fields_ = [
     ("number_of_events", ctypes.c_uint16),
     (
@@ -334,7 +335,8 @@ def event_list_init(self, number_of_events: int, events: list[tuple[int, int, in
         > data_collection_protocol.client_events_enable_disable_msg.MAX_EVENTS
     ):
         raise ValueError(
-            f"number_of_events, {number_of_events}, cannot exceed {data_collection_protocol.client_events_enable_disable_msg.MAX_EVENTS}"
+            f"number_of_events, {number_of_events}, cannot exceed "
+            f"{data_collection_protocol.client_events_enable_disable_msg.MAX_EVENTS}"
         )
     self.number_of_events = number_of_events
 

@@ -4,7 +4,8 @@ icc_mhu_lib_test.py - Python based Pythia 2.0 Test.
 Tests that check for icc mhu command output over same and across dies
 """
 import time
-import sys, os
+import sys
+import os
 from pathlib import Path
 from typing import List
 
@@ -13,7 +14,6 @@ sys.path.append(str(Path(__file__).parent.parent / "common"))
 
 from serial_utils import SerialUtility
 from thread_utils import ReceiverThread
-from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
@@ -27,6 +27,7 @@ sys.path.extend(
         current_dir,
     ]
 )
+
 
 class IccMhuTest(EchoFallsBaseTest):
     # Initialize class-level flag
@@ -62,7 +63,6 @@ class IccMhuTest(EchoFallsBaseTest):
         self.serial_util_send = None
         self.serial_util_receive = None
 
-
     def setup_dut(self) -> bool:
         """Setup the DUT for testing"""
         try:
@@ -79,17 +79,27 @@ class IccMhuTest(EchoFallsBaseTest):
             def get_channels(die):
                 return (
                     die.scp.channel_manager.get_current_channel(),
-                    die.mcp.channel_manager.get_current_channel()
+                    die.mcp.channel_manager.get_current_channel(),
                 )
 
             soc = self.dut.mb.node_0.soc
             if soc.secondary_die is not None:
-                self.log.info("Current Test is executing on DualDie Config, so secondary die will be used to open channel on SCP and MCP core")
-                self.core_com_channel_scp_die0, self.core_com_channel_mcp_die0 = get_channels(soc.primary_die)
-                self.core_com_channel_scp_die1, self.core_com_channel_mcp_die1 = get_channels(soc.secondary_die)
+                self.log.info(
+                    "Executing on DualDie Config, so secondary die will be used for SCP and MCP core"
+                )
+                self.core_com_channel_scp_die0, self.core_com_channel_mcp_die0 = (
+                    get_channels(soc.primary_die)
+                )
+                self.core_com_channel_scp_die1, self.core_com_channel_mcp_die1 = (
+                    get_channels(soc.secondary_die)
+                )
             else:
-                self.log.info("Current Test is executing on SingleDie Config, so primary die will be used to open channel on SCP and MCP core")
-                self.core_com_channel_scp_die0, self.core_com_channel_mcp_die0 = get_channels(soc.primary_die)
+                self.log.info(
+                    "Executing on SingleDie Config, so primary die will be used for SCP and MCP core"
+                )
+                self.core_com_channel_scp_die0, self.core_com_channel_mcp_die0 = (
+                    get_channels(soc.primary_die)
+                )
 
             return True
         except Exception as e:
@@ -194,7 +204,7 @@ class IccMhuTest(EchoFallsBaseTest):
                     return False
                 else:
                     self.log.info(
-                        f"Payload values match successful. Expected: {expected_payload_strs}, Received: {received_payload}"
+                        f"Payload values match! Expected: {expected_payload_strs}, Received: {received_payload}"
                     )
 
             except (IndexError, ValueError) as e:
@@ -225,12 +235,14 @@ class IccMhuTest(EchoFallsBaseTest):
         last_value = payload_bytes[-1]
 
         return f"MHU Recv Complete CB - payload [{last_index}] == 0x{last_value:x}"
-    
+
     def setup_serial_utilities(self, sender):
         """Initialize serial utilities based on sender die and log the setup."""
         if "die0" in sender:
             receiver = sender.replace("die0", "die1")
-            self.log.debug(f"Setting up D2D communication: Sender = {sender}, Receiver = {receiver}")
+            self.log.debug(
+                f"Setting up D2D communication: Sender = {sender}, Receiver = {receiver}"
+            )
             self.serial_util_receive = SerialUtility(
                 scp_channel=self.core_com_channel_scp_die1,
                 mcp_channel=self.core_com_channel_mcp_die1,
@@ -245,7 +257,9 @@ class IccMhuTest(EchoFallsBaseTest):
             )
         else:
             receiver = sender.replace("die1", "die0")
-            self.log.debug(f"Setting up D2D communication: Sender = {sender}, Receiver = {receiver}")
+            self.log.debug(
+                f"Setting up D2D communication: Sender = {sender}, Receiver = {receiver}"
+            )
             self.serial_util_receive = SerialUtility(
                 scp_channel=self.core_com_channel_scp_die0,
                 mcp_channel=self.core_com_channel_mcp_die0,
@@ -276,7 +290,9 @@ class IccMhuTest(EchoFallsBaseTest):
             return list(payload_bytes)
         return payload_bytes
 
-    def log_test_parameters(self, direction, channel, message_id, payload_size, payload_bytes):
+    def log_test_parameters(
+        self, direction, channel, message_id, payload_size, payload_bytes
+    ):
         """Log the test parameters."""
         self.log.info("\n" + "=" * 80)
         self.log.info("ICC MHU Test Parameters:")
@@ -307,7 +323,6 @@ class IccMhuTest(EchoFallsBaseTest):
             channel = getattr(self, attr)
             if channel is not None and channel.is_open():
                 channel.close()
-
 
     def test_icc_cli_mscp_mhu(
         self,
@@ -347,9 +362,11 @@ class IccMhuTest(EchoFallsBaseTest):
                     "Failed to receive initial SCP-MCP heartbeat during setup"
                 )
                 return False
-            
+
             payload_bytes = self.prepare_payload(payload_bytes)
-            self.log_test_parameters(direction, channel, message_id, payload_size, payload_bytes)
+            self.log_test_parameters(
+                direction, channel, message_id, payload_size, payload_bytes
+            )
 
             # Setup receive request on receiver
             receive_cmd = f"icc_mhu recv {channel} {message_id} {payload_size}"
@@ -447,7 +464,6 @@ class IccMhuTest(EchoFallsBaseTest):
         finally:
             self.close_all_channels()
 
-            
     def test_icc_cli_d2d_mhu(
         self,
         sender_is_mcp: bool,
@@ -456,7 +472,7 @@ class IccMhuTest(EchoFallsBaseTest):
         message_id: int = 2,
         payload_size: int = 3,
         payload_bytes: List[int] = None,
-        ) -> bool:
+    ) -> bool:
         """
         Perform a D2D ICC MHU communication test between MCP and SCP across dies.
 
@@ -479,29 +495,35 @@ class IccMhuTest(EchoFallsBaseTest):
         """
         try:
             sender = f"{'MCP' if sender_is_mcp else 'SCP'}_die{'0' if sender_is_die0 else '1'}"
-            receiver = f"{sender.split('_',maxsplit=1)[0]}_die{'1' if 'die0' in sender else '0'}"
+            receiver = f"{sender.split('_', maxsplit=1)[0]}_die{'1' if 'die0' in sender else '0'}"
             direction = f"{sender} to {receiver}"
 
             self.setup_serial_utilities(sender)
 
             if not self.check_heartbeat():
-                self.log.error("Failed to receive initial SCP-MCP heartbeat during setup")
+                self.log.error(
+                    "Failed to receive initial SCP-MCP heartbeat during setup"
+                )
                 return False
 
             payload_bytes = self.prepare_payload(payload_bytes)
-            self.log_test_parameters(direction, channel, message_id, payload_size, payload_bytes)
+            self.log_test_parameters(
+                direction, channel, message_id, payload_size, payload_bytes
+            )
 
             receive_cmd = f"icc_mhu recv {channel} {message_id} {payload_size}"
             self.log.debug(f"Setting up receive request on {receiver}: {receive_cmd}")
-            if not self.execute_command(self.serial_util_receive, sender_is_mcp, receive_cmd):
+            if not self.execute_command(
+                self.serial_util_receive, sender_is_mcp, receive_cmd
+            ):
                 self.log.error(f"Failed to setup receive request on {receiver}")
                 return False
 
             key = self.generate_key(payload_bytes)
             read_method = (
-            self.serial_util_receive.read_mcp_serial_until
-            if sender_is_mcp
-            else self.serial_util_receive.read_scp_serial_until
+                self.serial_util_receive.read_mcp_serial_until
+                if sender_is_mcp
+                else self.serial_util_receive.read_scp_serial_until
             )
             receiver_thread = ReceiverThread(
                 read_method=read_method, key=key, timeout=80
@@ -510,7 +532,9 @@ class IccMhuTest(EchoFallsBaseTest):
             receiver_thread.start()
             time.sleep(2)
             payload_str = " ".join(str(b) for b in payload_bytes)
-            send_cmd = f"icc_mhu send {channel} {message_id} {payload_size} {payload_str}"
+            send_cmd = (
+                f"icc_mhu send {channel} {message_id} {payload_size} {payload_str}"
+            )
             self.log.debug(f"Executing send command on {sender}: {send_cmd}")
             if not self.execute_command(self.serial_util_send, sender_is_mcp, send_cmd):
                 self.log.error(f"Failed to send message from {sender}")
@@ -529,20 +553,30 @@ class IccMhuTest(EchoFallsBaseTest):
             self.log.info(receiver_thread.log)
             self.log.info("=" * 80)
 
-            mhu_messages = [line for line in receiver_thread.log.splitlines() if "MHU Recv Complete CB" in line]
+            mhu_messages = [
+                line
+                for line in receiver_thread.log.splitlines()
+                if "MHU Recv Complete CB" in line
+            ]
             if not mhu_messages:
-                self.log.error(f"No MHU messages found in captured output ({direction})")
+                self.log.error(
+                    f"No MHU messages found in captured output ({direction})"
+                )
                 return False
 
             self.log.debug(f"Found MHU Messages ({direction}):")
             for msg in mhu_messages:
                 self.log.info(msg)
 
-            if not self.validate_mhu_message_payload(mhu_messages, payload_size, payload_bytes):
+            if not self.validate_mhu_message_payload(
+                mhu_messages, payload_size, payload_bytes
+            ):
                 self.log.error(f"MHU message payload validation failed ({direction})")
                 return False
 
-            self.log.debug(f"ICC MHU communication test ({direction}) completed successfully")
+            self.log.debug(
+                f"ICC MHU communication test ({direction}) completed successfully"
+            )
             return True
 
         except Exception as e:

@@ -544,6 +544,11 @@ class dcp_commands:
             response_dcp_msg_hdr.msg_status
         )
 
+        # Handle DATA_COLLECTION_E_BUSY specially - don't raise exception, just return status
+        if msg_status == data_collection_protocol.dcp_status_t.DATA_COLLECTION_E_BUSY:
+            logger.debug(f"Client is busy, returning status: {msg_status.name}")
+            return msg_status, None
+
         if not dcp_commands.validate_response(msg_status, logger):
             raise ValueError(
                 f"Message Error: "
@@ -574,7 +579,7 @@ class dcp_commands:
                         # Calculate the memory address to read from
                         memory_address = (
                             read_data_rsp.physical_start_addr
-                            + read_data_rsp.rd_data_addr_offset
+                            + read_data_rsp.rd_data_addr_offset  # type: ignore
                         )
                         # Use rd_data_size for the amount of data to read
                         src_endpoint.read_to_file(
@@ -592,8 +597,8 @@ class dcp_commands:
                             f"read_to_file API failed, skipping file write: {e}"
                         )
                 else:
-                    logger.debug(
-                        "read_to_file API not supported by endpoint, skipping file write"
+                    logger.warning(
+                        "  ⚠️  read_to_file API not supported by endpoint, skipping file write"
                     )
 
         return msg_status, read_data_rsp

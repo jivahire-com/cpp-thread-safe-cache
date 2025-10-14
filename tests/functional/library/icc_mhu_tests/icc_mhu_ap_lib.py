@@ -35,8 +35,23 @@ logger = logging.getLogger(__name__)
 class IccCommandId(Enum):
     ICC_COMMAND_DCP_MSG = 0x00020001
 
+
 class CoreMemoryMapInterface(ABC):
-    """Abstract base class for memory interface implementations"""
+    """
+    Abstract interface for hardware-agnostic memory access operations.
+
+    Provides a pluggable memory access abstraction that enables different memory
+    access implementations (T32 debugger, native hardware, simulation, mock) to be
+    used interchangeably by higher-level components.
+
+    This interface supports byte-level memory operations with efficient bulk memory
+    dumps for telemetry and debugging use cases. Implementations handle the specifics
+    of their underlying memory access mechanism while presenting a consistent API.
+
+    Key implementations:
+    - ApCore: Production T32 debugger-based memory access
+    - MockMemoryInterface: Test double for unit testing
+    """
 
     @abstractmethod
     def read(self, address: int, size: int = 4) -> int:
@@ -64,6 +79,10 @@ class CoreMemoryMapInterface(ABC):
         """
         pass
 
+    def close(self):
+        """Default close method for memory interfaces. Subclasses may override."""
+        pass
+
     def dump(self, address: int, size: int) -> bytearray:
         """
         Dump a block of memory efficiently.
@@ -81,7 +100,26 @@ class CoreMemoryMapInterface(ABC):
 
 class Trace32ApCore(Trace32):
     """
-    T32 implementation of Trace32 for the AP Core on Die 0.
+    T32 debugger lifecycle management for Kingsgate AP Core Die 0.
+
+    Manages T32 debugger initialization, configuration, and cleanup with Kingsgate-specific
+    settings. Extends Pythia Trace32 base class with lazy initialization for performance
+    and proper resource cleanup.
+
+    Responsibilities:
+    - Initialize and launch T32 debugger with AP Die 0 configuration
+    - Manage T32 connection lifecycle (attach/detach/shutdown)
+    - Validate X: drive availability and T32 paths
+    - Provide exception-safe resource cleanup
+
+    Configuration:
+    - Target: ARM AP Core Die 0 (localhost:30004)
+    - Debugger: T32_AP_DIE_0 via UDP communication
+    - Paths: X:/kingsgate/tools/Kingsgate_TRACE32/... (Kingsgate-specific)
+
+    Usage:
+    - Standalone: Direct T32 operations for debugging
+    - Injected: Memory interface backend via ApCore
     """
 
     def __init__(self):
@@ -131,26 +169,78 @@ class Trace32ApCore(Trace32):
             debugger_name=self.debugger_name,
         )
 
-        # Initialize and launch the T32 debugger via the Trace32 Class
-        # Pythia will do this for all debuggers in a configuration on
-        # environment setup, but we need it here for standalone use.
-        # https://azurecsi.visualstudio.com/DuvallFw/_git/fse.pythia2.0?path=/tdk_cobalt/pythia/tdk/cobalt/duts/rvp_dut.py&version=GBmain&line=94&lineEnd=141&lineStartColumn=5&lineEndColumn=55&lineStyle=plain&_a=contents # noqa: E501
-        self.initialize()
-        self.launch(
-            config=self.t32_core_config_path,
-            args=self.t32_start_script_path,
-            wait_time=self.t32_launch_delay_seconds,
-        )
+        # Track closure and initialization state
+        self._closed = False
+        self._initialized = False
 
-    def __del__(self):
-        # attempt to disconnect cleanly, but ignore any errors and quit
-        logger.debug(f"Destructor called - cleaning up {self.__str__()}")
-        logger.debug("Attempting to disconnect cleanly from T32 instance")
-        self.execute_command("sys.d")
-        logger.debug("Attempting to quit from T32 Instance")
-        self.execute_command("quit")
-        logger.debug("Attempting to the process")
-        self.quit()
+    def _ensure_initialized(self):
+        """Lazy initialization of T32 debugger."""
+        if not self._initialized:
+            logger.debug("Lazy initializing T32 debugger")
+            # Initialize and launch the T32 debugger via the Trace32 Class
+            # Pythia will do this for all debuggers in a configuration on
+            # environment setup, but we need it here for standalone use.
+            # https://azurecsi.visualstudio.com/DuvallFw/_git/fse.pythia2.0?path=/tdk_cobalt/pythia/tdk/cobalt/duts/rvp_dut.py&version=GBmain&line=94&lineEnd=141&lineStartColumn=5&lineEndColumn=55&lineStyle=plain&_a=contents # noqa: E501
+            try:
+                self.initialize()
+                self.launch(
+                    config=self.t32_core_config_path,
+                    args=self.t32_start_script_path,
+                    wait_time=self.t32_launch_delay_seconds,
+                )
+                self._initialized = True
+
+                # the underlying libraries will return without error, but the gui is not ready to accept commands.
+                # give it time
+                # specifically the issue is with
+                # https://azurecsi.visualstudio.com/DuvallFw/_git/fse.pythia2.0?path=/tdk_common/pythia/tdk/common/util/debugger/trace32.py
+                # the quit() api,   it always ends with a forced quit, which will allow the gui to start next time but
+                # it has to reset the hardware, and that takes time
+                time.sleep(10)
+
+                logger.debug("T32 debugger initialization completed")
+            except Exception as e:
+                logger.error(f"T32 initialization failed: {e}")
+                # Clean up any partial initialization
+                try:
+                    self.quit()
+                except Exception as cleanup_e:
+                    logger.warning(f"Failed to clean up after initialization failure: {cleanup_e}")
+                # Re-raise the original exception
+                raise
+
+    def execute_command(self, command):
+        """Execute T32 command, ensuring T32 is initialized first."""
+        self._ensure_initialized()
+        return super().execute_command(command)
+
+    def close(self):
+        """Cleanly shut down the Trace32 instance."""
+        logger.debug(
+            f"Trace32ApCore.close() called, _closed={self._closed}, _initialized={self._initialized}"
+        )
+        if self._closed:
+            logger.debug("Already closed, returning early")
+            return  # Already closed
+
+        logger.debug("Setting _closed=True immediately to prevent re-entry")
+        self._closed = True  # Set immediately to prevent re-entry
+
+        # Only attempt shutdown if we actually initialized T32
+        if self._initialized:
+            try:
+                logger.debug(
+                    f"Trace32ApCore.close() executing shutdown for {self.__str__()}"
+                )
+                self.execute_command("sys.d")
+                time.sleep(2)
+                self.quit()
+                logger.debug("Trace32ApCore.close() shutdown completed successfully")
+            except Exception as e:
+                logger.warning(f"Exception during Trace32ApCore.close(): {e}")
+                # _closed is already True, so we're still protected from re-entry
+        else:
+            logger.debug("T32 was never initialized, no shutdown needed")
 
     def __str__(self):
         return (
@@ -167,9 +257,34 @@ class Trace32ApCore(Trace32):
         )
 
 
-class ApCore(CoreMemoryMapInterface):
+class ApCoreMemoryInterface(CoreMemoryMapInterface):
     """
-    T32 implementation of CoreMemoryMapInterface for AP Die 0
+    T32-based memory interface implementation for AP Die 0.
+
+    Implements CoreMemoryMapInterface by translating abstract memory operations
+    (read/write/dump) into T32 debugger commands. Provides a clean memory access
+    abstraction that isolates T32-specific command syntax and response parsing
+    from higher-level components.
+
+    Responsibilities:
+    - Translate memory operations to T32 EOAXI commands
+    - Parse T32 command responses and extract memory values
+    - Handle unaligned memory access via byte-by-byte operations
+    - Provide efficient bulk memory dumps using T32 binary save
+    - Validate T32 responses and report meaningful errors
+
+    T32 Command Usage:
+    - read(): 'data.in EOAXI:<address> /Byte' with regex parsing
+    - write(): 'data.set EOAXI:<address> %Byte <value>' for byte writes
+    - dump(): 'data.save.binary <file> EOAXI:<start>--<end>' for bulk data
+
+    Args:
+        t32_instance: Optional T32 instance (defaults to Trace32ApCore())
+
+    Usage:
+        ApCoreMemoryInterface() - Production with default Trace32ApCore
+        ApCoreMemoryInterface(pythia_t32) - Integration with Pythia-managed T32
+        ApCoreMemoryInterface(mock_t32) - Testing with mock T32 instance
     """
 
     def __init__(self, t32_instance: Optional[Trace32] = None):
@@ -180,12 +295,24 @@ class ApCore(CoreMemoryMapInterface):
         if self.t32_instance is None:
             self.t32_instance = Trace32ApCore()
 
-        # Both Pythia and our own version will have already launched
-        # the T32 debugger, so we can use it directly. Attach so all
-        # further commands don't need to.
-        ret_tuple = self.t32_instance.execute_command("sys.a")
-        self._validate_t32_tuple(ret_tuple)
-        logger.debug(f"Attached to T32 instance: {self.t32_instance}")
+        self._attached = False
+
+    def _ensure_attached(self):
+        """Ensure T32 is attached before executing commands."""
+        if not self._attached:
+            logger.debug("Attaching to T32 instance")
+            # Both Pythia and our own version will have already launched
+            # the T32 debugger, so we can use it directly. Attach so all
+            # further commands don't need to.
+            ret_tuple = self.t32_instance.execute_command("sys.a")
+            self._validate_t32_tuple(ret_tuple)
+            logger.debug(f"Attached to T32 instance: {self.t32_instance}")
+            self._attached = True
+
+    def close(self):
+        """Clean up the T32 instance."""
+        if self.t32_instance is not None:
+            self.t32_instance.quit()
 
     def _validate_t32_tuple(self, ret_tuple: Tuple[bool, str, str]) -> None:
         # The type is Tuple[success, stdout, stderr]
@@ -225,6 +352,7 @@ class ApCore(CoreMemoryMapInterface):
         Returns:
             Value read from memory
         """
+        self._ensure_attached()
 
         logger.debug(f"Reading {size} bytes from address 0x{address:08X}")
 
@@ -274,6 +402,7 @@ class ApCore(CoreMemoryMapInterface):
             value: Value to write
             size: Size in bytes (1, 2, 4, 8)
         """
+        self._ensure_attached()
         # Write each byte of the value in little endian order
         # One byte at a time to handle unaligned writes
         value_bytes = value.to_bytes(size, byteorder="little")
@@ -296,6 +425,8 @@ class ApCore(CoreMemoryMapInterface):
         Returns:
             Bytearray of memory values
         """
+        self._ensure_attached()
+
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
             tmp_file.write(
                 b"Temporary file contents for dumping memory, will be overwritten.\n"
@@ -360,6 +491,11 @@ class IccMhu:
             raise ValueError(
                 "Subclass must define SEND_PAYLOAD_ADDR and RECV_PAYLOAD_ADDR"
             )
+
+    def close(self):
+        """Clean up the ICC MHU interface."""
+        if self.memory_interface is not None:
+            self.memory_interface.close()
 
     def _read_memory(self, address: int, size: int = 4) -> int:
         """
@@ -439,7 +575,7 @@ class IccMhu:
         except Exception as e:
             raise RuntimeError(f"Failed to check packet pending: {e}")
 
-    def get_packet(self, timeout_sec: int = 5) -> Optional[bytearray]:
+    def get_packet(self, timeout_sec: float = 5.0) -> Optional[bytearray]:
         """
         Get a packet from the receive channel and return its contents.
 
@@ -519,7 +655,9 @@ class IccMhu:
             logger.error(f"Failed to get packet: {e}")
             return None
 
-    def send_packet(self, command: int, packet: bytearray, timeout_sec: int = 5) -> None:
+    def send_packet(
+        self, command: int, packet: bytearray, timeout_sec: int = 5
+    ) -> None:
         """
         Send a packet with the specified data.
 
@@ -566,9 +704,7 @@ class IccMhu:
             )
 
             # Write the command
-            self._write_memory(
-                self.SEND_PAYLOAD_ADDR + self.COMMAND_OFFSET, command, 4
-            )
+            self._write_memory(self.SEND_PAYLOAD_ADDR + self.COMMAND_OFFSET, command, 4)
 
             # Write packet data
             for i, byte_val in enumerate(packet):
@@ -618,10 +754,10 @@ class IccMhuAp(IccMhu):
         Initialize the ICC MHU AP interface.
 
         Args:
-            memory_interface: Memory access interface implementation (optional, defaults to CoreMemoryMapInterface)
+            memory_interface: Memory access interface implementation (optional, defaults to ApCoreMemoryInterface)
         """
         if memory_interface is None:
-            memory_interface = CoreMemoryMapInterface()
+            memory_interface = ApCoreMemoryInterface()
         super().__init__(memory_interface)
 
 
@@ -869,7 +1005,7 @@ def test_basic_functionality(verbose: bool = True) -> bool:
         mock_memory.configure_scenario(
             "recv_packet_ready", payload_data=[0x10, 0x11, 0x12, 0x13]
         )
-        packet = mhu.get_packet(timeout_sec=1)
+        packet = mhu.get_packet(timeout_sec=1.0)
         success = packet is not None and len(packet) == 4
         test_results.append(success)
         if verbose:
@@ -959,7 +1095,7 @@ def test_error_scenarios(verbose: bool = True) -> bool:
         mock_memory = MockMemoryInterface()
         mock_memory.configure_scenario("no_packets")
         mhu = IccMhuAp(memory_interface=mock_memory)
-        mhu.get_packet(timeout_sec=1)
+        mhu.get_packet(timeout_sec=1.0)
         test_results.append(False)  # Should have timed out
         if verbose:
             print("✗ Test 3 - Should have timed out")
@@ -1056,7 +1192,7 @@ def test_t32_ap_die_0(verbose: bool = True) -> bool:
         print("\n=== Testing T32 AP Die 0 ===")
 
     # Open the T32 Instance
-    t32_instance = ApCore()
+    t32_instance = ApCoreMemoryInterface()
 
     #
     # Address and sizes taken from MCP CLI while testing, update as needed.

@@ -706,7 +706,7 @@ TEST_FUNCTION(test_mts_manager_handle_read_msg_fail, test_setup, nullptr)
     FpFwListInsertTail(&pkg_active_list, &tlm_pkg.list_entry);
 
     mts_manager_handle_read_msg(&trp_msg);
-    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_E_BUSY);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_MORE);
 }
 
 TEST_FUNCTION(test_mts_manager_handle_trp_msg_pkg_notif, test_setup, nullptr)
@@ -847,4 +847,102 @@ TEST_FUNCTION(test_mts_manager_send_prep_pwr_pkg_notification_to_scp, test_setup
     will_return(__wrap_mts_is_primary_instance, true);
     expect_function_call(__wrap_mts_client_send_new_trp_msg);
     mts_manager_send_prep_pwr_pkg_notification_to_scp();
+}
+
+TEST_FUNCTION(test_mts_manager_handle_dcp_read_data_response_size_valid_data, test_setup, test_teardown)
+{
+    uint8_t buffer[1000] = {0};
+    tlm_package_t tlm_pkg = {{0}};
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    FpFwListInitialize(&pkg_free_list);
+    FpFwListInitialize(&pkg_active_list);
+
+    tlm_pkg.pkg.source_die_id = 0;
+    tlm_pkg.pkg.source_core_id = 2;
+    tlm_pkg.pkg.reserved = 0;
+    tlm_pkg.pkg.local_mmap_addr = (uintptr_t)buffer;
+    tlm_pkg.pkg.phy_addr_offset = 0x4000;
+    tlm_pkg.pkg.pkg_size = 1000;
+    tlm_pkg.pkg.crc = 0x4267;
+
+    FpFwListInsertTail(&pkg_active_list, &tlm_pkg.list_entry);
+    trp_msg.payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_READ_DATA;
+    in_flight_tlm_pkg = nullptr;
+
+    // Test case where msg_status = DATA_COLLECTION_RD_DATA_VALID_LAST (>= threshold)
+    // Should set response_dcp_payload_size = sizeof(dcp_msg_read_data_t)
+    will_return(__wrap_mts_is_primary_instance, true);
+    expect_function_call(__wrap_mts_client_send_trp_response);
+
+    mts_manager_handle_dcp_msg(&trp_msg);
+
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_LAST);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.payload_size, sizeof(dcp_msg_read_data_t));
+
+    // Reset for next test
+    in_flight_tlm_pkg = nullptr;
+    FpFwListInitialize(&pkg_active_list);
+    FpFwListInsertTail(&pkg_active_list, &tlm_pkg.list_entry);
+
+    // Add another package to make it return DATA_COLLECTION_RD_DATA_VALID_MORE
+    tlm_package_t tlm_pkg_2 = {{0}};
+    FpFwListInsertTail(&pkg_active_list, &tlm_pkg_2.list_entry);
+
+    // Test case where msg_status = DATA_COLLECTION_RD_DATA_VALID_MORE (>= threshold)
+    // Should set response_dcp_payload_size = sizeof(dcp_msg_read_data_t)
+    will_return(__wrap_mts_is_primary_instance, true);
+    expect_function_call(__wrap_mts_client_send_trp_response);
+
+    mts_manager_handle_dcp_msg(&trp_msg);
+
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_MORE);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.payload_size, sizeof(dcp_msg_read_data_t));
+}
+
+TEST_FUNCTION(test_mts_manager_handle_dcp_read_data_response_size_error_conditions, test_setup, test_teardown)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    FpFwListInitialize(&pkg_free_list);
+    FpFwListInitialize(&pkg_active_list);
+
+    trp_msg.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_READ_DATA;
+    in_flight_tlm_pkg = nullptr;
+
+    // Test case 1: Empty list - should set msg_status to DATA_COLLECTION_RD_DATA_NONE (< threshold)
+    // Should set response_dcp_payload_size = 0
+    will_return(__wrap_mts_is_primary_instance, true);
+    expect_function_call(__wrap_mts_client_send_trp_response);
+
+    mts_manager_handle_dcp_msg(&trp_msg);
+
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_NONE);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.payload_size, 0);
+
+    // Test case 2: In-flight package already exists - should set msg_status to DCP_STATUS_E_BUSY (<
+    // threshold) Should set response_dcp_payload_size = 0
+    uint8_t buffer[1000] = {0};
+    tlm_package_t tlm_pkg = {{0}};
+    tlm_package_t in_flight_pkg = {{0}};
+
+    tlm_pkg.pkg.source_die_id = 0;
+    tlm_pkg.pkg.source_core_id = 2;
+    tlm_pkg.pkg.reserved = 0;
+    tlm_pkg.pkg.local_mmap_addr = (uintptr_t)buffer;
+    tlm_pkg.pkg.phy_addr_offset = 0x4000;
+    tlm_pkg.pkg.pkg_size = 1000;
+    tlm_pkg.pkg.crc = 0x4267;
+
+    FpFwListInsertTail(&pkg_active_list, &tlm_pkg.list_entry);
+    in_flight_tlm_pkg = &in_flight_pkg; // Set an in-flight package
+
+    will_return(__wrap_mts_is_primary_instance, true);
+    expect_function_call(__wrap_mts_client_send_trp_response);
+
+    mts_manager_handle_dcp_msg(&trp_msg);
+
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_MORE);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.payload_size, sizeof(dcp_msg_read_data_t));
 }

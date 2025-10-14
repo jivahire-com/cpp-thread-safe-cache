@@ -284,6 +284,7 @@ class SerialChannelBase:
     """
     A utility class to manage serial communication with a uart channel.
     Provides methods to send commands, read responses, and wait for heartbeat signals.
+    Uses segregated interfaces to follow Interface Segregation Principle.
     """
 
     def __init__(self, channel, name: str, ready_text: str):
@@ -449,7 +450,7 @@ class SerialChannelBase:
 # right click, and select 'Connect Terminal to Uart'
 #
 # to run the main functionality below from a repo environment
-# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/common/serial_utils.py
+# & (Join-Path ([System.Environment]::GetEnvironmentVariable("REPO_APP_PATH_python.win64", "Process")) "/tools/python.exe") tests/functional/library/common/serial_utils.py # noqa: E501
 #
 def main():
     print("This is the main entry point of serial_utils.py")

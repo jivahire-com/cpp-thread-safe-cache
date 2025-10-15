@@ -104,16 +104,9 @@ class sensor_fifo_sync_test(EchoFallsBaseTest):
 
             if self.dut.get_dut_type() == DeviceType.RVP:
                 self.log.warning("Device type is RVP. Performing SoC Reset ...")
-                cred_path = os.environ.get("SECURE_FILE_PATH")
-                creds = self.load_credentials_from_yaml(cred_path)
-                rscm_helper = RscmHelperLibrary(
-                    rm_host="172.29.89.33",
-                    bmc_host="172.17.0.97",
-                    rm_user=creds["RM_USER"],
-                    rm_password=creds["RM_PASSWORD"],
-                    bmc_user=creds["BMC_USER"],
-                    bmc_password=creds["BMC_PASSWORD"],
-                )  # Fill in real host if available
+                cred_path = os.environ.get('SECURE_FILE_PATH')
+                creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
+                rscm_helper = RscmHelperLibrary(rm_host=self.host_config.rack_scm.host, bmc_host=self.dut.mb.node_0.dcscm.bmc.ip, rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'], node=self.host_config.node_id)
                 rscm_helper.rscm_soc_reset()
 
             # This test will:
@@ -197,11 +190,3 @@ class sensor_fifo_sync_test(EchoFallsBaseTest):
             # Cleanup resources if needed
             if hasattr(self, "serial_util") and self.serial_util:
                 self.serial_util = None
-
-    @staticmethod
-    def load_credentials_from_yaml(path):
-        import yaml
-
-        with open(path, "r") as f:
-            data = yaml.safe_load(f)
-        return data

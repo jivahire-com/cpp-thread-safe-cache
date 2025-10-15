@@ -18,5 +18,20 @@
 ./../../../tests/functional/test_suites/configmgr_tests/configmgr_dump_cli_test_soc.robot
 ##./../../../tests/functional/test_suites/configmgr_tests/configmgr_set_cli_test_soc.robot
 
+## Fuse Tests
+./../../../tests/functional/test_suites/fuse_tests/fuse_revision_test_soc.robot
+
+## HSP Mailbox Tests
+./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv_soc.robot
+./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_soc.robot
+
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test_soc.robot
+
+## Warm Start Tests
+##./../../../tests/functional/test_suites/warm_start_tests/warm_start_test_soc.robot
+
+## Crash Dump Tests
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test_soc.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_stack_overflow_test_soc.robot
+##./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test_soc.robot

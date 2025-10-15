@@ -179,3 +179,10 @@ class KngPythiaTestSetup():
             raise AssertionError
         else:
             print("Power on command executed successfully.")
+
+    @staticmethod
+    def load_credentials_from_yaml(path):
+        import yaml
+        with open(path, 'r') as f:
+            data = yaml.safe_load(f)
+        return data

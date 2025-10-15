@@ -21,6 +21,7 @@ set(SOURCES
     test_soc_max_temperature.cpp
     test_log_inst_die_max_temp.cpp
     test_core_vm_throttling_priorities.cpp
+    test_log_instantaneous_die_temperature_sensors_integration.cpp
     test_core_aging_counter_data.cpp
     log_vm_throttling_integration_test.cpp
     )

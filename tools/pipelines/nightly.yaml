@@ -127,8 +127,10 @@ stages:
   dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie_0, SVP_Pythia_Tests_SingleDie_1, SVP_Pythia_Tests_DualDie_0, SVP_Pythia_Tests_DualDie_1, MSCP_FPGA_Pythia_Tests, ACCEL_FPGA_Pythia_Tests, MSCP_FPGA_Pythia_Dualdie_Tests]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
-  pool: 
+  pool:
     name: 1pfw-kingsgate-windows
+    demands:
+    - ImageOverride -equals 1pfw-win2022vNext
   jobs:
   - template: templates/promote.yaml
     parameters:

@@ -48,8 +48,10 @@ stages:
 - stage: Publish
   dependsOn: [Build_Unit_Test_x86, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests]
   condition: eq(variables['OfficialBuild'], 'true')
-  pool: 
+  pool:
     name: 1pfw-kingsgate-windows
+    demands:
+    - ImageOverride -equals 1pfw-win2022vNext
   jobs:
   - template: templates/publish.yaml
     parameters:

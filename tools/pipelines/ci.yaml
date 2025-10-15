@@ -64,8 +64,10 @@ stages:
   dependsOn: [Build_Unit_Test_x86, Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie, SVP_Pythia_Tests_DualDie]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
-  pool: 
+  pool:
     name: 1pfw-kingsgate-windows
+    demands:
+    - ImageOverride -equals 1pfw-win2022vNext
   jobs:
   - template: templates/promote.yaml
     parameters:

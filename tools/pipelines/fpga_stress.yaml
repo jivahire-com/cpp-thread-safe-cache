@@ -66,8 +66,10 @@ stages:
   dependsOn: [ MSCP_FPGA_Pythia_Tests, MSCP_FPGA_Pythia_DualDie_Tests, ACCEL_FPGA_Pythia_Tests ]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
-  pool: 
+  pool:
     name: 1pfw-kingsgate-windows
+    demands:
+    - ImageOverride -equals 1pfw-win2022vNext
   jobs:
   - template: templates/promote.yaml
     parameters:

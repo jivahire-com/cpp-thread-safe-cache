@@ -30,6 +30,8 @@ jobs:
   displayName: SVP Pythia Tests
   pool: 
     name: ${{ parameters.Pool }}
+    demands:
+    - ImageOverride -equals 1pfw-win2022vNext
     isCustom: true
     type: windows
 

@@ -8,8 +8,10 @@ parameters:
 jobs:
 - job: 'Publish'
   displayName: Publish
-  pool: 
+  pool:
     name: 1pfw-kingsgate-windows
+    demands:
+    - ImageOverride -equals 1pfw-win2022vNext
     isCustom: true
     type: windows
   steps: 

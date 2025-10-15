@@ -27,6 +27,7 @@
 typedef enum _pcie_rp_async_request_t
 {
     WAIT_FOR_EVENT = 0x00,
+    LINK_TRAINING_FAILED,
     PCIE_MAX_ASYNC_REQ
 } pcie_rp_async_request_t;
 

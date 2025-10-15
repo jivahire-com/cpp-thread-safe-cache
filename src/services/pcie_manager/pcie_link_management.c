@@ -9,10 +9,9 @@
  */
 
 /*------------- Includes -----------------*/
-#include "DfwkPtrTypes.h"
-
 #include <DbgPrint.h>
 #include <DfwkClient.h>
+#include <DfwkPtrTypes.h>
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <kng_soc_constants.h>
@@ -56,6 +55,7 @@ static void pcie_rp_timer_expiry_callback(unsigned long cb_val)
      */
     uint8_t rpss_idx = GET_RPSS_INDEX_FROM_TIMER_CALLBACK(cb_val);
     uint8_t rp_idx = GET_RP_INDEX_FROM_TIMER_CALLBACK(cb_val);
+    pciess_completion_request_t cmpl = {0};
     pcie_manager_context_t* ctx = scp_pcie_get_manager_context(rpss_idx);
 
     FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Link training timer expired!\n", rpss_idx, rp_idx);
@@ -65,8 +65,15 @@ static void pcie_rp_timer_expiry_callback(unsigned long cb_val)
      * the link status. Also initialize any capabilities that are required to
      * be initialized after link-up.
      */
-    send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)(ctx->iface), rpss_idx, rp_idx);
-    send_sync_rp_post_link_up_init((PDFWK_INTERFACE_HEADER)(ctx->iface), rpss_idx, rp_idx);
+    cmpl.op = LINK_TRAINING_FAILED;
+    cmpl.rp_index = rp_idx;
+    cmpl.status = SILIBS_E_TIMEOUT;
+    int status = tx_queue_send(&(ctx->work_queue), &(cmpl), TX_NO_WAIT);
+    if (status != TX_SUCCESS)
+    {
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: tx_queue_send error - %d\n", ctx->rpss_idx, cmpl.rp_index, status);
+        BUG_ASSERT_PARAM((status == TX_SUCCESS), status, 0);
+    }
 }
 
 static void start_link_training_timer_for_rp(pcie_manager_context_t* ctx, uint8_t rp_idx)

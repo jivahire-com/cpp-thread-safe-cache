@@ -113,6 +113,7 @@ mock_target(${TARGET}
     pcie_rp_rasdes_inject_retry_tlp_error
     pcie_rp_rasdes_inject_seqnum_error
     pcie_rp_rasdes_inject_symbol_error
+    pcie_rp_sii_get_link_state
     pcie_rp_vsecras_clear_rasdp_error_mode
     pcie_ss_rp_aer_spoof
     pcie_phy_setup_error_injection

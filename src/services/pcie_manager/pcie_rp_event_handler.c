@@ -12,6 +12,7 @@
 #include <pcie_link_management_i.h>
 #include <pcie_rp_event_handler.h>
 #include <pcie_rp_ide.h>
+#include <pcie_sync_requests_i.h>
 #include <pciess_int.h>       // pcie Interrupts
 #include <scp_pcie_manager.h> // for pcie_manager_context_t, pciess_complet...
 #include <stdint.h>           // for uint8_t
@@ -36,6 +37,13 @@ void process_wait_for_event_data(pcie_manager_context_t* ctx, pciess_completion_
 {
     uint32_t int_mask = req->async_data.int_mask;
     uint64_t glbl_ide_status = req->async_data.glbl_ide_data;
+
+    if (req->op == LINK_TRAINING_FAILED)
+    {
+        send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, req->rp_index);
+        send_sync_rp_post_link_up_init((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, req->rp_index);
+        return;
+    }
 
     /* Since we are only servicing notifiers, bit-order prioritization suffices */
     while (int_mask)

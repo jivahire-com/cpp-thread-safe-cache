@@ -31,6 +31,7 @@ extern "C" {
 #include <error_handler.h>
 #include <kng_soc_constants.h>
 #include <pcie_bdat_i.h>
+#include <pcie_common.h>
 #include <pcie_config_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
@@ -570,6 +571,58 @@ TEST_FUNCTION(test_get_rp_link_status, test_setup, test_teardown)
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_get_rp_link_status_logs_cper_busy, test_setup, test_teardown)
+{
+    pcie_sync_request_t r;
+    memset(&r, 0, sizeof(r));
+    r.header.RequestType = GET_LINK_STATUS;
+    r.req_type = GET_LINK_STATUS;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+
+    PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+    req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+
+    mock_pcie_ent.id = RPSS2;
+    mock_pcie_ent.rps[0].enabled = true;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_pciess_rp_get_link_train_done, SILIBS_E_BUSY);
+    will_return(__wrap_pcie_rp_sii_get_link_state, PCIE_LTSSM_STATE_DETECT_QUIET);
+    expect_function_calls(__wrap_hm_submit_cper, 1);
+
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_BUSY);
+}
+
+TEST_FUNCTION(test_get_rp_link_status_logs_cper_overwritten, test_setup, test_teardown)
+{
+    pcie_sync_request_t r;
+    memset(&r, 0, sizeof(r));
+    r.header.RequestType = GET_LINK_STATUS;
+    r.req_type = GET_LINK_STATUS;
+    r.rpss_index = RPSS3;
+    r.rp_index = 1;
+
+    PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+    req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+
+    mock_pcie_ent.id = RPSS3;
+    mock_pcie_ent.rps[1].enabled = true;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS3);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    will_return(__wrap_pciess_rp_get_link_train_done, SILIBS_E_OVERWRITTEN);
+    will_return(__wrap_pcie_rp_sii_get_link_state, PCIE_LTSSM_STATE_RECOVERY_EQUALIZATION_0);
+    expect_function_calls(__wrap_hm_submit_cper, 1);
+
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_E_OVERWRITTEN);
 }
 
 TEST_FUNCTION(test_force_aer_internal_uncorr_err, test_setup, test_teardown)

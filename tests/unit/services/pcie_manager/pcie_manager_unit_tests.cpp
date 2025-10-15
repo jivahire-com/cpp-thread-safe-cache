@@ -499,6 +499,32 @@ TEST_FUNCTION(test_process_wait_for_event_linkdown_rp_ready, NULL, NULL)
     }
 }
 
+/* Test link training failure routine in process_wait_for_event_data */
+TEST_FUNCTION(test_process_wait_for_event_link_training_failed, NULL, NULL)
+{
+    /* Setup LINK_TRAINING_FAILED operation in the completion request */
+    pciess_completion_request_t cmpl_req;
+    cmpl_req.op = LINK_TRAINING_FAILED;
+    cmpl_req.rp_index = 0;
+    cmpl_req.async_data.int_mask = 0; // Not used for this operation
+
+    ctx.rpss_idx = (RPSS_INSTANCE)0;
+
+    /* Expect GET_LINK_STATUS call */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_LINK_STATUS);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Expect POST_RP_LINK_UP_INIT call */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, POST_RP_LINK_UP_INIT);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    process_wait_for_event_data(&ctx, &cmpl_req);
+}
+
 /* Test Link down when the root port is not ready - we should not re-train in this case */
 TEST_FUNCTION(test_process_wait_for_event_linkdown_rp_not_ready, NULL, NULL)
 {

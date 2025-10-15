@@ -21,7 +21,8 @@
 #include <intu_lib.h>
 #include <kng_soc_constants.h> // for RPSS_INSTANCE
 #include <oi_pcie.h>           // for  pcie_laattr_ovrd_t
-#include <pcie_knobs.h>        // for pcie_cfg_t
+#include <pcie_common.h>
+#include <pcie_knobs.h> // for pcie_cfg_t
 #include <pcie_phy.h>
 #include <pcie_rp_rasdes.h>
 #include <pcie_ss_common.h>        // for pcie_ss_entity_t
@@ -461,5 +462,20 @@ silibs_status_t __wrap_oi_pcie_ss_populate_rp_bdat(pcie_ss_entity_t* ss, unsigne
     assert_non_null(bdat);
     assert_in_range(rp_index, 0, PCIESS_NUM_PORTS - 1);
     assert_int_equal(bdat_size, sizeof(BDAT_PCIE_PER_RP_DATA_MSFT_1));
+    return mock_type(silibs_status_t);
+}
+
+PCIE_LTSSM_STATE __wrap_pcie_rp_sii_get_link_state(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
+    return mock_type(PCIE_LTSSM_STATE);
+}
+
+silibs_status_t __wrap_pcie_rp_populate_cper(pcie_rp_entity_t* rp, void* cper, size_t cper_size)
+{
+    assert_non_null(rp);
+    assert_non_null(cper);
+    FPFW_UNUSED(cper_size);
+
     return mock_type(silibs_status_t);
 }

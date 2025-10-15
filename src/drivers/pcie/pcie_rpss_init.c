@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <health_monitor.h>
 #define __NO_CSR_TYPEDEFS__     // Needed to avoid huge buffers in ap_top_regs.h
 #define __NO_ADDRMAP_TYPEDEFS__ // Needed to avoid huge buffers in ap_top_regs.h
 #include <DbgPrint.h>
@@ -25,6 +26,8 @@
 #include <pcie_config_i.h>
 #include <pcie_dfwk.h>
 #include <pcie_platform_overrides_i.h>
+#include <pcie_rp_common.h>
+#include <pcie_rp_sii.h>
 #include <pcie_rpss_init_i.h>
 #include <pcie_ss_common.h>
 #include <pciess.h>
@@ -52,6 +55,8 @@ static uint64_t rpss_addrs[NUM_RPSS] = {
     AP_TOP_D1_VAB_RPSS2_ADDRESS,
     AP_TOP_D1_VAB_RPSS3_ADDRESS,
 };
+
+static acpi_cper_section_t cper_section = {0};
 
 /*------------- Functions ----------------*/
 int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
@@ -307,6 +312,23 @@ int get_rp_ready(PDFWK_SYNC_REQUEST_HEADER req)
     return sts;
 }
 
+static void log_link_training_failure_cper(pcie_ss_entity_t* rpss, uint8_t rp_index)
+{
+    memset(&cper_section, 0, sizeof(acpi_cper_section_t));
+    acpi_err_sec_pcie_vendor_t* pcie_cper = &cper_section.sec_pcie_vendor;
+    acpi_error_severity_t severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+
+    pcie_rp_populate_cper(&(rpss->rps[rp_index]), pcie_cper, sizeof(acpi_err_sec_pcie_vendor_t));
+
+    /* Fill in data specific to link training errors */
+    pcie_cper->error_type = PCIE_LINK_TRAINING_ERROR;
+    pcie_cper->link_training_info.ltssm_state = pcie_rp_sii_get_link_state(&(rpss->rps[rp_index]));
+    pcie_cper->link_training_info.link_width = rpss->rps[rp_index].current_state.lanecount;
+    pcie_cper->link_training_info.link_speed = rpss->rps[rp_index].current_state.linkrate;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_PCIE, severity, &cper_section, sizeof(cper_section));
+}
+
 int get_rp_link_status(PDFWK_SYNC_REQUEST_HEADER req)
 {
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
@@ -315,7 +337,16 @@ int get_rp_link_status(PDFWK_SYNC_REQUEST_HEADER req)
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
     BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
+    /*
+     * Log a link training non-FATAL CPER here only if this API returns the following:
+     * SILIBS_E_BUSY - this indicates that link training hasn't completed or the DLL_ACTIVE is not set
+     * SILIBS_E_OVERWRITTEN - this indicates that link training completed but the link width or speed is not as expected
+     */
     sts = pciess_rp_get_link_train_done(&(rpss->rps[r->rp_index]));
+    if ((sts & (SILIBS_E_BUSY | SILIBS_E_OVERWRITTEN)) != 0)
+    {
+        log_link_training_failure_cper(rpss, r->rp_index);
+    }
 
     return sts;
 }

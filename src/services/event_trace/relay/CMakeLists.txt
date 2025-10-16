@@ -16,6 +16,7 @@ target_link_libraries(
         fwlib.service.iccBase
         ms::lib::crash_dump
         ms::lib::hsp_firmware_headers
+        ms::lib::telemetry::fuses
         ms::service::atu_service
         ms::service::mts
         silibs::idsw_kng

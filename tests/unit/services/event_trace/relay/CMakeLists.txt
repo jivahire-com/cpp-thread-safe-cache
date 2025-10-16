@@ -9,6 +9,7 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
     ms::cmocka::testrunner
+    ms::lib::telemetry::fuses
     ms::lib::threadx
     ms::mocks::threadx
     ms::service::event_trace::relay

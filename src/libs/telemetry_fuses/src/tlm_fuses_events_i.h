@@ -45,7 +45,8 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, char_8),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, wafer_num),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, x_coord),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, y_coord))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, y_coord),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, parity_bits))
 
 //
 // ERRORS
@@ -142,6 +143,12 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
                      25,
                      TlmFusesReadEcidYCoord,
+                     FPFW_ET_LEVEL_ERROR,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_FUSES_LIB,
+                     26,
+                     TlmFusesReadEcidParityBits,
                      FPFW_ET_LEVEL_ERROR,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status))
 

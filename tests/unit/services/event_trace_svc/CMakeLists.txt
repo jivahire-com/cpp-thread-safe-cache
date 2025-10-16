@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.service.mts
         ms::cmocka::mocks
         ms::cmocka::testrunner
+        ms::lib::telemetry::fuses
         ms::lib::threadx
         ms::mocks::event_trace
         ms::mocks::threadx

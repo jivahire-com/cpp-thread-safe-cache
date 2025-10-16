@@ -58,7 +58,7 @@ static etr_service_context_t s_test_context;
 static etr_service_config_t s_test_config = {
     .soc_info =
         {
-            .soc_id = 0,
+            .soc_id = {0},
             .die_id = 0,
         },
     .asic_ddr_config =

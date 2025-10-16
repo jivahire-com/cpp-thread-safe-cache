@@ -13,6 +13,7 @@
 #include <FpFwUtils.h>
 #include <diag_decoder.h>
 #include <in_band_telemetry_ddr.h>
+#include <tlm_fuses.h>
 #include <transfer_relay_protocol.h>
 #include <tx_api.h>
 
@@ -55,9 +56,14 @@
 
 typedef struct
 {
-    uint64_t soc_id; // Wafer Lot Number and Wafer X/Y Coordinates
+    uint8_t soc_id[16]; // See https://azurecsi.visualstudio.com/DuvallFw/_git/1pfw.fwlibs?path=/src/libs/EventTracing/inc/IFpFwEventTracingBuffers.h&version=GBmain&line=113&lineEnd=113&lineStartColumn=1&lineEndColumn=164&lineStyle=plain&_a=contents
     uint32_t die_id;
 } soc_info_t;
+
+// Ensure the soc_id size matches the FPFW_ET_ASIC_BUFFER_HEADER::SocId size
+// and that the ECID struct can fit into the soc_id array
+static_assert(sizeof(((soc_info_t *)0)->soc_id) == sizeof(((FPFW_ET_ASIC_BUFFER_HEADER*)0)->SocId), "SocId needs to match size of FPFW_ET_ASIC_BUFFER_HEADER::SocId");
+static_assert(sizeof(((soc_info_t *)0)->soc_id) >= sizeof(ecid_t), "SocId needs to be able to fit the ECID");
 
 /* States for managing DDR buffers */
 typedef enum {

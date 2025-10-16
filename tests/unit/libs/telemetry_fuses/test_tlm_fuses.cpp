@@ -366,6 +366,11 @@ TEST_FUNCTION(test_tlm_fuses_get_ecid_fuse_svc_up, NULL, NULL)
     expect_value(__wrap_fuse_read, fuse_bit_size, ECID_Y_COORDINATE_WIDTH);
     will_return(__wrap_fuse_read, 3);
 
+    // Setup expectations for parity bit
+    expect_value(__wrap_fuse_read, fuse_bit_offset, ECID_ECID_PARITY_BIT_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, ECID_ECID_PARITY_BIT_WIDTH);
+    will_return(__wrap_fuse_read, 4);
+
     fpfw_status_t status = tlm_fuses_get_ecid(&ecid);
 
     assert_int_equal(status, FPFW_STATUS_SUCCESS);
@@ -373,6 +378,7 @@ TEST_FUNCTION(test_tlm_fuses_get_ecid_fuse_svc_up, NULL, NULL)
     assert_int_equal(ecid.wafer_num, 1);
     assert_int_equal(ecid.x_coord, 2);
     assert_int_equal(ecid.y_coord, 3);
+    assert_int_equal(ecid.parity_bits, 4);
 }
 
 TEST_FUNCTION(test_tlm_fuses_get_ecid_fuse_svc_down, NULL, NULL)
@@ -434,6 +440,20 @@ TEST_FUNCTION(test_tlm_fuses_get_ecid_fuse_failed_reads, NULL, NULL)
     will_return(__wrap_tlm_fuses_read, FPFW_STATUS_FAIL);
     status = tlm_fuses_get_ecid(&ecid);
 
+    assert_int_equal(status, FPFW_STATUS_FAIL);
+
+    // Test Case 5: Failed parity bits read
+    for (uint8_t i = 0; i < ECID_WAFER_LOT_NUMBER_CHAR_SIZE; i++)
+    {
+        will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    }
+
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_tlm_fuses_read, FPFW_STATUS_FAIL);
+
+    status = tlm_fuses_get_ecid(&ecid);
     assert_int_equal(status, FPFW_STATUS_FAIL);
 
     mock_tlm_fuses_read = false;

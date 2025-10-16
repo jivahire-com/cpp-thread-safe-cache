@@ -59,7 +59,7 @@ static void tlm_fuses_fill_default_dts_coeff(int tile_index, uint32_t coeff_coun
  * @return FPFW_INIT_STATUS_SUCCESS on success
  *
  */
-fpfw_status_t tlm_fuses_read(const uintptr_t fuse_store_addr, const unsigned int fuse_bit_offset, const unsigned int fuse_bit_size)
+fpfw_status_t tlm_fuses_read(void* fuse_store_addr, const unsigned int fuse_bit_offset, const unsigned int fuse_bit_size)
 {
     if ((fuse_bit_size == 0) || (fuse_bit_size > MAX_BITS_PER_FUSE))
     {
@@ -70,7 +70,7 @@ fpfw_status_t tlm_fuses_read(const uintptr_t fuse_store_addr, const unsigned int
     // Read the fuse and copy the data into the desired location
     uint64_t fuse_data = fuse_read(fuse_bit_offset, fuse_bit_size);
     size_t fuse_size = ((fuse_bit_size + (BITS_PER_BYTE - 1)) / BITS_PER_BYTE);
-    memcpy((void*)fuse_store_addr, (void*)&fuse_data, fuse_size);
+    memcpy(fuse_store_addr, (void*)&fuse_data, fuse_size);
 
     return FPFW_STATUS_SUCCESS;
 }
@@ -105,7 +105,7 @@ fpfw_status_t tlm_fuses_get_dts_coeff(unsigned int k_offset,
         uint64_t fuse_data_k = 0;
 
         // read DTS Y value
-        status = tlm_fuses_read((uintptr_t)&fuse_data_y, y_offset, y_width);
+        status = tlm_fuses_read(&fuse_data_y, y_offset, y_width);
         if (FPFW_STATUS_FAILED(status))
         {
             FPFW_ET_LOG(TlmFusesReadFailedY_offset, status);
@@ -120,7 +120,7 @@ fpfw_status_t tlm_fuses_get_dts_coeff(unsigned int k_offset,
         }
 
         // read DTS K value
-        status = tlm_fuses_read((uintptr_t)&fuse_data_k, k_offset, k_width);
+        status = tlm_fuses_read(&fuse_data_k, k_offset, k_width);
         if (FPFW_STATUS_FAILED(status))
         {
             FPFW_ET_LOG(TlmFusesReadFailedK_offset, status);
@@ -222,7 +222,7 @@ fpfw_status_t tlm_fuses_get_ecid(ecid_t* ecid)
         // Read the wafer lot number
         for (uint8_t i = 0; i < ECID_WAFER_LOT_NUMBER_CHAR_SIZE; i++)
         {
-            status = tlm_fuses_read((uintptr_t)&ecid->wafer_lot_num[i],
+            status = tlm_fuses_read(&ecid->wafer_lot_num[i],
                                     ECID_WAFER_LOT_NUMBER_CHAR0_BIT_OFFSET + (i * ECID_WAFER_LOT_NUMBER_CHAR0_WIDTH),
                                     ECID_WAFER_LOT_NUMBER_CHAR0_WIDTH);
             if (FPFW_STATUS_FAILED(status))
@@ -233,7 +233,7 @@ fpfw_status_t tlm_fuses_get_ecid(ecid_t* ecid)
         }
 
         // Read the wafer number
-        status = tlm_fuses_read((uintptr_t)&ecid->wafer_num, ECID_WAFER_NUMBER_BIT_OFFSET, ECID_WAFER_NUMBER_WIDTH);
+        status = tlm_fuses_read(&ecid->wafer_num, ECID_WAFER_NUMBER_BIT_OFFSET, ECID_WAFER_NUMBER_WIDTH);
         if (FPFW_STATUS_FAILED(status))
         {
             FPFW_ET_LOG(TlmFusesReadEcidWaferNum, status);
@@ -241,7 +241,7 @@ fpfw_status_t tlm_fuses_get_ecid(ecid_t* ecid)
         }
 
         // Read the x coordinate
-        status = tlm_fuses_read((uintptr_t)&ecid->x_coord, ECID_X_COORDINATE_BIT_OFFSET, ECID_X_COORDINATE_WIDTH);
+        status = tlm_fuses_read(&ecid->x_coord, ECID_X_COORDINATE_BIT_OFFSET, ECID_X_COORDINATE_WIDTH);
         if (FPFW_STATUS_FAILED(status))
         {
             FPFW_ET_LOG(TlmFusesReadEcidXCoord, status);
@@ -249,10 +249,18 @@ fpfw_status_t tlm_fuses_get_ecid(ecid_t* ecid)
         }
 
         // Read the y coordinate
-        status = tlm_fuses_read((uintptr_t)&ecid->y_coord, ECID_Y_COORDINATE_BIT_OFFSET, ECID_Y_COORDINATE_WIDTH);
+        status = tlm_fuses_read(&ecid->y_coord, ECID_Y_COORDINATE_BIT_OFFSET, ECID_Y_COORDINATE_WIDTH);
         if (FPFW_STATUS_FAILED(status))
         {
             FPFW_ET_LOG(TlmFusesReadEcidYCoord, status);
+            return status;
+        }
+
+        // Read the parity bit
+        status = tlm_fuses_read(&ecid->parity_bits, ECID_ECID_PARITY_BIT_BIT_OFFSET, ECID_ECID_PARITY_BIT_WIDTH);
+        if (FPFW_STATUS_FAILED(status))
+        {
+            FPFW_ET_LOG(TlmFusesReadEcidParityBits, status);
             return status;
         }
 
@@ -268,7 +276,8 @@ fpfw_status_t tlm_fuses_get_ecid(ecid_t* ecid)
                     ecid->wafer_lot_num[8],
                     ecid->wafer_num,
                     ecid->x_coord,
-                    ecid->y_coord);
+                    ecid->y_coord,
+                    ecid->parity_bits);
     }
     else
     {

@@ -67,6 +67,7 @@ static FPFW_CLI_STATUS read_ecid(int Argc, const char** Argv)
         FpFwCliPrint("\tWafer Number: 0x%x\n", fuses_ecid.wafer_num);
         FpFwCliPrint("\tX Coordinate: 0x%x\n", fuses_ecid.x_coord);
         FpFwCliPrint("\tY Coordinate: 0x%x\n", fuses_ecid.y_coord);
+        FpFwCliPrint("\tParity Bits:  0x%x\n", fuses_ecid.parity_bits);
     }
 
     return cli_status;

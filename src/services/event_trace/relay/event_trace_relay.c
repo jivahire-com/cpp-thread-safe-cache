@@ -127,13 +127,16 @@ static void etr_initialize_ddr_buffers(etr_service_context_t* p_context, const e
                         },
                     .asic_header =
                         {
-                            .SocId = p_config->soc_info.soc_id,
                             .FwVersion = {0},
                             .BufferSize = ASIC_BUFFER_PAYLOAD_SIZE - sizeof(diag_decoder_payload_header_t),
                             .UsedBytes = sizeof(FPFW_ET_ASIC_BUFFER_HEADER),
                         },
                 },
         };
+
+        memcpy(&p_context->ddr_buffers[i].buffer.asic.asic_header.SocId,
+               p_config->soc_info.soc_id,
+               sizeof(p_config->soc_info.soc_id));
     }
 
     p_context->p_active_asic_buffer = &p_context->ddr_buffers[0];

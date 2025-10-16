@@ -88,6 +88,7 @@ typedef struct _ecid_t
     uint8_t wafer_num;
     uint8_t x_coord;
     uint8_t y_coord;
+    uint8_t parity_bits;
 } ecid_t;
 
 /*------ Function Prototypes ------------*/

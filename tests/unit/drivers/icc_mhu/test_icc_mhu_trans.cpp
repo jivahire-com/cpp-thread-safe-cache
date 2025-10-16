@@ -54,6 +54,7 @@ mhu_icc_transport_device_config_t s_test_dev_config = {
         },
     .async_send_retry_period = TEST_ASYNC_SEND_RETRY_PERIOD_NS,
     .async_send_retry_max = 2,
+    .log_stats_dfwk_reqs_interval = 1,
 };
 
 static mhu_icc_transport_device_t s_test_mhu_icc_transport_device;

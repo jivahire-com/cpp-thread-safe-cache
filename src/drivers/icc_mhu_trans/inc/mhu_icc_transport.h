@@ -61,6 +61,11 @@ typedef struct {
 
     fpfw_dur_t async_send_retry_period;
     uint8_t async_send_retry_max;
+
+    // Log data every N DFWK Requests
+    // Ex: DFWK Requests % log_stats_dfwk_reqs_interval == 0 -> log stats
+    uint32_t log_stats_dfwk_reqs_interval;
+
 } mhu_icc_transport_device_config_t, *pmhu_icc_transport_device_config_t;
 
 typedef struct {
@@ -86,6 +91,24 @@ typedef struct {
 } mhu_icc_transport_async_recv_t, *pmhu_icc_transport_async_recv_t;
 
 typedef struct {
+    uint64_t sync_max_msg_size_reqs;
+    uint64_t sync_min_msg_size_reqs;
+    uint64_t sync_recv_reqs;
+    uint64_t sync_recv_reqs_failed;
+    uint64_t sync_send_reqs;
+    uint64_t sync_send_reqs_failed;
+    uint64_t async_recv_reqs;
+    uint64_t async_recv_reqs_completed;
+    uint64_t async_send_reqs;
+    uint64_t async_send_reqs_attempts;
+    uint64_t async_send_reqs_timed_out;
+    uint64_t async_send_reqs_completed;
+    uint64_t dfwk_reqs_unsupported;
+    uint64_t dfwk_requests; // Total number of sync and async requests
+    uint32_t dfwk_reqs_interval;
+} mhu_icc_transport_device_stats_t;
+
+typedef struct {
     DFWK_DEVICE_HEADER base_device;
 
     // Captures both the MHU IP configuration and the shared memory configuration
@@ -98,6 +121,9 @@ typedef struct {
     // Async request contexts
     mhu_icc_transport_async_recv_t async_recv_ctx;
     mhu_icc_transport_async_send_t async_send_ctx;
+
+    // Stats
+    mhu_icc_transport_device_stats_t stats;
 
     bool initialized;
 } mhu_icc_transport_device_t, *pmhu_icc_transport_device_t;

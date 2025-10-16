@@ -155,3 +155,27 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_MHU_ICC_TRANSPORT,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, request),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, buffer_size),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, new_payload_size))
+
+//
+// INFO Events - Offset by 200 to Event Id
+//
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_MHU_ICC_TRANSPORT,
+                     200,
+                     DeviceStats,
+                     FPFW_ET_LEVEL_INFO,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, sync_max_msg_size_reqs),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, sync_min_msg_size_reqs),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, sync_recv_reqs),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, sync_recv_reqs_failed),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, sync_send_reqs),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, sync_send_reqs_failed),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, async_recv_reqs),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, async_recv_reqs_completed),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, async_send_reqs),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, async_send_reqs_attempts),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, async_send_reqs_timed_out),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, async_send_reqs_completed),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, dfwk_reqs_unsupported),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, dfwk_reqs),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, device))
+

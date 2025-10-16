@@ -59,6 +59,29 @@
 // PRIVATE FUNCTIONS
 //
 
+void log_device_stats(pmhu_icc_transport_device_t device)
+{
+    if (device->stats.dfwk_requests % device->stats.dfwk_reqs_interval == 0)
+    {
+        FPFW_ET_LOG(DeviceStats,
+                    device->stats.sync_max_msg_size_reqs,
+                    device->stats.sync_min_msg_size_reqs,
+                    device->stats.sync_recv_reqs,
+                    device->stats.sync_recv_reqs_failed,
+                    device->stats.sync_send_reqs,
+                    device->stats.sync_send_reqs_failed,
+                    device->stats.async_recv_reqs,
+                    device->stats.async_recv_reqs_completed,
+                    device->stats.async_send_reqs,
+                    device->stats.async_send_reqs_attempts,
+                    device->stats.async_send_reqs_timed_out,
+                    device->stats.async_send_reqs_completed,
+                    device->stats.dfwk_reqs_unsupported,
+                    device->stats.dfwk_requests,
+                    (uintptr_t)device);
+    }
+}
+
 //
 // Provide the platform specific cache flush and invalidate functions
 // needed by the silibs icc_mhu library.
@@ -124,6 +147,7 @@ static void async_send_attempt(void* Context, fpfw_dur_t latency)
     FPFW_UNUSED(latency);
 
     mhu_icc_transport_device_t* device = (mhu_icc_transport_device_t*)Context;
+    device->stats.async_send_reqs_attempts++;
 
     // Send the packet
     FPFW_ICC_TRANSPORT_ASYNC_SEND_REQUEST* async_req =
@@ -152,11 +176,20 @@ static void async_send_attempt(void* Context, fpfw_dur_t latency)
     {
         // Update the request and complete it
         async_req->Output.Status = icc_packet_status_to_icc_transport_status(icc_packet_status);
+
+        if (icc_packet_status != ICC_MHU_STATUS_S_SUCCESS)
+        {
+            device->stats.async_send_reqs_timed_out++;
+        }
+
         FPFW_ET_LOG(AsyncSendComplete, (uint32_t)device->async_send_ctx.req, async_req->Output.Status);
         DfwkAsyncRequestComplete(device->async_send_ctx.req);
 
+        // Whether it timed out or was successful, we count it as completed
+        // We can compare the timed out vs completed stats to see how many succeeded
+        device->stats.async_send_reqs_completed++;
+
         // Set the current request to NULL and stop the timer if active
-        device->async_send_ctx.req = NULL;
         if (device->async_send_ctx.timer_active)
         {
             device->async_send_ctx.timer_active = false;
@@ -164,6 +197,7 @@ static void async_send_attempt(void* Context, fpfw_dur_t latency)
             FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCESS == timer_status, timer_status, 0, 0, 0);
             FPFW_ET_LOG(AsyncSendComplete, (uint32_t)device->async_send_ctx.req, timer_status);
         }
+        device->async_send_ctx.req = NULL;
     }
     else if (icc_packet_status != ICC_MHU_STATUS_S_SUCCESS && !device->async_send_ctx.timer_active)
     {
@@ -219,6 +253,7 @@ fpfw_status_t mhu_icc_transport_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
     {
         return FPFW_ICC_TRANSPORT_STATUS_NULL_ARG_ERR;
     }
+    device->stats.dfwk_requests++;
 
     fpfw_status_t status = FPFW_ICC_TRANSPORT_STATUS_FAILED_ERR;
     // Handler for each transport request
@@ -234,6 +269,8 @@ fpfw_status_t mhu_icc_transport_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
         max_size_req->Output.MaxMesgSize = device->recv_channel.ch_shared_mem_size;
         FPFW_ET_LOG(SyncMaxMessageSizeRequest, (uint32_t)device->async_send_ctx.req, max_size_req->Output.MaxMesgSize);
         status = FPFW_ICC_TRANSPORT_STATUS_SUCCESS;
+
+        device->stats.sync_max_msg_size_reqs++;
         break;
     }
     case ICC_TRANSPORT_GET_MIN_MESG_SIZE_SYNC_REQUEST_ID: {
@@ -243,6 +280,8 @@ fpfw_status_t mhu_icc_transport_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
         // The minimum size is the size of the header
         min_size_req->Output.MinMesgSize = sizeof(icc_mhu_header_t);
         FPFW_ET_LOG(SyncMinMessageSizeRequest, (uint32_t)device->async_send_ctx.req, min_size_req->Output.MinMesgSize);
+
+        device->stats.sync_min_msg_size_reqs++;
         return FPFW_ICC_TRANSPORT_STATUS_SUCCESS;
     }
     case ICC_TRANSPORT_TRY_RECV_SYNC_REQUEST_ID: {
@@ -271,12 +310,16 @@ fpfw_status_t mhu_icc_transport_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
                     (uint32_t)device->async_send_ctx.req,
                     icc_packet_status,
                     recv_try_req->Output.ReceivedBytes);
+
         if (icc_packet_status != ICC_MHU_STATUS_S_SUCCESS)
         {
             recv_try_req->Output.ReceivedBytes = 0;
+            device->stats.sync_recv_reqs_failed++;
         }
 
         status = icc_packet_status_to_icc_transport_status(icc_packet_status);
+
+        device->stats.sync_recv_reqs++;
         break;
     }
     case ICC_TRANSPORT_TRY_SEND_SYNC_REQUEST_ID: {
@@ -287,18 +330,29 @@ fpfw_status_t mhu_icc_transport_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER Request)
         // Process the request
         uint32_t icc_packet_status = icc_mhu_send_packet(&(device->send_channel), p_mhu_packet);
         FPFW_ET_LOG(SyncSendComplete, (uint32_t)device->async_send_ctx.req, icc_packet_status);
+        if (icc_packet_status != ICC_MHU_STATUS_S_SUCCESS)
+        {
+            device->stats.sync_send_reqs_failed++;
+        }
+
         status = icc_packet_status_to_icc_transport_status(icc_packet_status);
+
+        device->stats.sync_send_reqs++;
         break;
     }
     default:
         status = FPFW_ICC_TRANSPORT_STATUS_UNSUPPORTED_REQ_ERR;
+        device->stats.dfwk_reqs_unsupported++;
     }
+
+    log_device_stats(device);
     return status;
 }
 
 void mhu_icc_transport_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
 {
     mhu_icc_transport_device_t* device = (mhu_icc_transport_device_t*)Context;
+    device->stats.dfwk_requests++;
 
     // Push the requests to their respective serialized queues
     FPFW_ET_LOG(AsyncDispatchRequest, (uint32_t)device->async_send_ctx.req, Request->RequestType);
@@ -306,13 +360,19 @@ void mhu_icc_transport_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER Request, void* 
     {
     case ICC_TRANSPORT_RECV_ASYNC_REQUEST_ID:
         DfwkQueueEnqueueRequest(&device->async_recv_ctx.queue, Request);
+
+        device->stats.async_recv_reqs++;
         break;
     case ICC_TRANSPORT_SEND_ASYNC_REQUEST_ID:
         DfwkQueueEnqueueRequest(&device->async_send_ctx.queue, Request);
+
+        device->stats.async_send_reqs++;
         break;
     default:
+        device->stats.dfwk_reqs_unsupported++;
         break;
     }
+    log_device_stats(device);
 }
 
 void mhu_icc_transport_dispatch_async_recv(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
@@ -401,6 +461,7 @@ void mhu_icc_transport_isr(void* context)
     DfwkAsyncRequestComplete(device->async_recv_ctx.req);
 
     device->async_recv_ctx.req = NULL;
+    device->stats.async_recv_reqs_completed++;
 }
 
 //
@@ -480,6 +541,8 @@ fpfw_status_t mhu_icc_transport_device_init(mhu_icc_transport_device_t* dev,
     dev->async_recv_ctx.recv_irq_num = config->recv_irq_num;
     dev->async_send_ctx.timer_retry_max = config->async_send_retry_max;
     dev->async_send_ctx.timer_period = config->async_send_retry_period;
+
+    dev->stats.dfwk_reqs_interval = config->log_stats_dfwk_reqs_interval;
 
     // Initialize the device
     DfwkDeviceInitialize(&(dev->base_device), schedule);

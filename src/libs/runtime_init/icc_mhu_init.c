@@ -51,6 +51,11 @@
 // returns an error code on such failures.
 #define MAX_SYNC_RETRY_COUNT (50)
 
+// Different logging intervals for device stats, based on device usage
+#define STATS_LOGGING_DFWK_REQS_INTERVAL_10K  (10000U)
+#define STATS_LOGGING_DFWK_REQS_INTERVAL_100K (100000U)
+#define STATS_LOGGING_DFWK_REQS_INTERVAL_500K (500000U)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -127,6 +132,7 @@ FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "
             },
         .async_send_retry_period = ASYNC_SEND_RETRY_PERIOD_NS,
         .async_send_retry_max = ASYNC_SEND_RETRY_MAX,
+        .log_stats_dfwk_reqs_interval = STATS_LOGGING_DFWK_REQS_INTERVAL_500K,
     };
 
     // Initialize the driver framework device
@@ -224,6 +230,7 @@ FPFW_INIT_COMPONENT(icc_mscp2aprt, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
             },
         .async_send_retry_period = ASYNC_SEND_RETRY_PERIOD_NS,
         .async_send_retry_max = ASYNC_SEND_RETRY_MAX,
+        .log_stats_dfwk_reqs_interval = STATS_LOGGING_DFWK_REQS_INTERVAL_10K,
     };
 
     // Initialize the driver framework device
@@ -351,6 +358,7 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "sys
             },
         .async_send_retry_period = ASYNC_SEND_RETRY_PERIOD_NS,
         .async_send_retry_max = ASYNC_SEND_RETRY_MAX,
+        .log_stats_dfwk_reqs_interval = STATS_LOGGING_DFWK_REQS_INTERVAL_10K,
     };
 
     // Initialize the driver framework device
@@ -493,6 +501,7 @@ FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
             },
         .async_send_retry_period = ASYNC_SEND_RETRY_PERIOD_NS,
         .async_send_retry_max = ASYNC_SEND_RETRY_MAX,
+        .log_stats_dfwk_reqs_interval = STATS_LOGGING_DFWK_REQS_INTERVAL_100K,
     };
 
     // Initialize the driver framework device
@@ -643,6 +652,7 @@ FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
             },
         .async_send_retry_period = ASYNC_SEND_RETRY_PERIOD_NS,
         .async_send_retry_max = ASYNC_SEND_RETRY_MAX,
+        .log_stats_dfwk_reqs_interval = STATS_LOGGING_DFWK_REQS_INTERVAL_100K,
     };
 
     // Initialize the driver framework device

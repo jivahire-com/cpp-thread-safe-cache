@@ -29,6 +29,8 @@ mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/a
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
 ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
+ift_memory_state_clearing  = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_memory_state_clearing.bin' }
+ift_scan_state_clearing    = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_scan_state_clearing.bin' }
 rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }
 rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_data.build}/build/echofalls/debug/rp_data.bin' }
 
@@ -59,6 +61,8 @@ ddr_phy                    = { type='file', local='${REPO_APP_PATH_kng_ddrss_phy
 rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }
 rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_data.build}/build/echofalls/debug/rp_data.bin' }
 pcie_phy                   = { type='file', local='${REPO_APP_PATH_pcie.phy.bin}/pcie_phy_fw.bin' }
+ift_memory_state_clearing  = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_memory_state_clearing.bin' }
+ift_scan_state_clearing    = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_scan_state_clearing.bin' }
 fuse_override_die0         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
 fuse_override_die1         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
 
@@ -89,5 +93,7 @@ ddr_phy                    = { type='file', local='${REPO_APP_PATH_kng_ddrss_phy
 rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }
 rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_data.build}/build/echofalls/debug/rp_data.bin' }
 pcie_phy                   = { type='file', local='${REPO_APP_PATH_pcie.phy.bin}/pcie_phy_fw.bin' }
+ift_memory_state_clearing  = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_memory_state_clearing.bin' }
+ift_scan_state_clearing    = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_scan_state_clearing.bin' }
 fuse_override_die0         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
 fuse_override_die1         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }

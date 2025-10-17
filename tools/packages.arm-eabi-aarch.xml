@@ -18,12 +18,13 @@
         <package name="echofalls.svp.stmm.build" version="1.80.1.43" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.soc.uefi.build" version="1.80.1.43" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.soc.stmm.build" version="1.80.1.43" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="1pfw.datwizard-preview-x86_64-pc-windows-msvc" version="0.2.1-34" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.Dependency/nuget/v3/index.json"/>
+        <package name="1pfw.datwizard-preview-x86_64-pc-windows-msvc" version="0.2.1-40dev" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.Dependency/nuget/v3/index.json"/>
         <package name="kng_mesh_binary_images" version="1.0.0.12" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins/nuget/v3/index.json"/>
         <package name="kng_ddrss_phy_fw_image" version="1.0.0.9" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins/nuget/v3/index.json"/>
         <package name="echofalls.rp_exe.build" version="1.80.1.23" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.rp_data.build" version="1.80.1.23" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="pcie.phy.bin" version="1.50.0.4" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
+        <package name="IFTVectors" version="1.0.0.3" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
         <package name="1psfw.diagnosticdecoder.windows" version="1.1.256" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.Dependency/nuget/v3/index.json"/>
     </nuget_packages>
 

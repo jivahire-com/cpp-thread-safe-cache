@@ -1,6 +1,7 @@
 
 ## Boot tests
 ./../../../tests/functional/test_suites/boot_tests/soc_win_boot_dual_die.robot
+./../../../tests/functional/test_suites/cold_start_tests/cold_start_test.robot
 
 ## Sensor FIFO short duration tests
 ## Rework SoC Variant of test to utilize AFM switching to get easy access to Die 1 SCP/MCP uart

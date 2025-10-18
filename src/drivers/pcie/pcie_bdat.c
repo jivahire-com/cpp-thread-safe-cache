@@ -61,13 +61,12 @@
 
 /*-- Declarations (Statics and globals) --*/
 static bool bdat_published[NUM_RPSS * PCIESS_NUM_PORTS] = {false};
+static BDAT_PCIE_PER_RP_DATA_MSFT_1 temp_bdat_entry = {0};
 
 /*------------- Functions ----------------*/
 silibs_status_t publish_pcie_bdat_info_for_this_rp(pcie_ss_entity_t* rpss, uint8_t rp_index)
 {
     atu_map_entry_t pcie_bdat_atu_map_struct = COMBINED_BDAT_ATU_MAPPING;
-    BDAT_PCIE_PER_RP_DATA_MSFT_1 temp_bdat_entry;
-
     uint8_t rp_index_offset = (rpss->id * PCIESS_NUM_PORTS) + rp_index;
 
     /* Only publish BDAT information once per boot */
@@ -78,6 +77,9 @@ silibs_status_t publish_pcie_bdat_info_for_this_rp(pcie_ss_entity_t* rpss, uint8
 
     /* Mark as published to prevent retries on re-train/SBR events */
     bdat_published[rp_index_offset] = true;
+
+    /* Zero out the temp BDAT buffer */
+    memset(&temp_bdat_entry, 0, sizeof(BDAT_PCIE_PER_RP_DATA_MSFT_1));
 
     silibs_status_t sts = atu_map(ATU_ID_MSCP, &pcie_bdat_atu_map_struct);
     if (sts != SILIBS_SUCCESS)

@@ -159,7 +159,7 @@ typedef struct __attribute__((packed)) {
     uint16_t dimm_temp_s0_dC;
     uint16_t dimm_temp_s1_dC;
     uint16_t dimm_power_mW;
-    uint16_t dimm_mr4_throttle_count; // number of times MR4 throttled since last report
+    uint16_t dimm_throttle_count; // number of times throttled since last report (all sources)
     uint8_t dimm_id;
     uint8_t dimm_throttling; // dimm_throttle_source_t
     uint8_t dimm_memory_frequency_id; // DDRSS_SPEED_GRADE

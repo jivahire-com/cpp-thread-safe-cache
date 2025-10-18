@@ -491,7 +491,7 @@ bool data_smpl_process_dimm_sensor_fifo(void)
                                                  dimm_info_entry->dimm_temp_s0_dC,
                                                  dimm_info_entry->dimm_temp_s1_dC,
                                                  dimm_info_entry->dimm_power_mW,
-                                                 dimm_info_entry->dimm_mr4_throttle_count,
+                                                 dimm_info_entry->dimm_throttle_count,
                                                  dimm_info_entry->dimm_throttle_duration_ms,
                                                  dimm_info_entry->dimm_throttling);
             }

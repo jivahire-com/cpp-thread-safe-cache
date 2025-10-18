@@ -172,3 +172,6 @@ uint16_t gtimer_ticks_to_ms(uint32_t ticks);
 void ddr_bwl_residency_reset(void);
 void set_last_gtimer_count(uint64_t count);
 uint64_t get_last_gtimer_count(void);
+void ddr_telemetry_increment_throttle_count(void);
+uint16_t ddr_telemetry_get_throttle_count(void);
+void ddr_telemetry_reset_throttle_count(void);

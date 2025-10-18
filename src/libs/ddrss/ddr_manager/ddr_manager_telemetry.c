@@ -33,6 +33,7 @@ static TX_MUTEX ddr_telemetry_mutex;
 
 // BWL residency tracking
 static uint64_t bwl_residency_ticks = 0;
+static uint16_t throttle_count = 0; // number of times BWL has engaged in this telemetry period
 static uint64_t last_gtimer_count = 0;
 static TX_MUTEX bwl_residency_mutex;
 
@@ -107,6 +108,25 @@ uint16_t ddr_telemetry_get_dimm_power(uint8_t dimm_idx)
     return power_mW;
 }
 
+void ddr_telemetry_increment_throttle_count()
+{
+    ddr_bwl_residency_lock();
+    throttle_count == UINT16_MAX ? throttle_count = UINT16_MAX : throttle_count++;
+    ddr_bwl_residency_unlock();
+}
+
+uint16_t ddr_telemetry_get_throttle_count()
+{
+    return throttle_count;
+}
+
+void ddr_telemetry_reset_throttle_count()
+{
+    ddr_bwl_residency_lock();
+    throttle_count = 0;
+    ddr_bwl_residency_unlock();
+}
+
 void ddr_bwl_residency_add_ticks(uint32_t ticks)
 {
     ddr_bwl_residency_lock();
@@ -171,6 +191,7 @@ void ddr_telemetry_report()
 
     dimm_info.timestamp = gtimer_prodfw_get_counter();
     dimm_info.dimm_throttling = ddr_manager_get_bwl_state();
+    dimm_info.dimm_throttle_count = ddr_telemetry_get_throttle_count();
     dimm_info.dimm_memory_frequency_id = (uint8_t)config_get_ddr_speed_grade();
 
     // Report BWL residency time in ms
@@ -225,4 +246,7 @@ void ddr_telemetry_report()
 
     // Reset BWL residency counter after reporting
     ddr_bwl_residency_reset();
+
+    // Reset throttle count after reporting
+    ddr_telemetry_reset_throttle_count();
 }

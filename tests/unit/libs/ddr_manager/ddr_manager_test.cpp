@@ -1095,6 +1095,9 @@ TEST_FUNCTION(ddr_telemetry_report_verify_temps, NULL, NULL)
     sensor_ram_dimm_info_t test_dimm_info = {0};
     test_dimm_info.dimm_memory_frequency_id = (uint8_t)config_get_ddr_speed_grade();
     const int POWER_SCALING_FACTOR = 125;
+    const int THROTTLE_COUNT_TO_TEST = 0;
+
+    ddr_telemetry_reset_throttle_count();
 
     will_return(__wrap_gtimer_prodfw_get_counter, 0);
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000); // 1MHz for easy conversion
@@ -1104,10 +1107,76 @@ TEST_FUNCTION(ddr_telemetry_report_verify_temps, NULL, NULL)
         will_return(__wrap_ddr_i3c_interface_read_pmic_power, (dimm_idx));
         test_dimm_info.dimm_id = dimm_idx;
         test_dimm_info.dimm_power_mW = (dimm_idx * POWER_SCALING_FACTOR);
+        test_dimm_info.dimm_throttle_count = THROTTLE_COUNT_TO_TEST;
 
         for (int ts_idx = 0; ts_idx < NUM_TEMP_SENSORS_PER_DIMM; ts_idx++)
         {
             dimm_temp.temp_int = (10 * dimm_idx) + ts_idx;
+            dimm_temp.temp_frac = 50;
+            ddr_telemetry_update_dimm_temp(dimm_idx, ts_idx, dimm_temp);
+
+            if (ts_idx == 0)
+            {
+                test_dimm_info.dimm_temp_s0_dC = (10 * dimm_temp.temp_int) + ((dimm_temp.temp_frac + 5) / 10);
+            }
+            else
+            {
+                test_dimm_info.dimm_temp_s1_dC = (10 * dimm_temp.temp_int) + ((dimm_temp.temp_frac + 5) / 10);
+            }
+        }
+
+        expect_memory(__wrap_sensor_fifo_svc_add_dimm_info, dimm_info, &test_dimm_info, sizeof(test_dimm_info));
+    }
+
+    ddr_telemetry_report();
+}
+
+TEST_FUNCTION(ddr_telemetry_check_throttling_count, NULL, NULL)
+{
+    ddr_manager_i3c_temperature_t dimm_temp = {.is_positive = true};
+    sensor_ram_dimm_info_t test_dimm_info = {0};
+    test_dimm_info.dimm_memory_frequency_id = (uint8_t)config_get_ddr_speed_grade();
+    const int POWER_SCALING_FACTOR = 125;
+    const int THROTTLE_COUNT_TO_TEST = 2;
+
+    for (int throttle_count = 0; throttle_count < THROTTLE_COUNT_TO_TEST; throttle_count++)
+    {
+        // Arrange - Enable BWL MR4
+        expect_function_call(__wrap_mmio_read32);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_write32);
+        will_return(__wrap_idsw_get_die_id, DIE_0);
+        will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+        will_return(__wrap_gtimer_prodfw_get_counter, 100);
+
+        // Act
+        ddr_manager_enable_bwl_mr4();
+
+        // Arrange
+        expect_function_call(__wrap_mmio_read32);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_write32);
+        will_return(__wrap_idsw_get_die_id, DIE_0);
+        will_return_count(__wrap_ddrss_bandwidth_limiter_config, SILIBS_SUCCESS, DDRSS_MAX_SS_NUM);
+        will_return(__wrap_gtimer_prodfw_get_counter, 100);
+
+        // Act
+        ddr_manager_disable_bwl_mr4();
+    }
+
+    will_return(__wrap_gtimer_prodfw_get_counter, 0);
+    will_return(__wrap_gtimer_prodfw_get_frequency, 1000000); // 1MHz for easy conversion
+
+    for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
+    {
+        will_return(__wrap_ddr_i3c_interface_read_pmic_power, (dimm_idx));
+        test_dimm_info.dimm_id = dimm_idx;
+        test_dimm_info.dimm_power_mW = (dimm_idx * POWER_SCALING_FACTOR);
+        test_dimm_info.dimm_throttle_count = THROTTLE_COUNT_TO_TEST;
+
+        for (int ts_idx = 0; ts_idx < NUM_TEMP_SENSORS_PER_DIMM; ts_idx++)
+        {
+            dimm_temp.temp_int = (11 * dimm_idx) + ts_idx;
             dimm_temp.temp_frac = 50;
             ddr_telemetry_update_dimm_temp(dimm_idx, ts_idx, dimm_temp);
 

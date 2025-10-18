@@ -62,12 +62,14 @@ static void ddr_manager_control_bwl(int action)
             }
         }
 
-        // Record the time of engagement for residency tracking
-        set_last_gtimer_count(gtimer_prodfw_get_counter());
-
         // Set the MEMHOT GPIO to indicate to the platform that memory is hot and throttling is active
         ddr_manager_set_memhot_gpio();
         s_bwlEngaged = true;
+
+        // Record the time of engagement for residency tracking & increment throttle count
+        ddr_telemetry_increment_throttle_count();
+        set_last_gtimer_count(gtimer_prodfw_get_counter());
+
         printf("DDR BWL+\n");
     }
     else if (action == STOP)

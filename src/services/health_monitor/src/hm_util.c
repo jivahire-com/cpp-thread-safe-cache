@@ -31,7 +31,7 @@ static atu_map_entry_t error_injection_atu_entry = {
     .ap_base_address = ERROR_INJECTION_RESERVATION_BASE,
     .mscp_start_address = 0,
     .mscp_end_address = ALIGN_UP(MSCP_ATU_AP_WINDOW_ERROR_INJECTION_SIZE, ATU_PAGE_SIZE) - 1,
-    .attribute = {ATU_BUS_ATTR_ROOT},
+    .attribute = {ATU_BUS_ATTR_NS},
 };
 /*------------- Functions ----------------*/
 

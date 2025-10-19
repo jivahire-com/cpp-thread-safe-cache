@@ -122,8 +122,8 @@ void ddr_create_memory_map()
         uint64_t start_of_1gb_reservation = get_end_address(sorted_reservations, terminating_array_idx - 1);
         uint64_t end_of_1gb_reservation = start_of_1gb_reservation + ONE_GB;
 
-        insert_range(sorted_reservations, terminating_array_idx, start_of_1gb_reservation, end_of_1gb_reservation, DRAM_ACCESS_ANY);
-        insert_range(sorted_reservations, terminating_array_idx + 1, 0, 0, DRAM_ACCESS_ANY);
+        insert_range(sorted_reservations, terminating_array_idx, start_of_1gb_reservation, end_of_1gb_reservation, PAS_NON_SECURE);
+        insert_range(sorted_reservations, terminating_array_idx + 1, 0, 0, PAS_NON_SECURE);
     }
 
     if (add_svp_reserved_region == true)
@@ -136,7 +136,7 @@ void ddr_create_memory_map()
                      SVP_DDRSS_RESERVED_REGION_END,
                      SVP_DDRSS_RESERVED_REGION_ATTRIBUTES);
 
-        insert_range(sorted_reservations, terminating_array_idx + 1, 0, 0, DRAM_ACCESS_ANY);
+        insert_range(sorted_reservations, terminating_array_idx + 1, 0, 0, PAS_NON_SECURE);
     }
 
     sort_reserved_regions_inplace(sorted_reservations, num_reserved_regions);

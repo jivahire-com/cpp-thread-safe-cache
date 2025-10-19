@@ -23,8 +23,9 @@
 #include <string.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+
 #define COMBINED_BDAT_ATU_MAPPING \
-    ATU_MAPPING(COMBINED_BDAT_RSVD_REGION_BASE, 0, COMBINED_BDAT_RSVD_REGION_SIZE, ATU_PRIV_ROOT)
+    ATU_MAPPING(COMBINED_BDAT_RSVD_REGION_BASE, 0, COMBINED_BDAT_RSVD_REGION_SIZE, {ATU_BUS_ATTR_NS})
 
 /*
  * We populate PCIe BDAT data at the end of the BDAT combined BDAT reservation

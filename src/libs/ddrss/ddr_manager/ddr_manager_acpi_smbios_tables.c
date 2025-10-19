@@ -136,7 +136,7 @@ void ddr_create_bdat(void)
     uint32_t mc;
     uint16_t dimm_global_idx;
     uint8_t Bios_data_sign[] = {'B', 'D', 'A', 'T', 'H', 'E', 'A', 'D'};
-    atu_entry_attr_t bdat_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
+    atu_entry_attr_t bdat_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_NS};
     ddrss_cfg_knobs_t ddrss_prd_cfg_knobs = {0};
     int sts = SILIBS_SUCCESS;
 
@@ -932,7 +932,7 @@ void ddr_create_smbios_tables(void)
     // Copy to reserved DDR region specified by shared header file
     atu_map_entry_t smbios_mem_atu_map_struct;
 
-    atu_entry_attr_t smbios_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
+    atu_entry_attr_t smbios_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_NS};
 
     smbios_mem_atu_map_struct.ap_base_address = SMBIOS_HANDOFF_RESERVATION_BASE;
     smbios_mem_atu_map_struct.mscp_start_address = 0;

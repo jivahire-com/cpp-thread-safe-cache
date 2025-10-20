@@ -97,8 +97,8 @@ class soc_win_boot_dd(EchoFallsBaseTest):
             self.dut.teardown()
             time.sleep(30)
             return False
-
-        rscm_helper.rscm_set_profile("General")
+        #Remove setting profile on non nuc soc machines
+        #rscm_helper.rscm_set_profile("General")
 
         self.log.info("Reading APNS UART for SAC")
 

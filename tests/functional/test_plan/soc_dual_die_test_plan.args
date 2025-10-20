@@ -26,6 +26,12 @@
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv_soc.robot
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_soc.robot
 
+## Single Die ddrboot Tests
+./../../../tests/functional/test_suites/ddrboot_tests/mscp_ddrboot_hsp_boot_soc.robot
+
+## APNS SMBIOS Table Tests
+##./../../../tests/functional/test_suites/ddrboot_tests/apns_smbios_test_soc.robot
+
 ## Variable Service Tests
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test_soc.robot
 
@@ -35,4 +41,4 @@
 ## Crash Dump Tests
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test_soc.robot
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_stack_overflow_test_soc.robot
-##./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test_soc.robot
+./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test_soc.robot

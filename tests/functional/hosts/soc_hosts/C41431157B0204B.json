@@ -60,7 +60,7 @@
                     "bmc": {
                         "ssh": {
                             "host": "172.17.0.117",
-                            "port": 8391,
+                            "port": 8392,
                             "credential": {
                                 "service": "account",
                                 "username": "admin",

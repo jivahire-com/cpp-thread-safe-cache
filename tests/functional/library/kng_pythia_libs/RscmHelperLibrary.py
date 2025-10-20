@@ -128,6 +128,26 @@ class RscmHelperLibrary:
             # Clean up tunnel connection
             self.close_tunnel_connection()
 
+    def set_bmc_uart_mux_scp(self, bmc_cli):
+        """Execute SCP mux command on the BMC host."""
+        commands = ["gpioset gpiochip3 5=0", "gpioset gpiochip6 6=0"]
+        for cmd in commands:
+            ret, stdout, stderr = bmc_cli.execute_command(command=cmd, command_args=[])
+            if stderr:
+                print(f"BMC command failed: {cmd} | Error: {stderr}")
+                raise AssertionError
+            print(f"BMC command successful: {cmd} | Return: {ret}")
+
+    def set_bmc_uart_mux_mcp(self, bmc_cli):
+        """Execute SCP mux command on the BMC host."""
+        commands = ["gpioset gpiochip3 5=1"]
+        for cmd in commands:
+            ret, stdout, stderr = bmc_cli.execute_command(command=cmd, command_args=[])
+            if stderr:
+                print(f"BMC command failed: {cmd} | Error: {stderr}")
+                raise AssertionError
+            print(f"BMC command successful: {cmd} | Return: {ret}")
+
     @keyword
     def rscm_soc_reset(self):
         """Perform a cold reset of the system"""

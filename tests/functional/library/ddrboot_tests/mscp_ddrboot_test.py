@@ -11,9 +11,11 @@ from pathlib import Path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs'))
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
+from RscmHelperLibrary import RscmHelperLibrary
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
+import re
 
 # Class name must match file name for Robot Framework Library usage
 class mscp_ddrboot_test(EchoFallsBaseTest):
@@ -72,6 +74,12 @@ class mscp_ddrboot_test(EchoFallsBaseTest):
         if self.dut.get_dut_type() == DeviceType.BIGFPGA:
             self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
             KngPythiaTestSetup.fpga_oob_reset(self.log)
+        elif self.dut.get_dut_type() == DeviceType.RVP:
+            self.log.warning("Device type is RVP. Performing SoC Reset ...")
+            cred_path = os.environ.get('SECURE_FILE_PATH')
+            creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
+            rscm_helper = RscmHelperLibrary(rm_host=self.host_config.rack_scm.host, bmc_host=self.dut.mb.node_0.dcscm.bmc.ip, rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'], node=self.host_config.node_id)
+            rscm_helper.rscm_soc_reset()
             
         scp_connection.get_current_channel().open()
         # If connection does not open then SVP didn't launch or FPGA system has a conflict booking. So teardown and return fail
@@ -87,6 +95,10 @@ class mscp_ddrboot_test(EchoFallsBaseTest):
             time.sleep(30)
             return False
 
+        if self.dut.get_dut_type() == DeviceType.RVP:
+            bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
+            if not bmc_cli.is_open():
+                bmc_cli.open()
 
         self.log.info("Reading SCP UART for BDAT DONE . . .")
         try:
@@ -103,6 +115,8 @@ class mscp_ddrboot_test(EchoFallsBaseTest):
 
             self.log.info("Reading MCP UART for HeartBeat . . .")
 
+            if self.dut.get_dut_type() == DeviceType.RVP:
+                rscm_helper.set_bmc_uart_mux_mcp(bmc_cli)
             mcp_connection.get_current_channel().read_until(key="HeartBeat", timeout_seconds=900)
         except Exception as e:
             scp_connection.get_current_channel().close()
@@ -112,6 +126,8 @@ class mscp_ddrboot_test(EchoFallsBaseTest):
             self.dut.teardown()
             return False
         finally:
+            if self.dut.get_dut_type() == DeviceType.RVP:
+                rscm_helper.set_bmc_uart_mux_scp(bmc_cli)
             scp_connection.get_current_channel().close()
             mcp_connection.get_current_channel().close()
             self.test_notify(step="DDRBoot", msg="Test Done", _is_error=False)

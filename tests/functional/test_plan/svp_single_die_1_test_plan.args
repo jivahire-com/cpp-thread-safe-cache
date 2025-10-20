@@ -22,7 +22,8 @@
 ## ICC Mhu Tests
 ./../../../tests/functional/test_suites/icc_mhu/icc_cli_mscp_mhu.robot
 
-## Warm Start Tests
+## Warm Start Tests - run after booting to UEFI
+./../../../tests/functional/test_suites/boot_tests/uefi_boot_single_die.robot
 ./../../../tests/functional/test_suites/warm_start_tests/warm_start_test.robot
 
 ## SVP Teardown

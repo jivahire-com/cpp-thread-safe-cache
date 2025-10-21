@@ -120,11 +120,12 @@ silibs_status_t send_sync_rp_initiate_link_training(PDFWK_INTERFACE_HEADER iface
  *
  * @param[in] rpss_idx  - The RPSS instance index.
  * @param[in] rp_index  - The root port index.
+ * @param[in] lt_retry_count - pointer to retry count for the RP 
  *
  * @retval SILIBS_SUCCESS: Link status obtained successfully.
  * @retval Other:          Error occurred while obtaining link status.
  */
-silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
+silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, uint8_t *lt_retry_count);
 
 /**
  * @brief Send a synchronous request to carry out any initialization required on the RP after link-up.

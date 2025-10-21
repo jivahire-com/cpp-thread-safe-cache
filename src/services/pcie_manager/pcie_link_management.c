@@ -34,7 +34,8 @@
 #define GET_RP_INDEX_FROM_TIMER_CALLBACK(cb_val)   ((cb_val >> 8) & 0xFF)
 #define RP_LINK_TRAINING_TIMEOUT_TICKS             (500) /* = 5 seconds */
 #define RP_TIMER_ONE_SHOT                          (0)
-#define OVL_LT_RETRIES_MAX                         (3)
+#define LT_RETRIES_MAX                             (3)
+#define LT_RETRY_STOP                              (LT_RETRIES_MAX + 1)
 #define WAIT_SBR_MS                                (FPFW_MAX((TX_TIMER_TICKS_PER_SECOND / (200UL)), (1UL))) // 5ms
 
 /*------------- Typedefs -----------------*/
@@ -105,6 +106,8 @@ static void initiate_link_training_for_rp(pcie_manager_context_t* ctx, uint8_t r
     send_sync_rp_initiate_link_training((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, rp_index);
 }
 
+#if 0 
+// Keeping this in place just in case any overlake specific action needs to be taken
 static bool rp_is_overlake(uint8_t rpss_idx, uint8_t rp_idx)
 {
     if (rp_idx != 0)
@@ -121,6 +124,7 @@ static bool rp_is_overlake(uint8_t rpss_idx, uint8_t rp_idx)
 
     return (config_get_overlake_rpss_index_primary_soc() == rpss_idx);
 }
+#endif
 
 void initiate_link_training_on_rpss(pcie_manager_context_t* ctx)
 {
@@ -157,6 +161,18 @@ void handle_pcie_link_down_event(pcie_manager_context_t* ctx, pciess_completion_
         return;
     }
 
+    // Upon successful LT, the value of retrain_count == LT_RETRIES_MAX
+    // If we get a Link Down after retrain_count == LT_RETRIES_MAX
+    // it means its a real Link Down/SBR and not part of the Link Training
+    // retry loop.
+    if (ctx->lt_retry_count[rp_index] == LT_RETRY_STOP)
+    {
+        FPFW_DBGPRINT_INFO("Reset LT retry Count: RPSS[%d] RP[%d]: Retry Count %d\n",
+                           rpss_idx,
+                           rp_index,
+                           (int8_t)ctx->lt_retry_count[rp_index]);
+        ctx->lt_retry_count[rp_index] = 0x0;
+    }
     /* The root port is ready, initiate link re-training and return */
     initiate_link_training_for_rp(ctx, rp_index);
 }
@@ -165,31 +181,33 @@ void handle_pcie_link_up_event(pcie_manager_context_t* ctx, pciess_completion_re
 {
     uint8_t rpss_idx = ctx->rpss_idx;
     uint8_t rp_idx = cmpl->rp_index;
-    static uint8_t ovl_lt_retries = 0;
     silibs_status_t status = SILIBS_SUCCESS;
 
-    status = send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+    status = send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx, &(ctx->lt_retry_count[rp_idx]));
 
-    /* Deal with overlake re-training if this is an overlake root port */
-    if (rp_is_overlake(rpss_idx, rp_idx) && config_get_enable_overlake_sbr_workaround())
+    if (status == SILIBS_E_OVERWRITTEN && ctx->lt_retry_count[rp_idx] < LT_RETRIES_MAX)
     {
-        if (status == SILIBS_E_OVERWRITTEN && ovl_lt_retries < OVL_LT_RETRIES_MAX)
+        /* Send the SBR, this will result in link-down flow being triggered */
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Link training failed, issue SBR[%d] \n", rpss_idx, rp_idx, ctx->lt_retry_count[rp_idx]);
+        ctx->lt_retry_count[rp_idx]++;
+        send_sync_rp_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+        tx_thread_sleep(WAIT_SBR_MS);
+        send_sync_rp_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+    }
+    else if (ctx->lt_retry_count[rp_idx] == LT_RETRIES_MAX || status == SILIBS_SUCCESS)
+    {
+        /*
+         * In any case we stop retrying after retrying LT_RETRIES_MAX times
+         * irrespective of success/failure
+         * In case of Failure we log  a warning
+         */
+        ctx->lt_retry_count[rp_idx] = LT_RETRY_STOP;
+        if (status == SILIBS_E_OVERWRITTEN)
         {
-            /* Send the SBR, this will result in link-down flow being triggered */
-            FPFW_DBGPRINT_INFO("RPSS[%d] OVL2: Link training failed, issue SBR\n", rpss_idx);
-            send_sync_rp_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
-            tx_thread_sleep(WAIT_SBR_MS);
-            send_sync_rp_clear_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
-            ovl_lt_retries++;
-        }
-        else if (status == SILIBS_SUCCESS)
-        {
-            /*
-             * We should only retry on cold reset so set it to the max
-             * to ensure any future link down events don't trigger SBR
-             * flow
-             */
-            ovl_lt_retries = OVL_LT_RETRIES_MAX;
+            FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Link training failed, RetryCount set to max: [%d] \n",
+                                  rpss_idx,
+                                  rp_idx,
+                                  ctx->lt_retry_count[rp_idx]);
         }
     }
 

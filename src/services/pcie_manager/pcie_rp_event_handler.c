@@ -40,7 +40,7 @@ void process_wait_for_event_data(pcie_manager_context_t* ctx, pciess_completion_
 
     if (req->op == LINK_TRAINING_FAILED)
     {
-        send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, req->rp_index);
+        send_sync_rp_get_link_status((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, req->rp_index, NULL);
         send_sync_rp_post_link_up_init((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, req->rp_index);
         return;
     }

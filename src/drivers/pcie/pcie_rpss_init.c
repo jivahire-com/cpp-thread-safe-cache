@@ -41,7 +41,7 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
-
+#define LT_RETRIES_MAX (3)
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
@@ -333,18 +333,36 @@ int get_rp_link_status(PDFWK_SYNC_REQUEST_HEADER req)
 {
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
     silibs_status_t sts = SILIBS_SUCCESS;
+    /*
+     *  When LT Time out happens, The retry count is NOT send, a NULL pointer is passed
+     *  in which case we anyway have to log a CPER  to indicate Link triaining failed.
+     *  So we default the value of the lt_retry_count to MAX value.
+     */
+    uint8_t lt_retry_count = LT_RETRIES_MAX;
+
+    // Retry Count comes from the Request orginator
+    // IF Device is not attached [ aka Link Timer Expires ], this will be set to NULL
+    if ((r->p_sent_data) != NULL)
+    {
+        lt_retry_count = *((uint8_t*)(r->p_sent_data));
+        FPFW_DBGPRINT_VERBOSE("RPSS[%d] RP[%d]: Retry Count %d\n", r->rpss_index, r->rp_index, (int8_t)lt_retry_count);
+    }
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
     BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
     /*
-     * Log a link training non-FATAL CPER here only if this API returns the following:
+     * Log a link training non-FATAL CPER here only if :
+     *          - if retry count is >= LT_RETRIES_MAX   AND
+     *          - Status is SILIB_E_BUSY or SILIBS_E_OVERWRITTEN
+     *
      * SILIBS_E_BUSY - this indicates that link training hasn't completed or the DLL_ACTIVE is not set
      * SILIBS_E_OVERWRITTEN - this indicates that link training completed but the link width or speed is not as expected
      */
     sts = pciess_rp_get_link_train_done(&(rpss->rps[r->rp_index]));
-    if ((sts & (SILIBS_E_BUSY | SILIBS_E_OVERWRITTEN)) != 0)
+    if (((sts & (SILIBS_E_BUSY | SILIBS_E_OVERWRITTEN)) != 0) && lt_retry_count == LT_RETRIES_MAX)
     {
+        FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Retry Count %d\n", r->rpss_index, r->rp_index, (int8_t)lt_retry_count);
         log_link_training_failure_cper(rpss, r->rp_index);
     }
 

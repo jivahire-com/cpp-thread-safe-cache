@@ -255,6 +255,7 @@
     <Knob name="ddr_debug_level" type="uint8_t" default="2" help="Control DDR debug print level. 0: None; 1: Critical; 2: Info; 3: Debug; 4:Trace. (0 ~ 4)" />
     <Knob name="parallel_phy_train_en" type="uint8_t" default="1" help="Run DDR PHY training FW in parallel. 0 - Disable, 1 - Enable" />
     <Knob name="media_scrambling_en" type="uint8_t" default="1" help="DDR media scrambling eanble. 0 - Disable, 1 - Enable without Data Bus Inversion, 2 - Enable with Data Bus Inversion" />
+    <Knob name="alert_delay" type="uint8_t" default="0x30" help="DDR alert_n signal propagation delay in the unit of DRAM clock cycles. 0 - Use measured value from CA parity error injection, 1 - Use calculation per HPG, 2 ~ 0x3f, Use fixed overriding value. (0x0 ~ 0x3f)" />
     <!-- Validation ONLY knobs -->
     <Knob name="borgens_1gb_ddr_reserve_enable" type="bool" default="false" />
   </Knobs>

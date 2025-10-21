@@ -334,6 +334,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.ue_scrub_poison_en = config_get_ue_scrub_poison_en();
     ddrss_cfgs.ext_knobs.zq_cal_interval = config_get_zq_cal_interval();
     ddrss_cfgs.ext_knobs.zq_cal_interval_unit = config_get_zq_cal_interval_unit();
+    ddrss_cfgs.ext_knobs.alert_delay = config_get_alert_delay();
 
     platform_id = idsw_get_platform_sdv();
 

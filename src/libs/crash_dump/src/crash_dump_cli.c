@@ -270,7 +270,7 @@ static PLACED_CODE FPFW_CLI_STATUS cd_set_core_status(int argc, const char** pp_
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS cd_transfer_dump(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS cd_transfer_dump(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);

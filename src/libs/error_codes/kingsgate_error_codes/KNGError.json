@@ -460,6 +460,18 @@
           "Description": "Uncorrectable Error in System Fuse"
         }
       ]
+    },
+    {
+      "Facility_Name": "FACILITY_SEL",
+      "Facility_Value": 60,
+      "Facility_Description": "This is for SEL Manager error codes.",
+      "Errors": [
+        {
+          "Name": "KNG_E_SEL_EMPTY",
+          "Value": 1,
+          "Description": "Do not use, defined to prevent use of 0 as error code."
+        }
+      ]
     }
   ]
 }

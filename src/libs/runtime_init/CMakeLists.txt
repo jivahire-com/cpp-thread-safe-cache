@@ -65,6 +65,7 @@ add_library(${TARGET}
         scp_crash_dump_init.c
         scp_mpu_init.c
         sds_init.c
+        sel_init.c
         sensor_fifo_init.c
         spi_bridge_init.c
         startup_shutdown_init.c
@@ -182,6 +183,7 @@ target_link_libraries(
         ms::service::rhtlm_service::cli
         ms::service::scp_startup_shutdown
         ms::service::sds_service
+        ms::service::sel_mgr
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli
@@ -293,6 +295,7 @@ add_library(${TARGET}
         power_pldm_mcp_init.c
         tlm_fuses_init.c
         pwr_tlm_svc_mcp_init.c
+        sel_init.c
         sensor_fifo_init.c
         spi_bridge_init.c
         startup_shutdown_init.c
@@ -380,6 +383,7 @@ target_link_libraries(
         ms::service::mem::cli
         ms::service::mts
         ms::service::pwr_pldm_mcp
+        ms::service::sel_mgr
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli

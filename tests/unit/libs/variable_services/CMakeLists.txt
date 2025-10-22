@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:ms::lib::variable_services,INCLUDE_DIRECTORIES>)
 
 # Generic ports implmented within this project
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 lint_target(${TARGET})

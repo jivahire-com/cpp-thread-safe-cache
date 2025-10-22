@@ -28,6 +28,7 @@ target_link_libraries(${TARGET}
 )
 
 # Generic ports implement within this project
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 target_compile_definitions(

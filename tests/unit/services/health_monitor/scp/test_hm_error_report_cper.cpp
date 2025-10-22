@@ -46,6 +46,13 @@ void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
     function_called();
 }
 
+uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
+{
+    check_expected(addr);
+    function_called();
+    return mock_type(uint32_t);
+}
+
 int __wrap_idsw_get_platform_sdv(void)
 {
     return mock_type(int);

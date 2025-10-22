@@ -82,6 +82,7 @@ set_property(
 )
 
 # Defining platform APIs
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 # Setting compiler optimization level to -Og to match Pioneer boot code compilation flags

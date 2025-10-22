@@ -81,20 +81,7 @@ uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
 {
     check_expected_ptr(addr);
 
-    // Check if this address is part of current pool
-    mmio_rw_data_t* cur = head;
-
-    while (cur != NULL)
-    {
-        if (cur->addr == (uint32_t)addr)
-        {
-            return cur->value;
-        }
-
-        cur = (mmio_rw_data_t*)cur->p_next;
-    }
-
-    return 0x0;
+    return mock_type(uint32_t);
 }
 
 /**

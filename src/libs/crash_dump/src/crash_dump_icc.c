@@ -23,6 +23,7 @@
 #include <fpfw_cfg_mgr.h>         // for knobs
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <fpfw_init.h>            // for fpfw_init_get_handle
+#include <health_monitor.h>       // for hm_update_accel_fatal_cper_info
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
 #include <icc_mhu.h>              // for icc_mhu_request_t
 #include <icc_platform_defines.h> // for RMSS_D2D_MAILBOX_MSG_CRASHDUMP_SIGNAL_REQ
@@ -104,6 +105,8 @@ static void cd_accel_recv_addr_notify_cb(void* context, size_t output_size_bytes
     ctx->accel_cd_ctx[accel_type].cd_file_offset = msg->cd_file_offset;
     ctx->accel_cd_ctx[accel_type].cd_file_size = msg->cd_file_size;
     ctx->accel_cd_ctx[accel_type].cd_magic_nr_offset = msg->magic_nr_offset;
+
+    hm_update_accel_fatal_cper_info((uint32_t)accel_type, msg->cper_buffer_offset, msg->cper_magic_nr_offset);
     crash_dump_register_post_dump_callback(crash_dump_copy_accel_cd_file, (void*)accel_type, CRASH_DUMP_TYPE_FULL);
     crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_READY);
     FPFwCDPrintf("[CD][Accel %u]: CD file offset 0x%lx size 0x%lx\n", accel_type, msg->cd_file_offset, msg->cd_file_size);

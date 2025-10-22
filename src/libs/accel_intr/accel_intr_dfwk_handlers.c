@@ -26,8 +26,10 @@
 #include <crash_dump.h>        // for crash_dump_is_accel_cd_complete
 #include <fpfw_timer.h>        // for fpfw_timer_create, fpfw_timer_enable...
 #include <fpfw_timer_port.h>   // for fpfw_timer_create, fpfw_timer_enable...
+#include <health_monitor.h>    // for hm_fetch_accel_fatal_cper
 #include <sdm_ext_cfg_regs.h>  // for _addressblock_0x100000_misc_sys_ext_intr2_msg_send_intr
 #include <stdbool.h>           // for true, false
+#include <virt_irq.h>
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 /**
@@ -68,59 +70,14 @@ static struct _fpfw_timer_t accel_intr_crash_dump_collection_timers[NUM_VALID_AC
  */
 static accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_collection_timer_data[NUM_VALID_ACCEL_ID] = {
     // ACCEL_ID_SDM
-    {.accel_type = ACCEL_ID_SDM, .is_soc_reset = false, .is_collecting_crashdump = false},
+    {.accel_type = ACCEL_ID_SDM, .retry_count = 0, .skip_cper = false, .skip_cd = false, .has_crashed = false, .cper_collected = false},
 
     // ACCEL_ID_CDED
-    {.accel_type = ACCEL_ID_CDED, .is_soc_reset = false, .is_collecting_crashdump = false}};
-
-static uint32_t accel_cd_complete_retries[NUM_VALID_ACCEL_ID] = {0};
+    {.accel_type = ACCEL_ID_CDED, .retry_count = 0, .skip_cper = false, .skip_cd = false, .has_crashed = false, .cper_collected = false}};
 
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
-
-/**
- * @brief Request crash dump collection from Accel emCPU
- *
- * @details This function will perform following tasks
- * 1. Create timer to wait on doorbell interrupt SDM_MSG0_INTR using fpfw_timer_create
- * 2. Enable IRQ from ACCEL IP
- * 3. Send request to ACCEL emCPU to collect crash dump. This is done by raising doorbell interrupt SYS2_MSG0_INTR
- *
- * @param[in] accel_type : Accel id for CDED / SDM
- *
- * @retval void
- *
- */
-static void accel_intr_request_crash_dump_collection(ACCEL_ID accel_type, bool is_soc_reset)
-{
-    /**
-     * is_collecting_crashdump is set, indicates
-     * We started crash dump collection for a particular FATAL interrupt and have received another fatal interrupt
-     * 1. We will not start new crash dump collection
-     * 2. We will check if soc_reset is needed and will mark that in timer context
-     * 3. We will enable NVIC interrupt incase it has been disabled as part of FATAL ISR handler
-     */
-    /**
-     * Update this flow as per following ADO point 5
-     * TODO: Task 1982366: [SCP] Accel IP Fatal Interrupt Cleanup Tasks / Comments
-     * When one FATAL interrupt is received ->
-     * Halt the processor where it should be in WFI (waiting for interrupt) state ->
-     * Only handles Doorbell for crash sump collection
-     */
-    if (accel_intr_crash_dump_collection_timer_data[accel_type].is_collecting_crashdump)
-    {
-        accel_intr_crash_dump_collection_timer_data[accel_type].is_soc_reset |= is_soc_reset;
-        return;
-    }
-
-    // Set timeout count
-    accel_intr_crash_dump_collection_timer_data[accel_type].is_soc_reset = is_soc_reset;
-    accel_intr_crash_dump_collection_timer_data[accel_type].is_collecting_crashdump = true;
-
-    // Enable timer
-    fpfw_timer_enable(&accel_intr_crash_dump_collection_timers[accel_type], ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS);
-}
 
 /**
  * @brief Callback function for FPFW timer
@@ -130,100 +87,109 @@ static void accel_intr_request_crash_dump_collection(ACCEL_ID accel_type, bool i
  * @retval void
  *
  */
-static void accel_intr_handle_sdm_msg_recv_timeout(void* ctx, fpfw_dur_t latency)
+static void accel_intr_delay_cb(void* ctx, fpfw_dur_t latency)
 {
+    paccel_intr_crash_dump_collection_timer_data_t timer_data = ctx;
+    ACCEL_ID accel_type = timer_data->accel_type;
+
+    uint32_t interrupt_reg_addr =
+        sdm_ext_get_category_status_reg_addr(timer_data->ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR);
+    BUG_ASSERT(interrupt_reg_addr != SDM_EXT_INVALID_INTERRUPT_INPUT);
+
+    uint32_t interrupt_mask_addr =
+        sdm_ext_get_category_mask_reg_addr(timer_data->ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR);
+    BUG_ASSERT(interrupt_mask_addr != SDM_EXT_INVALID_INTERRUPT_INPUT);
+
+    uint32_t interrupt_reg_value =
+        BITWISE_AND(MMIO_READ32(interrupt_reg_addr), BITWISE_INVERT(MMIO_READ32(interrupt_mask_addr)));
+
+    uint32_t level1_clear_mask = SL_GET_BIT_MASK_RANGE(SDM_EXT_EMCPU_WDT_ERR_INTR, SDM_EXT_SDM_MSG3_INTR);
+    uint32_t cper_cd_skip_flags =
+        (SL_GET_SINGLE_BIT_MASK(SDM_EXT_LOCKUP_ERR_INT) | SL_GET_SINGLE_BIT_MASK(SDM_EXT_TCM_UE_ECC_ERR_INTR));
+
+    /**
+     * 1. If TCM UE or emcpu lock up error is received, we need to skip cper and cd collection
+     * 2. If doorbell interrupt is received, we need to forward cper as fatal
+     * 3. If emcpu wdt error, TCM UE or emcpu lockup is received, we need to forward cper as corrected
+     */
+
     FPFW_UNUSED(latency);
 
-    paccel_intr_crash_dump_collection_timer_data_t timer_ctx = ctx;
-    ACCEL_ID accel_type = timer_ctx->accel_type;
-    bool is_soc_reset = timer_ctx->is_soc_reset;
-    bool is_cd_complete = false;
-
-    FPFW_ET_LOG(AccelIntrCrashdumpCollectTimeout, accel_type);
-
-    accel_cd_complete_retries[accel_type]++;
+    if (interrupt_reg_value & cper_cd_skip_flags)
+    {
+        timer_data->skip_cper = true;
+        timer_data->skip_cd = true;
+    }
 
     /**
-     * @brief Check if crash dump collection is complete
-     * If it is not complete, we will wait again for crash dump collection to
-     * finish. We will retry wait for crash dump collection only for a limited
-     * number of times `ACCEL_MAX_CD_COMPLETE_RETRIES`.
-     *
-     * If it is not complete after the retries, we will reset the timer context
-     * and request SoC reset or Accel emCPU reset based on is_soc_reset flag
-     * and will ignore CD file transfer.
+     * 1. Check if the cper magic number is written and if so collect the cper
+     * 2. If magic number is not written, retry for a max of ACCEL_MAX_CD_COMPLETE_RETRIES
+     * 3. Once either cper is collected or retries are exhausted, check if crash dump collection is complete
+     * 4. Similar to cper, retry for a max of ACCEL_MAX_CD_COMPLETE_RETRIES
+     * 5. Once either cd is complete or retries are exhausted, call bug_check
+     * 6. Both UE fatals and emcpu fatals will both call bug_check
      */
-    if (!crash_dump_is_accel_cd_complete(accel_type))
+
+    if (!timer_data->skip_cper)
     {
-        if (accel_cd_complete_retries[accel_type] < ACCEL_MAX_CD_COMPLETE_RETRIES)
+        if (!hm_collect_accel_fatal_cper(accel_type))
         {
-            FPFW_ET_LOG(AccelIntrCrashdumpCollectRetry, accel_type, accel_cd_complete_retries[accel_type]);
-            // Restart the timer to wait for crash dump collection completion
-            fpfw_timer_enable(&accel_intr_crash_dump_collection_timers[accel_type],
-                              ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS);
-            return;
-        }
-
-        // Else reset the retry count for next crash dump collection
-        FPFW_ET_LOG(AccelIntrCrashdumpCollectFailed, accel_type);
-    }
-    else
-    {
-        is_cd_complete = true;
-    }
-
-    /**
-     * @brief Reset the timer context for crash dump collection
-     * This is done to ensure that the timer context is read
-     * for the next crash dump collection
-     */
-    timer_ctx->is_soc_reset = false;
-    timer_ctx->is_collecting_crashdump = false;
-
-    /**
-     * @brief Reset the crash dump collection retry count
-     * This is done to ensure that the retry count is reset
-     * for the next crash dump collection
-     */
-    accel_cd_complete_retries[accel_type] = 0;
-
-    /**
-     * 1. TODO: Task 1908548: [SCP] Implementation of SDM Fatal Interrupt in SCP
-     * Reset Accel emCPU and wait for emCPU to bootup
-     */
-
-    if (is_soc_reset)
-    {
-        FPFW_ET_LOG(AccelIntrSoCReset, accel_type);
-        // Request SoC reset in SCP
-        BUG_CHECK_EXTERNAL();
-    }
-    else
-    {
-        FPFW_ET_LOG(AccelIntremCPUReset, accel_type);
-        if (is_cd_complete)
-        {
-            crash_dump_transfer_accel_cd_to_BMC(accel_type);
-
-            /**
-             * CD collection is completed by accel core
-             * Request Accel emCPU reset
-             */
-            accel_core_warm_reset(accel_type);
+            if (timer_data->retry_count < ACCEL_MAX_CD_COMPLETE_RETRIES)
+            {
+                FPFW_ET_LOG(AccelIntrCPERCollectTimeout, accel_type, timer_data->retry_count);
+                // Restart the timer to wait for crash dump collection completion
+                fpfw_timer_enable(&accel_intr_crash_dump_collection_timers[accel_type],
+                                  ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS);
+                goto cper_collect_failed;
+            }
+            FPFW_ET_LOG(AccelIntrCPERCollectFailed, accel_type);
+            timer_data->skip_cper = true;
+            timer_data->retry_count = 0;
         }
         else
         {
-            /**
-             * Looks like accel core failed to collect crash dump
-             * after ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS
-             * Warm reset Accel emCPU.
-             *
-             * TODO: Since CD is not complete, we will not transfer the
-             * CD file for this case.
-             */
-            accel_core_warm_reset(accel_type);
+            timer_data->cper_collected = true;
         }
     }
+
+    // If CPER was skipped or not collected, generate a default CPER
+    if ((timer_data->skip_cper) && (!timer_data->cper_collected))
+    {
+        // TODO ADO: 2993136 Waiting for default cper definition to be created
+        // TODO ADO: 3041451 Generate default cper
+        timer_data->cper_collected = true;
+    }
+
+    // NOTE: CD collection and copy is done in crash_dump_accel.c
+
+    // Clear all level-1 interrupts as a precaution
+    sdm_ext_int_mask_status_clear(timer_data->ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR, level1_clear_mask);
+
+    // All crashes are control core resets
+    // However only UE fatals interrupted using MSG0 are a SOC coldboot
+    if (interrupt_reg_value & SL_GET_SINGLE_BIT_MASK(SDM_EXT_SDM_MSG0_INTR))
+    {
+        // Transmit cper with fatal severity
+        FPFW_ET_LOG(AccelIntrSoCReset, accel_type);
+    }
+    else
+    {
+        // Transmit cper with corrected severity
+        FPFW_ET_LOG(AccelIntremCPUReset, accel_type);
+    }
+
+    timer_data->has_crashed = true;
+    BUG_CHECK_EXTERNAL();
+    /**
+     * NOTE:
+     * TODO ADO 3041451:
+     * 1. Need to set reboot reason once crash is done
+     * 2. This can be done using the error severity of the cper
+     * 3. If it is a fatal cper, set reboot reason as COLD_BOOT else WARM_BOOT
+     */
+
+cper_collect_failed:
+    timer_data->retry_count++;
 }
 
 /*----------------------------- Global Functions ----------------------------*/
@@ -233,7 +199,7 @@ uint32_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type)
     fpfw_status_t status = fpfw_timer_create(&accel_intr_crash_dump_collection_timers[accel_type],
                                              FPFW_TIMER_ONESHOT,
                                              ACCEL_INTR_HANDSHAKE_TIMER_PERIOD_UNUSED_FOR_ONESHOT,
-                                             (fpfw_timer_callback)accel_intr_handle_sdm_msg_recv_timeout,
+                                             (fpfw_timer_callback)accel_intr_delay_cb,
                                              &accel_intr_crash_dump_collection_timer_data[accel_type]);
 
     if (status != FPFW_STATUS_SUCCESS)
@@ -248,41 +214,23 @@ uint32_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type)
 void accel_intr_handle_fatal_intr_recvd(ACCEL_ID accel_type)
 {
     // Based on ATU MAP get sdm_ext_cfg base address
-    uint32_t IRQnum = accel_intr_get_irq_num_from_accel_type(accel_type);
     uint32_t ext_cfg_addr = atu_svc_accel_atu_addr(accel_type);
 
-    /**
-     * 1. Loop through all FATAL interrupts to note and log triggered interrupts.
-     *    Also set flags soc_reset / accel_emcpu_reset accordingly. These are returned as part of irq_status
-     */
-    uint32_t irq_status =
-        accel_intr_process_fatal_interrupts(IRQnum, ext_cfg_addr, ACCEL_INTR_PROCESS_INTR_IN_BOTTOM_HALF);
-    /**
-     * TODO: Task 1973334: [SCP] Read and dump Accel IP registers from SCP
-     */
+    accel_intr_crash_dump_collection_timer_data[accel_type].ext_cfg_addr = ext_cfg_addr;
+    // Enable timer
+    fpfw_timer_enable(&accel_intr_crash_dump_collection_timers[accel_type], ACCEL_INTR_HANDSHAKE_TIMER_DELAY_IN_NUMBER_OF_TICKS);
+}
 
-    if (ACCEL_INTR_IS_RESET_SOC_SET(irq_status))
-    {
-        /**
-         * Request SoC reset in SCP. This should also trigger crash dump collection for ACCEL emCPU and other
-         * cores. Add logic to request SoC Reset in SCP ->
-         * TODO: Task 1908548: [SCP] Implementation of SDM Fatal Interrupt in SCP
-         * TODO: Task 1973282: [SCP] Interface with crash dump collection in SCP
-         * Remove this line when adding support for SoC reset
-         */
-        accel_intr_request_crash_dump_collection(accel_type, ACCEL_INTR_REQUEST_SOC_RESET);
-    }
-    else if (ACCEL_INTR_IS_RESET_ACCEL_EMCPU_SET(irq_status))
-    {
-        accel_intr_request_crash_dump_collection(accel_type, ACCEL_INTR_REQUEST_ACCEL_EMCPU_RESET);
-    }
-    else
-    {
-        /**
-         * 1. Re-init all interrupts routed from ACCEL IP and supported in SCP in level 1 registers
-         * Level 2 registers are cleared as part of Accel emCPU boot up
-         */
-        accel_intr_scp_init(accel_type, ext_cfg_addr, E_ACCEL_INTR_INIT_FULL_INTR_TREE);
-        FPFwCoreInterruptEnableVector(IRQnum);
-    }
+bool accel_intr_get_cd_skip(ACCEL_ID accel_type)
+{
+    return accel_intr_crash_dump_collection_timer_data[accel_type].skip_cd;
+}
+
+void accel_intr_set_cper_cd_skip(void* callback_param)
+{
+    uint32_t IRQnum = GET_PHYSICAL_IRQ_FROM_VIRTUAL_IRQ((uint32_t)callback_param);
+    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num(IRQnum);
+
+    accel_intr_crash_dump_collection_timer_data[accel_type].skip_cper = true;
+    accel_intr_crash_dump_collection_timer_data[accel_type].skip_cd = true;
 }

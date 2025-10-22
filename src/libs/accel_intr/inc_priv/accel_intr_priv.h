@@ -26,13 +26,10 @@
  * List of sdm_ext interrupts that are handled in SCP
  */
 typedef enum {
-    ACCEL_SCP_INTR_EMCPU_WDT_ERR = 0x0,     // Maps to SDM_EXT_EMCPU_WDT_ERR_INTR
-    ACCEL_SCP_INTR_CP_FATAL_ERR,            // Maps to SDM_EXT_CP_FATAL_ERR_INTR
-    ACCEL_SCP_INTR_UE_ECC_ERR,              // Maps to SDM_EXT_UE_ECC_ERR_INTR
-    ACCEL_SCP_INTR_CSR_PARITY_ERR,          // Maps to SDM_EXT_CSR_PARITY_ERR_INTR
-    ACCEL_SCP_INTR_SDM_WDT_ERR,             // Maps to SDM_EXT_SDM_WDT_ERR_INTR
-    ACCEL_SCP_INTR_FAB_WDT_ERR,             // Maps to SDM_EXT_FAB_WDT_ERR_INTR
-    ACCEL_SCP_INTR_AXI_UNSUPP_INTR_STATUS,  // Maps to SDM_EXT_AXI_UNSUPP_INTR_STATUS_INTR
+    ACCEL_SCP_INTR_EMCPU_WDT_ERR = 0x0,             // Maps to SDM_EXT_WDT_ERR_INTR
+    ACCEL_SCP_INTR_TCM_UE_ECC_ERR,                  // Maps to SDM_EXT_TCM_UE_ECC_ERR_INTR
+    ACCEL_SCP_INTR_EMCPU_LOCKUP_ERR,                // Maps to SDM_EXT_EMCPU_LOCKUP_ERR_INTR
+    ACCEL_SCP_INTR_SDM_MSG0_INTR,                   // Maps to SDM_EXT_SDM_MSG0_INTR
     ACCEL_SCP_INTR_MAX
 } eACCEL_SCP_INTR;
 
@@ -88,38 +85,20 @@ typedef struct
 {
     SDM_EXT_INTERRUPT_NUMBER accel_irq_bit;
     uint32_t (*accel_irq_init_fn)(ACCEL_ID, SDM_EXT_INTERRUPT_NUMBER, uint32_t, E_ACCEL_INTR_INIT_CONFIG);   // Interrupt specific init code.
-    uint32_t (*accel_irq_fn)(uint32_t, uint32_t, SDM_EXT_INTERRUPT_NUMBER, bool);  // Interrupt specific ISR handler code
+    void (*accel_irq_fn)(void *);  // Interrupt specific ISR handler code
 } accel_intr_irq_data_t, *paccel_intr_irq_data_t;
 
 // Structure to store data that is passed with timer
 typedef struct
 {
     ACCEL_ID    accel_type;                 // Accel type (SDM /CDED)
-    uint32_t    timeout_count;              // Timeout count. This is needed to take different action based on timeout
-    bool        is_soc_reset;               // Indicate if this is SoC reset
-    bool        is_collecting_crashdump;    // Indicates if crash dump collection has started
+    uint32_t    ext_cfg_addr;               // sdm_ext_cfg offset after ATU Map
+    uint32_t    retry_count;                // Retry count for crash dump collection
+    bool        skip_cper;                  // Skip CPER collection, used when CPER collection fails or tcm ue/lockup
+    bool        skip_cd;                    // Skip CPER collection, used when CPER collection fails or tcm ue/lockup
+    bool        has_crashed;                // To indicate if this accel has crashed
+    bool        cper_collected;             // To indicate if cper has been collected
 } accel_intr_crash_dump_collection_timer_data_t, *paccel_intr_crash_dump_collection_timer_data_t;
-
-/**
- * Meta data of CDED CP level 2 interrupts
- */
-typedef struct
-{
-    uint8_t bit_index;
-    char brief[CDED_CP_INT_TRACE_STR_LEN];
-    const void *l3_irq_data;
-    uint8_t l3_irq_data_count;
-} cded_cp_l2_irq_data_t;
-
-/**
- * Union that holds ISR of CDED CP level 3 interrupts.
- */
-typedef union
-{
-    uint32_t ccmp_isr[CDED_REGS_CCMP_CFG_REGS_ARRAY_COUNT];
-    uint32_t dcmp_isr[CDED_REGS_DCMP_CFG_REGS_ARRAY_COUNT];
-    uint32_t aes_isr[1]; /* Only once array count for AES engines */
-} cded_cp_l3_isr_data_t;
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 /**
@@ -129,26 +108,8 @@ typedef union
  * accel_irq_fn : Validate the IRQ in SDM IP interrupt tree or process if specified by parameter
  */
 extern const accel_intr_irq_data_t accel_irq_scp_data[ACCEL_SCP_INTR_MAX];
-extern const accel_intr_irq_data_t accel_irq_mcp_data[ACCEL_MCP_INTR_MAX];
-
-
-extern const cded_cp_l2_irq_data_t cded_cp_fatal_intr[];
 
 /*--------------------------- Function Prototypes ---------------------------*/
-/**
- * @brief Helper function to get eACCEL_SCP_INTR enum
- *
- * \b Description:
- * This function will have mapping of eACCEL_SCP_INTR to sdm_ext_cfg_regs.misc.sys_ext_intr2 bit
- * Based on input bit index eACCEL_SCP_INTR will be returned
- *
- * @param[in] irq_bit : sdm_ext_cfg_regs.misc.sys_ext_intr2 bit
- *
- * @retval
- *  On success, ACCEL_SCP_INTR_*
- *  On failure, ACCEL_SCP_INTR_MAX
- */
-eACCEL_SCP_INTR accel_scp_get_intr_enum(SDM_EXT_INTERRUPT_NUMBER irq_bit);
 
 /*************************************************************************
  * Misc Functions
@@ -236,272 +197,31 @@ void accel_intr_unmask_interrupt_level_1(uint32_t ext_cfg_addr, SDM_EXT_INTERRUP
  * IRQ Init functions
  *************************************************************************/
 
-/**
- * @brief Initialize EMCPU_WDT_ERR Interrupt
- *
- * \b Description:
- * Clear and unmask interrupt in SDM interrupt tree
- *
- * @param[in] accel_type : Accel type (SDM /CDED)
- * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] init_config : Interrupt tree initialization configuration 
- *
- * @retval
- *  Always returns, ACCEL_RET_SUCCESS
- */
-uint32_t accel_intr_emcpu_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
-
-/**
- * @brief Initialize UE_ECC_ERR Interrupt
- *
- * \b Description:
- * Clear and unmask interrupt in SDM interrupt tree
- *
- * @param[in] accel_type : Accel type (SDM /CDED)
- * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] init_config : Interrupt tree initialization configuration 
- *
- * @retval
- *  Always returns, ACCEL_RET_SUCCESS
- */
-uint32_t accel_intr_ue_ecc_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
-
-/**
- * @brief Initialize all ACCEL interrupts that have only level 1 register
- *
- * \b Description:
- * Clear and unmask interrupt in SDM interrupt tree
- *
- * @param[in] accel_type : Accel type (SDM /CDED)
- * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] init_config : Interrupt tree initialization configuration 
- *
- * @retval
- *  Always returns, ACCEL_RET_SUCCESS
- */
-uint32_t accel_intr_single_level_irq_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
-
-/**
- * @brief Initialize SDM_WDT_ERR Interrupt
- *
- * \b Description:
- * Clear and unmask interrupt in SDM interrupt tree
- *
- * @param[in] accel_type : Accel type (SDM /CDED)
- * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] init_config : Interrupt tree initialization configuration 
- *
- * @retval
- *  Always returns, ACCEL_RET_SUCCESS
- */
-uint32_t accel_intr_sdm_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
-
-/**
- * @brief Initialize FAB_WDT_ERR Interrupt
- *
- *
- * \b Description:
- * Clear and unmask interrupt in SDM interrupt tree
- *
- * @param[in] accel_type : Accel type (SDM /CDED)
- * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] init_config : Interrupt tree initialization configuration 
- *
- * @retval
- *  Always returns, ACCEL_RET_SUCCESS
- */
-uint32_t accel_intr_fab_wdt_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
-
-/**
- * @brief Initialize CDED_CP_FATAL_ERR Interrupt
- *
- *
- * \b Description:
- * Clear and unmask interrupt in SDM interrupt tree only for CDEDSS
- *
- * @param[in] accel_type : Accel type (SDM /CDED)
- * @param[in] bit_index  : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] init_config : Interrupt tree initialization configuration 
- *
- * @retval
- *  Always returns, ACCEL_RET_SUCCESS
- */
-uint32_t accel_intr_cded_cp_err_init(ACCEL_ID accel_type, SDM_EXT_INTERRUPT_NUMBER bit_index, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
-
 /*************************************************************************
  * IRQ Validation and Handler functions
  *************************************************************************/
 
 /**
- * @brief EMCPU_WDT_ERR Interrupt : Validate and process if requested
+ * @brief This is the fatal ISR function for ACCEL IP interrupt on SCP core
  *
- * \b Description:
- * Validate interrupt at all levels of ISR.
- * Level 1 is checked in caller so only level 2 is checked in this function
- * Process the interrupt if requested by caller
- *
- * @param[in] IRQnum       : IRQ number for SDM / CDED
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] bit_index    : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] process_this_fatal_intr  : Process the IRQ if this flag is set
- *
- * @retval uint32_t : Sets bits as follows
- * Bit 1 : Valid interrupt detected
- * Bit 2 : SoC reset is needed
- * Bit 3 : ACCEL emCPU reset is needed
- *
- */
-uint32_t accel_intr_emcpu_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
-
-/**
- * @brief Interrupts that have only level 1 : Validate and process if requested
- *
- * \b Description:
- * Level 1 is checked in caller so no validation is needed.
- * Process the interrupt if requested by caller
- *
- * @param[in] IRQnum       : IRQ number for SDM / CDED
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] bit_index    : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] process_this_fatal_intr  : Process the IRQ if this flag is set
- *
- * @retval uint32_t : Sets bits as follows
- * Bit 1 : Valid interrupt detected
- * Bit 2 : SoC reset is needed
- * Bit 3 : ACCEL emCPU reset is needed
- *
- */
-uint32_t accel_intr_single_level_irq_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
-
-/**
- * @brief UE_ECC_ERR Interrupt : Validate and process if requested
- *
- * \b Description:
- * Validate interrupt at all levels of ISR.
- * Level 1 is checked in caller so only level 2 is checked in this function
- * Process the interrupt if requested by caller
- *
- * @param[in] IRQnum       : IRQ number for SDM / CDED
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] bit_index    : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] process_this_fatal_intr  : Process the IRQ if this flag is set
- *
- * @retval uint32_t : Sets bits as follows
- * Bit 1 : Valid interrupt detected
- * Bit 2 : SoC reset is needed
- * Bit 3 : ACCEL emCPU reset is needed
- *
- */
-uint32_t accel_intr_ue_ecc_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
-
-/**
- * @brief SDM_WDT_ERR Interrupt : Validate and process if requested
- *
- * \b Description:
- * Validate interrupt at all levels of ISR.
- * Level 1 is checked in caller so only level 2 is checked in this function
- * Process the interrupt if requested by caller
- *
- * @param[in] IRQnum       : IRQ number for SDM / CDED
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] bit_index    : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] process_this_fatal_intr  : Process the IRQ if this flag is set
- *
- * @retval uint32_t : Sets bits as follows
- * Bit 1 : Valid interrupt detected
- * Bit 2 : SoC reset is needed
- * Bit 3 : ACCEL emCPU reset is needed
- *
- */
-uint32_t accel_intr_sdm_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
-
-/**
- * @brief FAB_WDT_ERR Interrupt : Validate and process if requested
- *
- * \b Description:
- * Validate interrupt at all levels of ISR.
- * Level 1 is checked in caller so only level 2 is checked in this function
- * Process the interrupt if requested by caller
- *
- * @param[in] IRQnum       : IRQ number for SDM / CDED
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] bit_index    : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] process_this_fatal_intr  : Process the IRQ if this flag is set
- *
- * @retval uint32_t : Sets bits as follows
- * Bit 1 : Valid interrupt detected
- * Bit 2 : SoC reset is needed
- * Bit 3 : ACCEL emCPU reset is needed
- *
- */
-uint32_t accel_intr_fab_wdt_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
-
-/**
- * @brief ACCEL_SCP_INTR_CP_FATAL_ERR Interrupt : Validate and process if requested
- *
- * \b Description:
- * Validate interrupt at all levels of ISR.
- * Level 1 is checked in caller so only level 2 & 3 is checked in this function
- * Process the interrupt if requested by caller
- *
- * @param[in] IRQnum       : IRQ number for CDED
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] bit_index    : Bit number in sdm_ext_cfg_regs.misc.sys_ext_intr2
- * @param[in] process_this_fatal_intr  : Process the IRQ if this flag is set
- *
- * @retval uint32_t : Sets bits as follows
- * Bit 1 : Valid interrupt detected
- * Bit 2 : SoC reset is needed
- * Bit 3 : ACCEL emCPU reset is needed
- *
- */
-uint32_t accel_intr_cded_cp_err_fn(uint32_t IRQnum, uint32_t ext_cfg_addr, SDM_EXT_INTERRUPT_NUMBER bit_index, bool process_this_fatal_intr);
-
-/**
- * @brief Loop through all FATAL interrupts.
- * When called from ISR : This will only validate the interrupts
- * When called from handler thread : The interrupts will also be processed
- *
- * @param[in] IRQnum : IRQnum on which interrupt is received
- * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] process_this_fatal_intr : Boolean value indicating whether to process or only validate interrupt
- *
- * @retval uint32_t : Sets bits as follows
- * Bit 1 : Valid interrupt detected
- * Bit 2 : SoC reset is needed
- * Bit 3 : ACCEL emCPU reset is needed
- *
- */
-uint32_t accel_intr_process_fatal_interrupts(uint32_t IRQnum, uint32_t ext_cfg_addr, bool process_this_fatal_intr);
-
-/**
- * @brief ISR function for ACCEL IP interrupt on SCP core
- *
- * @param[in] callback_param : This will have IRQNum to identify if interrupt is received for CDED / SDM
+ * @param callback_param This is the virtual IRQ number (Combination of NVIC IRQ, domain and bit index)
  *
  * @retval void
- *
  */
-void accel_intr_isr_scp(void* callback_param);
+void accel_intr_fatal_isr(void* callback_param);
 
 /**
- * @brief ISR function for ACCEL IP interrupt on MCP core
+ * @brief ISR for TCM_UE_ECC_ERR and EMCPU_LOCKUP_ERR interrupts
  *
- * @param[in] callback_param : This will have IRQNum to identify if interrupt is received for CDED / SDM
+ *
+ * @param callback_param This is the virtual IRQ number (Combination of NVIC IRQ, domain and bit index)
  *
  * @retval void
- *
  */
-void accel_intr_isr_mcp(void* callback_param);
+void accel_intr_tcm_ue_emcpu_lockcup_isr(void* p_callback_param);
 
 /*************************************************************************
- * IRQ DFWK Handler functions
+ * IRQ DFWK Handler & General Helper functions
  *************************************************************************/
 
 /**
@@ -515,3 +235,13 @@ void accel_intr_isr_mcp(void* callback_param);
  *
  */
 uint32_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type);
+
+/**
+ * @brief This function sets skip_cper and skip_cd to true for the given accelerator
+ *
+ * @param accel_type SDM/CDED
+ *
+ * @retval void
+ */
+void accel_intr_set_cper_cd_skip(void *callback_param);
+

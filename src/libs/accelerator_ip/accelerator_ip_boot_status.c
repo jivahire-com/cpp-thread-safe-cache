@@ -179,7 +179,7 @@ static void accel_boot_status_timeout_cb(void* ctx, fpfw_dur_t latency)
     post_led_status(&boot_status_req[accel_type], LED_STATUS_CODE_SCP_ACCEL_FAILED);
 }
 
-static fpfw_status_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type)
+static fpfw_status_t accel_boot_status_timer_init(ACCEL_ID accel_type)
 {
     return FPFW_TIMER_CREATE_ONESHOT(&accel_boot_status_timers[accel_type], accel_boot_status_timeout_cb, (void*)accel_type);
 }
@@ -219,7 +219,7 @@ fpfw_status_t accel_setup_boot_status_code(ACCEL_ID accel_type)
     }
 
     // Initialize timer which waits for boot status code coming from accel core
-    status = accel_intr_crash_dump_collection_timer_init(accel_type);
+    status = accel_boot_status_timer_init(accel_type);
     if (status != FPFW_STATUS_SUCCESS)
     {
         return status;

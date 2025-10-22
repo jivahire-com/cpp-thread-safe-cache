@@ -33,6 +33,9 @@ extern "C" {
 #define BUG_CHECK_RETURN_VALUE 0x1
 #define BUGCHECK_MOCK_RETURN   (setjmp(mock_jump_buf))
 #define bugcheck_mock_return() BUGCHECK_MOCK_RETURN
+#ifndef ACCEL_CPER_EXPECTED_MAGIC
+    #define ACCEL_CPER_EXPECTED_MAGIC (0x43504552U) /* 'CPER' */
+#endif
 
 /*------------- Typedefs -----------------*/
 
@@ -418,5 +421,51 @@ TEST_FUNCTION(hm_sdm_err_submission_cb_all_path, post_ddr_setup, nullptr)
 
     // Command code mismatch
     custom_invoke_callback(ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED), FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_update_fatal_cper_info, post_ddr_setup, nullptr)
+{
+    hm_update_accel_fatal_cper_info(ACCEL_ID_SDM, 0x0, 0x0);
+}
+
+TEST_FUNCTION(hm_collect_fatal_cper, post_ddr_setup, nullptr)
+{
+    // The API has a hard-coded memcopy which will cause an exception
+    // The only way to avoid it is to allocate a dummy buffer
+    uint32_t* cper_dummy_addr = (uint32_t*)calloc(1, sizeof(acpi_err_sec_accel_vendor_t));
+    uint32_t cper_diff = ((uint32_t)cper_dummy_addr) - 0x80000;
+
+    // Return the cper diff via __wrap_atu_svc_accel_atu_addr
+    will_return_always(__wrap_atu_svc_accel_atu_addr, cper_diff);
+
+    expect_any(__wrap_mmio_read32, addr);
+    expect_function_call(__wrap_mmio_read32);
+    will_return(__wrap_mmio_read32, ACCEL_CPER_EXPECTED_MAGIC);
+
+    FPFW_UNUSED(cper_dummy_addr);
+    FPFW_UNUSED(cper_diff);
+
+    assert_true(hm_collect_accel_fatal_cper(ACCEL_ID_SDM));
+
+    // Trigger failure path
+    expect_any(__wrap_mmio_read32, addr);
+    expect_function_call(__wrap_mmio_read32);
+    will_return(__wrap_mmio_read32, 0x0);
+
+    assert_false(hm_collect_accel_fatal_cper(ACCEL_ID_SDM));
+}
+
+TEST_FUNCTION(hm_send_fatal_cper, post_ddr_setup, nullptr)
+{
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
+    expect_value_count(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, -1);
+    expect_value_count(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT, -1);
+    expect_function_call_any(__wrap_mmio_write32);
+
+    hm_send_accel_error_cper(ACCEL_ID_SDM);
+    // CPER not collected for cded, will not trigger the send path
+    hm_send_accel_error_cper(ACCEL_ID_CDED);
 }
 }

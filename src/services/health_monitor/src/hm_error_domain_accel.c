@@ -8,8 +8,10 @@
  */
 
 /*------------- Includes -----------------*/
+#include "accelip_id.h"
+
 #include <FpFwUtils.h>
-#include <accelip_id.h>
+#include <accelerator_knobs.h>
 #include <atu_init.h>
 #include <bug_check.h>
 #include <cper.h>
@@ -23,6 +25,10 @@
 #include <sdm_ext_cfg_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+#ifndef ACCEL_CPER_EXPECTED_MAGIC
+    #define ACCEL_CPER_EXPECTED_MAGIC (0x43504552U) /* 'CPER' */
+#endif
 
 /*------------- Typedefs -----------------*/
 
@@ -41,8 +47,10 @@ static hm_accel_error_domain_register_payload_t hm_icc_accel_err_register_payloa
 static fpfw_icc_base_recv_req_t hm_icc_accel_err_register_recv_req[NUM_VALID_ACCEL_ID];
 static hm_accel_error_injection_payload_t accel_err_injection_payload[NUM_VALID_ACCEL_ID];
 static fpfw_icc_base_send_req_t hm_icc_accel_err_injection_req[NUM_VALID_ACCEL_ID];
+static hm_accel_fatal_cper_t fatal_cper_info[NUM_VALID_ACCEL_ID];
 
 /*-------- Function Prototypes -----------*/
+void icc_register_accel_cper_addr_callback(fpfw_icc_base_ctx_t* icc_ctx, ACCEL_ID accel_type);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -239,6 +247,11 @@ void hm_prepare_sdm_listener(fpfw_icc_base_ctx_t* icc_ctx)
     hm_icc_accel_err_register_recv_req[ACCEL_ID_SDM].cb = hm_sdm_error_domain_register_listener_cb;
     hm_icc_accel_err_register_recv_req[ACCEL_ID_SDM].cb_ctx = (void*)&hm_icc_accel_err_register_payload[ACCEL_ID_SDM];
 
+    // Reset fatal cper info
+    fatal_cper_info[ACCEL_ID_SDM].cper_buffer_offset = 0;
+    fatal_cper_info[ACCEL_ID_SDM].cper_magic_nr_offset = 0;
+    fatal_cper_info[ACCEL_ID_SDM].is_valid = false;
+
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &hm_icc_accel_err_register_recv_req[ACCEL_ID_SDM]);
     HM_ET_INFO_PARAM(HM_ET_TYPE_ACCEL_ICC_TRANSFER, status);
     BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -265,7 +278,70 @@ void hm_prepare_cded_sdm_listener(fpfw_icc_base_ctx_t* icc_ctx)
     hm_icc_accel_err_register_recv_req[ACCEL_ID_CDED].cb = hm_cded_sdm_error_domain_register_listener_cb;
     hm_icc_accel_err_register_recv_req[ACCEL_ID_CDED].cb_ctx = (void*)&hm_icc_accel_err_register_payload[ACCEL_ID_CDED];
 
+    // Reset fatal cper info
+    fatal_cper_info[ACCEL_ID_CDED].cper_buffer_offset = 0;
+    fatal_cper_info[ACCEL_ID_CDED].cper_magic_nr_offset = 0;
+    fatal_cper_info[ACCEL_ID_CDED].is_valid = false;
+
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &hm_icc_accel_err_register_recv_req[ACCEL_ID_CDED]);
     HM_ET_INFO_PARAM(HM_ET_TYPE_ACCEL_ICC_TRANSFER, status);
     BUG_ASSERT(status == FPFW_ICC_BASE_STATUS_SUCCESS);
+}
+
+void hm_update_accel_fatal_cper_info(uint32_t accel_id, uint32_t cper_buffer_offset, uint32_t cper_magic_nr_offset)
+{
+    BUG_ASSERT((ACCEL_ID)accel_id < NUM_VALID_ACCEL_ID);
+
+    fatal_cper_info[accel_id].cper_buffer_offset = cper_buffer_offset;
+    fatal_cper_info[accel_id].cper_magic_nr_offset = cper_magic_nr_offset;
+    HM_LOG_INFO("[Accel %u]: Fatal CPER off=0x%lx magic_off=0x%lx",
+                (unsigned)accel_id,
+                (unsigned long)cper_buffer_offset,
+                (unsigned long)cper_magic_nr_offset);
+}
+
+bool hm_collect_accel_fatal_cper(uint32_t accel_id)
+{
+    BUG_ASSERT((ACCEL_ID)accel_id < NUM_VALID_ACCEL_ID);
+
+    uint32_t magic_addr = SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS + atu_svc_accel_atu_addr(accel_id) +
+                          fatal_cper_info[accel_id].cper_magic_nr_offset;
+    uint8_t* cper_addr = (uint8_t*)SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS + atu_svc_accel_atu_addr(accel_id) +
+                         fatal_cper_info[accel_id].cper_buffer_offset;
+    hm_accel_cper_info_t* curr_cper_info = &accel_cper_info[accel_id];
+
+    if (MMIO_READ32(magic_addr) != ACCEL_CPER_EXPECTED_MAGIC)
+    {
+        return false;
+    }
+
+    // Copy the cper locally
+    memcpy((void*)&curr_cper_info->accel_err_payload, (void*)cper_addr, sizeof(acpi_err_sec_accel_vendor_t));
+    curr_cper_info->err_severity = (uint32_t)(*((cper_addr) + sizeof(acpi_err_sec_accel_vendor_t)));
+    fatal_cper_info[accel_id].is_valid = true;
+
+    return true;
+}
+
+void hm_send_accel_error_cper(uint32_t accel_id)
+{
+    acpi_cper_section_t cper_section;
+    hm_accel_cper_info_t* curr_cper_info = &accel_cper_info[accel_id];
+    char* accel_name = (accel_id == ACCEL_ID_SDM) ? "SDM" : "CDED";
+
+    /**
+     * If the error source was an accel it would have generated a fatal cper
+     * The fatal cper can either be from accel or a default one but will exist
+     * This means that is_valid will be true only if the accel had crashed
+     * Thus if we come here from a triggered SCP crash there won't any fatal CPERs
+     *
+     */
+    if (fatal_cper_info[accel_id].is_valid)
+    {
+        HM_LOG_INFO("%s:FATAL_CPER_SEND_EVTS:0x%x\r\n",
+                    (char*)accel_name,
+                    (int)curr_cper_info->accel_err_payload.sdm_interrupt_events);
+        cper_section.sec_sdm = curr_cper_info->accel_err_payload;
+        hm_submit_cper(curr_cper_info->error_domain_index, curr_cper_info->err_severity, &cper_section, sizeof(acpi_err_sec_accel_vendor_t));
+    }
 }

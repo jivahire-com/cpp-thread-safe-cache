@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
         silibs::sdm_em_ext_interrupts
         silibs::sdm_command_desc
+        ms::lib::interrupts
         ms::service::accel_intr_service
         ms::service::accel_intr_client
     PRIVATE
@@ -41,9 +42,9 @@ target_link_libraries(${TARGET}
         ms::lib::crash_dump
         ms::lib::error_codes
         ms::lib::event_trace::trace
-        ms::lib::interrupts
         ms::lib::system_info
         ms::service::atu_service
+        ms::service::health_monitor
         silibs::cded_interrupts
 )
 

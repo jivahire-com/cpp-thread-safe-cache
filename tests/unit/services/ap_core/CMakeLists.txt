@@ -90,6 +90,7 @@ mock_target(${TARGET}
     system_info_is_hsp_present
 
     accel_disable_cpu_wait
+    accel_intr_scp_err_intr_enable
     accel_get_itcm_addr
     accel_get_dtcm_addr
 

@@ -23,6 +23,7 @@ format_target(${TARGET})
 coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 #mock the functions needed

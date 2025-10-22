@@ -12,6 +12,7 @@
 /*----------------------------- Nested includes -----------------------------*/
 
 #include <accelip_id.h>             // for ACCEL_ID_CDED, ACCEL_ID_SDM
+#include <stdbool.h>
 #include <stdint.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
@@ -27,7 +28,7 @@ typedef enum {
  * @brief Configurations for ACCEL Interrupt Initialization
  * E_ACCEL_INTR_INIT_FULL_INTR_TREE: Initialize all levels in the tree.
  * E_ACCEL_INTR_INIT_ONLY_LEVEL1_INTR: Initialize only Level 1 interrupts.
- * 
+ *
  */
 typedef enum {
     E_ACCEL_INTR_INIT_FULL_INTR_TREE,
@@ -145,11 +146,8 @@ int32_t accel_intr_init(ACCEL_ID accel_type);
  *
  * @param[in] accel_type : Accel type (SDM /CDED)
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
- * @param[in] init_config : Initialization configuration
- *                         E_ACCEL_INTR_INIT_FULL_INTR_TREE: Initialize all levels in the tree.
- *                         E_ACCEL_INTR_INIT_ONLY_LEVEL1_INTR: Initialize only Level 1 interrupts.
  */
-void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr, E_ACCEL_INTR_INIT_CONFIG init_config);
+void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr);
 
 /**
  * @brief Enable / Disable ACCEL emCPU Watchdog
@@ -158,7 +156,23 @@ void accel_intr_scp_init(ACCEL_ID accel_type, uint32_t ext_cfg_addr, E_ACCEL_INT
  * @param[in] ext_cfg_addr : sdm_ext_cfg offset after ATU Map
  * @param[in] enable : ACCEL_INTR_ENABLE_ACCEL_EMCPU_WDT for enable and ACCEL_INTR_DISABLE_ACCEL_EMCPU_WDT for disable
  *
- * @retval
- * void
+ * @retval void
  */
 void accel_intr_emcpu_wdt_control(uint32_t ext_cfg_addr, uint8_t enable);
+
+/**
+ * @brief This function enables error interrupts from Accel IP once the core has booted
+ *
+ * @param accel_type Type of Accel IP (SDM / CDED)
+ * @retval void
+ */
+void accel_intr_scp_err_intr_enable(ACCEL_ID accel_type);
+
+/**
+ * @brief This function returns if CD collection needs to be skipped
+ *
+ * @param accel_type
+ *
+ * @retval true/false
+ */
+bool accel_intr_get_cd_skip(ACCEL_ID accel_type);

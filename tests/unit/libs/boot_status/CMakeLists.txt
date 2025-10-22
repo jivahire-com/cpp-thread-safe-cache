@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
         ms::lib::system_info
 )
 
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 lint_target(${TARGET})
@@ -32,4 +33,4 @@ mock_target(${TARGET}
     idsw_get_cpu_type
     idsw_get_die_id
     crash_dump_bug_check
-) 
+)

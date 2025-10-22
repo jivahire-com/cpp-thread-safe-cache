@@ -38,6 +38,7 @@ add_custom_target(
 )
 
 add_dependencies(${TARGET} sensor.fifo.include)
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
 target_include_directories(${TARGET}
     PUBLIC

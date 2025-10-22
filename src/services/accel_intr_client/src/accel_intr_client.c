@@ -18,9 +18,11 @@
 #include <FpFwUtils.h>      // for FPFW_UNUSED
 #include <accel_intr.h>     // for
 #include <stddef.h>         // for NULL
+#include <stdio.h>          // for printf
 
 /*-- Symbolic Constant Macros (defines) --*/
 static accel_intr_service_cmd_context_t accel_intr_service_cmd_context;
+static bool async_req_in_progress = false;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -34,6 +36,7 @@ static void accel_intr_async_request_complete(PDFWK_ASYNC_REQUEST_HEADER p_reque
 {
     FPFW_UNUSED(p_request);
     FPFW_UNUSED(p_completion_context);
+    async_req_in_progress = false;
 }
 
 static void dispatch_accel_intr_async_request(ACCEL_ID accel_type,
@@ -53,6 +56,14 @@ static void dispatch_accel_intr_async_request(ACCEL_ID accel_type,
 
 void send_fatal_intr_async_request(ACCEL_ID accel_type)
 {
+    // async_req_in_progress is to ensure only one request is in flight at a time
+    if (async_req_in_progress)
+    {
+        return;
+    }
+
+    // Since the request is for a fatal error, realistically the callback will never be called
+    async_req_in_progress = true;
     dispatch_accel_intr_async_request(accel_type, ACCEL_INTR_SERVICE_FATAL_INTR_RECVD, accel_intr_async_request_complete);
 }
 

@@ -301,6 +301,9 @@ static void request_accel_dtcm_load_complete_notify(void* context, size_t output
     status = accel_start_boot_status_timer(accel_type);
     BUG_ASSERT(status == FPFW_STATUS_SUCCESS);
 
+    // Enable the error interrupts at this point
+    accel_intr_scp_err_intr_enable(accel_type);
+
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("Accel[%d] DTCM FW load completed", accel_type);

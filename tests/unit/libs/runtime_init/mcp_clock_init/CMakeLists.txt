@@ -12,7 +12,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.assert
         fwlib.lib.init
-        fwlib.lib.utils        
+        fwlib.lib.utils
         ms::cmocka::testrunner
         ms::lib::crash_dump
         silibs::pik_clock
@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
 )
 
 # Generic ports implemented within this project
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 lint_target(${TARGET})

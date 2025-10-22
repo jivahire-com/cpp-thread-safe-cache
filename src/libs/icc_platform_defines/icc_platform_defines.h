@@ -240,6 +240,7 @@ typedef enum _large_fifo_mailbox_msg_command_code {
 	LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_TRANSFER,	/**< Crashdump transfer request to MCP */
 	LARGE_FIFO_MAILBOX_MSG_SCP_READY,			/**< SCP Ready message to accelerators */
 	LARGE_FIFO_MAILBOX_MSG_UEFI_READY,
+	LARGE_FIFO_MAILBOX_MSG_CPER_ADDR_REQ,      /**< Accelerator CPER buffer address/size notification */
     LARGE_FIFO_MAILBOX_MSG_MAX
 }large_fifo_mailbox_msg_command_code;
 
@@ -284,7 +285,32 @@ typedef struct _accel_cd_msg {
 	uint32_t cd_file_offset;
 	uint32_t cd_file_size;
 	uint32_t magic_nr_offset;
+	uint32_t cper_buffer_offset;
+	uint32_t cper_magic_nr_offset;
 } accel_cd_addr_msg;
+
+/**
+ * @brief Accel CPER metadata Large Fifo Mailbox message
+ *
+ * This message is sent by the accelerator to publish the location of a CPER
+ * (Common Platform Error Record) buffer in accelerator accessible memory.
+ * SCP will read the buffer at cper_file_offset of size cper_file_size upon
+ * receiving the doorbell interrupt (e.g. SYS_MSG0_INTR) and may validate a
+ * magic number if provided by accelerator firmware.
+ */
+typedef struct _accel_cper_addr_msg_t {
+	large_fifo_mailbox_msg_header hdr;   /**< command header (use E_MBOX_MSG_CPER_ADDR) */
+	uint32_t cper_file_offset;           /**< Offset (from accel DTCM base) to start of CPER buffer */
+	uint32_t cper_file_size;             /**< Size of CPER buffer in bytes */
+	uint32_t magic_nr;                   /**< Optional magic number value placed in buffer */
+	uint32_t magic_nr_offset;            /**< Offset where magic number is expected (from buffer base) */
+} accel_cper_addr_msg_t;
+
+typedef struct _accel_cper_params {
+	fpfw_icc_base_recv_req_t params;
+	ACCEL_ID accel_type;
+} accel_cper_params;
+
 
 /**
  * @brief Accel CD send message request

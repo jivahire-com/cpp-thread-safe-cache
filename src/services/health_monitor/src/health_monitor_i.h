@@ -27,6 +27,16 @@
 #define MAX_CPER_CACHE 4
 
 /*------------- Typedefs -----------------*/
+// CPER address information per accelerator (provided via large FIFO mailbox)
+typedef struct
+{
+    uint32_t valid;
+    uint32_t accel_id;
+    uint32_t cper_file_offset;
+    uint32_t cper_file_size;
+    uint32_t magic_nr_offset;
+    uint32_t reserved;
+} hm_accel_cper_addr_info_t;
 
 /*-------- Function Prototypes -----------*/
 void activate_error_domain(uint16_t error_domain_idx, const guid_t *p_error_domain_guid, const char *p_error_domain_txt);

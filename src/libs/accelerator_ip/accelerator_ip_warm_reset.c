@@ -138,9 +138,6 @@ static void accel_warm_boot_sequence(ACCEL_ID accel_type, uintptr_t sdm_ext_cfg_
 
     startup_stage = accel_type == ACCEL_ID_SDM ? STARTUP_WARM_BOOT_SDM_ASYNC : STARTUP_WARM_BOOT_CDED_ASYNC;
 
-    /* Re-init the entire interrupt tree to start from clean state once accel core is up */
-    accel_intr_scp_init(accel_type, sdm_ext_cfg_base, E_ACCEL_INTR_INIT_FULL_INTR_TREE);
-
     DfwkAsyncRequestInitialize((void*)&startup_accel_warm_reset_request[accel_type].header.async,
                                sizeof(startup_accel_warm_reset_request[accel_type]));
 

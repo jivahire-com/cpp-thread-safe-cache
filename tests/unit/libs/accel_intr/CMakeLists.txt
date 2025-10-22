@@ -67,6 +67,7 @@ unit_test_target(${TARGET})
 # Mock the functions needed
 mock_target(${TARGET}
     FPFwCoreInterruptEnableVector
+    FPFwCoreInterruptRegisterCallback
     accel_core_warm_reset
     accel_intr_service_get_cfg_address
     accel_mbox_sw_intr_cb
@@ -82,6 +83,7 @@ mock_target(${TARGET}
     fpfw_timer_create
     fpfw_timer_enable
     fpfw_timer_reset
+    hm_collect_accel_fatal_cper
     idsw_get_cpu_type
     idsw_get_platform_sdv
     is_sdm_ext_int_mask_status_clear

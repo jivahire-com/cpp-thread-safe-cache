@@ -296,7 +296,8 @@ FPFW_INIT_COMPONENT(cd_pomesh, FPFW_INIT_DEPENDENCIES("cd_init", "ddr", "hw_sem"
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cd_accel, FPFW_INIT_DEPENDENCIES("cd_init", "cd_pomesh", "icc_sdm_mbx", "icc_cded_mbx", "cfg_mgr"))
+FPFW_INIT_COMPONENT(cd_accel,
+                    FPFW_INIT_DEPENDENCIES("cd_init", "cd_pomesh", "icc_sdm_mbx", "icc_cded_mbx", "hm_sdm", "hm_cded", "cfg_mgr"))
 {
     for (ACCEL_ID accel_type = ACCEL_ID_SDM; accel_type < NUM_VALID_ACCEL_ID; accel_type++)
     {

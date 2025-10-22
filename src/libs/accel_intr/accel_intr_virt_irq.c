@@ -17,6 +17,7 @@
 #include <FPFwInterrupts.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <accel_intr.h>
+#include <accel_intr_events.h>
 #include <accel_intr_virt_irq.h>
 #include <accelerator_ip.h>
 #include <atu_init.h>
@@ -94,13 +95,16 @@ static void accel_intr_virt_irq_level1_wrapper_isr(void* irq_num)
     uint32_t interrupt_mask_addr = sdm_ext_get_category_mask_reg_addr(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR);
     BUG_ASSERT_PARAM(interrupt_mask_addr != SDM_EXT_INVALID_INTERRUPT_INPUT, interrupt_mask_addr, 0);
 
+    uint32_t isr_val = (uint32_t)MMIO_READ32(interrupt_reg_addr);
+
     // Mask interrupt value with mask bits
-    uint32_t interrupt_reg_value =
-        BITWISE_AND(MMIO_READ32(interrupt_reg_addr), BITWISE_INVERT(MMIO_READ32(interrupt_mask_addr)));
+    uint32_t interrupt_reg_value = BITWISE_AND(isr_val, BITWISE_INVERT(MMIO_READ32(interrupt_mask_addr)));
 
     // CDED IRQ is 118 and SDM is 119, subtracting CDED IRQ enum from irq_num will give a value of 0/1 to index the array
     uint32_t virt_irq_table_index =
         (uint32_t)((uint32_t)irq_num - accel_intr_get_irq_num_from_accel_type(ACCEL_ID_CDED));
+
+    FPFW_ET_LOG(AccelIntr, isr_val, interrupt_reg_value);
 
     for (uint32_t i = 0; i < SIZE_OF_UINT32_T_IN_BITS; i++)
     {

@@ -17,11 +17,13 @@
 #include <CrashDump.h>          // for FPFwCDPrintf
 #include <DbgPrint.h>           // for FPFW_DBGPRINT_INFO
 #include <FpFwUtils.h>          // for FPFW_MIN
+#include <accel_intr.h>         // for accel_intr_has_accel_crashed
 #include <atu_init.h>           // for atu_svc_accel_atu_addr
 #include <cded_regs_regs.h>     // for CDED_REGS_CCMP_CFG_ADDRESS
 #include <cdedss_config_regs.h> // for CDEDSS_CONFIG_CDED_REGS_REGS_ADDRESS
 #include <crash_dump.h>         // for crash_dump_register_address32
 #include <crash_dump_events.h>  // for CRASH_DUMP_ET
+#include <health_monitor.h>     // for hm_send_accel_error_cper
 #include <sdm_ext_cfg_regs.h>   // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
 #include <silibs_common.h>      // for BYTES_IN_WORD32
 #include <silibs_platform.h>    // for MMIO_READ32
@@ -417,11 +419,18 @@ static bool crash_dump_wait_for_accel_cd_complete(ACCEL_ID accel_type)
      * accel core to complete the crash dump collection. The later accel core
      * should have completed the crash dump collection by the time we reach here.
      */
-    FPFW_DBGPRINT_INFO("ACC%d_CD_WAIT_START\r\n", (int)accel_type);
+    if (accel_intr_get_cd_skip(accel_type))
+    {
+        CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_ACCEL_CD_SKIP, accel_type);
+        return false;
+    }
+
+    CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_ACCEL_CD_WAIT_START, accel_type);
     while (crash_dump_is_accel_cd_complete(accel_type) == false)
     {
         if (s_retry_count >= CRASH_DUMP_MAX_RETRY_COUNT)
         {
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ACCEL_CD_WAIT_FAILED, accel_type);
             return false;
         }
 
@@ -429,7 +438,7 @@ static bool crash_dump_wait_for_accel_cd_complete(ACCEL_ID accel_type)
         // Allow some time for the accel core to complete the crash dump collection
         SLEEP_US(CRASH_DUMP_MAX_RETRY_DELAY_US);
     }
-    FPFW_DBGPRINT_INFO("ACC%d_CD_WAIT_DONE\r\n", (int)accel_type);
+    CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_ACCEL_CD_WAIT_DONE, accel_type);
 
     return true;
 }
@@ -440,8 +449,9 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
     uint32_t accel_dtcm_addr;
     uint32_t cd_file_size = ctx->accel_cd_ctx[accel_type].cd_file_size;
     uint32_t cd_file_off = ctx->accel_cd_ctx[accel_type].cd_file_offset;
+    char* accel_name = (accel_type == ACCEL_ID_SDM) ? "SDM" : "CDED";
 
-    FPFW_DBGPRINT_INFO("ACC%d_CD_DDR_CPY_START\r\n", (int)accel_type);
+    CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_ACCEL_DDR_COPY_START, accel_type);
     if (ctx->type_ctx[CRASH_DUMP_TYPE_FULL] == NULL)
     {
         // no full dump context.
@@ -456,11 +466,16 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
         goto cd_transfer_failed;
     }
 
+    // Collect crash dump here only if the accel has not crashed
     if (!crash_dump_wait_for_accel_cd_complete(accel_type))
     {
         // Invalid MAGIC number address or CD collection is not complete for given accel core
         CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_CD_INCOMPLETE);
         goto cd_transfer_failed;
+    }
+    else
+    {
+        // TODO ADO 3041451: Need to generate a default CD in case dump is not available
     }
 
     if (accel_type == ACCEL_ID_SDM)
@@ -476,12 +491,15 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
 
     accel_dtcm_addr = atu_svc_accel_atu_addr(accel_type) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
     memcpy((void*)cd_ddr_addr, (void*)(accel_dtcm_addr + cd_file_off), cd_file_size);
+
+    // Transmit the cper to the OS at this point - this ensures we won't react to SCMI requests
+    hm_send_accel_error_cper(accel_type);
+
     crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_COMPLETED);
-    FPFW_DBGPRINT_INFO("ACC%d_CD_DDR_ADDR:0x%x SZ:%d\r\n", (int)accel_type, (int)cd_ddr_addr, (int)cd_file_size);
+    FPFW_DBGPRINT_INFO("%s:CD_DDR_ADDR:0x%x SZ:%d\r\n", accel_name, (int)cd_ddr_addr, (int)cd_file_size);
     return;
 
 cd_transfer_failed:
-    FPFW_DBGPRINT_INFO("ACC%d_CD_DDR_CPY_FAIL\r\n", (int)accel_type);
     crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
     CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_TRANSFER_FAILED);
 }

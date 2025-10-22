@@ -106,3 +106,12 @@ void hm_map_error_injection_payload();
 void hm_unmap_error_injection_payload();
 uint32_t AP_GHES_ADDR(uint32_t mscp_addr);
 uint32_t MSCP_GHES_ADDR(uint32_t ap_addr);
+
+void hm_update_accel_fatal_cper_info(uint32_t accel_id, uint32_t cper_buffer_offset, uint32_t cper_magic_nr_offset);
+
+bool hm_read_cper_magic_valid(uint32_t accel_id);
+
+bool hm_collect_accel_fatal_cper(uint32_t accel_id);
+
+void hm_send_accel_error_cper(uint32_t accel_id);
+

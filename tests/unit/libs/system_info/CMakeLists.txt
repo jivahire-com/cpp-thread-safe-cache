@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
         silibs::platform
 )
 
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 lint_target(${TARGET})
@@ -30,4 +31,4 @@ mock_target(${TARGET}
    fpfw_icc_base_send_recv_sync
    mmio_read32
    idsw_get_platform_sdv
-) 
+)

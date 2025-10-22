@@ -700,10 +700,6 @@ TEST_FUNCTION(accelip_emcpu_reset_sdm_test, nullptr, nullptr)
     will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
 
-    // Set expectations accel_intr_scp_init()
-    expect_value(__wrap_accel_intr_scp_init, accel_type, accel_type);
-    expect_value(__wrap_accel_intr_scp_init, init_config, E_ACCEL_INTR_INIT_FULL_INTR_TREE);
-
     // Set expectations for sos_start_phase
     will_return(__wrap_fpfw_init_get_handle, 0xDEADDEED);
     expect_value(__wrap_sos_start_phase, startup_stage, startup_stage);
@@ -738,10 +734,6 @@ TEST_FUNCTION(accelip_emcpu_reset_cded_test, nullptr, nullptr)
     will_return(__wrap_mmio_read32, 0xFFFFFFFF);
     will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_deassert_nsysreset, SILIBS_SUCCESS);
-
-    // Set expectations accel_intr_scp_init()
-    expect_value(__wrap_accel_intr_scp_init, accel_type, accel_type);
-    expect_value(__wrap_accel_intr_scp_init, init_config, E_ACCEL_INTR_INIT_FULL_INTR_TREE);
 
     // Set expectations for sos_start_phase
     will_return(__wrap_fpfw_init_get_handle, 0xDEADDEED);

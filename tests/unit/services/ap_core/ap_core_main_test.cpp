@@ -323,6 +323,12 @@ fpfw_status_t __wrap_fpfw_timer_enable(fpfw_timer_t* timer, fpfw_dur_t delay)
     return mock_type(fpfw_status_t);
 }
 
+void __wrap_accel_intr_scp_err_intr_enable(ACCEL_ID accel_type)
+{
+    FPFW_UNUSED(accel_type);
+    function_called();
+}
+
 } // extern "C"
 
 static int setup(void** state)
@@ -827,6 +833,9 @@ AP_CORE_TEST(dispatch_sdm_dtcm_load, setup, NULL)
     expect_function_call(__wrap_accel_disable_cpu_wait);
     will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+
+    expect_function_call(__wrap_accel_intr_scp_err_intr_enable);
+
     fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
 }
 
@@ -931,6 +940,8 @@ AP_CORE_TEST(dispatch_cded_dtcm_load, setup, NULL)
     expect_function_call(__wrap_accel_disable_cpu_wait);
     will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+    expect_function_call(__wrap_accel_intr_scp_err_intr_enable);
+
     fw_load_cb(cb_ctx, 0, FPFW_STATUS_SUCCESS);
 }
 

@@ -715,7 +715,7 @@ TEST_FUNCTION(test_crash_dump_config_icc_sdm, NULL, NULL)
     expect_function_call(__wrap_fpfw_icc_base_recv);
 
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
-    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 16);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 24);
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_TRANSFER);
 
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -758,7 +758,7 @@ TEST_FUNCTION(test_crash_dump_config_icc_cded, NULL, NULL)
     expect_function_call(__wrap_fpfw_icc_base_recv);
 
     expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0x12345678);
-    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 16);
+    expect_value(__wrap_fpfw_icc_base_recv, params->buffer_size, 24);
     expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_TRANSFER);
 
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -1488,6 +1488,7 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_sdm, nullptr, nullptr)
     will_return_always(__wrap_crash_dump_context, &context);
     will_return_count(__wrap_atu_svc_accel_atu_addr, atu_addr, 2);
     expect_value(__wrap_mmio_read32, addr, magic_number_addr);
+    will_return_always(__wrap_mmio_read32, magic_number_value);
 
     // crash_dump_update_accel_state()
     expect_any(__wrap_wait_for_semaphore, id);
@@ -1527,6 +1528,7 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_cded, nullptr, nullptr)
     will_return_always(__wrap_crash_dump_context, &context);
     will_return_count(__wrap_atu_svc_accel_atu_addr, atu_addr, 2);
     expect_value(__wrap_mmio_read32, addr, magic_number_addr);
+    will_return_always(__wrap_mmio_read32, magic_number_value);
 
     // crash_dump_update_accel_state()
     expect_any(__wrap_wait_for_semaphore, id);
@@ -1697,6 +1699,7 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_inval_magic_val, nullptr, nullp
     will_return_always(__wrap_crash_dump_context, &context);
     will_return(__wrap_atu_svc_accel_atu_addr, atu_addr);
     expect_value(__wrap_mmio_read32, addr, magic_number_addr);
+    will_return_always(__wrap_mmio_read32, 0x0);
 
     // crash_dump_update_accel_state()
     expect_any(__wrap_wait_for_semaphore, id);

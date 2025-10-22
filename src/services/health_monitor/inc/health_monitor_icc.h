@@ -145,7 +145,7 @@ typedef struct _accel_hmm_msg_ack {
 	uint32_t cper_buffer_offset;
 } hm_accel_msg_ack_t;
 
-typedef struct _hm_accel_cper_payload_t
+typedef struct _hm_accel_cper_payload_s
 {
     acpi_err_sec_accel_vendor_t accel_err_payload;
     fpfw_icc_base_recv_req_t hm_icc_sdm_err_submit_req;
@@ -154,3 +154,10 @@ typedef struct _hm_accel_cper_payload_t
     ACCEL_ID accel_id;
     acpi_error_severity_t err_severity;
 } hm_accel_cper_info_t;
+
+typedef struct _hm_accel_fatal_cper_s
+{
+    uint32_t cper_buffer_offset;
+    uint32_t cper_magic_nr_offset;
+    bool is_valid;
+} hm_accel_fatal_cper_t;

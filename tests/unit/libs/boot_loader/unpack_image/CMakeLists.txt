@@ -12,6 +12,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 target_compile_definitions(${TARGET} PRIVATE UNIT_TEST)
 
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
 target_link_libraries(${TARGET}

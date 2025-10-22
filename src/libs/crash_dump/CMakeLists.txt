@@ -1,7 +1,7 @@
 # SCP Crash dump
 set(TARGET kng.lib.crash_dump)
 
-set (SOURCES 
+set (SOURCES
         src/crash_dump.c
         src/crash_dump_accel.c
         src/crash_dump_cli.c
@@ -49,6 +49,7 @@ target_link_libraries(${TARGET}
         fwlib.service.cli
         fwlib.service.pldm
         kng.lib.hsp_firmware_headers
+        ms::lib::accel_intr
         ms::build_data
         ms::client_interface::startup_shutdown
         ms::cmsis::interface
@@ -57,6 +58,7 @@ target_link_libraries(${TARGET}
         ms::lib::register_headers
         ms::lib::system_info
         ms::lib::utils
+        ms::service::health_monitor
         silibs::gpio
         silibs::icc_mhu
         silibs::idhw

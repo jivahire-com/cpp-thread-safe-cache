@@ -14,11 +14,12 @@ extern "C" {
 #include "fpfw_status.h"      // for fpfw_status_t
 #include "fpfw_timer_types.h" // for _fpfw_timer_variant_t, fpfw_timer_call...
 
-#include <FpFwUtils.h>  // for fpfw_dur_t, FPFW_UNUSED
-#include <accelip_id.h> // for NUM_VALID_ACCEL_ID
-#include <fpfw_timer.h> // for fpfw_timer_t
-#include <stdint.h>     // for uint
-#include <stdint.h>     // for UINT64_MAX
+#include <FPFwInterrupts.h> // for FPFwCoreInterruptHandler
+#include <FpFwUtils.h>      // for fpfw_dur_t, FPFW_UNUSED
+#include <accelip_id.h>     // for NUM_VALID_ACCEL_ID
+#include <fpfw_timer.h>     // for fpfw_timer_t
+#include <stdint.h>         // for uint
+#include <stdint.h>         // for UINT64_MAX
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -101,6 +102,14 @@ fpfw_status_t __wrap_fpfw_timer_reset(fpfw_timer_t* timer)
 uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum)
 {
     check_expected(irqnum);
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_FPFwCoreInterruptRegisterCallback(uint32_t irqnum, FPFwCoreInterruptHandler handler, void* arg)
+{
+    check_expected(irqnum);
+    check_expected_ptr(handler);
+    check_expected_ptr(arg);
     return mock_type(uint32_t);
 }
 

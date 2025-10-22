@@ -36,17 +36,11 @@ extern "C" {
 silibs_status_t __wrap_read_core_defect_fuses(uint32_t* fuse_dis_core_64_67, uint32_t* fuse_dis_core_63_32, uint32_t* fuse_dis_core_31_0)
 {
     if (fuse_dis_core_64_67)
-    {
-        *fuse_dis_core_64_67 = 0; // Simulate fuse value of 0.
-    }
+        *fuse_dis_core_64_67 = 0;
     if (fuse_dis_core_63_32)
-    {
-        *fuse_dis_core_63_32 = 0; // Simulate fuse value of 0.
-    }
+        *fuse_dis_core_63_32 = 0;
     if (fuse_dis_core_31_0)
-    {
-        *fuse_dis_core_31_0 = 0; // Simulate fuse value of 0.
-    }
+        *fuse_dis_core_31_0 = 0;
     return mock_type(silibs_status_t);
 }
 
@@ -145,7 +139,7 @@ TEST_FUNCTION(test_core_info_get_disable_cores_result_die0, nullptr, nullptr)
 TEST_FUNCTION(test_core_info_get_spare_en_cores_die0, nullptr, nullptr)
 {
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
-    // Fuse all 0；Config seperately setup 0x2, 0x1, 0x3
+    // Fuse all 0；Config separately setup 0x2, 0x1, 0x3
     will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
     will_return(__wrap_config_get_die0_core_disable_value_31_0, 0x00000002);
     will_return(__wrap_config_get_die0_core_disable_value_63_32, 0x00000001);
@@ -168,8 +162,6 @@ TEST_FUNCTION(test_core_info_get_spare_en_cores_die0, nullptr, nullptr)
     assert_true(corebits_is_bit_set(result, 33));
     assert_false(corebits_is_bit_set(result, 64));
     assert_false(corebits_is_bit_set(result, 65));
-    assert_true(corebits_is_bit_set(result, 66));
-    assert_true(corebits_is_bit_set(result, 67));
 }
 
 TEST_FUNCTION(test_core_info_get_disable_cores_result_die1, nullptr, nullptr)
@@ -202,7 +194,7 @@ TEST_FUNCTION(test_core_info_get_disable_cores_result_die1, nullptr, nullptr)
 TEST_FUNCTION(test_core_info_get_spare_en_cores_die1, nullptr, nullptr)
 {
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
-    // Fuse all 0；Config seperately setup 0x2, 0x1, 0x3
+    // Fuse all 0；Config separately setup 0x2, 0x1, 0x3
     will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
     will_return(__wrap_config_get_die1_core_disable_value_31_0, 0x00000002);
     will_return(__wrap_config_get_die1_core_disable_value_63_32, 0x00000001);
@@ -225,22 +217,20 @@ TEST_FUNCTION(test_core_info_get_spare_en_cores_die1, nullptr, nullptr)
     assert_true(corebits_is_bit_set(result, 33));
     assert_false(corebits_is_bit_set(result, 64));
     assert_false(corebits_is_bit_set(result, 65));
-    assert_true(corebits_is_bit_set(result, 66));
-    assert_true(corebits_is_bit_set(result, 67));
 }
 }
 
 TEST_FUNCTION(test_core_info_fuse_disable_core_to_66, nullptr, nullptr)
 {
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
-    // Fuse all 0；Config seperately setup 0x0, 0x1, 0x3
+    // Fuse all 0; Config separately setup 0x0, 0x0, 0x0
     will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
     will_return(__wrap_config_get_die0_core_disable_value_31_0, 0x00000000);
     will_return(__wrap_config_get_die0_core_disable_value_63_32, 0x00000000);
     will_return(__wrap_config_get_die0_core_disable_value_95_64, 0x00000000);
 
     will_return(__wrap_config_get_die0_core_spare_en_31_0, 0x00000000);
-    will_return(__wrap_config_get_die0_core_spare_en_63_32, 0x000000000);
+    will_return(__wrap_config_get_die0_core_spare_en_63_32, 0x00000000);
     will_return(__wrap_config_get_die0_core_spare_en_95_64, 0x00000000);
 
     // calculation
@@ -249,6 +239,7 @@ TEST_FUNCTION(test_core_info_fuse_disable_core_to_66, nullptr, nullptr)
     // get the result
     corebits_t* result = core_info_get_enable_cores_result();
 
+    // Core 26 and Core 37 should be disabled, so they must NOT be set in result
     assert_false(corebits_is_bit_set(result, 26));
     assert_false(corebits_is_bit_set(result, 37));
 }
@@ -258,12 +249,12 @@ TEST_FUNCTION(test_core_info_fuse_disable_1_core, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     will_return(__wrap_read_core_defect_fuses, SILIBS_SUCCESS);
-    will_return(__wrap_config_get_die0_core_disable_value_31_0, 0x00000010);
+    will_return(__wrap_config_get_die0_core_disable_value_31_0, 0x00000010); // Core 4 disabled
     will_return(__wrap_config_get_die0_core_disable_value_63_32, 0x00000000);
     will_return(__wrap_config_get_die0_core_disable_value_95_64, 0x00000000);
 
     will_return(__wrap_config_get_die0_core_spare_en_31_0, 0x00000000);
-    will_return(__wrap_config_get_die0_core_spare_en_63_32, 0x000000000);
+    will_return(__wrap_config_get_die0_core_spare_en_63_32, 0x00000000);
     will_return(__wrap_config_get_die0_core_spare_en_95_64, 0x00000000);
 
     // calculation
@@ -271,5 +262,7 @@ TEST_FUNCTION(test_core_info_fuse_disable_1_core, nullptr, nullptr)
 
     // get the result
     corebits_t* result = core_info_get_enable_cores_result();
+
+    // Core 37 should be disabled by the pickup algorithm, so it must NOT be set in result
     assert_false(corebits_is_bit_set(result, 37));
 }

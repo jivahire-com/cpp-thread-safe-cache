@@ -73,13 +73,11 @@ void core_info_get_platform_disable_cores()
     read_core_defect_fuses(&(p_fuse_disable.fuse_dis_core_95_64),
                            &(p_fuse_disable.fuse_dis_core_63_32),
                            &(p_fuse_disable.fuse_dis_core_31_0));
-    p_result_disable.fuse_dis_core_31_0 = ~((p_fuse_disable.fuse_dis_core_31_0 | p_config_disable.fuse_dis_core_31_0) &
-                                            (~p_config_spare_en.fuse_dis_core_31_0));
-    p_result_disable.fuse_dis_core_63_32 = ~((p_fuse_disable.fuse_dis_core_63_32 | p_config_disable.fuse_dis_core_63_32) &
-                                             (~p_config_spare_en.fuse_dis_core_63_32));
-    p_result_disable.fuse_dis_core_95_64 = ~((p_fuse_disable.fuse_dis_core_95_64 | p_config_disable.fuse_dis_core_95_64) &
-                                             (~p_config_spare_en.fuse_dis_core_95_64)) &
-                                           0x0F;
+    p_result_disable.fuse_dis_core_31_0 = ~((p_fuse_disable.fuse_dis_core_31_0 | p_config_disable.fuse_dis_core_31_0));
+    p_result_disable.fuse_dis_core_63_32 =
+        ~((p_fuse_disable.fuse_dis_core_63_32 | p_config_disable.fuse_dis_core_63_32));
+    p_result_disable.fuse_dis_core_95_64 =
+        ~((p_fuse_disable.fuse_dis_core_95_64 | p_config_disable.fuse_dis_core_95_64)) & 0x0F;
     p_result_enable.fuse_dis_core_31_0 = ~(p_result_disable.fuse_dis_core_31_0);
     p_result_enable.fuse_dis_core_63_32 = ~(p_result_disable.fuse_dis_core_63_32);
     p_result_enable.fuse_dis_core_95_64 = ~(p_result_disable.fuse_dis_core_95_64);
@@ -87,6 +85,18 @@ void core_info_get_platform_disable_cores()
     p_result_disable.fuse_dis_core_31_0 = ~(p_result_enable.fuse_dis_core_31_0);
     p_result_disable.fuse_dis_core_63_32 = ~(p_result_enable.fuse_dis_core_63_32);
     p_result_disable.fuse_dis_core_95_64 = ~(p_result_enable.fuse_dis_core_95_64);
+    printf("Before Spare Core DIE [%d] : core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32 " \n",
+           idsw_get_die_id(),
+           (p_result_disable.fuse_dis_core_31_0),
+           (p_result_disable.fuse_dis_core_63_32),
+           (p_result_disable.fuse_dis_core_95_64));
+    // Task 2949783 Apply spare core knob AFTER 1 or 2 core disable logic
+    p_result_disable.fuse_dis_core_31_0 |= p_config_spare_en.fuse_dis_core_31_0;
+    p_result_disable.fuse_dis_core_63_32 |= p_config_spare_en.fuse_dis_core_63_32;
+    p_result_disable.fuse_dis_core_95_64 =
+        ((p_result_disable.fuse_dis_core_95_64 | p_config_spare_en.fuse_dis_core_95_64) & 0x0F);
+    // end
+
     printf("DIE [%d] : core0-31=0x%" PRIx32 " core32-63=0x%" PRIx32 " core64-95=0x%" PRIx32 " \n",
            idsw_get_die_id(),
            p_result_disable.fuse_dis_core_31_0,

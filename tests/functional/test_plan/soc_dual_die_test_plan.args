@@ -36,7 +36,7 @@
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test_soc.robot
 
 ## Warm Start Tests
-##./../../../tests/functional/test_suites/warm_start_tests/warm_start_test_soc.robot
+./../../../tests/functional/test_suites/warm_start_tests/warm_start_test_soc.robot
 
 ## Crash Dump Tests
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test_soc.robot

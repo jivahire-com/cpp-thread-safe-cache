@@ -78,96 +78,38 @@ class warm_start_test(EchoFallsBaseTest):
         core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         core_com_channel.open()
         assert core_com_channel.is_open()
+        hsp_connection = self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
+        hsp_connection.open()
+        assert hsp_connection.is_open()
+        apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel()
+        apns_connection.open()
+        assert apns_connection.is_open()
         
         try:
-            self.log.info("Waiting for Heartbeat Msg")
-            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=1800)
+            self.log.info("Waiting for SCP-Heartbeat Msg")
+            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=1500)
+            self.log.info("Waiting for SCP-AP Core Power ON Msg")
+            core_com_channel.read_until(key="Primary AP core power on", timeout_seconds=500)
+            self.log.info("Waiting for Windows Boot")
+            # Wait till windows boot as scp crashes during warm reset before windows is booted-Bug3063669
+            apns_connection.read_until(key="SAC>", timeout_seconds=900)
+            command="\r\n"
+            hsp_connection.write_line(write_string=command)
+            command="reset 4 2 0x9A 1"
+            hsp_connection.write_line(write_string=command)
+            self.log.info("Waiting for Quiesce completion Msg after warm reset")
+            core_com_channel.read_until(key="Reset complete, waiting forever", timeout_seconds=500)
+            self.log.info("Waiting for SCP-Heartbeat Msg after warm reset")
+            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=500)
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
-            self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
-            self.dut.teardown()
-            time.sleep(30)
-            return False
-
-        self.log.info("Submitting warm start data write command . . .") 
-        command="warm_start wswr 1 10 11 12 13"
-        core_com_channel.write_line(write_string=command)
-
-        try:
-            core_com_channel.read_until(key="Data put 1", timeout_seconds=900)
-            self.log.info("Data written to ID 1")
-        except Exception as e:
-            self.log.error(f"Error reading SCP UART: {e}")
-            core_com_channel.close()
-            self.test_notify(step="wswr command failed", msg="Test Fail", _is_error=True)
-            self.dut.teardown()
-            time.sleep(30)
-            return False
-            
-        self.log.info("Submitting warm start data read command . . .") 
-        command="warm_start wsrd 1"
-        core_com_channel.write_line(write_string=command)
-
-        try:
-            core_com_channel.read_until(key="Data for 1 (CLI)", timeout_seconds=900)
-            self.log.info("Data read from ID 1")
-            core_com_channel.read_until(key="0000: 0a 0b 0c 0d", timeout_seconds=900)
-            self.log.info("Data read from ID 1")
-        except Exception as e:
-            self.log.error(f"Error reading SCP UART: {e}")
-            core_com_channel.close()
-            self.test_notify(step="wsrd command failed", msg="Test Fail", _is_error=True)
-            self.dut.teardown()
-            time.sleep(30)
-            return False
-        
-        self.log.info("Submitting MSCP subsys reset command . . .") 
-        command="warm_start wsreset subsys"
-        core_com_channel.write_line(write_string=command)
-
-        try:
-            core_com_channel.read_until(key="[SoS] Reset complete notification sent successfully", timeout_seconds=900)
-            self.log.info("Mailbox cmd sent to HSP requesting MSCP subsys reset.. ")
-            self.log.info("Waiting until SCP is released out of reset.. ")
-            core_com_channel.read_until(key="Hello World - SCP!", timeout_seconds=1800)
-            self.log.info("SCP released out of reset")
-        except Exception as e:
-            self.log.error(f"Error reading SCP UART: {e}")
-            core_com_channel.close()
-            self.test_notify(step="wsreset subsys command failed", msg="Test Fail", _is_error=True)
-            self.dut.teardown()
-            time.sleep(30)
-            return False
-
-        self.log.info("Wait for SCP to come up after subsys reset . . .")
-        try:
-            self.log.info("Waiting for Heartbeat Msg")
-            core_com_channel.read_until(key="SOS boot completed", timeout_seconds=1800)
-        except Exception as e:
-            self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
-            self.test_notify(step="ScpHeartBeat", msg="Test Fail", _is_error=True)
-            self.dut.teardown()
-            time.sleep(30)
-            return False
-
-        self.log.info("Submitting MSCP shutdown command . . .") 
-        command="warm_start wsreset shutdown"
-        core_com_channel.write_line(write_string=command)
-
-        try:
-            core_com_channel.read_until(key="Disabling PPU handshaking", timeout_seconds=300)
-            self.log.info("Mailbox cmd sent to HSP requesting MSCP shutdown.. ")
-            core_com_channel.read_until(key="Shutdown completion", timeout_seconds=300)
-            self.log.info("SCP shutdown request sent successfully - waiting on HSP to reset SCP")
-        except Exception as e:
-            self.log.error(f"Error reading SCP UART: {e}")
-            core_com_channel.close()
-            self.test_notify(step="wsreset shutdown command failed", msg="Test Fail", _is_error=True)
+            self.test_notify(step="Warm Reset Test", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             time.sleep(30)
             return False
         
         core_com_channel.close()
+        hsp_connection.close()
         self.test_notify(step="Warm start CLI tests done", msg="Test Done", _is_error=False)
         self.dut.teardown()
         time.sleep(30)

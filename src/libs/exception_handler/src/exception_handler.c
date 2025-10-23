@@ -35,6 +35,7 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+#define KNG_CD_CTI_TRIGGER_ERROR_CODE 0
 
 /*------------- Functions ----------------*/
 static void print_context_info(core_crash_context_t* crash_context)
@@ -278,7 +279,7 @@ void exception_handler(exception_stack_frame_t* stack_frame)
         else
         {
             FPFwCDPrintf("CTI-triggered Debug Monitor Exception\n");
-            errorCode = KNG_CD_EXTERNAL_REQUEST;
+            errorCode = KNG_CD_CTI_TRIGGER_ERROR_CODE;
         }
         break;
     case NonMaskableInt_IRQn:
@@ -294,7 +295,7 @@ void exception_handler(exception_stack_frame_t* stack_frame)
     // Provide printout for debugging
     print_context_info(&g_core_crash_context);
 
-    if (errorCode != KNG_CD_EXTERNAL_REQUEST)
+    if (errorCode != KNG_CD_EXTERNAL_REQUEST && errorCode != KNG_CD_CTI_TRIGGER_ERROR_CODE)
     {
         // Send CPER
         acpi_err_sec_firmware_t sec_fw_cper_section = {

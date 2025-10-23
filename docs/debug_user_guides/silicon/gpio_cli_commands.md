@@ -6,12 +6,10 @@ There are some new APIs added to support check for invalid configs and get confi
 
 All commands are to be run on MCP Die 0. MCP Die 1 also supports all commands as backup.
 
-```
 Value x, y, z as per valid combinations list (at the end of this page)
-uart_afm 0 1 x y z in to switch from HSP Die 0 to MCP Die 0 on UART 0
-uart_afm 1 1 x y z in to switch from HSP Die 1 to MCP Die 1 on UART 5
-uart_die 0 1 1 to route UART1 and UART2 to Die 1
-```
+`afm uart_afm 0 1 x y z` to switch from HSP Die 0 to MCP Die 0 on UART 0
+`afm uart_afm 1 1 x y z` to switch from HSP Die 1 to MCP Die 1 on UART 5
+`afm uart_die 1 1` to route UART1 and UART2 to Die 1
 
 ---
 
@@ -28,7 +26,7 @@ Possible Configurations :
 
 | AFM Key | Meaning           |
 |---------|-------------------|
-|    x    | Not mapped        |
+|    -    | Not mapped        |
 |    0    | Default mapping   |
 |   1-2   | Alternate mapping |
 
@@ -36,19 +34,19 @@ Possible Configurations :
 
 | UART  | COM Name | SCP | HSP | MCTP | SDM | SDM_CDED | MCP | AP-Sec |
 |-------|----------|-----|-----|------|-----|----------|-----|--------|
-| UART0 |   COM4   |  x  |  0  |   1  |  x  |    2     |  x  |        |
-| UART1 |   COM5   |  0  |  x  |   x  |  1  |    2     |  x  |        |
-| UART2 |   COM6   |  1  |  x  |   0  |  2  |    x     |  x  |        |
-| UART3 |   COM7   |     |     |      |     |          |  0  |   1    |
+| UART0 |   COM4   |  -  |  0  |   1  |  -  |    2     |  -  |   -    |
+| UART1 |   COM5   |  0  |  -  |   -  |  1  |    2     |  -  |   -    |
+| UART2 |   COM6   |  1  |  -  |   0  |  2  |    -     |  -  |   -    |
+| UART3 |   COM7   |  -  |  -  |   -  |  -  |    -     |  0  |   1    |
 | UART4 |   COM8   |  -  |  -  |   -  |  -  |    -     |  -  |   -    |
 
 #### Die 1
 
 | UART  | COM Name | SCP | HSP | MCP | SDM | SDM_CDED |
 |-------|----------|-----|-----|-----|-----|----------|
-| UART1 |   COM5   |  0  |  x  |  x  |  1  |    2     |
-| UART2 |   COM6   |  1  |  x  |  0  |  2  |    x     |
-| UART5 |   COM9   |  x  |  0  |  1  |  x  |    2     |
+| UART5 |   COM9   |  -  |  0  |  1  |  -  |    2     |
+| UART1 |   COM5   |  0  |  -  |  -  |  1  |    2     |
+| UART2 |   COM6   |  1  |  -  |  0  |  2  |    -     |
 
 ---
 
@@ -58,8 +56,8 @@ Possible Configurations :
 |--------------------|---------------------------------------------|------------------------|
 | uart_afm           | Set UART AFM (all UARTs)                    | `uart_afm 0 0 2 x x`   |
 | uart_die           | Set UART die configuration                  | `uart_die 0 1`         |
-| uart_get_ownership | Get UART ownership                          | `get_uart_ownership`   |
-| uart_get_afm       | Get UART AFM                                | `get_uart_afm`         |
+| get_uart_ownership | Get UART ownership                          | `get_uart_ownership`   |
+| get_uart_afm       | Get UART AFM                                | `get_uart_afm`         |
 | get_mux_table      | Print the UART Mux Table                    | `get_mux_table`        |
 
 ---
@@ -119,7 +117,7 @@ Query the current AFM settings for all UARTs.
 - **How do I restore defaults?**
   - For changes made via the afm CLI, reset the SoC to restore defaults.
 - **How do I debug if a UART is not responding?**
-  - Use `uart_get_afm` and `get_uart_ownership` to check current settings. Use `get_mux_table` to fetch the mux table for reference.
+  - Use `get_uart_afm` and `get_uart_ownership` to check current settings. Use `get_mux_table` to fetch the mux table for reference.
 
 ---
 
@@ -134,12 +132,13 @@ Query the current AFM settings for all UARTs.
 
 - **Change only UART2 AFM:**
   ```
-  uart_afm x x 2 x
+  uart_afm 0 x x 2 x // For Die 0
+  uart_afm 1 x x 2 x // For Die 1
   ```
 - **Assign UART1 to die 0, UART2 to die 1:**
   ```
   uart_die 0 1
-  uart_get_ownership
+  get_uart_ownership
   ```
 
 ---

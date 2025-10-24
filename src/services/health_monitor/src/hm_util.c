@@ -87,3 +87,16 @@ void hm_unmap_error_injection_payload()
         hm_config->mscp_error_injection_addr_base = NULL;
     }
 }
+
+bool hm_is_fatal_error(uint32_t err_severity)
+{
+    return (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL || err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL);
+}
+
+void hm_copy_cper_record(volatile uint8_t* dest, const uint8_t* src, size_t size)
+{
+    for (size_t i = 0; i < size; ++i)
+    {
+        dest[i] = src[i];
+    }
+}

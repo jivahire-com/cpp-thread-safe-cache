@@ -210,10 +210,15 @@ TEST_FUNCTION(test_hm_submit_cper_ue_multi, post_ddr_setup, nullptr)
     assert_true(current_ghes_error_record_base->block_status_multi_ue == true);
 }
 
-TEST_FUNCTION(test_hm_submit_cper_rmss, post_ddr_setup, nullptr)
+TEST_FUNCTION(test_hm_submit_cper_arsm, post_ddr_setup, nullptr)
 {
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
+
+    // reset last cper record
+    hm_config_t* hm_config = get_hm_config();
+    void* last_cper_base = (void*)hm_config->mscp_full_cper_record_base;
+    memset(last_cper_base, 0, D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE);
 
     acpi_err_sec_firmware_t general_cper_section = {};
 
@@ -223,7 +228,6 @@ TEST_FUNCTION(test_hm_submit_cper_rmss, post_ddr_setup, nullptr)
     hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(general_cper_section));
 
     // locate error record
-    hm_config_t* hm_config = get_hm_config();
     acpi_cper_record_t* full_mscp_cper = (acpi_cper_record_t*)hm_config->mscp_full_cper_record_base;
     assert_true(full_mscp_cper->record_header.revision == 0x0101);
 }

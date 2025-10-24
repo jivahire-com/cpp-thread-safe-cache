@@ -26,7 +26,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
+FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc"))
 {
     uintptr_t mscp_ghes_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_TABLE_BLOCK_BASE);
     uintptr_t mscp_ghes_error_record_addr_table_base =
@@ -35,6 +35,8 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
         MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_ACK_ADDRESS_TABLE_BASE);
     uintptr_t mscp_ghes_error_record_addr_base =
         MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_ERROR_RECORD_BASE);
+    uintptr_t mscp_full_cper_record_base =
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_MSCP_LAST_CPER_RECORD_BASE);
 
     static hm_config_t hm_config = {0};
     hm_config.mscp_ghes_base = (acpi_ghes_t*)mscp_ghes_base;
@@ -44,7 +46,7 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
     hm_config.mscp_ghes_base_apcore_offset = 0;
     hm_config.mscp_error_injection_addr_base = 0;
     hm_config.mscp_hsp_ras_payload_base = (uint8_t*)SCP_EXP_HSP_RAS_PAYLOAD_BASE;
-    hm_config.mscp_full_cper_record_base = (uint8_t*)SCP_EXP_MSCP_CPER_REPORT_BASE;
+    hm_config.mscp_full_cper_record_base = (uint8_t*)mscp_full_cper_record_base;
 
     // To Do
     // SVP Bug on IOSS Semaphore -  https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2327121

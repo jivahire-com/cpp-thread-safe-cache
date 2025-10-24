@@ -8,9 +8,12 @@
  */
 
 /*------------- Includes -----------------*/
+#include <FpFwUtils.h>
 #include <atu_api.h>
+#include <bug_check.h>
 #include <einj.h>
 #include <fpfw_init.h>
+#include <fpfw_pldm_service.h>
 #include <health_monitor.h>
 #include <hm_cli.h>
 #include <idhw.h>
@@ -24,7 +27,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("icc_mscp2mscp", "icc_die2die", "atu_svc", "cd_drv"))
+FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "icc_mscp2mscp", "icc_die2die", "atu_svc", "cd_drv"))
 {
     uintptr_t mscp_ghes_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_TABLE_BLOCK_BASE);
     uintptr_t mscp_ghes_error_record_addr_table_base =
@@ -33,6 +36,8 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("icc_mscp2mscp", "icc_die2die
         MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_ACK_ADDRESS_TABLE_BASE);
     uintptr_t mscp_ghes_error_record_addr_base =
         MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_ERROR_RECORD_BASE);
+    uintptr_t mscp_full_cper_record_base =
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_MSCP_LAST_CPER_RECORD_BASE);
 
     static hm_config_t hm_config = {0};
     hm_config.mscp_ghes_base = (acpi_ghes_t*)mscp_ghes_base;
@@ -42,7 +47,7 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("icc_mscp2mscp", "icc_die2die
     hm_config.mscp_ghes_base_apcore_offset = 0;
     hm_config.mscp_error_injection_addr_base = 0;
     hm_config.mscp_hsp_ras_payload_base = (uint8_t*)SCP_EXP_HSP_RAS_PAYLOAD_BASE;
-    hm_config.mscp_full_cper_record_base = (uint8_t*)SCP_EXP_MSCP_CPER_REPORT_BASE;
+    hm_config.mscp_full_cper_record_base = (uint8_t*)mscp_full_cper_record_base;
 
     hm_config.semaphore_id = IS_PLATFORM_SVP() ? SEM_ID_MSCP_EXP_1 : SEM_ID_DIE0_IOSS_1;
     hm_config.semaphore_key = HM_SEMAPHORE_KEY(idsw_get_die_id());
@@ -63,5 +68,29 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("icc_mscp2mscp", "icc_die2die
 FPFW_INIT_COMPONENT(hm_cli_init, FPFW_INIT_DEPENDENCIES("hm_svc"))
 {
     hm_cli_init();
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+static void pldm_platform_event_ready_callback(uint16_t event_id, void* context)
+{
+    FPFW_UNUSED(event_id);
+    FPFW_UNUSED(context);
+
+    hm_set_pldm_ready_status();
+}
+
+FPFW_INIT_COMPONENT(hm_pldm, FPFW_INIT_DEPENDENCIES("hm_svc", "pldm"))
+{
+    if (idsw_get_die_id() == DIE_0)
+    {
+        pldm_platform_event_ready_notification ready_notification = {
+            .CallBack = pldm_platform_event_ready_callback,
+            .context = NULL,
+        };
+
+        fpfw_status_t status = fpfw_pldm_service_register_platform_event_ready_notification(&ready_notification);
+        BUG_ASSERT_PARAM(status == FPFW_STATUS_SUCCESS, status, 0);
+    }
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

@@ -306,7 +306,7 @@ void exception_handler(exception_stack_frame_t* stack_frame)
         acpi_cper_section_t cper_section;
         cper_section.sec_fw = sec_fw_cper_section;
 
-        hm_submit_cper(err_domain, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(cper_section));
+        hm_submit_cper_cd_state(err_domain, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(cper_section));
     }
 
     // Call the crash dump handler

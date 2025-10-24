@@ -398,7 +398,7 @@ void icache_ue_isr()
 {
     mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_ICACHE,
                                     .err_source_irq = HW_INT_ICDET_DATA_UE,
-                                    .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_ICACHE_UE,
                                     .bugcheck_required = true,
                                     .param1 = (uint32_t*)&scp_system_control_reg->iebr0,
@@ -424,7 +424,7 @@ void icache_tag_ue_isr()
 {
     mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_SCP_ICACHE,
                                     .err_source_irq = HW_INT_ICDET_TAG_UE,
-                                    .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                    .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                     .err_code = KNG_HM_ICACHE_TAG_UE,
                                     .bugcheck_required = true,
                                     .param1 = (uint32_t*)&scp_system_control_reg->iebr0,

@@ -11,6 +11,7 @@
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
+#include <crash_dump.h>
 #include <fpfw_pldm_service.h>
 #include <fpfw_status.h>
 #include <health_monitor_i.h>
@@ -29,30 +30,32 @@ typedef struct _pldm_cper_record_t
 } pldm_cper_record_t;
 
 /*-------- Function Prototypes -----------*/
-void hm_transfer_cper_to_bmc_local();
 
 /*-- Declarations (Statics and globals) --*/
-static volatile bool cper_transfer_ongoing = false;
+static volatile bool pldm_cper_transfer_ongoing = false;
 static volatile bool cper_transfer_reroute_ongoing = false;
+static volatile bool pldm_stack_ready = false;
+static pldm_cper_record_t full_pldm_cper;
 
 /*------------- Functions ----------------*/
 static void hm_transfer_cper_completion_pldm_cb(fpfw_pldm_cc_t completionCode, void* ctx)
 {
-    FPFW_UNUSED(ctx);
+    HM_LOG_INFO("CPER OOB transfer completed, status (%d)", completionCode);
+    pldm_cper_record_t* rec = (pldm_cper_record_t*)ctx;
+    BUG_ASSERT_PARAM(rec != NULL, rec, &full_pldm_cper);
 
-    if (completionCode == FPFW_PLDM_CC_SUCCESS)
-    {
-        HM_LOG_INFO("PLDM CPER transfer succeeded");
-    }
-    else
-    {
-        HM_LOG_CRIT("PLDM CPER transfer failed(%d)", completionCode);
-    }
+    hm_config_t* cfg = get_hm_config();
+    BUG_ASSERT_PARAM(cfg != NULL, cfg, 0);
 
-    cper_transfer_ongoing = false;
+    wait_for_semaphore(cfg->semaphore_id, cfg->semaphore_key);
+    hm_set_pldm_transfer_status(HM_PLDM_TRANSFER_STATUS_IDLE,
+                                hm_is_fatal_error(rec->cper_record.record_header.error_severity));
+    release_semaphore(cfg->semaphore_id);
+
+    pldm_cper_transfer_ongoing = false;
 }
 
-static void hm_cper_transfer_reroute_cb(void* context, fpfw_status_t status)
+static void hm_cper_transfer_reroute_mcpd2d_cb(void* context, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
     FPFW_UNUSED(status);
@@ -60,13 +63,13 @@ static void hm_cper_transfer_reroute_cb(void* context, fpfw_status_t status)
     cper_transfer_reroute_ongoing = false;
 }
 
-static void hm_mcp_cper_transfer_d2d_listener_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+static void hm_mcp_cper_transfer_listener_mcpd2d_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
     FPFW_UNUSED(status);
 
-    hm_transfer_cper_to_bmc_local();
+    hm_transfer_cper_to_bmc_internal(false);
 
     hm_config_t* hm_config = get_hm_config();
     hm_cper_transfer_listener_from_secondary_mcp(hm_config->icc_ctx[HM_INTERCORE_LOCAL]);
@@ -78,61 +81,83 @@ static void hm_mcp_cper_transfer_listener_from_scp_cb(void* context, size_t outp
     FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
 
-    hm_transfer_cper_to_bmc();
+    hm_transfer_cper_mcp2bmc();
 
     hm_config_t* hm_config = get_hm_config();
     hm_cper_transfer_listener_from_scp(hm_config->icc_ctx[HM_INTERCORE_REMOTE]);
 }
 
-void hm_transfer_cper_to_bmc_local()
+static bool hm_get_pldm_cper_data(bool is_ue, uint8_t* cper_record_base)
 {
-    if (cper_transfer_ongoing)
+    hm_config_t* cfg = get_hm_config();
+    BUG_ASSERT_PARAM(cfg != NULL, cfg, false);
+
+    volatile hm_arsm_cper_backup_t* backup = (volatile hm_arsm_cper_backup_t*)(uintptr_t)cfg->mscp_full_cper_record_base;
+
+    if (hm_get_pldm_transfer_status(is_ue) != HM_PLDM_TRANSFER_STATUS_REQUESTED)
     {
-        HM_LOG_INFO("PLDM CPER transfer already in progress\n");
+        return false;
+    }
+
+    wait_for_semaphore(cfg->semaphore_id, cfg->semaphore_key);
+    hm_copy_cper_record((volatile uint8_t*)cper_record_base,
+                        (const uint8_t*)(is_ue ? &backup->last_ue_cper_record.cper_record
+                                               : &backup->last_cper_record.cper_record),
+                        sizeof(acpi_cper_record_t));
+    release_semaphore(cfg->semaphore_id);
+    return true;
+}
+
+void hm_transfer_cper_to_bmc_internal(bool is_ue)
+{
+    if (get_hm_config()->is_primary == false)
+    {
+        HM_LOG_INFO("CPER OOB transfer request made on secondary MCP, aborting\n");
         return;
     }
 
-    HM_LOG_INFO("Request PLDM CPER transfer\n");
-
-    cper_transfer_ongoing = true;
-    volatile uint8_t* rmss_cper_record_base = (volatile uint8_t*)(uintptr_t)get_hm_config()->mscp_full_cper_record_base;
-    BUG_ASSERT_PARAM(rmss_cper_record_base != NULL, rmss_cper_record_base, 0);
-
-    static pldm_cper_record_t full_cper;
-
-    full_cper.cper_event_header.format_version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION;
-    full_cper.cper_event_header.format_type = PLDM_PLATFORM_CPER_EVENT_WITH_HEADER;
-    full_cper.cper_event_header.event_data_length = sizeof(acpi_cper_record_t);
-
-    volatile uint8_t* src = rmss_cper_record_base;
-    uint8_t* dst = (uint8_t*)&full_cper.cper_record;
-
-    wait_for_semaphore(get_hm_config()->semaphore_id, get_hm_config()->semaphore_key);
-    for (size_t i = 0; i < sizeof(acpi_cper_record_t); i++)
+    if (pldm_stack_ready == false)
     {
-        dst[i] = src[i];
+        HM_LOG_INFO("PLDM stack not ready, abort OOB transfer\n");
+        return;
     }
-    release_semaphore(get_hm_config()->semaphore_id);
 
-    static fpfw_pmc_platform_event_descriptor_t descriptor = {.event_class = PLDM_CPER_EVENT,
-                                                              .event_payload_size = sizeof(pldm_cper_record_t)};
-
-    descriptor.event_payload = &full_cper;
-
-    static pldm_platform_event_config_t event = {.p_descriptor = &descriptor};
-
-    static pldm_platform_event_notification notification = {.CallBack = hm_transfer_cper_completion_pldm_cb,
-                                                            .context = NULL};
-
-    fpfw_status_t status = fpfw_pldm_service_raise_platform_event(&event, &notification);
-
-    if (FPFW_STATUS_FAILED(status))
+    if (pldm_cper_transfer_ongoing)
     {
-        cper_transfer_ongoing = false;
+        HM_LOG_INFO("CPER OOB transfer request dropped, PLDM busy\n");
+        return;
+    }
+
+    if (hm_get_pldm_cper_data(is_ue, (uint8_t*)&full_pldm_cper.cper_record))
+    {
+        pldm_cper_transfer_ongoing = true;
+        full_pldm_cper.cper_event_header.format_version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION;
+        full_pldm_cper.cper_event_header.format_type = PLDM_PLATFORM_CPER_EVENT_WITH_HEADER;
+        full_pldm_cper.cper_event_header.event_data_length = sizeof(acpi_cper_record_t);
+
+        HM_LOG_INFO("CPER OOB transfer requested, (domain=%s, sev=%ld)\n",
+                    full_pldm_cper.cper_record.section_descriptor[0].fru_text,
+                    full_pldm_cper.cper_record.record_header.error_severity);
+
+        static fpfw_pmc_platform_event_descriptor_t descriptor = {.event_class = PLDM_CPER_EVENT,
+                                                                  .event_payload_size = sizeof(pldm_cper_record_t)};
+        descriptor.event_payload = &full_pldm_cper;
+
+        static pldm_platform_event_config_t event = {.p_descriptor = &descriptor};
+        static pldm_platform_event_notification notification = {.CallBack = hm_transfer_cper_completion_pldm_cb,
+                                                                .context = &full_pldm_cper};
+
+        fpfw_status_t status = fpfw_pldm_service_raise_platform_event(&event, &notification);
+
+        if (FPFW_STATUS_FAILED(status))
+        {
+            HM_LOG_INFO("CPER OOB transfer request failed (status=0x%x)\n", status);
+            pldm_cper_transfer_ongoing = false;
+        }
     }
 }
 
-void hm_transfer_cper_to_bmc()
+void hm_transfer_cper_mcp2bmc()
 {
     if (get_hm_config()->is_mcp == false)
     {
@@ -141,11 +166,11 @@ void hm_transfer_cper_to_bmc()
 
     if (get_hm_config()->is_primary)
     {
-        hm_transfer_cper_to_bmc_local();
+        hm_transfer_cper_to_bmc_internal(false);
     }
     else
     {
-        HM_LOG_INFO("PLDM transfer req on secondary mcp, re-route\n");
+        HM_LOG_INFO("CPER OOB request on secondary mcp, re-route\n");
 
         if (cper_transfer_reroute_ongoing)
         {
@@ -162,7 +187,7 @@ void hm_transfer_cper_to_bmc()
         static fpfw_icc_base_send_req_t cper_pldm_transfer_req = {0};
         cper_pldm_transfer_req.payload_buffer = s_icc_mhu_pldm_req_payload;
         cper_pldm_transfer_req.buffer_size = sizeof(s_icc_mhu_pldm_req_payload);
-        cper_pldm_transfer_req.cb = hm_cper_transfer_reroute_cb;
+        cper_pldm_transfer_req.cb = hm_cper_transfer_reroute_mcpd2d_cb;
         cper_pldm_transfer_req.cb_ctx = s_icc_mhu_pldm_req_payload;
 
         fpfw_status_t status = fpfw_icc_base_send(get_hm_config()->icc_ctx[HM_INTERCORE_LOCAL], &cper_pldm_transfer_req);
@@ -176,15 +201,13 @@ void hm_transfer_cper_to_bmc()
 
 void hm_cper_transfer_listener_from_secondary_mcp(fpfw_icc_base_ctx_t* icc_ctx)
 {
-    HM_LOG_INFO("Waiting CPER transfer request from secondary MCP\n");
-
     static uint8_t hm_cper_transfer_pldm_req_payload[SCP_EXP_ICC_MHU_SCP_MCP_LOCAL_RECEIVE_SIZE];
     static fpfw_icc_base_recv_req_t hm_cper_transfer_pldm_recv = {0};
 
     hm_cper_transfer_pldm_recv.recv_cmd_code = ICC_HM_CPER_TRANSFER_PLDM_REQ_MCP;
     hm_cper_transfer_pldm_recv.payload_buffer = hm_cper_transfer_pldm_req_payload;
     hm_cper_transfer_pldm_recv.buffer_size = sizeof(hm_cper_transfer_pldm_req_payload);
-    hm_cper_transfer_pldm_recv.cb = hm_mcp_cper_transfer_d2d_listener_cb;
+    hm_cper_transfer_pldm_recv.cb = hm_mcp_cper_transfer_listener_mcpd2d_cb;
     hm_cper_transfer_pldm_recv.cb_ctx = NULL;
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &hm_cper_transfer_pldm_recv);
@@ -194,8 +217,6 @@ void hm_cper_transfer_listener_from_secondary_mcp(fpfw_icc_base_ctx_t* icc_ctx)
 // Set up CPER transfer listener from SCP
 void hm_cper_transfer_listener_from_scp(fpfw_icc_base_ctx_t* icc_ctx)
 {
-    HM_LOG_INFO("Waiting CPER transfer request from SCP\n");
-
     static uint8_t hm_cper_transfer_req_payload[SCP_EXP_ICC_MHU_SCP_MCP_LOCAL_RECEIVE_SIZE];
     static fpfw_icc_base_recv_req_t hm_cper_transfer_recv = {0};
 
@@ -207,4 +228,19 @@ void hm_cper_transfer_listener_from_scp(fpfw_icc_base_ctx_t* icc_ctx)
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &hm_cper_transfer_recv);
     BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, FPFW_ICC_BASE_STATUS_SUCCESS);
+}
+
+void hm_set_pldm_ready_status()
+{
+    pldm_stack_ready = true;
+
+    if (hm_get_pldm_cper_data(true, (uint8_t*)&full_pldm_cper.cper_record))
+    {
+        HM_LOG_INFO("Pending UE CPER found, rescheduling transfer\n");
+        // ToDo - when pldm scheduler available, delegate transfer
+    }
+    else
+    {
+        HM_LOG_INFO("UE CPER data not found\n");
+    }
 }

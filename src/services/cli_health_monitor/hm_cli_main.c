@@ -117,7 +117,8 @@ static PLACED_CODE FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
     uint64_t* err_record_ack_addr = (uint64_t*)hm_config->mscp_ghes_ack_addr_table_base;
     for (uint32_t error_domain_idx = 0; error_domain_idx < ACPI_ERROR_DOMAIN_COUNT; error_domain_idx++)
     {
-        FpFwCliPrint(" err domain idx: %d at %p\n", error_domain_idx, (void*)(err_record_ack_addr++));
+        FpFwCliPrint(" err domain idx: %d at %p, value: %ld\n", error_domain_idx, (void*)(err_record_ack_addr), *err_record_ack_addr);
+        err_record_ack_addr++;
     }
     FpFwCliPrint("\n");
 
@@ -292,6 +293,12 @@ static PLACED_CODE void dump_cper_contents(acpi_cper_record_t* record_addr)
         return;
     }
 
+    if (record_addr->record_header.section_count == 0)
+    {
+        FpFwCliPrint("No CPER record found\n\n");
+        return;
+    }
+
     acpi_cper_record_header_t* hdr = &record_addr->record_header;
     FpFwCliPrint("CPER Record Header:\n");
     FpFwCliPrint("  Signature: %c%c%c%c\n",
@@ -330,6 +337,9 @@ static PLACED_CODE void dump_cper_contents(acpi_cper_record_t* record_addr)
         }
         FpFwCliPrint("\n");
     }
+
+    hm_cper_pldm_payload_t* record_payload = (hm_cper_pldm_payload_t*)record_addr;
+    FpFwCliPrint("\nTransfer Status: (%d)\n\n", record_payload->transfer_status);
 }
 
 static PLACED_CODE FPFW_CLI_STATUS hm_dump_last_cper_cli(int argc, const char** argv)
@@ -340,8 +350,13 @@ static PLACED_CODE FPFW_CLI_STATUS hm_dump_last_cper_cli(int argc, const char** 
     hm_config_t* hm_config = get_hm_config();
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
-    acpi_cper_record_t* cper_record_on_rmss = (acpi_cper_record_t*)hm_config->mscp_full_cper_record_base;
-    dump_cper_contents(cper_record_on_rmss);
+    hm_arsm_cper_backup_t* last_cper_record_base = (hm_arsm_cper_backup_t*)hm_config->mscp_full_cper_record_base;
+
+    FpFwCliPrint("Last CPER Record:\n");
+    dump_cper_contents(&last_cper_record_base->last_cper_record.cper_record);
+
+    FpFwCliPrint("Last UE CPER Record:\n");
+    dump_cper_contents(&last_cper_record_base->last_ue_cper_record.cper_record);
 
     return CLI_SUCCESS;
 }

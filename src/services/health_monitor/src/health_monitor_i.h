@@ -61,7 +61,8 @@ void hm_hsp_error_domain_register_listener(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_hsp_error_record_submit_listener(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_apcore_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx);
 const char* get_error_domain_name(acpi_error_domain_t domain);
-void hm_transfer_cper_to_bmc();
+void hm_transfer_cper_mcp2bmc();
+void hm_transfer_cper_to_bmc_internal(bool is_ue);
 void hm_cper_transfer_listener_from_scp(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_cper_transfer_listener_from_secondary_mcp(fpfw_icc_base_ctx_t* icc_ctx);
 void create_full_mscp_cper_record(acpi_error_domain_t err_domain_idx,
@@ -69,7 +70,7 @@ void create_full_mscp_cper_record(acpi_error_domain_t err_domain_idx,
     acpi_cper_section_t* err_record_section,
     uint32_t err_record_section_size,
     acpi_cper_record_t* cper_record);
-
-/*-- Declarations (Statics and globals) --*/
-
-/*------------- Functions ----------------*/
+void hm_set_pldm_transfer_status(hm_pldm_transfer_status status, bool is_ue);
+hm_pldm_transfer_status hm_get_pldm_transfer_status(bool is_ue);
+bool hm_is_fatal_error(uint32_t err_severity);
+void hm_copy_cper_record(volatile uint8_t* dest, const uint8_t* src, size_t size);

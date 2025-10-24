@@ -1,4 +1,4 @@
-set(TARGET health_monitor_scp.test)
+set(TARGET health_monitor.test)
 
 set(SOURCES
     test_hm_main.cpp
@@ -7,10 +7,10 @@ set(SOURCES
     test_hm_error_domain_register.cpp
     test_hm_error_report_cper.cpp
     test_hm_error_injection.cpp
-    test_hm_error_domain_mcp.cpp
     test_hm_error_domain_accel.cpp
     test_hm_error_domain_hsp.cpp
     test_hm_error_domain_apcore.cpp
+    test_hm_error_domain_mcp.cpp
     test_hm_error_report_pldm.cpp
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_main.c
     ${CMAKE_SOURCE_DIR}/src/services/health_monitor/src/hm_error_domain_register.c

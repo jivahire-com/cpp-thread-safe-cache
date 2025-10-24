@@ -30,34 +30,28 @@ static void update_local_error_record(uint32_t sec_idx,
 /*-- Declarations (Statics and globals) --*/
 static hm_error_record_t error_record_sections[MAX_CPER_CACHE] = {0};
 static uint32_t local_cper_count = 0;
-static bool cper_transfer_ongoing = false;
+static bool icc_cper_transfer_req_ongoing = false;
 /*------------- Functions ----------------*/
-static void cper_transfer_req_complete_cb(void* context, fpfw_status_t status)
+static void cper_transfer_req_scp2mcp_complete_cb(void* context, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
     FPFW_UNUSED(status);
+    HM_LOG_INFO("CPER OOB path requested, status=0x%x\n", status);
 
-    if (status == FPFW_ICC_BASE_STATUS_SUCCESS)
-    {
-        HM_LOG_INFO("PLDM CPER transfer req to MCP was made\n");
-    }
-    else
-    {
-        HM_LOG_CRIT("PLDM CPER transfer failed(0x%x)", status);
-    }
-
-    cper_transfer_ongoing = false;
+    icc_cper_transfer_req_ongoing = false;
 }
 
-void hm_request_cper_transfer_mcp(fpfw_icc_base_ctx_t* icc_ctx)
+void hm_request_cper_transfer_scp2mcp(fpfw_icc_base_ctx_t* icc_ctx)
 {
     BUG_ASSERT_PARAM(icc_ctx != NULL, icc_ctx, 0);
 
-    if (cper_transfer_ongoing)
+    if (icc_cper_transfer_req_ongoing)
     {
+        HM_LOG_INFO("CPER OOB path request dropped\n");
         return;
     }
 
+    icc_cper_transfer_req_ongoing = true;
     static uint8_t s_icc_mhu_send_payload[sizeof(icc_mhu_header_t) + 1] = {0};
     icc_mhu_packet_t* p_send_req = (icc_mhu_packet_t*)s_icc_mhu_send_payload;
 
@@ -67,26 +61,68 @@ void hm_request_cper_transfer_mcp(fpfw_icc_base_ctx_t* icc_ctx)
     static fpfw_icc_base_send_req_t cper_transfer_req = {0};
     cper_transfer_req.payload_buffer = s_icc_mhu_send_payload;
     cper_transfer_req.buffer_size = sizeof(s_icc_mhu_send_payload);
-    cper_transfer_req.cb = cper_transfer_req_complete_cb;
+    cper_transfer_req.cb = cper_transfer_req_scp2mcp_complete_cb;
     cper_transfer_req.cb_ctx = s_icc_mhu_send_payload;
 
     // we don't need to monitor the status of this request
     fpfw_status_t status = fpfw_icc_base_send(icc_ctx, &cper_transfer_req);
 
-    if (FPFW_STATUS_SUCCEEDED(status))
+    if (FPFW_STATUS_FAILED(status))
     {
-        cper_transfer_ongoing = true;
-    }
-    else
-    {
-        cper_transfer_ongoing = false;
+        icc_cper_transfer_req_ongoing = false;
     }
 }
 
-void hm_submit_cper(uint16_t error_domain_idx,
-                    acpi_error_severity_t err_severity,
-                    acpi_cper_section_t* err_record_section,
-                    uint32_t err_record_section_size)
+void hm_set_pldm_transfer_status(hm_pldm_transfer_status status, bool is_ue)
+{
+    hm_config_t* hm_config = get_hm_config();
+    BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
+
+    volatile hm_arsm_cper_backup_t* backup = (volatile hm_arsm_cper_backup_t*)(uintptr_t)hm_config->mscp_full_cper_record_base;
+
+    if (is_ue)
+    {
+        backup->last_ue_cper_record.transfer_status = status;
+    }
+    else
+    {
+        backup->last_cper_record.transfer_status = status;
+    }
+}
+
+hm_pldm_transfer_status hm_get_pldm_transfer_status(bool is_ue)
+{
+    hm_config_t* hm_config = get_hm_config();
+    BUG_ASSERT_PARAM(hm_config != NULL, hm_config, HM_PLDM_TRANSFER_STATUS_IDLE);
+
+    volatile hm_arsm_cper_backup_t* backup = (volatile hm_arsm_cper_backup_t*)(uintptr_t)hm_config->mscp_full_cper_record_base;
+
+    return is_ue ? backup->last_ue_cper_record.transfer_status : backup->last_cper_record.transfer_status;
+}
+
+static void save_last_cper_record(volatile hm_arsm_cper_backup_t* backup, uint8_t* new_cper_record, acpi_error_severity_t severity)
+{
+    volatile uint8_t* base[] = {(volatile uint8_t*)&backup->last_cper_record.cper_record,
+                                (volatile uint8_t*)&backup->last_ue_cper_record.cper_record};
+
+    if (hm_get_pldm_transfer_status(false) == HM_PLDM_TRANSFER_STATUS_IDLE)
+    {
+        hm_copy_cper_record(base[0], new_cper_record, sizeof(acpi_cper_record_t));
+        hm_set_pldm_transfer_status(HM_PLDM_TRANSFER_STATUS_REQUESTED, false);
+    }
+
+    if (hm_is_fatal_error(severity) && hm_get_pldm_transfer_status(true) == HM_PLDM_TRANSFER_STATUS_IDLE)
+    {
+        hm_copy_cper_record(base[1], new_cper_record, sizeof(acpi_cper_record_t));
+        hm_set_pldm_transfer_status(HM_PLDM_TRANSFER_STATUS_REQUESTED, true);
+    }
+}
+
+void hm_submit_cper_internal(uint16_t error_domain_idx,
+                             acpi_error_severity_t err_severity,
+                             acpi_cper_section_t* err_record_section,
+                             uint32_t err_record_section_size,
+                             bool pldm_transfer_allowed)
 {
     if ((error_domain_idx < ACPI_ERROR_DOMAIN_COUNT) && (err_record_section_size <= sizeof(acpi_cper_section_t)) &&
         err_record_section != NULL && err_record_section_size > 0)
@@ -94,38 +130,44 @@ void hm_submit_cper(uint16_t error_domain_idx,
         hm_config_t* hm_config = get_hm_config();
         if (hm_config != NULL)
         {
-            // Generate full CPER record under RMSS
+            HM_LOG_INFO("CPER submission requested (domain=%s, sev=%d)", get_error_domain_name(error_domain_idx), err_severity);
+
+            // Generate full CPER record
             acpi_cper_record_t cper_record = {0};
             create_full_mscp_cper_record(error_domain_idx, err_severity, err_record_section, err_record_section_size, &cper_record);
 
-            volatile uint8_t* rmss_cper_record_base = (volatile uint8_t*)(uintptr_t)hm_config->mscp_full_cper_record_base;
-            BUG_ASSERT_PARAM(rmss_cper_record_base != NULL, rmss_cper_record_base, 0);
+            static_assert(sizeof(hm_arsm_cper_backup_t) <= D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE,
+                          "hm_arsm_cper_backup_t > D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE");
 
-            static_assert(sizeof(acpi_cper_record_t) <= SCP_EXP_MSCP_CPER_REPORT_SIZE,
-                          "acpi_cper_record_t > SCP_EXP_MSCP_CPER_REPORT_SIZE");
+            volatile hm_arsm_cper_backup_t* last_cper_record_base =
+                (volatile hm_arsm_cper_backup_t*)(uintptr_t)hm_config->mscp_full_cper_record_base;
+            BUG_ASSERT_PARAM(last_cper_record_base != NULL, last_cper_record_base, hm_config->mscp_full_cper_record_base);
 
             wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
-            for (uint32_t i = 0; i < sizeof(acpi_cper_record_t); ++i)
-            {
-                rmss_cper_record_base[i] = ((uint8_t*)&cper_record)[i];
-            }
+            save_last_cper_record(last_cper_record_base, (uint8_t*)&cper_record, err_severity);
             release_semaphore(hm_config->semaphore_id);
 
-            HM_LOG_INFO("Full CPER record created for (%s)", get_error_domain_name(error_domain_idx));
-
-            if (hm_config->is_mcp)
+            if (hm_is_fatal_error(err_severity))
             {
-                hm_transfer_cper_to_bmc();
+                crash_dump_set_UE(true);
             }
-            else
-            {
-                // Send full CPER record to BMC if mcp up and ready.
-                acpi_ghes_t* mcp_ghes_base = hm_config->mscp_ghes_base;
-                mcp_ghes_base += ACPI_ERROR_DOMAIN_MCP_PROC;
 
-                if (mcp_ghes_base->enabled)
+            if (pldm_transfer_allowed)
+            {
+                if (hm_config->is_mcp)
                 {
-                    hm_request_cper_transfer_mcp(hm_config->icc_ctx[HM_INTERCORE_REMOTE]);
+                    hm_transfer_cper_mcp2bmc();
+                }
+                else
+                {
+                    // Send full CPER record to BMC if mcp up and ready.
+                    acpi_ghes_t* mcp_ghes_base = hm_config->mscp_ghes_base;
+                    mcp_ghes_base += ACPI_ERROR_DOMAIN_MCP_PROC;
+
+                    if (mcp_ghes_base->enabled)
+                    {
+                        hm_request_cper_transfer_scp2mcp(hm_config->icc_ctx[HM_INTERCORE_REMOTE]);
+                    }
                 }
             }
         }
@@ -160,19 +202,28 @@ void hm_submit_cper(uint16_t error_domain_idx,
                 }
             }
         }
-
-        if ((err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL) ||
-            (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL))
-        {
-            crash_dump_set_UE(true);
-            hm_report_error_event(HM_ERROR_REPORT_VARSVC, true);
-        }
     }
     else
     {
         HM_ET_ERROR_PARAM(HM_ET_TYPE_CPER_INVALID_PARAMS, error_domain_idx);
         BUG_ASSERT_PARAM(false, error_domain_idx, err_record_section_size);
     }
+}
+
+void hm_submit_cper_cd_state(uint16_t error_domain_idx,
+                             acpi_error_severity_t err_severity,
+                             acpi_cper_section_t* err_record_section,
+                             uint32_t err_record_section_size)
+{
+    hm_submit_cper_internal(error_domain_idx, err_severity, err_record_section, err_record_section_size, false);
+}
+
+void hm_submit_cper(uint16_t error_domain_idx,
+                    acpi_error_severity_t err_severity,
+                    acpi_cper_section_t* err_record_section,
+                    uint32_t err_record_section_size)
+{
+    hm_submit_cper_internal(error_domain_idx, err_severity, err_record_section, err_record_section_size, true);
 }
 
 void hm_submit_cached_cper()

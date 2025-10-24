@@ -24,6 +24,11 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         ms::service::health_monitor
         ms::service::health_monitor::cli
+        ms::lib::crash_dump
+        fwlib.service.pldm
+        ms::lib::pldm_pdr
+        ms::lib::pldm_common_headers
+        extern.libpldm
 )
 
 # Generic ports implmented within this project
@@ -45,4 +50,6 @@ mock_target(${TARGET}
     hm_post_intercore_init
     hm_cli_init
     idhw_is_single_die_boot_en
+    fpfw_pldm_service_register_platform_event_ready_notification
+    hm_set_pldm_ready_status
 )

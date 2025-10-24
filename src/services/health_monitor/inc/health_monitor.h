@@ -42,6 +42,12 @@ typedef enum
     HM_ERROR_REPORT_VARSVC,
 } hm_error_report_type_t;
 
+typedef enum
+{
+    HM_PLDM_TRANSFER_STATUS_IDLE = 0,
+    HM_PLDM_TRANSFER_STATUS_REQUESTED
+} hm_pldm_transfer_status;
+
 typedef struct {
     // GHES table related
     acpi_ghes_t* mscp_ghes_base;
@@ -84,6 +90,18 @@ typedef struct {
     acpi_cper_section_t cper_section;
 } hm_error_record_t;
 
+typedef struct _hm_cper_pldm_payload_t
+{
+    acpi_cper_record_t cper_record;
+    uint32_t transfer_status;
+} hm_cper_pldm_payload_t;
+
+typedef struct _hm_arsm_cper_backup_t
+{
+    hm_cper_pldm_payload_t last_cper_record;
+    hm_cper_pldm_payload_t last_ue_cper_record;
+} hm_arsm_cper_backup_t;
+
 /*-------- Function Prototypes -----------*/
 hm_config_t* get_hm_config();
 acpi_einj_cmd_status_t hm_inject_error(void);
@@ -99,11 +117,17 @@ void hm_submit_cper(uint16_t error_domain_idx,
                     acpi_cper_section_t* err_record_section,
                     uint32_t err_record_section_size);
 
+void hm_submit_cper_cd_state(uint16_t error_domain_idx,
+                    acpi_error_severity_t err_severity,
+                    acpi_cper_section_t* err_record_section,
+                    uint32_t err_record_section_size);
+
 void hm_pre_ddr_init(hm_config_t* hm_config);
 void hm_post_ddr_init();
 void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ctx_t* icc_ctx);
 void hm_map_error_injection_payload();
 void hm_unmap_error_injection_payload();
+void hm_set_pldm_ready_status();
 uint32_t AP_GHES_ADDR(uint32_t mscp_addr);
 uint32_t MSCP_GHES_ADDR(uint32_t ap_addr);
 

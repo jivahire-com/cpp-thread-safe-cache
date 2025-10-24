@@ -48,7 +48,7 @@ mock_target(${TARGET}
     wdog_cmsdk_apb_disable
     wdog_cmsdk_apb_lock_unlock
     _tx_thread_stack_error_notify
-    hm_submit_cper
+    hm_submit_cper_cd_state
     get_arsm_ecc_atu_entry
     atu_map
     atu_unmap

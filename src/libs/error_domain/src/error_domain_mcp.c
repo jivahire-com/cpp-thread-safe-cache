@@ -323,7 +323,7 @@ void icache_ue_isr()
 {
     mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_MCP_ICACHE,
                                    .err_source_irq = HW_INT_ICDET_DATA_UE,
-                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_ICACHE_UE,
                                    .bugcheck_required = true,
                                    .err_status_addr = (uint32_t*)&mcp_system_control_reg->iebr0,
@@ -349,7 +349,7 @@ void icache_tag_ue_isr()
 {
     mcp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_MCP_ICACHE,
                                    .err_source_irq = HW_INT_ICDET_TAG_UE,
-                                   .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                   .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
                                    .err_code = KNG_HM_ICACHE_TAG_UE,
                                    .bugcheck_required = true,
                                    .err_status_addr = (uint32_t*)&mcp_system_control_reg->iebr0,

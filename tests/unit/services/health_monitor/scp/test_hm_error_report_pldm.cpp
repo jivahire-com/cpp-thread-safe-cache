@@ -58,7 +58,7 @@ fpfw_status_t __wrap_fpfw_pldm_service_raise_platform_event(pldm_platform_event_
 //
 // Tests
 //
-TEST_FUNCTION(test_pldm_from_primary_scp, post_ddr_setup, nullptr)
+TEST_FUNCTION(test_pldm_not_ready, post_ddr_setup, nullptr)
 {
     hm_config_t* hm_config = get_hm_config();
     hm_config->is_primary = true;
@@ -66,10 +66,49 @@ TEST_FUNCTION(test_pldm_from_primary_scp, post_ddr_setup, nullptr)
 
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_function_call(__wrap_release_semaphore);
+    hm_cper_transfer_listener_from_scp((fpfw_icc_base_ctx_t*)ICC_HM_CPER_TRANSFER_REQ_MCP);
+}
+
+TEST_FUNCTION(test_pldm_from_primary_scp, post_ddr_setup, nullptr)
+{
+    hm_config_t* hm_config = get_hm_config();
+    hm_config->is_primary = true;
+    hm_config->is_mcp = true;
+
+    // Clear last CPER record
+    void* last_cper_base = (void*)hm_config->mscp_full_cper_record_base;
+    memset(last_cper_base, 0, D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE);
+
+    hm_set_pldm_ready_status();
+
+    // dummy CPER record requested state
+    hm_arsm_cper_backup_t* backup_cper = (hm_arsm_cper_backup_t*)last_cper_base;
+    backup_cper->last_cper_record.transfer_status = HM_PLDM_TRANSFER_STATUS_REQUESTED;
+
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call_any(__wrap_fpfw_icc_base_recv);
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+    hm_cper_transfer_listener_from_scp((fpfw_icc_base_ctx_t*)ICC_HM_CPER_TRANSFER_REQ_MCP);
+}
+
+TEST_FUNCTION(test_pldm_from_primary_scp_no_pending, post_ddr_setup, nullptr)
+{
+    hm_config_t* hm_config = get_hm_config();
+    hm_config->is_primary = true;
+    hm_config->is_mcp = true;
+
+    // Clear last CPER record
+    void* last_cper_base = (void*)hm_config->mscp_full_cper_record_base;
+    memset(last_cper_base, 0, D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE);
+
+    hm_set_pldm_ready_status();
+
+    // dummy CPER record requested state
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call_any(__wrap_fpfw_icc_base_recv);
     hm_cper_transfer_listener_from_scp((fpfw_icc_base_ctx_t*)ICC_HM_CPER_TRANSFER_REQ_MCP);
 }
 
@@ -93,12 +132,21 @@ TEST_FUNCTION(test_pldm_from_primary_mcp, post_ddr_setup, nullptr)
     hm_config->is_primary = true;
     hm_config->is_mcp = true;
 
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_function_call(__wrap_release_semaphore);
+    void* last_cper_base = (void*)hm_config->mscp_full_cper_record_base;
+    memset(last_cper_base, 0, D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE);
+
+    hm_set_pldm_ready_status();
+
+    // dummy CPER record requested state
+    hm_arsm_cper_backup_t* backup_cper = (hm_arsm_cper_backup_t*)last_cper_base;
+    backup_cper->last_cper_record.transfer_status = HM_PLDM_TRANSFER_STATUS_REQUESTED;
+
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
 
-    hm_transfer_cper_to_bmc();
+    hm_transfer_cper_mcp2bmc();
 }
 
 TEST_FUNCTION(test_pldm_from_secondary_mcp, post_ddr_setup, nullptr)
@@ -109,10 +157,6 @@ TEST_FUNCTION(test_pldm_from_secondary_mcp, post_ddr_setup, nullptr)
 
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
-    expect_function_call(__wrap_wait_for_semaphore);
-    expect_function_call(__wrap_release_semaphore);
-    will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
-    expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
 
     hm_cper_transfer_listener_from_secondary_mcp((fpfw_icc_base_ctx_t*)ICC_HM_CPER_TRANSFER_PLDM_REQ_MCP);
 }

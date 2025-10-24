@@ -15,6 +15,7 @@ extern "C" {
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <accelip_id.h> // for ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <fpfw_init.h>  // for fpfw_init_result_t, fpfw_init_component_t
+#include <fpfw_pldm_service.h>
 #include <health_monitor.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -29,6 +30,7 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_hm_svc;
 extern fpfw_init_component_t _fpfw_component_hm_cli_init;
+extern fpfw_init_component_t _fpfw_component_hm_pldm;
 
 /*------------- Functions ----------------*/
 //
@@ -76,6 +78,25 @@ bool __wrap_idhw_is_single_die_boot_en(void)
 {
     return mock_type(bool);
 }
+
+PlatformEventReadyNotificationCb __wrap_pldm_platform_event_ready_callback = NULL;
+
+fpfw_status_t __wrap_fpfw_pldm_service_register_platform_event_ready_notification(pldm_platform_event_ready_notification* p_notification)
+{
+    assert_non_null(p_notification);
+    assert_non_null(p_notification->CallBack);
+
+    __wrap_pldm_platform_event_ready_callback = p_notification->CallBack;
+
+    function_called();
+
+    return FPFW_STATUS_SUCCESS;
+}
+
+void __wrap_hm_set_pldm_ready_status()
+{
+    function_called();
+}
 }
 
 //
@@ -110,4 +131,15 @@ TEST_FUNCTION(hm_cli_init, nullptr, nullptr)
 
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_pldm, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    expect_function_call(__wrap_fpfw_pldm_service_register_platform_event_ready_notification);
+    _fpfw_component_hm_pldm.init_fn();
+
+    expect_function_call(__wrap_hm_set_pldm_ready_status);
+    __wrap_pldm_platform_event_ready_callback(0, NULL);
 }

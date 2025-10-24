@@ -331,9 +331,8 @@ void update_error_record_section(uint16_t error_domain_idx,
         if (error_domain_enabled)
         {
             hm_report_error_event(HM_ERROR_REPORT_INTERRUPT, true);
+            HM_LOG_INFO("CPER reported, inband(domain=%s, sev=%d)", get_error_domain_name(error_domain_idx), err_severity);
         }
-
-        HM_LOG_INFO("%s CPER record updated, severity(%d)", get_error_domain_name(error_domain_idx), err_severity);
     }
     else
     {

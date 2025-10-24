@@ -23,7 +23,7 @@ static acpi_ghes_error_record_dual_die_t ghes_error_record_local[ACPI_ERROR_DOMA
 static uint64_t ghes_record_addr_table_local[ACPI_ERROR_DOMAIN_COUNT] = {0};
 static uint64_t ghes_ack_addr_table_local[ACPI_ERROR_DOMAIN_COUNT] = {0};
 static uint8_t hsp_ras_payload[SCP_EXP_HSP_RAS_PAYLOAD_SIZE] = {0};
-static uint8_t mscp_cper_record[SCP_EXP_MSCP_CPER_REPORT_SIZE] = {0};
+static uint8_t mscp_cper_record[D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE] = {0};
 extern acpi_error_domain_t test_error_domain;
 
 /*-- Declarations (Statics and globals) --*/

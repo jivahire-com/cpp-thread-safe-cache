@@ -243,3 +243,8 @@ void __wrap_ras_print_record(ras_error_record_t* record)
 {
     assert_non_null(record);
 }
+
+bool __wrap_system_info_is_warm_start(void)
+{
+    return mock_type(bool);
+}

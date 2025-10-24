@@ -140,6 +140,18 @@ silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8
 silibs_status_t send_sync_rp_post_link_up_init(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
 
 /**
+ * @brief Send a synchronous request to update Presense Detect Shadow register after link up.
+ *
+ * @param[in] iface     - Pointer to the driver interface header for this RPSS.
+ * @param[in] rpss_idx  - The RPSS instance index.
+ * @param[in] rp_index  - The root port index.
+ *
+ * @retval SILIBS_SUCCESS: Initialization after link-up sent successfully.
+ * @retval Other:          Error occurred while sending initialization after link-up.
+ */
+silibs_status_t send_sync_rpp_update_presence_detect(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx);
+
+/**
  * @brief Send a synchronous request to set the secondary bus reset for the specified RP.
  *
  * @param[in] rpss_idx  - The RPSS instance index.

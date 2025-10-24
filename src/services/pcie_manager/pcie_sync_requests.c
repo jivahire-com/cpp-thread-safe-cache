@@ -155,6 +155,11 @@ silibs_status_t send_sync_rp_post_link_up_init(PDFWK_INTERFACE_HEADER iface, uin
     return send_generic_rp_sync_req(iface, rpss_idx, rp_idx, POST_RP_LINK_UP_INIT, NULL, NULL, false);
 }
 
+silibs_status_t send_sync_rpp_update_presence_detect(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx)
+{
+    return send_generic_rp_sync_req(iface, rpss_idx, rp_idx, SET_PDS_SHADOW_REGISTER, NULL, NULL, false);
+}
+
 silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8_t rpss_idx, uint8_t rp_idx, uint8_t* lt_retry_count)
 {
     silibs_status_t status =

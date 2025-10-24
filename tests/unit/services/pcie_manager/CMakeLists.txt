@@ -95,6 +95,7 @@ mock_target(${TARGET}
     system_info_get_board_id
     system_info_get_board_rework_id
     system_info_get_soc_position
+    system_info_is_warm_start
     variable_serv_copy_to_rmss_ram
     variable_service_async_set_variable
     variable_service_initialize_ctx

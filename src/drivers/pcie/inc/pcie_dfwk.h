@@ -50,6 +50,7 @@ typedef enum _pcie_rp_sync_request_t
     IDE_RX_REKEY,
     INJECT_PCIE_ERROR,
     CLI_REQUEST,
+    SET_PDS_SHADOW_REGISTER,
     PCIE_MAX_SYNC_REQ
 } pcie_rp_sync_request_t;
 

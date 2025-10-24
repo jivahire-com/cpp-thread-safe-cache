@@ -26,6 +26,7 @@
 #include <silibs_kng_soc.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <system_info.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -118,6 +119,8 @@ bool scp_pcie_is_disabled(void)
 
 void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DIE_ID die_id)
 {
+    uint8_t update_pds = 0;
+
     if (schedule == NULL)
     {
         FPFW_DBGPRINT_ERROR("[PCIe Init] Failure - NULL driver framework schedule!\n");
@@ -161,6 +164,22 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
         pcie_mgr_ctx[i].iface = &(iface[i]);
         pcie_mgr_ctx[i].event_ptr = &event_ptr;
         pcie_mgr_ctx[i].phyfw_load_event_ptr = &pcie_phyfw_load_event;
+
+        if (!system_info_is_warm_start())
+        {
+            pcie_mgr_ctx[i].is_cold_boot = true;
+            update_pds = 0;
+        }
+        else
+        {
+            pcie_mgr_ctx[i].is_cold_boot = false;
+            update_pds = 1;
+        }
+
+        for (uint8_t idx = 0; idx < PCIESS_NUM_PORTS; idx++)
+        {
+            pcie_mgr_ctx[i].update_pds[idx] = update_pds;
+        }
 
         /* Setup worker queue for each rpss worker thread */
         int status = tx_queue_create(&(pcie_mgr_ctx[i].work_queue),

@@ -111,6 +111,10 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
     case (IDE_RX_REKEY):
         FPFW_DBGPRINT_ALWAYS("RPSS[%d] RP[%d] Error: RX Rekeying is not yet supported!\n", r->rpss_index, r->rp_index);
         break;
+    case SET_PDS_SHADOW_REGISTER:
+        rpss = pciess_get_entity(r->rpss_index);
+        sts = pcie_rp_sii_set_presence_detect_state(&(rpss->rps[r->rp_index]), DEVICE_PRESENT);
+        break;
     default:
         FPFW_DBGPRINT_ERROR("RPSS[%d]: Bad sync req received!\n", r->rpss_index);
         sts = SILIBS_E_PARAM;

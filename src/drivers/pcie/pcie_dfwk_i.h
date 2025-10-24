@@ -17,6 +17,7 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
+#define DEVICE_PRESENT  (1)
 
 /*-- Declarations (Statics and globals) --*/
 

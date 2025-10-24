@@ -46,6 +46,8 @@ typedef struct _pcie_manager_context_t
     TX_EVENT_FLAGS_GROUP* phyfw_load_event_ptr;
     TX_TIMER expiry_timer[PCIESS_NUM_PORTS];
     uint8_t lt_retry_count[PCIESS_NUM_PORTS];
+    bool is_cold_boot;
+    uint8_t update_pds[PCIESS_NUM_PORTS];
 } pcie_manager_context_t;
 
 /* This is the thread context block for config service thread*/

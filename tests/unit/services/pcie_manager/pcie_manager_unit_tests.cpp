@@ -90,7 +90,6 @@ bool __wrap_ift_is_enabled(void)
 }
 }
 
-#if 1
 TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
 {
     auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
@@ -129,6 +128,8 @@ TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
     expect_any_always(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_NO_MEMORY);
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_NO_MEMORY);
+    will_return(__wrap_system_info_is_warm_start, true);
+
     if (!set_error_handler_return())
     {
         scp_pcie_initialize(sched, rpss_to_init, DIE_0);
@@ -172,6 +173,42 @@ TEST_FUNCTION(pcie_service_init_success_die1, NULL, NULL)
     expect_any_always(__wrap__txe_queue_create, queue_start);
     expect_any_always(__wrap__txe_queue_create, queue_size);
     expect_any_always(__wrap__txe_queue_create, queue_control_block_size);
+    will_return_always(__wrap_system_info_is_warm_start, true);
+
+    scp_pcie_initialize(sched, rpss_to_init, DIE_1);
+}
+
+TEST_FUNCTION(pcie_service_init_success_die1_coldboot, NULL, NULL)
+{
+    auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
+    uint16_t rpss_to_init = ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7));
+
+    expect_any_always(__wrap__txe_event_flags_create, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_create, name_ptr);
+    expect_any_always(__wrap__txe_event_flags_create, event_control_block_size);
+    expect_any_always(__wrap__txe_thread_create, thread_ptr);
+    expect_any_always(__wrap__txe_thread_create, name_ptr);
+    expect_any_always(__wrap__txe_thread_create, entry_function);
+    expect_any_always(__wrap__txe_thread_create, entry_input);
+    expect_any_always(__wrap__txe_thread_create, stack_start);
+    expect_any_always(__wrap__txe_thread_create, stack_size);
+    expect_any_always(__wrap__txe_thread_create, priority);
+    expect_any_always(__wrap__txe_thread_create, preempt_threshold);
+    expect_any_always(__wrap__txe_thread_create, time_slice);
+    expect_any_always(__wrap__txe_thread_create, auto_start);
+    expect_any_always(__wrap__txe_thread_create, thread_control_block_size);
+    expect_value_count(__wrap_pcie_dfwk_init, schedule, sched, 4);
+    will_return_always(__wrap__txe_thread_create, TX_SUCCESS);
+    will_return_always(__wrap__txe_event_flags_create, TX_SUCCESS);
+    will_return_always(__wrap__txe_queue_create, TX_SUCCESS);
+    expect_any_always(__wrap__txe_queue_create, queue_ptr);
+    expect_any_always(__wrap__txe_queue_create, name_ptr);
+    expect_any_always(__wrap__txe_queue_create, message_size);
+    expect_any_always(__wrap__txe_queue_create, queue_start);
+    expect_any_always(__wrap__txe_queue_create, queue_size);
+    expect_any_always(__wrap__txe_queue_create, queue_control_block_size);
+    will_return_always(__wrap_system_info_is_warm_start, false);
+
     scp_pcie_initialize(sched, rpss_to_init, DIE_1);
 }
 
@@ -622,7 +659,7 @@ TEST_FUNCTION(test_process_wait_for_event_unhandled, NULL, NULL)
         }
     }
 }
-#endif
+
 /* Test link up routine in process_wait_for_event_data */
 TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
 {
@@ -640,6 +677,11 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, SET_PDS_SHADOW_REGISTER);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
     expect_value(__wrap__tx_thread_sleep, timer_ticks, 100);
 
     process_wait_for_event_data(&ctx, &cmpl_req);
@@ -654,6 +696,11 @@ TEST_FUNCTION(test_process_wait_for_event_linkup, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, SET_PDS_SHADOW_REGISTER);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
     expect_value(__wrap__tx_thread_sleep, timer_ticks, 100);
 
     process_wait_for_event_data(&ctx, &cmpl_req);

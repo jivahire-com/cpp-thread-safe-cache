@@ -212,6 +212,17 @@ void handle_pcie_link_up_event(pcie_manager_context_t* ctx, pciess_completion_re
     }
 
     send_sync_rp_post_link_up_init((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+
+    // Update PDS only once on cold boot
+    if (!(ctx->update_pds[rp_idx]))
+    {
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Update PDS Shadow Register.\n", rpss_idx, rp_idx);
+        send_sync_rpp_update_presence_detect((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
+        /*
+         * Update State PDS variables when link training done.
+         */
+        ctx->update_pds[rp_idx] = 1;
+    }
 }
 
 void handle_aer_force_link_down_event(pcie_manager_context_t* ctx, pciess_completion_request_t* cmpl)

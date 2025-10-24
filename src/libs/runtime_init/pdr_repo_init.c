@@ -35,19 +35,484 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-// Step 1: expand argument then stringify
+// Helper macros for UTF-16 string conversion
 #define STRINGIFY_STEP1(x)  #x
 #define STRINGIFY(x)        STRINGIFY_STEP1(x)
 
-// Step 2: paste u + "..."
 #define U16_PASTE_INNER(x)  u##x
 #define U16_PASTE(x)        U16_PASTE_INNER(x)
 
-// Final macro
 #define UTF16_STRINGIFY(x)  U16_PASTE(STRINGIFY(x))
 
+//
+// Sensor Thresholds + Range Field Support
+// - Both the threshold support and the range field support fields need to match
+//   for the actual thresholds to be recognized.
+//
 
-#define DEFINE_POWER_TLM_TEMPERATURE_SENSOR(NAME, UPDATE_RATE)                                          \
+// clang-format off
+#define SUPPORTED_THRESHOLD_HIGH_WARNING  (1 << 0) // Bit 0
+#define SUPPORTED_THRESHOLD_HIGH_CRITICAL (1 << 1) // Bit 1
+#define SUPPORTED_THRESHOLD_HIGH_FATAL    (1 << 2) // Bit 2
+#define SUPPORTED_THRESHOLD_LOW_WARNING   (1 << 3) // Bit 3
+#define SUPPORTED_THRESHOLD_LOW_CRITICAL  (1 << 4) // Bit 4
+#define SUPPORTED_THRESHOLD_LOW_FATAL     (1 << 5) // Bit 5
+#define SUPPORTED_THRESHOLD_RESERVED      (3 << 6) // Bits 6-7
+
+#define SUPPORTED_THRESHOLDS_CRITICAL_HIGH (SUPPORTED_THRESHOLD_HIGH_CRITICAL)
+#define SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH (SUPPORTED_THRESHOLD_HIGH_CRITICAL | SUPPORTED_THRESHOLD_HIGH_FATAL)
+#define SUPPORTED_THRESHOLDS_WARNING_HIGH_CRITICAL_HIGH_FATAL_HIGH (SUPPORTED_THRESHOLD_HIGH_WARNING | SUPPORTED_THRESHOLD_HIGH_CRITICAL | SUPPORTED_THRESHOLD_HIGH_FATAL)
+#define SUPPORTED_THRESHOLDS_WARNING_HIGH_CRITICAL_LOW_CRITICAL_HIGH (SUPPORTED_THRESHOLD_HIGH_WARNING | SUPPORTED_THRESHOLD_LOW_CRITICAL | SUPPORTED_THRESHOLD_HIGH_CRITICAL)
+
+//
+// NOTE: The version of the spec used does not call out the WARNING level in this field.
+//       - WARNING HIGH is supported by default and WARNING LOW is treated as CRITICAL HIGH by the BMC.
+//       - BMC: https://azurecsi.visualstudio.com/OpenBMC/_git/intel-pldmd?path=%2Fsrc%2Fnumeric_sensor_handler.cpp&_a=contents&version=GBmicrosoft%2Fmain
+//       - Spec - Section 28.4: https://www.dmtf.org/sites/default/files/standards/documents/DSP0248_1.2.0.pdf
+//
+#define SUPPORTED_RANGE_FIELD_NOMINAL_VALUE_SUPPORTED   (1 << 0) // Bit 0
+#define SUPPORTED_RANGE_FIELD_NORMAL_MAX_SUPPORTED      (1 << 1) // Bit 1
+#define SUPPORTED_RANGE_FIELD_NORMAL_MIN_SUPPORTED      (1 << 2) // Bit 2
+#define SUPPORTED_RANGE_FIELD_WARNING_HIGH_SUPPORTED    (0)      // Supported by default
+#define SUPPORTED_RANGE_FIELD_WARNING_LOW_SUPPORTED     (1 << 3) // Treated as CRITICAL HIGH
+#define SUPPORTED_RANGE_FIELD_CRITICAL_HIGH_SUPPORTED   (1 << 3) // Bit 3
+#define SUPPORTED_RANGE_FIELD_CRITICAL_LOW_SUPPORTED    (1 << 4) // Bit 4
+#define SUPPORTED_RANGE_FIELD_FATAL_HIGH_SUPPORTED      (1 << 5) // Bit 5
+#define SUPPORTED_RANGE_FIELD_FATAL_LOW_SUPPORTED       (1 << 6) // Bit 6
+#define SUPPORTED_RANGE_FIELD_RESERVED                  (1 << 7) // Bit 7
+
+#define SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH (SUPPORTED_RANGE_FIELD_CRITICAL_HIGH_SUPPORTED)
+#define SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH (SUPPORTED_RANGE_FIELD_CRITICAL_HIGH_SUPPORTED | SUPPORTED_RANGE_FIELD_FATAL_HIGH_SUPPORTED)
+#define SUPPORTED_RANGE_FIELDS_WARNING_HIGH_CRITICAL_HIGH_FATAL_HIGH (SUPPORTED_RANGE_FIELD_WARNING_HIGH_SUPPORTED | SUPPORTED_RANGE_FIELD_CRITICAL_HIGH_SUPPORTED | SUPPORTED_RANGE_FIELD_FATAL_HIGH_SUPPORTED)
+#define SUPPORTED_RANGE_FIELDS_WARNING_HIGH_CRITICAL_LOW_CRITICAL_HIGH (SUPPORTED_RANGE_FIELD_WARNING_HIGH_SUPPORTED | SUPPORTED_RANGE_FIELD_CRITICAL_LOW_SUPPORTED | SUPPORTED_RANGE_FIELD_CRITICAL_HIGH_SUPPORTED)
+
+//
+// Sensor Definitions - use defines to simplify PDR creation. Will generate a compile error if
+//                      definitions are missing. Must match sensor name when adding sensor.
+// - Define all threshold values per sensor. Define as 0 if not used
+// - Define the supported thresholds for each sensor
+// - Define the supported range fields for each sensor
+//
+
+#define THRESHOLD_NOT_USED (0U)
+
+// Temperature Sensor Thresholds (in deci-Celsius)
+#define VR_TMP_MAX_WARNING_LOW_DC          (THRESHOLD_NOT_USED)
+#define VR_TMP_MAX_WARNING_HIGH_DC         (1050U)
+#define VR_TMP_MAX_CRITICAL_LOW_DC         (THRESHOLD_NOT_USED)
+#define VR_TMP_MAX_CRITICAL_HIGH_DC        (1100U)
+#define VR_TMP_MAX_FATAL_LOW_DC            (THRESHOLD_NOT_USED)
+#define VR_TMP_MAX_FATAL_HIGH_DC           (1250U)
+#define VR_TMP_MAX_SUPPORTED_THRESHOLDS    (SUPPORTED_THRESHOLDS_WARNING_HIGH_CRITICAL_HIGH_FATAL_HIGH)
+#define VR_TMP_MAX_SUPPORTED_RANGE_FIELDS  (SUPPORTED_RANGE_FIELDS_WARNING_HIGH_CRITICAL_HIGH_FATAL_HIGH)
+
+#define SOC_TMP_MAX_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define SOC_TMP_MAX_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define SOC_TMP_MAX_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define SOC_TMP_MAX_CRITICAL_HIGH_DC       (950U)
+#define SOC_TMP_MAX_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define SOC_TMP_MAX_FATAL_HIGH_DC          (1150U)
+#define SOC_TMP_MAX_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define SOC_TMP_MAX_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_TMP_MAX_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_TMP_MAX_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_TMP_MAX_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_TMP_MAX_CRITICAL_HIGH_DC       (850U)
+#define DIMM_TMP_MAX_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_TMP_MAX_FATAL_HIGH_DC          (950U)
+#define DIMM_TMP_MAX_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_TMP_MAX_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// Thresholds for the "XX" DIMM temperature sensors, which are applied to each unique DIMM
+#define DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC (850U)
+#define DIMM_AVG_TMP_XX_FATAL_HIGH_DC    (950U)
+
+#define DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC (850U)
+#define DIMM_MAX_TMP_XX_FATAL_HIGH_DC    (950U)
+
+// DIMM 00 sensor defines
+#define DIMM_AVG_TMP_00_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_00_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_00_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_00_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_00_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_00_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_00_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_00_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_00_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_00_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_00_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_00_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_00_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_00_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_00_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_00_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 01 sensor defines
+#define DIMM_AVG_TMP_01_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_01_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_01_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_01_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_01_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_01_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_01_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_01_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_01_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_01_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_01_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_01_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_01_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_01_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_01_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_01_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 02 sensor defines
+#define DIMM_AVG_TMP_02_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_02_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_02_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_02_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_02_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_02_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_02_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_02_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_02_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_02_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_02_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_02_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_02_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_02_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_02_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_02_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 03 sensor defines
+#define DIMM_AVG_TMP_03_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_03_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_03_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_03_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_03_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_03_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_03_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_03_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_03_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_03_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_03_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_03_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_03_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_03_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_03_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_03_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 04 sensor defines
+#define DIMM_AVG_TMP_04_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_04_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_04_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_04_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_04_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_04_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_04_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_04_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_04_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_04_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_04_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_04_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_04_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_04_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_04_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_04_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 05 sensor defines
+#define DIMM_AVG_TMP_05_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_05_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_05_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_05_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_05_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_05_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_05_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_05_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_05_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_05_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_05_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_05_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_05_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_05_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_05_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_05_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 06 sensor defines
+#define DIMM_AVG_TMP_06_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_06_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_06_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_06_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_06_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_06_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_06_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_06_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_06_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_06_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_06_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_06_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_06_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_06_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_06_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_06_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 07 sensor defines
+#define DIMM_AVG_TMP_07_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_07_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_07_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_07_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_07_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_07_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_07_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_07_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_07_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_07_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_07_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_07_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_07_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_07_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_07_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_07_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 08 sensor defines
+#define DIMM_AVG_TMP_08_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_08_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_08_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_08_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_08_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_08_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_08_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_08_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_08_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_08_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_08_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_08_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_08_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_08_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_08_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_08_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 09 sensor defines
+#define DIMM_AVG_TMP_09_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_09_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_09_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_09_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_09_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_09_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_09_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_09_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_09_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_09_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_09_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_09_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_09_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_09_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_09_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_09_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 10 sensor defines
+#define DIMM_AVG_TMP_10_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_10_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_10_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_10_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_10_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_10_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_10_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_10_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_10_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_10_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_10_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_10_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_10_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_10_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_10_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_10_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 11 sensor defines
+#define DIMM_AVG_TMP_11_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_11_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_11_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_11_CRITICAL_HIGH_DC       (DIMM_AVG_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_AVG_TMP_11_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_TMP_11_FATAL_HIGH_DC          (DIMM_AVG_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_AVG_TMP_11_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_TMP_11_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+#define DIMM_MAX_TMP_11_WARNING_LOW_DC         (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_11_WARNING_HIGH_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_11_CRITICAL_LOW_DC        (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_11_CRITICAL_HIGH_DC       (DIMM_MAX_TMP_XX_CRITICAL_HIGH_DC)
+#define DIMM_MAX_TMP_11_FATAL_LOW_DC           (THRESHOLD_NOT_USED)
+#define DIMM_MAX_TMP_11_FATAL_HIGH_DC          (DIMM_MAX_TMP_XX_FATAL_HIGH_DC)
+#define DIMM_MAX_TMP_11_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_MAX_TMP_11_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// Power Sensor Thresholds (in milli-watts)
+#define SOC_PWR_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define SOC_PWR_WARNING_HIGH_MW        (400000U)
+#define SOC_PWR_CRITICAL_LOW_MW        (425000U)
+#define SOC_PWR_CRITICAL_HIGH_MW       (450000U)
+#define SOC_PWR_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define SOC_PWR_FATAL_HIGH_MW          (THRESHOLD_NOT_USED)
+#define SOC_PWR_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_WARNING_HIGH_CRITICAL_LOW_CRITICAL_HIGH)
+#define SOC_PWR_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_WARNING_HIGH_CRITICAL_LOW_CRITICAL_HIGH)
+
+#define DIMM_TOTAL_PWR_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_TOTAL_PWR_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_TOTAL_PWR_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_TOTAL_PWR_CRITICAL_HIGH_MW       (255000U)
+#define DIMM_TOTAL_PWR_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_TOTAL_PWR_FATAL_HIGH_MW          (300000U)
+#define DIMM_TOTAL_PWR_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_TOTAL_PWR_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// Thresholds for the "XX" DIMM power sensors, which are applied to each unique DIMM
+#define DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW (21250U)
+#define DIMM_AVG_PWR_XX_FATAL_HIGH_MW    (25000U)
+
+// DIMM 00 power sensor defines
+#define DIMM_AVG_PWR_00_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_00_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_00_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_00_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_00_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_00_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_00_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_00_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 01 power sensor defines
+#define DIMM_AVG_PWR_01_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_01_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_01_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_01_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_01_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_01_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_01_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_01_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 02 power sensor defines
+#define DIMM_AVG_PWR_02_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_02_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_02_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_02_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_02_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_02_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_02_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_02_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 03 power sensor defines
+#define DIMM_AVG_PWR_03_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_03_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_03_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_03_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_03_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_03_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_03_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_03_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 04 power sensor defines
+#define DIMM_AVG_PWR_04_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_04_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_04_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_04_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_04_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_04_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_04_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_04_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 05 power sensor defines
+#define DIMM_AVG_PWR_05_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_05_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_05_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_05_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_05_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_05_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_05_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_05_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 06 power sensor defines
+#define DIMM_AVG_PWR_06_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_06_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_06_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_06_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_06_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_06_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_06_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_06_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 07 power sensor defines
+#define DIMM_AVG_PWR_07_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_07_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_07_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_07_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_07_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_07_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_07_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_07_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 08 power sensor defines
+#define DIMM_AVG_PWR_08_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_08_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_08_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_08_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_08_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_08_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_08_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_08_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 09 power sensor defines
+#define DIMM_AVG_PWR_09_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_09_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_09_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_09_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_09_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_09_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_09_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_09_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 10 power sensor defines
+#define DIMM_AVG_PWR_10_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_10_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_10_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_10_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_10_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_10_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_10_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_10_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// DIMM 11 power sensor defines
+#define DIMM_AVG_PWR_11_WARNING_LOW_MW         (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_11_WARNING_HIGH_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_11_CRITICAL_LOW_MW        (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_11_CRITICAL_HIGH_MW       (DIMM_AVG_PWR_XX_CRITICAL_HIGH_MW)
+#define DIMM_AVG_PWR_11_FATAL_LOW_MW           (THRESHOLD_NOT_USED)
+#define DIMM_AVG_PWR_11_FATAL_HIGH_MW          (DIMM_AVG_PWR_XX_FATAL_HIGH_MW)
+#define DIMM_AVG_PWR_11_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH_FATAL_HIGH)
+#define DIMM_AVG_PWR_11_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH_FATAL_HIGH)
+
+// Frequency Sensor Thresholds (in Mega-Hertz)
+#define SOC_AVG_FREQ_WARNING_LOW_MHZ        (THRESHOLD_NOT_USED)
+#define SOC_AVG_FREQ_WARNING_HIGH_MHZ       (THRESHOLD_NOT_USED)
+#define SOC_AVG_FREQ_CRITICAL_LOW_MHZ       (THRESHOLD_NOT_USED)
+#define SOC_AVG_FREQ_CRITICAL_HIGH_MHZ      (3500U)
+#define SOC_AVG_FREQ_FATAL_LOW_MHZ          (THRESHOLD_NOT_USED)
+#define SOC_AVG_FREQ_FATAL_HIGH_MHZ         (THRESHOLD_NOT_USED)
+#define SOC_AVG_FREQ_SUPPORTED_THRESHOLDS   (SUPPORTED_THRESHOLDS_CRITICAL_HIGH)
+#define SOC_AVG_FREQ_SUPPORTED_RANGE_FIELDS (SUPPORTED_RANGE_FIELDS_CRITICAL_HIGH)
+
+#define DEFINE_POWER_TLM_TEMPERATURE_SENSOR(NAME, UPDATE_RATE) \
 static fpfw_pldm_pdr_numeric_sensor_UINT16_UINT16_t s_##NAME##_pdr    =                                 \
 {                                                                                                       \
     .hdr.record_handle = 0,                                                                             \
@@ -62,7 +527,7 @@ static fpfw_pldm_pdr_numeric_sensor_UINT16_UINT16_t s_##NAME##_pdr    =         
     .container_id         = 0,                                                                          \
     .sensor_init          = PLDM_NO_INIT,                                                               \
     .auxiliar_init_pdr    = true,                                                                       \
-    .base_unit            = PLDM_BASE_UNIT_CELCIUS,                                                     \
+    .base_unit            = PLDM_BASE_UNIT_CELSIUS,                                                     \
     .unit_modifier        = -1,                                                                         \
     .rate_unit            = 0,                                                                          \
     .base_oem_unit_handle = 0,                                                                          \
@@ -79,23 +544,23 @@ static fpfw_pldm_pdr_numeric_sensor_UINT16_UINT16_t s_##NAME##_pdr    =         
     .plus_tolerance = 0,                                                                                \
     .minus_tolerance = 0,                                                                               \
     .hysteresis                           = 0,                                                          \
-    .supported_thresholds                 = 0,                                                          \
+    .supported_thresholds                 = NAME##_SUPPORTED_THRESHOLDS,                                \
     .thresholds_and_hysteresis_volatility = 0x1F,                                                       \
     .state_transition_interval            = 1,                                                          \
     .update_interval                      = UPDATE_RATE,                                                \
-    .max_readable                         = 1000,                                                       \
+    .max_readable                         = 4000,                                                       \
     .min_readable                         = 0,                                                          \
     .range_field_format                   = PLDM_SENSOR_DATA_SIZE_UINT16,                               \
-    .range_field_support                  = 0,                                                          \
+    .range_field_support                  = NAME##_SUPPORTED_RANGE_FIELDS,                              \
     .nominal_value                        = 250,                                                        \
     .normal_min                           = 0,                                                          \
     .normal_max                           = 0,                                                          \
-    .warning_high                         = 0,                                                          \
-    .warning_low                          = 0,                                                          \
-    .critical_low                         = 0,                                                          \
-    .critical_high                        = 0,                                                          \
-    .fatal_low                            = 0,                                                          \
-    .fatal_high                           = 0,                                                          \
+    .warning_high                         = NAME##_WARNING_HIGH_DC,                                     \
+    .warning_low                          = NAME##_WARNING_LOW_DC,                                      \
+    .critical_low                         = NAME##_CRITICAL_LOW_DC,                                     \
+    .critical_high                        = NAME##_CRITICAL_HIGH_DC,                                    \
+    .fatal_low                            = NAME##_FATAL_LOW_DC,                                        \
+    .fatal_high                           = NAME##_FATAL_HIGH_DC,                                       \
 };                                                                                                      \
 static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =                                  \
 {                                                                                                       \
@@ -110,7 +575,8 @@ static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =          
     .sensor_name = UTF16_STRINGIFY(NAME)                                                                \
 };                                                                                                      \
 
-#define DEFINE_POWER_TLM_POWER_SENSOR(NAME, UPDATE_RATE)                                                \
+
+#define DEFINE_POWER_TLM_POWER_SENSOR(NAME, UPDATE_RATE) \
 static fpfw_pldm_pdr_numeric_sensor_UINT32_UINT32_t s_##NAME##_pdr    =                                 \
 {                                                                                                       \
     .hdr.record_handle = 0,                                                                             \
@@ -142,23 +608,23 @@ static fpfw_pldm_pdr_numeric_sensor_UINT32_UINT32_t s_##NAME##_pdr    =         
     .plus_tolerance = 0,                                                                                \
     .minus_tolerance = 0,                                                                               \
     .hysteresis                           = 0,                                                          \
-    .supported_thresholds                 = 0,                                                          \
+    .supported_thresholds                 = NAME##_SUPPORTED_THRESHOLDS,                                \
     .thresholds_and_hysteresis_volatility = 0x1F,                                                       \
     .state_transition_interval            = 1,                                                          \
     .update_interval                      = UPDATE_RATE,                                                \
     .max_readable                         = 4294967295U,                                                \
     .min_readable                         = 0,                                                          \
     .range_field_format                   = PLDM_SENSOR_DATA_SIZE_UINT32,                               \
-    .range_field_support                  = 0,                                                          \
+    .range_field_support                  = NAME##_SUPPORTED_RANGE_FIELDS,                              \
     .nominal_value                        = 0,                                                          \
     .normal_min                           = 0,                                                          \
     .normal_max                           = 0,                                                          \
-    .warning_high                         = 0,                                                          \
-    .warning_low                          = 0,                                                          \
-    .critical_low                         = 0,                                                          \
-    .critical_high                        = 0,                                                          \
-    .fatal_low                            = 0,                                                          \
-    .fatal_high                           = 0,                                                          \
+    .warning_high                         = NAME##_WARNING_HIGH_MW,                                     \
+    .warning_low                          = NAME##_WARNING_LOW_MW,                                      \
+    .critical_low                         = NAME##_CRITICAL_LOW_MW,                                     \
+    .critical_high                        = NAME##_CRITICAL_HIGH_MW,                                    \
+    .fatal_low                            = NAME##_FATAL_LOW_MW,                                        \
+    .fatal_high                           = NAME##_FATAL_HIGH_MW,                                       \
 };                                                                                                      \
 static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =                                  \
 {                                                                                                       \
@@ -173,7 +639,7 @@ static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =          
     .sensor_name = UTF16_STRINGIFY(NAME)                                                                \
 };
 
-#define DEFINE_POWER_TLM_FREQUENCY_SENSOR(NAME)                                                         \
+#define DEFINE_POWER_TLM_FREQUENCY_SENSOR(NAME, UPDATE_RATE)                                            \
 static fpfw_pldm_pdr_numeric_sensor_UINT16_UINT16_t s_##NAME##_pdr    =                                 \
 {                                                                                                       \
     .hdr.record_handle = 0,                                                                             \
@@ -205,23 +671,23 @@ static fpfw_pldm_pdr_numeric_sensor_UINT16_UINT16_t s_##NAME##_pdr    =         
     .plus_tolerance = 0,                                                                                \
     .minus_tolerance = 0,                                                                               \
     .hysteresis                           = 0,                                                          \
-    .supported_thresholds                 = 0,                                                          \
+    .supported_thresholds                 = NAME##_SUPPORTED_THRESHOLDS,                                \
     .thresholds_and_hysteresis_volatility = 0x1F,                                                       \
     .state_transition_interval            = 1,                                                          \
-    .update_interval                      = 0.5,                                                        \
+    .update_interval                      = UPDATE_RATE,                                                \
     .max_readable                         = 4000,                                                       \
     .min_readable                         = 0,                                                          \
     .range_field_format                   = PLDM_SENSOR_DATA_SIZE_UINT16,                               \
-    .range_field_support                  = 0,                                                          \
+    .range_field_support                  = NAME##_SUPPORTED_RANGE_FIELDS,                              \
     .nominal_value                        = 2100,                                                       \
     .normal_min                           = 0,                                                          \
     .normal_max                           = 0,                                                          \
-    .warning_high                         = 0,                                                          \
-    .warning_low                          = 0,                                                          \
-    .critical_low                         = 0,                                                          \
-    .critical_high                        = 0,                                                          \
-    .fatal_low                            = 0,                                                          \
-    .fatal_high                           = 0,                                                          \
+    .warning_high                         = NAME##_WARNING_HIGH_MHZ,                                    \
+    .warning_low                          = NAME##_WARNING_LOW_MHZ,                                     \
+    .critical_low                         = NAME##_CRITICAL_LOW_MHZ,                                    \
+    .critical_high                        = NAME##_CRITICAL_HIGH_MHZ,                                   \
+    .fatal_low                            = NAME##_FATAL_LOW_MHZ,                                       \
+    .fatal_high                           = NAME##_FATAL_HIGH_MHZ,                                      \
 };                                                                                                      \
 static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =                                  \
 {                                                                                                       \
@@ -235,6 +701,8 @@ static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =          
     .name_language_tag = "en",                                                                          \
     .sensor_name = UTF16_STRINGIFY(NAME)                                                                \
 };
+
+// clang-format on
 
 /*------------- Typedefs -----------------*/
 
@@ -252,7 +720,7 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
     DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_TMP_MAX, 0.5);
     DEFINE_POWER_TLM_POWER_SENSOR(DIMM_TOTAL_PWR, 0.5);
     DEFINE_POWER_TLM_TEMPERATURE_SENSOR(VR_TMP_MAX, 0.5);
-    DEFINE_POWER_TLM_FREQUENCY_SENSOR(SOC_AVG_FREQ);
+    DEFINE_POWER_TLM_FREQUENCY_SENSOR(SOC_AVG_FREQ, 0.5);
 
     DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_00, 15.0);
     DEFINE_POWER_TLM_TEMPERATURE_SENSOR(DIMM_AVG_TMP_01, 15.0);
@@ -292,8 +760,6 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
     DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_09, 15.0);
     DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_10, 15.0);
     DEFINE_POWER_TLM_POWER_SENSOR(DIMM_AVG_PWR_11, 15.0);
-
-
 
     /*----------Power Pldm PDR entries----------*/
     static fpfw_pldm_pdr_sensor_auxiliary_name_t s_POWER_THROTTLING_STATE_pdr_aux_name = {

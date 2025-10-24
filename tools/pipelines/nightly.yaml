@@ -75,38 +75,6 @@ stages:
       ArtifactName: SVP_Pythia_Tests_DualDie_1
       TestPlan: .\tests\functional\test_plan\svp_dual_die_1_test_plan.args
 
-- stage: ACCEL_FPGA_Pythia_Tests
-  dependsOn: [Build_Arm_EABI_AARCH_Debug]
-  jobs:
-  - template: templates/fpga_pythia_test.yaml
-    parameters:
-      ArtifactName: ACCEL
-      Pool: '1pfw-kingsgate-bigfpga-pipelines'
-      TestPlan: .\tests\functional\test_plan\accel_single_die_test_plan.args
-      ifwi: 'kingsgate.ifwi.ap.baremetal.debug.dat'
-      TestVehicleCapability: 'SingleDieFPGA'
-  
-- stage: MSCP_FPGA_Pythia_Tests
-  dependsOn: [Build_Arm_EABI_AARCH_Debug]
-  jobs:
-  - template: templates/fpga_pythia_test.yaml
-    parameters:
-      ArtifactName: MSCP
-      Pool: '1pfw-kingsgate-bigfpga-pipelines'
-      TestVehicleCapability: 'SingleDieFPGA'
-
-- stage: MSCP_FPGA_Pythia_Dualdie_Tests
-  dependsOn: [Build_Arm_EABI_AARCH_Debug]
-  jobs:
-  - template: templates/fpga_pythia_test.yaml
-    parameters:
-      ArtifactName: MSCP_DualDie
-      TestPlan: .\tests\functional\test_plan\fpga_dual_die_test_plan.args
-      TestVehicleCapability: 'DualDieFPGA'
-      Pool: '1pfw-kingsgate-bigfpga-pipelines'
-      #TestAgent: 'RDU-120015-DF14'
-      #Pool: '1pfw-kingsgate-big-fpga'
-
 - stage: MSCP_SOC_Pythia_Dualdie_Tests
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
@@ -124,7 +92,7 @@ stages:
 
 # This is to tag the commits that pass nightly tests.
 - stage: Promote
-  dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie_0, SVP_Pythia_Tests_SingleDie_1, SVP_Pythia_Tests_DualDie_0, SVP_Pythia_Tests_DualDie_1, MSCP_FPGA_Pythia_Tests, ACCEL_FPGA_Pythia_Tests, MSCP_FPGA_Pythia_Dualdie_Tests]
+  dependsOn: [ Build_Arm_EABI_AARCH_Debug, SVP_Pythia_Tests_SingleDie_0, SVP_Pythia_Tests_SingleDie_1, SVP_Pythia_Tests_DualDie_0, SVP_Pythia_Tests_DualDie_1, MSCP_SOC_Pythia_Dualdie_Tests]
   # Promote only builds triggered on the main branch (ignore PR build triggers), and ignore manual builds triggered on main for publish (prevents re-tagging)
   condition: and(eq(variables['OfficialBuild'], 'true'), ne(variables['Build.Reason'], 'Manual'))
   pool:

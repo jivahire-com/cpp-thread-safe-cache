@@ -8,14 +8,14 @@
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kingsgate_register_header" version="1.6.0"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="sdm_register_header" version="1.0.0"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="cded_register_header" version="1.0.0"/>
-        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kng_system_fuse_data" version="3.3.1"/>
+        <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="kng_system_fuse_data" version="3.3.0"/>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="shell-boot-variable-list" version="0.0.1"/>
     </universal_packages>
 
     <nuget_packages>
         <package name="1pfw.tools.win64" version="1.0.153" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
-        <package name="kingsgate.hsp.headers.release" version="1.80.0.85" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
-        <package name="kingsgate.sprt.release" version="1.80.0.85" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
+        <package name="kingsgate.hsp.headers.release" version="1.85.0.29" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
+        <package name="kingsgate.sprt.release" version="1.85.0.29" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
         <package name="kingsgate.firmware.a0rom" version="1.0.0.40" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
         <package name="kingsgate.headers.a0rom" version="1.0.0.40" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
     </nuget_packages>

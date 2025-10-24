@@ -93,6 +93,7 @@ class warm_start_test(EchoFallsBaseTest):
             self.log.info("Waiting for Windows Boot")
             # Wait till windows boot as scp crashes during warm reset before windows is booted-Bug3063669
             apns_connection.read_until(key="SAC>", timeout_seconds=900)
+            apns_connection.read_until(key="CMD command is now available", timeout_seconds=250)
             command="\r\n"
             hsp_connection.write_line(write_string=command)
             command="reset 4 2 0x9A 1"

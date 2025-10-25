@@ -53,6 +53,16 @@
 #define CSTATE_C3 (3)
 #define CSTATE_C4 (4)
 
+#define DIE_MESH_FREQ_HZ (2000000000ULL) // 2 GHz
+#define MESH_PWR_TLM_INTERVAL(seconds) ((seconds) * DIE_MESH_FREQ_HZ)
+//Mesh telemetry interval is based on a 2 GHz PLL reference clock (Reference KNG power management HAS v1.04 Section 11.5)
+// Recommended interval is  count =  1 s × 2 GHz = 2,000,000,000 
+#define PER_DIE_MESH_PWR_TLM_INTERVAL MESH_PWR_TLM_INTERVAL(1ULL) //Enable mesh telemetry with 1 s interval count
+
+// Convert counter value to milliseconds based on reference clock frequency
+#define MESH_COUNTER_TO_MS(counter) \
+    ( ((double)(counter) / (double)(DIE_MESH_FREQ_HZ)) * 1000.0 )
+    
 /*-------------- Typedefs ----------------*/
 typedef enum
 {
@@ -519,3 +529,24 @@ void data_smpl_process_cstate_entry_latency(uint8_t core_id, uint8_t packet_csta
  * @param[in] core_id - The ID of the core.
  */
 void data_smpl_process_cstate_exit_latency(uint8_t core_id);
+
+/**
+ * @brief Update the mesh telemetry metrics. This function is called based on the programmed interval.
+ *
+ * @return None
+ */
+void data_smpl_update_metrics_for_per_die_mesh_counters(void);
+
+/**
+ * @brief Initialize the die mesh telemetry.
+ *
+ * @return None
+ */
+void data_smpl_die_mesh_tlm_init(void);
+
+/**
+ * @brief Reset the die mesh telemetry.
+ *
+ * @return None
+ */
+void data_smpl_die_mesh_tlm_reset(void);

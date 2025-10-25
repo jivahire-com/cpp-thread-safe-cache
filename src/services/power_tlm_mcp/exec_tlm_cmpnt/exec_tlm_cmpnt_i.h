@@ -26,6 +26,7 @@
 #define OOB_TMR_EXPIRED            (1 << 5)
 #define NEW_INBAND_MTS_MESSAGE     (1 << 6)
 #define NEW_OUT_OF_BAND_PLDM_REQ   (1 << 7)
+#define ONE_SECOND_TMR_EXPIRED     (1 << 8)
 
 /*-------------- Typedefs ----------------*/
 
@@ -46,6 +47,7 @@ void inst_sample_timer_cb(ULONG context);
 void pwr_pkg_timer_cb(ULONG context);
 void every_24hr_pkg_timer_cb(ULONG context);
 void oob_timer_cb(ULONG context);
+void one_second_timer_cb(ULONG context);
 
 void run_timer_exit_actions(tlm_operating_mode_t exiting_mode);
 void run_timer_enter_actions(tlm_operating_mode_t entering_mode);

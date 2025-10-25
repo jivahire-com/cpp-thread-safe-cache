@@ -256,3 +256,41 @@ int __wrap_dvfs_c2_get_pcm_bank_sensor_data(const uintptr_t cluster_pex_base_add
 
     return mock_type(int);
 }
+
+// Mock implementations for mesh telemetry hardware APIs
+uint32_t __wrap_mesh_get_m1_entry_count(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m2_entry_count(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m0_residency(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m1_residency(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m2_residency(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_telemetry_delivered_perf_count(void)
+{
+    return mock_type(uint32_t);
+}
+
+void __wrap_mesh_clock_telemetry(bool enable, uint32_t interval_count)
+{
+    check_expected(enable);
+    check_expected(interval_count);
+    function_called();
+}

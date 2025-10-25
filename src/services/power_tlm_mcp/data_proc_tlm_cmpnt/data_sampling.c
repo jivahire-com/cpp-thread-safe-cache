@@ -23,11 +23,12 @@
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCEEDED, fpf...
 #include <in_band_tlm_cmpnt.h>
 #include <mcp_telemetry_shared.h> //for cstate_instr_timestamp_t
-#include <sensor_fifo_service.h>  // for QUADWORD_SIZE, sensor_ram_...
-#include <stdbool.h>              // for false, true
-#include <stddef.h>               // for size_t
-#include <stdint.h>               // for uint8_t, uint16_t
-#include <string.h>               // for memset
+#include <mesh_d2d_telemetry.h>
+#include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
+#include <stdbool.h>             // for false, true
+#include <stddef.h>              // for size_t
+#include <stdint.h>              // for uint8_t, uint16_t
+#include <string.h>              // for memset
 #include <telemetry_package_defs.h>
 #include <tlm_fuses.h>
 
@@ -205,6 +206,22 @@ void data_smpl_update_metrics_for_cores_aging_counters(void)
     {
         data_smpl_process_aging_data(core_id, this_pwr_pkg_timestamp_uS);
     }
+}
+
+void data_smpl_update_metrics_for_per_die_mesh_counters(void)
+{
+    //   Read the mesh telemetry data from the hardware block
+    uint32_t m0_residency_count = mesh_get_m0_residency();
+    uint32_t m1_residency_count = mesh_get_m1_residency();
+    uint32_t m2_residency_count = mesh_get_m2_residency();
+    uint32_t m1_entry_count = mesh_get_m1_entry_count();
+    uint32_t m2_entry_count = mesh_get_m2_entry_count();
+    uint32_t delivered_perf_count = mesh_get_telemetry_delivered_perf_count();
+    // compute and update the metrics with the new data
+    comp_metrics_for_per_die_mesh_tlm(m1_entry_count, m2_entry_count, m0_residency_count, m1_residency_count, m2_residency_count, delivered_perf_count);
+
+    // re-initialize the die mesh telemetry module to collect counters for next window of 1 second
+    data_smpl_die_mesh_tlm_init();
 }
 
 bool data_smpl_process_tile_temperature_sensor_fifo(void)
@@ -1453,4 +1470,16 @@ uint64_t data_smpl_get_cstate_tfa_timestamp(uint8_t core_id, cstate_tfa_timestam
     const cstate_instr_timestamp_t* core_entry = &cstate_tfa_timestamp_base[core_id + die_offset];
     uint64_t timestamp_uS = ROUND_NSEC_TO_USEC(core_entry->timestamp[timestamp_id]);
     return timestamp_uS;
+}
+
+void data_smpl_die_mesh_tlm_init(void)
+{
+    // Initialize the mesh telemetry hardware block
+    mesh_clock_telemetry(true, PER_DIE_MESH_PWR_TLM_INTERVAL); // Enable mesh telemetry with 1000ms interval count
+}
+
+void data_smpl_die_mesh_tlm_reset(void)
+{
+    // Reset the mesh telemetry hardware block
+    mesh_clock_telemetry(false, PER_DIE_MESH_PWR_TLM_INTERVAL); // Disable mesh telemetry
 }

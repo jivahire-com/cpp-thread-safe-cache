@@ -438,10 +438,10 @@ typedef struct {
 typedef struct {
     uint64_t m1_entry_count;
     uint64_t m2_entry_count;
-    uint64_t m0_residency_count;
-    uint64_t m1_residency_count;
-    uint64_t m2_residency_count;
-    uint64_t delivery_perf_count;
+    uint64_t m0_residency_mS;
+    uint64_t m1_residency_mS;
+    uint64_t m2_residency_mS;
+    uint64_t delivery_perf_mS;
 } pwr_soc_element_die_mesh_t, *p_pwr_soc_element_die_mesh_t;
 
 typedef struct {

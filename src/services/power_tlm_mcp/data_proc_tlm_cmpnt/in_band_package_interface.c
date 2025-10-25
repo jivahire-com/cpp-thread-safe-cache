@@ -372,9 +372,20 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
 
 void data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(p_pwr_soc_element_die_mesh_t die_mesh_data)
 {
-    // TODO: Implement the rest of the record
-    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584672/?view=edit
-    memset(die_mesh_data, 0, sizeof(pwr_soc_element_die_mesh_t));
+    if (die_mesh_data == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH);
+    }
+    else
+    {
+        die_mesh_data->m1_entry_count = computed_metrics_2_mins.mesh.die_mesh_pwr.m1_entry_count;
+        die_mesh_data->m2_entry_count = computed_metrics_2_mins.mesh.die_mesh_pwr.m2_entry_count;
+        die_mesh_data->m0_residency_mS = MESH_COUNTER_TO_MS(computed_metrics_2_mins.mesh.die_mesh_pwr.m0_residency_count);
+        die_mesh_data->m1_residency_mS = MESH_COUNTER_TO_MS(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_residency_count);
+        die_mesh_data->m2_residency_mS = MESH_COUNTER_TO_MS(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_residency_count);
+        die_mesh_data->delivery_perf_mS =
+            MESH_COUNTER_TO_MS(computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count);
+    }
 }
 
 void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(p_pwr_soc_element_d2d_link_t d2d_link_data)

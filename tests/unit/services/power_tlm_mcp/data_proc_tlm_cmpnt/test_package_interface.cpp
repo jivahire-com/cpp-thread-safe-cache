@@ -23,6 +23,7 @@ extern "C" {
 #include <data_sampling_i.h>
 #include <die_2_die_exchange_i.h>
 #include <dvfs.h>
+#include <in_band_package_interface_i.h>
 #include <mcp_telemetry_shared.h> //for cstate_instr_timestamp_t
 #include <sensor_fifo_service.h>  // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>               // for uint32_t, uint64_t, int32_t
@@ -525,10 +526,80 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, test_setup, t
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data, test_setup, test_teardown)
 {
-    // TODO: Implement the rest of the record
-    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584672/?view=edit
+    // Test with valid data - populate computed metrics first with counter values
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m1_entry_count = 10;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m2_entry_count = 5;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m0_residency_count = 3000000000ULL; // 3 billion counts = 1500 ms
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m1_residency_count = 1500000000ULL; // 1.5 billion counts = 750 ms
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m2_residency_count = 500000000ULL; // 500 million counts = 250 ms
+    computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count = 4000000000ULL; // 4 billion counts = 2000 ms
+
     pwr_soc_element_die_mesh_t die_mesh_data = {0};
+
+    // Call the function under test
     data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(&die_mesh_data);
+
+    // Verify the data was copied correctly from computed metrics (counts converted to ms)
+    assert_int_equal(die_mesh_data.m1_entry_count, 10);
+    assert_int_equal(die_mesh_data.m2_entry_count, 5);
+    assert_int_equal(die_mesh_data.m0_residency_mS, 1500);
+    assert_int_equal(die_mesh_data.m1_residency_mS, 750);
+    assert_int_equal(die_mesh_data.m2_residency_mS, 250);
+    assert_int_equal(die_mesh_data.delivery_perf_mS, 2000);
+}
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data_null_pointer, test_setup, test_teardown)
+{
+    // Test with NULL pointer - should handle gracefully and log error
+    data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(NULL);
+    // Function should handle NULL pointer gracefully without crashing
+    // (Real implementation logs an error via FPFW_ET_LOG)
+}
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data_zero_values, test_setup, test_teardown)
+{
+    // Test with all zero values in computed metrics
+    memset(&computed_metrics_2_mins.mesh.die_mesh_pwr, 0, sizeof(computed_metrics_2_mins.mesh.die_mesh_pwr));
+
+    pwr_soc_element_die_mesh_t die_mesh_data = {0xFF}; // Initialize to non-zero
+
+    // Call the function under test
+    data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(&die_mesh_data);
+
+    // Verify all values are zero
+    assert_int_equal(die_mesh_data.m1_entry_count, 0);
+    assert_int_equal(die_mesh_data.m2_entry_count, 0);
+    assert_int_equal(die_mesh_data.m0_residency_mS, 0);
+    assert_int_equal(die_mesh_data.m1_residency_mS, 0);
+    assert_int_equal(die_mesh_data.m2_residency_mS, 0);
+    assert_int_equal(die_mesh_data.delivery_perf_mS, 0);
+}
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data_max_values, test_setup, test_teardown)
+{
+    // Test with maximum values
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m1_entry_count = UINT64_MAX;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m2_entry_count = UINT64_MAX;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m0_residency_count = UINT64_MAX;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m1_residency_count = UINT64_MAX;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m2_residency_count = UINT64_MAX;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count = UINT64_MAX;
+
+    pwr_soc_element_die_mesh_t die_mesh_data = {0};
+
+    // Call the function under test
+    data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(&die_mesh_data);
+
+    // Verify maximum values are handled correctly
+    // Entry counts remain as-is
+    assert_int_equal(die_mesh_data.m1_entry_count, UINT64_MAX);
+    assert_int_equal(die_mesh_data.m2_entry_count, UINT64_MAX);
+    // Residency values are converted from counts to milliseconds
+    uint64_t expected_max_ms = (uint64_t)MESH_COUNTER_TO_MS(UINT64_MAX);
+    assert_int_equal(die_mesh_data.m0_residency_mS, expected_max_ms);
+    assert_int_equal(die_mesh_data.m1_residency_mS, expected_max_ms);
+    assert_int_equal(die_mesh_data.m2_residency_mS, expected_max_ms);
+    assert_int_equal(die_mesh_data.delivery_perf_mS, expected_max_ms);
 }
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data, test_setup, test_teardown)

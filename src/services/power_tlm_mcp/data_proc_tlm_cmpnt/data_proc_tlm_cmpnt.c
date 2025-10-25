@@ -54,11 +54,13 @@ void data_proc_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mo
 
         // Note:  Enable first counter pair id for each core
         aging_counter_init();
+        data_smpl_die_mesh_tlm_init();
 
         in_band_publishing_active = true;
     }
     else
     {
+        data_smpl_die_mesh_tlm_reset();
         in_band_publishing_active = false;
     }
 }
@@ -95,4 +97,10 @@ void data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg(void)
 
 void data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg(void)
 {
+}
+
+void data_proc_tlm_cmpnt_process_one_second_input_data(void)
+{
+    // mesh telemetry data processing
+    data_smpl_update_metrics_for_per_die_mesh_counters();
 }

@@ -114,7 +114,16 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_tlm_mode_enter_actions, test_setup, test_
         expect_function_call(__wrap_dvfs_c2_pcm_enable_aging_sensor_measurement);
     }
 
+    expect_value(__wrap_mesh_clock_telemetry, enable, true);
+    expect_value(__wrap_mesh_clock_telemetry, interval_count, PER_DIE_MESH_PWR_TLM_INTERVAL);
+    expect_function_call(__wrap_mesh_clock_telemetry);
+
     data_proc_tlm_cmpnt_tlm_mode_enter_actions(TLM_OP_MODE_PUBLISHING);
+
+    // Test TLM_OP_MODE_DISABLED case - should call data_smpl_die_mesh_tlm_reset()
+    expect_value(__wrap_mesh_clock_telemetry, enable, false);
+    expect_value(__wrap_mesh_clock_telemetry, interval_count, PER_DIE_MESH_PWR_TLM_INTERVAL);
+    expect_function_call(__wrap_mesh_clock_telemetry);
 
     data_proc_tlm_cmpnt_tlm_mode_enter_actions(TLM_OP_MODE_DISABLED);
 }
@@ -129,6 +138,32 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg, test_setup, te
 {
     // expand unit test once implementation is available
     data_proc_tlm_cmpnt_prepare_data_for_24hr_pkg();
+}
+
+TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_one_second_input_data, test_setup, test_teardown)
+{
+    uint8_t m1_entry_count = 5;
+    uint8_t m2_entry_count = 3;
+    uint64_t test_m0_residency = 1500000000ULL;       // 1.5 seconds worth of 2GHz clock cycles
+    uint64_t test_m1_residency = 500000000ULL;        // 0.5 seconds worth of 2GHz clock cycles
+    uint64_t test_m2_residency = 100000000ULL;        // 0.1 seconds worth of 2GHz clock cycles
+    uint64_t test_del_perf_residency = 2000000000ULL; // 1 second worth of 2GHz clock cycles
+
+    // Set up mock return values for mesh hardware APIs (inlined into data_smpl_update_metrics_for_per_die_mesh_counters)
+    will_return(__wrap_mesh_get_m1_entry_count, m1_entry_count);
+    will_return(__wrap_mesh_get_m2_entry_count, m2_entry_count);
+    will_return(__wrap_mesh_get_m0_residency, (uint32_t)test_m0_residency);
+    will_return(__wrap_mesh_get_m1_residency, (uint32_t)test_m1_residency);
+    will_return(__wrap_mesh_get_m2_residency, (uint32_t)test_m2_residency);
+    will_return(__wrap_mesh_get_telemetry_delivered_perf_count, (uint32_t)test_del_perf_residency);
+
+    // Set up expected call for data_smpl_die_mesh_tlm_init (re-initialization)
+    expect_value(__wrap_mesh_clock_telemetry, enable, true);
+    expect_value(__wrap_mesh_clock_telemetry, interval_count, PER_DIE_MESH_PWR_TLM_INTERVAL);
+    expect_function_call(__wrap_mesh_clock_telemetry);
+
+    // Call the function under test
+    data_proc_tlm_cmpnt_process_one_second_input_data();
 }
 
 TEST_FUNCTION(test_data_smpl_reset_residency_timestamps, test_setup, test_teardown)

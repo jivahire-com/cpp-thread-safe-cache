@@ -445,3 +445,10 @@ uint16_t data_proc_tlm_cmpnt_get_oob_dimm_max_temp_dC(uint8_t dimm_idx);
  * @return The average power in milliwatts.
  */
 uint16_t data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(uint8_t dimm_idx);
+
+/**
+ * @brief Process input data that is collected every second (e.g., mesh telemetry data).
+ *
+ * @return None
+ */
+void data_proc_tlm_cmpnt_process_one_second_input_data(void);

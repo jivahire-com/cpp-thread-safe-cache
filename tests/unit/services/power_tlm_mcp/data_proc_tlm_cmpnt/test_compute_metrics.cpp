@@ -26,6 +26,14 @@ extern "C" {
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define TEST_DIE_ID         (1)
+#define TEST_M1_ENTRY_COUNT (5)
+#define TEST_M2_ENTRY_COUNT (3)
+#define TEST_M0_RESIDENCY   (1500000000ULL) // 1.5 seconds worth of 2GHz clock cycles
+#define TEST_M1_RESIDENCY   (500000000ULL)  // 0.5 seconds worth of 2GHz clock cycles
+#define TEST_M2_RESIDENCY   (100000000ULL)  // 0.1 seconds worth of 2GHz clock cycles
+#define TEST_DELIVERED_PERF (2000000000ULL) // 1 second worth of 2GHz clock cycles
+
 extern "C" {
 extern aging_counter_t core_aging[NUMBER_OF_CORES_PER_DIE];
 }
@@ -1114,4 +1122,91 @@ TEST_FUNCTION(test_comp_metrics_for_mpam_throttling, test_setup, test_teardown)
     // Verify valid MPAM data is unchanged (function should return early on invalid ID)
     assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].residency_uS, valid_mpam_residency);
     assert_int_equal(computed_metrics_2_mins.mpam[test_mpam_id].nominal_pstate, valid_mpam_pstate);
+}
+
+//
+// Tests for comp_metrics_for_per_die_mesh_tlm()
+//
+
+TEST_FUNCTION(test_comp_metrics_for_per_die_mesh_tlm, test_setup, test_teardown)
+{
+    uint32_t m1_entry_count = 5;
+    uint32_t m2_entry_count = 3;
+    uint32_t test_m0_residency = 1500000000UL;       // 1.5 seconds worth of 2GHz clock cycles
+    uint32_t test_m1_residency = 500000000UL;        // 0.5 seconds worth of 2GHz clock cycles
+    uint32_t test_m2_residency = 100000000UL;        // 0.1 seconds worth of 2GHz clock cycles
+    uint32_t test_del_perf_residency = 2000000000UL; // 1 second worth of 2GHz clock cycles
+
+    // Clear computed metrics
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    // Call the function under test
+    comp_metrics_for_per_die_mesh_tlm(m1_entry_count, m2_entry_count, test_m0_residency, test_m1_residency, test_m2_residency, test_del_perf_residency);
+
+    // Verify the computed metrics were updated
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_entry_count,
+                     m1_entry_count); // Should directly store the m1_entry_count value
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_entry_count,
+                     m2_entry_count); // Should directly store the m2_entry_count value
+
+    // Verify residency values stored as raw counts
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m0_residency_count, test_m0_residency);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_residency_count, test_m1_residency);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_residency_count, test_m2_residency);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count, test_del_perf_residency);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_per_die_mesh_tlm_zero_entry_counts, test_setup, test_teardown)
+{
+    uint32_t m1_entry_count = 0; // Zero entry count
+    uint32_t m2_entry_count = 0; // Zero entry count
+
+    // Ensure publishing is active
+    in_band_publishing_active = true;
+
+    // Clear computed metrics
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    // Call the function under test
+    comp_metrics_for_per_die_mesh_tlm(m1_entry_count, m2_entry_count, TEST_M0_RESIDENCY, TEST_M1_RESIDENCY, TEST_M2_RESIDENCY, TEST_DELIVERED_PERF);
+
+    // Verify entry counts remain zero when input entry counts are zero
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_entry_count, m1_entry_count); // Should be 0
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_entry_count, m2_entry_count); // Should be 0
+
+    // But residency values should still be updated as raw counts
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m0_residency_count, TEST_M0_RESIDENCY);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_residency_count, TEST_M1_RESIDENCY);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_residency_count, TEST_M2_RESIDENCY);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count, TEST_DELIVERED_PERF);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_per_die_mesh_tlm_accumulation, test_setup, test_teardown)
+{
+    uint32_t m1_entry_count = 1;
+    uint32_t m2_entry_count = 1;
+    uint32_t m0_residency_count = 1000000000UL;   // 0.5 seconds
+    uint32_t m1_residency_count = 500000000UL;    // 0.25 seconds
+    uint32_t m2_residency_count = 200000000UL;    // 0.1 seconds
+    uint32_t delivered_perf_count = 1000000000UL; // 0.5 seconds
+
+    // Ensure publishing is active
+    in_band_publishing_active = true;
+
+    // Clear computed metrics
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    // Call the function multiple times to test accumulation
+    comp_metrics_for_per_die_mesh_tlm(m1_entry_count, m2_entry_count, m0_residency_count, m1_residency_count, m2_residency_count, delivered_perf_count);
+    comp_metrics_for_per_die_mesh_tlm(m1_entry_count, m2_entry_count, m0_residency_count, m1_residency_count, m2_residency_count, delivered_perf_count);
+
+    // Verify accumulation - each call adds the entry count value
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_entry_count, m1_entry_count * 2); // Should accumulate: 1 * 2 = 2
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_entry_count, m2_entry_count * 2); // Should accumulate: 1 * 2 = 2
+
+    // Residency values should also accumulate as raw counts
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m0_residency_count, m0_residency_count * 2);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_residency_count, m1_residency_count * 2);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_residency_count, m2_residency_count * 2);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count, delivered_perf_count * 2);
 }

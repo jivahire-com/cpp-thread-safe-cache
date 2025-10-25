@@ -529,6 +529,21 @@ void comp_metrics_for_soc_avg_pstate(uint8_t (*pstate)[NUMBER_OF_CORES_PER_DIE])
     }
 }
 
+void comp_metrics_for_per_die_mesh_tlm(uint32_t m1_entry_count,
+                                       uint32_t m2_entry_count,
+                                       uint32_t m0_residency_count,
+                                       uint32_t m1_residency_count,
+                                       uint32_t m2_residency_count,
+                                       uint32_t delivered_perf_count)
+{
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m1_entry_count += (uint64_t)m1_entry_count;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m2_entry_count += (uint64_t)m2_entry_count;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m0_residency_count += (uint64_t)m0_residency_count;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m1_residency_count += (uint64_t)m1_residency_count;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.m2_residency_count += (uint64_t)m2_residency_count;
+    computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count += (uint64_t)delivered_perf_count;
+}
+
 void comp_metrics_reset_local_2_min_metrics()
 {
     memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));

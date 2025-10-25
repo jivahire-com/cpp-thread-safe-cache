@@ -63,4 +63,11 @@ mock_target(${TARGET}
     dvfs_c2_pcm_enable_aging_sensor_measurement
     dvfs_c2_pcm_aging_get_sensor_status
     dvfs_c2_get_pcm_bank_sensor_data
+    mesh_clock_telemetry
+    mesh_get_m1_entry_count
+    mesh_get_m2_entry_count
+    mesh_get_m0_residency
+    mesh_get_m1_residency
+    mesh_get_m2_residency
+    mesh_get_telemetry_delivered_perf_count
 )

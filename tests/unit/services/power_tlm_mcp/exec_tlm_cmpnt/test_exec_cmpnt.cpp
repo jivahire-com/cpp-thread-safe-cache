@@ -59,6 +59,7 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_change_telemetry_mode_disable, test_setup, tes
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
 
     exec_tlm_cmpnt_change_telemetry_mode(TLM_OP_MODE_DISABLED);
 
@@ -77,7 +78,9 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_change_telemetry_mode_enable_with_inst, test_s
     expect_function_call(in_band_tlm_cmpnt_tlm_mode_enter_actions);
 
     will_return(in_band_tlm_cmpnt_is_any_instantaneous_enabled, true);
+    will_return(in_band_tlm_cmpnt_is_power_record_enabled, true);
 
+    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
@@ -99,6 +102,7 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_change_telemetry_mode_enable_without_inst, tes
     expect_function_call(in_band_tlm_cmpnt_tlm_mode_enter_actions);
 
     will_return(in_band_tlm_cmpnt_is_any_instantaneous_enabled, false);
+    will_return(in_band_tlm_cmpnt_is_power_record_enabled, false);
 
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
@@ -214,13 +218,14 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_init, test_setup, test_teardown)
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
     expect_any_always(__wrap__txe_event_flags_create, group_ptr);
     expect_any_always(__wrap__txe_event_flags_create, name_ptr);
     expect_any_always(__wrap__txe_event_flags_create, event_control_block_size);
     will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
 
-    expect_function_calls(__wrap_FpFwAssertWithArgs, 7);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 8);
 
     exec_tlm_cmpnt_init(1, 1000, 100, 86000);
 
@@ -286,6 +291,18 @@ TEST_FUNCTION(test_oob_timer_cb, test_setup, test_teardown)
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
     oob_timer_cb(0);
+}
+
+TEST_FUNCTION(test_one_second_timer_cb, test_setup, test_teardown)
+{
+    expect_any_always(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ONE_SECOND_TMR_EXPIRED);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
+    one_second_timer_cb(0);
 }
 
 TEST_FUNCTION(test_exec_tlm_cmpnt_notify_new_in_band_mts_message, test_setup, test_teardown)

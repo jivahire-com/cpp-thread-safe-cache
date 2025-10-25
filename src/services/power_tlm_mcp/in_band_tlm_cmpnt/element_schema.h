@@ -205,10 +205,10 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      FPFW_ET_LEVEL_DEBUG,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, m1_entry_count),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, m2_entry_count),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, m0_residency_count),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, m1_residency_count),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, m2_residency_count),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, delivery_perf_count))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, m0_residency_mS),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, m1_residency_mS),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, m2_residency_mS),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, delivery_perf_mS))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE,

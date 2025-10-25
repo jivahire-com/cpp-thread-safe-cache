@@ -13,6 +13,7 @@
 #include <FpFwLock.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <exec_tlm_cmpnt.h>
+#include <in_band_tlm_cmpnt.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -32,6 +33,11 @@ void __wrap_FpFwAssertWithArgs(int expression, uintptr_t arg0, uintptr_t arg1, u
     FPFW_UNUSED(arg2);
     FPFW_UNUSED(arg3);
 
+    function_called();
+}
+
+void data_proc_tlm_cmpnt_process_one_second_input_data(void)
+{
     function_called();
 }
 
@@ -115,6 +121,13 @@ void in_band_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mode
 
 bool in_band_tlm_cmpnt_is_any_instantaneous_enabled(void)
 {
+    return mock_type(bool);
+}
+
+bool in_band_tlm_cmpnt_is_power_record_enabled(pwr_telemetry_element_id_t element_id)
+{
+    // check_expected_ptr(&element_id);
+    FPFW_UNUSED(element_id);
     return mock_type(bool);
 }
 

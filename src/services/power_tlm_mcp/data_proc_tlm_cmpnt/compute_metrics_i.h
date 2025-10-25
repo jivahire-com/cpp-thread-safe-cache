@@ -11,7 +11,6 @@
 
 /*----------- Nested includes ------------*/
 
-#include "data_sampling_i.h" // internal APIs
 #include "data_utilities_i.h"
 
 #include <exec_tlm_cmpnt.h>
@@ -59,6 +58,15 @@ typedef struct {
 } rack_priority_metrics_t;
 
 typedef struct {
+    uint64_t m1_entry_count;    
+    uint64_t m2_entry_count;    
+    uint64_t m0_residency_count;      
+    uint64_t m1_residency_count;      
+    uint64_t m2_residency_count;     
+    uint64_t delivered_perf_count;
+} die_mesh_pwr_metrics_t;
+
+typedef struct {
     uint64_t timestamp_uS;
     uint32_t unaged_counter;
     uint32_t aged_counter;
@@ -85,6 +93,11 @@ typedef struct
 {
     aging_counter_metrics_t core_aging_counters[NUMBER_OF_AGING_COUNTER_PAIRS];
 } computed_per_core_24_hrs_metrics_t;
+
+typedef struct
+{
+    die_mesh_pwr_metrics_t die_mesh_pwr;
+} computed_per_die_metrics_t;
 
 typedef struct
 {
@@ -123,6 +136,7 @@ typedef struct {
     computed_per_core_metrics_t cores[NUMBER_OF_CORES_PER_DIE];
     computed_per_soc_metrics_t soc;
     computed_per_mpam_metrics_t mpam[NUMBER_OF_MPAMS];
+    computed_per_die_metrics_t mesh;
 } computed_metrics_2_min_t;
 
 typedef struct
@@ -464,3 +478,15 @@ void comp_metrics_for_mpam_data( mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS]
  * @param[in] nominal_pstate - The nominal pstate value.
  */
 void comp_metrics_for_mpam_throttling(uint8_t mpam_id, uint32_t residency_uS, uint8_t nominal_pstate);
+
+/**
+ * @brief Update the per-die mesh telemetry metrics based on the provided telemetry data.
+ *
+ * @param[in] m1_entry_count - M1 entry count
+ * @param[in] m2_entry_count - M2 entry count  
+ * @param[in] m0_residency_count - M0 residency count
+ * @param[in] m1_residency_count - M1 residency count
+ * @param[in] m2_residency_count - M2 residency count
+ * @param[in] delivered_perf_count - Delivered performance count
+ */
+void comp_metrics_for_per_die_mesh_tlm(uint32_t m1_entry_count, uint32_t m2_entry_count, uint32_t m0_residency_count, uint32_t m1_residency_count, uint32_t m2_residency_count, uint32_t delivered_perf_count);

@@ -35,6 +35,14 @@ extern "C" {
 // Conversion macro: centi-amps to milliamps (1 cA = 10 mA)
 #define CONVERT_CENTIAMPS_TO_MILLIAMPS(ca) ((ca) * 10)
 
+#define TEST_DIE_ID         (1)
+#define TEST_M1_ENTRY_COUNT (5)
+#define TEST_M2_ENTRY_COUNT (3)
+#define TEST_M0_RESIDENCY   (1500000000ULL) // 1.5 seconds worth of 2GHz clock cycles
+#define TEST_M1_RESIDENCY   (500000000ULL)  // 0.5 seconds worth of 2GHz clock cycles
+#define TEST_M2_RESIDENCY   (100000000ULL)  // 0.1 seconds worth of 2GHz clock cycles
+#define TEST_DELIVERED_PERF (2000000000ULL) // 1 second worth of 2GHz clock cycles
+
 extern "C" {
 extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
@@ -3856,4 +3864,68 @@ TEST_FUNCTION(test_data_smpl_calculate_mpam_throttling_transitions, test_setup, 
     // Expected: residency_uS = 55000 - 20000 = 35000, nominal_pstate = 8
     assert_int_equal(computed_metrics_2_mins.mpam[5].residency_uS, 35000);
     assert_int_equal(computed_metrics_2_mins.mpam[5].nominal_pstate, 8);
+}
+
+TEST_FUNCTION(test_data_smpl_die_mesh_tlm_init_success, test_setup, test_teardown)
+{
+    // Expected mesh_clock_telemetry call with enable=true and PER_DIE_MESH_PWR_TLM_INTERVAL
+    expect_value(__wrap_mesh_clock_telemetry, enable, true);
+    expect_value(__wrap_mesh_clock_telemetry, interval_count, PER_DIE_MESH_PWR_TLM_INTERVAL);
+    expect_function_call(__wrap_mesh_clock_telemetry);
+
+    // Call the function under test
+    data_smpl_die_mesh_tlm_init();
+}
+
+TEST_FUNCTION(test_data_smpl_update_metrics_for_per_die_mesh_counters_full_flow, test_setup, test_teardown)
+{
+    // Ensure publishing is active
+    in_band_publishing_active = true;
+
+    // Clear computed metrics
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    // Set up mock return values for mesh hardware APIs (inlined from data_smpl_die_mesh_pwr_tlm_get_data)
+    will_return(__wrap_mesh_get_m1_entry_count, TEST_M1_ENTRY_COUNT);
+    will_return(__wrap_mesh_get_m2_entry_count, TEST_M2_ENTRY_COUNT);
+    will_return(__wrap_mesh_get_m0_residency, (uint32_t)TEST_M0_RESIDENCY);
+    will_return(__wrap_mesh_get_m1_residency, (uint32_t)TEST_M1_RESIDENCY);
+    will_return(__wrap_mesh_get_m2_residency, (uint32_t)TEST_M2_RESIDENCY);
+    will_return(__wrap_mesh_get_telemetry_delivered_perf_count, (uint32_t)TEST_DELIVERED_PERF);
+
+    // Set up expected call for data_smpl_die_mesh_tlm_init (re-initialization)
+    expect_value(__wrap_mesh_clock_telemetry, enable, true);
+    expect_value(__wrap_mesh_clock_telemetry, interval_count, PER_DIE_MESH_PWR_TLM_INTERVAL);
+    expect_function_call(__wrap_mesh_clock_telemetry);
+
+    // Call the function under test
+    data_smpl_update_metrics_for_per_die_mesh_counters();
+
+    // Verify computed metrics were updated
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_entry_count,
+                     TEST_M1_ENTRY_COUNT); // Should directly store TEST_M1_ENTRY_COUNT (5)
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_entry_count,
+                     TEST_M2_ENTRY_COUNT); // Should directly store TEST_M2_ENTRY_COUNT (3)
+
+    // Verify residency values stored as raw counts
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m0_residency_count, TEST_M0_RESIDENCY);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_residency_count, TEST_M1_RESIDENCY);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_residency_count, TEST_M2_RESIDENCY);
+    assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count, TEST_DELIVERED_PERF);
+}
+
+TEST_FUNCTION(test_data_smpl_die_mesh_tlm_reset_success, test_setup, test_teardown)
+{
+    // Test case: Verify reset function disables mesh telemetry with correct parameters
+
+    // Expected mesh_clock_telemetry call with enable=false and PER_DIE_MESH_PWR_TLM_INTERVAL
+    expect_value(__wrap_mesh_clock_telemetry, enable, false);
+    expect_value(__wrap_mesh_clock_telemetry, interval_count, PER_DIE_MESH_PWR_TLM_INTERVAL);
+    expect_function_call(__wrap_mesh_clock_telemetry);
+
+    // Call the function under test
+    data_smpl_die_mesh_tlm_reset();
+
+    // Note: This function should disable mesh telemetry by calling mesh_clock_telemetry with enable=false
+    // The interval_count parameter is passed but not used when disabling
 }

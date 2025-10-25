@@ -65,6 +65,7 @@ TX_TIMER inst_sample_tmr;
 TX_TIMER power_pkg_tmr;
 TX_TIMER _24hr_pkg_tmr;
 TX_TIMER oob_print_tmr;
+TX_TIMER one_second_tmr;
 
 TX_EVENT_FLAGS_GROUP s_thread_control;
 tlm_operating_mode_t pending_mode_change;
@@ -158,6 +159,16 @@ void exec_tlm_cmpnt_init(uint8_t die_id, uint32_t pwr_pkg_period_ms, uint32_t in
                                TX_NO_ACTIVATE);      /* UINT auto_activate) */
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 
+    txStatus = tx_timer_create(&one_second_tmr,     /* TX_TIMER *timer_ptr */
+                               "one_second_tmr",    /* CHAR *name_ptr */
+                               one_second_timer_cb, /* VOID (*expiration_function)(ULONG input)*/
+                               0,                   /* ULONG expiration_input */
+                               MS_TO_TX_TICKS(1100),
+                               /* ULONG initial_ticks >= 1 */ /*Note : we start the initial tick at 1100ms, which is 100ms later to avoid not to fall on the boundary line of 1 sec sampling rate and intval count , and to make sure we have the counters ready to read by this time */
+                               MS_TO_TX_TICKS(1000),          /* ULONG  reschedule_ticks */
+                               TX_NO_ACTIVATE);               /* UINT auto_activate) */
+    FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
+
     txStatus = tx_event_flags_create(&s_thread_control, "Telemetry Service Event");
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
@@ -210,6 +221,13 @@ void tlm_svc_thread(ULONG thread_input)
             {
                 data_proc_tlm_cmpnt_prepare_data_for_inst_sample();
                 in_band_tlm_cmpnt_add_inst_sample();
+            }
+
+            if (current_bits & ONE_SECOND_TMR_EXPIRED)
+            {
+                // this timer is used to process one-second interval data
+                // it is not used for any other purpose
+                data_proc_tlm_cmpnt_process_one_second_input_data();
             }
 
             if (current_bits & PWR_PKG_TMR_EXPIRED)
@@ -298,6 +316,14 @@ void oob_timer_cb(ULONG context)
     FPFW_UNUSED(context);
 
     UINT txStatus = tx_event_flags_set(&s_thread_control, OOB_TMR_EXPIRED, TX_OR);
+    FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
+}
+
+void one_second_timer_cb(ULONG context)
+{
+    FPFW_UNUSED(context);
+
+    UINT txStatus = tx_event_flags_set(&s_thread_control, ONE_SECOND_TMR_EXPIRED, TX_OR);
     FPFW_RUNTIME_ASSERT_EXT(txStatus == TX_SUCCESS, txStatus, 0, 0, 0);
 }
 
@@ -466,6 +492,7 @@ void run_timer_exit_actions(tlm_operating_mode_t exiting_mode)
         tx_timer_deactivate(&inst_sample_tmr);
         tx_timer_deactivate(&power_pkg_tmr);
         tx_timer_deactivate(&_24hr_pkg_tmr);
+        tx_timer_deactivate(&one_second_tmr);
         _24_pkg_pending = false;
         break;
 
@@ -495,6 +522,11 @@ void run_timer_enter_actions(tlm_operating_mode_t entering_mode)
         }
         tx_timer_activate(&power_pkg_tmr);
         tx_timer_activate(&_24hr_pkg_tmr);
+
+        if (in_band_tlm_cmpnt_is_power_record_enabled(POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH))
+        {
+            tx_timer_activate(&one_second_tmr);
+        }
         _24_pkg_pending = false;
         _pwr_pkg_pending = false;
         _pwr_pkg_gen_count = 0;

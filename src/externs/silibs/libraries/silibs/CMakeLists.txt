@@ -53,6 +53,7 @@ set(SILIB_LIST
     ioss_init
     lib_i3c
     mhuv3
+    mesh_d2d_telemetry
     pcie
     pciess
     pcr_clock_config

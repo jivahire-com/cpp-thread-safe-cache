@@ -37,6 +37,7 @@ target_link_libraries(${TARGET}
         ms::lib::pwr_tlm_core_ex
         ms::lib::telemetry::fuses
         silibs::dvfs
+        silibs::mesh_d2d_telemetry
         silibs::pvt
         silibs::semaphore
 )

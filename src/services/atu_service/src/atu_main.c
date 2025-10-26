@@ -118,7 +118,7 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .ap_base_address = VAR_SVC_DDR_DIE_0_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
+        .attribute = {ATU_BUS_ATTR_S},
     },
     // Crash dump status header on DIE0
     {
@@ -213,7 +213,7 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .ap_base_address = VAR_SVC_DDR_DIE_0_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
+        .attribute = {ATU_BUS_ATTR_S},
     },
     // Crash dump status header on DIE0
     {
@@ -333,7 +333,7 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .ap_base_address = VAR_SVC_DDR_DIE_1_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
+        .attribute = {ATU_BUS_ATTR_S},
     },
     // Crash dump status header on DIE1
     {
@@ -421,7 +421,7 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .ap_base_address = VAR_SVC_DDR_DIE_1_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
+        .attribute = {ATU_BUS_ATTR_S},
     },
     // Crash dump status header on DIE1
     {

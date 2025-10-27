@@ -590,8 +590,12 @@ Invoke-Build
 Function Invoke-Build()
 {
     # Keeps x86 build from failing/breaking pipeline build stage
-    $ErrorActionPreference = "SilentlyContinue"
+    $ErrorActionPreference = "Continue"
+
     ninja -C $env:REPO_APP_TARGET_BUILD_DIR $args
+    if ($LASTEXITCODE -ne 0) {
+        throw "Build failed with exit code $LASTEXITCODE"
+    }
 
     # check for successful build
     $build_status = Join-Path -Path $(Get-ChildItem -Path "Env:REPO_APP_TARGET_BUILD_DIR").Value -ChildPath '.allbuilt'

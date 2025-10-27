@@ -1,6 +1,9 @@
 # Set target
 set(CLANG_TARGET_TRIPLE i386-pc-windows-msvc)
 
+# Force use of response files to avoid Windows command line length limits
+set(CMAKE_NINJA_FORCE_RESPONSE_FILE TRUE)
+
 include($ENV{REPO_APP_ROOT}/tools/cmakes/scripts/enabled_on.cmake)
 set_valid_enable_flags(${CLANG_TARGET_TRIPLE})
 

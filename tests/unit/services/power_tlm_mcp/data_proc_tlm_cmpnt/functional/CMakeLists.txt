@@ -1,4 +1,4 @@
-set(TARGET kng.service.pwr_tlm_mcp.cmpnt.data_proc.functional.test)
+set(TARGET kng.svc.pwr_tlm_mcp.dp.func.test)
 
 set(SOURCES
     test_tile_temperature.cpp

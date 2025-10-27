@@ -4,7 +4,7 @@ project(kingsgate.mscp VERSION $ENV{MajorVersion}.$ENV{MinorVersion}.$ENV{PatchV
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_OBJECT_PATH_MAX 260) # set Max path length on CMake to be higher then default for Windows build
+set(CMAKE_OBJECT_PATH_MAX 512) # set Max path length on CMake to be higher then default for Windows build
 
 # Base directories
 set(REPO_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})

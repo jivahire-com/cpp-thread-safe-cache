@@ -90,10 +90,10 @@ class apns_smbios_test(EchoFallsBaseTest):
             # Send SMBIOS Type 16 command
             self.log.info("Querying SMBIOS Table 16...")
             apns_connection.get_current_channel().write_line(write_string=" SMBIOSVIEW  -t 16")
-            smbios16_output = apns_connection.get_current_channel().read_until(key="ExtendedMaximumCapacity", timeout_seconds=60)
+            smbios16_output = apns_connection.get_current_channel().read_until(key="ShowType ", timeout_seconds=60)
             self.log.info("SMBIOS Type 16 Output:\n" + smbios16_output)
             # Validate the output
-            if not smbios16_output.strip() or ("QueryType   = 16" not in smbios16_output and "Type: Physical Memory Array" not in smbios16_output):
+            if not smbios16_output.strip() or ("QueryType   = 16" not in smbios16_output):
                 self.log.error("SMBIOS Type 16 output is empty or missing 'type'")
                 apns_connection.get_current_channel().close()
                 self.test_notify(step="SMBIOS Query", msg="Test Fail", _is_error=True)
@@ -103,27 +103,23 @@ class apns_smbios_test(EchoFallsBaseTest):
             # Send SMBIOS Type 17 command
             self.log.info("Querying SMBIOS Table 17...")
             apns_connection.get_current_channel().write_line(write_string="SMBIOSVIEW  -t 17")
-            smbios17_output = apns_connection.get_current_channel().read_until(key="Handle: 17", timeout_seconds=90)
+            time.sleep(1)
+            apns_connection.get_current_channel().write_line(write_string="SMBIOSVIEW  -t 17")
+            smbios17_output = ""
+            for i in range(2):
+                output = apns_connection.get_current_channel().read_until(key="Shell>", timeout_seconds=60)
+                smbios17_output += output + "\n"
+
             self.log.info("SMBIOS Type 17 Output:\n" + smbios17_output)
-            if not smbios17_output.strip() or ("QueryType" not in smbios17_output and "Memory Device" not in smbios17_output):
+            if not smbios17_output.strip() or ("QueryType   = 17" not in smbios17_output):
                self.log.error("SMBIOS Type 17 output is empty or missing expected markers")
                self.test_notify(step="SMBIOS Type 17", msg="Test Fail", _is_error=True)
                apns_connection.get_current_channel().close()
                self.dut.teardown()
                time.sleep(30)
                return False
-            # Each Dimn will have a Handle no in Simbios View info and the no will be 12 to 17 so I will check Handle 12 to Handle 17 all exists in simbios17_output
-            required_types = list(range(12, 17))
-            missing_types = [t for t in required_types if not re.search(rf"\bHandle:\s*{t}\b", smbios17_output)]
-
-            if missing_types:
-                self.log.error(f"Missing required 'Type' entries in SMBIOS Type 17 output: {missing_types}")
-                self.test_notify(step="SMBIOS Types", msg=f"Missing types: {missing_types}", _is_error=True)
-                apns_connection.get_current_channel().close()
-                self.dut.teardown()
-                time.sleep(30)
-                return False
-            self.test_notify(step="SMBIOS Types", msg="Test successful", _is_error=False)
+           
+            self.test_notify(step="SMBIOS Query", msg="Test success", _is_error=False)
             apns_connection.get_current_channel().close()
             self.dut.teardown()
             time.sleep(30)

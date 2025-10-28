@@ -1,4 +1,5 @@
 --variable KEEP_SVP_ALIVE:TRUE
+--variable HOST_JSON:hsp_scp_bl_embed_fw_dual_die.json
 
 ## AVS Die 0 Tests
 ./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die0.robot
@@ -32,6 +33,22 @@
 ./../../../tests/functional/test_suites/varserv_tests/varserv_cli_test.robot
 
 ## MTS Tests
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_reset_test.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_platform_info.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_manifest.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_test.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_reset_test.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_platform_info.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_manifest.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_test.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_reset_test.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_platform_info.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_manifest.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_test.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_reset_test.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_platform_info.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_manifest.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_test.robot
 ./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_reset_test.robot
 ./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_platform_info.robot
 ./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_manifest.robot

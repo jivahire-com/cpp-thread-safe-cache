@@ -34,6 +34,10 @@
 
 ## MTS Tests
 ./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_capabilities.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_reset_test.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_platform_info.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_client_get_manifest.robot
+./../../../tests/functional/test_suites/mts_tests/mts_dcp_test.robot
 
 ## SVP Teardown
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

@@ -25,6 +25,16 @@
 #define POWER_ET_WARN(type, param)          EventWritePowerWarnParam((param), (type))
 #define POWER_ET_STATUS(type)               EventWritePowerStatus((type))
 #define POWER_ET_STATUS_PARAM(type, param)  EventWritePowerStatusParam((param), (type))
+#define POWER_ET_LOG_TRACE_STATUS(type)    \
+    EventWritePowerLogTraceStatus((type))
+#define POWER_ET_LOG_TRACE_STR(message) \
+    EventWritePowerLogTraceStr((message))
+#define POWER_ET_LOG_TRACE_PARAM(type, param) \
+    EventWritePowerLogTraceParam((param), (type))
+#define POWER_ET_LOG_TRACE_CHANGE_STATE(loop_id, state) \
+    EventWritePowerLogChangeState((loop_id), (state))
+#define POWER_ET_LOG_TRACE_SIGNAL_EVT(event) \
+    EventWritePowerLogSignalEvt((event))
 #ifdef COREBITS_FMT_DATA
     #define POWER_ET_AFFECTED_CORES(type, cores) EventWritePowerWarnParamAffectedCores(COREBITS_FMT_DATA(cores), (type))
 #endif
@@ -36,7 +46,7 @@
 #define POWER_ET_ENCODE_MODULE_EVENT(module, event)   ((module << 16) | event)
 
 #define ET_NOPARAM 0
-
+#define PWR_TRACE_STR_SIZE      192
 /*-------------- Typedefs ----------------*/
 
 typedef enum
@@ -79,6 +89,18 @@ typedef enum
     POWER_ET_D2D_SEND_FAIL_CB,
     POWER_ET_D2D_RECV_FAIL_CB,
     POWER_ET_D2D_UNEXPECTED_STATE,
+    POWER_ET_TYPE_REMOTE_LOOP_FAILURE,
+    POWER_ET_D2D_PREV_DATA_NOT_CONSUMED,
+    POWER_ET_D2D_REMOTE_DATA_CORRUPTED,
+    POWER_ET_D2D_REMOTE_INVALID_PWRCAP,
+    POWER_ET_D2D_PID_MISMATCH,
+    POWER_ET_TYPE_SOC_PWR_CALCULATION,
+    POWER_ET_D2D_SEND_TRANSACTION_COUNT,
+    POWER_ET_D2D_RECV_TRANSACTION_COUNT,
+    POWER_ET_TYPE_LOOP_STATE_CHANGE,
+    POWER_ET_TYPE_LOOP_SIGNAL_EVENT,
+    POWER_ET_TYPE_CTRL_LOOP_TIMER_CB,
+    POWER_ET_TYPE_PVT_TELEM_TIMER_CB,
 
     POWER_ET_TYPE_COUNT
 }   E_POWER_ET_TYPE_T;
@@ -91,6 +113,11 @@ typedef enum {
     POWER_ET_ID_TYPE_STATUS_NOPARAMS,
     POWER_ET_ID_TYPE_STATUS_PARAMS,
     POWER_ET_ID_TYPE_LOG_TRACE,
+    POWER_ET_ID_TYPE_LOG_TRACE_NO_PARAMS,
+    POWER_ET_ID_TYPE_LOG_TRACE_STR,
+    POWER_ET_ID_TYPE_LOG_TRACE_PARAM,
+    POWER_ET_ID_TYPE_CHANGE_STATE,
+    POWER_ET_ID_TYPE_SIGNAL_EVT,
 
     POWER_ET_ID_TYPE_COUNT
 } E_POWER_ET_ID_TYPES_T;
@@ -110,22 +137,22 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID f
                      POWER_ET_ID_TYPE_FATAL,                    // Event ID, for this provider
                      PowerFatal,                                // Event Name
                      FPFW_ET_LEVEL_FATAL,                       // Event Log Level, filterable by provider mask
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, status),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, param),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, param),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
                      POWER_ET_ID_TYPE_ERROR,                    // Event ID, for this provider
                      PowerErrorParam,                           // Event Name
                      FPFW_ET_LEVEL_ERROR,                       // Event Log Level, filterable by provider mask
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, param),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, param),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
                      POWER_ET_ID_TYPE_WARNING,                  // Event ID, for this provider
                      PowerWarnParam,                            // Event Name
                      FPFW_ET_LEVEL_WARNING,                     // Event Log Level, filterable by provider mask
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, param),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, param),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
 
 // Generate an Event associated with the provider. This defines the event AND the event write function for it
@@ -148,7 +175,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID f
                      POWER_ET_ID_TYPE_STATUS_PARAMS,            // Event ID, for this provider
                      PowerStatusParam,                          // Event Name
                      FPFW_ET_LEVEL_INFO,                        // Event Log Level, filterable by provider mask
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, param),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, param),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
 
 #define POWER_ET_LOG_TRACE_UINT64_COUNT 4   /* count should match UINT64 fields below in PowerLogTrace */
@@ -162,5 +189,38 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID f
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, data0),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, data1),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, data2))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
+                    POWER_ET_ID_TYPE_LOG_TRACE_NO_PARAMS,                // Event ID, for this provider
+                    PowerLogTraceStatus,                             // Event Name
+                    FPFW_ET_LEVEL_DEBUG,                       // Event Log Level, filterable by provider mask
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,
+                    POWER_ET_ID_TYPE_LOG_TRACE_STR,
+                    PowerLogTraceStr,
+                    FPFW_ET_LEVEL_DEBUG,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_ASCII_STRING(PWR_TRACE_STR_SIZE), message))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
+                     POWER_ET_ID_TYPE_LOG_TRACE_PARAM,                // Event ID, for this provider
+                     PowerLogTraceParam,                             // Event Name
+                     FPFW_ET_LEVEL_DEBUG,                       // Event Log Level, filterable by provider mask
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, param),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
+
+ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
+                     POWER_ET_ID_TYPE_CHANGE_STATE,                // Event ID, for this provider
+                     PowerLogChangeState,                             // Event Name
+                     FPFW_ET_LEVEL_DEBUG,                       // Event Log Level, filterable by provider mask
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, loop_id),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, state))
+                     
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
+                     POWER_ET_ID_TYPE_SIGNAL_EVT,                // Event ID, for this provider
+                     PowerLogSignalEvt,                             // Event Name
+                     FPFW_ET_LEVEL_DEBUG,                       // Event Log Level, filterable by provider mask
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, event))
 
 /*--------- Function Prototypes ----------*/

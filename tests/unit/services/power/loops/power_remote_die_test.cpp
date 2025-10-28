@@ -174,6 +174,8 @@ POWER_TEST(remote_die_init__dual_die, setup, teardown)
     expect_value_count(__wrap_FpFwAssert, expression, true, 4);
     setup_multi_die();
 
+    expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
+
     // expect two calls to setup_recv_request
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
@@ -218,6 +220,7 @@ POWER_TEST(remote_die_exchange_inputs__multi_die, setup, teardown)
     expect_function_call(__wrap_cortex_m7_atomic_or);
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
 
+    expect_function_call(__wrap_cortex_m7_atomic_call_data_synchronization_barrier);
     expect_value(__wrap_FpFwAssert, expression, true);
     s_stored_recv_cb(s_stored_recv_context, 0, FPFW_STATUS_SUCCESS);
 }
@@ -255,6 +258,7 @@ POWER_TEST(remote_die_exchange_inputs__multi_die__recv_first, setup, teardown)
     expect_function_call(__wrap_cortex_m7_atomic_or);
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
 
+    expect_function_call(__wrap_cortex_m7_atomic_call_data_synchronization_barrier);
     expect_value(__wrap_FpFwAssert, expression, true);
     s_stored_recv_cb(s_stored_recv_context, 0, FPFW_STATUS_SUCCESS);
 

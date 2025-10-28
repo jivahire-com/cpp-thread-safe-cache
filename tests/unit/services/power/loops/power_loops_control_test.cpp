@@ -1052,6 +1052,8 @@ POWER_TEST(control_exchange_inputs_handler__signal_exchange_inputs_done, NULL, N
     will_return(__wrap_power_cap_update, MP_POWER_CAP_PENDING);                      //! update for die 1
 
     will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
+    // expect remote_die_idle_reset
+    expect_function_call(__wrap_power_remote_die_idle_reset);
     // call state handler
     call_handler(POWER_CONTROL_STATE_EXCHANGE_INPUTS, POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS, &input_data);
 }

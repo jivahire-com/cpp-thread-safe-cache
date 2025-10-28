@@ -21,3 +21,8 @@
 
 /*--------- Function Prototypes ----------*/
 void stdio_textio_init(PDFWK_INTERFACE_HEADER textio_interface);
+
+#ifdef _WIN32
+struct _reent;
+int _write_r(struct _reent* reent, int fh, const unsigned char* buf, unsigned len);
+#endif

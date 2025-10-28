@@ -28,6 +28,7 @@
 #include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
 #include <inttypes.h>
+#include <math.h>
 #include <scf_power.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -640,6 +641,8 @@ static void exchange_inputs_handler(int event, const void* event_data)
         //! store/update remote power snapshot data (contains soc pwr, prior & resource data) in the control loop context
         memcpy(&s_ctrl_loop.remote, &p_input_data->remote_data_snapshot, sizeof(power_remote_data_t));
         store_remote_soc_power(&p_input_data->remote_data_snapshot.power);
+        float total_soc_pwr = (float)(power_vrs_get_recent_power_mw()) / 1000.0F;
+        POWER_ET_LOG_TRACE_PARAM(POWER_ET_TYPE_SOC_PWR_CALCULATION, (uint32_t)(total_soc_pwr));
 
         //! Fetch power cap to match die 0 if the current die is die 1
         if (idsw_get_die_id() == DIE_1)
@@ -647,7 +650,11 @@ static void exchange_inputs_handler(int event, const void* event_data)
             new_vrcpu_cap_die0 = p_input_data->vrcpu_cap_die0;
             POWER_LOG_TRACE("vrcpu_cap_die0 = %d\n", new_vrcpu_cap_die0);
             //! check if the power cap has changed
-            if (new_vrcpu_cap_die0 != prev_vrcpu_cap_die0)
+            if (new_vrcpu_cap_die0 == 0)
+            {
+                POWER_ET_ERROR(POWER_ET_D2D_REMOTE_INVALID_PWRCAP, new_vrcpu_cap_die0);
+            }
+            else if (new_vrcpu_cap_die0 != prev_vrcpu_cap_die0)
             {
                 //! update the power cap for die 1, the callback will be raised post power_cap_finalise()
                 //! when the current local core's power cap matches the new requested power cap.
@@ -655,11 +662,11 @@ static void exchange_inputs_handler(int event, const void* event_data)
                 if (result != MP_POWER_CAP_PENDING)
                 {
                     // if the power cap update failed, we need to set the power cap back to the previous value
-                    POWER_LOG_ERR("Power cap update failed, status %d\n", result);
+                    POWER_LOG_ERR("[POWER CAP UPDATE] Power cap update failed, status %d\n", result);
                 }
                 else
                 {
-                    POWER_LOG_INFO("Power cap update pending, new cap %d\n", new_vrcpu_cap_die0);
+                    POWER_LOG_INFO("[POWER CAP UPDATE] Power cap update pending, new cap %d\n", new_vrcpu_cap_die0);
                     //! track prev received power cap from die 0
                     prev_vrcpu_cap_die0 = new_vrcpu_cap_die0;
                 }
@@ -667,6 +674,7 @@ static void exchange_inputs_handler(int event, const void* event_data)
         }
         //! Move on to the next event to distribute the available power
         power_control_loop_change_state(POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE);
+        power_remote_die_idle_reset();
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
         POWER_LOG_TRACE("[POWER CTRL LOOP] [exchange_inputs_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
@@ -701,20 +709,63 @@ static void exchange_completion_handler(int event, const void* event_data)
         POWER_LOG_TRACE(
             "[POWER CTRL LOOP] [exchange_completion_handler] POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE\n");
         FPFW_RUNTIME_ASSERT(event_data != NULL);
-        power_d2d_data_ex_complete_t* p_complete_data = (power_d2d_data_ex_complete_t*)event_data;
+        pid_context_t remote_pid_snapshot = ((power_d2d_data_ex_complete_t*)event_data)->pid_context;
         //! Get the pid context from local die
         pid_get_context(&loc_pid_context);
         //! Do this sync only for die 1
         if (idsw_get_die_id() == DIE_1)
         {
-            // check if the pid context on die 1 is different from die 0
-            if ((loc_pid_context.available_resources != p_complete_data->pid_context.available_resources) ||
-                (loc_pid_context.integral != p_complete_data->pid_context.integral) ||
-                (loc_pid_context.prev_error != p_complete_data->pid_context.prev_error))
+            // Define tolerance for floating-point comparisons (3 decimal places precision)
+            const float FLOAT_TOLERANCE = 0.001F;
+
+            // Check for significant differences, ignoring minor floating-point precision issues
+            bool resources_mismatch = (loc_pid_context.available_resources != remote_pid_snapshot.available_resources);
+            bool integral_mismatch = (fabsf(loc_pid_context.integral - remote_pid_snapshot.integral) > FLOAT_TOLERANCE);
+            bool error_mismatch = (fabsf(loc_pid_context.prev_error - remote_pid_snapshot.prev_error) > FLOAT_TOLERANCE);
+
+            // check if the pid context on die 1 is significantly different from die 0
+            if (resources_mismatch || integral_mismatch || error_mismatch)
             {
-                POWER_LOG_INFO("PID context mismatch between die 0 and die 1\n");
-                //! pid ctx on both dies must sync
-                pid_set_context(&p_complete_data->pid_context);
+                //! Update local pid context to match remote die 0
+                pid_set_context(&remote_pid_snapshot);
+
+                //! Log the PID mismatch event
+                POWER_ET_STATUS(POWER_ET_D2D_PID_MISMATCH);
+
+                //! Debug trace logs for showing only mismatched fields
+                char mismatch_msg[256] = "[PID]";
+                if (resources_mismatch)
+                {
+                    char temp[64];
+                    snprintf(temp,
+                             sizeof(temp),
+                             " Rsrc: L=%" PRId32 " R=%" PRId32,
+                             loc_pid_context.available_resources,
+                             remote_pid_snapshot.available_resources);
+                    strncat(mismatch_msg, temp, sizeof(mismatch_msg) - strlen(mismatch_msg) - 1);
+                }
+                if (integral_mismatch)
+                {
+                    char temp[64];
+                    snprintf(temp,
+                             sizeof(temp),
+                             " I: L=%.6f R=%.6f",
+                             loc_pid_context.integral,
+                             remote_pid_snapshot.integral);
+                    strncat(mismatch_msg, temp, sizeof(mismatch_msg) - strlen(mismatch_msg) - 1);
+                }
+                if (error_mismatch)
+                {
+                    char temp[64];
+                    snprintf(temp,
+                             sizeof(temp),
+                             " E: L=%.6f R=%.6f",
+                             loc_pid_context.prev_error,
+                             remote_pid_snapshot.prev_error);
+                    strncat(mismatch_msg, temp, sizeof(mismatch_msg) - strlen(mismatch_msg) - 1);
+                }
+                POWER_LOG_TRACE("%s", mismatch_msg);
+                POWER_ET_LOG_TRACE_STR(mismatch_msg);
             }
         }
         // exchange completion done
@@ -752,10 +803,9 @@ static void error_handler(int event, const void* event_data)
         POWER_ET_ERROR(POWER_ET_TYPE_CTRLLOOP_ERROR_ENTRY,
                        POWER_ET_ENCODE_RETRIES_STATE(s_control_loop_context.status.retries[POWER_LOOP_RETRY_TYPE_INTERVAL],
                                                      s_control_loop_context.status.last_state));
-        POWER_LOG_INFO("Control loop error state entry, retries exhausted in state %d: interval retries %d",
-                       s_control_loop_context.status.last_state,
-                       s_control_loop_context.status.retries[POWER_LOOP_RETRY_TYPE_INTERVAL]);
-        POWER_LOG_INFO("return to idle on next alarm");
+        POWER_LOG_TRACE("CtrlErr S:%d", s_control_loop_context.status.last_state);
+        POWER_LOG_TRACE("return to idle on next alarm");
+        power_remote_die_error_reset(s_control_loop_context.status.last_state);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
         power_control_loop_change_state(POWER_CONTROL_STATE_IDLE);

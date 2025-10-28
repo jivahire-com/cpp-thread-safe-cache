@@ -200,8 +200,8 @@ power_runconfig_t* __wrap_power_runconfig_get()
 
 POWER_TEST(power_loops_init, NULL, NULL)
 {
-#define THREAD_PRIORITY          (10)
-#define THREAD_PREEMPT_THRESHOLD (10)
+#define THREAD_PRIORITY          (5)
+#define THREAD_PREEMPT_THRESHOLD (5)
 
     // expectations for queue create API
     // work queue

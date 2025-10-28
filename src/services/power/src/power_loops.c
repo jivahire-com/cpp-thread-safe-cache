@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "power_events.h"
 #include "power_i.h"
 #include "power_loops_i.h"
 
@@ -23,8 +24,8 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-#define PWR_THREAD_PRIORITY          (10)
-#define PWR_THREAD_PREEMPT_THRESHOLD (10)
+#define PWR_THREAD_PRIORITY          (5)
+#define PWR_THREAD_PREEMPT_THRESHOLD (PWR_THREAD_PRIORITY)
 
 #define PWR_STACK_SIZE         ((TX_MINIMUM_STACK) + ((3) * (FPFW_KB)))
 #define PWR_QUEUE_ENTRIES      (15)
@@ -284,6 +285,7 @@ void power_loops_handle_event(power_loop_context_t* p_context, int event, const 
     message.data.state_signal.event = event;
     message.data.state_signal.event_data = event_data;
 
+    POWER_ET_LOG_TRACE_SIGNAL_EVT(event);
     int status = tx_queue_send(&s_power_loops_thread_ctx.work_queue, &message, TX_NO_WAIT);
     BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
 }
@@ -299,6 +301,7 @@ void power_loops_change_state(power_loop_context_t* p_context, int state)
     message.data.state_change.p_context = p_context;
     message.data.state_change.state = state;
 
+    POWER_ET_LOG_TRACE_CHANGE_STATE(p_context->id, state);
     int status = tx_queue_send(&s_power_loops_thread_ctx.work_queue, &message, TX_NO_WAIT);
     BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
 }

@@ -60,6 +60,7 @@ typedef struct _power_d2d_context
     uintptr_t d2d_send_arsm_payload;                           //!< data to be sent to the remote die
     uintptr_t d2d_recv_arsm_payload;                           //!< data to be received from the remote die
     uint8_t event_data_buffer[D2D_PWR_MESG_MAX_EXCHANGE_SIZE]; //!< local buffer for storing the arsm payload
+    uint32_t transaction_counter; //!< counter for tracking transaction sequence numbers
 } power_d2d_context_t;
 
 // context structure for remote die interface
@@ -94,6 +95,20 @@ power_d2d_arsm_data_t* get_arsm_mem_to_read(void* d2d_ctx)
     return (power_d2d_arsm_data_t*)p_d2d_ctx->d2d_recv_arsm_payload;
 }
 
+void clear_sync_flag_in_arsm_send(power_d2d_context_t* p_d2d_ctx)
+{
+    power_d2d_arsm_data_t* p_arsm_data = get_arsm_mem_to_write(p_d2d_ctx);
+    p_arsm_data->d2d_pwr_data_sync = false;
+    cortex_m7_atomic_call_data_synchronization_barrier();
+}
+
+void clear_sync_flag_in_arsm_recv(power_d2d_context_t* p_d2d_ctx)
+{
+    power_d2d_arsm_data_t* p_arsm_data = get_arsm_mem_to_read(p_d2d_ctx);
+    p_arsm_data->d2d_pwr_data_sync = false;
+    cortex_m7_atomic_call_data_synchronization_barrier();
+}
+
 static void mark_and_send_if_ready(power_d2d_context_t* p_d2d_ctx, uint32_t type)
 {
     // expect we're not already in progress; if we are, we still leave this function in that state
@@ -115,6 +130,8 @@ static void power_remote_die_icc_base_send_complete_notify(void* context, fpfw_s
 
     if (status != DFWK_SUCCESS)
     {
+        //! Clear the sync flag on arsm region to indicate data was not sent
+        clear_sync_flag_in_arsm_send(p_d2d_ctx);
         // if we're failing, just log the status -- other side not receiving will cause an error there
         POWER_ET_STATUS_PARAM(POWER_ET_D2D_SEND_FAIL_CB, status);
     }
@@ -137,14 +154,33 @@ static void power_remote_die_icc_base_recv_complete_notify(void* context, size_t
 
     //! Fetch data from arsm shared memory
     power_d2d_arsm_data_t* p_arsm_data = get_arsm_mem_to_read(p_d2d_ctx);
-    //! Clear the local buffer
-    memset(p_d2d_ctx->event_data_buffer, 0, sizeof(p_d2d_ctx->event_data_buffer));
-    //! Copy data from the arsm shared memory to the local buffer associated with the context
-    memcpy(p_d2d_ctx->event_data_buffer, (uint8_t*)p_arsm_data->pwr_data_addr, p_arsm_data->pwr_data_size);
-    //! update status and send completion to control loop if ready
-    mark_and_send_if_ready(p_d2d_ctx, RECV_COMPLETE);
+    bool sync_flag_before = p_arsm_data->d2d_pwr_data_sync;
+    //! Ensure sync flag is set before and after copying; discard if it changes to false
+    if (sync_flag_before)
+    {
+        //! Log transaction count from received data
+        POWER_ET_LOG_TRACE_PARAM(POWER_ET_D2D_RECV_TRANSACTION_COUNT, p_arsm_data->transaction_count);
 
-    // setup next callback
+        //! Clear local buffer and copy data from shared memory
+        memset(p_d2d_ctx->event_data_buffer, 0, sizeof(p_d2d_ctx->event_data_buffer));
+        memcpy(p_d2d_ctx->event_data_buffer, (uint8_t*)p_arsm_data->pwr_data_addr, p_arsm_data->pwr_data_size);
+
+        //! Verify that sync flag is still set
+        if (p_arsm_data->d2d_pwr_data_sync)
+        {
+            //! Post the signal that recv is complete
+            mark_and_send_if_ready(p_d2d_ctx, RECV_COMPLETE);
+            //! Clear the sync flag to indicate data has been consumed
+            clear_sync_flag_in_arsm_recv(p_d2d_ctx);
+        }
+        else
+        {
+            //! Unlikely! If sync flag changed to false while copying, sender has reset it, data is corrupted, do not post signal
+            POWER_ET_STATUS_PARAM(POWER_ET_D2D_REMOTE_DATA_CORRUPTED, p_d2d_ctx->d2d_recv_params.recv_cmd_code);
+        }
+    }
+
+    //! setup next callback everytime
     setup_recv_request(p_d2d_ctx);
 }
 
@@ -194,7 +230,19 @@ static void power_remote_die_exchange(power_runconfig_t* p_runconfig, power_d2d_
     //! Get ref to the control loop context to get hold of the latest updated data by the control loop
     power_ctrl_loop_detail_t* ctrl_loop_ctx = get_s_ctrl_loop();
 
-    // if we sent previously, but don't have a received signal, clear so we can send again.
+    //! Get the arsm shared memory to write to
+    power_d2d_arsm_data_t* p_arsm_data = get_arsm_mem_to_write(p_d2d_ctx);
+
+    //! Check if arsm memory to write to is free to use, i.e. sync flag, this is cleared in recv cb of remote die
+    if (p_arsm_data->d2d_pwr_data_sync)
+    {
+        //! previous data not yet consumed by remote die, debug log
+        POWER_ET_LOG_TRACE_STATUS(POWER_ET_D2D_PREV_DATA_NOT_CONSUMED);
+        return;
+    }
+
+    //! if local die sent previously, but haven't received from remote die yet ie local die's recv cb not
+    //! raised, clear status so we can send again.
     power_remote_die_clear_previous_send(p_d2d_ctx);
 
     // if we've only started to send but haven't gotten a callback, we're in an unexpected state
@@ -205,14 +253,11 @@ static void power_remote_die_exchange(power_runconfig_t* p_runconfig, power_d2d_
         return;
     }
 
-    //! Get the arsm shared memory to write to
-    power_d2d_arsm_data_t* p_arsm_data = get_arsm_mem_to_write(p_d2d_ctx);
-
     //! Prepare data to send as per command code
     if (cmd_code == ICC_COMMAND_PWR_D2D_EX_INPUT_MSG)
     {
         POWER_LOG_TRACE("ICC_COMMAND_PWR_D2D_EX_INPUT_MSG\n");
-        //! clean out the entire arsm region for the die & cmd
+        //! clean out the entire arsm region for the die & cmd including sync flag
         memset(p_arsm_data, 0, D2D_PWR_MESG_INPUT_EXCHANGE_SIZE);
         //! Populate the arsm metadata
         p_arsm_data->pwr_data_size = sizeof(power_d2d_data_ex_input_t);
@@ -246,6 +291,13 @@ static void power_remote_die_exchange(power_runconfig_t* p_runconfig, power_d2d_
         p_complete_data->is_currently_throttling = ctrl_loop_ctx->throttling;
     }
 
+    //! Increment transaction counter and store in ARSM for receiver to track sequence
+    p_d2d_ctx->transaction_counter++;
+    p_arsm_data->transaction_count = p_d2d_ctx->transaction_counter;
+    POWER_ET_LOG_TRACE_PARAM(POWER_ET_D2D_SEND_TRANSACTION_COUNT, p_arsm_data->transaction_count);
+
+    //! Set the shared memory sync flag to indicate data is ready
+    p_arsm_data->d2d_pwr_data_sync = true;
     //! Add barrier here to ensure all writes to the shared memory is completed before raising icc send
     cortex_m7_atomic_call_data_synchronization_barrier();
 
@@ -354,6 +406,10 @@ void power_remote_die_init(power_runconfig_t* p_runconfig)
     POWER_LOG_INFO("ex_complete d2d_recv_arsm_payload:  0x%" PRIxPTR "\n",
                    s_power_remote_die_ctx.ex_complete.d2d_recv_arsm_payload);
 
+    //! Explicitly ensure all sync flags are cleared at init, each die clears it's sync flag in it's local arsm send payload region (which is remote's recv )
+    clear_sync_flag_in_arsm_send(&s_power_remote_die_ctx.ex_inputs);
+    clear_sync_flag_in_arsm_send(&s_power_remote_die_ctx.ex_complete);
+
     // setup the receive requests
     setup_recv_request(&s_power_remote_die_ctx.ex_inputs);
     setup_recv_request(&s_power_remote_die_ctx.ex_complete);
@@ -369,6 +425,23 @@ void power_remote_die_idle_reset()
     // clear unexpected completed SEND status
     power_remote_die_clear_previous_send(&s_power_remote_die_ctx.ex_inputs);
     power_remote_die_clear_previous_send(&s_power_remote_die_ctx.ex_complete);
+}
+
+void power_remote_die_error_reset(int last_state)
+{
+    //! If retries exhausted during either of the d2d exchanges, clear the sync flag in arsm send region to enable sending again
+    switch (last_state)
+    {
+    case POWER_CONTROL_STATE_COLLECT_INPUTS:
+        clear_sync_flag_in_arsm_send(&s_power_remote_die_ctx.ex_inputs);
+        break;
+    case POWER_CONTROL_STATE_EXCHANGE_INPUTS:
+        clear_sync_flag_in_arsm_send(&s_power_remote_die_ctx.ex_complete);
+        break;
+    default:
+        // No action needed for other states
+        break;
+    }
 }
 
 void power_remote_die_exchange_inputs(power_runconfig_t* p_runconfig)

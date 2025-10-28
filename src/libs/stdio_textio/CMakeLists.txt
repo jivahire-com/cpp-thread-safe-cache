@@ -1,5 +1,3 @@
-enabled_on(arm-eabi-aarch)
-
 set(TARGET stdio_textio)
 
 set(SRC
@@ -10,7 +8,9 @@ set(LIBS
         PRIVATE
             fwlib.driver.interface.text_io
             fwlib.lib.utils
+            ms::driver::textio::pl011
             ms::lib::crash_dump
+            silibs::common::lib_uart_pl011
 )
 
 add_library(${TARGET} STATIC ${SRC})

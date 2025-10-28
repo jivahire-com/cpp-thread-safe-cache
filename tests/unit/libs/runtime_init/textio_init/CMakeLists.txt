@@ -56,4 +56,5 @@ mock_target(${TARGET}
     textio_pl011_device_initialize
     textio_pl011_device_interface_initialize
     idsw_get_platform_sdv
+    stdio_textio_init
 )

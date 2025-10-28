@@ -129,6 +129,13 @@ void power_remote_die_exchange_complete(power_runconfig_t* p_runconfig);
 void power_remote_die_idle_reset();
 
 /**
+ * @brief Function to reset the remote die exchange state in case of error
+ * 
+ * @param[in] last_state 
+ */
+void power_remote_die_error_reset(int last_state);
+
+/**
  * @brief Get the arsm mem to write to. Use only for test purposes.
  * 
  * @param d2d_ctx 

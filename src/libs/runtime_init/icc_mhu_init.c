@@ -54,7 +54,7 @@
 #define STATS_LOGGING_DFWK_REQS_INTERVAL_10K  (10000U)
 #define STATS_LOGGING_DFWK_REQS_INTERVAL_100K (100000U)
 #define STATS_LOGGING_DFWK_REQS_INTERVAL_500K (500000U)
-
+#define STATS_LOGGING_DFWK_REQS_INTERVAL_5M   (5000000U)
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -651,7 +651,7 @@ FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
             },
         .async_send_retry_period = ASYNC_SEND_RETRY_PERIOD_NS,
         .async_send_retry_max = ASYNC_SEND_RETRY_MAX,
-        .log_stats_dfwk_reqs_interval = STATS_LOGGING_DFWK_REQS_INTERVAL_100K,
+        .log_stats_dfwk_reqs_interval = STATS_LOGGING_DFWK_REQS_INTERVAL_5M,
     };
 
     // Initialize the driver framework device

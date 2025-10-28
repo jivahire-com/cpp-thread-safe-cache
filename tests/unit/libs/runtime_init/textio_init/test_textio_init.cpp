@@ -108,6 +108,12 @@ idsw_die_id_t __wrap_idsw_get_die_id(void)
     return mock_type(idsw_die_id_t);
 }
 
+void __wrap_stdio_textio_init(PDFWK_INTERFACE_HEADER textio_interface)
+{
+    FPFW_UNUSED(textio_interface);
+    function_called();
+}
+
 //
 // Tests
 //
@@ -203,7 +209,7 @@ TEST_FUNCTION(textio_init_std_io, nullptr, nullptr)
     will_return(__wrap_fpfw_init_get_handle, &uart_device); //! uart device handle
     expect_value(__wrap_textio_pl011_device_interface_initialize, device, &uart_device);
     expect_function_call(__wrap_textio_pl011_device_interface_initialize);
-    expect_function_call(stdio_textio_init);
+    expect_function_call(__wrap_stdio_textio_init);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_std_io.init_fn();

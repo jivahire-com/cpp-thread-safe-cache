@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "power_events.h"
 #include "power_hw_int_i.h"
 #include "power_i.h"
 #include "power_loops_i.h"
@@ -91,9 +92,11 @@ void ctrl_loop_timer_cb(void* ctx, uint64_t exp_tick, uint64_t now_tick)
     UNUSED(now_tick);
 
     power_runconfig_t* p_runconfig = (power_runconfig_t*)ctx;
+    POWER_ET_LOG_TRACE_STATUS(POWER_ET_TYPE_CTRL_LOOP_TIMER_CB);
     /* VR telemetry and the power control loop are driven by the
      * interval alarm; provide to VR telem first, since it triggers
      * AVS requests */
+
     if ((p_runconfig->knobs.loops_disable & (power_loops_disable_t_CTRL_LOOP | power_loops_disable_t_VR_TELEM_LOOP)) !=
         (power_loops_disable_t_CTRL_LOOP | power_loops_disable_t_VR_TELEM_LOOP))
     {
@@ -113,6 +116,8 @@ void pvt_telem_loop_timer_cb(void* ctx, uint64_t exp_tick, uint64_t now_tick)
     UNUSED(now_tick);
 
     power_runconfig_t* p_runconfig = (power_runconfig_t*)ctx;
+    POWER_ET_LOG_TRACE_STATUS(POWER_ET_TYPE_PVT_TELEM_TIMER_CB);
+
     /* PVT telemetry driven by this pvt interval event */
     if ((p_runconfig->knobs.loops_disable & power_loops_disable_t_PVT_TELEM_LOOP) == 0)
     {

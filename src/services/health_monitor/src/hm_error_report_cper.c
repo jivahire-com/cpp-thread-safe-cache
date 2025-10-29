@@ -132,12 +132,17 @@ void hm_submit_cper_internal(uint16_t error_domain_idx,
         {
             HM_LOG_INFO("CPER submission requested (domain=%s, sev=%d)", get_error_domain_name(error_domain_idx), err_severity);
 
+            if (is_standard_error_section_used(error_domain_idx) == false)
+            {
+                cper_common_section_header_t* common_header = (cper_common_section_header_t*)err_record_section;
+                common_header->instance = hm_config->is_primary ? 0 : 1;
+            }
+
             // Generate full CPER record
             acpi_cper_record_t cper_record = {0};
             create_full_mscp_cper_record(error_domain_idx, err_severity, err_record_section, err_record_section_size, &cper_record);
 
-            static_assert(sizeof(hm_arsm_cper_backup_t) <= D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE,
-                          "hm_arsm_cper_backup_t > D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE");
+            static_assert(sizeof(hm_arsm_cper_backup_t) <= RAS_LAST_CPER_SIZE, "hm_arsm_cper_backup_t > RAS_LAST_CPER_SIZE");
 
             volatile hm_arsm_cper_backup_t* last_cper_record_base =
                 (volatile hm_arsm_cper_backup_t*)(uintptr_t)hm_config->mscp_full_cper_record_base;

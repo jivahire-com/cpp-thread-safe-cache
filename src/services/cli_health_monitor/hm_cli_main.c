@@ -12,6 +12,7 @@
 #include <FpFwCli.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
+#include <cper.h>
 #include <einj.h>
 #include <health_monitor.h>
 #include <hm_cli.h>
@@ -59,7 +60,7 @@ static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
     {NULL_LIST_ENTRY, "hm", "hm_inject_err", hm_inject_err_cli, "inject err {err_idx}", ""},
     {NULL_LIST_ENTRY, "hm", "hm_inject_err_raw", hm_inject_err_raw_cli, "inject err {err_idx}", ""},
     {NULL_LIST_ENTRY, "hm", "hm_activate_sample_domain", hm_activate_sample_err_domain_cli, "active sample err domain", ""},
-    {NULL_LIST_ENTRY, "hm", "hm_submit_sample_cper", hm_submit_sample_cper_cli, "submit ce cper {err_idx}", ""}};
+    {NULL_LIST_ENTRY, "hm", "hm_submit_sample_cper", hm_submit_sample_cper_cli, "submit ce cper {err_idx} {severity}", ""}};
 
 static const guid_name_map_t guid_map[] = {
     {ACPI_ERROR_TYPE_VENDOR_DDR, "ddr mem"},
@@ -117,7 +118,10 @@ static PLACED_CODE FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
     uint64_t* err_record_ack_addr = (uint64_t*)hm_config->mscp_ghes_ack_addr_table_base;
     for (uint32_t error_domain_idx = 0; error_domain_idx < ACPI_ERROR_DOMAIN_COUNT; error_domain_idx++)
     {
-        FpFwCliPrint(" err domain idx: %d at %p, value: %ld\n", error_domain_idx, (void*)(err_record_ack_addr), *err_record_ack_addr);
+        FpFwCliPrint(" err domain idx: %d at %p, value: %ld\n",
+                     error_domain_idx,
+                     (void*)(err_record_ack_addr),
+                     *(volatile uint32_t*)err_record_ack_addr);
         err_record_ack_addr++;
     }
     FpFwCliPrint("\n");
@@ -352,10 +356,10 @@ static PLACED_CODE FPFW_CLI_STATUS hm_dump_last_cper_cli(int argc, const char** 
 
     hm_arsm_cper_backup_t* last_cper_record_base = (hm_arsm_cper_backup_t*)hm_config->mscp_full_cper_record_base;
 
-    FpFwCliPrint("Last CPER Record:\n");
+    FpFwCliPrint("Last CPER Record @ (%p):\n", (void*)&last_cper_record_base->last_cper_record.cper_record);
     dump_cper_contents(&last_cper_record_base->last_cper_record.cper_record);
 
-    FpFwCliPrint("Last UE CPER Record:\n");
+    FpFwCliPrint("Last UE CPER Record @ (%p):\n", (void*)&last_cper_record_base->last_ue_cper_record.cper_record);
     dump_cper_contents(&last_cper_record_base->last_ue_cper_record.cper_record);
 
     return CLI_SUCCESS;
@@ -383,10 +387,12 @@ static PLACED_CODE FPFW_CLI_STATUS hm_activate_sample_err_domain_cli(int argc, c
 static PLACED_CODE FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const char** argv)
 {
     acpi_error_domain_t err_domain_idx = ACPI_ERROR_DOMAIN_INVALID;
+    acpi_error_severity_t err_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
 
-    if (argc == 2)
+    if (argc == 3)
     {
         int err_idx = atoi(argv[1]);
+        int severity = atoi(argv[2]);
 
         if (err_idx < ACPI_ERROR_DOMAIN_DDR || err_idx > ACPI_ERROR_DOMAIN_COUNT - 1)
         {
@@ -394,7 +400,14 @@ static PLACED_CODE FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const cha
             return CLI_ERROR;
         }
 
+        if (severity < ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL || severity > ACPI_ERROR_SEVERITY_INFORMATIONAL)
+        {
+            FpFwCliPrint("ERR:Invalid Severity(%d)\n", __LINE__);
+            return CLI_ERROR;
+        }
+
         err_domain_idx = (acpi_error_domain_t)err_idx;
+        err_severity = (acpi_error_severity_t)severity;
     }
     else
     {
@@ -404,7 +417,13 @@ static PLACED_CODE FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const cha
 
     acpi_cper_section_t general_cper_section = {0};
 
-    hm_submit_cper(err_domain_idx, ACPI_ERROR_SEVERITY_INFORMATIONAL, &general_cper_section, sizeof(acpi_cper_section_t));
+    hm_submit_cper(err_domain_idx, err_severity, &general_cper_section, sizeof(acpi_cper_section_t));
+
+    if (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL || err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
+    {
+        FpFwCliPrint("Submitted UE CPER to error domain %d\n", err_domain_idx);
+        BUG_CHECK(KNG_E_FAIL, 0, 0);
+    }
     return CLI_SUCCESS;
 }
 

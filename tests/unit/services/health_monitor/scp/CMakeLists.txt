@@ -78,4 +78,6 @@ mock_target(${TARGET}
     MSCP_GHES_ADDR
     idsw_get_platform_sdv
     fpfw_pldm_service_raise_platform_event
+    _txe_timer_create
+    _txe_timer_deactivate
 )

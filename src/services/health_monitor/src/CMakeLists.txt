@@ -15,6 +15,7 @@ add_library(${TARGET}
         hm_error_report_pldm.c
         hm_main.c
         hm_error_report_ue.c
+        hm_error_report_flush.c
         hm_util.c
 )
 

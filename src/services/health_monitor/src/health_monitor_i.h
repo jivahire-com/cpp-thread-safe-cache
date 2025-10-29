@@ -23,8 +23,10 @@
 #define HM_LOG_DBG(fmt, ...) FPFW_DBGPRINT_VERBOSE(HM_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define HM_LOG_ERR(fmt, ...) FPFW_DBGPRINT_ERROR(HM_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define HM_LOG_CRIT(fmt, ...) FPFW_DBGPRINT_ERROR(HM_MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
-
 #define MAX_CPER_CACHE 4
+#define GHES_ACK_SET_VALUE 1
+#define GHES_ACK_UNSET_VALUE 0
+
 
 /*------------- Typedefs -----------------*/
 // CPER address information per accelerator (provided via large FIFO mailbox)
@@ -74,3 +76,5 @@ void hm_set_pldm_transfer_status(hm_pldm_transfer_status status, bool is_ue);
 hm_pldm_transfer_status hm_get_pldm_transfer_status(bool is_ue);
 bool hm_is_fatal_error(uint32_t err_severity);
 void hm_copy_cper_record(volatile uint8_t* dest, const uint8_t* src, size_t size);
+void hm_flush_GHES_until_OS_boot();
+bool is_standard_error_section_used(int error_domain_idx);

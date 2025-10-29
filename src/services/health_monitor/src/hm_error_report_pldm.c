@@ -110,6 +110,8 @@ static bool hm_get_pldm_cper_data(bool is_ue, uint8_t* cper_record_base)
 
 void hm_transfer_cper_to_bmc_internal(bool is_ue)
 {
+    hm_flush_GHES_until_OS_boot();
+
     if (get_hm_config()->is_primary == false)
     {
         HM_LOG_INFO("CPER OOB transfer request made on secondary MCP, aborting\n");

@@ -25,6 +25,47 @@
 static bool ghes_table_init = false;
 
 /*------------- Functions ----------------*/
+static int cper_severity_rank(acpi_error_severity_t severity)
+{
+    switch (severity)
+    {
+    case ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL:
+        return 0;
+    case ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL:
+        return 1;
+    case ACPI_ERROR_SEVERITY_CORRECTED:
+        return 2;
+    default:
+        return 3;
+    }
+}
+static acpi_error_severity_t get_highest_severity(acpi_ghes_error_record_dual_die_t* record)
+{
+    acpi_error_severity_t adjusted_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
+
+    if (record->block_status_entry_count == 0)
+    {
+        return adjusted_severity;
+    }
+
+    acpi_error_severity_t s0 = record->data[0].error_severity;
+    acpi_error_severity_t s1 = (record->block_status_entry_count == 2) ? record->data[1].error_severity : s0;
+
+    s0 = (s0 == ACPI_ERROR_SEVERITY_INFORMATIONAL) ? ACPI_ERROR_SEVERITY_CORRECTED : s0;
+    s1 = (s1 == ACPI_ERROR_SEVERITY_INFORMATIONAL) ? ACPI_ERROR_SEVERITY_CORRECTED : s1;
+
+    if (cper_severity_rank(s0) < cper_severity_rank(s1))
+    {
+        adjusted_severity = s0;
+    }
+    else
+    {
+        adjusted_severity = s1;
+    }
+
+    return adjusted_severity;
+}
+
 void set_ghes_table_ready()
 {
     ghes_table_init = true;
@@ -108,7 +149,8 @@ void construct_mscp_ghes_table()
             // GHES Structure update for current error domain
             default_ghes.source_id = error_domain_idx;
             default_ghes.address.address = (uint32_t)AP_GHES_ADDR((uint32_t)current_ghes_error_record_location);
-            default_ghes.ack.address.address = (uint32_t)AP_GHES_ADDR((uint32_t)current_ghes_ack_base++);
+            default_ghes.ack.address.address = (uint32_t)AP_GHES_ADDR((uint32_t)current_ghes_ack_base);
+            *(uint32_t*)current_ghes_ack_base++ = GHES_ACK_UNSET_VALUE;
 
             for (size_t i = 0; i < sizeof(acpi_ghes_t); i++)
             {
@@ -243,6 +285,8 @@ void update_error_record_section(uint16_t error_domain_idx,
 {
     if ((error_domain_idx < ACPI_ERROR_DOMAIN_COUNT) && (err_record_section_size <= sizeof(acpi_cper_section_t)))
     {
+        acpi_error_severity_t adjusted_severity = err_severity;
+
         if (ghes_table_init == false)
         {
             HM_ET_ERROR_PARAM(HM_ET_TYPE_GHES_INVALID_PARAMS, ghes_table_init);
@@ -254,12 +298,12 @@ void update_error_record_section(uint16_t error_domain_idx,
         BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
 
         // update common heder part of error record section if vendor specific
-        if ((error_domain_idx != ACPI_ERROR_DOMAIN_STD_PROCESSOR) &&
-            (error_domain_idx != ACPI_ERROR_DOMAIN_STD_MEMORY) && (error_domain_idx != ACPI_ERROR_DOMAIN_STD_PCIE) &&
-            (error_domain_idx != ACPI_ERROR_DOMAIN_STD_PLATFORM) && (error_domain_idx != ACPI_ERROR_DOMAIN_DDR))
+        if (is_standard_error_section_used(error_domain_idx) == false)
         {
-            cper_common_section_header_t* common_header = (cper_common_section_header_t*)err_record_section;
-            common_header->instance = hm_config->is_primary ? 0 : 1;
+            // inband path only
+            // override recoverable error severity to corrected for vendor specific error domains
+            adjusted_severity = ((err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL) ? ACPI_ERROR_SEVERITY_CORRECTED
+                                                                                             : err_severity);
         }
 
         // locate the GHES base of current error domain
@@ -276,32 +320,47 @@ void update_error_record_section(uint16_t error_domain_idx,
         // lock before updating error record information
         wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
 
-        if (current_domain_error_record_base->block_status_entry_count != 0)
+        // if we have a room to hold section entry then
+        if (current_domain_error_record_base->block_status_entry_count < 2)
         {
-            // move the first section to the next one
-            volatile uint8_t* dst = (volatile uint8_t*)&current_domain_error_record_base->data[1].section;
-            volatile uint8_t* src = (volatile uint8_t*)&current_domain_error_record_base->data[0].section;
-            for (size_t i = 0; i < sizeof(acpi_cper_section_t); ++i)
+            uint32_t idx = current_domain_error_record_base->block_status_entry_count;
+
+            // update severity on error data entry
+            current_domain_error_record_base->data[idx].error_severity = adjusted_severity;
+
+            // copy cper section into error data entry
+            hm_copy_cper_record((volatile uint8_t*)&current_domain_error_record_base->data[idx].section,
+                                (const uint8_t*)err_record_section,
+                                err_record_section_size);
+
+            current_domain_error_record_base->block_status_entry_count++;
+        }
+        else
+        {
+            // if section entry is full, override the non-fatal one if current error is fatal
+            if (hm_is_fatal_error(err_severity))
             {
-                dst[i] = src[i];
+                for (int i = 0; i < 2; i++)
+                {
+                    if (current_domain_error_record_base->data[i].error_severity != ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
+                    {
+                        current_domain_error_record_base->data[i].error_severity = adjusted_severity;
+
+                        hm_copy_cper_record((volatile uint8_t*)&current_domain_error_record_base->data[i].section,
+                                            (const uint8_t*)err_record_section,
+                                            err_record_section_size);
+                        break;
+                    }
+                }
             }
         }
 
-        // copy current section to the first section
-        for (size_t i = 0; i < err_record_section_size; ++i)
-        {
-            ((volatile uint8_t*)&current_domain_error_record_base->data[0].section)[i] =
-                ((const uint8_t*)err_record_section)[i];
-        }
+        adjusted_severity = get_highest_severity((acpi_ghes_error_record_dual_die_t*)current_domain_error_record_base);
+        // Update Error Status Block severity to reflect the most severe entry
+        current_domain_error_record_base->error_severity = adjusted_severity;
 
-        // update error record section
-        // override error severity if it is recoverable
-        // As OS tries to recover but will end up with OS BUG_CHECK as don't know how to recover
-        current_domain_error_record_base->error_severity =
-            ((err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL) ? ACPI_ERROR_SEVERITY_CORRECTED : err_severity);
-
-        if ((err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL) ||
-            (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL))
+        if ((adjusted_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL) ||
+            (adjusted_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL))
         {
             if (current_domain_error_record_base->block_status_ue)
             {
@@ -310,7 +369,7 @@ void update_error_record_section(uint16_t error_domain_idx,
             current_domain_error_record_base->block_status_ue = true;
         }
 
-        if (err_severity == ACPI_ERROR_SEVERITY_CORRECTED)
+        if (adjusted_severity == ACPI_ERROR_SEVERITY_CORRECTED)
         {
             if (current_domain_error_record_base->block_status_ce)
             {
@@ -319,17 +378,17 @@ void update_error_record_section(uint16_t error_domain_idx,
             current_domain_error_record_base->block_status_ce = true;
         }
 
-        if (current_domain_error_record_base->block_status_entry_count < 2)
-        {
-            current_domain_error_record_base->block_status_entry_count++;
-        }
-
         bool error_domain_enabled = current_error_domain_ghes_base->enabled;
         release_semaphore(hm_config->semaphore_id);
 
         // report AP for new CPER arrival
         if (error_domain_enabled)
         {
+            // Request ACK for the error to GHES
+            volatile uint32_t* ack_base_addr =
+                (uint32_t*)MSCP_GHES_ADDR((uint32_t)current_error_domain_ghes_base->ack.address.address);
+            *ack_base_addr = GHES_ACK_SET_VALUE;
+
             hm_report_error_event(HM_ERROR_REPORT_INTERRUPT, true);
             HM_LOG_INFO("CPER reported, inband(domain=%s, sev=%d)", get_error_domain_name(error_domain_idx), err_severity);
         }

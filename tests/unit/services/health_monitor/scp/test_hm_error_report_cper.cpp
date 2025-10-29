@@ -218,7 +218,7 @@ TEST_FUNCTION(test_hm_submit_cper_arsm, post_ddr_setup, nullptr)
     // reset last cper record
     hm_config_t* hm_config = get_hm_config();
     void* last_cper_base = (void*)hm_config->mscp_full_cper_record_base;
-    memset(last_cper_base, 0, D0_ARSM_MSCP_LAST_CPER_RECORD_SIZE);
+    memset(last_cper_base, 0, RAS_LAST_CPER_SIZE);
 
     acpi_err_sec_firmware_t general_cper_section = {};
 

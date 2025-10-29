@@ -100,3 +100,10 @@ void hm_copy_cper_record(volatile uint8_t* dest, const uint8_t* src, size_t size
         dest[i] = src[i];
     }
 }
+
+bool is_standard_error_section_used(int error_domain_idx)
+{
+    return (error_domain_idx == ACPI_ERROR_DOMAIN_STD_PROCESSOR ||
+            error_domain_idx == ACPI_ERROR_DOMAIN_STD_MEMORY || error_domain_idx == ACPI_ERROR_DOMAIN_STD_PCIE ||
+            error_domain_idx == ACPI_ERROR_DOMAIN_STD_PLATFORM || error_domain_idx == ACPI_ERROR_DOMAIN_DDR);
+}

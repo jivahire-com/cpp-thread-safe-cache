@@ -37,7 +37,7 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "icc_mscp2mscp", "i
     uintptr_t mscp_ghes_error_record_addr_base =
         MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_ERROR_RECORD_BASE);
     uintptr_t mscp_full_cper_record_base =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_MSCP_LAST_CPER_RECORD_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_LAST_CPER_BASE);
 
     static hm_config_t hm_config = {0};
     hm_config.mscp_ghes_base = (acpi_ghes_t*)mscp_ghes_base;

@@ -17,8 +17,8 @@ Library     library.pldm_tests.pldm_base
 ...         workspace_config=${WORKSPACE_CONFIG}
 ...         default_log_home=${LOG_DIR}
 ...         fw_payload_path=${PAYLOAD_DIR}
-...         dut_platform="KingsgateSVP"
-...         host_config=${HOST_CONFIG_DIR}/single_die_flash_boot.json
+...         dut_platform="KingsgateSOC"
+...         host_config=${HOST_CONFIG_DIR}/${HOST_FILE_NAME}
 ...         WITH NAME    pldm_base_lib
 
 *** Variables ***

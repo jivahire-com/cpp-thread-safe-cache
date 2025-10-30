@@ -14,11 +14,11 @@ import time
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "kng_pythia_libs"))
 
 from kng_pythia_test_setup import KngPythiaTestSetup
-from library.common.serial_utils import SerialUtility
 from library.pldm_tests.pldm_spec_parser import pldm_spec_parser
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 from pathlib import Path
+from RscmHelperLibrary import RscmHelperLibrary
 
 
 class pldm_base(EchoFallsBaseTest):
@@ -55,17 +55,7 @@ class pldm_base(EchoFallsBaseTest):
             host_config,
             host_name,
         )
-
         self.mctp_eids = []
-        self.bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
-        self.utility = SerialUtility(
-            self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel(),
-            self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel(),
-            self.log,
-            self.dut,
-        )
-        self.pldm_spec = pldm_spec_parser()
-        self.pldm_spec.load_spec_data("pldm_spec_data.json")
 
     def setup(self):
         self.dut.setup()
@@ -74,31 +64,47 @@ class pldm_base(EchoFallsBaseTest):
                 "Device type is bigFPGA. Performing an additional OOB reset ..."
             )
             KngPythiaTestSetup.fpga_oob_reset(self.log)
+        elif self.dut.get_dut_type() == DeviceType.RVP:
+            self.log.warning("Device type is RVP. Performing SoC Reset ...")
+            cred_path = os.environ.get("SECURE_FILE_PATH")
+            creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
+            self.rscm_helper = RscmHelperLibrary(
+                rm_host=self.host_config.rack_scm.host,
+                bmc_host=self.dut.mb.node_0.dcscm.bmc.ip,
+                rm_user=creds["RM_USER"],
+                rm_password=creds["RM_PASSWORD"],
+                bmc_user=creds["BMC_USER"],
+                bmc_password=creds["BMC_PASSWORD"],
+                node=self.host_config.node_id,
+            )
+            self.rscm_helper.rscm_soc_reset()
+
+        self.bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
         self.bmc_cli.open()
         assert self.bmc_cli.is_open()
 
-        self.utility.open_mcp_channel()
-        delay_10_minutes = 10 * 60
-        self.utility.read_mcp_serial_until(
-            "StartupShutdownSvc::LocalCoreSyncStageRemoteEnd", delay_10_minutes
+        if self.dut.get_dut_type() == DeviceType.RVP:
+            self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
+
+        self.core_mcp_channel = (
+            self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
         )
-        self.__execute_commands_after_system_boot()
+        self.core_mcp_channel.open()
+        assert self.core_mcp_channel.is_open()
+
+        self.pldm_spec = pldm_spec_parser()
+        self.pldm_spec.load_spec_data("pldm_spec_data.json")
+
+        delay_10_minutes = 10 * 60
+        self.core_mcp_channel.read_until(
+            key="StartupShutdownSvc::LocalCoreSyncStageRemoteEnd",
+            timeout_seconds=delay_10_minutes,
+        )
 
     def teardown(self):
+        if self.dut.get_dut_type() == DeviceType.RVP:
+            self.rscm_helper.set_bmc_uart_mux_scp(self.bmc_cli)
         self.dut.teardown()
-        time.sleep(10)
-
-    def __execute_commands_after_system_boot(self):
-        self.__bmc_execute_command(
-            "echo 1 | tee /sys/bus/i3c/devices/i3c-1/discover > /dev/null"
-        )
-        self.__bmc_execute_command(
-            "echo 1 | tee /sys/bus/i3c/devices/i3c-1/discover > /dev/null"
-        )
-        time.sleep(5)
-        self.__bmc_execute_command(
-            "systemctl restart xyz.openbmc_project.mctpd@kernel.service"
-        )
         time.sleep(10)
 
     def __get_nth_last_byte_from_byte_string(self, data, n):
@@ -125,15 +131,11 @@ class pldm_base(EchoFallsBaseTest):
 
     def __bmc_execute_command(self, command):
         cmd_str = command
-        prefix_str = "echo '0penBmc' | sudo -S bash -c '"
-        suffix_str = "'"
         result, stdout, stderr = self.bmc_cli.execute_command(
-            command=prefix_str + cmd_str + suffix_str, command_args=[]
+            command=cmd_str, command_args=[], timeout_secs=1
         )
         if result != 0:
-            self.log.info(
-                f"~$ failed to execute command: {prefix_str + cmd_str + suffix_str}"
-            )
+            self.log.info(f"~$ failed to execute command: {cmd_str}")
         return result, stdout, stderr
 
     def testcase1_pldm_get_mctp_id(self):

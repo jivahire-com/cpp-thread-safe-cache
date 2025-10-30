@@ -9,7 +9,6 @@
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-#include <DbgPrint.h>      // for FPFW_DBGPRINT_INFO
 #include <FpFwUtils.h>     // for FPFW_KB
 #include <build_data.h>    // for BUILD_ELF_SECTION_BINARY_METADATA
 #include <etc_etd_svc.h>   // for etc_svc_init

@@ -12,7 +12,7 @@
 /*-------------------------------- Includes ---------------------------------*/
 #include <bug_check.h>                // for BUG_CHECK
 #include <et_mts_client.h>            // for event_trace_mts_client_notify_new_msg_cb
-#include <et_svc_events.h>            // for ET_LOG_ET_SVC
+#include <et_mts_client_events.h>     // for ET_LOG_ET_SVC
 #include <etc_etd_svc.h>              // for get_etc_buffer_size, get_etc_buffer_address
 #include <inttypes.h>                 // for PRIx32
 #include <message_transfer_service.h> // for mts_client_t ...
@@ -64,20 +64,20 @@ void event_trace_mts_client_notify_new_msg_cb(void)
 
     UINT queue_status = 0;
 
-    ET_LOG_ET_SVC(ETInfo, "Rx ET MTS Msg");
+    ET_LOG_ET_SVC(MTSClientInfo, "Rx ET MTS Msg");
 
     queue_status = tx_queue_receive(&s_event_trace_mts_client.rx_queue, &p_trp_msg, TX_NO_WAIT);
     if (queue_status != TX_SUCCESS)
     {
         // Soft failure. Report and move on
-        ET_LOG_ET_SVC(ETErr, "Rx Msg from Queue Fail %d", queue_status);
+        ET_LOG_ET_SVC(MTSClientErr, "Rx Msg from Queue Fail %d", queue_status);
         return;
     }
 
     if (p_trp_msg == NULL)
     {
         // Soft failure. Report and move on
-        ET_LOG_ET_SVC(ETErr, "Rx NULL msg");
+        ET_LOG_ET_SVC(MTSClientErr, "Rx NULL msg");
         return;
     }
 
@@ -99,9 +99,9 @@ void event_trace_mts_client_notify_new_msg_cb(void)
             (void*)(SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS + p_trp_msg->payload.read_intercore_block_rsp.addr_offset),
             p_trp_msg->payload.read_intercore_block_rsp.block_size);
 
-        ET_LOG_ET_SVC(ETInfo, "Addr Offset: %" PRIx32, p_trp_msg->payload.read_intercore_block_rsp.addr_offset);
-        ET_LOG_ET_SVC(ETInfo, "Block Size: %" PRIu32, p_trp_msg->payload.read_intercore_block_rsp.block_size);
-        ET_LOG_ET_SVC(ETInfo, "CRC: 0x%" PRIx32, p_trp_msg->payload.read_intercore_block_rsp.crc);
+        ET_LOG_ET_SVC(MTSClientInfo, "Addr Offset: %" PRIx32, p_trp_msg->payload.read_intercore_block_rsp.addr_offset);
+        ET_LOG_ET_SVC(MTSClientInfo, "Block Size: %" PRIu32, p_trp_msg->payload.read_intercore_block_rsp.block_size);
+        ET_LOG_ET_SVC(MTSClientInfo, "CRC: 0x%" PRIx32, p_trp_msg->payload.read_intercore_block_rsp.crc);
 
         mts_client_send_trp_response(p_trp_msg);
         break;
@@ -119,14 +119,14 @@ void event_trace_mts_client_notify_new_msg_cb(void)
         else
         {
             // Soft failure. Report and move on
-            ET_LOG_ET_SVC(ETErr, "Block ID Invalid: %d", p_trp_msg->payload.read_intercore_block.block_id);
+            ET_LOG_ET_SVC(MTSClientErr, "Block ID Invalid: %d", p_trp_msg->payload.read_intercore_block.block_id);
         }
         break;
     }
 
     default:
         // Soft failure. Report and move on
-        ET_LOG_ET_SVC(ETErr, "Message ID Unknown: %d", p_trp_msg->hdr.trp_msg_id);
+        ET_LOG_ET_SVC(MTSClientErr, "Message ID Unknown: %d", p_trp_msg->hdr.trp_msg_id);
         break;
     }
 
@@ -134,7 +134,7 @@ void event_trace_mts_client_notify_new_msg_cb(void)
     if (block_status != TX_SUCCESS)
     {
         // Soft failure. Report and move on
-        ET_LOG_ET_SVC(ETErr, "Block Release Fail: %d", block_status);
+        ET_LOG_ET_SVC(MTSClientErr, "Block Release Fail: %d", block_status);
     }
 }
 

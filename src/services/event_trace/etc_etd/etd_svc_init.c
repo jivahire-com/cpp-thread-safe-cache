@@ -8,7 +8,6 @@
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-#include <DbgPrint.h>                 // for FPFW_DBGPRINT_INFO
 #include <FpFwUtils.h>                // for FPFW_KB
 #include <IFpFwEventTracingDefines.h> // for PFPFW_ET_EVENT_METADATA_HEADER
 #include <IFpFwEventTracingEvents.h>  // for PFPFW_ET_PROVIDER_EVENT_FILTER

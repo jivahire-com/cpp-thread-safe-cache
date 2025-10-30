@@ -34,12 +34,17 @@
 
 /**
  * Sizing and capacity for HSP Buffers
- * - How big, including the Diag Header and any HSP Headers, the HSP Buffer Payload is.
- * - How many HSP Buffers we can fit into DDR.
- * @TODO: - This is a placeholder value, the actual size is TBD.
- *          https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1506825
+ * HSP Buffer Payload is a constant 1792 bytes. 
+ * HSP Buffer Manifest is currently 235 kbytes. 
+ * Ref: https://azurecsi.visualstudio.com/Woodinville/_git/kingsgate.hsp?path=/sprt/src/telemetry_manager/telemetry_mailbox_parser.c&version=GBmain&_a=contents&line=479&lineStyle=plain&lineEnd=479&lineStartColumn=2&lineEndColumn=68
+ * This includes:
+ *   The Header
+ *   The Manifest, included with every payload
+ *   Log Data
+ * 
+ * Sizing the HSP buffer to 256kB to account for any future changes.
 */
-#define HSP_BUFFER_PAYLOAD_SIZE (16 * FPFW_KB)
+#define HSP_BUFFER_PAYLOAD_SIZE (256 * FPFW_KB)
 #define HSP_BUFFER_DDR_CAPACITY_MAX (IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE / HSP_BUFFER_PAYLOAD_SIZE)
 
 /**
@@ -86,7 +91,6 @@ typedef struct {
 
 typedef struct {
     diag_decoder_payload_header_t diag_header;
-    uint8_t data[0];
 } hsp_buffer_info_t, *p_hsp_buffer_info_t;
 
 typedef struct {

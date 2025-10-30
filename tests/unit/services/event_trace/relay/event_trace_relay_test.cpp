@@ -15,6 +15,7 @@ extern "C" {
 #include <etr_init_config_i.h>
 #include <event_trace_relay.h>
 #include <event_trace_relay_i.h>
+#include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
 #include <stdnoreturn.h>
 #include <thread_x_mocks.h>
@@ -24,7 +25,7 @@ extern "C" {
 /*-- Symbolic Constant Macros (defines) --*/
 
 #define TEST_ASIC_COUNT (10)
-#define TEST_HSP_COUNT  (10)
+#define TEST_HSP_COUNT  (4)
 
 #define BUGCHECK_MOCK_RETURN   (setjmp(mock_jump_buf))
 #define bugcheck_mock_return() BUGCHECK_MOCK_RETURN
@@ -97,6 +98,11 @@ uint8_t __wrap_mts_get_this_die_id(void)
     return mock_type(uint8_t);
 }
 
+uint8_t __wrap_idsw_get_die_id(void)
+{
+    return mock_type(uint8_t);
+}
+
 uint32_t __wrap_mts_get_this_core_id(void)
 {
     return 0x01; // Mocked to return core ID 0x01 for testing purposes
@@ -104,7 +110,7 @@ uint32_t __wrap_mts_get_this_core_id(void)
 
 bool __wrap_transfer_rly_is_primary_node(void)
 {
-    return true; // Mocked to always return true for testing purposes
+    return mock_type(bool);
 }
 
 uint32_t __wrap_atu_svc_accel_atu_addr(uint8_t accel_id)
@@ -116,11 +122,30 @@ uint32_t __wrap_atu_svc_accel_atu_addr(uint8_t accel_id)
 void __wrap_mts_client_send_trp_response(p_trp_msg_t trp_msg)
 {
     FPFW_UNUSED(trp_msg);
+
+    // Do Nothing - just an empty mock
 }
 
 void __wrap_mts_client_send_new_trp_msg(p_trp_msg_t trp_msg)
 {
     FPFW_UNUSED(trp_msg);
+
+    // Do Nothing - just an empty mock
+}
+
+void __wrap_mts_client_forward_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
+{
+    FPFW_UNUSED(trp_msg);
+    FPFW_UNUSED(broadcast_option);
+
+    // Do Nothing - just an empty mock
+}
+
+void __wrap_mts_client_send_dcp_notification(mts_client_id_t client_id, dcp_notification_type_t notification)
+{
+    FPFW_UNUSED(client_id);
+    FPFW_UNUSED(notification);
+    function_called();
 }
 
 FPFW_LOCK_STATE __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
@@ -133,6 +158,8 @@ void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
 {
     FPFW_UNUSED(Lock);
     FPFW_UNUSED(OldState);
+
+    // Do Nothing - just an empty mock
 }
 
 UINT __wrap__txe_block_pool_create(TX_BLOCK_POOL* pool_ptr, CHAR* name_ptr, ULONG block_size, VOID* pool_start, ULONG pool_size, UINT pool_control_block_size)
@@ -174,7 +201,8 @@ void __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t client)
 {
     FPFW_UNUSED(id);
     FPFW_UNUSED(client);
-    // This function is mocked in the test
+
+    // Do Nothing - just an empty mock
 }
 
 _Noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
@@ -555,6 +583,8 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup,
     // Set up expectations for mts_get_this_die_id
     will_return_always(__wrap_mts_get_this_die_id, DIE_0);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     ddr_buffer_info_t* p_new_asic_buffer = s_test_context.p_active_asic_buffer;
@@ -667,6 +697,8 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
 
     // Set up expectations for mts_get_this_die_id
     will_return_always(__wrap_mts_get_this_die_id, DIE_0);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -849,6 +881,8 @@ TEST_FUNCTION(test_etr_process_request_host_request_capabilities, test_setup, te
 
     will_return(__wrap_mts_get_this_die_id, DIE_0);
 
+    will_return_always(__wrap_transfer_rly_is_primary_node, true);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to success
@@ -882,6 +916,8 @@ TEST_FUNCTION(test_etr_process_request_host_request_state, test_setup, test_tear
 
     will_return(__wrap_mts_get_this_die_id, DIE_0);
 
+    will_return_always(__wrap_transfer_rly_is_primary_node, true);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to success
@@ -914,6 +950,8 @@ TEST_FUNCTION(test_etr_process_request_host_request_invalid, test_setup, test_te
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
     will_return(__wrap_mts_get_this_die_id, DIE_0);
+
+    will_return_always(__wrap_transfer_rly_is_primary_node, true);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -953,6 +991,8 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup
 
     will_return_always(__wrap_mts_get_this_die_id, DIE_0);
 
+    will_return_always(__wrap_transfer_rly_is_primary_node, true);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of the dcp read data request is set to success, and TRP Message status is set to success
@@ -960,7 +1000,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending_primary_etr, test_setup, test_teardown)
 {
     // Set Expectations for successful tx_event_flags_get
     expect_any_always(__wrap__txe_event_flags_get, group_ptr);
@@ -983,13 +1023,14 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending, test_se
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
+    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
+    will_return_always(__wrap_transfer_rly_is_primary_node, true);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
-    // Expect that the status of the dcp read data request is set to busy and TRP Message status is set DCP error
-    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DCP_STATUS_E_BUSY);
-    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_E_DCP_ERROR);
+    // Expect that the status of the dcp read data request is set to success, and TRP Message status is set to success
+    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, test_setup, test_teardown)
@@ -1023,6 +1064,8 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
     will_return(__wrap_mts_get_this_die_id, DIE_0);
+
+    will_return_always(__wrap_transfer_rly_is_primary_node, true);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -1065,6 +1108,8 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, 
 
     will_return(__wrap_mts_get_this_die_id, DIE_0);
 
+    will_return_always(__wrap_transfer_rly_is_primary_node, true);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the active buffer is still pending since the address was invalid
@@ -1074,11 +1119,42 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, 
     assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_NONE);
 }
 
-TEST_FUNCTION(test_etr_icc_handle_hsp, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup, test_teardown)
 {
     // The HSP ICC interface simply handles a request, sends a response, and sets up another receive
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    static hsp_log_payload_header_t test_payload = {
+        .output_header =
+            {
+                .manifest_size = 10,
+                .log_size = 10,
+            },
+    };
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    etr_set_override_atu_test_address(&test_payload);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_etr_icc_handle_hsp_secondary_die, test_setup, test_teardown)
+{
+    // The HSP ICC interface simply handles a request, sends a response, and sets up another receive
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    static hsp_log_payload_header_t test_payload = {
+        .output_header =
+            {
+                .manifest_size = 10,
+                .log_size = 10,
+            },
+    };
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
+    etr_set_override_atu_test_address(&test_payload);
 
     etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
 }

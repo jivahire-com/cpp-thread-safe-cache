@@ -27,6 +27,7 @@ sdm_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_itcm.bin'}
 mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/man/etman.bin'}
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
+hsp_telemetry              = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/pctool/hsptrace_decoder.json'}
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
 ddr_phy                    = { type='file',  local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
 ift_memory_state_clearing  = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_memory_state_clearing.bin' }
@@ -56,6 +57,7 @@ sdm_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_itcm.bin'}
 mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/man/etman.bin'}
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
+hsp_telemetry              = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/pctool/hsptrace_decoder.json'}
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
 ddr_phy                    = { type='file', local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
 rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }
@@ -88,6 +90,7 @@ sdm_dtcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm
 sdm_itcm                   = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/sdm/sdm_fw_itcm.bin'}
 mscp_manifest              = { type='file', local='${REPO_APP_BUILD_DIR}/Debug/arm-eabi-aarch/bin/man/etman.bin'}
 accel_manifest             = { type='file', local='${REPO_APP_PATH_kingsgate.sdm.cded}/build/bin/arm-eabi-aarch/Debug/man/etman.bin' }
+hsp_telemetry              = { type='file', local='${REPO_APP_PATH_kingsgate.sprt.release}/release/pctool/hsptrace_decoder.json'}
 mesh_config                = { type='file', local='${REPO_APP_PATH_kng_mesh_binary_images}/cmn800_mesh_tables.bin' }
 ddr_phy                    = { type='file', local='${REPO_APP_PATH_kng_ddrss_phy_fw_image}/ddrss_phy_train_combined.bin' }
 rp_exe                     = { type='file', local='${REPO_APP_PATH_echofalls.rp_exe.build}/build/echofalls/debug/rp_exe.bin' }

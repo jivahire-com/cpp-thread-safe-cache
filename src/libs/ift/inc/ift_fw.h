@@ -37,20 +37,6 @@ enum
     IFT_MGR_IFT_INTENT_TYPE_MAX = 4,
 };
 
-enum
-{
-
-    HSP_MAILBOX_CMD_IFT_INTENT_REQ = 0x240, /**< Request to HSP to get the IFT intent */
-    HSP_MAILBOX_CMD_IFT_INTENT_RSP,         /**< Response from HSP for the IFT intent request */
-    HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_REQ,  /**< Request to HSP to load IFT firmware */
-    HSP_MAILBOX_CMD_IFT_LOAD_FW_64BIT_RSP,  /**< Response from HSP for IFT firmware load request */
-    HSP_MAILBOX_CMD_IFT_RUN_STATUS_REQ,     /**< Request to HSP to notify IFT run status */
-    HSP_MAILBOX_CMD_IFT_RUN_STATUS_RSP,     /**< Response of IFT run status from SCP to HSP  */
-    HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_REQ, /**< Request to HSP to set the IFT IST run status */
-    HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP, /**< Response from HSP for the IFT IST run status request */
-};
-
-
 /*-------------- Typedefs ----------------*/
 
 typedef struct
@@ -78,27 +64,11 @@ typedef struct
 } ift_interface_t, *pift_interface_t;
 
 
-struct kng_hsp_mailbox_cmd_ift_intent_rsp
-{
-    struct kng_hsp_mailbox_msg_header hdr; /**< msg header containing cmd, seq,context and flags. */
-    uint8_t ift_enabled : 1;               /**< IFT enabled status. */
-    uint8_t reserved : 7;                  /**< Reserved for future use. */
-    uint8_t reserved2[3];                  /**< Reserved for future use. */
-    uint32_t ift_intent_type;              /**< IFT intent type. */
-};
-
 struct kng_hsp_mailbox_msg_req
 {
     struct kng_hsp_mailbox_msg_header hdr;   /**< msg header containing cmd, seq, context and flags. */
     uint32_t status;                         /**< Status of the processed incoming mailbox messages. */
     uint32_t status_ex;                      /**< Additional status information or actions (e.g., goto recovery). */
-};
-
-struct kng_hsp_mailbox_cmd_ift_run_status_req
-{
-    struct kng_hsp_mailbox_msg_header header; /**< msg header containing cmd, seq,context and flags. */
-    uint32_t ift_run_status;                  /**< IFT run status. */
-    uint32_t scp_run_status;                  /**< SCP run status. */
 };
 
 union kng_hsp_mailbox_ift_intent_msg
@@ -113,13 +83,6 @@ union kng_hsp_mailbox_ift_status_msg
     struct kng_hsp_mailbox_cmd_ift_run_status_req ift_status_req; /**< IFT run status request structure. */
     struct kng_hsp_mailbox_msg_header ift_status_rsp;             /**< IFT run status response message header. */
     uint32_t as_uint32[4];                                        /**< Raw access to message as 4 uint32 words. */
-};
-
-struct kng_hsp_mailbox_cmd_ift_ist_run_status_req
-{
-    struct kng_hsp_mailbox_msg_header header; /**< msg header containing cmd, seq,context and flags. */
-    uint32_t ift_ist_run_status;              /**< IFT IST run status. */
-    uint32_t reserved[2];
 };
 
 /*--------- Function Prototypes ----------*/

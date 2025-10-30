@@ -13,6 +13,7 @@
 #include <boot_status_codes.h>
 #include <kingsgate_hsp_boot_metadata.h>
 #include <kingsgate_hsp_mailbox_commands.h>
+#include <telemetry_shared_header.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define HSP_MBOX_FIFO_DEPTH						(4U)
@@ -24,6 +25,10 @@ typedef struct kng_hsp_mailbox_cmd_set_variable kng_hsp_mailbox_cmd_set_variable
 typedef struct kng_hsp_mailbox_cmd_get_variable kng_hsp_mailbox_cmd_get_variable;
 typedef struct kng_hsp_mailbox_cmd_load_fw_64bit_req kng_hsp_mailbox_cmd_load_fw_64bit_req;
 typedef struct kng_hsp_mailbox_cmd_prepare_for_core_reset_req kng_hsp_mailbox_cmd_prepare_for_core_reset_req;
+typedef struct kng_hsp_mailbox_cmd_send_log_req kng_hsp_mailbox_cmd_send_log_req;
+
+typedef struct hsp_log_payload_header hsp_log_payload_header_t;
+typedef struct hsp_log_payload_header* p_hsp_log_payload_header_t;
 
 typedef enum _HSP_MAILBOX_RSP_STATUS {
 	HSP_MAILBOX_RSP_STATUS_SUCCESS = 0,

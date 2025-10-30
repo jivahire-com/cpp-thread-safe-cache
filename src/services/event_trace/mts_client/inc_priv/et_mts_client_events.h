@@ -3,8 +3,8 @@
 //
 
 /**
- * @file et_svc_events.h
- * Defines Event Defintions for the Event Trace Service.
+ * @file et_mts_client_events.h
+ * Defines Events for the Event Trace MTS Client.
  */
 
 #pragma once
@@ -27,42 +27,42 @@ snprintf(s_et_svc_message, LOG_DEFAULT_ASCII_STR_SIZE, __VA_ARGS__);   \
 
 FPFW_ET_DEFINE_PROVIDER_EX(
     EVENT_TRACE_PROVIDER_ID_EVENT_TRACE_SERVICE, // ID
-    ET_SERVICE,                                   // Name
+    ET_MTS,                                   // Name
     ET_LEVEL_MASK_ALL                             // Logging Level Mask
 )
 
 /**
- * Define Event Trace events for the Event Trace Service Provider. 
+ * Define Event Trace events for the Event Trace MTS Client. 
 */
 typedef enum {
-    E_EVENT_TRACE_SERVICE_EVENT_INIT_INFO = 0, 
-    E_EVENT_TRACE_SERVICE_EVENT_INIT_WARNING,
-    E_EVENT_TRACE_SERVICE_EVENT_INIT_ERROR,
-    E_EVENT_TRACE_SERVICE_EVENT_ID_MAX
+    E_EVENT_TRACE_MTS_CLIENT_EVENT_INFO = 0, 
+    E_EVENT_TRACE_MTS_CLIENT_EVENT_WARNING,
+    E_EVENT_TRACE_MTS_CLIENT_EVENT_ERROR,
+    E_EVENT_TRACE_MTS_CLIENT_EVENT_ID_MAX
 } e_event_trace_service_event_id_t;
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
 FPFW_ET_DEFINE_EVENT(
     EVENT_TRACE_PROVIDER_ID_EVENT_TRACE_SERVICE,
-    E_EVENT_TRACE_SERVICE_EVENT_INIT_INFO,
-    ETInfo,
+    E_EVENT_TRACE_MTS_CLIENT_EVENT_INFO,
+    MTSClientInfo,
     FPFW_ET_LEVEL_INFO,
     FPFW_ET_DEFINE_FIELD(FPFW_ET_ASCII_STRING(LOG_DEFAULT_ASCII_STR_SIZE), Log)
 )
 
 FPFW_ET_DEFINE_EVENT(
     EVENT_TRACE_PROVIDER_ID_EVENT_TRACE_SERVICE,
-    E_EVENT_TRACE_SERVICE_EVENT_INIT_WARNING,
-    ETWarn,
+    E_EVENT_TRACE_MTS_CLIENT_EVENT_WARNING,
+    MTSClientWarn,
     FPFW_ET_LEVEL_WARNING,
     FPFW_ET_DEFINE_FIELD(FPFW_ET_ASCII_STRING(LOG_DEFAULT_ASCII_STR_SIZE), Log)
 )
 
 FPFW_ET_DEFINE_EVENT(
     EVENT_TRACE_PROVIDER_ID_EVENT_TRACE_SERVICE,
-    E_EVENT_TRACE_SERVICE_EVENT_INIT_ERROR,
-    ETErr,
+    E_EVENT_TRACE_MTS_CLIENT_EVENT_ERROR,
+    MTSClientErr,
     FPFW_ET_LEVEL_ERROR,
     FPFW_ET_DEFINE_FIELD(FPFW_ET_ASCII_STRING(LOG_DEFAULT_ASCII_STR_SIZE), Log)
 )

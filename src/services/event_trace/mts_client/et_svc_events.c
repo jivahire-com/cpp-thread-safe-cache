@@ -13,7 +13,7 @@
 #define FPFW_ET_IMPLEMENTATION
 #define FPFW_ET_METADATA
 
-#include "et_svc_events.h"
+#include <et_mts_client_events.h>
 
 /*-------------------------------- Typedefs ---------------------------------*/
 

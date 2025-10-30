@@ -4,17 +4,18 @@ add_library(${TARGET}
     STATIC
         etr_hsp_manager.c
         event_trace_relay.c
+        event_trace_relay_events.c
 )
 
 target_link_libraries(
     ${TARGET}
     PRIVATE
         IFPFW.EventTracing
-        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.specialization.mts
         fwlib.service.iccBase
         ms::lib::crash_dump
+        ms::lib::event_trace::trace
         ms::lib::hsp_firmware_headers
         ms::lib::telemetry::fuses
         ms::service::atu_service

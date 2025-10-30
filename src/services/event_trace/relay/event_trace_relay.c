@@ -33,6 +33,7 @@
 #include <atu_init.h>
 #include <bug_check.h>
 #include <data_collection_protocol.h>
+#include <event_trace_relay_events.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
 #include <mts_platform_specialization.h>
@@ -154,14 +155,11 @@ static void etr_initialize_ddr_buffers(etr_service_context_t* p_context, const e
                     .base_addr = p_config->hsp_ddr_config.base_addr + (i * HSP_BUFFER_PAYLOAD_SIZE),
                     .size_bytes = sizeof(diag_decoder_payload_header_t),
                 },
-            .buffer.hsp =
-                {
-                    .diag_header =
-                        {
-                            .payload_parser_version = DIAG_HSP_PAYLOAD_PARSER_VERSION,
-                            .payload_parser_type = DIAG_PAYLOAD_PARSER_HSP_TRACE,
-                        },
-                },
+            .buffer.hsp = {.diag_header =
+                               {
+                                   .payload_parser_version = DIAG_HSP_PAYLOAD_PARSER_VERSION,
+                                   .payload_parser_type = DIAG_PAYLOAD_PARSER_HSP_TRACE,
+                               }},
         };
     }
 }
@@ -218,7 +216,7 @@ static void etr_get_new_asic_buffer(etr_service_context_t* p_context)
 static void etr_notify_primary_mcp_asic_buffer_complete(ddr_buffer_info_t* p_buffer)
 {
     /* Create a TRP message to notify the MCP that the buffer is ready to be read */
-    FPFW_DBGPRINT_VERBOSE("[ETR] Notifying MCP on Die 0 for ETR Processing Complete");
+    FPFW_ET_LOG_ETR_ASCII_VERBOSE("Notify MCP D0: ETR proc done");
 
     uint32_t crc = fpfw_crc32(0, (void*)(p_buffer->payload_management.base_addr), p_buffer->payload_management.size_bytes);
 
@@ -309,16 +307,13 @@ static void etr_handle_copy_buffer_request(etr_service_context_t* p_context, etr
     uint64_t size_left = p_context->p_active_asic_buffer->buffer.asic.asic_header.BufferSize -
                          p_context->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes;
 
+    FPFW_ET_LOG_ETR_ASCII_VERBOSE("Size left in ASIC buffer: %zu", size_left);
+
     /* If it doesn't fit, complete the current asic buffer */
     if (size_left <= p_request->buffer_size_bytes)
     {
-        FPFW_DBGPRINT_VERBOSE(
-            "[ETR] Not enough space in current ASIC buffer, completing it and using a new one");
+        FPFW_ET_LOG_ETR_ASCII_VERBOSE("ASIC buff too small, refreshing");
         etr_complete_asic_buffer(p_context);
-    }
-    else
-    {
-        FPFW_DBGPRINT_VERBOSE("[ETR] Buffer fits in current ASIC buffer. Size left: %zu", size_left);
     }
 
     /* Copy the buffer into the asic buffer */
@@ -335,7 +330,7 @@ static void etr_handle_copy_buffer_request(etr_service_context_t* p_context, etr
     /* Notify the owner of the core buffer that is has been copied */
     etr_notify_etc(p_request);
 
-    FPFW_DBGPRINT_VERBOSE("[ETR] Handle Copy Buffer Request Completed");
+    FPFW_ET_LOG_ETR_ASCII_VERBOSE("Copy Buffer Request Completed");
 }
 
 /**
@@ -343,48 +338,72 @@ static void etr_handle_copy_buffer_request(etr_service_context_t* p_context, etr
  *
  * @param p_context -> Pointer to the ETR service context.
  * @param p_request -> Pointer to the host read service request
- * @return None
+ *
+ * @return true if a buffer was found and the request can be processed, false otherwise
  */
-static void etr_handle_host_read_request(etr_service_context_t* p_context, etr_service_request_t* p_request)
+static fpfw_status_t etr_handle_host_read_request(etr_service_context_t* p_context, etr_service_request_t* p_request)
 {
-    FPFW_DBGPRINT_INFO("[ETR] Handling Host Read Request");
+    FPFW_ET_LOG_ETR_ASCII_INFO("Handling Host Read Request");
 
     /* Set the status to success by default */
     p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
 
-    bool free_buffer_found = false;
-    p_ddr_buffer_info_t p_pending_asic_buffer = NULL;
-
     /* Walk the buffer array to find the first pending buffer */
-    for (uint32_t i = 0; i < ASIC_BUFFER_DDR_CAPACITY_MAX; i++)
+    for (uint32_t i = 0; i < ETR_DDR_BUFFERS_CAPACITY_MAX; i++)
     {
-        if (p_context->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_PENDING &&
-            p_context->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_TRACE_DEVICE)
+        if (p_context->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_PENDING)
         {
-            free_buffer_found = true;
-            p_pending_asic_buffer = &p_context->ddr_buffers[i];
-            break;
+            /* If a pending buffer is found, check if it is an ASIC buffer or HSP buffer */
+            p_ddr_buffer_info_t p_pending_buffer = &p_context->ddr_buffers[i];
+
+            if (p_context->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_HSP_TRACE)
+            {
+                FPFW_ET_LOG_ETR_ASCII_INFO("Pending HSP buffer @%p\n",
+                                           (void*)p_pending_buffer->payload_management.base_addr);
+                p_request->p_trp_msg->payload.dcp_msg.payload.read_data.physical_buffer_size = IB_TLM_DDR_ATU_AP_WIN_TRACE_SIZE;
+                p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_size =
+                    p_pending_buffer->payload_management.size_bytes;
+            }
+            else
+            {
+                FPFW_ET_LOG_ETR_ASCII_INFO("Pending ASIC buffer @%p\n",
+                                           (void*)p_pending_buffer->payload_management.base_addr);
+                p_context->p_active_asic_buffer = &p_context->ddr_buffers[i];
+                p_request->p_trp_msg->payload.dcp_msg.payload.read_data.physical_buffer_size =
+                    IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE;
+                p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_size =
+                    p_pending_buffer->payload_management.size_bytes + sizeof(asic_buffer_info_t);
+            }
+
+            p_request->p_trp_msg->payload.dcp_msg.payload.read_data.physical_start_addr = IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR;
+            p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_addr_offset =
+                EVT_TELEMETRY_GET_DDR_OFFSET(mts_get_this_die_id(), p_pending_buffer->payload_management.base_addr);
+            p_request->p_trp_msg->payload.dcp_msg.payload.read_data.crc =
+                fpfw_crc32(0,
+                           (void*)(p_pending_buffer->payload_management.base_addr),
+                           p_pending_buffer->payload_management.size_bytes);
+
+            FPFW_ET_LOG(HostReq,
+                        p_request->p_trp_msg->payload.dcp_msg.payload.read_data.physical_start_addr,
+                        p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_addr_offset,
+                        p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_size,
+                        p_request->p_trp_msg->payload.dcp_msg.payload.read_data.crc);
+
+            return FPFW_STATUS_SUCCESS;
         }
     }
 
-    if (!free_buffer_found)
+    /* If no free buffers found */
+    FPFW_ET_LOG_ETR_ASCII_ERROR("No pending ASIC buffers found");
+
+    /* If this is not a primary instance, return dcp_msg msg_status as busy */
+    /* For the primary instance, the DCP request will be forwarded to the secondary instance, so retain state */
+    if (!mts_is_primary_instance())
     {
-        FPFW_DBGPRINT_ERROR("[ETR] No pending ASIC buffers found for read request");
-        p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_E_BUSY;
-        return;
+        p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_NONE;
     }
 
-    p_request->p_trp_msg->payload.dcp_msg.payload.read_data.physical_start_addr = IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR;
-    p_request->p_trp_msg->payload.dcp_msg.payload.read_data.physical_buffer_size = IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE;
-    p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_addr_offset =
-        EVT_TELEMETRY_GET_DDR_OFFSET(mts_get_this_die_id(), p_pending_asic_buffer->payload_management.base_addr);
-    p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_size =
-        p_pending_asic_buffer->payload_management.size_bytes + sizeof(asic_buffer_info_t);
-
-    p_request->p_trp_msg->payload.dcp_msg.payload.read_data.crc =
-        fpfw_crc32(0,
-                   (void*)(p_pending_asic_buffer->payload_management.base_addr),
-                   p_pending_asic_buffer->payload_management.size_bytes);
+    return FPFW_STATUS_FAIL;
 }
 
 /**
@@ -445,7 +464,7 @@ static void etr_handle_read_complete_response(etr_service_context_t* p_context, 
         {
             p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_RD_DATA_NONE;
         }
-        FPFW_DBGPRINT_ERROR("[ETR] No pending ASIC buffers found for read complete request");
+        FPFW_ET_LOG_ETR_ASCII_ERROR("No pending ASIC buffers found");
     }
 }
 
@@ -458,18 +477,16 @@ static void etr_handle_read_complete_response(etr_service_context_t* p_context, 
  */
 static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_request_t p_request)
 {
-    // The ETR telemetry service runs on all MCPs. The architecture is such that the Host only interacts
-    // with Die 0 MCP. DCP transactions are only handled by the primary MCP instance.
+    /* The ETR telemetry service runs on all MCPs. The architecture is such that the Host only interacts
+     * with Die 0 MCP. DCP transactions from AP are only handled by the primary MCP instance. */
     bool primary_instance = mts_is_primary_instance();
-    uint16_t response_dcp_payload_size = 0;
-
-    p_trp_msg_t p_trp_msg = p_request->p_trp_msg;
-
-    // reply back to the host if primary instance, otherwise let forwarded messages drop
-    if (!primary_instance)
+    if (!primary_instance && (p_request->p_trp_msg->hdr.src_node.core_id == CPU_AP))
     {
         return;
     }
+
+    uint16_t response_dcp_payload_size = 0;
+    p_trp_msg_t p_trp_msg = p_request->p_trp_msg;
 
     switch (p_trp_msg->payload.dcp_msg.hdr.msg_id)
     {
@@ -494,8 +511,18 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
         break;
 
     case DCP_MSG_ID_READ_DATA:
+        /* If local ETR has no data to share, forward the request to the secondary and return.
+        The secondary ETR will handle the request if it has data available. No response expected */
+        if (etr_handle_host_read_request(p_context, p_request) != FPFW_STATUS_SUCCESS)
+        {
+            if (primary_instance)
+            {
+                mts_client_forward_trp_msg(p_trp_msg, TRP_BROADCAST_PRIM_TO_SEC_PEER_ONLY);
+            }
+        }
+
+        /* When not forwarding the message, update the response payload size */
         response_dcp_payload_size = sizeof(dcp_msg_read_data_t);
-        etr_handle_host_read_request(p_context, p_request);
         break;
 
     case DCP_MSG_ID_READ_DATA_COMPLETE:
@@ -503,7 +530,7 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
         break;
 
     default:
-        FPFW_DBGPRINT_ERROR("[ETR] Unexpected DCP message ID: %d", p_trp_msg->payload.dcp_msg.hdr.msg_id);
+        FPFW_ET_LOG_ETR_ASCII_ERROR("Invalid DCP message ID: %d", p_trp_msg->payload.dcp_msg.hdr.msg_id);
         p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_E_UNSUPPORTED_MSG;
         break;
     };
@@ -518,8 +545,6 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
         p_trp_msg->hdr.trp_msg_status = TRP_STATUS_SUCCESS;
     }
 
-    // if incoming message was validated and required to be forwarded, the forward message above needs to
-    // retain the original payload size.
     p_trp_msg->payload.dcp_msg.hdr.payload_size = response_dcp_payload_size;
     p_trp_msg->hdr.payload_size = sizeof(dcp_msg_hdr_t) + p_trp_msg->payload.dcp_msg.hdr.payload_size;
 
@@ -584,7 +609,7 @@ fpfw_status_t decode_validate_buffer_metadata(etr_service_request_t* p_request)
         break;
 
     default:
-        FPFW_DBGPRINT_ERROR("[ETR] Invalid Core ID: %d", p_request->p_trp_msg->hdr.src_node.core_id);
+        FPFW_ET_LOG_ETR_ASCII_ERROR("Invalid Core ID: %d", p_request->p_trp_msg->hdr.src_node.core_id);
         return FPFW_STATUS_FAIL;
     }
 
@@ -593,20 +618,20 @@ fpfw_status_t decode_validate_buffer_metadata(etr_service_request_t* p_request)
     p_request->buffer_size_bytes = p_etc_header->UsedBytes;
 
     /* Print the Event Trace Buffer Header metadata */
-    FPFW_DBGPRINT_VERBOSE("[ETR] Event Trace Buffer Header Metadata:\n \
-        - Core ID: %d\n    \
-        - Buffer ID: %d, \n    \
+    FPFW_ET_LOG_ETR_ASCII_VERBOSE("ETR Hdr:\n \
+        - Core ID: %2d\n    \
+        - Buffer ID: %2d, \n    \
         - Buffer Size: %zu",
-                          p_etc_header->CoreId,
-                          p_etc_header->BufferId,
-                          p_etc_header->BufferSize);
+                                  p_etc_header->CoreId,
+                                  p_etc_header->BufferId,
+                                  p_etc_header->BufferSize);
 
     /* Sanity Check the Buffer Header */
     if ((p_etc_header->CoreId != CPU_SCP && p_etc_header->CoreId != CPU_MCP &&
          p_etc_header->CoreId != CPU_SDM && p_etc_header->CoreId != CPU_CDED_SDM) ||
         (p_etc_header->BufferSize == 0))
     {
-        FPFW_DBGPRINT_ERROR("[ETR] Invalid ET Buffer. Dropping request.");
+        FPFW_ET_LOG_ETR_ASCII_ERROR("Invalid ET Buffer. Drop request");
         return FPFW_STATUS_FAIL;
     }
 
@@ -665,7 +690,7 @@ static void etr_mts_client_init(p_etr_service_context_t p_context, const etr_ser
 /*----------------------------- Global Functions ----------------------------*/
 void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t* p_config)
 {
-    FPFW_DBGPRINT_INFO("[ETR] Initializing Event Trace Relay Service and the MTS Client");
+    FPFW_ET_LOG_ETR_ASCII_INFO("Initializing ETR Svc and MTS Clnt");
 
     BUG_ASSERT(p_context != NULL);
     BUG_ASSERT(p_config != NULL);
@@ -682,7 +707,7 @@ void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t
     /* Initialize the MTS client for the Event Trace Relay */
     etr_mts_client_init(p_context, p_config);
 
-    FPFW_DBGPRINT_INFO("[ETR] Event Trace Relay Service and MTS Client Initialized");
+    FPFW_ET_LOG_ETR_ASCII_INFO("ETR Service and MTS Clnt Init done");
 }
 
 /**
@@ -731,13 +756,13 @@ void etr_worker_thread_func(ULONG thread_input)
 
             if (etr_request.p_trp_msg == NULL)
             {
-                FPFW_DBGPRINT_ERROR("[ETR-MTS] Received NULL TRP message from MTS queue");
+                FPFW_ET_LOG_ETR_ASCII_ERROR("NULL TRP message from MTS queue");
                 break;
             }
 
-            FPFW_DBGPRINT_INFO("[ETR-MTS] Processing new ET MTS msg with ID: %d, from core %d",
-                               etr_request.p_trp_msg->hdr.trp_msg_id,
-                               etr_request.p_trp_msg->hdr.src_node.core_id);
+            FPFW_ET_LOG_ETR_ASCII_INFO("Processing new ET MTS msg ID: %2d, core %2d",
+                                       etr_request.p_trp_msg->hdr.trp_msg_id,
+                                       etr_request.p_trp_msg->hdr.src_node.core_id);
 
             switch (etr_request.p_trp_msg->hdr.trp_msg_id)
             {
@@ -751,7 +776,7 @@ void etr_worker_thread_func(ULONG thread_input)
 
                 if (decode_validate_buffer_metadata(&etr_request) != FPFW_STATUS_SUCCESS)
                 {
-                    FPFW_DBGPRINT_ERROR("[ETR] Buffer Metadata Invalid");
+                    FPFW_ET_LOG_ETR_ASCII_ERROR("[ETR] Buffer Metadata Invalid");
 
                     /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
                     etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
@@ -771,8 +796,7 @@ void etr_worker_thread_func(ULONG thread_input)
                 }
                 else
                 {
-                    FPFW_DBGPRINT_ERROR(
-                        "[ETR-MTS] Received TRP_MSG_ID_READ_PACKAGE_COMPLETE on Die 0. Invalid.");
+                    FPFW_ET_LOG_ETR_ASCII_ERROR("Rx TRP read package complete on D0");
 
                     /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
                     etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
@@ -790,8 +814,7 @@ void etr_worker_thread_func(ULONG thread_input)
                 }
                 else
                 {
-                    FPFW_DBGPRINT_ERROR(
-                        "[ETR-MTS] Received TRP_MSG_ID_PACKAGE_NOTIFICATION on Die 1. Invalid.");
+                    FPFW_ET_LOG_ETR_ASCII_ERROR("Rx TRP pkg notification on D1");
 
                     /* Update the TRP message status to TRP_STATUS_E_PARAM*/
                     etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
@@ -809,7 +832,7 @@ void etr_worker_thread_func(ULONG thread_input)
                 else
                 {
                     /* If we receive a TRP_MSG_ID_READ_PACKAGE on Die 0, we ignore it */
-                    FPFW_DBGPRINT_ERROR("[ETR-MTS] Received TRP_MSG_ID_READ_PACKAGE on Die 0. Ignoring.");
+                    FPFW_ET_LOG_ETR_ASCII_ERROR("Rx TRP_MSG_ID_READ_PACKAGE on D0");
 
                     /* Update the TRP message status to TRP_STATUS_E_PARAM */
                     etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
@@ -818,7 +841,7 @@ void etr_worker_thread_func(ULONG thread_input)
                 break;
 
             default:
-                FPFW_DBGPRINT_ERROR("[ETR-MTS] Unsupported ET MTS ID: %d", etr_request.p_trp_msg->hdr.trp_msg_id);
+                FPFW_ET_LOG_ETR_ASCII_ERROR("Unsupported ET MTS ID: %d", etr_request.p_trp_msg->hdr.trp_msg_id);
 
                 /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
                 etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;

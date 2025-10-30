@@ -131,8 +131,8 @@ void ift_icc_get_ift_intent(fpfw_icc_base_ctx_t* hsp_icc_ctx, uint8_t* ift_enabl
 
     BUG_ASSERT_PARAM(fpfw_status == FPFW_ICC_BASE_STATUS_SUCCESS, fpfw_status, 0);
     BUG_ASSERT_PARAM(recv_msg_size_bytes >= sizeof(struct kng_hsp_mailbox_msg_header), recv_msg_size_bytes, 0);
-    BUG_ASSERT_PARAM(ift_icc_msg.ift_intent_rsp.hdr.cmd == HSP_MAILBOX_CMD_IFT_INTENT_RSP,
-                     ift_icc_msg.ift_intent_rsp.hdr.cmd,
+    BUG_ASSERT_PARAM(ift_icc_msg.ift_intent_rsp.header.cmd == HSP_MAILBOX_CMD_IFT_INTENT_RSP,
+                     ift_icc_msg.ift_intent_rsp.header.cmd,
                      0);
 
     *ift_enabled = ift_icc_msg.ift_intent_rsp.ift_enabled;

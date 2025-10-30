@@ -16,7 +16,6 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET} 
     PRIVATE
         fwlib.lib.assert
-        fwlib.lib.interface.platform.dbgprint
         ms::build_data
         ms::lib::event_trace::trace
         ms::lib::register_headers

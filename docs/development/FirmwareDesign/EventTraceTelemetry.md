@@ -314,3 +314,41 @@ sequenceDiagram
 :::
 
 The host can query the Event Trace Manifest with the Primary MCP, and the Primary MCP will share the Physical DDR Base Address for the full manifest, the offset from the base address, as well as the size of the full manifest. This will enable the AP Host to read the full manifest and use it to decode any incoming Event Trace Buffers.
+
+## HSP telemetry
+
+MCP also acts as an interface to transmit HSP telemetry to the host. While this flow does not utilize the Event Trace Relay, it does use the MTS client to transmit the telemetry data to the host using DCP. The high level flow is as below.
+
+:::mermaid
+sequenceDiagram
+    participant HSP
+    participant MCP
+    participant DDR
+    participant Host
+
+    loop Log HSP Telemetry
+        HSP -->> DDR: Log telemetry to DDR region
+    end
+
+    alt HSP Buffer Full
+        HSP -->> MCP: Notify HSP telemetry Buffer Full (via ICC)
+        MCP -->> DDR: Copy HSP telemetry to HSP ASIC Buffer
+        MCP -->> HSP: Ack Buffer Copy Complete (via ICC)
+        HSP -->> HSP: Refresh and reuse buffer
+        MCP -->> Host: ASIC Buffer available (via DCP)
+    end
+
+    Host -->> DDR: Read HSP ASIC Buffer
+    Host -->> MCP: ASIC Buffer Read Complete
+    MCP -->> DDR: Free up processed HSP ASIC Buffer
+:::
+
+On die 1, the MCP notifies MCP Die 0 to forward the DCP message instead of the Host. MCP Die 0 acts as the man in the middle and forwards the DCP message to the Host. Any message to MCP Die 1 from the Host is forwarded likewise by MCP Die 0.
+
+Some noticeable changes between Event Trace Telemetry and HSP Telemetry are:
+
+1. HSP does not implement MTS, so interfaces are via direct ICC.
+1. HSP telemetry embeds the manifest in every telemetry packet. Hence, there is no manifest recovery step during init.
+1. HSP telemetry packets are significantly bigger than the event trace buffers of the cortex m7 cores. Hence, the number of HSP ASIC buffers are much smaller than the number of ET ASIC Buffers.
+1. Due to the higher size of the HSP Telemetry buffers, there is no combining of multiple HSP telemetry buffers into a single HSP ASIC Buffer. There's only one HSP telemetry buffer in each HSP ASIC Buffer.
+1. MCP does not append a separate header for the HSP ASIC Buffer.

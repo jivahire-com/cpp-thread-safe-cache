@@ -11,6 +11,7 @@
 
 /*----------------------------- Nested includes -----------------------------*/
 #include <event_trace_relay.h>
+#include <hsp_firmware_headers.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -48,3 +49,14 @@ void etr_icc_handle_hsp(void* context, size_t output_size_bytes, fpfw_status_t s
  * @return None -> This function runs in an infinite loop, so should never return
  */
 void etr_worker_thread_func(ULONG thread_input);
+
+#ifdef _WIN32   // Unit Test Only
+/**
+ * @brief Sets an override address for the ATU test payload header used in unit tests.
+ *
+ * @param atu_test_addr -> Pointer to the test payload header to use.
+ *
+ * @return None
+ */
+void etr_set_override_atu_test_address(p_hsp_log_payload_header_t atu_test_addr);
+#endif

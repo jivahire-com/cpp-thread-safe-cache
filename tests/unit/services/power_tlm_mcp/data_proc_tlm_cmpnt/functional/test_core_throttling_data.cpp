@@ -1807,3 +1807,255 @@ TEST_FUNCTION(test_core_multiple_adaptive_clocking_overrun_cycles, test_setup, t
         printf("***\n");
     }
 }
+
+// Test single VR_HOT throttling cycle: NO_THROTTLING → SYS_FRC_PMIN_THROTTLING_START → FINALIZE (no END event)
+//
+// Test Flow Summary:
+// ==================
+// T1: NO_THROTTLING (baseline)
+// T2: SYS_FRC_PMIN_THROTTLING_START (VR_HOT throttling begins)
+// T3: FINALIZE (calculate residency using finalize timestamp - simulates package boundary)
+// --- FINAL CHECK: entry_count=1, residency calculated from finalize timestamp ---
+TEST_FUNCTION(test_core_vr_hot_throttling_functional, test_setup, test_teardown)
+{
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
+    if (g_print_logs)
+    {
+        printf("***\n");
+        printf("--- START test_core_vr_hot_throttling_functional ---\n");
+    }
+    uint8_t core_index = 0;
+    // Timestamps are in microseconds; residency is processed in milliseconds (conversion happens in package_create_pwr_core_throttle_record, compute_metrics.c).
+    uint64_t T1_us = 1000000, T2_us = 2000000, T3_finalize_us = 4000000;
+
+    // Set up gtimer frequency mock for all calls in this test
+    setup_mock_gtimer_frequency();
+
+    // Use microsecond values directly for timestamps
+    pstate_telem_t mock_pstate_data_initial = {0};
+    core_current_t mock_current_data = {0};
+
+    // Step 1: NO_THROTTLING
+    setup_mock_pstate_data_with_throttling(&mock_pstate_data_initial, core_index, 10, 20, NO_THROTTLING, 0, T1_us);
+    setup_mock_current_data(&mock_current_data, core_index, T1_us, 100, 80, 120, 100, 100, 10);
+    if (g_print_logs)
+        printf("Processing step 1: NO_THROTTLING\n");
+    data_smpl_process_pstate_sensor_fifo();
+    data_smpl_process_core_current_sensor_fifo();
+
+    // Step 2: SYS_FRC_PMIN_THROTTLING_START (VR_HOT throttling start)
+    pstate_telem_t mock_pstate_data_start = {0};
+    core_current_t mock_current_data_start = {0};
+
+    setup_mock_pstate_data_with_throttling(&mock_pstate_data_start, core_index, 10, 20, SYS_FRC_PMIN_THROTTLING_START, 0, T2_us);
+    setup_mock_current_data(&mock_current_data_start, core_index, T2_us, 100, 80, 120, 100, 150, 10);
+    if (g_print_logs)
+        printf("Processing step 2: SYS_FRC_PMIN_THROTTLING_START (VR_HOT)\n");
+    data_smpl_process_pstate_sensor_fifo();
+    data_smpl_process_core_current_sensor_fifo();
+
+    // Assert that throttling status is active after SYS_FRC_PMIN_THROTTLING_START
+    assert_true(core_rt[core_index].status_flags.throttle_is_active);
+    assert_true(core_rt[core_index].throttle_source_tracker[THROTTLE_SOURCE_VR_HOT]);
+
+    // Step 3: FINALIZE at package boundary (no END event - test finalize residency calculation)
+    // This tests the scenario where VR_HOT throttling is still active at package boundary
+    // and residency must be calculated using the finalize timestamp
+    set_next_finalize_timestamp(T3_finalize_us);
+    data_smpl_finalize_pwr_pkg_metrics();
+    uint32_t T_finalize_pkg_us = time_t0; // Capture the finalize timestamp used
+    if (g_print_logs)
+        printf("Finalize called at T=%" PRIu32 " us (calculates residency for active VR_HOT throttling)\n", T_finalize_pkg_us);
+
+    // Assert that VR_HOT throttling is still active (no END event sent)
+    assert_true(core_rt[core_index].throttle_source_tracker[THROTTLE_SOURCE_VR_HOT]);
+
+    // Get final results by creating record for the same
+    pwr_core_record_throttle_t throttle_record = {{0}};
+    package_create_pwr_core_throttle_record(&throttle_record);
+    pwr_core_element_throttle_t* throttle_array =
+        &throttle_record.throttle_collection[core_index].throttle_element[THROTTLE_SOURCE_VR_HOT];
+
+    // Expected values for VR_HOT throttling (THROTTLE_SOURCE_VR_HOT = 3)
+    uint32_t expected_entry_count = 1; // One throttling start event
+    // expected_residency_mS is in milliseconds (mS), calculated using finalize timestamp
+    // Throttling started at T2_us, finalized at T3_finalize_us, so residency = T3_finalize_us-T2_us
+    uint32_t expected_residency_mS = (T3_finalize_us - T2_us) / 1000; // 2000 mS
+    bool expected_throttling_status = true; // Throttling should still be active (no END event)
+    uint16_t expected_overrun_count = 0;    // VR_HOT is not an overrun source
+    uint8_t expected_max_pstate = 10;       // From the START event pstate data
+    uint8_t expected_avg_pstate = 10;       // Only one pstate value during throttling
+
+    if (g_print_logs)
+    {
+        printf("\n=== Results ===\n");
+        printf("VR_HOT Throttling entry_count: %d (expected=%d)\n", throttle_array->entry_count, expected_entry_count);
+        printf("VR_HOT Throttling residency: %d ms (expected=%d ms)\n", throttle_array->residency_mS, expected_residency_mS);
+        printf("VR_HOT throttling status: %d (expected=%d)\n",
+               core_rt[core_index].status_flags.throttle_is_active,
+               expected_throttling_status);
+        printf("VR_HOT overrun_count: %d (expected=%d)\n", throttle_array->overrun_count, expected_overrun_count);
+        printf("VR_HOT max_pstate: %d (expected=%d)\n", throttle_array->max_pstate, expected_max_pstate);
+        printf("VR_HOT avg_pstate: %d (expected=%d)\n", throttle_array->avg_pstate, expected_avg_pstate);
+    }
+
+    // Assert all expected values
+    assert_int_equal(expected_entry_count, throttle_array->entry_count);
+    assert_int_equal(expected_residency_mS, throttle_array->residency_mS);
+    assert_int_equal(expected_throttling_status, core_rt[core_index].status_flags.throttle_is_active);
+    assert_int_equal(expected_overrun_count, throttle_array->overrun_count);
+    assert_int_equal(expected_max_pstate, throttle_array->max_pstate);
+    assert_int_equal(expected_avg_pstate, throttle_array->avg_pstate);
+    // VR_HOT throttle_source_tracker should still be active and true as no END event was sent
+    assert_int_equal(true, core_rt[core_index].throttle_source_tracker[THROTTLE_SOURCE_VR_HOT]);
+
+    if (g_print_logs)
+    {
+        printf("--- END test_core_vr_hot_throttling_functional ---\n");
+        printf("***\n");
+    }
+}
+
+// Test multiple VR_HOT throttling cycles with duplicates
+//
+// Test Flow Summary:
+// ==================
+// T1: NO_THROTTLING (baseline)
+// T2: SYS_FRC_PMIN_THROTTLING_START (cycle 1 start)
+// T3: SYS_FRC_PMIN_THROTTLING_START (duplicate start - should not increment entry_count)
+// T4: SYS_FRC_PMIN_THROTTLING_END (cycle 1 end)
+// T5: SYS_FRC_PMIN_THROTTLING_START (cycle 2 start)
+// T6: SYS_FRC_PMIN_THROTTLING_END (cycle 2 end)
+// --- FINAL CHECK: entry_count=2, total residency accumulated ---
+TEST_FUNCTION(test_core_multiple_vr_hot_throttling_cycles, test_setup, test_teardown)
+{
+    // Add mock setup for droop counts
+    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
+    if (g_print_logs)
+    {
+        printf("***\n");
+        printf("--- START test_core_multiple_vr_hot_throttling_cycles ---\n");
+    }
+    uint8_t core_index = 0;
+    uint64_t T1_us = 1000000, T2_us = 2000000, T3_us = 3000000, T4_us = 4000000;
+    uint64_t T5_us = 5000000, T6_us = 6000000, T7_finalize_us = 7000000;
+
+    // Set up gtimer frequency mock for all calls in this test
+    setup_mock_gtimer_frequency();
+
+    // Step 1: NO_THROTTLING
+    pstate_telem_t pstate_no_throttling = {0};
+    core_current_t current_no_throttling = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_no_throttling, core_index, 10, 20, NO_THROTTLING, 0, T1_us);
+    setup_mock_current_data(&current_no_throttling, core_index, T1_us, 100, 80, 120, 100, 100, 10);
+    if (g_print_logs)
+        printf("Processing step 1: NO_THROTTLING\n");
+    data_smpl_process_pstate_sensor_fifo();
+    data_smpl_process_core_current_sensor_fifo();
+
+    // Step 2: SYS_FRC_PMIN_THROTTLING_START (Cycle 1)
+    pstate_telem_t pstate_start1 = {0};
+    core_current_t current_start1 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_start1, core_index, 10, 20, SYS_FRC_PMIN_THROTTLING_START, 0, T2_us);
+    setup_mock_current_data(&current_start1, core_index, T2_us, 100, 80, 120, 100, 150, 10);
+    if (g_print_logs)
+        printf("Processing step 2: SYS_FRC_PMIN_THROTTLING_START (cycle 1)\n");
+    data_smpl_process_pstate_sensor_fifo();
+    data_smpl_process_core_current_sensor_fifo();
+
+    // Step 3: SYS_FRC_PMIN_THROTTLING_START (Duplicate - should be ignored for entry_count)
+    pstate_telem_t pstate_duplicate = {0};
+    core_current_t current_duplicate = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_duplicate, core_index, 11, 25, SYS_FRC_PMIN_THROTTLING_START, 0, T3_us);
+    setup_mock_current_data(&current_duplicate, core_index, T3_us, 100, 80, 120, 100, 160, 11);
+    if (g_print_logs)
+        printf("Processing step 3: SYS_FRC_PMIN_THROTTLING_START (duplicate)\n");
+    data_smpl_process_pstate_sensor_fifo();
+    data_smpl_process_core_current_sensor_fifo();
+
+    // Step 4: SYS_FRC_PMIN_THROTTLING_END (Cycle 1 end)
+    pstate_telem_t pstate_end1 = {0};
+    core_current_t current_end1 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_end1, core_index, 12, 30, SYS_FRC_PMIN_THROTTLING_END, 0, T4_us);
+    setup_mock_current_data(&current_end1, core_index, T4_us, 100, 80, 120, 100, 170, 12);
+    if (g_print_logs)
+        printf("Processing step 4: SYS_FRC_PMIN_THROTTLING_END (cycle 1)\n");
+    data_smpl_process_pstate_sensor_fifo();
+    data_smpl_process_core_current_sensor_fifo();
+
+    // Step 5: SYS_FRC_PMIN_THROTTLING_START (Cycle 2)
+    pstate_telem_t pstate_start2 = {0};
+    core_current_t current_start2 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_start2, core_index, 13, 35, SYS_FRC_PMIN_THROTTLING_START, 0, T5_us);
+    setup_mock_current_data(&current_start2, core_index, T5_us, 100, 80, 120, 100, 180, 13);
+    if (g_print_logs)
+        printf("Processing step 5: SYS_FRC_PMIN_THROTTLING_START (cycle 2)\n");
+    data_smpl_process_pstate_sensor_fifo();
+    data_smpl_process_core_current_sensor_fifo();
+
+    // Step 6: SYS_FRC_PMIN_THROTTLING_END (Cycle 2 end)
+    pstate_telem_t pstate_end2 = {0};
+    core_current_t current_end2 = {0};
+    setup_mock_pstate_data_with_throttling(&pstate_end2, core_index, 14, 40, SYS_FRC_PMIN_THROTTLING_END, 0, T6_us);
+    setup_mock_current_data(&current_end2, core_index, T6_us, 100, 80, 120, 100, 190, 14);
+    if (g_print_logs)
+        printf("Processing step 6: SYS_FRC_PMIN_THROTTLING_END (cycle 2)\n");
+    data_smpl_process_pstate_sensor_fifo();
+    data_smpl_process_core_current_sensor_fifo();
+
+    // Set finalize timestamp and finalize metrics before package creation
+    set_next_finalize_timestamp(T7_finalize_us);
+    data_smpl_finalize_pwr_pkg_metrics();
+
+    // Get final results
+    pwr_core_record_throttle_t throttle_record = {{0}};
+    package_create_pwr_core_throttle_record(&throttle_record);
+    pwr_core_element_throttle_t* throttle_array =
+        &throttle_record.throttle_collection[core_index].throttle_element[THROTTLE_SOURCE_VR_HOT];
+
+    // Expected values for multiple VR_HOT throttling cycles
+    uint32_t expected_entry_count = 2; // Two distinct start events (duplicate ignored)
+    // Cycle 1: T2_us to T4_us = 2000ms, Cycle 2: T5_us to T6_us = 1000ms, Total = 3000ms
+    uint32_t expected_residency_mS = ((T4_us - T2_us) + (T6_us - T5_us)) / 1000; // 3000 mS
+    bool expected_throttling_status = false; // Should be inactive after final END event
+    uint16_t expected_overrun_count = 0;     // VR_HOT is not an overrun source
+    // Throttle pstates tracked: START1(10), duplicate(11), START2(13)
+    // Max pstate during throttling = 13 (from START2, END pstates 14 excluded as end event signals termination or exit of throttling)
+    uint8_t expected_max_pstate = 13; // Highest pstate during throttling (excluding END events)
+    // Average pstate calculation (weighted by residency):
+    // Cycle 1: pstate 10 for 1000ms (T2-T3), pstate 11 for 1000ms (T3-T4) = (10*1000 + 11*1000)/2000 = 10.5
+    // Cycle 2: pstate 13 for 1000ms (T5-T6) = 13
+    // Overall avg: ((10*1000 + 11*1000 + 13*1000) / 3000) = 34000/3000 = 11.33 ≈ 11
+    uint8_t expected_avg_pstate = 11; // Weighted average across all throttling periods
+
+    if (g_print_logs)
+    {
+        printf("\n=== Results (Multiple VR_HOT Cycles) ===\n");
+        printf("VR_HOT entry_count: %d (expected=%d)\n", throttle_array->entry_count, expected_entry_count);
+        printf("VR_HOT residency: %d ms (expected=%d ms)\n", throttle_array->residency_mS, expected_residency_mS);
+        printf("VR_HOT throttling status: %d (expected=%d)\n",
+               core_rt[core_index].status_flags.throttle_is_active,
+               expected_throttling_status);
+        printf("VR_HOT overrun_count: %d (expected=%d)\n", throttle_array->overrun_count, expected_overrun_count);
+        printf("VR_HOT max_pstate: %d (expected=%d)\n", throttle_array->max_pstate, expected_max_pstate);
+        printf("VR_HOT avg_pstate: %d (expected=%d)\n", throttle_array->avg_pstate, expected_avg_pstate);
+    }
+
+    // Assert all expected values
+    assert_int_equal(expected_entry_count, throttle_array->entry_count);
+    assert_int_equal(expected_residency_mS, throttle_array->residency_mS);
+    assert_int_equal(expected_throttling_status, core_rt[core_index].status_flags.throttle_is_active);
+    assert_int_equal(expected_overrun_count, throttle_array->overrun_count);
+    assert_int_equal(expected_max_pstate, throttle_array->max_pstate);
+    assert_int_equal(expected_avg_pstate, throttle_array->avg_pstate);
+    assert_int_equal(false, core_rt[core_index].throttle_source_tracker[THROTTLE_SOURCE_VR_HOT]); // VR_HOT throttling tracker should be inactive after END events
+
+    if (g_print_logs)
+    {
+        printf("--- END test_core_multiple_vr_hot_throttling_cycles ---\n");
+        printf("***\n");
+    }
+}

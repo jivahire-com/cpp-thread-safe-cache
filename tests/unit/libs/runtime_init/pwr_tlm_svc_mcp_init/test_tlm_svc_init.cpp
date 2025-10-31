@@ -47,6 +47,11 @@ idsw_die_id_t __wrap_idsw_get_die_id(void)
     return mock_type(idsw_die_id_t);
 }
 
+bool __wrap_idhw_is_single_die_boot_en(void)
+{
+    return mock_type(bool);
+}
+
 power_tlm_knobs_t __wrap_config_get_pwr_tlm_knobs(void)
 {
     return *((power_tlm_knobs_t*)mock_type(power_tlm_knobs_t*));
@@ -56,13 +61,15 @@ void __wrap_telemetry_service_init(uint8_t die_id,
                                    uint32_t pwr_pkg_period_ms,
                                    uint32_t inst_pkg_sample_period_ms,
                                    uint16_t inst_samples_per_pkg,
-                                   uint32_t _24_hr_pkg_sample_period_ms)
+                                   uint32_t _24_hr_pkg_sample_period_ms,
+                                   bool is_single_die_system)
 {
     check_expected(die_id);
     check_expected(pwr_pkg_period_ms);
     check_expected(inst_pkg_sample_period_ms);
     check_expected(inst_samples_per_pkg);
     check_expected(_24_hr_pkg_sample_period_ms);
+    check_expected(is_single_die_system);
 }
 
 void __wrap_pwr_tlm_cli_svc_init(void)
@@ -83,12 +90,14 @@ TEST_FUNCTION(test_tlm_svc_init, nullptr, nullptr)
 
     will_return(__wrap_config_get_pwr_tlm_knobs, &pwr_tlm_knobs);
     will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_idhw_is_single_die_boot_en, false); // dual die system
 
     expect_value(__wrap_telemetry_service_init, die_id, DIE_0);
     expect_value(__wrap_telemetry_service_init, pwr_pkg_period_ms, 30000);
     expect_value(__wrap_telemetry_service_init, inst_pkg_sample_period_ms, 20);
     expect_value(__wrap_telemetry_service_init, inst_samples_per_pkg, 10);
     expect_value(__wrap_telemetry_service_init, _24_hr_pkg_sample_period_ms, 3600000); // 1 hour in ms
+    expect_value(__wrap_telemetry_service_init, is_single_die_system, false);
 
     expect_function_call(__wrap_pwr_tlm_cli_svc_init);
 
@@ -110,12 +119,14 @@ TEST_FUNCTION(test_tlm_svc_init_other_branches, nullptr, nullptr)
 
     will_return(__wrap_config_get_pwr_tlm_knobs, &pwr_tlm_knobs);
     will_return(__wrap_idsw_get_die_id, DIE_1);
+    will_return(__wrap_idhw_is_single_die_boot_en, true); // single die system
 
     expect_value(__wrap_telemetry_service_init, die_id, DIE_1);
     expect_value(__wrap_telemetry_service_init, pwr_pkg_period_ms, 60000);
     expect_value(__wrap_telemetry_service_init, inst_pkg_sample_period_ms, 100);
     expect_value(__wrap_telemetry_service_init, inst_samples_per_pkg, 20);
     expect_value(__wrap_telemetry_service_init, _24_hr_pkg_sample_period_ms, 86400000); // default value
+    expect_value(__wrap_telemetry_service_init, is_single_die_system, true);
 
     expect_function_call(__wrap_pwr_tlm_cli_svc_init);
 
@@ -137,12 +148,14 @@ TEST_FUNCTION(test_tlm_svc_init_range_limit, nullptr, nullptr)
 
     will_return(__wrap_config_get_pwr_tlm_knobs, &pwr_tlm_knobs);
     will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_idhw_is_single_die_boot_en, false); // dual die system
 
     expect_value(__wrap_telemetry_service_init, die_id, DIE_0);
     expect_value(__wrap_telemetry_service_init, pwr_pkg_period_ms, 120000);
     expect_value(__wrap_telemetry_service_init, inst_pkg_sample_period_ms, 20);
     expect_value(__wrap_telemetry_service_init, inst_samples_per_pkg, 10);
     expect_value(__wrap_telemetry_service_init, _24_hr_pkg_sample_period_ms, 1800000); // 30 minutes in ms
+    expect_value(__wrap_telemetry_service_init, is_single_die_system, false);
 
     expect_function_call(__wrap_pwr_tlm_cli_svc_init);
 

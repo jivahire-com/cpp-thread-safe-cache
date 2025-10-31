@@ -188,7 +188,7 @@ TEST_FUNCTION(test_gen_24hr_report_no_records, test_setup, test_teardown)
         power_pkg_element_enable[i] = false;
     }
 
-    expect_value(__wrap__txe_queue_receive, queue_ptr, &inst_pkg_free_queue);
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &pwr_pkg_free_queue);
     expect_any(__wrap__txe_queue_receive, destination_ptr);
     expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
 
@@ -206,7 +206,7 @@ TEST_FUNCTION(test_gen_24hr_report_some_records, test_setup, test_teardown)
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data, 1);
 
     // for ddr_manager_allocate_mem_for_pwr_pkg
-    expect_value(__wrap__txe_queue_receive, queue_ptr, &inst_pkg_free_queue);
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &pwr_pkg_free_queue);
     expect_any(__wrap__txe_queue_receive, destination_ptr);
     expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
 

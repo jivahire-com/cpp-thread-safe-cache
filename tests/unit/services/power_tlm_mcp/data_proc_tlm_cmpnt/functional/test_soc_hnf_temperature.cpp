@@ -93,7 +93,7 @@ static int32_t test_setup(void** state)
 {
     FPFW_UNUSED(state);
     reset_pwr_tlm_data();
-    data_proc_tlm_cmpnt_init(0);
+    data_proc_tlm_cmpnt_init(0, false); // die_id=0, is_single_die=false
     //  enable all cores for these tests
     for (unsigned int core = 0; core < NUMBER_OF_CORES_PER_DIE; ++core)
     {

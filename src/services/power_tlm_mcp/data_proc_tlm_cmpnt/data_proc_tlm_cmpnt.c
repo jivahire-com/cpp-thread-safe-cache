@@ -30,13 +30,13 @@
 /*------------- Functions ----------------*/
 extern void oob_inf_init(void);
 
-void data_proc_tlm_cmpnt_init(uint8_t die_id)
+void data_proc_tlm_cmpnt_init(uint8_t die_id, bool is_single_die_system)
 {
     die_2_die_exch_init(die_id);
 
     data_smpl_init();
 
-    comp_metrics_init();
+    comp_metrics_init(is_single_die_system);
 
     package_inf_init();
 

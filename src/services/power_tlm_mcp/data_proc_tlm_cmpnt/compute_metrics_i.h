@@ -58,11 +58,11 @@ typedef struct {
 } rack_priority_metrics_t;
 
 typedef struct {
-    uint64_t m1_entry_count;    
-    uint64_t m2_entry_count;    
-    uint64_t m0_residency_count;      
-    uint64_t m1_residency_count;      
-    uint64_t m2_residency_count;     
+    uint64_t m1_entry_count;
+    uint64_t m2_entry_count;
+    uint64_t m0_residency_count;
+    uint64_t m1_residency_count;
+    uint64_t m2_residency_count;
     uint64_t delivered_perf_count;
 } die_mesh_pwr_metrics_t;
 
@@ -89,8 +89,13 @@ typedef struct
     mma_u16_t vcpu_input_voltage_mV;
 } computed_per_core_metrics_t;
 
+typedef struct{
+    uint32_t bin_count[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES];
+} histogram_element_t;
+
 typedef struct
 {
+    histogram_element_t histogram;
     aging_counter_metrics_t core_aging_counters[NUMBER_OF_AGING_COUNTER_PAIRS];
 } computed_per_core_24_hrs_metrics_t;
 
@@ -184,7 +189,8 @@ typedef struct
 /*-- Declarations (Statics and globals) --*/
 
 extern computed_metrics_2_min_t computed_metrics_2_mins;
-extern computed_metrics_24_hrs_t computed_metrics_24_hrs;
+extern computed_metrics_24_hrs_t* p_computed_metrics_24_hrs;
+#define computed_metrics_24_hrs (*p_computed_metrics_24_hrs)
 
 extern computed_metrics_oob_t computed_metrics_oob;
 // these metrics are used for die-to-die exchange but are cleared differently depending on the die
@@ -200,10 +206,10 @@ extern bool in_band_publishing_active;
 
 /**
  * @brief Initialize the compute metrics module
- * @param   None
+ * @param[in] is_single_die_system True if the system is single die, false if dual die.
  * @return  None
  */
-void comp_metrics_init(void);
+void comp_metrics_init(bool is_single_die_system);
 
 /**
  * @brief Initialize the active cores based on the system configuration
@@ -261,9 +267,11 @@ void comp_metrics_for_single_core_power(uint8_t core_id, uint16_t latest_power_m
 /**
  * @brief function is intended to update the histogram data for a specified core
  *
- * @param[in] core_id
+ * @param[in] core_id  pertinent core
+ * @param[in] core_voltage_mV  latest core voltage in mV
+ * @param[in] core_temperature_dC  latest core temperature in dC
  */
-void comp_metrics_for_single_core_histogram(uint8_t core_id);
+void comp_metrics_for_single_core_histogram(uint8_t core_id, uint16_t core_voltage_mV, uint16_t core_temperature_dC);
 
 /**
  * @brief function is intended to update the core power state (PState) based on the provided core ID and PState index.
@@ -483,7 +491,7 @@ void comp_metrics_for_mpam_throttling(uint8_t mpam_id, uint32_t residency_uS, ui
  * @brief Update the per-die mesh telemetry metrics based on the provided telemetry data.
  *
  * @param[in] m1_entry_count - M1 entry count
- * @param[in] m2_entry_count - M2 entry count  
+ * @param[in] m2_entry_count - M2 entry count
  * @param[in] m0_residency_count - M0 residency count
  * @param[in] m1_residency_count - M1 residency count
  * @param[in] m2_residency_count - M2 residency count

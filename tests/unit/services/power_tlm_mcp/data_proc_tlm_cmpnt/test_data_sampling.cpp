@@ -313,7 +313,7 @@ TEST_FUNCTION(test_data_smpl_parse_tile_temperature_entry, test_setup, test_tear
 TEST_FUNCTION(test_data_smpl_process_tile_temperature_sensor_fifo, test_setup, test_teardown)
 {
     will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
-    comp_metrics_init();
+    comp_metrics_init(false); // false = dual die system (24hr metrics enabled)
 
     // Clear runtime info before test
     memset(core_rt, 0, sizeof(core_rt));
@@ -3928,4 +3928,99 @@ TEST_FUNCTION(test_data_smpl_die_mesh_tlm_reset_success, test_setup, test_teardo
 
     // Note: This function should disable mesh telemetry by calling mesh_clock_telemetry with enable=false
     // The interval_count parameter is passed but not used when disabling
+}
+
+TEST_FUNCTION(test_data_smpl_update_core_histogram, test_setup, test_teardown)
+{
+    // Clear core runtime info and computed metrics for clean test state
+    memset(core_rt, 0, sizeof(core_rt));
+    memset(&computed_metrics_24_hrs, 0, sizeof(computed_metrics_24_hrs));
+
+    // Enable both conditions for histogram updates
+    in_band_publishing_active = true;
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        core_is_active[core_id] = true;
+    }
+
+    // Test case 1: Verify function processes all cores
+    // Set unique voltage/temperature values for each core to verify individual processing
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        core_rt[core_id].latest_voltage_mV = 900 + (core_id * 10);  // 900, 910, 920, etc.
+        core_rt[core_id].latest_max_value_dC = 700 + (core_id * 5); // 700, 705, 710, etc.
+    }
+
+    // Call the function under test
+    data_smpl_update_core_histogram();
+
+    // Verify that histogram was updated for each core (count total entries)
+    uint32_t total_histogram_entries = 0;
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        for (uint8_t v = 0; v < NUMBER_OF_HS_VOLTAGE_SCALES; v++)
+        {
+            for (uint8_t t = 0; t < NUMBER_OF_HS_TEMP_SCALES; t++)
+            {
+                total_histogram_entries += computed_metrics_24_hrs.cores[core_id].histogram.bin_count[v][t];
+            }
+        }
+    }
+
+    // Should have exactly NUMBER_OF_CORES_PER_DIE entries (one per core)
+    assert_int_equal(total_histogram_entries, NUMBER_OF_CORES_PER_DIE);
+
+    // Test case 2: Verify function respects guard conditions
+    // Clear histogram and test with publishing disabled
+    memset(&computed_metrics_24_hrs, 0, sizeof(computed_metrics_24_hrs));
+    in_band_publishing_active = false;
+
+    data_smpl_update_core_histogram();
+
+    // No histogram entries should be created when publishing is disabled
+    total_histogram_entries = 0;
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        for (uint8_t v = 0; v < NUMBER_OF_HS_VOLTAGE_SCALES; v++)
+        {
+            for (uint8_t t = 0; t < NUMBER_OF_HS_TEMP_SCALES; t++)
+            {
+                total_histogram_entries += computed_metrics_24_hrs.cores[core_id].histogram.bin_count[v][t];
+            }
+        }
+    }
+    assert_int_equal(total_histogram_entries, 0);
+
+    // Test case 3: Verify function works with mixed active/inactive cores
+    memset(&computed_metrics_24_hrs, 0, sizeof(computed_metrics_24_hrs));
+    in_band_publishing_active = true; // Re-enable publishing
+
+    // Set only half the cores active
+    uint8_t active_cores = 0;
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        core_is_active[core_id] = (core_id % 2 == 0); // Even cores active
+        if (core_is_active[core_id])
+            active_cores++;
+
+        // Set voltage/temperature for all cores
+        core_rt[core_id].latest_voltage_mV = 950;
+        core_rt[core_id].latest_max_value_dC = 750;
+    }
+
+    data_smpl_update_core_histogram();
+
+    // Should only have entries for active cores
+    total_histogram_entries = 0;
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        for (uint8_t v = 0; v < NUMBER_OF_HS_VOLTAGE_SCALES; v++)
+        {
+            for (uint8_t t = 0; t < NUMBER_OF_HS_TEMP_SCALES; t++)
+            {
+                total_histogram_entries += computed_metrics_24_hrs.cores[core_id].histogram.bin_count[v][t];
+            }
+        }
+    }
+    assert_int_equal(total_histogram_entries, active_cores);
 }

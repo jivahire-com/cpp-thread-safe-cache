@@ -344,10 +344,36 @@ TEST_FUNCTION(test_get_pwr_core_temperature_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_core_histogram_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     pwr_core_element_histogram_t histogram_data[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES] = {{{0}}};
+
+    // Set up test values in computed_metrics_24_hrs for the test core
+    for (uint8_t v = 0; v < NUMBER_OF_HS_VOLTAGE_SCALES; v++)
+    {
+        for (uint8_t t = 0; t < NUMBER_OF_HS_TEMP_SCALES; t++)
+        {
+            computed_metrics_24_hrs.cores[TEST_CORE_ID_5].histogram.bin_count[v][t] = (v * 100) + t;
+        }
+    }
+
+    // Valid call - should succeed
     data_proc_tlm_cmpnt_get_pwr_core_histogram_data(TEST_CORE_ID_5, &histogram_data);
+
+    // Verify the histogram data was copied correctly
+    for (uint8_t v = 0; v < NUMBER_OF_HS_VOLTAGE_SCALES; v++)
+    {
+        for (uint8_t t = 0; t < NUMBER_OF_HS_TEMP_SCALES; t++)
+        {
+            assert_int_equal(histogram_data[v][t].voltage_band, v);
+            assert_int_equal(histogram_data[v][t].temperature_band, t);
+            assert_int_equal(histogram_data[v][t].bin_count, (v * 100) + t);
+        }
+    }
+
+    // Test error path: invalid core_id
+    data_proc_tlm_cmpnt_get_pwr_core_histogram_data(NUMBER_OF_CORES_PER_DIE, &histogram_data);
+
+    // Test error path: NULL pointer
+    data_proc_tlm_cmpnt_get_pwr_core_histogram_data(TEST_CORE_ID_5, nullptr);
 }
 
 TEST_FUNCTION(test_get_pwr_soc_pkg_mon_data, test_setup, test_teardown)

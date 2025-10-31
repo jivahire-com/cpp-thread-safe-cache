@@ -423,6 +423,13 @@ void data_smpl_terminate_non_rack_throttle_sources(uint8_t core_id, uint64_t* ti
 void data_smpl_update_soc_avg_pstate(void);
 
 /**
+ * @brief This API updates the core histogram data.
+ *
+ * @param  none
+ */
+void data_smpl_update_core_histogram(void);
+
+/**
  * @brief When a power package is about to be generated, this function is called to finalize
  *  any residencies to align with the timestamp of the new power package.
  *

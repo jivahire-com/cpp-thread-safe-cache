@@ -15,8 +15,10 @@
 #include "die_2_die_exchange_i.h"
 #include "telemetry_events_i.h"
 
+#include <atu_api.h>
 #include <core_info.h>
 #include <corebits.h>
+#include <kng_scp_tfa_shared.h>
 #include <pwr_tlm_core_exchange.h>
 #include <stdbool.h> // for false, true
 #include <stddef.h>  // for size_t
@@ -32,15 +34,29 @@
 
 /*-- Declarations (Statics and globals) --*/
 
+#ifdef PWR_TLM_TEST_OVERRIDE
+
+    #undef MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR
+static uint8_t test_array_24hrs[ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_PWR_TLM_LARGE_DATA_BASE) + D1_ARSM_MSCP_PWR_TLM_LARGE_DATA_SIZE];
+    #define MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR (test_array_24hrs)
+#endif
+
 computed_metrics_2_min_t computed_metrics_2_mins = {0};
-computed_metrics_24_hrs_t computed_metrics_24_hrs = {0};
 computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins = {0};
 computed_metrics_oob_t computed_metrics_oob = {0};
+
+computed_metrics_24_hrs_t* p_computed_metrics_24_hrs = (computed_metrics_24_hrs_t*)(uintptr_t)((
+    MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_PWR_TLM_LARGE_DATA_BASE)));
 
 bool core_is_active[NUMBER_OF_CORES_PER_DIE] = {0};
 bool in_band_publishing_active = false;
 
+static bool metrics_24hrs_enabled = false;
+
 /*------------- Functions ----------------*/
+
+static_assert(sizeof(computed_metrics_24_hrs_t) <= D1_ARSM_MSCP_PWR_TLM_LARGE_DATA_SIZE,
+              "computed_metrics_24_hrs_t size exceeds reserved memory region");
 
 static_assert(NUMBER_OF_CORES_PER_DIE == NUM_AP_CORES_PER_DIE,
               "Mismatch between NUMBER_OF_CORES_PER_DIE and NUM_AP_CORES_PER_DIE");
@@ -56,8 +72,10 @@ void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
     comp_metrics_reset_d2d_2_min_metrics();
 }
 
-void comp_metrics_init(void)
+void comp_metrics_init(bool is_single_die_system)
 {
+    metrics_24hrs_enabled = !is_single_die_system;
+
     data_util_mov_avg_u16_init(&computed_metrics_oob.max_soc_temp_mov_avg_dC,
                                computed_metrics_oob.max_soc_temp_samples_dC,
                                TEMPERATURE_MOVING_AVG_NUM_SAMPLES);
@@ -111,6 +129,11 @@ void comp_metrics_init_active_cores(void)
 bool comp_metrics_core_and_inband_publishing_active(uint8_t core_id)
 {
     return (core_is_active[core_id] && in_band_publishing_active);
+}
+
+static inline bool comp_metrics_24hrs_is_available(void)
+{
+    return metrics_24hrs_enabled;
 }
 
 void comp_metrics_for_single_core_current(uint8_t core_id, uint16_t latest_value_mA)
@@ -186,6 +209,58 @@ void comp_metrics_for_single_core_power_per_pstate(uint8_t core_id, uint8_t curr
     {
         data_util_calc_mma_u16(&computed_metrics_2_mins.cores[core_id].pstate[current_pstate].power_mW, latest_power_mW);
     }
+}
+
+void comp_metrics_for_single_core_histogram(uint8_t core_id, uint16_t core_voltage_mV, uint16_t core_temperature_dC)
+{
+    if (!comp_metrics_core_and_inband_publishing_active(core_id))
+    {
+        return;
+    }
+
+    if (!comp_metrics_24hrs_is_available())
+    {
+        return;
+    }
+
+    // Voltage bin upper limits in mV (20 bins) - descending order
+    // Array size is NUMBER_OF_HS_VOLTAGE_SCALES - 1 because the highest bin (bin 0) has no upper limit
+    // Bin ranges use exclusive lower bounds and inclusive upper bounds: (lower, upper]
+    // Bin 0: (974, ∞] mV, Bin 1: (966, 974] mV, Bin 2: (958, 966] mV, ..., Bin 18: (830, 838] mV, Bin 19: [0, 830] mV
+    static const uint16_t voltage_bin_upper_limits_mV[NUMBER_OF_HS_VOLTAGE_SCALES - 1] =
+        {974, 966, 958, 950, 942, 934, 926, 918, 910, 902, 894, 886, 878, 870, 862, 854, 846, 838, 830};
+
+    // Temperature bin upper limits in dC (15 bins) - descending order
+    // Array size is NUMBER_OF_HS_TEMP_SCALES - 1 because the highest bin (bin 0) has no upper limit
+    // Bin ranges use exclusive lower bounds and inclusive upper bounds: (lower, upper]
+    // Bin 0: (965, ∞] dC, Bin 1: (935, 965] dC, Bin 2: (905, 935] dC, ..., Bin 12: (605, 635] dC, Bin 13: (575, 605] dC, Bin 14: [0, 575] dC
+    static const uint16_t temp_bin_upper_limits_dC[NUMBER_OF_HS_TEMP_SCALES - 1] =
+        {965, 935, 905, 875, 845, 815, 785, 755, 725, 695, 665, 635, 605, 575};
+
+    // Find voltage bin - bin 0 is highest values, bin 19 is lowest values
+    uint8_t voltage_bin = NUMBER_OF_HS_VOLTAGE_SCALES - 1; // Default to lowest bin
+    for (uint8_t i = 0; i < (NUMBER_OF_HS_VOLTAGE_SCALES - 1); i++)
+    {
+        if (core_voltage_mV > voltage_bin_upper_limits_mV[i])
+        {
+            voltage_bin = i;
+            break;
+        }
+    }
+
+    // Find temperature bin - bin 0 is highest values, bin 14 is lowest values
+    uint8_t temperature_bin = NUMBER_OF_HS_TEMP_SCALES - 1; // Default to lowest bin
+    for (uint8_t i = 0; i < (NUMBER_OF_HS_TEMP_SCALES - 1); i++)
+    {
+        if (core_temperature_dC > temp_bin_upper_limits_dC[i])
+        {
+            temperature_bin = i;
+            break;
+        }
+    }
+
+    // Increment the appropriate histogram bin
+    computed_metrics_24_hrs.cores[core_id].histogram.bin_count[voltage_bin][temperature_bin] += 1;
 }
 
 void comp_metrics_for_single_core_throttle_overrun(uint8_t core_id, uint8_t throttle_source)
@@ -431,6 +506,10 @@ void comp_metrics_for_single_core_aging_counters(uint8_t core_id,
                                                  uint32_t latest_unaged_counter,
                                                  uint8_t counter_id)
 {
+    if (!comp_metrics_24hrs_is_available())
+    {
+        return;
+    }
 
     computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].counter_id = counter_id;
     computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].aged_counter = latest_aged_counter;
@@ -556,5 +635,10 @@ void comp_metrics_reset_d2d_2_min_metrics()
 
 void comp_metrics_reset_24_hrs_metrics()
 {
-    memset(&computed_metrics_24_hrs, 0, sizeof(computed_metrics_24_hrs));
+    if (!comp_metrics_24hrs_is_available())
+    {
+        return;
+    }
+
+    memset(p_computed_metrics_24_hrs, 0, sizeof(computed_metrics_24_hrs_t));
 }

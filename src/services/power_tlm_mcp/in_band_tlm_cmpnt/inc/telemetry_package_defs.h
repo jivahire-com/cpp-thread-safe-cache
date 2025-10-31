@@ -30,8 +30,8 @@
 //current, temperature, RACK, VR HOT, ADP_CLK, currnt overrun, adp_clk overrun
 #define NUMBER_OF_THROTTLE_SOURCES    (7)  //(5+2)
 #define NUMBER_OF_RACK_THROTTLE_PRIORITIES   (8)
-#define NUMBER_OF_HS_VOLTAGE_SCALES (17)
-#define NUMBER_OF_HS_TEMP_SCALES    (7)
+#define NUMBER_OF_HS_VOLTAGE_SCALES (20)
+#define NUMBER_OF_HS_TEMP_SCALES    (15)
 
 /*Note : total DIMM in SoC is 12, per Die 6 module*/
 #define NUMBER_OF_DIMMS_PER_DIE      (6)
@@ -282,9 +282,9 @@ typedef struct {
 //----------------POWER_TELEMETRY_ELEMENT_CORE_HISTOGRAM----------------
 
 typedef struct {
-    uint8_t voltage_band; /* voltage band, it will hold and index */
-    uint8_t temperature_band; /* it's a temperature band, will hold an index*/
-    uint32_t counter;
+    uint32_t bin_count;
+    uint8_t voltage_band;
+    uint8_t temperature_band;
 } pwr_core_element_histogram_t, *p_pwr_core_element_histogram_t;
 
 typedef struct {

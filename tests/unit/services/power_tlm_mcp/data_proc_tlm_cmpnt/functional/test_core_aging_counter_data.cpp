@@ -57,7 +57,6 @@ extern "C" {
 extern uint32_t time_t0;
 extern aging_counter_t core_aging[NUMBER_OF_CORES_PER_DIE];
 extern bool core_is_active[NUMBER_OF_CORES_PER_DIE];
-extern computed_metrics_24_hrs_t computed_metrics_24_hrs;
 extern int g_enable_mock_die_id; // Enable/disable die ID mocking for aging counter tests
 }
 

@@ -148,7 +148,11 @@ void data_proc_tlm_cmpnt_process_input_data(void)
         update_dimm_metrics = data_smpl_process_dimm_sensor_fifo();
     }
 
+    // called here because need to process all cores after the fifo's are empty
     data_smpl_update_soc_avg_pstate();
+
+    // called here because need all voltage and temperatures to be processed from the sensor fifo's first
+    data_smpl_update_core_histogram();
 
     if (update_max_die_temp)
     {
@@ -669,6 +673,17 @@ void data_smpl_update_soc_avg_pstate(void)
         core_ptr++;
     }
     comp_metrics_for_soc_avg_pstate(&latest_pstate);
+}
+
+void data_smpl_update_core_histogram(void)
+{
+    core_runtime_info_t* core_ptr = core_rt;
+
+    for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+    {
+        comp_metrics_for_single_core_histogram(core_id, core_ptr->latest_voltage_mV, core_ptr->latest_max_value_dC);
+        core_ptr++;
+    }
 }
 
 void data_smpl_update_max_die_temp(void)

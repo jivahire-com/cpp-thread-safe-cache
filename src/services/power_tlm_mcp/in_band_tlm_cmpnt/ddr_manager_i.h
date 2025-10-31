@@ -80,14 +80,14 @@ typedef struct
 #define INST_PKG_MAX_SIZE \
     ((MAX_INST_SAMPLES_PER_PACKAGE * sizeof(inst_full_package_t)) + sizeof(telemetry_package_hdr_t))
 
-// 24hr packages can use INST_POOL_BLOCK_SIZE blocks
+// 24hr packages will use POWER_POOL_BLOCK_SIZE blocks, as the size exceeds INST_POOL_BLOCK_SIZE
 #define POWER_24HR_PKG_MAX_SIZE (sizeof(power_24_hr_package_t) + sizeof(telemetry_package_hdr_t))
 
 #define POWER_POOL_BLOCK_SIZE (POWER_POOL_BLOCK_ALIGN(POWER_PKG_MAX_SIZE))
 #define INST_POOL_BLOCK_SIZE  (INST_POOL_BLOCK_ALIGN(INST_PKG_MAX_SIZE))
 
-// power blocks are reported on the order of minutes, so only need two in flight
-#define NUM_POWER_POOL_BLOCKS (2)
+// power blocks are reported on the order of minutes, 24 hr package can also use one, set to 3 to allow for latency
+#define NUM_POWER_POOL_BLOCKS (3)
 #define POWER_POOL_TOTAL_SIZE  (POWER_POOL_BLOCK_SIZE * NUM_POWER_POOL_BLOCKS)
 
 // 24 hr packages aren't fully defined, likely will fit within an instantaneous block, if not will adjust

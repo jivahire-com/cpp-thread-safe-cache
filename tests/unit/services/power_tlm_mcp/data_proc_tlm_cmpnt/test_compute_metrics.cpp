@@ -56,7 +56,7 @@ static int test_setup(void** pContext)
 
     will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
 
-    comp_metrics_init();
+    comp_metrics_init(false); // false = dual die system (24hr metrics enabled)
 
     in_band_publishing_active = true;
 
@@ -66,6 +66,32 @@ static int test_setup(void** pContext)
 static int test_teardown(void** pContext)
 {
     FPFW_UNUSED(pContext);
+    return 0;
+}
+
+/**
+ * @brief Setup function for single die tests (24hr metrics disabled)
+ *
+ * This setup function is used for tests that verify behavior when 24hr metrics are disabled.
+ * It does not call comp_metrics_init() - the test itself will call comp_metrics_init(true).
+ */
+static int test_setup_single_die(void** pContext)
+{
+    FPFW_UNUSED(pContext);
+
+    memset(core_rt, 0, sizeof(core_rt));
+
+    comp_metrics_reset_local_2_min_metrics();
+
+    // Don't call comp_metrics_reset_24_hrs_metrics() here since metrics aren't initialized yet
+
+    // Don't set up mocks in setup - they will be set up in the test body to avoid
+    // "remaining non-returned values" errors from CMocka
+
+    // Don't call comp_metrics_init() here - let the test call it with is_single_die_system=true
+
+    in_band_publishing_active = true;
+
     return 0;
 }
 
@@ -303,7 +329,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rail_temp, test_setup, test_teardown)
 
     will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
 
-    comp_metrics_init();
+    comp_metrics_init(false); // false = dual die system (24hr metrics enabled)
     die_2_die_exch_init(1);
 
     vr_index = 1;
@@ -1209,4 +1235,210 @@ TEST_FUNCTION(test_comp_metrics_for_per_die_mesh_tlm_accumulation, test_setup, t
     assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m1_residency_count, m1_residency_count * 2);
     assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.m2_residency_count, m2_residency_count * 2);
     assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count, delivered_perf_count * 2);
+}
+
+TEST_FUNCTION(test_comp_metrics_for_single_core_histogram, test_setup, test_teardown)
+{
+    uint8_t core_id = TEST_CORE_ID;
+
+    // Test case 1: Core inactive - should not update histogram
+    core_is_active[core_id] = false;
+    in_band_publishing_active = true;
+
+    comp_metrics_for_single_core_histogram(core_id, 900, 800);
+
+    // Verify no bins were incremented
+    for (uint8_t v = 0; v < NUMBER_OF_HS_VOLTAGE_SCALES; v++)
+    {
+        for (uint8_t t = 0; t < NUMBER_OF_HS_TEMP_SCALES; t++)
+        {
+            assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[v][t], 0);
+        }
+    }
+
+    // Test case 2: Publishing inactive - should not update histogram
+    core_is_active[core_id] = true;
+    in_band_publishing_active = false;
+
+    comp_metrics_for_single_core_histogram(core_id, 900, 800);
+
+    // Verify no bins were incremented
+    for (uint8_t v = 0; v < NUMBER_OF_HS_VOLTAGE_SCALES; v++)
+    {
+        for (uint8_t t = 0; t < NUMBER_OF_HS_TEMP_SCALES; t++)
+        {
+            assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[v][t], 0);
+        }
+    }
+
+    // Enable both conditions for remaining tests
+    core_is_active[core_id] = true;
+    in_band_publishing_active = true;
+
+    // Test case 3: Simple diagnostic test - use extreme values first
+    // Voltage: 2000mV > 974 threshold → voltage bin 0
+    // Temperature: 1500dC > 965 threshold → temperature bin 0
+    comp_metrics_for_single_core_histogram(core_id, 2000, 1500);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[0][0], 1);
+
+    // Voltage: 0mV < 830 threshold → voltage bin 19 (last bin)
+    // Temperature: 0dC < 575 threshold → temperature bin 14 (last bin)
+    comp_metrics_for_single_core_histogram(core_id, 0, 0);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[19][14], 1);
+
+    // Test case 4: Test first bin boundaries
+    // Voltage: 975mV > 974 threshold → voltage bin 0
+    // Temperature: 700dC > 695 threshold → temperature bin 9
+    comp_metrics_for_single_core_histogram(core_id, 975, 700);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[0][9], 1);
+
+    // Voltage: 974mV = 974 threshold → voltage bin 1
+    // Temperature: 700dC > 695 threshold → temperature bin 9
+    comp_metrics_for_single_core_histogram(core_id, 974, 700);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[1][9], 1);
+
+    // Voltage: 900mV > 894 threshold → voltage bin 10
+    // Temperature: 966dC > 965 threshold → temperature bin 0
+    comp_metrics_for_single_core_histogram(core_id, 900, 966);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[10][0], 1);
+
+    // Voltage: 900mV > 894 threshold → voltage bin 10
+    // Temperature: 965dC = 965 threshold → temperature bin 1
+    comp_metrics_for_single_core_histogram(core_id, 900, 965);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[10][1], 1);
+
+    // Test case 5: Test last voltage bin boundary (bin 18/19 at 830mV threshold)
+    // Voltage: 831mV > 830 threshold → voltage bin 18
+    // Temperature: 700dC > 695 threshold → temperature bin 9
+    comp_metrics_for_single_core_histogram(core_id, 831, 700);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[18][9], 1);
+
+    // Voltage: 830mV = 830 threshold → voltage bin 19 (last bin)
+    // Temperature: 700dC > 695 threshold → temperature bin 9
+    comp_metrics_for_single_core_histogram(core_id, 830, 700);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[19][9], 1);
+
+    // Voltage: 829mV < 830 threshold → voltage bin 19 (last bin)
+    // Temperature: 700dC > 695 threshold → temperature bin 9
+    comp_metrics_for_single_core_histogram(core_id, 829, 700);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[19][9], 2);
+
+    // Test case 6: Test temperature bin boundaries
+    // Voltage: 900mV > 894 threshold → voltage bin 10
+    // Temperature: 606dC > 605 threshold → temperature bin 12
+    comp_metrics_for_single_core_histogram(core_id, 900, 606);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[10][12], 1);
+
+    // Voltage: 900mV > 894 threshold → voltage bin 10
+    // Temperature: 605dC = 605 threshold → temperature bin 13
+    comp_metrics_for_single_core_histogram(core_id, 900, 605);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[10][13], 1);
+
+    // Voltage: 900mV > 894 threshold → voltage bin 10
+    // Temperature: 604dC < 605 threshold → temperature bin 13
+    comp_metrics_for_single_core_histogram(core_id, 900, 604);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[10][13], 2);
+
+    // Test case 7: Test last temperature bin boundary (bin 13/14 at 575dC threshold)
+    // Voltage: 900mV > 894 threshold → voltage bin 10
+    // Temperature: 576dC > 575 threshold → temperature bin 13
+    comp_metrics_for_single_core_histogram(core_id, 900, 576);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[10][13], 3);
+
+    // Voltage: 900mV > 894 threshold → voltage bin 10
+    // Temperature: 575dC = 575 threshold → temperature bin 14 (last bin)
+    comp_metrics_for_single_core_histogram(core_id, 900, 575);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[10][14], 1);
+
+    // Voltage: 900mV > 894 threshold → voltage bin 10
+    // Temperature: 574dC < 575 threshold → temperature bin 14 (last bin)
+    comp_metrics_for_single_core_histogram(core_id, 900, 574);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[10][14], 2);
+
+    // Voltage: 900mV > 894 threshold → voltage bin 10
+    // Temperature: 100dC < 575 threshold → temperature bin 14 (last bin)
+    comp_metrics_for_single_core_histogram(core_id, 900, 100);
+    assert_int_equal(computed_metrics_24_hrs.cores[core_id].histogram.bin_count[10][14], 3);
+}
+
+/**
+ * @brief Test that comp_metrics_for_single_core_histogram handles disabled 24hr metrics gracefully
+ *
+ * When initialized with is_single_die_system=true, the 24hr metrics are disabled and
+ * p_computed_metrics_24_hrs is set to NULL. This test verifies that calling
+ * comp_metrics_for_single_core_histogram() in this state does not crash and returns early.
+ */
+TEST_FUNCTION(test_comp_metrics_for_single_core_histogram_disabled, test_setup_single_die, test_teardown)
+{
+    uint8_t core_id = TEST_CORE_ID;
+
+    // Set up mock for comp_metrics_init() - must use will_return_always because the mock
+    // function calls mock_type() in a loop (once per BITTYPE_COUNT)
+    will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
+
+    // Initialize with 24hr metrics disabled (single die system)
+    comp_metrics_init(true);
+
+    // Enable conditions that would normally allow histogram updates
+    core_is_active[core_id] = true;
+    in_band_publishing_active = true;
+
+    // Call the function - it should return early without crashing
+    // We cannot verify the 24hr data wasn't modified because p_computed_metrics_24_hrs is NULL
+    // The test passes if the function returns without accessing the NULL pointer
+    comp_metrics_for_single_core_histogram(core_id, 900, 800);
+
+    // If we reach here, the test passed - the function handled the disabled state gracefully
+} /**
+   * @brief Test that comp_metrics_for_single_core_aging_counters handles disabled 24hr metrics gracefully
+   *
+   * When initialized with is_single_die_system=true, the 24hr metrics are disabled and
+   * p_computed_metrics_24_hrs is set to NULL. This test verifies that calling
+   * comp_metrics_for_single_core_aging_counters() in this state does not crash and returns early.
+   */
+TEST_FUNCTION(test_comp_metrics_for_single_core_aging_counters_disabled, test_setup_single_die, test_teardown)
+{
+    uint8_t core_id = TEST_CORE_ID;
+
+    // Set up mock for comp_metrics_init() - must use will_return_always because the mock
+    // function calls mock_type() in a loop (once per BITTYPE_COUNT)
+    will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
+
+    // Initialize with 24hr metrics disabled (single die system)
+    comp_metrics_init(true);
+
+    // Call the function with valid parameters - it should return early without crashing
+    // We cannot verify the 24hr data wasn't modified because p_computed_metrics_24_hrs is NULL
+    // The test passes if the function returns without accessing the NULL pointer
+    comp_metrics_for_single_core_aging_counters(core_id,
+                                                900,     // voltage_mV
+                                                800,     // temperature_dC
+                                                1000000, // timestamp_uS
+                                                123456,  // aged_counter
+                                                234567,  // unaged_counter
+                                                0);      // counter_id
+
+    // If we reach here, the test passed - the function handled the disabled state gracefully
+}
+
+/**
+ * @brief Test that comp_metrics_reset_24_hrs_metrics handles disabled 24hr metrics gracefully
+ *
+ * When initialized with is_single_die_system=true, the 24hr metrics are disabled and
+ * p_computed_metrics_24_hrs is set to NULL. This test verifies that calling
+ * comp_metrics_reset_24_hrs_metrics() in this state does not crash and returns early.
+ */
+TEST_FUNCTION(test_comp_metrics_reset_24_hrs_metrics_disabled, test_setup_single_die, test_teardown)
+{
+    // Set up mock for comp_metrics_init() - must use will_return_always because the mock
+    // function calls mock_type() in a loop (once per BITTYPE_COUNT)
+    will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
+
+    // Initialize with 24hr metrics disabled (single die system)
+    comp_metrics_init(true);
+
+    // Call the function - it should return early without crashing
+    comp_metrics_reset_24_hrs_metrics();
+
+    // If we reach here, the test passed - the function handled the disabled state gracefully
 }

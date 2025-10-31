@@ -37,6 +37,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     config_get_pwr_tlm_knobs
     idsw_get_die_id
+    idhw_is_single_die_boot_en
     telemetry_service_init
     pwr_tlm_cli_svc_init
 )

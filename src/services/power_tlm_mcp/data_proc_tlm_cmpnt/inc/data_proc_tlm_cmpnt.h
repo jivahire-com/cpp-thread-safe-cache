@@ -24,8 +24,9 @@
 /**
  * @brief Initialize the data processing component.
  * @param[in] die_id The ID of the die to initialize.
+ * @param[in] is_single_die_system True if the system is single die, false if dual die.
  */
-void data_proc_tlm_cmpnt_init(uint8_t die_id);
+void data_proc_tlm_cmpnt_init(uint8_t die_id, bool is_single_die_system);
 
 /**
  * @brief Notification on telemetry mode transition.

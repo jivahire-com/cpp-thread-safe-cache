@@ -124,8 +124,8 @@ void in_band_tlm_cmpnt_generate_24hr_pkg(void)
     size_t pkg_available_size;
     uint32_t pkg_used_size;
 
-    // can use instantaneous block as it large enough, (static_assert ensures this), also more of them available
-    fpfw_status_t status = ddr_manager_allocate_mem_for_inst_pkg(&pkg_location, &pkg_available_size);
+    // must use power package block as 24 hr block exceeds instantaneous package block size
+    fpfw_status_t status = ddr_manager_allocate_mem_for_pwr_pkg(&pkg_location, &pkg_available_size);
 
     if (FPFW_STATUS_SUCCEEDED(status)) // failure already traced
     {

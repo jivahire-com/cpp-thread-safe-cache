@@ -114,9 +114,9 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_CORE_HISTOGRAM,
                      pwr_core_element_histogram,
                      FPFW_ET_LEVEL_DEBUG,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, bin_count),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, voltage_band),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, temperature_band),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, counter))
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, temperature_band))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_CORE_AGING,

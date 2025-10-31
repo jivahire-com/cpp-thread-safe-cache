@@ -58,7 +58,7 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_init, test_setup, test_teardown)
 
     will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
 
-    data_proc_tlm_cmpnt_init(1);
+    data_proc_tlm_cmpnt_init(1, false); // die_id=1, is_single_die=false
 }
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg, test_setup, test_teardown)

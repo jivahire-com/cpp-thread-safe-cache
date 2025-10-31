@@ -216,8 +216,24 @@ void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(
     uint16_t core_id,
     pwr_core_element_histogram_t (*histogram_array)[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES])
 {
-    FPFW_UNUSED(core_id);
-    FPFW_UNUSED(histogram_array);
+    // parameter check: core_id, check if correct
+    if (core_id >= NUMBER_OF_CORES_PER_DIE || histogram_array == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_CORE_HISTOGRAM);
+    }
+    else
+    {
+        for (uint8_t voltage_idx = 0; voltage_idx < NUMBER_OF_HS_VOLTAGE_SCALES; voltage_idx++)
+        {
+            for (uint8_t temp_idx = 0; temp_idx < NUMBER_OF_HS_TEMP_SCALES; temp_idx++)
+            {
+                (*histogram_array)[voltage_idx][temp_idx].voltage_band = voltage_idx;
+                (*histogram_array)[voltage_idx][temp_idx].temperature_band = temp_idx;
+                (*histogram_array)[voltage_idx][temp_idx].bin_count =
+                    computed_metrics_24_hrs.cores[core_id].histogram.bin_count[voltage_idx][temp_idx];
+            }
+        }
+    }
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_aging_data(uint16_t core_id, pwr_core_element_aging_t (*aging_data)[NUMBER_OF_AGING_COUNTER_PAIRS])

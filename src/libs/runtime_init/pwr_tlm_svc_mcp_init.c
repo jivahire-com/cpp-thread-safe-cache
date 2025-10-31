@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
+#include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <pwr_tlm_cli_service.h>
@@ -72,7 +73,12 @@ FPFW_INIT_COMPONENT(pwr_tlm_svc_mcp,
         _24_hr_pkg_sample_period_ms = 30 * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
     }
 
-    telemetry_service_init(idsw_get_die_id(), pwr_pkg_period_ms, inst_pkg_sample_period_ms, inst_samples_per_pkg, _24_hr_pkg_sample_period_ms);
+    telemetry_service_init(idsw_get_die_id(),
+                           pwr_pkg_period_ms,
+                           inst_pkg_sample_period_ms,
+                           inst_samples_per_pkg,
+                           _24_hr_pkg_sample_period_ms,
+                           idhw_is_single_die_boot_en());
 
     pwr_tlm_cli_svc_init();
 

@@ -737,7 +737,6 @@ FPFW_INIT_COMPONENT(icc_mcp2aps, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
         return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
     }
 
-    FPFW_DBGPRINT_INFO("MINPARK: SEL icc_mcp2aps die_id=%d, cpu_id=%d\n", die_id, cpu_id);
     static mhu_icc_transport_device_t s_icc_mcp_2_ap_s_dev = {};
 
     uintptr_t recv_payload_address = ICC_MHU_PAYLOADS_AP_S_TO_D0_MCP_AP_WINDOW_BASE;
@@ -793,7 +792,6 @@ FPFW_INIT_COMPONENT(icc_mcp2aps, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
                                                          &dev_config);
     if (FPFW_STATUS_FAILED(status))
     {
-        FPFW_DBGPRINT_ERROR("MINPARK: SEL %s %d : status=0x%08lx\n", __FUNCTION__, __LINE__, status);
         return (fpfw_init_result_t){status, NULL};
     }
 
@@ -803,7 +801,6 @@ FPFW_INIT_COMPONENT(icc_mcp2aps, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
     status = mhu_icc_transport_interface_init(&s_icc_mcp_2_ap_s_dev, &s_icc_mcp_2_ap_s_if);
     if (FPFW_STATUS_FAILED(status))
     {
-        FPFW_DBGPRINT_ERROR("MINPARK: SEL %s %d : status=0x%08lx\n", __FUNCTION__, __LINE__, status);
         return (fpfw_init_result_t){status, NULL};
     }
 
@@ -847,7 +844,6 @@ FPFW_INIT_COMPONENT(icc_mcp2aps, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
     status = fpfw_icc_base_init(&s_icc_base_mcp_ap_s_ctx, &s_icc_base_mcp_ap_s_cfg);
     if (FPFW_STATUS_FAILED(status))
     {
-        FPFW_DBGPRINT_ERROR("MINPARK: SEL %s %d : status=0x%08lx\n", __FUNCTION__, __LINE__, status);
         return (fpfw_init_result_t){status, NULL};
     }
 
@@ -855,10 +851,8 @@ FPFW_INIT_COMPONENT(icc_mcp2aps, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
     status = fpfw_icc_dispatcher_start(&s_icc_base_mcp_ap_s_ctx.dispatch_ctx);
     if (FPFW_STATUS_FAILED(status))
     {
-        FPFW_DBGPRINT_ERROR("MINPARK: SEL %s %d : status=0x%08lx\n", __FUNCTION__, __LINE__, status);
         return (fpfw_init_result_t){status, NULL};
     }
 
-    FPFW_DBGPRINT_INFO("MINPARK: SEL %s %d : status=0x%08lx\n", __FUNCTION__, __LINE__, status);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_mcp_ap_s_ctx};
 }

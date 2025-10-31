@@ -432,10 +432,10 @@ void power_remote_die_error_reset(int last_state)
     //! If retries exhausted during either of the d2d exchanges, clear the sync flag in arsm send region to enable sending again
     switch (last_state)
     {
-    case POWER_CONTROL_STATE_COLLECT_INPUTS:
+    case POWER_CONTROL_STATE_EXCHANGE_INPUTS:
         clear_sync_flag_in_arsm_send(&s_power_remote_die_ctx.ex_inputs);
         break;
-    case POWER_CONTROL_STATE_EXCHANGE_INPUTS:
+    case POWER_CONTROL_STATE_EXCHANGE_COMPLETION:
         clear_sync_flag_in_arsm_send(&s_power_remote_die_ctx.ex_complete);
         break;
     default:

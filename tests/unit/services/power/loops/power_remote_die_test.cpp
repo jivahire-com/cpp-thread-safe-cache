@@ -285,3 +285,51 @@ POWER_TEST(remote_die_exchange_complete__single_die, setup, teardown)
     set_expectations_for_send_complete_signal(POWER_CTRL_LOOP_SIGNAL_EXCHANGE_COMPLETE);
     __real_power_remote_die_exchange_complete(&s_test_power_runconfig);
 }
+
+POWER_TEST(remote_die_error_reset__exchange_inputs, setup, teardown)
+{
+    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
+    setup_multi_die();
+    expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
+    set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
+    set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
+    __real_power_remote_die_init(&s_test_power_runconfig);
+
+    // set sync flag to true then reset for inputs
+    ((power_d2d_arsm_data_t*)mock_arsm_buffer)->d2d_pwr_data_sync = true;
+    expect_function_call(__wrap_cortex_m7_atomic_call_data_synchronization_barrier);
+    power_remote_die_error_reset(POWER_CONTROL_STATE_EXCHANGE_INPUTS);
+    assert_false(((power_d2d_arsm_data_t*)mock_arsm_buffer)->d2d_pwr_data_sync);
+}
+
+POWER_TEST(remote_die_error_reset__exchange_completion, setup, teardown)
+{
+    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
+    setup_multi_die();
+    expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
+    set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
+    set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
+    __real_power_remote_die_init(&s_test_power_runconfig);
+
+    // set sync flag to true then reset for inputs
+    ((power_d2d_arsm_data_t*)mock_arsm_buffer)->d2d_pwr_data_sync = true;
+    expect_function_call(__wrap_cortex_m7_atomic_call_data_synchronization_barrier);
+    power_remote_die_error_reset(POWER_CONTROL_STATE_EXCHANGE_COMPLETION);
+    assert_false(((power_d2d_arsm_data_t*)mock_arsm_buffer)->d2d_pwr_data_sync);
+}
+
+POWER_TEST(remote_die_error_reset__other_state, setup, teardown)
+{
+    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
+    setup_multi_die();
+    expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
+    set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
+    set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
+    __real_power_remote_die_init(&s_test_power_runconfig);
+
+    // set sync flag to true then reset for inputs
+    ((power_d2d_arsm_data_t*)mock_arsm_buffer)->d2d_pwr_data_sync = true;
+    power_remote_die_error_reset(POWER_CONTROL_STATE_IDLE);
+    // flag should remain set
+    assert_true(((power_d2d_arsm_data_t*)mock_arsm_buffer)->d2d_pwr_data_sync);
+}

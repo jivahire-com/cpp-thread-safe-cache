@@ -215,7 +215,7 @@ static bool check_shared_sram_ecc_ras_fault(void)
  *
  * @param stack_frame Pointer to the exception stack frame
  */
-void exception_handler(exception_stack_frame_t* stack_frame)
+FPFW_NORETURN void exception_handler(exception_stack_frame_t* stack_frame)
 {
     save_crash_context(stack_frame);
 
@@ -320,20 +320,16 @@ void exception_handler(exception_stack_frame_t* stack_frame)
  * @brief Main exception handler for Cortex-M7. This function is called when an exception occurs.
  *
  */
-void main_exception_handler(void)
+FPFW_NORETURN __attribute__((naked)) void main_exception_handler(void)
 {
-    exception_stack_frame_t* stack_frame = NULL;
 #ifndef _WIN32
     __asm__ volatile("CPSID   i     \n" // Disable interrupts
                      "tst lr, #4    \n" // Check LR[2] (LR holds EXC_RETURN)
                      "ite eq        \n"
-                     "mrseq %0, msp \n"  // Move msp into output register if EXC_RETURN[2] == 0
-                     "mrsne %0, psp \n"  // Move psp into output register if EXC_RETURN[2] == 1
-                     :                   // Outputs
-                     "=r"(stack_frame)); // Point stack_frame to the location of the exception stack frame
+                     "mrseq r0, msp \n" // Move msp into output register if EXC_RETURN[2] == 0
+                     "mrsne r0, psp \n" // Move psp into output register if EXC_RETURN[2] == 1
+                     "b exception_handler"); // Branch to exception handler with the location of the exception stack frame
 #endif
-    // Capture stack frame and non-stacked registers, and jump into main handler
-    exception_handler(stack_frame);
 }
 
 /**

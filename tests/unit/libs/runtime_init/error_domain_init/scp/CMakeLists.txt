@@ -49,4 +49,5 @@ mock_target(${TARGET}
     register_scp_error_domain
     register_smmu_error_domain
     register_gic_error_domain
+    register_ap_wdt_error_domain
 )

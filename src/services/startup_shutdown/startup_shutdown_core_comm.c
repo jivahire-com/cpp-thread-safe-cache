@@ -485,6 +485,7 @@ KNG_STATUS sos_request_shutdown(ssi_shutdown_type_t type)
         break;
     case COLD_RESET:
     case COLD_RESET_SCP_INITIATED:
+    case COLD_RESET_POST_AP_WD_TIMEOUT:
         shutdown_req.msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(HSP_MAILBOX_CMD_COLD_RESET_REQ, 0, 0);
         break;
     case MSCP_SUBSYS_RESET:

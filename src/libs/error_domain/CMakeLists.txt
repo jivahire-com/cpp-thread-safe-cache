@@ -15,6 +15,8 @@ set (SOURCES
         src/exception_trigger.c
         src/error_domain_gic.c
         src/error_injection_gic.c
+        src/error_domain_ap_wdt.c
+        src/error_injection_ap_wdt.c
 )
 
 add_library(${TARGET}
@@ -30,14 +32,19 @@ target_link_libraries(
             ms::lib::icc_platform_defines
         PRIVATE
             fwlib.lib.interface.platform.dbgprint
+            fwlib.lib.interface.platform.interrupts
             fwlib.lib.init
+            ms::lib::register_headers
             ms::lib::arm_intrinsic
             ms::lib::cortex_m7::nvic
             ms::lib::crash_dump
             ms::lib::error_codes
             ms::lib::scp_interrupts
+            ms::lib::warm_start
             ms::service::health_monitor
+            ms::service::scp_startup_shutdown
             ms::service::power
+            kng.lib.hsp_firmware_headers
             silibs::atu
             silibs::cmsdk_wd
             silibs::idhw

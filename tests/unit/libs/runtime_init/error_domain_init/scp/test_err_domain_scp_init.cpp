@@ -44,6 +44,11 @@ void __wrap_register_gic_error_domain()
     function_called();
 }
 
+void __wrap_register_ap_wdt_error_domain()
+{
+    function_called();
+}
+
 void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
 {
     FPFW_UNUSED(id);
@@ -68,6 +73,7 @@ TEST_FUNCTION(scp_ras, nullptr, nullptr)
     expect_function_call(__wrap_register_scp_error_domain);
     expect_function_call(__wrap_register_smmu_error_domain);
     expect_function_call(__wrap_register_gic_error_domain);
+    expect_function_call(__wrap_register_ap_wdt_error_domain);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_scp_ras.init_fn();

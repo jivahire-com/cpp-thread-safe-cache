@@ -102,6 +102,7 @@ typedef enum _shutdown_type
     SHUTDOWN_SCP_INITIATED,
     COLD_RESET,
     COLD_RESET_SCP_INITIATED,
+    COLD_RESET_POST_AP_WD_TIMEOUT,
     MSCP_SUBSYS_RESET,
     REMOTE_SCP_SHUTDOWN,
     AP_WARM_RESET, /* Drivers should ignore unless they have specific requirements around AP warm reset */

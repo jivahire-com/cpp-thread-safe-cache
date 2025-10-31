@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
+        fwlib.lib.interface.platform.interrupts
         silibs::idsw_kng
         silibs::semaphore
         silibs::kng_silibs_platform
@@ -85,4 +86,76 @@ mock_target(${TARGET}
     is_cached_space
     _txe_timer_create
     fpfw_init_get_handle
+)
+
+# AP Watchdog ISR Test
+set(AP_WDT_TARGET ap_wdt_isr.test)
+
+set(AP_WDT_SOURCES
+    test_error_domain_ap_wdt_isr.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_domain_ap_wdt.c
+)
+
+# Compile AP WDT ISR test
+add_executable(${AP_WDT_TARGET} ${AP_WDT_SOURCES})
+
+target_link_libraries(${AP_WDT_TARGET}
+    PRIVATE
+        fwlib.dfwk
+        fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
+        fwlib.lib.utils
+        fwlib.platform.dfwkhost.threadx
+        fwlib.lib.interface.platform.interrupts
+        silibs::idsw_kng
+        silibs::kng_silibs_platform
+        silibs::idhw
+        silibs::idsw
+        ms::cmocka::testrunner
+        ms::service::atu_service
+        ms::service::health_monitor
+        ms::lib::arm_intrinsic
+        ms::lib::cortex_m7::nvic
+        ms::lib::error_domain::scp
+        ms::lib::crash_dump
+        ms::lib::warm_start
+)
+
+# Get private includes for AP WDT test
+target_include_directories(${AP_WDT_TARGET}
+    PRIVATE
+        $<TARGET_PROPERTY:ms::lib::error_domain::scp,INCLUDE_DIRECTORIES>
+        ./
+)
+
+# Generic ports implement within this project
+set_target_properties(${AP_WDT_TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
+set_target_properties(${AP_WDT_TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
+
+target_compile_options(${AP_WDT_TARGET} PRIVATE -Wno-unused-function)
+
+target_compile_definitions(
+    ${AP_WDT_TARGET}
+    PRIVATE
+        SCP_RUNTIME_INIT
+        SCP_CONFIG_VARIABLE_TYPE
+)
+
+lint_target(${AP_WDT_TARGET})
+format_target(${AP_WDT_TARGET})
+coverage_target(${AP_WDT_TARGET})
+unit_test_target(${AP_WDT_TARGET})
+
+# Mock the functions needed for AP WDT ISR test
+mock_target(${AP_WDT_TARGET}
+    atu_map
+    atu_unmap
+    crash_dump_bug_check
+    crash_dump_register_address32
+    hm_submit_cper
+    idsw_get_die_id
+    mmio_read32
+    nvic_get_current_irq
+    nvic_irq_clear_pending
+    ws_data_put
 )

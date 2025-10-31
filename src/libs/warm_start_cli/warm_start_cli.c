@@ -41,6 +41,11 @@ void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_cont
 
 extern ws_data_list_t* p_ws_list;
 
+#define WARM_START_ID_STRINGS                             \
+    {                                                     \
+        "RESERVED", "CLI", "POWER_FUSE", "AP_WDT", "LAST" \
+    }
+
 static FPFW_CLI_COMMAND warm_start_cli_list[] = {
     {NULL_LIST_ENTRY, "warm_start", "wsrd", ws_read_cli, "Warm Start Read Data", "syntax: wsrd <id>\n"},
     {NULL_LIST_ENTRY, "warm_start", "wswr", ws_write_cli, "Warm Start Write Data", "syntax: wswr <id> <byte>..\n"},

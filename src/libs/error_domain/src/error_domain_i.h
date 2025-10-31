@@ -60,6 +60,7 @@ void shared_sram_ecc_isr_ext();
 void enable_shared_sram_errors(ecc_entry_getter_fn get_entry, int count);
 void get_rsm_ecc_atu_entry_wrapper(int type, atu_map_entry_t* entry);
 acpi_einj_cmd_status_t hm_smmu_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx);
+acpi_einj_cmd_status_t hm_ap_wdt_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx);
 uint32_t map_rsm_address(mscp_rsm_ram_type_t type, atu_map_entry_t* atu_entry);
 acpi_einj_cmd_status_t gic_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx);
 acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx);

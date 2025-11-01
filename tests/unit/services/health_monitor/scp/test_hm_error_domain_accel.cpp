@@ -240,6 +240,7 @@ TEST_FUNCTION(hm_cded_error_domain_register_listener_recv_reg_fail, post_ddr_set
 
 TEST_FUNCTION(hm_sdm_error_injection_cb, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_system_info_get_mission_mode, false);
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);
@@ -275,6 +276,7 @@ TEST_FUNCTION(hm_sdm_error_injection_cb, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(hm_sdm_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_system_info_get_mission_mode, false);
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);
@@ -310,6 +312,7 @@ TEST_FUNCTION(hm_sdm_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(hm_cded_error_injection_cb, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_system_info_get_mission_mode, false);
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);
@@ -345,6 +348,7 @@ TEST_FUNCTION(hm_cded_error_injection_cb, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(hm_cded_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_system_info_get_mission_mode, false);
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);

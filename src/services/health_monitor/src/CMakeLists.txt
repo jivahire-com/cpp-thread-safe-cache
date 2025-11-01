@@ -46,6 +46,7 @@ target_link_libraries(${TARGET}
         silibs::idsw_kng
         silibs::spi_bridge
         ms::lib::accelerator_ip
+        ms::lib::system_info
         ms::lib::crash_dump
         ms::lib::icc_platform_defines
         ms::service::atu_service

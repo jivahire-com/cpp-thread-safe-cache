@@ -45,6 +45,7 @@ extern ras_einj_info_t einj_payload_local;
 //
 TEST_FUNCTION(hm_apcore_error_injection_listener, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_system_info_get_mission_mode, false);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
 

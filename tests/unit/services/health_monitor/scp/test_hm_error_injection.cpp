@@ -201,6 +201,11 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 
     return mock_type(int);
 }
+
+bool __wrap_system_info_get_mission_mode()
+{
+    return mock_type(bool);
+}
 }
 
 //
@@ -208,6 +213,7 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 //
 TEST_FUNCTION(test_hm_inject_error, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_system_info_get_mission_mode, false);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
     expect_function_call_any(hm_error_injection_cb);
@@ -231,6 +237,7 @@ TEST_FUNCTION(test_hm_inject_error, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_inject_error_remote, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_system_info_get_mission_mode, false);
     will_return_always(__wrap_idsw_get_die_id, 1);
     will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -258,7 +265,7 @@ TEST_FUNCTION(test_hm_inject_error_remote, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_inject_error_singledie, post_ddr_setup, nullptr)
 {
-
+    will_return(__wrap_system_info_get_mission_mode, false);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
     will_return_always(__wrap_idsw_get_die_id, 1);
@@ -275,6 +282,27 @@ TEST_FUNCTION(test_hm_inject_error_singledie, post_ddr_setup, nullptr)
     einj_payload->version = (ERROR_INJECTION_PAYLOAD_VERSION);
     einj_payload->component_group = (uint16_t)test_error_domain;
     einj_payload->component_instance = 0;
+    hm_unmap_error_injection_payload();
+
+    assert_true(hm_inject_error() == ACPI_EINJ_INVALID_ACCESS);
+}
+
+TEST_FUNCTION(test_hm_inject_error_mission_mode, post_ddr_setup, nullptr)
+{
+    will_return(__wrap_system_info_get_mission_mode, true);
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    hm_register_error_domain((uint16_t)test_error_domain, NULL, TEST_ERROR_DOMAIN_NAME, hm_error_injection_cb, nullptr);
+
+    hm_config_t* hm_config = get_hm_config();
+
+    hm_map_error_injection_payload();
+    ras_einj_info_t* einj_payload = (ras_einj_info_t*)hm_config->mscp_error_injection_addr_base;
+    einj_payload->version = (ERROR_INJECTION_PAYLOAD_VERSION);
+    einj_payload->component_group = (uint16_t)test_error_domain;
     hm_unmap_error_injection_payload();
 
     assert_true(hm_inject_error() == ACPI_EINJ_INVALID_ACCESS);

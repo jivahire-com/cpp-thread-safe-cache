@@ -61,6 +61,7 @@ TEST_FUNCTION(hm_mcp_error_domain_register_listener_failed, post_ddr_setup, null
 
 TEST_FUNCTION(hm_mcp_error_injection_cb, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_system_info_get_mission_mode, false);
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);

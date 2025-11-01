@@ -80,4 +80,5 @@ mock_target(${TARGET}
     fpfw_pldm_service_raise_platform_event
     _txe_timer_create
     _txe_timer_deactivate
+    system_info_get_mission_mode
 )

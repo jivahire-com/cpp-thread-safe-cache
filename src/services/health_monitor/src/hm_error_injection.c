@@ -16,6 +16,7 @@
 #include <icc_platform_defines.h>
 #include <idhw.h>
 #include <idsw.h>
+#include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -65,6 +66,12 @@ acpi_einj_cmd_status_t hm_inject_error(void)
 {
     uint32_t injection_target = 0;
     acpi_einj_cmd_status_t status = ACPI_EINJ_SUCCESS;
+
+    if (system_info_get_mission_mode() == true)
+    {
+        HM_LOG_CRIT("Error injection not allowed in mission mode");
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
 
     hm_config_t* hm_config = get_hm_config();
 

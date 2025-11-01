@@ -14,6 +14,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs')
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 from RscmHelperLibrary import RscmHelperLibrary
+from library.utilities.bmc_utils import set_bmc_uart_mux, BmcCommandError
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
@@ -83,36 +84,24 @@ class mscp_heart_beat_dd_soc(EchoFallsBaseTest):
             assert channel.is_open()
 
         try:
-            self.run_bmc_commands(["gpioset gpiochip3 5=0", "gpioset gpiochip6 6=0"])
+            set_bmc_uart_mux(self.dut, self.log, "SCP")
             self.log.info(f"Reading from self.dut.mb.node_0.soc.primary_die.scp.channel_manager\n")
             core_scp_channel.read_until(key="ScpHeartBeat", timeout_seconds=300)
 
-            self.run_bmc_commands(["gpioset gpiochip3 5=1", "gpioset gpiochip6 6=0"])
+            set_bmc_uart_mux(self.dut, self.log, "MCP")
             self.log.info(f"Reading from McpHeartBeat after BMC MUX\n")
             core_mcp_channel.read_until(key="McpHeartBeat", timeout_seconds=300)
 
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="HeartBeat", msg="Test Fail", _is_error=True)
-            self.run_bmc_commands(["gpioset gpiochip3 5=0", "gpioset gpiochip6 6=0"])
+            set_bmc_uart_mux(self.dut, self.log, "SCP", raise_on_error=False)
             self.dut.teardown()
             time.sleep(30)
             return False
 
-        self.run_bmc_commands(["gpioset gpiochip3 5=0"])
+        set_bmc_uart_mux(self.dut, self.log, "SCP", raise_on_error=False)
         self.test_notify(step="HeartBeat", msg="Test Done", _is_error=False)
         self.dut.teardown()
         time.sleep(30)
         return True
-    
-    def run_bmc_commands(self, commands):
-        # Ensure BMC CLI is open
-        bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
-        if not bmc_cli.is_open():
-            bmc_cli.open()
-        for cmd in commands:
-            ret, stdout, stderr = bmc_cli.execute_command(command=cmd, command_args=[])
-            if stderr:
-                self.log.error(f"BMC command failed: {cmd} | Error: {stderr}")
-                raise AssertionError
-            self.log.info(f"BMC command successful: {cmd} | Return: {ret}")

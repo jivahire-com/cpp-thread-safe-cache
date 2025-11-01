@@ -65,8 +65,8 @@ rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_
 pcie_phy                   = { type='file', local='${REPO_APP_PATH_pcie.phy.bin}/pcie_phy_fw.bin' }
 ift_memory_state_clearing  = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_memory_state_clearing.bin' }
 ift_scan_state_clearing    = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_scan_state_clearing.bin' }
-fuse_override_die0         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
-fuse_override_die1         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
+fuse_override_die0         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/A1/kng_fpga_override_fuse_values_silicon.bin' }
+fuse_override_die1         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/A1/kng_fpga_override_fuse_values_silicon.bin' }
 
 # Build this flavor with
 #  datwizard build --flavor "kingsgate.ifwi.ap.baremetal.debug"
@@ -98,5 +98,5 @@ rp_data                    = { type='file', local='${REPO_APP_PATH_echofalls.rp_
 pcie_phy                   = { type='file', local='${REPO_APP_PATH_pcie.phy.bin}/pcie_phy_fw.bin' }
 ift_memory_state_clearing  = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_memory_state_clearing.bin' }
 ift_scan_state_clearing    = { type='file', local='${REPO_APP_PATH_IFTVectors}/IFTVectors/ift_scan_state_clearing.bin' }
-fuse_override_die0         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
-fuse_override_die1         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/kng_fpga_override_fuse_values_silicon.bin' }
+fuse_override_die0         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/A1/kng_fpga_override_fuse_values_silicon.bin' }
+fuse_override_die1         = { type='file', local='${REPO_APP_PATH_kng_system_fuse_data}/A1/kng_fpga_override_fuse_values_silicon.bin' }

@@ -112,7 +112,8 @@ static fpfw_status_t etr_copy_hsp_telemetry(etr_service_context_t* p_service_con
 
     if (!found_free_buffer)
     {
-        FPFW_ET_LOG_ETR_ASCII_WARN("HSP buff full, dumping payload");
+        /* TODO (ADO3102046) This should be a warning. Leaving it at Verbose since this is filling up the MCP Trace (no AP read of telemetry)*/
+        FPFW_ET_LOG_ETR_ASCII_VERBOSE("HSP buff full, dumping payload");
         return FPFW_STATUS_FAIL;
     }
 

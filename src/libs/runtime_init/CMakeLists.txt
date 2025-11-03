@@ -179,7 +179,6 @@ target_link_libraries(
         ms::service::pcie_manager::cli
         ms::service::power
         ms::service::pwr_tlm_scp
-        ms::service::rhtlm_service
         ms::service::rhtlm_service::cli
         ms::service::scp_startup_shutdown
         ms::service::sds_service

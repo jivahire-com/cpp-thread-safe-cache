@@ -14,13 +14,13 @@
 
 #include <FpFwCli.h>   // for FpFwCliPrint, FPFW_CLI_COM...
 #include <FpFwUtils.h> // for FPFW_UNUSED, FPFW_ARRAY_SIZE
+#include <ddr_rhtlm_service.h>
 #include <ddrss_config.h>
 #include <ddrss_runtime_api.h>
 #include <errno.h>
 #include <health_monitor.h>
 #include <idsw_kng.h> // for idsw_get_die_id
 #include <memory.h>
-#include <rhtlm_service.h>
 #include <silibs_platform.h>
 #include <silibs_status.h>
 #include <stdbool.h> // for bool
@@ -85,6 +85,8 @@ static PLACED_CODE void print_rhm_cfg_telemetry(ddrss_rhm_tm_cfg_t* p_tm)
     FpFwCliPrint("smc1 :0x%x\n", p_tm->rm_smc_1);
     FpFwCliPrint("smc2 :0x%x\n", p_tm->rm_smc_2);
     FpFwCliPrint("cfg  :0x%x\n", p_tm->rm_cfg);
+    FpFwCliPrint("mr58 :0x%x\n", p_tm->mr58);
+    FpFwCliPrint("mr59 :0x%x\n", p_tm->mr59);
 }
 
 /**

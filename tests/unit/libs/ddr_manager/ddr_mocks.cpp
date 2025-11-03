@@ -122,6 +122,16 @@ bool __wrap_config_get_borgens_1gb_ddr_reserve_enable()
     return mock_type(bool);
 }
 
+uint64_t __wrap_config_get_rh_tlm_service_period_ms(void)
+{
+    return mock_type(uint64_t);
+}
+
+bool __wrap_config_get_erhm_en()
+{
+    return mock_type(bool);
+}
+
 ddrss_phy_training_dq_margin_t* __wrap_ddrss_get_training_margin_base()
 {
     return mock_type(ddrss_phy_training_dq_margin_t*);
@@ -295,6 +305,25 @@ uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum)
 uint32_t __wrap_gtimer_prodfw_get_frequency(void)
 {
     return mock_type(uint32_t);
+}
+
+int __wrap_ddrss_get_telemetry_record(uint32_t mc, DDRSS_TELEMETRY_TYPE telemetry_type, void* telemetry_buf, int telemetry_buf_len)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(telemetry_type);
+    FPFW_UNUSED(telemetry_buf);
+    FPFW_UNUSED(telemetry_buf_len);
+
+    return mock_type(int);
+}
+
+void __wrap_prod_ddrss_convert_rh_cfg_rec_to_rh_cper(uint32_t mc, void* rh_cfg_rec, void* rh_cper)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(rh_cfg_rec);
+    FPFW_UNUSED(rh_cper);
+
+    function_called();
 }
 
 } // extern "C"

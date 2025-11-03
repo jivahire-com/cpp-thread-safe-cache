@@ -249,7 +249,7 @@
     <Knob name="dqs_interval_timer_run_time" type="uint8_t" default="128" help="Specifies how long the DRAM oscillator runs once started in a calibration, In multiple-of-16 memory controller clock cycles. 0: 8192 cycles; 1: 16 cycles; ...; 254: 4064 cycles; 255: 4096 cycles. (0 ~ 255)" />
     <Knob name="pll_frac_en" type="uint8_t" default="1" help="DDRSS PLL fraction mode enable. 0 - Disable, 1 - Enable" />
     <Knob name="bitrot_TCM_delay" type="uint64_t" default="86400000" help="Delay after reading TCM memory types in ms." />
-    <Knob name="rh_tlm_service_period_ms" type="uint64_t" default="0" help="Row Hammer Tlm servie package send period in ms ( 0 disabled  ) " />
+    <Knob name="rh_tlm_service_period_ms" type="uint64_t" default="86400000" help="Row Hammer Tlm servie package send period in ms ( 0 disabled  ) " />
     <Knob name="rh_tlm_cca_mode" type="uint8_t" default="0" help="Row Hammer filtering cca mode 1 - production mode ( will fitler out some tlm data) 0 - debug mode " />
     <!-- Extra DDR internal knobs from silibs -->
     <Knob name="ddr_debug_level" type="uint8_t" default="2" help="Control DDR debug print level. 0: None; 1: Critical; 2: Info; 3: Debug; 4:Trace. (0 ~ 4)" />

@@ -28,7 +28,6 @@ target_link_libraries(
         silibs::kng_silibs_platform
         silibs::ras_arm
         ms::service::health_monitor
-        ms::service::rhtlm_service
         ms::lib::utils
 
 )

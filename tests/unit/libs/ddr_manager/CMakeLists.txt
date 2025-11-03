@@ -66,8 +66,10 @@ mock_target(${TARGET}
     atu_unmap
     config_get_borgens_1gb_ddr_reserve_enable
     config_get_ddrmanager_bwl_polling_en
-    ddr_create_memory_map
+    config_get_erhm_en
     config_get_ras_init_en
+    config_get_rh_tlm_service_period_ms
+    ddr_create_memory_map
     ddr_i3c_interface_read_spd_nvm_data
     ddr_i3c_interface_read_temp_sensor_mr_reg
     ddr_i3c_interface_read_pmic_power
@@ -110,6 +112,8 @@ mock_target(${TARGET}
     FPFwCoreInterruptIsEnabled
     FPFwCoreInterruptEnableVector
     FPFwCoreInterruptDisableVector
+    ddrss_get_telemetry_record
+    prod_ddrss_convert_rh_cfg_rec_to_rh_cper
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

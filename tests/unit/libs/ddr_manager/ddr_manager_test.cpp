@@ -25,6 +25,7 @@ extern "C" {
 #include <ddr_manager.h> // for ddr_manager_init, ddr_service_context_t
 #include <ddr_manager_bwl.h>
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
+#include <ddr_rhtlm_service.h>
 #include <ddrss_lib.h>
 #include <error_handler.h> // for set_error_handler_return
 #include <fpfw_cfg_mgr.h>
@@ -530,6 +531,30 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
 
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
     g_should_wrap_ddr_create_memory_map = false;
+}
+
+TEST_FUNCTION(ecc_ce_timer_cb_success, NULL, NULL)
+{
+    ddr_service_context_t ddr_service_ctx = {};
+
+    expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx.work_queue);
+    expect_any_always(__wrap__txe_queue_send, source_ptr);
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_send, TX_SUCCESS);
+
+    ecc_ce_timer_cb((ULONG)&ddr_service_ctx);
+}
+
+TEST_FUNCTION(rh_tlm_timer_cb_success, NULL, NULL)
+{
+    ddr_service_context_t ddr_service_ctx = {};
+
+    expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx.work_queue);
+    expect_any_always(__wrap__txe_queue_send, source_ptr);
+    expect_value(__wrap__txe_queue_send, wait_option, TX_NO_WAIT);
+    will_return(__wrap__txe_queue_send, TX_SUCCESS);
+
+    rh_tlm_timer_cb((ULONG)&ddr_service_ctx);
 }
 
 TEST_FUNCTION(ddr_timer_cb_success, NULL, NULL)
@@ -1072,6 +1097,11 @@ TEST_FUNCTION(ddr_start_i3c_and_ecc_ce_timer, NULL, NULL)
     will_return(__wrap_config_get_ras_init_en, true);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
+    // Check that row hammer polling timer is created/started
+    will_return_always(__wrap_config_get_rh_tlm_service_period_ms, 1000);
+    will_return(__wrap_config_get_erhm_en, true);
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
+
     // Exit the while (1) loop
     callback_param = 0xFF;
     will_return(tx_queue_copy_parameter, callback_param);
@@ -1087,6 +1117,47 @@ TEST_FUNCTION(ddr_start_i3c_and_ecc_ce_timer, NULL, NULL)
     {
         ddr_worker_thread_func((ULONG)&ddr_service_ctx);
     }
+}
+
+TEST_FUNCTION(test_rhtlm_cfg_scan_no_telemetry, NULL, NULL)
+{
+
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_count(__wrap_ddrss_get_telemetry_record, SILIBS_E_DATA, RHTLM_MC_DIE0_COUNT_NR);
+
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_function_call(__wrap_hm_submit_cper);
+
+    rhtlm_cfg_scan();
+}
+
+TEST_FUNCTION(test_rhtlm_cfg_scan_no_telemetry_die1, NULL, NULL)
+{
+
+    will_return(__wrap_idsw_get_die_id, DIE_1);
+    will_return_count(__wrap_ddrss_get_telemetry_record, SILIBS_E_DATA, (RHTLM_MC_DIE1_COUNT_NR - RHTLM_MC_DIE0_COUNT_NR));
+
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+    expect_function_call(__wrap_hm_submit_cper);
+
+    rhtlm_cfg_scan();
+}
+
+TEST_FUNCTION(test_rhtlm_cfg_scan_telemetry, NULL, NULL)
+{
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    for (int i = 0; i < RHTLM_MC_DIE0_COUNT_NR; i++)
+    {
+        will_return(__wrap_ddrss_get_telemetry_record, SILIBS_SUCCESS);
+        expect_function_call(__wrap_prod_ddrss_convert_rh_cfg_rec_to_rh_cper);
+        expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+        expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
+        expect_function_call(__wrap_hm_submit_cper);
+    }
+    rhtlm_cfg_scan();
 }
 
 TEST_FUNCTION(ddr_telemetry_report_verify_temps, NULL, NULL)

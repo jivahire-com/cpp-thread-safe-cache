@@ -84,6 +84,11 @@ void prod_ddrss_convert_rh_rec_to_rh_cper(uint32_t mc,
                                           ddrss_rhm_tm_evt_t* p_rh_tel,
                                           acpi_err_sec_ddrss_rhm_tm_t* p_rh_cper);
 
+void prod_ddrss_convert_rh_cfg_rec_to_rh_cper(uint32_t mc,
+                                          rh_tlm_sample_type sample_type,
+                                          ddrss_rhm_tm_cfg_t* p_rh_cfg,
+                                          acpi_err_sec_ddrss_rhm_cfg_t* p_rh_cfg_cper);
+
 /**
  * @brief Function to initialize DDRSS PCR
  *
@@ -95,4 +100,3 @@ int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us);
 // in ddrss_ras.c
 int ddrss_probe_ras_agent(uint32_t mc, uint32_t ras_agent_entity_id);
 ddrss_phy_training_dq_margin_t* ddrss_get_training_margin_base(void);
-

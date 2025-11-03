@@ -97,6 +97,13 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                     DDR_LOG_CRIT("Enabling ECC CE polling timer\n");
                     enable_ecc_ce_polling_timer();
                 }
+
+                if ((config_get_rh_tlm_service_period_ms() != 0) && (config_get_erhm_en() != 0))
+                {
+                    DDR_LOG_INFO("Enabling Row Hammer cfg TLM polling timer\n");
+                    enable_row_hammer_tlm_cfg_polling_timer();
+                    rhtlm_cca_mode_filtering();
+                }
                 break;
 
             case DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT:
@@ -118,6 +125,10 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
             case DDR_POLL_ECC_CE_EVENT:
                 ddr_poll_ecc_ce_errors();
+                break;
+
+            case DDR_RH_CFG_TLM_SERVICE_EVENT:
+                rhtlm_cfg_scan();
                 break;
 
             default:
@@ -181,6 +192,36 @@ void enable_ecc_ce_polling_timer(void)
     }
 }
 
+void enable_row_hammer_tlm_cfg_polling_timer(void)
+{
+    idsw_plat_id_t plat_id = idsw_get_platform_sdv();
+    // Send the RH cfg once per day.
+    // timer reference clock is 100Mhz (10ns)
+    // (24 * 3600 * 1000000000ULL / 10); // 24 hours, so set Knob name="rh_tlm_service_period_ms" type="uint64_t" default="8640000000"
+
+    ULONG reschedule_ticks = ((TX_TIMER_TICKS_PER_SECOND * config_get_rh_tlm_service_period_ms() + 999) / 1000UL);
+
+    if ((plat_id == PLATFORM_RVP_EVT_SILICON) && (reschedule_ticks != 0))
+    {
+        ddr_service_context_t* pddr_service_ctx = ddr_get_service_context();
+
+        int status = tx_timer_create((TX_TIMER*)&pddr_service_ctx->rh_tlm_polling_timer, /* TX_TIMER *timer_ptr */
+                                     (char*)DDR_RH_TLM_TIMER_NAME,                       /* CHAR *name_ptr */
+                                     rh_tlm_timer_cb,         /* VOID (*expiration_function)(ULONG input) */
+                                     (ULONG)pddr_service_ctx, /* ULONG expiration_input */
+                                     reschedule_ticks,        /* ULONG initial_ticks >= 1 */
+                                     reschedule_ticks,        /* ULONG reschedule_ticks */
+                                     TX_AUTO_ACTIVATE);       /* UINT auto_activate) */
+
+        if (status != TX_SUCCESS)
+        {
+            DDR_LOG_INFO("RH TLM Polling Timer creation failed with status: %d", status);
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, status);
+            FPFwErrorRaise(status, 0, 0, 0, 0);
+        }
+    }
+}
+
 // Timer CB for DIMM temperature sensors & PMIC power register polling
 void ddr_timer_cb(ULONG pddr_service_ctx)
 {
@@ -212,6 +253,14 @@ void ecc_ce_timer_cb(ULONG pddr_service_ctx)
     uint32_t msg_ecc_ce_polling = DDR_POLL_ECC_CE_EVENT;
 
     tx_queue_send(&ddr_service_ctx->work_queue, &msg_ecc_ce_polling, TX_NO_WAIT);
+}
+
+void rh_tlm_timer_cb(ULONG pddr_service_ctx)
+{
+    ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
+    uint32_t msg_rh_tlm_service = DDR_RH_CFG_TLM_SERVICE_EVENT;
+
+    tx_queue_send(&ddr_service_ctx->work_queue, &msg_rh_tlm_service, TX_NO_WAIT);
 }
 
 static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)

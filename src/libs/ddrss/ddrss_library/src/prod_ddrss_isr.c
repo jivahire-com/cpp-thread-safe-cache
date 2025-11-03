@@ -108,8 +108,8 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agen
  *
  *
  * @param[in] mc            - Memory controller
- * @param[in] sample_type   - info aout how the rh was sampled
- * @param[in] p_rh_tel        - pointer to rh telemetry record
+ * @param[in] sample_type   - info about how the rh was sampled
+ * @param[in] p_rh_tel      - pointer to rh telemetry record
  * @param[in] p_rh_cper     - pointer to rh cper telemetry record
  *
  * @return void
@@ -145,6 +145,42 @@ void prod_ddrss_convert_rh_rec_to_rh_cper(uint32_t mc,
         p_rh_cper->way_count[i] = p_rh_tel->way_info[i].count;
         p_rh_cper->way_lock[i] = p_rh_tel->way_info[i].lock;
     }
+}
+
+/**
+ * @brief     Convert rh cfg record to rh cper record
+ *
+ *
+ * @param[in] mc            - Memory controller
+ * @param[in] sample_type   - info about how the rh was sampled
+ * @param[in] p_rh_cfg      - pointer to rh cfg record
+ * @param[in] p_rh_cfg_cper - pointer to rh cper cfg record
+ *
+ * @return void
+ */
+void prod_ddrss_convert_rh_cfg_rec_to_rh_cper(uint32_t mc,
+                                              rh_tlm_sample_type sample_type,
+                                              ddrss_rhm_tm_cfg_t* p_rh_cfg,
+                                              acpi_err_sec_ddrss_rhm_cfg_t* p_rh_cfg_cper)
+{
+    if (p_rh_cfg == NULL || p_rh_cfg_cper == NULL)
+    {
+        return;
+    }
+
+    p_rh_cfg_cper->tlm_sample_type = sample_type;
+    p_rh_cfg_cper->mc = mc;
+    p_rh_cfg_cper->rm_pn_seed = p_rh_cfg->rm_pn_seed;
+    p_rh_cfg_cper->rm_tm_sel = p_rh_cfg->rm_tm_sel;
+    p_rh_cfg_cper->rm_tm_filter = p_rh_cfg->rm_tm_filter;
+    p_rh_cfg_cper->rm_act_thr = p_rh_cfg->rm_act_thr;
+    p_rh_cfg_cper->rm_sample_thr = p_rh_cfg->rm_sample_thr;
+    p_rh_cfg_cper->rm_soc = p_rh_cfg->rm_soc;
+    p_rh_cfg_cper->rm_smc_1 = p_rh_cfg->rm_smc_1;
+    p_rh_cfg_cper->rm_smc_2 = p_rh_cfg->rm_smc_2;
+    p_rh_cfg_cper->rm_cfg = p_rh_cfg->rm_cfg;
+    p_rh_cfg_cper->mr58 = p_rh_cfg->mr58;
+    p_rh_cfg_cper->mr59 = p_rh_cfg->mr59;
 }
 
 /**
@@ -604,7 +640,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
             acpi_err_sec_ddrss_rhm_tm_t rh_cper_section = {0};
             acpi_cper_section_t cper_section;
             cper_section.sec_rh_tlm = rh_cper_section;
-            prod_ddrss_convert_rh_rec_to_rh_cper(mc, RHTLM_SAMPLE_EVENT, &ddrss_rm_telemetry, &rh_cper_section);
+            prod_ddrss_convert_rh_rec_to_rh_cper(mc, RHTLM_EVT, &ddrss_rm_telemetry, &rh_cper_section);
             hm_submit_cper(ACPI_ERROR_DOMAIN_RHTLM, ACPI_ERROR_SEVERITY_INFORMATIONAL, &cper_section, sizeof(cper_section));
         }
         mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);

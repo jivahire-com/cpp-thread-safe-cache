@@ -24,6 +24,8 @@
 #define DDR_WORK_THREAD_NAME ("ddr-work_thread")
 #define DDR_I3C_TIMER_NAME ("ddr-i3c-timer")
 #define DDR_ECC_CE_TIMER_NAME ("ddr-ecc-ce-timer")
+#define DDR_RH_TLM_TIMER_NAME ("ddr-rh-tlm-timer")
+
 #define NUM_DIMM_PER_DIE  (6) // Each die will address 6 DIMMs
 #define NUM_DIMM_TEMP_SENSORS (2) // Each DIMM will have 2 temperature sensors
 
@@ -163,9 +165,18 @@ void ddr_publish_prm_addr_trans_cfg();
  * This function enables the ECC CE polling timer to periodically check for ECC CE errors.
  */
 void enable_ecc_ce_polling_timer();
+
+/**
+ * @brief  : Scan all memory controllers for RH configuration record
+ *           if none detected , send a dummy one to act as a heartbeat
+ * @param  : void
+ */
+void rhtlm_cfg_scan(void);
+
 void ecc_ce_timer_cb(ULONG pddr_service_ctx);
 void ddr_poll_ecc_ce_errors();
-
+void enable_row_hammer_tlm_cfg_polling_timer(void);
+void rh_tlm_timer_cb(ULONG pddr_service_ctx);
 void ddr_bwl_residency_add_ticks(uint32_t ticks);
 uint32_t ddr_bwl_residency_get_ticks(void);
 uint16_t gtimer_ticks_to_ms(uint32_t ticks);
@@ -175,3 +186,4 @@ uint64_t get_last_gtimer_count(void);
 void ddr_telemetry_increment_throttle_count(void);
 uint16_t ddr_telemetry_get_throttle_count(void);
 void ddr_telemetry_reset_throttle_count(void);
+void rhtlm_cca_mode_filtering(void);

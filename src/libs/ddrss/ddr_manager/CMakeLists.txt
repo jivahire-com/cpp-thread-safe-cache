@@ -12,6 +12,7 @@ add_library(${TARGET}
         ddr_manager_memory_map.c
         ddr_manager_platform.c
         ddr_manager_polling.c
+        ddr_manager_rhtlm_service.c
         ddr_manager_telemetry.c
         ddr_manager_top.c
 )
@@ -30,6 +31,8 @@ target_link_libraries(${TARGET}
         silibs::ddr_i3c
         silibs::ddrss
         silibs::idhw
+        silibs::idsw
+        silibs::idsw_kng
         silibs::kng_silibs_platform
         silibs::platform
         silibs::ras_arm

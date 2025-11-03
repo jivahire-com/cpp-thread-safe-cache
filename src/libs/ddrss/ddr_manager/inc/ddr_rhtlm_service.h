@@ -3,13 +3,14 @@
 //
 
 /**
- * @file rh_tlm_service.h
+ * @file ddr_rhtlm_service.h
  * Header file for Row Hammer Telemetry
  */
 
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <stdbool.h>
 #include <stdint.h>
 #include <tx_api.h>
 
@@ -30,15 +31,6 @@ typedef struct
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
-
-/**
- * @brief  : Init for Row Hammer Telemetry Service
- *
- * @param  : context - pointer to this thread service specific structure 
- * @retval : void 
- */
-
-void rhtlm_thread_init(rhtlm_service_ctx_t* context);
 
 /**
  * @brief  : Print status Information about the service

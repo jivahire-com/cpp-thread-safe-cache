@@ -27,6 +27,7 @@ typedef enum
     DDR_POLL_DIMMS_I3C_POWER_EVENT,
     DDR_START_POLLING_TIMER_EVENT,
     DDR_POLL_ECC_CE_EVENT,
+    DDR_RH_CFG_TLM_SERVICE_EVENT,
 } DDR_MANAGER_MESSAGE_TYPE;
 
 typedef struct
@@ -52,6 +53,7 @@ typedef struct
     TX_QUEUE work_queue;
     TX_TIMER ddr_i3c_polling_timer;
     TX_TIMER ecc_ce_polling_timer;
+    TX_TIMER rh_tlm_polling_timer;
 } ddr_service_context_t;
 
 /*-- Declarations (Statics and globals) --*/

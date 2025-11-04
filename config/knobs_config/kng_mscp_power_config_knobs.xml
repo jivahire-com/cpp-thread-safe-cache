@@ -212,7 +212,7 @@
     <Knob name="power_soc_maximum_electrical_current_limit_vcpu1" type="uint16_t" default="497" help="Vcpu1 current maximum value (A) used to determine the maximum electrical power limit." />
     <Knob name="power_r_loadline_vcpu0" type="uint16_t" default="500 " help="Loadline resistance (uOhm - used in Vcpu calculation)" />
     <Knob name="power_r_loadline_vcpu1" type="uint16_t" default="500 " help="Loadline resistance (uOhm - used in Vcpu calculation)" />
-    <Knob name="power_vsys_r_loadline" type="uint16_t" default="600" help="Loadline resistance (uOhm - used in Vsys power calculation)" />
+    <Knob name="power_vsys_r_loadline" type="uint16_t" default="480" help="Loadline resistance (uOhm - used in Vsys power calculation)" />
 
     <!-- Double Check default values (Different between code and doc) -->
     <Knob name="power_activity_factor_dhry_adjustment" type="uint8_t" default="217" help="Activity factor with mpmm disabled" />

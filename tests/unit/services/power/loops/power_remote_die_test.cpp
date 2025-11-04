@@ -28,6 +28,7 @@ extern "C" {
 #include <power_runconfig_i.h> // for power_fuses_read, power_fuses_get_cur...
 #include <stdint.h>            // for int8_t, uint64_t, uint8_t, uintptr_t
 #include <string.h>            // for memcpy
+
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -37,6 +38,7 @@ void __real_power_remote_die_idle_reset();
 void __real_power_remote_die_init(power_runconfig_t* p_runconfig);
 void __real_power_remote_die_exchange_inputs(power_runconfig_t* p_runconfig);
 void __real_power_remote_die_exchange_complete(power_runconfig_t* p_runconfig);
+power_remote_die_context_t* power_remote_die_get_context(void);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -332,4 +334,29 @@ POWER_TEST(remote_die_error_reset__other_state, setup, teardown)
     power_remote_die_error_reset(POWER_CONTROL_STATE_IDLE);
     // flag should remain set
     assert_true(((power_d2d_arsm_data_t*)mock_arsm_buffer)->d2d_pwr_data_sync);
+}
+
+POWER_TEST(remote_die_exchange_inputs__clears_ex_complete_recv_complete, setup, teardown)
+{
+    // initialize multi-die environment
+    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
+    setup_multi_die();
+    expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
+    set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
+    set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
+    __real_power_remote_die_init(&s_test_power_runconfig);
+
+    // manually set RECV_COMPLETE bit in ex_complete context
+    power_remote_die_context_t* ctx = power_remote_die_get_context();
+    ctx->ex_complete.send_recv_status = 2; // RECV_COMPLETE
+
+    // call exchange_inputs; expect assertion and send request sequence
+    expect_value(__wrap_FpFwAssert, expression, true);
+    set_expectations_for_send_request((void*)TEST_ICC_D2D_CTX);
+    expect_function_call(__wrap_cortex_m7_atomic_call_data_synchronization_barrier);
+    expect_function_call(__wrap_cortex_m7_atomic_or);
+    __real_power_remote_die_exchange_inputs(&s_test_power_runconfig);
+
+    // verify RECV_COMPLETE cleared
+    assert_int_equal(ctx->ex_complete.send_recv_status, 0);
 }

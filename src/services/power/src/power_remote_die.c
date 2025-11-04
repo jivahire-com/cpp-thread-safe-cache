@@ -34,42 +34,8 @@
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-// bit values for send/recv status
-#define SEND_STARTED  (1)
-#define RECV_COMPLETE (2)
-#define SEND_COMPLETE (4)
-#define READY_STATUS  (SEND_STARTED | SEND_COMPLETE | RECV_COMPLETE)
-
-// define the max size of the mailbox message in words
-#define D2D_MHU_MIN_MESG_SIZE_BYTES (sizeof(icc_mhu_packet_t))
-#define D2D_MHU_MAX_MESG_SIZE_BYTES (512)
-#define D2D_MBOX_MAX_WORDS          (D2D_FIFO_MBOX_MAX_MESG_SIZE_BYTES / sizeof(uint32_t))
-#define D2D_MHU_MIN_WORDS           (D2D_MHU_MIN_MESG_SIZE_BYTES / sizeof(uint32_t))
-#define D2D_MHU_MAX_WORDS           (D2D_MHU_MAX_MESG_SIZE_BYTES / sizeof(uint32_t))
 
 /*------------- Typedefs -----------------*/
-// power_d2d_context_t: context structure for D2D communication
-typedef struct _power_d2d_context
-{
-    uint32_t send_recv_status;                       //! flag or status governing the control loop for sync
-    uint32_t d2d_send_mhu_buffer[D2D_MHU_MAX_WORDS]; //! Buffer for MHU send packet
-    uint32_t d2d_recv_mhu_buffer[D2D_MHU_MAX_WORDS]; //! Buffer for MHU receive packet
-    fpfw_icc_base_send_req_t d2d_send_params;
-    fpfw_icc_base_recv_req_t d2d_recv_params;
-    power_ctrl_loop_signal_t ctrl_loop_signal;
-    uintptr_t d2d_send_arsm_payload;                           //!< data to be sent to the remote die
-    uintptr_t d2d_recv_arsm_payload;                           //!< data to be received from the remote die
-    uint8_t event_data_buffer[D2D_PWR_MESG_MAX_EXCHANGE_SIZE]; //!< local buffer for storing the arsm payload
-    uint32_t transaction_counter; //!< counter for tracking transaction sequence numbers
-} power_d2d_context_t;
-
-// context structure for remote die interface
-typedef struct _power_remote_die_context
-{
-    power_d2d_context_t ex_inputs;
-    power_d2d_context_t ex_complete;
-    power_runconfig_t* p_runconfig;
-} power_remote_die_context_t;
 
 /*-------- Function Prototypes -----------*/
 static void setup_recv_request(power_d2d_context_t* p_d2d_ctx);
@@ -78,6 +44,11 @@ static void send_complete_signal(power_d2d_context_t* p_d2d_ctx);
 
 /*-- Declarations (Statics and globals) --*/
 static power_remote_die_context_t s_power_remote_die_ctx = {0};
+
+power_remote_die_context_t* power_remote_die_get_context(void)
+{
+    return &s_power_remote_die_ctx;
+}
 
 /*------------- Functions ----------------*/
 //! APIs added as test seams to inject addr for arsm shared memory
@@ -447,6 +418,9 @@ void power_remote_die_error_reset(int last_state)
 void power_remote_die_exchange_inputs(power_runconfig_t* p_runconfig)
 {
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
+
+    // Since we haven't yet exchanged inputs, ensure exchange complete recv status is cleared
+    cortex_m7_atomic_compare_exchange(&s_power_remote_die_ctx.ex_complete.send_recv_status, 0, RECV_COMPLETE);
 
     // common function, pass exchange context and expected completion signal
     power_remote_die_exchange(p_runconfig, &s_power_remote_die_ctx.ex_inputs, ICC_COMMAND_PWR_D2D_EX_INPUT_MSG);

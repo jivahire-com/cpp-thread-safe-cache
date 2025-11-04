@@ -277,12 +277,16 @@ TEST_FUNCTION(config_service_thread_success_die0, NULL, NULL)
     will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
     will_return(__wrap__txe_event_flags_delete, TX_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
 
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
 
+    will_return(__wrap_variable_service_async_set_variable, 0);
     will_return(__wrap_variable_service_async_set_variable, 0);
     will_return(__wrap_variable_service_async_set_variable, 0);
 
@@ -330,7 +334,10 @@ TEST_FUNCTION(config_service_thread_success_die1, NULL, NULL)
     will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
     will_return(__wrap__txe_event_flags_delete, TX_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_idsw_get_die_id, SOC_D1);
 
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
@@ -383,12 +390,16 @@ TEST_FUNCTION(config_service_thread_success_die0_accel_isolation, NULL, NULL)
     will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
     will_return(__wrap__txe_event_flags_delete, TX_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
 
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
     will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE);
+    will_return(__wrap_variable_service_initialize_ctx, SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_END);
 
+    will_return(__wrap_variable_service_async_set_variable, 0);
     will_return(__wrap_variable_service_async_set_variable, 0);
     will_return(__wrap_variable_service_async_set_variable, 0);
 
@@ -436,7 +447,10 @@ TEST_FUNCTION(config_service_thread_success_die1_accel_isolation, NULL, NULL)
     will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
     will_return(__wrap__txe_event_flags_delete, TX_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D1);
+    will_return(__wrap_idsw_get_die_id, SOC_D1);
 
+    will_return(__wrap_variable_service_initialize_ctx, MSCP_ATU_AP_WINDOW_VAR_SVC_PCIE_PAYLOAD_BASE);
+    will_return(__wrap_variable_service_initialize_ctx, MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR);
     will_return(__wrap_variable_service_initialize_ctx, MSCP_ATU_AP_WINDOW_VAR_SVC_PCIE_PAYLOAD_BASE);
     will_return(__wrap_variable_service_initialize_ctx, MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR);
     will_return(__wrap_variable_service_initialize_ctx, MSCP_ATU_AP_WINDOW_VAR_SVC_PCIE_PAYLOAD_BASE);
@@ -467,7 +481,7 @@ TEST_FUNCTION(config_service_thread_success_die1_accel_isolation, NULL, NULL)
 /* Tests to validate completion request handling */
 TEST_FUNCTION(test_completion_callback, NULL, NULL) // abe
 {
-    auto& async_req = ctx.async_req[0];
+    auto async_req = ctx.async_req[0];
     async_req.status = SILIBS_E_TIMEOUT;
     async_req.async_data.int_mask = 0;
 
@@ -490,7 +504,7 @@ TEST_FUNCTION(test_completion_callback, NULL, NULL) // abe
 /* Tests to validate completion request handling */
 TEST_FUNCTION(test_completion_callback_queue_full, NULL, NULL)
 {
-    auto& async_req = ctx.async_req[0];
+    auto async_req = ctx.async_req[0];
     async_req.rp_index = 2;
     async_req.status = SILIBS_E_TIMEOUT;
 

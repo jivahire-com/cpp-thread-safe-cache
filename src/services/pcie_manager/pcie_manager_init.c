@@ -31,7 +31,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define KB                                (1024)
-#define PCIE_RP_SERVICE_THREAD_STACK_SIZE ((2) * (KB))
+#define PCIE_RP_SERVICE_THREAD_STACK_SIZE ((3) * (KB))
 
 /*------------- Typedefs -----------------*/
 

@@ -17,6 +17,7 @@
 #include <idsw_kng.h>
 #include <kng_error.h>
 #include <mscp_exp_rmss_memory_map.h>
+#include <mu_public.h>
 #include <pcie_config_variable.h>
 #include <pcie_manager_i.h>   // for rpss_req_completion_cb, rpss_service_t...
 #include <scp_pcie_manager.h> // for pcie_manager_context_t, pciess_complet...
@@ -37,6 +38,7 @@ void set_var_complete_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uin
 
 static uint32_t rb_cb_ctx;
 static uint32_t vab_cb_ctx;
+static uint32_t cxl_mem_cb_ctx;
 
 /* publish NV variable with RB aperture info */
 static guid_t const rb_config_guid_die_0 = PCIE_RB_CONFIG_VAR_DIE_0_GUID;
@@ -49,12 +51,19 @@ static guid_t const vab_config_guid_die_1 = VAB_CONFIG_VAR_DIE_1_GUID;
 static uint16_t rb_config_varname_die_1[] = PCIE_RB_CONFIG_VAR_DIE_1_NAME;
 static uint16_t vab_config_varname_die_1[] = VAB_CONFIG_VAR_DIE_1_NAME;
 
+static guid_t const cxl_memtype_config_guid = CXL_MEMORY_TYPE_VAR_GUID;
+static uint16_t cxl_memtype_config_varname[] = CXL_MEMORY_TYPE_VAR_NAME;
+
 static kingsgate_pcie_root_bridge_config* rb_config_var;
 static kingsgate_pcie_vab_config* vab_config_var;
+static uint32_t cxl_memtype_var;
+
 static const guid_t* rb_config_guid;
 static const guid_t* vab_config_guid;
+static const guid_t* cxl_memtype_guid;
 static uint16_t* rb_config_varname;
 static uint16_t* vab_config_varname;
+static uint16_t* cxl_memtype_varname;
 
 var_service_shared_mem_t rb_set_var_mem_ctx = {.payload_base = SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE,
                                                .max_payload_size = sizeof(variable_service_shared_mem_format_t) +
@@ -66,10 +75,24 @@ var_service_shared_mem_t vab_set_var_mem_ctx = {.payload_base = SCP_EXP_SCP_PCIE
                                                                     sizeof(vab_config_varname_die_0) +
                                                                     sizeof(kingsgate_pcie_vab_config)};
 
+var_service_shared_mem_t cxl_set_var_mem_ctx = {.payload_base = SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_BASE,
+                                                .max_payload_size = sizeof(variable_service_shared_mem_format_t) +
+                                                                    sizeof(cxl_memtype_config_varname) +
+                                                                    sizeof(cxl_memtype_var)};
 static var_service_req_ctx_t rb_set_var_ctx = {};
 static var_service_req_ctx_t vab_set_var_ctx = {};
+static var_service_req_ctx_t cxl_set_var_ctx = {};
 
 /*------------- Functions ----------------*/
+// The Base Address for the SetVariable must be 32 Bit Aligned
+static uint64_t Get32BitAlignedAddress(uint64_t Address)
+{
+    if (Address % sizeof(uint32_t))
+    {
+        Address = Address + ((sizeof(uint32_t)) - Address % (sizeof(uint32_t)));
+    }
+    return Address;
+}
 
 /* Will be called when the SetVariable is completed from HSP side */
 void set_var_complete_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
@@ -80,13 +103,12 @@ void set_var_complete_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uin
     FPFW_UNUSED(data_start_ptr);
 
     int status;
-
+    var_service_req_params_t req_params = {};
     if (context == &rb_cb_ctx)
     {
         FPFW_DBGPRINT_INFO("[PCIe Config] RB set_variable response received! Status: %x\n", (int)var_serv_ctx->async_req_result);
         // unlock context so we can send another for VAB
         // variable_service_unlock_get_var_ctx(var_serv_ctx);
-        var_service_req_params_t req_params = {};
         req_params.variable_name_ptr = (uint16_t*)vab_config_varname;
         req_params.variable_name_size = sizeof(vab_config_varname_die_0);
         memcpy(&req_params.vendor_namespace_guid, vab_config_guid, sizeof(req_params.vendor_namespace_guid));
@@ -98,8 +120,37 @@ void set_var_complete_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uin
     }
     else if (context == &vab_cb_ctx)
     {
+        KNG_DIE_ID current_die_instance = (KNG_DIE_ID)idsw_get_die_id();
         FPFW_DBGPRINT_INFO("[PCIe Config] VAB set_variable response received! Status: %x\n",
                            (int)var_serv_ctx->async_req_result);
+
+        // For EF the CXL is available only on Die1 , but HSP has issues accessing variable store for die 1
+        // So the variable is updated from Die 0
+        if (current_die_instance == DIE_0)
+        {
+            cxl_region_params_t cxl_region_params = config_get_cxl_params_die1();
+            // Populate CXL Memory Type
+            cxl_memtype_var = (uint32_t)cxl_region_params.memory_type;
+            FPFW_DBGPRINT_INFO("[PCIe Config] CXL Memory Type: %x\n", (int)cxl_memtype_var);
+
+            req_params.variable_name_ptr = (uint16_t*)cxl_memtype_varname;
+            req_params.variable_name_size = sizeof(cxl_memtype_config_varname);
+            memcpy(&req_params.vendor_namespace_guid, cxl_memtype_guid, sizeof(req_params.vendor_namespace_guid));
+            req_params.data_size = sizeof(cxl_memtype_var);
+            req_params.data = (uint8_t*)&cxl_memtype_var;
+            req_params.attributes.as_uint32 = EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
+            status = variable_service_async_set_variable(&cxl_set_var_ctx, &req_params, set_var_complete_cb, (void*)&cxl_mem_cb_ctx);
+            BUG_ASSERT(status == KNG_SUCCESS);
+        }
+    }
+    else if (context == &cxl_mem_cb_ctx)
+    {
+        FPFW_DBGPRINT_INFO("[PCIe Config] CXL Mem Type set_variable response received! Status: %x\n",
+                           (int)var_serv_ctx->async_req_result);
+    }
+    else
+    {
+        FPFW_DBGPRINT_INFO("[PCIe Config] Unexpected Completion \n");
     }
 }
 
@@ -124,6 +175,12 @@ void config_variable_service_thread_fn(ULONG thread_input)
                                                                        sizeof(vab_config_varname_die_0) +
                                                                        sizeof(kingsgate_pcie_vab_config),
                   "ERROR: PCIE VAB Variable payload size exceeded");
+
+    static_assert(SCP_EXP_SCP_PCIE_VARIABLE_SERVICE_PAYLOAD_SIZE > sizeof(variable_service_shared_mem_format_t) +
+                                                                       sizeof(cxl_memtype_config_varname) +
+                                                                       sizeof(cxl_memtype_var),
+                  "ERROR: PCIE CXL Mem Type Variable payload size exceeded");
+
     int status = tx_event_flags_get(ctx->event_ptr, ctx->event_flags_mask, TX_AND, &event, TX_WAIT_FOREVER);
     if (status != TX_SUCCESS)
     {
@@ -239,15 +296,22 @@ void config_variable_service_thread_fn(ULONG thread_input)
     {
         rb_config_guid = &rb_config_guid_die_0;
         vab_config_guid = &vab_config_guid_die_0;
+        cxl_memtype_guid = &cxl_memtype_config_guid;
         rb_config_varname = rb_config_varname_die_0;
         vab_config_varname = vab_config_varname_die_0;
+        cxl_memtype_varname = cxl_memtype_config_varname;
     }
     else
     {
+        // The CXL memory is on Die 1 , so we will publish the
+        // variable from SCP on Die 1
         rb_config_guid = &rb_config_guid_die_1;
         vab_config_guid = &vab_config_guid_die_1;
+        cxl_memtype_guid = &cxl_memtype_config_guid;
         rb_config_varname = rb_config_varname_die_1;
         vab_config_varname = vab_config_varname_die_1;
+        cxl_memtype_varname = cxl_memtype_config_varname;
+
         // By default the payload is in the MSCP EXP RAM but Die 1 HSP cannot access it
         // So Die 1 payload is in DDR
         rb_set_var_mem_ctx.payload_base = (uintptr_t)MSCP_ATU_AP_WINDOW_VAR_SVC_PCIE_PAYLOAD_BASE;
@@ -257,8 +321,14 @@ void config_variable_service_thread_fn(ULONG thread_input)
     variable_service_initialize_ctx(&rb_set_var_ctx, &rb_set_var_mem_ctx);
 
     // Init VAB variable service context
-    vab_set_var_mem_ctx.payload_base = rb_set_var_mem_ctx.payload_base + rb_set_var_mem_ctx.max_payload_size;
+    vab_set_var_mem_ctx.payload_base =
+        Get32BitAlignedAddress(rb_set_var_mem_ctx.payload_base + rb_set_var_mem_ctx.max_payload_size);
     variable_service_initialize_ctx(&vab_set_var_ctx, &vab_set_var_mem_ctx);
+
+    // Init CXL Mem Type variable servive context
+    cxl_set_var_mem_ctx.payload_base =
+        Get32BitAlignedAddress(vab_set_var_mem_ctx.payload_base + vab_set_var_mem_ctx.max_payload_size);
+    variable_service_initialize_ctx(&cxl_set_var_ctx, &cxl_set_var_mem_ctx);
 
     var_service_req_params_t req_params = {};
     req_params.variable_name_ptr = (uint16_t*)rb_config_varname;

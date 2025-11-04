@@ -647,26 +647,34 @@ TEST_FUNCTION(test_get_pwr_soc_d2d_link_create_data, test_setup, test_teardown)
 {
     pwr_soc_record_d2d_link_t record = {{0}};
 
-    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data, 1);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data, NUMBER_OF_D2D_INTERFACES);
     uint32_t record_size = package_create_pwr_soc_d2d_link_record(&record);
 
     assert_int_equal(record_size, sizeof(pwr_soc_record_d2d_link_t));
     assert_int_not_equal(record.record_header.timestamp_uS, 0);
     assert_int_not_equal(record.record_header.record_number, 0);
-    assert_int_equal(record.record_header.number_of_collections, 1);
+    assert_int_equal(record.record_header.number_of_collections, NUMBER_OF_D2D_INTERFACES);
     assert_int_equal(record.record_header.record_payload_size,
                      (sizeof(pwr_soc_record_d2d_link_t) - sizeof(telemetry_record_hdr_t)));
 
-    assert_int_equal(record.d2d_link_collection.collection_header.provider_id, EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA);
-    assert_int_equal(record.d2d_link_collection.collection_header.element_id, POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE);
-    assert_int_equal(record.d2d_link_collection.collection_header.collection_id, 0);
-    assert_int_equal(record.d2d_link_collection.collection_header.number_of_elements, 1);
-    assert_int_equal(record.d2d_link_collection.collection_header.collection_payload_size,
-                     sizeof(pwr_soc_collection_d2d_link_t) - sizeof(telemetry_collection_hdr_t));
+    // Verify each d2d interface collection
+    for (uint16_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        assert_int_equal(record.d2d_link_collection[interface_id].collection_header.provider_id,
+                         EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA);
+        assert_int_equal(record.d2d_link_collection[interface_id].collection_header.element_id,
+                         POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE);
+        assert_int_equal(record.d2d_link_collection[interface_id].collection_header.collection_id, interface_id);
+        assert_int_equal(record.d2d_link_collection[interface_id].collection_header.number_of_elements,
+                         NUMBER_OF_D2D_LINKS_STATE);
+        assert_int_equal(record.d2d_link_collection[interface_id].collection_header.collection_payload_size,
+                         sizeof(pwr_soc_collection_d2d_link_t) - sizeof(telemetry_collection_hdr_t));
 
-    // event data ranges are initialized to 0, the mock Get Api sets them to 0xFF
-    // This verifies that the correct data ranges are passed to the data processing component get data api's
-    assert_memset_to_ff((uint8_t*)&record.d2d_link_collection.d2d_link_element, sizeof(pwr_soc_element_d2d_link_t));
+        // event data ranges are initialized to 0, the mock Get Api sets them to 0xFF
+        // This verifies that the correct data ranges are passed to the data processing component get data api's
+        assert_memset_to_ff((uint8_t*)record.d2d_link_collection[interface_id].d2d_link_element,
+                            sizeof(pwr_soc_element_d2d_link_t) * NUMBER_OF_D2D_LINKS_STATE);
+    }
 }
 
 TEST_FUNCTION(test_get_pwr_mpam_core_pwr_pkg_create_data, test_setup, test_teardown)
@@ -981,7 +989,7 @@ TEST_FUNCTION(test_package_create_power_pkg_all_enabled, test_setup, test_teardo
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_hnf_data, NUMBER_OF_HNF_CHANNELS_PER_DIE);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data, NUMBER_OF_SOC_TEMP_SENSORS);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data, 1);
-    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data, 1);
+    expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data, NUMBER_OF_D2D_INTERFACES);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, 1);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_mpam_core_pwr_data, NUMBER_OF_MPAMS);
     expect_function_calls(data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data, NUMBER_OF_MPAMS);

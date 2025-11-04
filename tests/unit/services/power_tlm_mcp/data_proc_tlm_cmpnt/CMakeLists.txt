@@ -70,4 +70,6 @@ mock_target(${TARGET}
     mesh_get_m1_residency
     mesh_get_m2_residency
     mesh_get_telemetry_delivered_perf_count
+    d2dss_pmu_init
+    d2dss_pmu_read
 )

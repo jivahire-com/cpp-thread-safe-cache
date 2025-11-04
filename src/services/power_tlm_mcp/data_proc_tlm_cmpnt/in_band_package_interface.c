@@ -404,11 +404,30 @@ void data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(p_pwr_soc_element_die_mesh_t 
     }
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(p_pwr_soc_element_d2d_link_t d2d_link_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(uint8_t interface_id,
+                                                   pwr_soc_element_d2d_link_t (*d2d_link_data)[NUMBER_OF_D2D_LINKS_STATE])
 {
-    // TODO: Implement the rest of the record
-    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584673/?view=edit
-    memset(d2d_link_data, 0, sizeof(pwr_soc_element_d2d_link_t));
+    // Parameter validation
+    if (interface_id >= NUMBER_OF_D2D_INTERFACES || d2d_link_data == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE);
+    }
+    else
+    {
+        // Populate the data
+        for (uint8_t i = 0; i < NUMBER_OF_D2D_LINKS_STATE; i++)
+        {
+            (*d2d_link_data)[i].link_id = i; // Link ID
+            (*d2d_link_data)[i].tx_residency_mS =
+                D2DSS_COUNTER_TO_MS(computed_metrics_2_mins.d2dss[interface_id].d2d_link[i].tx_residency_count);
+            (*d2d_link_data)[i].rx_residency_mS =
+                D2DSS_COUNTER_TO_MS(computed_metrics_2_mins.d2dss[interface_id].d2d_link[i].rx_residency_count);
+            (*d2d_link_data)[i].bw_tx_flit_bytes =
+                D2DSS_FLIT_COUNT_TO_BYTES(computed_metrics_2_mins.d2dss[interface_id].d2d_link[i].bw_tx_flit_count);
+            (*d2d_link_data)[i].bw_rx_flit_bytes =
+                D2DSS_FLIT_COUNT_TO_BYTES(computed_metrics_2_mins.d2dss[interface_id].d2d_link[i].bw_rx_flit_count);
+        }
+    }
 }
 
 void data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data(p_pwr_soc_element_max_soc_temp_t max_temp_data)

@@ -75,6 +75,14 @@ typedef struct {
     uint8_t counter_id;
 } aging_counter_metrics_t;
 
+typedef struct {
+    uint64_t tx_residency_count;
+    uint64_t rx_residency_count;
+    uint64_t  bw_tx_flit_count ;
+    uint64_t bw_rx_flit_count;;
+    uint8_t  link_id;
+} d2d_link_metrics_t;
+
 typedef struct
 {
     uint64_t droop_count;
@@ -124,6 +132,11 @@ typedef struct
 
 typedef struct
 {
+    d2d_link_metrics_t d2d_link[NUMBER_OF_D2D_LINKS_STATE];
+} computed_per_d2dss_interface_metrics_t;
+
+typedef struct
+{
     mma_u32_t current_mA;
     mma_u16_t voltage_mV;
     mma_u16_t temperature_dC;
@@ -141,6 +154,7 @@ typedef struct {
     computed_per_core_metrics_t cores[NUMBER_OF_CORES_PER_DIE];
     computed_per_soc_metrics_t soc;
     computed_per_mpam_metrics_t mpam[NUMBER_OF_MPAMS];
+    computed_per_d2dss_interface_metrics_t d2dss[NUMBER_OF_D2D_INTERFACES];
     computed_per_die_metrics_t mesh;
 } computed_metrics_2_min_t;
 
@@ -487,9 +501,9 @@ void comp_metrics_for_mpam_data( mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS]
  */
 void comp_metrics_for_mpam_throttling(uint8_t mpam_id, uint32_t residency_uS, uint8_t nominal_pstate);
 
-/**
+ /**
  * @brief Update the per-die mesh telemetry metrics based on the provided telemetry data.
- *
+ * 
  * @param[in] m1_entry_count - M1 entry count
  * @param[in] m2_entry_count - M2 entry count
  * @param[in] m0_residency_count - M0 residency count
@@ -498,3 +512,18 @@ void comp_metrics_for_mpam_throttling(uint8_t mpam_id, uint32_t residency_uS, ui
  * @param[in] delivered_perf_count - Delivered performance count
  */
 void comp_metrics_for_per_die_mesh_tlm(uint32_t m1_entry_count, uint32_t m2_entry_count, uint32_t m0_residency_count, uint32_t m1_residency_count, uint32_t m2_residency_count, uint32_t delivered_perf_count);
+
+/**
+ * @brief Update D2DSS interface metrics for all links of a specified D2DSS interface.
+ *
+ * @param[in] d2dss_id - The identifier of the D2DSS interface.
+ * @param[in] tx_res_counter_diff - Array of transmit residency counter differences for each link.
+ * @param[in] rx_res_counter_diff - Array of receive residency counter differences for each link.
+ * @param[in] bw_tx_flit_counter_diff - Array of bandwidth transmit flit counter differences for each link.
+ * @param[in] bw_rx_flit_counter_diff - Array of bandwidth receive flit counter differences for each link.
+ */
+void comp_metrics_for_single_d2dss_interface_all_links(uint8_t  d2dss_id,
+                                                    uint64_t (*tx_res_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
+                                                    uint64_t (*rx_res_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
+                                                    uint64_t (*bw_tx_flit_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
+                                                    uint64_t (*bw_rx_flit_counter_diff)[NUMBER_OF_D2D_LINKS_STATE]);

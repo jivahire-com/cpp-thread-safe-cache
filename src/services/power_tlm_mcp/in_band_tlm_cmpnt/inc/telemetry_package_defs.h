@@ -27,6 +27,10 @@
 #define NUMBER_OF_AGING_COUNTER_PAIRS (8)
 #define NUMBER_OF_ACCEL_COUNTERS (100)
 
+// D2D interface constants
+#define NUMBER_OF_D2D_INTERFACES (8)
+#define NUMBER_OF_D2D_LINKS_STATE (3)
+
 //current, temperature, RACK, VR HOT, ADP_CLK, currnt overrun, adp_clk overrun
 #define NUMBER_OF_THROTTLE_SOURCES    (7)  //(5+2)
 #define NUMBER_OF_RACK_THROTTLE_PRIORITIES   (8)
@@ -457,20 +461,21 @@ typedef struct {
 //----------------POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE----------------
 
 typedef struct {
-    uint64_t residency_count;
-    uint64_t bw_transmit;
-    uint64_t bw_receive;;
+    uint64_t tx_residency_mS;
+    uint64_t rx_residency_mS;
+    uint64_t bw_tx_flit_bytes;
+    uint64_t bw_rx_flit_bytes;
     uint8_t  link_id;
 } pwr_soc_element_d2d_link_t, *p_pwr_soc_element_d2d_link_t;
 
 typedef struct {
     telemetry_collection_hdr_t collection_header;
-    pwr_soc_element_d2d_link_t d2d_link_element;
+    pwr_soc_element_d2d_link_t d2d_link_element[NUMBER_OF_D2D_LINKS_STATE];
 } pwr_soc_collection_d2d_link_t, *p_pwr_soc_collection_d2d_link_t;
 
 typedef struct {
     telemetry_record_hdr_t record_header;
-    pwr_soc_collection_d2d_link_t d2d_link_collection;
+    pwr_soc_collection_d2d_link_t d2d_link_collection[NUMBER_OF_D2D_INTERFACES];
 } pwr_soc_record_d2d_link_t, *p_pwr_soc_record_d2d_link_t;
 
 //----------------POWER_TELEMETRY_ELEMENT_SOC_MAX_TEMPERATURE----------------

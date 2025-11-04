@@ -523,7 +523,8 @@ void run_timer_enter_actions(tlm_operating_mode_t entering_mode)
         tx_timer_activate(&power_pkg_tmr);
         tx_timer_activate(&_24hr_pkg_tmr);
 
-        if (in_band_tlm_cmpnt_is_power_record_enabled(POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH))
+        if (in_band_tlm_cmpnt_is_power_record_enabled(POWER_TELEMETRY_ELEMENT_SOC_PER_DIE_MESH) ||
+            in_band_tlm_cmpnt_is_power_record_enabled(POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE))
         {
             tx_timer_activate(&one_second_tmr);
         }

@@ -519,6 +519,25 @@ void comp_metrics_for_single_core_aging_counters(uint8_t core_id,
     computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].voltage_mV = latest_voltage_mV;
 }
 
+void comp_metrics_for_single_d2dss_interface_all_links(uint8_t d2dss_id,
+                                                       uint64_t (*tx_res_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
+                                                       uint64_t (*rx_res_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
+                                                       uint64_t (*bw_tx_flit_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
+                                                       uint64_t (*bw_rx_flit_counter_diff)[NUMBER_OF_D2D_LINKS_STATE])
+{
+    for (uint8_t link_state = 0; link_state < NUMBER_OF_D2D_LINKS_STATE; ++link_state)
+    {
+        computed_metrics_2_mins.d2dss[d2dss_id].d2d_link[link_state].tx_residency_count +=
+            (*tx_res_counter_diff)[link_state];
+        computed_metrics_2_mins.d2dss[d2dss_id].d2d_link[link_state].rx_residency_count +=
+            (*rx_res_counter_diff)[link_state];
+        computed_metrics_2_mins.d2dss[d2dss_id].d2d_link[link_state].bw_tx_flit_count +=
+            (*bw_tx_flit_counter_diff)[link_state];
+        computed_metrics_2_mins.d2dss[d2dss_id].d2d_link[link_state].bw_rx_flit_count +=
+            (*bw_rx_flit_counter_diff)[link_state];
+    }
+}
+
 void comp_metrics_for_mpam_data(mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS])
 {
     if (in_band_publishing_active)

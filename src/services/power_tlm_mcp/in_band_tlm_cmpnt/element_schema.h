@@ -214,9 +214,10 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,
                      POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE,
                      pwr_soc_element_d2d_link,
                      FPFW_ET_LEVEL_DEBUG,
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, residency_count),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, bw_transmit),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, bw_receive),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, tx_residency_mS),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, rx_residency_mS),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, bw_tx_flit_bytes),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT64, bw_rx_flit_bytes),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, link_id))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA,

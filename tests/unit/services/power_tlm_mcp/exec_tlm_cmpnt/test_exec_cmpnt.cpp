@@ -103,6 +103,7 @@ TEST_FUNCTION(test_exec_tlm_cmpnt_change_telemetry_mode_enable_without_inst, tes
 
     will_return(in_band_tlm_cmpnt_is_any_instantaneous_enabled, false);
     will_return(in_band_tlm_cmpnt_is_power_record_enabled, false);
+    will_return(in_band_tlm_cmpnt_is_power_record_enabled, false);
 
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     will_return(__wrap__txe_timer_activate, TX_SUCCESS);

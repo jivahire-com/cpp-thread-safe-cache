@@ -294,3 +294,32 @@ void __wrap_mesh_clock_telemetry(bool enable, uint32_t interval_count)
     check_expected(interval_count);
     function_called();
 }
+
+// Mock implementations for D2DSS PMU APIs
+int __wrap_d2dss_pmu_init(uint8_t d2dss_index, uint8_t event_number, uint32_t event_count, bool enable)
+{
+    check_expected(d2dss_index);
+    check_expected(event_number);
+    check_expected(event_count);
+    check_expected(enable);
+    return mock_type(int);
+}
+
+int __wrap_d2dss_pmu_read(uint8_t d2dss_index, uint8_t event_number, uintptr_t counter_low, uintptr_t counter_high)
+{
+    check_expected(d2dss_index);
+    check_expected(event_number);
+
+    // Cast uintptr_t to uint32_t* and check they are valid pointers
+    uint32_t* counter_low_ptr = (uint32_t*)counter_low;
+    uint32_t* counter_high_ptr = (uint32_t*)counter_high;
+
+    assert_non_null(counter_low_ptr);
+    assert_non_null(counter_high_ptr);
+
+    // Set the counter values from mock data
+    *counter_low_ptr = mock_type(uint32_t);
+    *counter_high_ptr = mock_type(uint32_t);
+
+    return mock_type(int);
+}

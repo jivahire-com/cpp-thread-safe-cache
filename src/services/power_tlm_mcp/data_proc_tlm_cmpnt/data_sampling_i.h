@@ -62,7 +62,14 @@
 // Convert counter value to milliseconds based on reference clock frequency
 #define MESH_COUNTER_TO_MS(counter) \
     ( ((double)(counter) / (double)(DIE_MESH_FREQ_HZ)) * 1000.0 )
-    
+
+// Convert D2DSS counter value to milliseconds, D2DSS sync with reference clock of DIE MESH
+#define D2DSS_COUNTER_TO_MS(counter) \
+    ( ((double)(counter) / (double)(DIE_MESH_FREQ_HZ)) * 1000.0 )
+
+//Every Flit count is 64 bytes for kingsgate
+#define D2DSS_FLIT_COUNT_TO_BYTES(count) ((count) * 64)
+
 /*-------------- Typedefs ----------------*/
 typedef enum
 {
@@ -81,6 +88,35 @@ typedef enum
     THROTTLE_SOURCE_CURRENT_OVERRUN,
     THROTTLE_SOURCE_ADAPTIVE_CLK_OVERRUN,
 } throttle_source_t;
+
+/**
+ * @brief D2D Link ID enumeration
+ * 
+ * Defines the link state identifiers for D2DSS interfaces.
+ * Each D2DSS interface supports 3 link states (L0, L0s, L1).
+ */
+typedef enum
+{
+    D2D_LINK_L0 = 0,    // L0 - Active state with full bandwidth
+    D2D_LINK_L0S,       // L0s - Low power state with reduced bandwidth
+    D2D_LINK_L1,        // L1 - Sleep state with no bandwidth
+    D2D_LINK_MAX
+} d2d_link_t;
+
+//Die-to-Die Subsystem  MAS v1p0 Section 5.8, Performance monitoring Unit (PMU) -counters
+//IP Name : Debug wrapper Sub-IP 
+//Ref: https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/_layouts/15/Doc.aspx?sourcedoc=%7B179CCE4D-5CCE-4087-9E7F-AB4514BDFE03%7D&file=Kingsgate%20D2D%20MAS%20v1p0.docx&wdOrigin=TEAMS-MAGLEV.undefined_ns.rwc&action=default&mobileredirect=true
+typedef enum
+{
+    D2DSS_SOURCE_CNTR_RX_PHY_L0S_RESIDENCY = 0, 
+    D2DSS_SOURCE_CNTR_RX_PHY_L1_RESIDENCY,//on die
+    D2DSS_SOURCE_CNTR_TX_PHY_L0S_RESIDENCY,
+    D2DSS_SOURCE_CNTR_TX_PHY_L1_RESIDENCY,//off die
+    D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY,
+    D2DSS_SOURCE_CNTR_TX_PHY_FLIT_COUNT,
+    D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY,
+    D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT
+} d2d_source_counter_t;
 
 /**
  *  @brief Core related runtime resources
@@ -155,6 +191,13 @@ typedef struct {
     uint8_t nominal_pstate;
     mpam_status_flags_t status_flags;
 } mpam_runtime_info_t;
+
+typedef struct {
+    uint64_t latest_tx_res_counter[NUMBER_OF_D2D_LINKS_STATE];
+    uint64_t latest_rx_res_counter[NUMBER_OF_D2D_LINKS_STATE];
+    uint64_t latest_bw_tx_flit_counter[NUMBER_OF_D2D_LINKS_STATE];
+    uint64_t latest_bw_rx_flit_counter[NUMBER_OF_D2D_LINKS_STATE];
+} d2dss_runtime_info_t;
 
 /**
  *  @brief Enum for Pstate message throttle status codes
@@ -557,3 +600,72 @@ void data_smpl_die_mesh_tlm_init(void);
  * @return None
  */
 void data_smpl_die_mesh_tlm_reset(void);
+
+/**
+ * @brief Initialize D2DSS PMU counters for all interfaces and required events.
+ * Configures PMU counters for D2D link state telemetry collection.
+ * 
+ * @return none
+ */
+void data_smpl_init_d2dss_pmu_counters(void);
+
+/**
+ * @brief Read D2DSS PMU counter for a specific interface and event.
+ * 
+ * @param[in] interface_id - D2DSS interface ID (0-7)
+ * @param[in] event_number - PMU event counter number (0-7)
+ * @param[out] counter_value - Pointer to store the 64-bit counter value
+ * @return true if the read was successful, false otherwise.
+ */
+bool data_smpl_read_d2dss_pmu_counter(uint8_t interface_id, uint8_t event_number, uint64_t* counter_value);
+
+/**
+ * @brief Read D2DSS L0 link state status for a specific interface.
+ * This function reads L0 residency and bandwidth counters to determine L0 state status.
+ * 
+ * @param[in] interface_id - D2DSS interface ID (0-7)
+ * @param[out] tx_res_diff - Pointer to receive TX residency counter difference
+ * @param[out] rx_res_diff - Pointer to receive RX residency counter difference
+ * @param[out] bw_tx_diff - Pointer to receive TX bandwidth flit counter difference
+ * @param[out] bw_rx_diff - Pointer to receive RX bandwidth flit counter difference
+ * @return true if L0 state is active/detected, false otherwise
+ */
+bool data_smpl_read_d2dss_l0_state(uint8_t interface_id, uint64_t* tx_res_diff, uint64_t* rx_res_diff, uint64_t* bw_tx_diff, uint64_t* bw_rx_diff);
+
+/**
+ * @brief Read D2DSS L0s link state status for a specific interface.
+ * This function reads L0s residency counters to determine L0s state status.
+ * 
+ * @param[in] interface_id - D2DSS interface ID (0-7)
+ * @param[out] tx_res_diff - Pointer to receive TX residency counter difference
+ * @param[out] rx_res_diff - Pointer to receive RX residency counter difference
+ * @return true if L0s state is active/detected, false otherwise
+ */
+bool data_smpl_read_d2dss_l0s_state(uint8_t interface_id, uint64_t* tx_res_diff, uint64_t* rx_res_diff);
+
+/**
+ * @brief Read D2DSS L1 link state status for a specific interface.
+ * This function reads L1 residency counters to determine L1 state status.
+ * 
+ * @param[in] interface_id - D2DSS interface ID (0-7)
+ * @param[out] tx_res_diff - Pointer to receive TX residency counter difference
+ * @param[out] rx_res_diff - Pointer to receive RX residency counter difference
+ * @return true if L1 state is active/detected, false otherwise
+ */
+bool data_smpl_read_d2dss_l1_state(uint8_t interface_id, uint64_t* tx_res_diff, uint64_t* rx_res_diff);
+
+/**
+ * @brief Process D2DSS link telemetry data for all interfaces
+ *
+ * This function processes telemetry data for all 8 D2DSS interfaces (0-7)
+ * and aggregates the data using compute metrics.
+ */
+void data_smpl_update_metrics_for_d2d_link_telemetry(void);
+
+/**
+ * @brief Reset D2DSS link telemetry counters for all interfaces.
+ * This function resets all PMU counters and telemetry data for D2DSS interfaces.
+ * 
+ * @return none
+ */
+void data_smpl_d2dss_link_tlm_reset(void);

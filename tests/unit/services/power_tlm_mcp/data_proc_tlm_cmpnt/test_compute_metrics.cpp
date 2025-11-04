@@ -1237,6 +1237,71 @@ TEST_FUNCTION(test_comp_metrics_for_per_die_mesh_tlm_accumulation, test_setup, t
     assert_int_equal(computed_metrics_2_mins.mesh.die_mesh_pwr.delivered_perf_count, delivered_perf_count * 2);
 }
 
+// D2D compute metrics test - success case
+TEST_FUNCTION(test_comp_metrics_for_single_d2dss_interface_all_links_success, test_setup, test_teardown)
+{
+    // Setup test data - simulate D2D counter arrays for all 3 link states (L0, L0s, L1)
+    uint64_t tx_res_counters[NUMBER_OF_D2D_LINKS_STATE] = {100, 200, 300};
+    uint64_t rx_res_counters[NUMBER_OF_D2D_LINKS_STATE] = {150, 250, 350};
+    uint64_t bw_tx_counters[NUMBER_OF_D2D_LINKS_STATE] = {110, 210, 310};
+    uint64_t bw_rx_counters[NUMBER_OF_D2D_LINKS_STATE] = {120, 220, 320};
+
+    uint8_t test_interface_id = 0;
+
+    // Clear computed metrics before test
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    // Call the function
+    comp_metrics_for_single_d2dss_interface_all_links(test_interface_id, &tx_res_counters, &rx_res_counters, &bw_tx_counters, &bw_rx_counters);
+
+    // Verify that metrics were updated for the specified interface
+    // Check all 3 link states (L0, L0s, L1)
+    for (uint8_t link_state = 0; link_state < NUMBER_OF_D2D_LINKS_STATE; link_state++)
+    {
+        assert_int_equal(computed_metrics_2_mins.d2dss[test_interface_id].d2d_link[link_state].tx_residency_count,
+                         tx_res_counters[link_state]);
+        assert_int_equal(computed_metrics_2_mins.d2dss[test_interface_id].d2d_link[link_state].rx_residency_count,
+                         rx_res_counters[link_state]);
+        assert_int_equal(computed_metrics_2_mins.d2dss[test_interface_id].d2d_link[link_state].bw_tx_flit_count,
+                         bw_tx_counters[link_state]);
+        assert_int_equal(computed_metrics_2_mins.d2dss[test_interface_id].d2d_link[link_state].bw_rx_flit_count,
+                         bw_rx_counters[link_state]);
+    }
+}
+
+// D2D compute metrics test - accumulation behavior
+TEST_FUNCTION(test_comp_metrics_for_single_d2dss_interface_all_links_accumulation, test_setup, test_teardown)
+{
+    // Setup test data
+    uint64_t tx_res_counters[NUMBER_OF_D2D_LINKS_STATE] = {10, 20, 30};
+    uint64_t rx_res_counters[NUMBER_OF_D2D_LINKS_STATE] = {15, 25, 35};
+    uint64_t bw_tx_counters[NUMBER_OF_D2D_LINKS_STATE] = {11, 21, 31};
+    uint64_t bw_rx_counters[NUMBER_OF_D2D_LINKS_STATE] = {12, 22, 32};
+
+    uint8_t test_interface_id = 2;
+
+    // Clear computed metrics
+    memset(&computed_metrics_2_mins, 0, sizeof(computed_metrics_2_mins));
+
+    // Call the function multiple times to test accumulation
+    comp_metrics_for_single_d2dss_interface_all_links(test_interface_id, &tx_res_counters, &rx_res_counters, &bw_tx_counters, &bw_rx_counters);
+
+    comp_metrics_for_single_d2dss_interface_all_links(test_interface_id, &tx_res_counters, &rx_res_counters, &bw_tx_counters, &bw_rx_counters);
+
+    // Verify accumulation behavior - counters should accumulate (add) on each call
+    for (uint8_t link_state = 0; link_state < NUMBER_OF_D2D_LINKS_STATE; link_state++)
+    {
+        assert_int_equal(computed_metrics_2_mins.d2dss[test_interface_id].d2d_link[link_state].tx_residency_count,
+                         tx_res_counters[link_state] * 2);
+        assert_int_equal(computed_metrics_2_mins.d2dss[test_interface_id].d2d_link[link_state].rx_residency_count,
+                         rx_res_counters[link_state] * 2);
+        assert_int_equal(computed_metrics_2_mins.d2dss[test_interface_id].d2d_link[link_state].bw_tx_flit_count,
+                         bw_tx_counters[link_state] * 2);
+        assert_int_equal(computed_metrics_2_mins.d2dss[test_interface_id].d2d_link[link_state].bw_rx_flit_count,
+                         bw_rx_counters[link_state] * 2);
+    }
+}
+
 TEST_FUNCTION(test_comp_metrics_for_single_core_histogram, test_setup, test_teardown)
 {
     uint8_t core_id = TEST_CORE_ID;
@@ -1389,13 +1454,15 @@ TEST_FUNCTION(test_comp_metrics_for_single_core_histogram_disabled, test_setup_s
     comp_metrics_for_single_core_histogram(core_id, 900, 800);
 
     // If we reach here, the test passed - the function handled the disabled state gracefully
-} /**
-   * @brief Test that comp_metrics_for_single_core_aging_counters handles disabled 24hr metrics gracefully
-   *
-   * When initialized with is_single_die_system=true, the 24hr metrics are disabled and
-   * p_computed_metrics_24_hrs is set to NULL. This test verifies that calling
-   * comp_metrics_for_single_core_aging_counters() in this state does not crash and returns early.
-   */
+}
+
+/**
+ * @brief Test that comp_metrics_for_single_core_aging_counters handles disabled 24hr metrics gracefully
+ *
+ * When initialized with is_single_die_system=true, the 24hr metrics are disabled and
+ * p_computed_metrics_24_hrs is set to NULL. This test verifies that calling
+ * comp_metrics_for_single_core_aging_counters() in this state does not crash and returns early.
+ */
 TEST_FUNCTION(test_comp_metrics_for_single_core_aging_counters_disabled, test_setup_single_die, test_teardown)
 {
     uint8_t core_id = TEST_CORE_ID;

@@ -232,9 +232,11 @@ void data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(p_pwr_soc_element_die_mesh_t 
     function_called();
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(p_pwr_soc_element_d2d_link_t d2d_link_data)
+void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(uint8_t interface_id,
+                                                   pwr_soc_element_d2d_link_t (*d2d_link_data)[NUMBER_OF_D2D_LINKS_STATE])
 {
-    memset(d2d_link_data, 0xFF, sizeof(pwr_soc_element_d2d_link_t));
+    FPFW_UNUSED(interface_id);
+    memset(d2d_link_data, 0xFF, sizeof(pwr_soc_element_d2d_link_t) * NUMBER_OF_D2D_LINKS_STATE);
 
     function_called();
 }

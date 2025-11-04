@@ -51,6 +51,7 @@ extern soc_runtime_info_t soc_rt;
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 extern computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins;
 extern mpam_data_t mpam_staging[NUMBER_OF_MPAMS];
+extern d2dss_runtime_info_t d2dss_rt[NUMBER_OF_D2D_INTERFACES];
 extern bool core_is_active[NUMBER_OF_CORES_PER_DIE];
 bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
 }
@@ -4023,4 +4024,831 @@ TEST_FUNCTION(test_data_smpl_update_core_histogram, test_setup, test_teardown)
         }
     }
     assert_int_equal(total_histogram_entries, active_cores);
+}
+
+TEST_FUNCTION(test_data_smpl_d2dss_link_tlm_reset, test_setup, test_teardown)
+{
+    // Pre-populate d2dss_rt with some non-zero data to verify it gets cleared
+    for (uint8_t i = 0; i < NUMBER_OF_D2D_INTERFACES; i++)
+    {
+        d2dss_rt[i].latest_tx_res_counter[D2D_LINK_L0] = 0x1000 + i;
+        d2dss_rt[i].latest_rx_res_counter[D2D_LINK_L0] = 0x2000 + i;
+        d2dss_rt[i].latest_bw_tx_flit_counter[D2D_LINK_L0] = 0x3000 + i;
+        d2dss_rt[i].latest_bw_rx_flit_counter[D2D_LINK_L0] = 0x4000 + i;
+    }
+
+    // Setup mock expectations for d2dss_pmu_init calls
+
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        for (uint8_t event_source = 0; event_source <= D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT; event_source++)
+        {
+            expect_value(__wrap_d2dss_pmu_init, d2dss_index, interface_id);
+            expect_value(__wrap_d2dss_pmu_init, event_number, event_source);
+            expect_value(__wrap_d2dss_pmu_init, event_count, 0); // 0 to disable
+            expect_value(__wrap_d2dss_pmu_init, enable, false);  // false to disable
+            will_return(__wrap_d2dss_pmu_init, 0);               // Return success
+        }
+    }
+
+    // Call the function to reset D2D telemetry
+    data_smpl_d2dss_link_tlm_reset();
+
+    // Verify that d2dss_rt runtime data has been cleared (memset to 0)
+    for (uint8_t i = 0; i < NUMBER_OF_D2D_INTERFACES; i++)
+    {
+        assert_int_equal(d2dss_rt[i].latest_tx_res_counter[D2D_LINK_L0], 0);
+        assert_int_equal(d2dss_rt[i].latest_rx_res_counter[D2D_LINK_L0], 0);
+        assert_int_equal(d2dss_rt[i].latest_bw_tx_flit_counter[D2D_LINK_L0], 0);
+        assert_int_equal(d2dss_rt[i].latest_bw_rx_flit_counter[D2D_LINK_L0], 0);
+
+        // Also verify other link states are cleared
+        assert_int_equal(d2dss_rt[i].latest_tx_res_counter[D2D_LINK_L0S], 0);
+        assert_int_equal(d2dss_rt[i].latest_rx_res_counter[D2D_LINK_L0S], 0);
+        assert_int_equal(d2dss_rt[i].latest_tx_res_counter[D2D_LINK_L1], 0);
+        assert_int_equal(d2dss_rt[i].latest_rx_res_counter[D2D_LINK_L1], 0);
+    }
+}
+
+TEST_FUNCTION(test_data_smpl_d2dss_link_tlm_reset_with_failure, test_setup, test_teardown)
+{
+    // Pre-populate d2dss_rt with some non-zero data to verify it gets cleared even on failure
+    for (uint8_t i = 0; i < NUMBER_OF_D2D_INTERFACES; i++)
+    {
+        d2dss_rt[i].latest_tx_res_counter[D2D_LINK_L0] = 0x5000 + i;
+        d2dss_rt[i].latest_rx_res_counter[D2D_LINK_L0] = 0x6000 + i;
+        d2dss_rt[i].latest_bw_tx_flit_counter[D2D_LINK_L0] = 0x7000 + i;
+        d2dss_rt[i].latest_bw_rx_flit_counter[D2D_LINK_L0] = 0x8000 + i;
+    }
+
+    // Setup mock expectations for d2dss_pmu_init calls - simulate some failures
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        for (uint8_t event_source = 0; event_source <= D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT; event_source++)
+        {
+            expect_value(__wrap_d2dss_pmu_init, d2dss_index, interface_id);
+            expect_value(__wrap_d2dss_pmu_init, event_number, event_source);
+            expect_value(__wrap_d2dss_pmu_init, event_count, 0); // 0 to disable
+            expect_value(__wrap_d2dss_pmu_init, enable, false);  // false to disable
+
+            // Simulate failure for some specific interface/event combinations
+            if (interface_id == 2 && event_source == D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY)
+            {
+                will_return(__wrap_d2dss_pmu_init, 1); // Return failure (non-zero)
+            }
+            else if (interface_id == 5 && event_source == D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT)
+            {
+                will_return(__wrap_d2dss_pmu_init, -1); // Return different failure code
+            }
+            else
+            {
+                will_return(__wrap_d2dss_pmu_init, 0); // Return success for others
+            }
+        }
+    }
+
+    // Call the function to reset D2D telemetry (should handle failures gracefully)
+    data_smpl_d2dss_link_tlm_reset();
+
+    // Verify that d2dss_rt runtime data has been cleared despite PMU init failures
+    // The function should still perform memset at the end even if some PMU inits fail
+    for (uint8_t i = 0; i < NUMBER_OF_D2D_INTERFACES; i++)
+    {
+        assert_int_equal(d2dss_rt[i].latest_tx_res_counter[D2D_LINK_L0], 0);
+        assert_int_equal(d2dss_rt[i].latest_rx_res_counter[D2D_LINK_L0], 0);
+        assert_int_equal(d2dss_rt[i].latest_bw_tx_flit_counter[D2D_LINK_L0], 0);
+        assert_int_equal(d2dss_rt[i].latest_bw_rx_flit_counter[D2D_LINK_L0], 0);
+
+        // Also verify other link states are cleared
+        assert_int_equal(d2dss_rt[i].latest_tx_res_counter[D2D_LINK_L0S], 0);
+        assert_int_equal(d2dss_rt[i].latest_rx_res_counter[D2D_LINK_L0S], 0);
+        assert_int_equal(d2dss_rt[i].latest_tx_res_counter[D2D_LINK_L1], 0);
+        assert_int_equal(d2dss_rt[i].latest_rx_res_counter[D2D_LINK_L1], 0);
+    }
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_pmu_counter_success, test_setup, test_teardown)
+{
+    uint64_t counter_value = 0;
+    uint8_t test_interface_id = 0;
+    uint8_t test_event_number = 1;
+
+    // Expected 64-bit counter value: 0x123456789ABCDEF0
+    uint32_t expected_counter_low = 0x9ABCDEF0;  // Lower 32 bits
+    uint32_t expected_counter_high = 0x12345678; // Upper 32 bits
+    uint64_t expected_full_counter = 0x123456789ABCDEF0ULL;
+
+    // Setup mock expectations for d2dss_pmu_read
+    // Use the correct parameter names from the mock function signature
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, test_event_number);
+    will_return(__wrap_d2dss_pmu_read, expected_counter_low);  // Counter low value
+    will_return(__wrap_d2dss_pmu_read, expected_counter_high); // Counter high value
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);        // Return success code
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_pmu_counter(test_interface_id, test_event_number, &counter_value);
+
+    // Verify the result - the function should succeed
+    assert_true(result);
+    // Verify that the counter value matches the expected 64-bit value
+    assert_int_equal(counter_value, expected_full_counter);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_pmu_counter_failure, test_setup, test_teardown)
+{
+    uint64_t counter_value = 0x999; // Pre-set to non-zero to verify it gets cleared on failure
+    uint8_t test_interface_id = 1;
+    uint8_t test_event_number = 2;
+
+    // Setup mock expectations for d2dss_pmu_read to return failure
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, test_event_number);
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter low value (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter high value (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 1); // Return non-zero (failure code)
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_pmu_counter(test_interface_id, test_event_number, &counter_value);
+
+    // Verify the result - the function should fail
+    assert_false(result);
+    // Verify that counter_value was set to 0 on error (as per implementation)
+    assert_int_equal(counter_value, 0);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_pmu_counter_invalid_event, test_setup, test_teardown)
+{
+    uint64_t counter_value = 0x999; // Pre-set to non-zero
+    uint8_t test_interface_id = 0;
+    uint8_t invalid_event_number = D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT + 1; // Invalid (too high)
+
+    // No mock expectations needed since function should return early due to validation
+
+    // Call the function with invalid event number
+    bool result = data_smpl_read_d2dss_pmu_counter(test_interface_id, invalid_event_number, &counter_value);
+
+    // Verify the result - the function should fail due to invalid event number
+    assert_false(result);
+    // counter_value should remain unchanged since function returns early
+    assert_int_equal(counter_value, 0x999);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0_state_success, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 0;
+    uint64_t rx_l0_count = 1000;
+    uint64_t tx_l0_count = 2000;
+    uint64_t rx_flit_count = 1000;
+    uint64_t tx_flit_count = 2000;
+
+    // Set previous values for residency counters
+    d2dss_rt[test_interface_id].latest_tx_res_counter[0] = tx_l0_count - 800; // Previous TX L0 value
+    d2dss_rt[test_interface_id].latest_rx_res_counter[0] = rx_l0_count - 500; // Previous RX L0 value
+
+    // Set previous values for bandwidth counters
+    d2dss_rt[test_interface_id].latest_bw_tx_flit_counter[0] = tx_flit_count - 800; // Previous TX flit value
+    d2dss_rt[test_interface_id].latest_bw_rx_flit_counter[0] = rx_flit_count - 500; // Previous RX flit value
+
+    // Declare local variables to receive diff values from output parameters
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+    uint64_t bw_tx_diff = 0;
+    uint64_t bw_rx_diff = 0;
+
+    // Setup mock expectations for all 4 PMU counter reads required by L0 state function
+    // PMU Counter 6 - Incoming RX PHY L0 residency count increment
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rx_l0_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rx_l0_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 4 - Off-die TX PHY L0 residency count increment
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)tx_l0_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(tx_l0_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 7 - Incoming RX PHY flit count increment
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rx_flit_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rx_flit_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 5 - Off-die TX PHY flit count increment
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_FLIT_COUNT);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)tx_flit_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(tx_flit_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // Call the function with output parameters
+    bool result = data_smpl_read_d2dss_l0_state(test_interface_id, &tx_res_diff, &rx_res_diff, &bw_tx_diff, &bw_rx_diff);
+    // Verify the function succeeded
+    assert_true(result);
+
+    // Verify the calculated differences match expected values
+    assert_int_equal(tx_res_diff, 800); // tx_l0_count - previous_tx_value = 2000 - 1200 = 800
+    assert_int_equal(rx_res_diff, 500); // rx_l0_count - previous_rx_value = 1000 - 500 = 500
+    assert_int_equal(bw_tx_diff, 800);  // tx_flit_count - previous_tx_flit = 2000 - 1200 = 800
+    assert_int_equal(bw_rx_diff, 500);  // rx_flit_count - previous_rx_flit = 1000 - 500 = 500
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0_state_failure_rx_l0_residency, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 1;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+    uint64_t bw_tx_diff = 0;
+    uint64_t bw_rx_diff = 0;
+
+    // PMU Counter 6 - Incoming RX PHY L0 residency count (first call that will fail)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter low (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter high (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 1); // Return failure (non-zero)
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l0_state(test_interface_id, &tx_res_diff, &rx_res_diff, &bw_tx_diff, &bw_rx_diff);
+
+    // Verify the function failed as expected
+    assert_false(result);
+
+    // Verify that runtime tracking variables remain at their initial state (0)
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0], 0);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0_state_failure_tx_l0_residency, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 2;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+    uint64_t bw_tx_diff = 0;
+    uint64_t bw_rx_diff = 0;
+
+    // PMU Counter 6 - RX PHY L0 residency (success)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 1000); // Counter low
+    will_return(__wrap_d2dss_pmu_read, 0);    // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 4 - TX PHY L0 residency (failure)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 0);  // Counter low (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 0);  // Counter high (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, -1); // Return failure
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l0_state(test_interface_id, &tx_res_diff, &rx_res_diff, &bw_tx_diff, &bw_rx_diff);
+
+    // Verify the function failed as expected
+    assert_false(result);
+
+    // Verify that runtime tracking variables remain at their initial state (0)
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0], 0);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0_state_failure_rx_flit_count, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 3;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+    uint64_t bw_tx_diff = 0;
+    uint64_t bw_rx_diff = 0;
+
+    // PMU Counter 6 - RX PHY L0 residency (success)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 1500); // Counter low
+    will_return(__wrap_d2dss_pmu_read, 0);    // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 4 - TX PHY L0 residency (success)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 2000); // Counter low
+    will_return(__wrap_d2dss_pmu_read, 0);    // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 7 - RX PHY flit count (failure)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT);
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter low (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter high (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 2); // Return failure
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l0_state(test_interface_id, &tx_res_diff, &rx_res_diff, &bw_tx_diff, &bw_rx_diff);
+
+    // Verify the function failed as expected
+    assert_false(result);
+
+    // Verify that the residency counters were updated before failure occurred
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0], 2000);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0], 1500);
+    // Bandwidth counters should remain at initial state since failure occurred before updating them
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0], 0);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0_state_failure_tx_flit_count, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 4;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+    uint64_t bw_tx_diff = 0;
+    uint64_t bw_rx_diff = 0;
+
+    // PMU Counter 6 - RX PHY L0 residency (success)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 2500); // Counter low
+    will_return(__wrap_d2dss_pmu_read, 0);    // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 4 - TX PHY L0 residency (success)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 3000); // Counter low
+    will_return(__wrap_d2dss_pmu_read, 0);    // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 7 - RX PHY flit count (success)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT);
+    will_return(__wrap_d2dss_pmu_read, 500); // Counter low
+    will_return(__wrap_d2dss_pmu_read, 0);   // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 5 - TX PHY flit count (failure)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_FLIT_COUNT);
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter low (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter high (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 5); // Return failure
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l0_state(test_interface_id, &tx_res_diff, &rx_res_diff, &bw_tx_diff, &bw_rx_diff);
+
+    // Verify the function failed as expected
+    assert_false(result);
+
+    // Verify that the residency counters were updated before failure occurred
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0], 3000);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0], 2500);
+    // Bandwidth counters should remain at initial state since failure occurred before completing bandwidth updates
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0], 0);
+}
+
+// D2D L0s state read test
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0s_state_success, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 1;
+    uint64_t rx_l0s_count = 1000;
+    uint64_t tx_l0s_count = 2000;
+
+    uint64_t rx_flit_count = 1000;
+    uint64_t tx_flit_count = 2000;
+
+    // Set previous values for residency counters
+    d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0S] = tx_l0s_count - 800; // Previous TX L0 value
+    d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0S] = rx_l0s_count - 500; // Previous RX L0 value
+
+    // Set previous values for bandwidth counters
+    d2dss_rt[test_interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0S] = tx_flit_count - 800; // Previous TX flit value
+    d2dss_rt[test_interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0S] = rx_flit_count - 500; // Previous RX flit value
+
+    // Declare local variables to receive diff values from output parameters
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+
+    // Setup mock expectations for L0s state detection (only 2 PMU counters)
+    // PMU Counter 0 - Incoming RX PHY L0s residency count increment
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0S_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rx_l0s_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rx_l0s_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 2 - Off-die TX PHY L0s residency count increment
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L0S_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)tx_l0s_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(tx_l0s_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // Call the function with output parameters
+    bool result = data_smpl_read_d2dss_l0s_state(test_interface_id, &tx_res_diff, &rx_res_diff);
+
+    // Verify the function succeeded
+    assert_true(result);
+
+    assert_int_equal(tx_res_diff, 800);
+    assert_int_equal(rx_res_diff, 500);
+}
+
+// D2D L1 state read test
+TEST_FUNCTION(test_data_smpl_read_d2dss_l1_state_success, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 0;
+    uint64_t rx_l1_count = 3000;
+    uint64_t tx_l1_count = 4000;
+
+    d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L1] = rx_l1_count - 800; // Previous value
+    d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L1] = tx_l1_count - 500; // Previous value
+
+    // Declare local variables to receive diff values from output parameters
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+
+    // Setup mock expectations for L1 state detection (only 2 PMU counters)
+    // PMU Counter 1 - Incoming RX PHY L1 residency count increment
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L1_RESIDENCY);
+
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rx_l1_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rx_l1_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+    // PMU Counter 3 - Off-die TX PHY L1 residency count increment
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L1_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)tx_l1_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(tx_l1_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // Call the function with output parameters
+    bool result = data_smpl_read_d2dss_l1_state(test_interface_id, &tx_res_diff, &rx_res_diff);
+
+    // Verify the function succeeded
+    assert_true(result);
+
+    assert_int_equal(tx_res_diff, 500);
+    assert_int_equal(rx_res_diff, 800);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0s_state_failure_rx_l0s_residency, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 2;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+
+    // PMU Counter 0 - RX PHY L0s residency (failure)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0S_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter low (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter high (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 1); // Return failure (non-zero)
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l0s_state(test_interface_id, &tx_res_diff, &rx_res_diff);
+
+    // Verify the function failed as expected
+    assert_false(result);
+
+    // Verify that runtime tracking variables remain at their initial state (0)
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0S], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0S], 0);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0s_state_failure_tx_l0s_residency, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 3;
+    uint64_t rx_l0s_count = 1500;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+
+    // PMU Counter 0 - RX PHY L0s residency (success)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0S_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rx_l0s_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rx_l0s_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 2 - TX PHY L0s residency (failure)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L0S_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 0);  // Counter low (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 0);  // Counter high (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, -1); // Return failure
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l0s_state(test_interface_id, &tx_res_diff, &rx_res_diff);
+
+    // Verify the function failed as expected
+    assert_false(result);
+
+    // Verify that runtime tracking variables remain at their initial state (0)
+    // since failure occurred before updating any counters
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0S], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0S], 0);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l1_state_failure_rx_l1_residency, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 4;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+
+    // PMU Counter 1 - RX PHY L1 residency (failure)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L1_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter low (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter high (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 2); // Return failure (non-zero)
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l1_state(test_interface_id, &tx_res_diff, &rx_res_diff);
+
+    // Verify the function failed as expected
+    assert_false(result);
+
+    // Verify that runtime tracking variables remain at their initial state (0)
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L1], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L1], 0);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l1_state_failure_tx_l1_residency, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 5;
+    uint64_t rx_l1_count = 2500;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+
+    // PMU Counter 1 - RX PHY L1 residency (success)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L1_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rx_l1_count);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rx_l1_count >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 3 - TX PHY L1 residency (failure)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L1_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter low (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 0); // Counter high (don't care on failure)
+    will_return(__wrap_d2dss_pmu_read, 3); // Return failure
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l1_state(test_interface_id, &tx_res_diff, &rx_res_diff);
+
+    // Verify the function failed as expected
+    assert_false(result);
+
+    // Verify that runtime tracking variables remain at their initial state (0)
+    // since failure occurred before updating any counters
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L1], 0);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L1], 0);
+}
+
+// Counter Rollover Tests - Test 64-bit counter wraparound scenarios
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0_state_counter_rollover, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 6;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+    uint64_t bw_tx_diff = 0;
+    uint64_t bw_rx_diff = 0;
+
+    // Simulate counter near max value (just before rollover)
+    uint64_t near_max_value = 0xFFFFFFFFFFFFFFF0ULL;    // Close to UINT64_MAX
+    uint64_t rolled_over_value = 0x0000000000000010ULL; // After rollover
+
+    // First call - Set baseline near maximum
+    d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0] = near_max_value - 1000;
+    d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0] = near_max_value - 800;
+    d2dss_rt[test_interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0] = near_max_value - 600;
+    d2dss_rt[test_interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0] = near_max_value - 400;
+
+    // Setup mock expectations - counters have rolled over
+    // PMU Counter 6 - RX PHY L0 residency (rolled over)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rolled_over_value);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rolled_over_value >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 4 - TX PHY L0 residency (rolled over)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rolled_over_value);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rolled_over_value >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 7 - RX PHY flit count (rolled over)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rolled_over_value);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rolled_over_value >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 5 - TX PHY flit count (rolled over)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_FLIT_COUNT);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rolled_over_value);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rolled_over_value >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l0_state(test_interface_id, &tx_res_diff, &rx_res_diff, &bw_tx_diff, &bw_rx_diff);
+
+    // Verify the function succeeded
+    assert_true(result);
+
+    // Verify rollover calculation: (rolled_over_value - previous_value) wraps around correctly
+    // Expected diff = rolled_over_value + (UINT64_MAX - previous_value + 1)
+    // Due to unsigned arithmetic, this automatically handles rollover
+    uint64_t expected_tx_res_diff = rolled_over_value - (near_max_value - 1000);
+    uint64_t expected_rx_res_diff = rolled_over_value - (near_max_value - 800);
+    uint64_t expected_bw_tx_diff = rolled_over_value - (near_max_value - 600);
+    uint64_t expected_bw_rx_diff = rolled_over_value - (near_max_value - 400);
+
+    assert_int_equal(tx_res_diff, expected_tx_res_diff);
+    assert_int_equal(rx_res_diff, expected_rx_res_diff);
+    assert_int_equal(bw_tx_diff, expected_bw_tx_diff);
+    assert_int_equal(bw_rx_diff, expected_bw_rx_diff);
+
+    // Verify that runtime tracking variables were updated with new values
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0], rolled_over_value);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0], rolled_over_value);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0], rolled_over_value);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0], rolled_over_value);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l0s_state_counter_rollover, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 7;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+
+    // Simulate counter near max value (just before rollover)
+    uint64_t near_max_tx = 0xFFFFFFFFFFFFFF00ULL;
+    uint64_t near_max_rx = 0xFFFFFFFFFFFFFFF0ULL;
+    uint64_t rolled_over_tx = 0x0000000000000100ULL; // After rollover
+    uint64_t rolled_over_rx = 0x0000000000000050ULL;
+
+    // Set baseline near maximum
+    d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0S] = near_max_tx;
+    d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0S] = near_max_rx;
+
+    // Setup mock expectations - counters have rolled over
+    // PMU Counter 0 - RX PHY L0s residency (rolled over)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L0S_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rolled_over_rx);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rolled_over_rx >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 2 - TX PHY L0s residency (rolled over)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L0S_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)rolled_over_tx);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(rolled_over_tx >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l0s_state(test_interface_id, &tx_res_diff, &rx_res_diff);
+
+    // Verify the function succeeded
+    assert_true(result);
+
+    // Verify rollover calculation handles wraparound correctly
+    uint64_t expected_tx_diff = rolled_over_tx - near_max_tx;
+    uint64_t expected_rx_diff = rolled_over_rx - near_max_rx;
+
+    assert_int_equal(tx_res_diff, expected_tx_diff);
+    assert_int_equal(rx_res_diff, expected_rx_diff);
+
+    // Verify that runtime tracking variables were updated
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L0S], rolled_over_tx);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L0S], rolled_over_rx);
+}
+
+TEST_FUNCTION(test_data_smpl_read_d2dss_l1_state_counter_rollover, test_setup, test_teardown)
+{
+    uint8_t test_interface_id = 6;
+    uint64_t tx_res_diff = 0;
+    uint64_t rx_res_diff = 0;
+
+    // Simulate exact rollover scenario - counter at max, then wraps to 0
+    uint64_t max_value = 0xFFFFFFFFFFFFFFFFULL;      // UINT64_MAX
+    uint64_t after_rollover = 0x0000000000000001ULL; // First value after max
+
+    // Set baseline at maximum
+    d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L1] = max_value;
+    d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L1] = max_value;
+
+    // Setup mock expectations - counters have rolled over from max to 1
+    // PMU Counter 1 - RX PHY L1 residency (rolled over)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_RX_PHY_L1_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)after_rollover);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(after_rollover >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // PMU Counter 3 - TX PHY L1 residency (rolled over)
+    expect_value(__wrap_d2dss_pmu_read, d2dss_index, test_interface_id);
+    expect_value(__wrap_d2dss_pmu_read, event_number, D2DSS_SOURCE_CNTR_TX_PHY_L1_RESIDENCY);
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)after_rollover);         // Counter low
+    will_return(__wrap_d2dss_pmu_read, (uint32_t)(after_rollover >> 32)); // Counter high
+    will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+    // Call the function
+    bool result = data_smpl_read_d2dss_l1_state(test_interface_id, &tx_res_diff, &rx_res_diff);
+
+    // Verify the function succeeded
+    assert_true(result);
+
+    // Verify rollover: after_rollover - max_value = 1 - UINT64_MAX = 2 (in unsigned arithmetic)
+    uint64_t expected_diff = after_rollover - max_value;
+
+    printf("\n L1 counter rollover test : %llu  and %llu \n", tx_res_diff, expected_diff);
+
+    assert_int_equal(tx_res_diff, expected_diff); // Should be 2
+    assert_int_equal(rx_res_diff, expected_diff); // Should be 2
+
+    // Verify that runtime tracking variables were updated
+    assert_int_equal(d2dss_rt[test_interface_id].latest_tx_res_counter[D2D_LINK_L1], after_rollover);
+    assert_int_equal(d2dss_rt[test_interface_id].latest_rx_res_counter[D2D_LINK_L1], after_rollover);
+}
+
+// D2D PMU initialization test - success case
+TEST_FUNCTION(test_data_smpl_init_d2dss_pmu_counters_success, test_setup, test_teardown)
+{
+    // Setup mock expectations for d2dss_pmu_init
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+
+        for (uint8_t event_source = 0; event_source <= D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT; event_source++)
+        {
+            expect_value(__wrap_d2dss_pmu_init, d2dss_index, interface_id);
+            expect_value(__wrap_d2dss_pmu_init, event_number, event_source);
+            if (event_source == D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY || event_source == D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY)
+            {
+                expect_value(__wrap_d2dss_pmu_init, event_count, 2); // L0 residency counters need config = 2
+            }
+            else
+            {
+                expect_value(__wrap_d2dss_pmu_init, event_count, 1);
+            }
+            expect_value(__wrap_d2dss_pmu_init, enable, true); // true to enable
+            will_return(__wrap_d2dss_pmu_init, 0);             // Return success
+        }
+    }
+
+    // Call the function
+    data_smpl_init_d2dss_pmu_counters();
+
+    // Function should initialize all PMU counters successfully
+}
+
+// D2D PMU initialization test - failure case
+TEST_FUNCTION(test_data_smpl_init_d2dss_pmu_counters_failure, test_setup, test_teardown)
+{
+    // Setup mock expectations for d2dss_pmu_init - simulate failure on interface 1, event 2
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        for (uint8_t event_source = 0; event_source <= D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT; event_source++)
+        {
+            expect_value(__wrap_d2dss_pmu_init, d2dss_index, interface_id);
+            expect_value(__wrap_d2dss_pmu_init, event_number, event_source);
+            if (event_source == D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY || event_source == D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY)
+            {
+                expect_value(__wrap_d2dss_pmu_init, event_count, 2); // L0 residency counters need config = 2
+            }
+            else
+            {
+                expect_value(__wrap_d2dss_pmu_init, event_count, 1);
+            }
+            expect_value(__wrap_d2dss_pmu_init, enable, true); // true to enable
+
+            // Simulate failure on interface 1, event 2 (arbitrary choice for test)
+            if (interface_id == 1 && event_source == 2)
+            {
+                will_return(__wrap_d2dss_pmu_init, 1); // Return failure (non-zero)
+            }
+            else
+            {
+                will_return(__wrap_d2dss_pmu_init, 0); // Return success
+            }
+        }
+    }
+
+    // Call the function
+    data_smpl_init_d2dss_pmu_counters();
+
+    // Function should handle failures gracefully and continue with remaining initializations
 }

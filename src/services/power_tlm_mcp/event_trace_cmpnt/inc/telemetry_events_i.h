@@ -528,5 +528,26 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     PwrTlmMtsMissedReadComplete,
                     FPFW_ET_LEVEL_WARNING)
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    94,
+                    LogPMUcounterReadFailed,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, counter_id))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    95,
+                    LogD2DSSPMUCounterInitFailed,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, interface_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, event_number),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, event_config))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
+                    96,
+                    LogD2DSSPMUCounterResetFailed,
+                    FPFW_ET_LEVEL_ERROR,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, interface_id),
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, event_number))
+
 /*--------- Function Prototypes ----------*/
 

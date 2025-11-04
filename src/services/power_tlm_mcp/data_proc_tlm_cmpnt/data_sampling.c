@@ -57,6 +57,7 @@ soc_runtime_info_t soc_rt = {0};
 dimm_runtime_info_t dimm_rt = {0};
 mpam_runtime_info_t mpam_rt[NUMBER_OF_MPAMS] = {0};
 mpam_data_t mpam_staging[NUMBER_OF_MPAMS] = {0};
+d2dss_runtime_info_t d2dss_rt[NUMBER_OF_D2D_INTERFACES] = {0};
 dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
 // cstate TFA timestamp data  base pointer
 cstate_instr_timestamp_t* cstate_tfa_timestamp_base =
@@ -1497,4 +1498,280 @@ void data_smpl_die_mesh_tlm_reset(void)
 {
     // Reset the mesh telemetry hardware block
     mesh_clock_telemetry(false, PER_DIE_MESH_PWR_TLM_INTERVAL); // Disable mesh telemetry
+}
+
+void data_smpl_init_d2dss_pmu_counters(void)
+{
+    // Initialize D2DSS PMU counters for all 8 interfaces (0-7), each interface has 8 counters
+    // and Each interface needs specific PMU events configured
+
+    // PMU configuration based on the specified events
+    // PMU 0 -  Incoming RX PHY L0s residency count increment
+    // PMU 1 -  Incoming RX PHY L1 residency count increment
+    // PMU 2 -  Off-die TX PHY L0s residency count increment
+    // PMU 3 -  Off-die TX PHY L1 residency count increment
+    // PMU 4 -   Off-die TX PHY L0 residency count increment
+    // PMU 5 -  Off-die TX PHY flit count increment
+    // PMU 6 -  Incoming RX PHY L0 residency count increment
+    // PMU 7 -  Incoming RX PHY flit count increment
+
+    // Initialize PMU counters for all D2DSS interfaces (0-7)
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        for (uint8_t d2d_event_source = 0; d2d_event_source <= D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT; d2d_event_source++)
+        {
+            // default event config will be 0x01 but for L0 TX and L0 RX residency it should be 0x02;
+            uint8_t event_config = (d2d_event_source == D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY ||
+                                    d2d_event_source == D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY)
+                                       ? 2
+                                       : 1; // Default event config
+            // Initialize the PMU counter for this interface and event
+            int result = d2dss_pmu_init(interface_id,
+                                        d2d_event_source,
+                                        event_config, // event config
+                                        true);        // enable = true
+
+            if (result != SILIBS_SUCCESS)
+            {
+                FPFW_ET_LOG(LogD2DSSPMUCounterInitFailed, interface_id, d2d_event_source, event_config);
+            }
+        }
+    }
+}
+
+void data_smpl_d2dss_link_tlm_reset(void)
+{
+    // Reset D2DSS PMU counters for all interfaces
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        for (uint8_t d2d_event_source = 0; d2d_event_source <= D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT; d2d_event_source++)
+        {
+            // Disable the PMU counter for this interface and event
+            int result = d2dss_pmu_init(interface_id,
+                                        d2d_event_source,
+                                        0,    // event config = 0 to disable
+                                        false // enable = false
+            );
+
+            if (result != SILIBS_SUCCESS)
+            {
+                FPFW_ET_LOG(LogD2DSSPMUCounterResetFailed, interface_id, d2d_event_source);
+            }
+        }
+    }
+    // Clear d2dss runtime data as it hold the last power package counters latest values.
+    memset(d2dss_rt, 0, sizeof(d2dss_rt));
+}
+
+bool data_smpl_read_d2dss_pmu_counter(uint8_t interface_id, uint8_t event_number, uint64_t* counter_value)
+{
+    if (event_number > D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT)
+    {
+        return false;
+    }
+    uint32_t counter_low = 0;
+    uint32_t counter_high = 0;
+    // Read PMU counter using silibs API
+    int result = d2dss_pmu_read(interface_id, event_number, (uintptr_t)&counter_low, (uintptr_t)&counter_high);
+
+    if (result != SILIBS_SUCCESS)
+    {
+
+        *counter_value = 0; // Set to 0 on error
+        return false;
+    }
+
+    // Combine high and low 32-bit values into 64-bit counter
+    *counter_value = ((uint64_t)counter_high << 32) | counter_low;
+    return true;
+}
+
+bool data_smpl_read_d2dss_l0_state(uint8_t interface_id, uint64_t* tx_res_diff, uint64_t* rx_res_diff, uint64_t* bw_tx_diff, uint64_t* bw_rx_diff)
+{
+    uint64_t rx_l0_count;
+    uint64_t tx_l0_count;
+    uint64_t rx_flit_count;
+    uint64_t tx_flit_count;
+
+    // PMU 6 - Incoming RX PHY L0 residency count increment
+    if (data_smpl_read_d2dss_pmu_counter(interface_id, D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY, &rx_l0_count) != true)
+    {
+        FPFW_ET_LOG(LogPMUcounterReadFailed, D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY);
+        return false;
+    }
+
+    // PMU 4 - Off-die TX PHY L0 residency count increment
+    if (data_smpl_read_d2dss_pmu_counter(interface_id, D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY, &tx_l0_count) != true)
+    {
+        FPFW_ET_LOG(LogPMUcounterReadFailed, D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY);
+        return false;
+    }
+    if (d2dss_rt[interface_id].latest_tx_res_counter[D2D_LINK_L0] == 0 &&
+        d2dss_rt[interface_id].latest_rx_res_counter[D2D_LINK_L0] == 0)
+    { // First time reading the counters, set diff to zero
+        *tx_res_diff = 0;
+        *rx_res_diff = 0;
+    }
+    else
+    {
+        *tx_res_diff = tx_l0_count - d2dss_rt[interface_id].latest_tx_res_counter[D2D_LINK_L0];
+        *rx_res_diff = rx_l0_count - d2dss_rt[interface_id].latest_rx_res_counter[D2D_LINK_L0];
+    }
+    //  update latest counters for next diff calculation
+    d2dss_rt[interface_id].latest_tx_res_counter[D2D_LINK_L0] = tx_l0_count;
+    d2dss_rt[interface_id].latest_rx_res_counter[D2D_LINK_L0] = rx_l0_count;
+
+    // PMU 7 - Incoming RX PHY flit count increment
+    if (data_smpl_read_d2dss_pmu_counter(interface_id, D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT, &rx_flit_count) != true)
+    {
+        FPFW_ET_LOG(LogPMUcounterReadFailed, D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT);
+        return false;
+    }
+    // PMU 5 - Off-die TX PHY flit count increment
+    if (data_smpl_read_d2dss_pmu_counter(interface_id, D2DSS_SOURCE_CNTR_TX_PHY_FLIT_COUNT, &tx_flit_count) != true)
+    {
+        FPFW_ET_LOG(LogPMUcounterReadFailed, D2DSS_SOURCE_CNTR_TX_PHY_FLIT_COUNT);
+        return false;
+    }
+
+    if (d2dss_rt[interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0] == 0 &&
+        d2dss_rt[interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0] == 0)
+    {
+        // First time reading the counters, set diff to zero
+        *bw_tx_diff = 0;
+        *bw_rx_diff = 0;
+    }
+    else
+    {
+        *bw_tx_diff = tx_flit_count - d2dss_rt[interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0];
+        *bw_rx_diff = rx_flit_count - d2dss_rt[interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0];
+    }
+    // update latest counters for next diff calculation
+    d2dss_rt[interface_id].latest_bw_tx_flit_counter[D2D_LINK_L0] = tx_flit_count;
+    d2dss_rt[interface_id].latest_bw_rx_flit_counter[D2D_LINK_L0] = rx_flit_count;
+
+    return true;
+}
+
+bool data_smpl_read_d2dss_l0s_state(uint8_t interface_id, uint64_t* tx_res_diff, uint64_t* rx_res_diff)
+{
+    uint64_t rx_l0s_count;
+    uint64_t tx_l0s_count;
+    // For L0s measurement – counters on Tx side will measure the residency
+    // ref: https://microsoft.sharepoint.com/:w:/t/EchoFalls/EeRhcyq0Y25JpaCmHhAnJJ8BqNZDRS_yZ_rLdoE0sMwGVw section 9.2.6.1
+
+    // PMU 0 - Incoming RX PHY L0s residency count increment
+    if (data_smpl_read_d2dss_pmu_counter(interface_id, D2DSS_SOURCE_CNTR_RX_PHY_L0S_RESIDENCY, &rx_l0s_count) != true)
+    {
+        FPFW_ET_LOG(LogPMUcounterReadFailed, D2DSS_SOURCE_CNTR_RX_PHY_L0S_RESIDENCY);
+        return false;
+    }
+    // PMU 2 - Off-die TX PHY L0s residency count increment
+    if (data_smpl_read_d2dss_pmu_counter(interface_id, D2DSS_SOURCE_CNTR_TX_PHY_L0S_RESIDENCY, &tx_l0s_count) != true)
+    {
+        FPFW_ET_LOG(LogPMUcounterReadFailed, D2DSS_SOURCE_CNTR_TX_PHY_L0S_RESIDENCY);
+        return false;
+    }
+
+    if (d2dss_rt[interface_id].latest_tx_res_counter[D2D_LINK_L0S] == 0 &&
+        d2dss_rt[interface_id].latest_rx_res_counter[D2D_LINK_L0S] == 0)
+    {
+        // First time reading the counters, set diff to zero
+        *tx_res_diff = 0;
+        *rx_res_diff = 0;
+    }
+    else
+    {
+        *tx_res_diff = tx_l0s_count - d2dss_rt[interface_id].latest_tx_res_counter[D2D_LINK_L0S];
+        *rx_res_diff = rx_l0s_count - d2dss_rt[interface_id].latest_rx_res_counter[D2D_LINK_L0S];
+    }
+    // update latest counters for next diff calculation
+    d2dss_rt[interface_id].latest_tx_res_counter[D2D_LINK_L0S] = tx_l0s_count;
+    d2dss_rt[interface_id].latest_rx_res_counter[D2D_LINK_L0S] = rx_l0s_count;
+
+    // we don't set bw_tx_diff and bw_rx_diff here as L0s is a data idle state so tx and rx flit will be zero.
+    return true;
+}
+
+bool data_smpl_read_d2dss_l1_state(uint8_t interface_id, uint64_t* tx_res_diff, uint64_t* rx_res_diff)
+{
+    uint64_t rx_l1_count;
+    uint64_t tx_l1_count;
+
+    // PMU 1 - Incoming RX PHY L1 residency count increment
+    if (data_smpl_read_d2dss_pmu_counter(interface_id, D2DSS_SOURCE_CNTR_RX_PHY_L1_RESIDENCY, &rx_l1_count) != true)
+    {
+        FPFW_ET_LOG(LogPMUcounterReadFailed, D2DSS_SOURCE_CNTR_RX_PHY_L1_RESIDENCY);
+        return false;
+    }
+
+    // PMU 3 - Off-die TX PHY L1 residency count increment
+    if (data_smpl_read_d2dss_pmu_counter(interface_id, D2DSS_SOURCE_CNTR_TX_PHY_L1_RESIDENCY, &tx_l1_count) != true)
+    {
+        FPFW_ET_LOG(LogPMUcounterReadFailed, D2DSS_SOURCE_CNTR_TX_PHY_L1_RESIDENCY);
+        return false;
+    }
+
+    if (d2dss_rt[interface_id].latest_tx_res_counter[D2D_LINK_L1] == 0 &&
+        d2dss_rt[interface_id].latest_rx_res_counter[D2D_LINK_L1] == 0)
+    {
+        // First time reading the counters, set diff to zero
+        *tx_res_diff = 0;
+        *rx_res_diff = 0;
+    }
+    else
+    {
+        *tx_res_diff = tx_l1_count - d2dss_rt[interface_id].latest_tx_res_counter[D2D_LINK_L1];
+        *rx_res_diff = rx_l1_count - d2dss_rt[interface_id].latest_rx_res_counter[D2D_LINK_L1];
+    }
+
+    // update latest counters for next diff calculation
+    d2dss_rt[interface_id].latest_tx_res_counter[D2D_LINK_L1] = tx_l1_count;
+    d2dss_rt[interface_id].latest_rx_res_counter[D2D_LINK_L1] = rx_l1_count;
+
+    // we don't set bw_tx_diff and bw_rx_diff here because L1 is a clock gated state so tx and rx flit will be zero.
+    return true;
+}
+
+void data_smpl_update_metrics_for_d2d_link_telemetry(void)
+{
+    // Process telemetry data for all D2DSS interfaces (0-7)
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        // Declare stack variables for diff values
+        uint64_t d2d_link_tx_res_count_diff[NUMBER_OF_D2D_LINKS_STATE] = {0};
+        uint64_t d2d_link_rx_res_count_diff[NUMBER_OF_D2D_LINKS_STATE] = {0};
+        uint64_t d2d_link_bw_tx_flit_count_diff[NUMBER_OF_D2D_LINKS_STATE] = {0};
+        uint64_t d2d_link_bw_rx_flit_count_diff[NUMBER_OF_D2D_LINKS_STATE] = {0};
+
+        bool l0_status = false;
+        bool l0s_status = false;
+        bool l1_status = false;
+
+        // Read L0 state (has all 4 counters: tx_res, rx_res, bw_tx, bw_rx)
+        l0_status = data_smpl_read_d2dss_l0_state(interface_id,
+                                                  &d2d_link_tx_res_count_diff[D2D_LINK_L0],
+                                                  &d2d_link_rx_res_count_diff[D2D_LINK_L0],
+                                                  &d2d_link_bw_tx_flit_count_diff[D2D_LINK_L0],
+                                                  &d2d_link_bw_rx_flit_count_diff[D2D_LINK_L0]);
+
+        // Read L0s state (has 2 counters: tx_res, rx_res only, no bandwidth)
+        l0s_status = data_smpl_read_d2dss_l0s_state(interface_id,
+                                                    &d2d_link_tx_res_count_diff[D2D_LINK_L0S],
+                                                    &d2d_link_rx_res_count_diff[D2D_LINK_L0S]);
+
+        // Read L1 state (has 2 counters: tx_res, rx_res only, no bandwidth)
+        l1_status = data_smpl_read_d2dss_l1_state(interface_id,
+                                                  &d2d_link_tx_res_count_diff[D2D_LINK_L1],
+                                                  &d2d_link_rx_res_count_diff[D2D_LINK_L1]);
+
+        if (l0_status || l0s_status || l1_status)
+        {
+            comp_metrics_for_single_d2dss_interface_all_links(interface_id,
+                                                              &d2d_link_tx_res_count_diff,
+                                                              &d2d_link_rx_res_count_diff,
+                                                              &d2d_link_bw_tx_flit_count_diff,
+                                                              &d2d_link_bw_rx_flit_count_diff);
+        }
+    }
 }

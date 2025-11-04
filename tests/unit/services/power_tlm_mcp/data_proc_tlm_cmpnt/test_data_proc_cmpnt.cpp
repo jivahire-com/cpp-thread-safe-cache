@@ -26,6 +26,7 @@ extern "C" {
 extern dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE];
 bool data_proc_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
 extern aging_counter_t core_aging[NUMBER_OF_CORES_PER_DIE];
+extern bool in_band_publishing_active;
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -40,6 +41,7 @@ extern aging_counter_t core_aging[NUMBER_OF_CORES_PER_DIE];
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
+    in_band_publishing_active = true;
     return 0;
 }
 
@@ -118,12 +120,46 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_tlm_mode_enter_actions, test_setup, test_
     expect_value(__wrap_mesh_clock_telemetry, interval_count, PER_DIE_MESH_PWR_TLM_INTERVAL);
     expect_function_call(__wrap_mesh_clock_telemetry);
 
+    // Mock expectations for data_smpl_init_d2dss_pmu_counters() call
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        for (uint8_t event_source = 0; event_source <= D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT; event_source++)
+        {
+            expect_value(__wrap_d2dss_pmu_init, d2dss_index, interface_id);
+            expect_value(__wrap_d2dss_pmu_init, event_number, event_source);
+            if (event_source == D2DSS_SOURCE_CNTR_TX_PHY_L0_RESIDENCY || event_source == D2DSS_SOURCE_CNTR_RX_PHY_L0_RESIDENCY)
+            {
+                expect_value(__wrap_d2dss_pmu_init, event_count, 2); // L0 residency counters need config = 2
+            }
+            else
+            {
+                expect_value(__wrap_d2dss_pmu_init, event_count, 1);
+            }
+            expect_value(__wrap_d2dss_pmu_init, enable, true); // true to enable
+            will_return(__wrap_d2dss_pmu_init, 0);             // Return success
+        }
+    }
+
     data_proc_tlm_cmpnt_tlm_mode_enter_actions(TLM_OP_MODE_PUBLISHING);
 
     // Test TLM_OP_MODE_DISABLED case - should call data_smpl_die_mesh_tlm_reset()
     expect_value(__wrap_mesh_clock_telemetry, enable, false);
     expect_value(__wrap_mesh_clock_telemetry, interval_count, PER_DIE_MESH_PWR_TLM_INTERVAL);
     expect_function_call(__wrap_mesh_clock_telemetry);
+
+    // If data_smpl_init_d2dss_pmu_counters is also called in DISABLED mode, add mock expectations
+    // (assuming it's called to disable/reset the counters)
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        for (uint8_t event_source = 0; event_source <= D2DSS_SOURCE_CNTR_RX_PHY_FLIT_COUNT; event_source++)
+        {
+            expect_value(__wrap_d2dss_pmu_init, d2dss_index, interface_id);
+            expect_value(__wrap_d2dss_pmu_init, event_number, event_source);
+            expect_value(__wrap_d2dss_pmu_init, event_count, 0);
+            expect_value(__wrap_d2dss_pmu_init, enable, false); // false to disable in disabled mode
+            will_return(__wrap_d2dss_pmu_init, 0);              // Return success
+        }
+    }
 
     data_proc_tlm_cmpnt_tlm_mode_enter_actions(TLM_OP_MODE_DISABLED);
 }
@@ -161,6 +197,62 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_one_second_input_data, test_setup
     expect_value(__wrap_mesh_clock_telemetry, enable, true);
     expect_value(__wrap_mesh_clock_telemetry, interval_count, PER_DIE_MESH_PWR_TLM_INTERVAL);
     expect_function_call(__wrap_mesh_clock_telemetry);
+
+    // Set up mock expectations for D2DSS PMU read calls for all interfaces
+    // For each of the 8 D2D interfaces, each link state (L0, L0s, L1) will read multiple counters
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        // L0 state: 4 counters (RX L0 residency, TX L0 residency, RX flit count, TX flit count)
+        expect_any(__wrap_d2dss_pmu_read, d2dss_index);
+        expect_any(__wrap_d2dss_pmu_read, event_number);
+        will_return(__wrap_d2dss_pmu_read, 0); // counter_low
+        will_return(__wrap_d2dss_pmu_read, 0); // counter_high
+        will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+        expect_any(__wrap_d2dss_pmu_read, d2dss_index);
+        expect_any(__wrap_d2dss_pmu_read, event_number);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+        expect_any(__wrap_d2dss_pmu_read, d2dss_index);
+        expect_any(__wrap_d2dss_pmu_read, event_number);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+        expect_any(__wrap_d2dss_pmu_read, d2dss_index);
+        expect_any(__wrap_d2dss_pmu_read, event_number);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+        // L0s state: 2 counters (RX L0s residency, TX L0s residency)
+        expect_any(__wrap_d2dss_pmu_read, d2dss_index);
+        expect_any(__wrap_d2dss_pmu_read, event_number);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+        expect_any(__wrap_d2dss_pmu_read, d2dss_index);
+        expect_any(__wrap_d2dss_pmu_read, event_number);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+        // L1 state: 2 counters (RX L1 residency, TX L1 residency)
+        expect_any(__wrap_d2dss_pmu_read, d2dss_index);
+        expect_any(__wrap_d2dss_pmu_read, event_number);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+
+        expect_any(__wrap_d2dss_pmu_read, d2dss_index);
+        expect_any(__wrap_d2dss_pmu_read, event_number);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, 0);
+        will_return(__wrap_d2dss_pmu_read, SILIBS_SUCCESS);
+    }
 
     // Call the function under test
     data_proc_tlm_cmpnt_process_one_second_input_data();

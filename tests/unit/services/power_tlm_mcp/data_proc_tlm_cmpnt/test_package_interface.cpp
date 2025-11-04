@@ -630,10 +630,158 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data_max_values, tes
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data, test_setup, test_teardown)
 {
-    // TODO: Implement the rest of the record
-    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584673/?view=edit
-    pwr_soc_element_d2d_link_t d2d_link_data = {0};
-    data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(&d2d_link_data);
+    // Test case 1: Valid interface_id with populated data
+    pwr_soc_element_d2d_link_t d2d_link_data[NUMBER_OF_D2D_LINKS_STATE] = {{0}};
+    uint8_t valid_interface_id = 0;
+
+    // Set up test data in computed_metrics_2_mins for the d2d link interface
+    // Based on actual d2d link telemetry structure, we have:
+    // - tx_residency_count and rx_residency_count (converted to mS in output)
+    // -  bw_tx_flit_count  and bw_rx_flit_count (bandwidth counters)
+    // - link_id (link identifier)
+
+    // Set up test data for d2d link states (states 0, 1, and 2)
+    // Using DIE_MESH_FREQ_HZ = 2GHz, to get desired ms values: ms * 2,000,000,000 / 1000
+    // Bandwidth values are flit counts that will be converted to bytes using D2DSS_FLIT_COUNT_TO_BYTES (count * 64)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[0].tx_residency_count =
+        3000000000ULL; // TX residency count (converts to 1500 mS)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[0].rx_residency_count =
+        2800000000ULL; // RX residency count (converts to 1400 mS)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[0].bw_tx_flit_count =
+        2500; // TX flit count (converts to 2500*64 bytes)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[0].bw_rx_flit_count =
+        2400; // RX flit count (converts to 2400*64 bytes)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[0].link_id = 0; // Link ID
+
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[1].tx_residency_count =
+        600000000ULL; // TX residency count (converts to 300 mS)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[1].rx_residency_count =
+        500000000ULL; // RX residency count (converts to 250 mS)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[1].bw_tx_flit_count =
+        0; // TX flit count (converts to 0*64 bytes)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[1].bw_rx_flit_count =
+        0; // RX flit count (converts to 0*64 bytes)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[1].link_id = 1; // Link ID
+
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[2].tx_residency_count =
+        1000000000ULL; // TX residency count (converts to 500 mS)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[2].rx_residency_count =
+        800000000ULL; // RX residency count (converts to 400 mS)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[2].bw_tx_flit_count =
+        1200; // TX flit count (converts to 1200*64 bytes)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[2].bw_rx_flit_count =
+        1100; // RX flit count (converts to 1100*64 bytes)
+    computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link[2].link_id = 2; // Link ID
+
+    // Call the function under test
+    data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(valid_interface_id, &d2d_link_data);
+
+    // Now with the bug fixed, each array position gets populated correctly
+    assert_int_equal(d2d_link_data[0].tx_residency_mS, 1500);       // State 0 TX residency
+    assert_int_equal(d2d_link_data[0].rx_residency_mS, 1400);       // State 0 RX residency
+    assert_int_equal(d2d_link_data[0].bw_tx_flit_bytes, 2500 * 64); // State 0 TX bandwidth (flit count * 64 bytes)
+    assert_int_equal(d2d_link_data[0].bw_rx_flit_bytes, 2400 * 64); // State 0 RX bandwidth (flit count * 64 bytes)
+    assert_int_equal(d2d_link_data[0].link_id, 0);                  // State 0 Link ID
+
+    assert_int_equal(d2d_link_data[1].tx_residency_mS, 300);     // State 1 TX residency
+    assert_int_equal(d2d_link_data[1].rx_residency_mS, 250);     // State 1 RX residency
+    assert_int_equal(d2d_link_data[1].bw_tx_flit_bytes, 0 * 64); // State 1 TX bandwidth (flit count * 64 bytes)
+    assert_int_equal(d2d_link_data[1].bw_rx_flit_bytes, 0 * 64); // State 1 RX bandwidth (flit count * 64 bytes)
+    assert_int_equal(d2d_link_data[1].link_id, 1);               // State 1 Link ID
+
+    assert_int_equal(d2d_link_data[2].tx_residency_mS, 500);        // State 2 TX residency
+    assert_int_equal(d2d_link_data[2].rx_residency_mS, 400);        // State 2 RX residency
+    assert_int_equal(d2d_link_data[2].bw_tx_flit_bytes, 1200 * 64); // State 2 TX bandwidth (flit count * 64 bytes)
+    assert_int_equal(d2d_link_data[2].bw_rx_flit_bytes, 1100 * 64); // State 2 RX bandwidth (flit count * 64 bytes)
+    assert_int_equal(d2d_link_data[2].link_id, 2);                  // State 2 Link ID
+
+    // Test case 2: Invalid interface_id (out of bounds)
+    pwr_soc_element_d2d_link_t invalid_d2d_data[NUMBER_OF_D2D_LINKS_STATE];
+    memset(invalid_d2d_data, 0xFF, sizeof(invalid_d2d_data)); // Pre-fill with known values
+
+    uint8_t invalid_interface_id = NUMBER_OF_D2D_INTERFACES;
+
+    data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(invalid_interface_id, &invalid_d2d_data);
+
+    // For invalid interface_id, the data should remain unchanged (error case)
+    // Verify that the function didn't modify the pre-filled data
+    assert_int_equal(invalid_d2d_data[0].tx_residency_mS, 0xFFFFFFFFFFFFFFFF);
+    assert_int_equal(invalid_d2d_data[0].rx_residency_mS, 0xFFFFFFFFFFFFFFFF);
+    assert_int_equal(invalid_d2d_data[0].link_id, 0xFF);
+
+    // Test case 3: NULL pointer handling
+    data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(valid_interface_id, NULL);
+    // Function should handle NULL pointer gracefully without crashing
+
+    // Test case 4: Edge case - maximum valid interface_id
+    if (NUMBER_OF_D2D_INTERFACES > 1)
+    {
+        uint8_t max_interface_id = NUMBER_OF_D2D_INTERFACES - 1;
+
+        // Set up test data for maximum interface - need all states, but only state 2 will be used
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[0].tx_residency_count = 4000000000ULL; // Converts to 2000 mS
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[0].rx_residency_count = 3600000000ULL; // Converts to 1800 mS
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[0].bw_tx_flit_count = 5000;
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[0].bw_rx_flit_count = 4800;
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[0].link_id = 0;
+
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[1].tx_residency_count = 2000000000ULL; // Converts to 1000 mS
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[1].rx_residency_count = 1800000000ULL; // Converts to 900 mS
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[1].bw_tx_flit_count = 3000;
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[1].bw_rx_flit_count = 2800;
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[1].link_id = 1;
+
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[2].tx_residency_count =
+            6000000000ULL; // Converts to 3000 mS - final value
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[2].rx_residency_count =
+            5000000000ULL; // Converts to 2500 mS - final value
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[2].bw_tx_flit_count = 7000; // final value
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[2].bw_rx_flit_count = 6500; // final value
+        computed_metrics_2_mins.d2dss[max_interface_id].d2d_link[2].link_id = 2;             // final value
+
+        pwr_soc_element_d2d_link_t max_d2d_data[NUMBER_OF_D2D_LINKS_STATE] = {{0}};
+
+        data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(max_interface_id, &max_d2d_data);
+
+        // With bug fixed, all array positions get populated correctly
+        assert_int_equal(max_d2d_data[0].tx_residency_mS, 2000);       // State 0 value
+        assert_int_equal(max_d2d_data[0].rx_residency_mS, 1800);       // State 0 value
+        assert_int_equal(max_d2d_data[0].bw_tx_flit_bytes, 5000 * 64); // State 0 value
+        assert_int_equal(max_d2d_data[0].bw_rx_flit_bytes, 4800 * 64); // State 0 value
+        assert_int_equal(max_d2d_data[0].link_id, 0);                  // State 0 value
+
+        assert_int_equal(max_d2d_data[1].tx_residency_mS, 1000);       // State 1 value
+        assert_int_equal(max_d2d_data[1].rx_residency_mS, 900);        // State 1 value
+        assert_int_equal(max_d2d_data[1].bw_tx_flit_bytes, 3000 * 64); // State 1 value
+        assert_int_equal(max_d2d_data[1].bw_rx_flit_bytes, 2800 * 64); // State 1 value
+        assert_int_equal(max_d2d_data[1].link_id, 1);                  // State 1 value
+
+        assert_int_equal(max_d2d_data[2].tx_residency_mS, 3000);       // State 2 value
+        assert_int_equal(max_d2d_data[2].rx_residency_mS, 2500);       // State 2 value
+        assert_int_equal(max_d2d_data[2].bw_tx_flit_bytes, 7000 * 64); // State 2 value
+        assert_int_equal(max_d2d_data[2].bw_rx_flit_bytes, 6500 * 64); // State 2 value
+        assert_int_equal(max_d2d_data[2].link_id, 2);                  // State 2 value
+    }
+
+    // Test case 5: Zero values test
+    // Clear computed metrics and verify zero handling
+    memset(&computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link,
+           0,
+           sizeof(computed_metrics_2_mins.d2dss[valid_interface_id].d2d_link));
+
+    pwr_soc_element_d2d_link_t zero_d2d_data[NUMBER_OF_D2D_LINKS_STATE] = {{0xFF}}; // Pre-fill to verify clearing
+
+    data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(valid_interface_id, &zero_d2d_data);
+
+    // Verify zero values are handled correctly
+    for (uint8_t state = 0; state < NUMBER_OF_D2D_LINKS_STATE; state++)
+    {
+        assert_int_equal(zero_d2d_data[state].tx_residency_mS, 0);
+        assert_int_equal(zero_d2d_data[state].rx_residency_mS, 0);
+        assert_int_equal(zero_d2d_data[state].bw_tx_flit_bytes, 0);
+        assert_int_equal(zero_d2d_data[state].bw_rx_flit_bytes, 0);
+        assert_int_equal(zero_d2d_data[state].link_id, state);
+    }
 }
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_soc_max_temp_data, test_setup, test_teardown)

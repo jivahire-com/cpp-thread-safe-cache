@@ -249,11 +249,11 @@ void data_proc_tlm_cmpnt_get_pwr_soc_snsr_temp_data(uint16_t sensor_id, p_pwr_so
 void data_proc_tlm_cmpnt_get_pwr_soc_die_mesh_data(p_pwr_soc_element_die_mesh_t die_mesh_data);
 
 /**
- * @brief Get the soc d2d link data for the specified die.
- *
+ * @brief Get the soc d2d link data .
+ * @param[in] interface_id - The interface id to get the d2d link data for. 0 .. NUMBER_OF_D2D_INTERFACES-1
  * @param[out] d2d_link_data - Pointer to the structure to store the d2d link data in.
  */
-void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(p_pwr_soc_element_d2d_link_t d2d_link_data);
+void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(uint8_t interface_id, pwr_soc_element_d2d_link_t (*d2d_link_data)[NUMBER_OF_D2D_LINKS_STATE]);
 
 /**
  * @brief Get the soc maximum temperature data.
@@ -453,3 +453,5 @@ uint16_t data_proc_tlm_cmpnt_get_oob_dimm_avg_pwr_mW(uint8_t dimm_idx);
  * @return None
  */
 void data_proc_tlm_cmpnt_process_one_second_input_data(void);
+
+

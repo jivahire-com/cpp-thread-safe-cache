@@ -832,17 +832,21 @@ uint32_t package_create_pwr_soc_d2d_link_record(p_pwr_soc_record_d2d_link_t d2d_
 {
     populate_record_hdr(&d2d_link_record->record_header,
                         ++power_pkg_record_number[POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE],
-                        1,
+                        NUMBER_OF_D2D_INTERFACES,
                         sizeof(pwr_soc_record_d2d_link_t));
 
-    // This record is created per die, and each die has a single D2D link
-    populate_pwr_collection_hdr(&d2d_link_record->d2d_link_collection.collection_header,
-                                POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE,
-                                0,
-                                1,
-                                sizeof(pwr_soc_collection_d2d_link_t));
+    // This record is created per die, and each die has 8 D2D interfaces (0-7)
+    for (uint16_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        populate_pwr_collection_hdr(&d2d_link_record->d2d_link_collection[interface_id].collection_header,
+                                    POWER_TELEMETRY_ELEMENT_SOC_DIE_TO_DIE_LINK_STATE,
+                                    interface_id, // Use interface_id as collection_id
+                                    NUMBER_OF_D2D_LINKS_STATE,
+                                    sizeof(pwr_soc_collection_d2d_link_t));
 
-    data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(&d2d_link_record->d2d_link_collection.d2d_link_element);
+        data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(interface_id,
+                                                      &d2d_link_record->d2d_link_collection[interface_id].d2d_link_element);
+    }
 
     return sizeof(pwr_soc_record_d2d_link_t);
 }

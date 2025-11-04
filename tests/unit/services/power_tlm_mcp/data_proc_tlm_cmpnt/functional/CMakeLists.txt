@@ -24,6 +24,7 @@ set(SOURCES
     test_log_instantaneous_die_temperature_sensors_integration.cpp
     test_core_aging_counter_data.cpp
     log_vm_throttling_integration_test.cpp
+    log_memory_throttling_integration_test.cpp
     )
 
 add_executable(${TARGET} ${SOURCES})

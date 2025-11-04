@@ -1380,11 +1380,20 @@ TEST_FUNCTION(test_tower_error_injections, nullptr, nullptr)
     op_type->op = TOWER_EINJ_TARGET_BY_NODE;
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
-    will_return(__wrap_idhw_is_single_die_boot_en, false);
-    will_return(__wrap_idsw_get_die_id, 0);
-    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
-    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    will_return_always(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return_always(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
     will_return(__wrap_tower_fmu_inject_single_error, SILIBS_SUCCESS);
+    will_return_always(__wrap_ras_arm_fmu_agent_trigger_by_type, SILIBS_SUCCESS);
+    ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
+    assert_int_equal(ret, ACPI_EINJ_SUCCESS);
+
+    op_type->op = TOWER_EINJ_TARGET_BY_INDEX;
+    ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
+    assert_int_equal(ret, ACPI_EINJ_SUCCESS);
+
+    op_type->op = TOWER_EINJ_TARGET_RAW;
     ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
     assert_int_equal(ret, ACPI_EINJ_SUCCESS);
 }
@@ -1430,7 +1439,7 @@ TEST_FUNCTION(test_tower_error_injections_failures, nullptr, nullptr)
     ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
     assert_int_equal(ret, ACPI_EINJ_SUCCESS);
 
-    /* Silibs internal error */
+    /* Silibs internal errors */
     mock_einj_payload.component_group = ACPI_ERROR_DOMAIN_NITOWER;
     mock_einj_payload.component_instance = 0;
     mock_einj_payload.component_type = TOWER_D2DSS0;
@@ -1440,6 +1449,15 @@ TEST_FUNCTION(test_tower_error_injections_failures, nullptr, nullptr)
     will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
     will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
     will_return(__wrap_tower_fmu_inject_single_error, SILIBS_E_PARAM);
+    ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
+    assert_int_equal(ret, ACPI_EINJ_INVALID_ACCESS);
+
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_idsw_get_die_id, 0);
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_arm_fmu_agent_trigger_by_type, SILIBS_E_PARAM);
+    op_type->op = TOWER_EINJ_TARGET_RAW;
     ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
     assert_int_equal(ret, ACPI_EINJ_INVALID_ACCESS);
 }

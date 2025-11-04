@@ -214,3 +214,11 @@ silibs_status_t __wrap_tower_fmu_inject_single_error(uintptr_t tower_base_addr,
 
     return mock_type(silibs_status_t);
 }
+
+silibs_status_t __wrap_ras_arm_fmu_agent_trigger_by_type(ras_agent_entity_t* agent, uint64_t types)
+{
+    assert_non_null(agent);
+    assert_true(types != 0);
+
+    return mock_type(silibs_status_t);
+}

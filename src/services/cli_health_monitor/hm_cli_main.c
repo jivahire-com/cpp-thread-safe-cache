@@ -213,7 +213,7 @@ static PLACED_CODE FPFW_CLI_STATUS hm_inject_err_raw_cli(int argc, const char** 
 {
     if (argc < 9)
     {
-        FpFwCliPrint("usage: hm_inject_err_raw_cli <group> <type> <instance> <status> <operation> "
+        FpFwCliPrint("usage: hm_inject_err_raw <group> <type> <instance> <status> <operation> "
                      "<error_parameter_0> <error_parameter_1> <error_value>\n");
         return CLI_ERROR;
     }

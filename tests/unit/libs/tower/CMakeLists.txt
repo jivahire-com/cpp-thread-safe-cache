@@ -57,6 +57,7 @@ mock_target(${TARGET}
     ras_print_record
     system_info_is_hsp_present
     tower_fmu_inject_single_error
+    ras_arm_fmu_agent_trigger_by_type
     tower_get_ras_agent_entity
     tower_sequence_configure_towers
 )

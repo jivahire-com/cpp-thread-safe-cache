@@ -284,28 +284,21 @@ acpi_einj_cmd_status_t tower_error_injection_cb(ras_einj_info_t* einj_payload, v
             goto exit;
         }
         break;
-    /* All of the below fall-through for now */
     case TOWER_EINJ_TARGET_BY_INDEX:
-        /*
-         * Note: This block can be uncommented once SiLibs PR {304712} to re-add this function clears
-         * tower_fmu_inj_t inj = {.payload = {.err = op_type.type, .fmu_index = params.by_index.index}};
-         * status = ras_arm_fmu_agent_trigger_by_type(agent, inj.generic);
-         * if (status)
-         * {
-         *     goto exit;
-         * }
-         * break;
-         */
+        tower_fmu_inj_t inj = {.payload = {.err = op_type.type, .fmu_index = params.by_index.index}};
+        status = ras_arm_fmu_agent_trigger_by_type(agent, inj.generic);
+        if (status)
+        {
+            goto exit;
+        }
+        break;
     case TOWER_EINJ_TARGET_RAW:
-        /*
-         * Note: This block can be uncommented once SiLibs PR {304712} to re-add this function clears
-         * status = ras_arm_fmu_agent_trigger_by_type(agent, einj_payload->param_type.error_parameters[1]);
-         * if (status)
-         * {
-         *     goto exit;
-         * }
-         * break;
-         */
+        status = ras_arm_fmu_agent_trigger_by_type(agent, einj_payload->param_type.error_parameters[1]);
+        if (status)
+        {
+            goto exit;
+        }
+        break;
     default:
         FPFW_DBGPRINT_ALWAYS("|Tower| Error: Invalid injection type: (%d)\n", op_type.op);
         break;

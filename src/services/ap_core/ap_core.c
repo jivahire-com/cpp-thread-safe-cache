@@ -70,7 +70,6 @@ void ap_core_die_config_handover_completion(void* p_request)
 
 static void ap_core_die_config_handover(pssi_startup_notification_request_t p_request)
 {
-
     s_ap_core_ctx.outstanding_request = (pap_core_asynchronous_request_t)p_request;
 
     if (s_ap_core_ctx.p_config->primary_boot_die)
@@ -84,8 +83,19 @@ static void ap_core_die_config_handover(pssi_startup_notification_request_t p_re
         result = sds_block_write(SDS_DIE_CONFIG_STRUCT_ID, &die_config_val, SDS_DIE_CONFIG_SIZE);
         BUG_ASSERT(result == KNG_SUCCESS);
     }
-    register_remote_die_cfg_completion_cb(ap_core_die_config_handover_completion, p_request);
-    write_fuse_info_to_ap();
+
+    // Handle potential race: if die0 already has remote fuse config, complete immediately after local write.
+    // Otherwise register callback before sending/processing fuse info.
+    if ((idsw_get_die_id() == DIE_0) && fuse_has_remote_die_config())
+    {
+        write_fuse_info_to_ap();
+        ap_core_die_config_handover_completion(p_request);
+    }
+    else
+    {
+        fuse_register_remote_die_cfg_completion_cb(ap_core_die_config_handover_completion, p_request);
+        write_fuse_info_to_ap();
+    }
 }
 
 static void ap_core_cache_ltssm_init_request(pssi_startup_notification_request_t p_request)

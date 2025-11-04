@@ -65,6 +65,8 @@ static fpfw_icc_base_ctx_t* icc_base_ctx_fuse;
 static fpfw_icc_base_ctx_t* icc_base_ctx_die2die;
 kng_fuse_disable_core_t DIE0_fuse_disable, DIE1_fuse_disable;
 static kng_fuse_disable_core_t remote_die_core_disable = {0};
+// Flag to track if remote die config already received before AP handover registration
+static bool remote_die_cfg_received = false;
 
 static fpfw_icc_base_send_req_t scp_send_params;
 static fpfw_icc_base_recv_req_t scp_recv_params;
@@ -103,9 +105,25 @@ static struct ap_core_die_cfg_cb_t ap_core_die_cfg_completion = {.cb = NULL, .co
 void scp_remote_die_config_req_cb(void* context, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
-    FPFW_UNUSED(status);
-    printf(FUSE_NAME "distribution completed 0x%" PRIx32 "\n", status);
+    printf(FUSE_NAME "Remote send completed 0x%" PRIx32 "\n", status);
+
+    if (status == FPFW_ICC_TRANSPORT_STATUS_BUSY)
+    {
+        // Retry sending fuse info to remote die
+        write_fuse_info_to_ap();
+    }
+    else if (FPFW_STATUS_SUCCEEDED(status))
+    {
+        //! Die 1 can complete the ap core handover
+        BUG_ASSERT(ap_core_die_cfg_completion.cb != NULL && ap_core_die_cfg_completion.context != NULL);
+        ap_core_die_cfg_completion.cb(ap_core_die_cfg_completion.context);
+    }
+    else
+    {
+        BUG_ASSERT_PARAM(false, status, "Failed to send remote die config");
+    }
 }
+
 inline bool is_core_disabled(const kng_fuse_disable_core_t* fuse, uint32_t core)
 {
     bool result = false;
@@ -139,6 +157,7 @@ inline void disable_core(kng_fuse_disable_core_t* fuse, uint32_t core)
         fuse->fuse_dis_core_95_64 |= (1U << (core - 64));
     }
 }
+
 void fuse_disable_pick_algorithm(kng_fuse_disable_core_t* f)
 {
     static const uint8_t column_map[5][12] = {{8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19},
@@ -210,6 +229,9 @@ void fuse_disable_pick_algorithm(kng_fuse_disable_core_t* f)
         break;
     }
 }
+
+// Adjust disabled cores to make total disabled cores to 2
+// From ADO: 2772469 : SoC FW to enable 132 cores only in KNG SoC based on core selection algorithm
 void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
 {
     int total_disable_cores = __builtin_popcount(p_fuse_disable->fuse_dis_core_31_0) +
@@ -227,7 +249,7 @@ void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
                p_fuse_disable->fuse_dis_core_63_32,
                p_fuse_disable->fuse_dis_core_95_64);
     }
-    else if (total_disable_cores == 1) // TODO: TASK 2772469 : SoC FW to enable 132 cores only in KNG SoC based on core selection algorithm - Copy
+    else if (total_disable_cores == 1)
     {
         printf(FUSE_NAME "DIE [%d] :  core31-0=0x%" PRIx32 " core63-323=0x%" PRIx32 " core95-63=0x%" PRIx32 " \n",
                idsw_get_die_id(),
@@ -255,7 +277,7 @@ void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
 void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(output_size_bytes);
-    uint32_t result = 0;
+    printf(FUSE_NAME "Remote die config received callback invoked with status 0x%" PRIx32 "\n", status);
 
     icc_mhu_d2d_fuse_packet_t* req_params = (icc_mhu_d2d_fuse_packet_t*)context;
     if (status != FPFW_STATUS_SUCCESS)
@@ -264,12 +286,16 @@ void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_sta
         return;
     }
 
+    // Mark remote die config as received so AP handover can detect prior completion
+    remote_die_cfg_received = true;
+
     remote_die_core_disable.fuse_dis_core_31_0 = req_params->payload[0];
     remote_die_core_disable.fuse_dis_core_63_32 = req_params->payload[1];
     remote_die_core_disable.fuse_dis_core_95_64 = req_params->payload[2];
     remote_die_core_disable.fuse_dis_core_127_96 = req_params->payload[3];
 
-    result = sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
+    uint32_t result =
+        sds_block_creation(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, FUSE_DISABLE_CORE_DIE1_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
     BUG_ASSERT(result == KNG_SUCCESS);
     fuse_disable_cores_to_66(&remote_die_core_disable);
     result = sds_block_write(FUSE_DISABLE_CORE_DIE1_STRUCT_ID, &remote_die_core_disable, FUSE_DISABLE_CORE_DIE1_SIZE);
@@ -291,6 +317,11 @@ void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_sta
     {
         ap_core_die_cfg_completion.cb(ap_core_die_cfg_completion.context);
     }
+}
+
+bool fuse_has_remote_die_config(void)
+{
+    return remote_die_cfg_received;
 }
 
 int prepare_remote_die_config_listener(fpfw_icc_base_ctx_t* icc_ctx)
@@ -424,7 +455,7 @@ int read_core_disables()
     return SILIBS_SUCCESS;
 }
 
-void register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx)
+void fuse_register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx)
 {
     if ((cb == NULL) || (ctx == NULL))
     {
@@ -509,14 +540,6 @@ int write_fuse_info_to_ap()
             printf(FUSE_NAME "send fuse info to primary die fail 0x%" PRIx32 "\n", icc_status);
             BUG_ASSERT_PARAM((icc_status == FPFW_ICC_BASE_STATUS_SUCCESS), icc_status, icc_mhu_send_die2die_payload);
         }
-
-        if ((ap_core_die_cfg_completion.cb == NULL) || (ap_core_die_cfg_completion.context == NULL))
-        {
-            printf(FUSE_NAME "AP core die cfg cb null\n");
-            return FPFW_INIT_STATUS_E_UNKNOWN_ID;
-        }
-        //! Die 1 can complete the ap core handover immediately
-        ap_core_die_cfg_completion.cb(ap_core_die_cfg_completion.context);
     }
     printf(FUSE_NAME "DIE fuse info to ap successfully!\n");
     return result;

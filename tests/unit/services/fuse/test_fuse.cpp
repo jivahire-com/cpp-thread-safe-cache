@@ -1071,7 +1071,7 @@ TEST_FUNCTION(test_fuse_core_to_ap_die0, NULL, NULL)
     expect_memory(__wrap_sds_block_write, buffer, &(DIE0_hns_fuses_test), HNS_FUSES_SIZE);
     expect_value(__wrap_sds_block_write, buffer_size, HNS_FUSES_SIZE);
 
-    register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
+    fuse_register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
     expect_function_call(mock_ap_core_die_cfg_cb);
     write_fuse_info_to_ap();
 }
@@ -1079,7 +1079,7 @@ TEST_FUNCTION(test_fuse_core_to_ap_die0, NULL, NULL)
 TEST_FUNCTION(test_fuse_core_ap_die1, NULL, NULL)
 {
     DFWK_ASYNC_REQUEST_HEADER dummy_request;
-    register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
+    fuse_register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
     will_return_always(__wrap_mesh_get_hns_sds_vector_from_hns_sparring, 0x0);
 
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
@@ -1096,7 +1096,7 @@ TEST_FUNCTION(test_fuse_core_ap_sparring_die0, NULL, NULL)
     DFWK_ASYNC_REQUEST_HEADER dummy_request;
     kng_fuse_disable_core_t DIE0_core_disable_post_knob_test = {0x2, 0x0, 0xfffffff3, 0xffffffff};
 
-    register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
+    fuse_register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
     will_return_always(__wrap_mesh_get_hns_sds_vector_from_hns_sparring, -1);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
@@ -1112,7 +1112,7 @@ TEST_FUNCTION(test_fuse_core_ap_sparring_die0, NULL, NULL)
 TEST_FUNCTION(test_fuse_core_ap_sparring_die1, NULL, NULL)
 {
     DFWK_ASYNC_REQUEST_HEADER dummy_request;
-    register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
+    fuse_register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
     will_return_always(__wrap_mesh_get_hns_sds_vector_from_hns_sparring, -1);
 
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
@@ -1125,7 +1125,7 @@ TEST_FUNCTION(test_fuse_save_remote_die_config, NULL, NULL)
 {
     // mocks
     DFWK_ASYNC_REQUEST_HEADER dummy_request;
-    register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
+    fuse_register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
     kng_hns_fuses_t DIE1_hns_fuses_test = {0x0};
     kng_fuse_disable_core_t expected = DIE1_core_disable_post_knob_test;
     expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE1_STRUCT_ID);
@@ -1206,6 +1206,51 @@ TEST_FUNCTION(test_fuse_distribute_bug_assert, NULL, NULL)
         platform_fuse_override();
     }
 }
+}
+
+TEST_FUNCTION(test_scp_remote_die_config_req_cb_retry, NULL, NULL)
+{
+    // Expect retry (write_fuse_info_to_ap) when BUSY status received
+    DFWK_ASYNC_REQUEST_HEADER dummy_request;
+    fuse_register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
+    will_return_always(__wrap_mesh_get_hns_sds_vector_from_hns_sparring, 0x0);
+
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
+    will_return_always(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send);
+
+    expect_function_call(mock_ap_core_die_cfg_cb);
+    scp_remote_die_config_req_cb(NULL, FPFW_ICC_TRANSPORT_STATUS_BUSY);
+}
+
+TEST_FUNCTION(test_fuse_has_remote_die_config_true, NULL, NULL)
+{
+    // Prepare payload and expectations similar to save_remote_die_config test
+    DFWK_ASYNC_REQUEST_HEADER dummy_request;
+    fuse_register_remote_die_cfg_completion_cb(mock_ap_core_die_cfg_cb, &dummy_request);
+    kng_hns_fuses_t DIE1_hns_fuses_test = {0x0};
+    kng_fuse_disable_core_t expected = DIE1_core_disable_post_knob_test;
+    expect_value(__wrap_sds_block_write, sds_module_id, FUSE_DISABLE_CORE_DIE1_STRUCT_ID);
+    expect_memory(__wrap_sds_block_write, buffer, &expected, FUSE_DISABLE_CORE_DIE1_SIZE);
+    expect_value(__wrap_sds_block_write, buffer_size, FUSE_DISABLE_CORE_DIE1_SIZE);
+
+    expect_value(__wrap_sds_block_write, sds_module_id, HNS_FUSES_DIE1_STRUCT_ID);
+    expect_memory(__wrap_sds_block_write, buffer, &(DIE1_hns_fuses_test), HNS_FUSES_SIZE);
+    expect_value(__wrap_sds_block_write, buffer_size, HNS_FUSES_SIZE);
+
+    static uint8_t icc_mhu_send_die2die_payload_flag[512] = {0};
+    icc_mhu_d2d_fuse_packet_t* msg = (icc_mhu_d2d_fuse_packet_t*)icc_mhu_send_die2die_payload_flag;
+    msg->payload[0] = DIE1_core_disable_post_knob_test.fuse_dis_core_31_0;
+    msg->payload[1] = DIE1_core_disable_post_knob_test.fuse_dis_core_63_32;
+    msg->payload[2] = DIE1_core_disable_post_knob_test.fuse_dis_core_95_64;
+    msg->payload[3] = DIE1_core_disable_post_knob_test.fuse_dis_core_127_96;
+    msg->payload[4] = DIE1_hns_fuses_test.hns_fuses_31_0;
+    msg->payload[5] = DIE1_hns_fuses_test.hns_fuses_63_32;
+    msg->payload[6] = DIE1_hns_fuses_test.hns_fuses_95_64;
+
+    expect_function_call(mock_ap_core_die_cfg_cb);
+    save_remote_die_config_cb(&icc_mhu_send_die2die_payload_flag, 0, FPFW_STATUS_SUCCESS);
+    assert_true(fuse_has_remote_die_config());
 }
 
 TEST_FUNCTION(test_fuse_init_single_die, NULL, NULL)

@@ -109,7 +109,14 @@ int write_fuse_info_to_ap();
  * @param[in] cb - Cb that completes the STARTUP_DIE_CONFIG_INIT boot stage request
  * @param[in] ctx - Context for the callback
  */
-void register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx);
+void fuse_register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx);
+
+/**
+ * Check if remote die configuration has already been received
+ * 
+ * @return true if remote die configuration has been received, false otherwise
+ */
+bool fuse_has_remote_die_config(void);
 
 /**
  * Print fuse artifacts version used in the FW code

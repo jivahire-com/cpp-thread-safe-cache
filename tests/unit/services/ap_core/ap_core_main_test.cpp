@@ -228,7 +228,7 @@ int __wrap_write_fuse_info_to_ap()
     return mock_type(int);
 }
 
-void __wrap_register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx)
+void __wrap_fuse_register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx)
 {
     check_expected_ptr(cb);
     check_expected_ptr(ctx);
@@ -327,6 +327,11 @@ void __wrap_accel_intr_scp_err_intr_enable(ACCEL_ID accel_type)
 {
     FPFW_UNUSED(accel_type);
     function_called();
+}
+
+bool __wrap_fuse_has_remote_die_config()
+{
+    return mock_type(bool);
 }
 
 } // extern "C"
@@ -475,6 +480,9 @@ AP_CORE_TEST(dispatch_die_config, setup, NULL)
     test_request.stage = STARTUP_DIE_CONFIG_INIT;
     test_request.boot_type = COLD_BOOT;
 
+    will_return(__wrap_idsw_get_die_id, 0);
+    will_return(__wrap_fuse_has_remote_die_config, false);
+
     // expect that die info is stored in SDS
     shared_scp_exp_csr_die_config test_die_config = {.as_uint32 = 42};
     expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_DIE_CONFIG_ADDRESS);
@@ -483,9 +491,36 @@ AP_CORE_TEST(dispatch_die_config, setup, NULL)
     expect_memory(__wrap_sds_block_write, buffer, &test_die_config, sizeof(test_die_config));
     expect_value(__wrap_sds_block_write, buffer_size, sizeof(test_die_config));
 
-    expect_value(__wrap_register_remote_die_cfg_completion_cb, cb, ap_core_die_config_handover_completion);
-    expect_value(__wrap_register_remote_die_cfg_completion_cb, ctx, &test_request.header);
+    expect_value(__wrap_fuse_register_remote_die_cfg_completion_cb, cb, ap_core_die_config_handover_completion);
+    expect_value(__wrap_fuse_register_remote_die_cfg_completion_cb, ctx, &test_request.header);
     will_return(__wrap_write_fuse_info_to_ap, 0);
+
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_die_config_remote_received, setup, NULL)
+{
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_DIE_CONFIG_INIT;
+    test_request.boot_type = COLD_BOOT;
+
+    will_return(__wrap_idsw_get_die_id, 0);
+    will_return(__wrap_fuse_has_remote_die_config, true);
+
+    shared_scp_exp_csr_die_config test_die_config = {.as_uint32 = 99};
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_DIE_CONFIG_ADDRESS);
+    will_return(__wrap_mmio_read32, test_die_config.as_uint32);
+    expect_value(__wrap_sds_block_write, sds_module_id, SDS_DIE_CONFIG_STRUCT_ID);
+    expect_memory(__wrap_sds_block_write, buffer, &test_die_config, sizeof(test_die_config));
+    expect_value(__wrap_sds_block_write, buffer_size, sizeof(test_die_config));
+
+    // Should NOT register callback when remote config already received
+    // Expect direct completion instead
+    will_return(__wrap_write_fuse_info_to_ap, 0);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
 
     assert_non_null(s_dispatch_routine);
     s_dispatch_routine(&test_request.header, &test_device.header);

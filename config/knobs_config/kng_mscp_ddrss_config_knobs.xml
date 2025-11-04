@@ -71,15 +71,15 @@
     <Knob name="auto_phy_lp2_en" type="uint8_t" default="0" help="Enable automatic entry of the DDR PHY's low power mode, type 2. 0 - Disable, 1 - Enable" />
     <Knob name="phy_lp2_entry_delay" type="uint8_t" default="10" help="Specify the delay to enter PHY low-power mode type 2 once all conditions are satisfied, in the time units specified by the delay unit. (0 ~ 255)" />
     <Knob name="phy_lp2_entry_delay_unit" type="DDRSS_POWER_DELAY_TIME_UNIT" default="DDRSS_POWER_DELAY_TIME_UNIT_100US" help="Specifies the time unit used for entry delay of PHY low-power mode type 2" />
-    <Knob name="auto_self_refresh_en" type="uint8_t" default="0" help="Enable automatic entry of DRAM self-refresh mode. 0 - Disable, 1 - Enable" />
+    <Knob name="auto_self_refresh_en" type="uint8_t" default="1" help="Enable automatic entry of DRAM self-refresh mode. 0 - Disable, 1 - Enable" />
     <Knob name="temp_comp_refresh_en" type="uint8_t" default="1" help="Enable periodic Temp Compensation operation. 0 - Disable, 1 - Enable" />
     <Knob name="periodic_ecs_readout_en" type="uint8_t" default="0" help="Periodic ECS readout enable. 0 - Disable, 1 - Enable" />
     <Knob name="periodic_zq_cal_en" type="uint8_t" default="1" help="Periodic ZQ cal enable. 0 - Disable, 1 - Enable" />
     <Knob name="periodic_osc_cal_en" type="uint8_t" default="1" help="Periodic DQS osc cal enable. 0 - Disable, 1 - Enable" />
     <Knob name="periodic_phy_update" type="uint8_t" default="1" help="Periodic PHY update enable. 0 - Disable, 1 - Enable" />
     <Knob name="periodic_ecs_en" type="uint8_t" default="0" help="Periodic ecs enable. 0 - Disable, 1 - Enable" />
-    <Knob name="self_refresh_entry_delay" type="uint8_t" default="10" help="Delay time for entering DRAM self-refresh mode after entry conditions are satisfied, in the units specified by the delay unit. (0 ~ 255)" />
-    <Knob name="self_refresh_entry_delay_unit" type="DDRSS_POWER_DELAY_TIME_UNIT" default="DDRSS_POWER_DELAY_TIME_UNIT_100US" help="Specifies the time unit used for self-refresh entry delay" />
+    <Knob name="self_refresh_entry_delay" type="uint8_t" default="40" help="Delay time for entering DRAM self-refresh mode after entry conditions are satisfied, in the units specified by the delay unit. (0 ~ 255)" />
+    <Knob name="self_refresh_entry_delay_unit" type="DDRSS_POWER_DELAY_TIME_UNIT" default="DDRSS_POWER_DELAY_TIME_UNIT_1US" help="Specifies the time unit used for self-refresh entry delay" />
     <Knob name="dynamic_clk_gating_en" type="uint8_t" default="0" help="Enable dynamic clock gating for MC and DFI clock. 0 - Disable, 1 - Enable" />
     <Knob name="dram_active_power_down_en" type="uint8_t" default="0" help="Specify whether active power down is allowed. 0 - Always use precharged power down mode only, 1 - Allow both active power-down mode and precharge power-down mode are used" />
     <Knob name="dram_power_down_en" type="uint8_t" default="0" help="Enable automatic entry of DRAM power-down mode. 0 - Disable, 1 - Enable" />

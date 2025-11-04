@@ -113,5 +113,5 @@ include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/mock.cmake)
 target_compile_options(fwlib.lib.crashDump PRIVATE "-Os")
 
 # Enable MCTP Event Tracing
-add_compile_definitions(FPFW_FWLIBS_ENABLE_MCTP_ET)
-add_compile_definitions(FPFW_FWLIBS_ENABLE_MCTP_UART_ET)
+target_compile_options(fwlib.lib.mctp PRIVATE -DFPFW_FWLIBS_ENABLE_MCTP_ET)
+target_compile_options(fwlib.lib.mctp_uart_binding PRIVATE -DFPFW_FWLIBS_ENABLE_MCTP_UART_ET)

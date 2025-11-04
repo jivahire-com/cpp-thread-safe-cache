@@ -122,11 +122,11 @@ FPFW_INIT_COMPONENT(mctp, FPFW_INIT_DEPENDENCIES("mctp_uart"))
 
     textio_pl011_device_interface_initialize(pl011_dev, &pl011_interface);
 
-    static fpfw_mctp_uart_packet_info mctp_uart_packets[NUM_MCTP_PACKETS] = {0};
+    static fpfw_mctp_uart_frame_info mctp_uart_frames[NUM_MCTP_PACKETS] = {0};
     static fpfw_mctp_uart_binding_config mctp_uart_binding_config = {.name = "mctp_uart_binding",
                                                                      .uart_interface = &pl011_interface.header,
                                                                      .mctp_ctx = &mctp_context,
-                                                                     .packet_array = mctp_uart_packets,
+                                                                     .frame_array = mctp_uart_frames,
                                                                      .num_packets = NUM_MCTP_PACKETS,
                                                                      .num_pending_rx_requests = NUM_RX_MCTP_PACKETS};
     fpfw_status_t status = fpfw_mctp_uart_binding_init(&mctp_uart_binding_ctx, &mctp_uart_binding_config);

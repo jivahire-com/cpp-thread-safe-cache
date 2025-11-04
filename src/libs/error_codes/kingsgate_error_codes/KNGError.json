@@ -458,6 +458,11 @@
           "Name": "KNG_HM_SYSFUSE_TAG_UE",
           "Value": 30,
           "Description": "Uncorrectable Error in System Fuse"
+        },
+        {
+          "Name": "KNG_HM_VAB_SMMU_UE",
+          "Value": 31,
+          "Description": "Uncorrectable Error in VAB SMMU"
         }
       ]
     },

@@ -193,6 +193,7 @@ void __wrap_hm_submit_cper(uint16_t error_domain_idx,
     FPFW_UNUSED(err_severity);
     FPFW_UNUSED(err_record_section_size);
     assert_non_null(err_record_section);
+    function_called();
 }
 
 silibs_status_t __wrap_vab_get_1p_parity_status(uintptr_t vab_base, uint32_t* status)

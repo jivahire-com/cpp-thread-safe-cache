@@ -133,12 +133,15 @@ acpi_einj_cmd_status_t hm_smmu_error_injection_handler(ras_einj_info_t* einj_pay
         switch (einj_payload->param_type.error_type)
         {
         case AP_SMMU_ERROR_TCU_VAB:
+            SMMU_LOG_INFO("AP_SMMU_ERROR_TCU_VAB");
             err_ins_addr = base_addr + SMMU_YARDLEY_EAC_VAB_TCU_VAB_ADDRESS + VAB_TCU_X2_TCU_ERRGEN_ADDRESS;
             break;
         case AP_SMMU_ERROR_TBU_LTI_X4_VAB:
+            SMMU_LOG_INFO("AP_SMMU_ERROR_TBU_LTI_X4_VAB");
             err_ins_addr = base_addr + SMMU_YARDLEY_EAC_VAB_TBU_LTI_X4_VAB_ADDRESS + VAB_TBU_LTI_X4_TBU_ERRGEN_ADDRESS;
             break;
         case AP_SMMU_ERROR_TBU_ACE_LITE_VAB:
+            SMMU_LOG_INFO("AP_SMMU_ERROR_TBU_ACE_LITE_VAB");
             err_ins_addr = base_addr + SMMU_YARDLEY_EAC_VAB_TBU_ACE_LITE_VAB_ADDRESS + VAB_TBU_ACE_LITE_TBU_ERRGEN_ADDRESS;
             break;
         default:
@@ -149,6 +152,9 @@ acpi_einj_cmd_status_t hm_smmu_error_injection_handler(ras_einj_info_t* einj_pay
 
         // Write the injection word
         MMIO_WRITE32(err_ins_addr, einj_payload->value_type.error_values);
+
+        SMMU_LOG_INFO("err_ins_addr : %d", err_ins_addr);
+        SMMU_LOG_INFO("err_values injected: %d", einj_payload->value_type.error_values);
 
         unmap_ap_address(&ap_atu_entry);
     }

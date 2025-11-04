@@ -9,9 +9,11 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
+#include <atu_api.h>
 #include <bug_check.h>
 #include <cper.h>
 #include <health_monitor.h>
+#include <kng_atu_mappings.h>
 #include <silibs_common.h>
 #include <silibs_platform.h>
 #include <silibs_status.h>
@@ -20,12 +22,16 @@
 #include <string.h>
 #include <tower_isr.h>
 #include <vab.h>
+#include <vab_atu_mappings.h>
 #include <vab_init.h>
 #include <vab_intu.h>
 #include <vab_irq.h>
 #include <vab_irq_common.h>
 #include <vab_regs.h>
 #include <vab_rpss_top_regs.h>
+#include <vab_tbu_ace_lite_regs.h>
+#include <vab_tbu_lti_x4_regs.h>
+#include <vab_tcu_x2_regs.h>
 #include <vab_utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -38,13 +44,20 @@
 #define RAS_TCU_OFFSET                                                                                \
     (VAB_RPSS_TOP_VAB_ADDRESS + VAB_SMMU_YARDLEY_VAB_ADDRESS + SMMU_YARDLEY_EAC_VAB_TCU_VAB_ADDRESS + \
      MMU_YARDLEY_TCU_X2_CUSTOM_VAB_TCU_X2_ADDRESS + VAB_TCU_X2_TCU_ERRFR_ADDRESS)
-#define RAS_TBU0_OFFSET                                                                               \
-    (VAB_RPSS_TOP_VAB_ADDRESS + VAB_SMMU_YARDLEY_VAB_ADDRESS + SMMU_YARDLEY_EAC_VAB_TCU_VAB_ADDRESS + \
+#define RAS_TBU0_OFFSET                                                                                      \
+    (VAB_RPSS_TOP_VAB_ADDRESS + VAB_SMMU_YARDLEY_VAB_ADDRESS + SMMU_YARDLEY_EAC_VAB_TBU_LTI_X4_VAB_ADDRESS + \
      MMU_YARDLEY_TBU_LTI_X4_CUSTOM_VAB_TBU_LTI_X4_ADDRESS + VAB_TBU_LTI_X4_TBU_ERRFR_ADDRESS)
-#define RAS_TBU1_OFFSET                                                                               \
-    (VAB_RPSS_TOP_VAB_ADDRESS + VAB_SMMU_YARDLEY_VAB_ADDRESS + SMMU_YARDLEY_EAC_VAB_TCU_VAB_ADDRESS + \
+#define RAS_TBU1_OFFSET                                                                                        \
+    (VAB_RPSS_TOP_VAB_ADDRESS + VAB_SMMU_YARDLEY_VAB_ADDRESS + SMMU_YARDLEY_EAC_VAB_TBU_ACE_LITE_VAB_ADDRESS + \
      MMU_YARDLEY_TBU_ACE_LITE_CUSTOM_VAB_TBU_ACE_LITE_ADDRESS + VAB_TBU_ACE_LITE_TBU_ERRFR_ADDRESS)
 #define RAS_VAB_OFFSET (VAB_RPSS_TOP_VAB_ADDRESS + VAB_VAB_RAS_NODE_ADDRESS + VAB_ERG0_ERR0FR_LO_ADDRESS)
+
+#define SMMU_CI_MASK  (0x80000U)
+#define SMMU_UET_MASK (0x300000U)
+#define SMMU_DE_MASK  (0x800000U)
+#define SMMU_CE_MASK  (0x3000000U)
+#define SMMU_OF_MASK  (0x8000000U)
+#define SMMU_UE_MASK  (0x20000000U)
 
 /*------------- Typedefs -----------------*/
 
@@ -100,45 +113,49 @@ silibs_status_t vab_ras_node_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t bas
     return SILIBS_E_PANIC;
 }
 
-silibs_status_t vab_tbu0_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t base)
+void hm_submit_smmu_cper(uint32_t err_status, SUBSYSTEM_WITH_VAB_ID vab_id)
 {
-    silibs_status_t status;
-    ras_agent_entity_t* agent = vab_get_smmu_ras_agent_entity(vab_id, SMMU_RAS_NODE_TBU0);
-    ras_arm_agent_set_base(agent, base + RAS_TBU0_OFFSET);
-    ras_error_record_t record = {0};
+    bool bugcheck_required = false;
 
-    while (ras_agent_probe(agent, &record))
+    acpi_err_sec_firmware_t smmu_cper = {.severity = ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL,
+                                         .record_id = vab_id,
+                                         .param = {0, 0, 0, 0}};
+
+    if (err_status & (SMMU_CI_MASK | SMMU_UE_MASK | SMMU_UET_MASK))
     {
-        ras_print_record(&record);
-        if (record.handler)
-        {
-            status = record.handler(&record);
-            if (status)
-            {
-                FPFW_DBGPRINT_ALWAYS("Error encountered while handling TBU0 record\n");
-                return status;
-            }
-        }
-        else
-        {
-            FPFW_DBGPRINT_ALWAYS("TBU0 Record was marked as invalid! No further handling will be done\n");
-            continue;
-        }
+        smmu_cper.severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+        bugcheck_required = true;
+    }
+    else if (err_status & (SMMU_CE_MASK | SMMU_DE_MASK | SMMU_OF_MASK))
+    {
+        smmu_cper.severity = ACPI_ERROR_SEVERITY_CORRECTED;
     }
 
-    return SILIBS_SUCCESS;
+    smmu_cper.param[0] = err_status;
+
+    acpi_cper_section_t cper_section;
+    cper_section.sec_fw = smmu_cper;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_SMMU, cper_section.sec_fw.severity, &cper_section, sizeof(cper_section));
+
+    if (bugcheck_required)
+    {
+        BUG_CHECK(KNG_HM_VAB_SMMU_UE, err_status, 0);
+    }
 }
 
-silibs_status_t vab_tbu1_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t base)
+static silibs_status_t vab_record_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t base, SMMU_RAS_NODE_TYPE ras_node_type, uint32_t errstatus_offset)
 {
     silibs_status_t status;
-    ras_agent_entity_t* agent = vab_get_smmu_ras_agent_entity(vab_id, SMMU_RAS_NODE_TBU1);
-    ras_arm_agent_set_base(agent, base + RAS_TBU1_OFFSET);
+    ras_agent_entity_t* agent = vab_get_smmu_ras_agent_entity(vab_id, ras_node_type);
+    ras_arm_agent_set_base(agent, base + errstatus_offset);
     ras_error_record_t record = {0};
 
     while (ras_agent_probe(agent, &record))
     {
         ras_print_record(&record);
+        hm_submit_smmu_cper(record.status, vab_id);
+
         if (record.handler)
         {
             status = record.handler(&record);
@@ -158,33 +175,19 @@ silibs_status_t vab_tbu1_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t base)
     return SILIBS_SUCCESS;
 }
 
+silibs_status_t vab_tbu0_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t base)
+{
+    return vab_record_handler(vab_id, base, SMMU_RAS_NODE_TBU0, RAS_TBU0_OFFSET);
+}
+
+silibs_status_t vab_tbu1_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t base)
+{
+    return vab_record_handler(vab_id, base, SMMU_RAS_NODE_TBU1, RAS_TBU1_OFFSET);
+}
+
 silibs_status_t vab_tcu_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t base)
 {
-    silibs_status_t status;
-    ras_agent_entity_t* agent = vab_get_smmu_ras_agent_entity(vab_id, SMMU_RAS_NODE_TCU);
-    ras_arm_agent_set_base(agent, base + RAS_TCU_OFFSET);
-    ras_error_record_t record = {0};
-
-    while (ras_agent_probe(agent, &record))
-    {
-        ras_print_record(&record);
-        if (record.handler)
-        {
-            status = record.handler(&record);
-            if (status)
-            {
-                FPFW_DBGPRINT_ALWAYS("Error encountered while handling TCU record\n");
-                return status;
-            }
-        }
-        else
-        {
-            FPFW_DBGPRINT_ALWAYS("TCU Record was marked as invalid! No further handling will be done\n");
-            continue;
-        }
-    }
-
-    return SILIBS_SUCCESS;
+    return vab_record_handler(vab_id, base, SMMU_RAS_NODE_TCU, RAS_TCU_OFFSET);
 }
 
 static silibs_status_t vab_parity_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t base, vab_error_component_t component)

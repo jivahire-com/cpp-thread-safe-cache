@@ -172,6 +172,7 @@ TEST_FUNCTION(test_vab_ras_node_handler, NULL, NULL)
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
         will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+        expect_function_call(__wrap_hm_submit_cper);
         expect_function_call(__wrap_crash_dump_bug_check);
         if (!bugcheck_mock_return())
         {
@@ -185,6 +186,7 @@ TEST_FUNCTION(test_vab_ras_node_handler, NULL, NULL)
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
         will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+        expect_function_call(__wrap_hm_submit_cper);
         expect_function_call(__wrap_crash_dump_bug_check);
         if (!bugcheck_mock_return())
         {
@@ -204,6 +206,7 @@ TEST_FUNCTION(test_vab_tbu0_handler, NULL, NULL)
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_function_call(__wrap_hm_submit_cper);
         vab_tbu0_handler(vab_id, 0xDEADBEEF);
 
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
@@ -212,6 +215,7 @@ TEST_FUNCTION(test_vab_tbu0_handler, NULL, NULL)
         will_return(__wrap_ras_agent_probe, nullptr);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_function_call(__wrap_hm_submit_cper);
         vab_tbu0_handler(vab_id, 0xDEADBEEF);
     }
 }
@@ -227,6 +231,7 @@ TEST_FUNCTION(test_vab_tbu1_handler, NULL, NULL)
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_function_call(__wrap_hm_submit_cper);
         vab_tbu1_handler(vab_id, 0xDEADBEEF);
 
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
@@ -235,6 +240,7 @@ TEST_FUNCTION(test_vab_tbu1_handler, NULL, NULL)
         will_return(__wrap_ras_agent_probe, nullptr);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_function_call(__wrap_hm_submit_cper);
         vab_tbu1_handler(vab_id, 0xDEADBEEF);
     }
 }
@@ -250,6 +256,7 @@ TEST_FUNCTION(test_vab_tcu_handler, NULL, NULL)
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_function_call(__wrap_hm_submit_cper);
         vab_tcu_handler(vab_id, 0xDEADBEEF);
 
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
@@ -258,6 +265,7 @@ TEST_FUNCTION(test_vab_tcu_handler, NULL, NULL)
         will_return(__wrap_ras_agent_probe, nullptr);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_function_call(__wrap_hm_submit_cper);
         vab_tcu_handler(vab_id, 0xDEADBEEF);
     }
 }
@@ -270,27 +278,36 @@ TEST_FUNCTION(test_vab_parity_errors, NULL, NULL)
     for (id = D0_VAB0_RPSS0; id < MAX_VAB_INSTANCES; id++)
     {
         auto vab_id = (SUBSYSTEM_WITH_VAB_ID)id;
-        expect_function_calls(__wrap_crash_dump_bug_check, 5);
+        expect_function_call(__wrap_hm_submit_cper);
+        expect_function_call(__wrap_crash_dump_bug_check);
         if (!bugcheck_mock_return())
         {
             vab_fabric_parity_handler(vab_id, 0xDEADBEEF);
         }
 
+        expect_function_call(__wrap_hm_submit_cper);
+        expect_function_call(__wrap_crash_dump_bug_check);
         if (!bugcheck_mock_return())
         {
             vab_csr_parity_handler(vab_id, 0xDEADBEEF);
         }
 
+        expect_function_call(__wrap_hm_submit_cper);
+        expect_function_call(__wrap_crash_dump_bug_check);
         if (!bugcheck_mock_return())
         {
             vab_pcr_parity_handler(vab_id, 0xDEADBEEF);
         }
 
+        expect_function_call(__wrap_hm_submit_cper);
+        expect_function_call(__wrap_crash_dump_bug_check);
         if (!bugcheck_mock_return())
         {
             vab_integ_pcr_parity_handler(vab_id, 0xDEADBEEF);
         }
 
+        expect_function_call(__wrap_hm_submit_cper);
+        expect_function_call(__wrap_crash_dump_bug_check);
         if (!bugcheck_mock_return())
         {
             vab_integ_csr_parity_handler(vab_id, 0xDEADBEEF);

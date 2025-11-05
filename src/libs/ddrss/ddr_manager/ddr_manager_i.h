@@ -15,6 +15,7 @@
 #include <kingsgate_hsp_boot_metadata.h>
 #include <kingsgate_hsp_mailbox_commands.h>
 #include <fpfw_icc_base.h>
+#include <smbios_structs.h>
 #include <stdint.h>
 #include <tx_api.h>
 #include "ddr_manager_i3c.h"
@@ -28,6 +29,9 @@
 
 #define NUM_DIMM_PER_DIE  (6) // Each die will address 6 DIMMs
 #define NUM_DIMM_TEMP_SENSORS (2) // Each DIMM will have 2 temperature sensors
+
+#define UEFI_SPEC33_SMBIOS17_LENGTH (0x5C) // SMBIOS Spec 3.3 Type 17 Length
+#define UEFI_SPEC37_SMBIOS17_LENGTH (0x64) // SMBIOS Spec 3.7 Type 17 Length
 
 // SVP Reserved regions
 // Bug #2538992 - Limit 0x0000020290000000 - 0x0000026000000000 by setting Uefi Concealed attribute`
@@ -118,6 +122,7 @@ void ddr_create_memory_map(void);
 void ddr_process_i3c_data(void);
 void ddr_create_bdat(void);
 void ddr_create_smbios_tables(void);
+void copy_single_smbios_type_17(uint8_t* dest_addr, SMBIOS_MEM_DEVICE_17* smb_table17);
 
 uint32_t get_single_type17_table_and_strings_size(uint8_t* spd_buff);
 size_t get_deviceLocator_string(uint32_t dimm_global_idx, char* buffer, size_t bufferSize);

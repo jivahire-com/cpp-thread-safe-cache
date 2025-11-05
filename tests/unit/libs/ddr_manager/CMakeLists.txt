@@ -66,6 +66,8 @@ mock_target(${TARGET}
     atu_unmap
     config_get_borgens_1gb_ddr_reserve_enable
     config_get_ddrmanager_bwl_polling_en
+    copy_single_smbios_type_17
+    ddr_create_memory_map
     config_get_erhm_en
     config_get_ras_init_en
     config_get_rh_tlm_service_period_ms

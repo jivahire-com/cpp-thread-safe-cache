@@ -743,8 +743,8 @@ static uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
         for version 3.3, 64h for version 3.7 and later and later
         */
         smb_table17.Type = 17;
-        smb_table17.Length = 0x5C; // For spec ver 3.7, 64h is correct - But we are conforming to 3.3
-        smb_table17.Handle = 0;    // UEFI to populate
+        smb_table17.Length = UEFI_SPEC33_SMBIOS17_LENGTH; // For spec ver 3.7, 64h is correct - But we are conforming to 3.3
+        smb_table17.Handle = 0;                           // UEFI to populate
         smb_table17.PhysMemoryArrayHandle = 0; // UEFI to populate
         smb_table17.MemoryErrorInfoHandle = 0; // UEFI to populate
         smb_table17.TotalWidth = 80;           // with ECC bits as per PNR
@@ -802,7 +802,7 @@ static uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
         smb_table17.SerialNumber = 4; // 1-based index of a list of strings immediately following the type17 table
         smb_table17.AssetTag = 5;     // This field will not contain a string
         smb_table17.PartNumber = 6; // 1-based index of a list of strings immediately following the type17 table
-        smb_table17.Attributes = ddrss_prd_cfg_knobs.dimm_rank + 1; // 1 for single rank. 2 for dual rank
+        smb_table17.Attributes = ddrss_prd_cfg_knobs.dimm_rank; // 1 for single rank. 2 for dual rank
         smb_table17.ConfiguredMemorySpeed = ddrss_get_dimm_speed_mts();
         smb_table17.MinVoltage =
             ddrss_get_vdd_voltage(); // Defined in JEDEC spec: VDDQ VDD VSS VPP ZQ, (ZQ1) Supply Supply Supply Supply Reference DQ Power Supply: 1.1 V Power Supply: 1.1 V Ground DRAM Activating Power Supply: 1.8 V
@@ -827,7 +827,8 @@ static uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
                     Copy this DIMM's TYPE17 table to memory
             -----------------------------------------------------------*/
         uint8_t temp_buffer[sizeof(smb_table17)];
-        memcpy(temp_buffer, &smb_table17, sizeof(smb_table17));
+        copy_single_smbios_type_17(temp_buffer, &smb_table17);
+
         for (size_t byte_idx = 0; byte_idx < sizeof(smb_table17); byte_idx++)
         {
             MMIO_WRITE8(this_dies_smbios_next_addr++, temp_buffer[byte_idx]);
@@ -1145,4 +1146,9 @@ bool dimm_is_present(uint32_t dimm_local_idx)
     }
 
     return ddrss_mask & (1 << dimm_local_idx) ? true : false;
+}
+
+void copy_single_smbios_type_17(uint8_t* dest_addr, SMBIOS_MEM_DEVICE_17* smb_table17)
+{
+    memcpy(dest_addr, smb_table17, sizeof(SMBIOS_MEM_DEVICE_17));
 }

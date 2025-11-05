@@ -60,6 +60,9 @@ extern "C" {
 #define DDR_TEST_THREAD_PRIORITY             (10)
 #define DDR_TEST_TIMER_INITIAL_TICKS         (10)
 #define DDR_TEST_TIMER_RESCHEDULE_TICKS      (15)
+#define TEST_DDRSS_DDR5_RDIMM_VPP_MV         (1800)
+#define TEST_DDRSS_DDR5_RDIMM_VDD_MV         (1100)
+#define TEST_JEDEC_MICROSOFT_ID              (0xD5)
 
 /*------------- Typedefs -----------------*/
 
@@ -929,6 +932,34 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_0, NULL, NULL)
 
         will_return(__wrap_ddrss_is_valid_local_mc, true);
 
+        // Check expected Type17 parameters
+        g_check_smb17_params = true;
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->Type, 17);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->Length, UEFI_SPEC33_SMBIOS17_LENGTH);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->Handle, 0);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->PhysMemoryArrayHandle, 0);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->MemoryErrorInfoHandle, 0);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->TotalWidth, 80);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->DataWidth, 64);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->FormFactor, 0x09);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->DeviceSet, 0xFF);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->MemoryType, 0x22);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->TypeDetail, 0x2000);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->Attributes, 2); // Rank hardcoded for EF
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->ExtendedSize, 0);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->MinVoltage, TEST_DDRSS_DDR5_RDIMM_VDD_MV);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->MaxVoltage, TEST_DDRSS_DDR5_RDIMM_VPP_MV);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->ConfiguredVoltage, TEST_DDRSS_DDR5_RDIMM_VDD_MV);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->MemoryTechnology, 0x03);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->MemoryOperatingModeCapability, 8);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->MemorySubsystemControllerManufacturerID, TEST_JEDEC_MICROSOFT_ID);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->MemorySubsystemControllerProductID, TEST_JEDEC_MICROSOFT_ID);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->NonvolatileSize, 0);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->CacheSize, 0);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->LogicalSize, 0);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->ExtendedSpeed, 0);
+        expect_value(__wrap_copy_single_smbios_type_17, smb_table17->ExtendedConfiguredMemorySpeed, 0);
+
         // Write Type17 table to memory
         expect_function_calls(__wrap_mmio_write8, sizeof(SMBIOS_MEM_DEVICE_17));
 
@@ -975,6 +1006,7 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_0, NULL, NULL)
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     ddr_create_smbios_tables();
+    g_check_smb17_params = false;
 }
 
 TEST_FUNCTION(ddr_create_smbios_tables_test_die_1, NULL, NULL)

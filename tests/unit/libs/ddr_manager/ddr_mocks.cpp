@@ -31,6 +31,7 @@
 bool g_should_wrap_idsw_get_platform_sdv = false;
 bool g_should_wrap_ddr_create_memory_map = false;
 bool g_should_wrap_ddrss_get_ddrss_mask = false;
+bool g_check_smb17_params = false;
 
 /*------------- Functions ----------------*/
 
@@ -305,6 +306,44 @@ uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum)
 uint32_t __wrap_gtimer_prodfw_get_frequency(void)
 {
     return mock_type(uint32_t);
+}
+
+void __wrap_copy_single_smbios_type_17(uint8_t* dest_addr, SMBIOS_MEM_DEVICE_17* smb_table17)
+{
+    FPFW_UNUSED(dest_addr);
+    FPFW_UNUSED(smb_table17)
+
+    if (g_check_smb17_params)
+    {
+        // Check each parameter of the SMBIOS Type 17 structure
+        check_expected(smb_table17->Type);
+        check_expected(smb_table17->Length);
+        check_expected(smb_table17->Handle);
+        check_expected(smb_table17->PhysMemoryArrayHandle);
+        check_expected(smb_table17->MemoryErrorInfoHandle);
+        check_expected(smb_table17->TotalWidth);
+        check_expected(smb_table17->DataWidth);
+        check_expected(smb_table17->FormFactor);
+        check_expected(smb_table17->DeviceSet);
+        check_expected(smb_table17->MemoryType);
+        check_expected(smb_table17->TypeDetail);
+        check_expected(smb_table17->Attributes); // This is Rank
+        check_expected(smb_table17->ExtendedSize);
+        check_expected(smb_table17->MinVoltage);
+        check_expected(smb_table17->MaxVoltage);
+        check_expected(smb_table17->ConfiguredVoltage);
+        check_expected(smb_table17->MemoryTechnology);
+        check_expected(smb_table17->MemoryOperatingModeCapability);
+        check_expected(smb_table17->MemorySubsystemControllerManufacturerID);
+        check_expected(smb_table17->MemorySubsystemControllerProductID);
+        check_expected(smb_table17->NonvolatileSize);
+        check_expected(smb_table17->CacheSize);
+        check_expected(smb_table17->LogicalSize);
+        check_expected(smb_table17->ExtendedSpeed);
+        check_expected(smb_table17->ExtendedConfiguredMemorySpeed);
+    }
+
+    return;
 }
 
 int __wrap_ddrss_get_telemetry_record(uint32_t mc, DDRSS_TELEMETRY_TYPE telemetry_type, void* telemetry_buf, int telemetry_buf_len)

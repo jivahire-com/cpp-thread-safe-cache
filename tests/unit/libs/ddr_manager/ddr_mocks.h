@@ -2,6 +2,7 @@
 #include <ddrss_runtime_api.h>
 #include <cper.h>
 #include <idsw_kng.h>
+#include <smbios_structs.h>
 #include <stdint.h>
 
 
@@ -11,6 +12,7 @@ extern bool in_setup_teardown;
 extern bool g_should_wrap_idsw_get_platform_sdv;
 extern bool g_should_wrap_ddr_create_memory_map;
 extern bool g_should_wrap_ddrss_get_ddrss_mask;
+extern bool g_check_smb17_params;
 
 int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry);
 int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry);
@@ -40,4 +42,6 @@ void __real_ddr_create_memory_map();
 bool __wrap_FPFwCoreInterruptIsEnabled(uint32_t irqnum);
 uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum);
 uint32_t __wrap_FPFwCoreInterruptDisableVector(uint32_t irqnum);
+
+void __wrap_copy_single_smbios_type_17(uint8_t* dest_addr, SMBIOS_MEM_DEVICE_17* src_table17);
 }

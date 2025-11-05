@@ -41,7 +41,8 @@
 ## Crash Dump Tests
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_trigger_exception_test_soc.robot
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_stack_overflow_test_soc.robot
-./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test_soc.robot
+#Commenting this test - potentially cause a mesh hang if run after multiple cores are booted
+#./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test_soc.robot
 
 ## PLDM Tests
 ./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot

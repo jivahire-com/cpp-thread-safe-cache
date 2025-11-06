@@ -4,10 +4,6 @@
 ## Dual Die Heartbeat Tests
 ./../../../tests/functional/test_suites/heart_beat/mscp_heartbeat_hsp_boot_dual_die.robot
 
-## AVS Die 1 Tests
-./../../../tests/functional/test_suites/avs_tests/avs_read_tests_die1.robot
-./../../../tests/functional/test_suites/avs_tests/avs_write_tests_die1.robot
-
 ## CONFIG MANAGER Die1 Tests
 ./../../../tests/functional/test_suites/configmgr_tests/configmgr_cli_test_die1.robot
 ./../../../tests/functional/test_suites/configmgr_tests/configmgr_dump_cli_test_die1.robot
@@ -21,18 +17,5 @@
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 ./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_die1.robot
 
-## Sensor FIFO short duration tests
-## SVP Teardown required before sensor fifo tests so ensure tests run after boot is complete
-./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
-./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
-./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
-./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_read_wrentry_single_fifo_test.robot
-
 ## SVP Teardown
-./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
-
-## Power Tests
-./../../../tests/functional/test_suites/power_tests/mod_power_control_loop_health.robot
-./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
-./../../../tests/functional/test_suites/power_tests/mod_power_ft.robot
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

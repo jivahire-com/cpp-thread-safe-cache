@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //
 /**
- * @file test_log_instantaneous_die_temperature_sensors_integration.cpp
+ * @file test_inst_die_temp_sensors_integration.cpp
  * [IB Telemetry] Log Instantaneous Die Temperature Sensors Integration Test
  *
  * Test Flow:

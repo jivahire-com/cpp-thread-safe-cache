@@ -148,6 +148,7 @@ static void print_mesh_cper(acpi_err_sec_generic_t* mesh_cper)
                   mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_3]);
         MESH_INFO("Error Record Number 0x%lx\n", mesh_cper->err_record_num);
         MESH_INFO("Error Record Version 0x%x\n", mesh_cper->version);
+        MESH_INFO("Error Record Die Id 0x%x\n", mesh_cper->die_id);
         MESH_INFO("Error Record Feature 0x%08x_%08x\n",
                   (uint32_t)(mesh_cper->err_fr >> 32),
                   (uint32_t)mesh_cper->err_fr);
@@ -380,8 +381,9 @@ int mesh_error_handler_convert_d2d_ras_record_to_cper(ras_error_record_t* record
     mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_1] = D2D_ERROR_RAS_ERROR;
     mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_2] = d2d_subsystem;
     mesh_cper->node_id.vendor_specific_data[MESH_RAS_VENDOR_SPECIFIC_DATA_OFFSET_3] = 0;
-    mesh_cper->err_record_num = 0; // Error Record Number
-    mesh_cper->version = 0;        // Version of the CPER
+    mesh_cper->err_record_num = 0;                  // Error Record Number
+    mesh_cper->version = 0;                         // Version of the CPER
+    mesh_cper->die_id = (uint8_t)idhw_get_die_id(); // Die ID of the SoC
 
     // Fill in the error record details
     mesh_cper->err_fr = record->syndrome;

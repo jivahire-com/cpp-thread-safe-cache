@@ -32,6 +32,7 @@ void set_expectations_crash_dump_register_core_registers();
 void set_expectations_crash_dump_register_default_registers(const core_register_mmio_t* mmio_registers, uint32_t mmio_register_count);
 void set_expectations_crash_dump_register_core_stack();
 void set_expectations_crash_dump_register_standard_info();
+void set_expectations_crash_dump_register_ecid();
 void set_expectations_crash_dump_register_threadx();
 void set_expectations_crash_dump_register_address32(void* address_exp, uint32_t size_exp, FPFwCdDumpPriority priority_exp);
 void set_expectations_crash_dump_register_address32_no_address(uint32_t size_exp, FPFwCdDumpPriority priority_exp);

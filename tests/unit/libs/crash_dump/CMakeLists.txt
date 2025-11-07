@@ -32,6 +32,7 @@ target_link_libraries(${TARGET}
     ms::lib::cortex_m7::nvic
     ms::lib::crash_dump
     ms::lib::icc_platform_defines
+    ms::lib::telemetry::fuses
     ms::lib::threadx
     ms::mocks::silibs_platform
     silibs::idhw
@@ -86,6 +87,7 @@ mock_target(${TARGET}
     CdRegisterAddress32PointerArray
     CdRegisterCallback
     CdRegisterRegisterSet
+    CdRegisterCustomChunk
     atu_map
     atu_unmap
     atu_svc_accel_atu_addr
@@ -116,4 +118,5 @@ mock_target(${TARGET}
     crash_dump_get_dump_size
     fpfw_pldm_service_raise_platform_event
     system_info_is_warm_start
+    tlm_fuses_get_ecid
 )

@@ -36,9 +36,18 @@ extern "C" {
 #include <sdm_ext_cfg_regs.h>            // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
 #include <silibs_platform_mock.h>        // for mmio_set_mock_data
 #include <startup_shutdown_ssi.h>        // for sos_register_ssi
+#include <tlm_fuses.h>                   // for ecid_t, tlm_fuses_get_ecid
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CD_DEFAULT_MEM_POOL_SIZE 1024
+// ECID INFO GUID
+#define CD_ECID_INFO_GUID                                  \
+    {                                                      \
+        0x185084EC, 0xE4AD, 0x4DA1,                        \
+        {                                                  \
+            0xA4, 0xDF, 0x8A, 0xDC, 0xF3, 0x3D, 0xD1, 0xB4 \
+        }                                                  \
+    }
 
 /*------------- Typedefs -----------------*/
 
@@ -68,6 +77,8 @@ extern VOID (*static_timer_cb)(ULONG id);
 extern bool transfer_completed;
 extern DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE static_cd_dfwk_CompletionRoutine;
 
+extern FPFW_CD_CUSTOM_CHUNK_UPDATE_CALLBACK __wrap_cd_ecid_update_callback;
+
 bool __real_crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
 bool __use_real_crash_dump_get_is_dump_complete = false;
 
@@ -92,6 +103,24 @@ bool __wrap_crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_cont
     FPFW_UNUSED(type_context);
 
     return mock_type(bool);
+}
+
+fpfw_status_t __wrap_tlm_fuses_get_ecid(ecid_t* ecid)
+{
+    assert_non_null(ecid);
+
+    function_called();
+
+    ecid_t mock_ecid = {
+        "123456789", // wafer_lot_num
+        12,          // wafer_num
+        34,          // x_coord
+        56,          // y_coord
+        0xAB         // parity_bits
+    };
+    memcpy(ecid, &mock_ecid, sizeof(ecid_t));
+
+    return FPFW_STATUS_SUCCESS;
 }
 
 //
@@ -236,6 +265,17 @@ void set_expectations_crash_dump_register_standard_info()
     expect_not_value(__wrap_CdRegisterAddress32, address, NULL);
     expect_value(__wrap_CdRegisterAddress32, size, sizeof(CD_MSFT_VERSION_INFO));
     expect_value(__wrap_CdRegisterAddress32, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+}
+
+void set_expectations_crash_dump_register_ecid()
+{
+    static GUID CD_ECID_INFO_GUID_DATA = CD_ECID_INFO_GUID;
+    expect_function_call(__wrap_CdRegisterCustomChunk);
+    expect_memory(__wrap_CdRegisterCustomChunk, &signature, &CD_ECID_INFO_GUID_DATA, sizeof(GUID));
+    expect_value(__wrap_CdRegisterCustomChunk, clientContext, NULL);
+    expect_value(__wrap_CdRegisterCustomChunk, payloadSize, DUMP_ROUND_UP(sizeof(ecid_t), DUMP_NATURAL_ALIGNMENT));
+    expect_value(__wrap_CdRegisterCustomChunk, getSizeCallback, NULL);
+    expect_value(__wrap_CdRegisterCustomChunk, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }
 
 void set_expectations_crash_dump_register_threadx()
@@ -405,6 +445,9 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp, nullptr, nullptr)
     // crash_dump_register_standard_info()
     set_expectations_crash_dump_register_standard_info();
 
+    // crash_dump_register_ecid()
+    set_expectations_crash_dump_register_ecid();
+
     // crash_dump_register_threadx()
     set_expectations_crash_dump_register_threadx();
 
@@ -464,6 +507,9 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp_warmstart, nullptr, nullptr
 
     // crash_dump_register_standard_info()
     set_expectations_crash_dump_register_standard_info();
+
+    // crash_dump_register_ecid()
+    set_expectations_crash_dump_register_ecid();
 
     // crash_dump_register_threadx()
     set_expectations_crash_dump_register_threadx();
@@ -525,6 +571,9 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
     // crash_dump_register_standard_info()
     set_expectations_crash_dump_register_standard_info();
 
+    // crash_dump_register_ecid()
+    set_expectations_crash_dump_register_ecid();
+
     // crash_dump_register_threadx()
     set_expectations_crash_dump_register_threadx();
 
@@ -584,6 +633,9 @@ TEST_FUNCTION(test_crash_dump_register_mini_dump, nullptr, nullptr)
 
     // crash_dump_register_standard_info()
     set_expectations_crash_dump_register_standard_info();
+
+    // crash_dump_register_ecid()
+    set_expectations_crash_dump_register_ecid();
 
     // Call API under test
     KNG_STATUS result = crash_dump_register_dump(&type_context);

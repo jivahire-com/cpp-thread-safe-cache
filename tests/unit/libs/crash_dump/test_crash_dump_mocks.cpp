@@ -411,6 +411,32 @@ bool __wrap_CdRegisterRegisterSet(FPFwCrashDumpCtx* ctx, void* address, uint32_t
     return true;
 }
 
+FPFW_CD_CUSTOM_CHUNK_UPDATE_CALLBACK __wrap_cd_ecid_update_callback = NULL;
+
+bool __wrap_CdRegisterCustomChunk(FPFwCrashDumpCtx* ctx,
+                                  GUID signature,
+                                  void* clientContext,
+                                  uint32_t payloadSize,
+                                  FPFW_CD_CUSTOM_CHUNK_GET_SIZE_CALLBACK getSizeCallback,
+                                  FPFW_CD_CUSTOM_CHUNK_UPDATE_CALLBACK updateCallback,
+                                  FPFwCdDumpPriority priority)
+{
+    assert_non_null(ctx);
+
+    check_expected_ptr(&signature);
+    check_expected_ptr(clientContext);
+    check_expected(payloadSize);
+    check_expected_ptr(getSizeCallback);
+    assert_non_null(updateCallback);
+    check_expected(priority);
+
+    __wrap_cd_ecid_update_callback = updateCallback;
+
+    function_called();
+
+    return true;
+}
+
 UINT __wrap__txe_mutex_create(TX_MUTEX* mutex_ptr, CHAR* name_ptr, UINT inherit, UINT mutex_control_block_size)
 {
     assert_non_null(mutex_ptr); // Ensure the mutex pointer is not NULL

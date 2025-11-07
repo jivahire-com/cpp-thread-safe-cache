@@ -12,6 +12,7 @@ set (SOURCES
         src/crash_dump_init.c
         src/crash_dump_overrides.c
         src/crash_dump_payload_core.c
+        src/crash_dump_payload_ecid.c
         src/crash_dump_payload_msft.c
         src/crash_dump_payload_threadx.c
         src/crash_dump_pldm.c
@@ -57,6 +58,7 @@ target_link_libraries(${TARGET}
         ms::lib::icc_platform_defines
         ms::lib::register_headers
         ms::lib::system_info
+        ms::lib::telemetry::fuses
         ms::lib::utils
         ms::service::health_monitor
         silibs::gpio

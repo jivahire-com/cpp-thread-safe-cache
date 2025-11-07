@@ -77,3 +77,10 @@ void crash_dump_register_threadx(crash_dump_type_context_t *type_context);
  * @param context callback context
  */
 void crash_dump_capture_threadx(void* context);
+
+/**
+ * @brief Captures ECID information
+ * 
+ * #param type_context crash dump type based context
+ */
+void crash_dump_register_ECID(crash_dump_type_context_t* type_context);

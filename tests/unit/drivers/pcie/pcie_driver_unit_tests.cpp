@@ -185,6 +185,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
     dev.rb_configs = rb_configs;
     pciess_device_interface_t iface;
     iface.dev = &dev;
+    bool cold_boot = true;
 
     /* Setup silibs expectations */
     /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
@@ -197,6 +198,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
         r.req_type = INITIAL_CONFIG_REQUEST;
         r.rpss_index = (RPSS_INSTANCE)i;
         r.rp_index = 0;
+        r.p_sent_data = &cold_boot;
 
         /* Set the owning interface*/
         auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
@@ -224,8 +226,8 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
     }
 }
 
-/* Test case for initial pciess init sync. request for mirrored configurations successful path */
-TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
+/* Test case for initial pciess init sync. request for non-mirrored configurations successful path */
+TEST_FUNCTION(test_pcie_rpss_init_soc1_warm_boot_success, test_setup, test_teardown)
 {
     /*Setup the mock interface and device*/
     pcie_root_bridge_config rb_configs[4];
@@ -233,6 +235,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
     dev.rb_configs = rb_configs;
     pciess_device_interface_t iface;
     iface.dev = &dev;
+    bool cold_boot = false;
 
     /* Setup silibs expectations */
     /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
@@ -245,6 +248,55 @@ TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
         r.req_type = INITIAL_CONFIG_REQUEST;
         r.rpss_index = (RPSS_INSTANCE)i;
         r.rp_index = 0;
+        r.p_sent_data = &cold_boot;
+
+        /* Set the owning interface*/
+        auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
+        req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
+
+        mock_pcie_ent.id = r.rpss_index;
+        will_return(__wrap_get_rpss_resolved_base, 0xDEADBEEF);
+        expect_value(__wrap_pciess_get_entity, rpss_idx, i);
+        will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+        will_return(__wrap_system_info_get_soc_position, 0x00);
+        expect_value(__wrap_pciess_config_entity, program_phy_regs, true);
+        expect_value(__wrap_pciess_config_entity, enable_apu, true);
+        will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
+        will_return(__wrap_pciess_config_ss_for_scp_warm_reset, SILIBS_SUCCESS);
+        will_return(__wrap_idsw_get_die_id, DIE_0);
+
+        cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
+        will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
+
+        int32_t ret = pcie_sched_sync_op(&(r.header));
+        assert_int_equal(ret, 0);
+        assert_int_equal(r.status, SILIBS_SUCCESS);
+    }
+}
+
+/* Test case for initial pciess init sync. request for mirrored configurations successful path */
+TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
+{
+    /*Setup the mock interface and device*/
+    pcie_root_bridge_config rb_configs[4];
+    pciess_device_t dev;
+    dev.rb_configs = rb_configs;
+    pciess_device_interface_t iface;
+    iface.dev = &dev;
+    bool cold_boot = true;
+
+    /* Setup silibs expectations */
+    /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    for (uint8_t i = 0; i < NUM_RPSS; i++)
+    {
+        /* Setup the request for an rpss */
+        pcie_sync_request_t r;
+        r.header.RequestType = INITIAL_CONFIG_REQUEST;
+        r.req_type = INITIAL_CONFIG_REQUEST;
+        r.rpss_index = (RPSS_INSTANCE)i;
+        r.rp_index = 0;
+        r.p_sent_data = &cold_boot;
 
         /* Set the owning interface*/
         auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
@@ -284,6 +336,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     dev.rb_configs = rb_configs;
     pciess_device_interface_t iface;
     iface.dev = &dev;
+    bool cold_boot = true;
 
     /* Setup the request for an rpss */
     pcie_sync_request_t r;
@@ -291,6 +344,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     r.req_type = INITIAL_CONFIG_REQUEST;
     r.rpss_index = RPSS2;
     r.rp_index = 0;
+    r.p_sent_data = &cold_boot;
 
     /* Set the owning interface*/
     PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
@@ -326,6 +380,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     assert_int_equal(rb_configs[0].flags.is_secondary_soc, false);
 }
 
+#if 1
 TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardown)
 {
     /* Setup the request for an rpss */
@@ -385,6 +440,28 @@ TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_success, test_setup, test_teardo
     will_return(__wrap_pciess_rps_clear_intus, SILIBS_SUCCESS);
     will_return_always(__wrap_oi_pcie_ss_set_laattr_rp_overrides, SILIBS_SUCCESS);
     expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << r.rpss_index));
+    int32_t ret = pcie_sched_sync_op(&(r.header));
+    assert_int_equal(ret, 0);
+    assert_int_equal(r.status, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_pcie_rpss_post_rp_ready_init_warm_boot_success, test_setup, test_teardown)
+{
+    /* Setup the request for an rpss */
+    bool cold_boot = false;
+    pcie_sync_request_t r;
+    r.header.RequestType = POST_RP_INIT_REQUEST;
+    r.req_type = POST_RP_INIT_REQUEST;
+    r.rpss_index = RPSS2;
+    r.rp_index = 0;
+    r.p_sent_data = &cold_boot;
+
+    mock_pcie_ent.id = r.rpss_index;
+
+    expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
+    will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
+    expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << r.rpss_index));
+    will_return(__wrap_pciess_rps_post_rp_ready_init_scp_warm_reset, SILIBS_SUCCESS);
     int32_t ret = pcie_sched_sync_op(&(r.header));
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
@@ -1351,6 +1428,7 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
     dev.rb_configs = rb_configs;
     pciess_device_interface_t iface;
     iface.dev = &dev;
+    bool cold_boot = true;
 
     /* Setup the request for an rpss */
     pcie_sync_request_t r;
@@ -1358,6 +1436,7 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
     r.req_type = INITIAL_CONFIG_REQUEST;
     r.rpss_index = RPSS5; // RPSS5 on FPGA is CXL-enabled
     r.rp_index = 0;
+    r.p_sent_data = &cold_boot;
 
     /* Set the owning interface*/
     PDFWK_SYNC_REQUEST_HEADER req = (PDFWK_SYNC_REQUEST_HEADER)&r;
@@ -1408,6 +1487,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_ift_success, test_setup, test_teardown)
     dev.rb_configs = rb_configs;
     pciess_device_interface_t iface;
     iface.dev = &dev;
+    bool cold_boot = true;
 
     /* Setup silibs expectations */
     /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
@@ -1420,6 +1500,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_ift_success, test_setup, test_teardown)
         r.req_type = INITIAL_CONFIG_REQUEST;
         r.rpss_index = (RPSS_INSTANCE)i;
         r.rp_index = 0;
+        r.p_sent_data = &cold_boot;
 
         /* Set the owning interface*/
         auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
@@ -1460,6 +1541,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_ift_fail, test_setup, test_teardown)
     dev.rb_configs = rb_configs;
     pciess_device_interface_t iface;
     iface.dev = &dev;
+    bool cold_boot = true;
 
     /* Setup silibs expectations */
     /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
@@ -1474,6 +1556,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_ift_fail, test_setup, test_teardown)
         r.req_type = INITIAL_CONFIG_REQUEST;
         r.rpss_index = RPSS0;
         r.rp_index = 0;
+        r.p_sent_data = &cold_boot;
 
         /* Set the owning interface*/
         auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
@@ -1565,3 +1648,4 @@ TEST_FUNCTION(test_get_pcie_bdat_info_errors, test_setup, test_teardown)
     status = publish_pcie_bdat_info_for_this_rp(&mock_pcie_ent, 0);
     assert_int_equal(status, SILIBS_SUCCESS);
 }
+#endif

@@ -95,6 +95,7 @@ mock_target(${TARGET}
     pciess_deassert_por_reset
     pciess_rp_clear_intus
     pcie_rp_ide_disable_all_streams
+    pciess_config_ss_for_scp_warm_reset
     pciess_rp_initiate_link_training
     pciess_phys_toggle_clocks
     pciess_poll_phys_sram_init_done
@@ -103,10 +104,11 @@ mock_target(${TARGET}
     pciess_rp_ready
     pciess_rps_ready
     pciess_rp_post_link_up_init
-    pciess_rps_post_rp_ready_init
     pciess_probe
     pciess_phys_program_fw
     pciess_ras_process_record
+    pciess_rps_post_rp_ready_init
+    pciess_rps_post_rp_ready_init_scp_warm_reset
     pcie_rp_rasdes_inject_crc_error
     pcie_rp_rasdes_inject_dllp_error
     pcie_rp_rasdes_inject_fc_error

@@ -64,6 +64,7 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
     uint8_t rpss_id = r->rpss_index;
     silibs_status_t sts = SILIBS_SUCCESS;
+    bool is_cold_boot = false;
 
     /* Setup resolved addresses */
     uint64_t ap_subsystem_config_addr = rpss_addrs[rpss_id] + VAB_RPSS_TOP_RPSS_ADDRESS;
@@ -82,27 +83,43 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
                                true);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
-    /* Override settings based on the platform we are running on */
-    plat_overrides_pre_pciess_config_ss_for_bifur(rpss);
-
-    if (!ift_is_enabled())
+    // Cold Boot info comes from the Request orginator
+    // By default its assumes to be false
+    if ((r->p_sent_data) != NULL)
     {
-        sts = pciess_config_ss_for_bifur(rpss);
-        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+        is_cold_boot = *((bool*)(r->p_sent_data));
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Cold Boot Notification. \n", r->rpss_index, r->rp_index);
+    }
 
-        sts = pciess_deassert_por_reset(rpss);
-        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+    if (is_cold_boot)
+    {
+        /* Override settings based on the platform we are running on */
+        plat_overrides_pre_pciess_config_ss_for_bifur(rpss);
 
-        sts = pciess_phys_toggle_clocks(rpss);
-        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+        if (!ift_is_enabled())
+        {
+            sts = pciess_config_ss_for_bifur(rpss);
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
-        pciess_device_interface_t* iface = (pciess_device_interface_t*)(req->OwningInterface);
-        pciess_device_t* dev = (pciess_device_t*)(iface->dev);
-        populate_rb_configs_from_rpss_entity(rpss, dev->rb_configs);
+            sts = pciess_deassert_por_reset(rpss);
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+
+            sts = pciess_phys_toggle_clocks(rpss);
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+
+            pciess_device_interface_t* iface = (pciess_device_interface_t*)(req->OwningInterface);
+            pciess_device_t* dev = (pciess_device_t*)(iface->dev);
+            populate_rb_configs_from_rpss_entity(rpss, dev->rb_configs);
+        }
+        else
+        {
+            sts = pciess_config_ss_for_ift(rpss);
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+        }
     }
     else
     {
-        sts = pciess_config_ss_for_ift(rpss);
+        sts = pciess_config_ss_for_scp_warm_reset(rpss);
         BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
     }
 
@@ -160,106 +177,126 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
 {
     pcie_sync_request_t* r = (pcie_sync_request_t*)req;
     silibs_status_t sts = SILIBS_SUCCESS;
+    bool is_cold_boot = false;
+
+    // Cold Boot info comes from the Request orginator
+    // By default its assumes to be false
+    if ((r->p_sent_data) != NULL)
+    {
+        is_cold_boot = *((bool*)(r->p_sent_data));
+        FPFW_DBGPRINT_VERBOSE("RPSS[%d] RP[%d]: Cold Boot Notification. \n", r->rpss_index, r->rp_index);
+    }
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
     BUG_ASSERT_PARAM(rpss != NULL, rpss, 0);
 
-    sts = pciess_rps_post_rp_ready_init(rpss);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+    if (is_cold_boot)
+    {
+        sts = pciess_rps_post_rp_ready_init(rpss);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
 
-    sts = pciess_rps_clear_intus(rpss);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+        sts = pciess_rps_clear_intus(rpss);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+
+        pcie_prod_cfg_workarounds_t* rpss_workarounds = get_workaround_for_rpss(rpss->id);
+
+        for (uint8_t i = 0; i < PCIESS_NUM_PORTS; i++)
+        {
+            if (rpss_workarounds->prod_rp_cfgs[i].hide_dpc == true)
+            {
+                sts = oi_pcie_rp_dbi_hide_dpc_cap(&(rpss->rps[i]));
+                BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+            }
+            /* TODO: If mscp is going to have complete control over this register set by knobs,
+             *   the interface enums for this call must be passed up by silibs knobs headers
+             *   to mscp xml
+             */
+
+            // Apply force read allocate
+            pcie_laattr_ovrd_t overrides_r = {0};
+            // Default override values, matches POR values
+            overrides_r.tph_override = PCIE_LAATTR_WB_A_OS;
+            overrides_r.notph_override = PCIE_LAATTR_WB_A_OS;
+            overrides_r.nosnoop_override = PCIE_LAATTR_WB_A_OS;
+
+            // Read tph
+            if (rpss_workarounds->prod_rp_cfgs[i].lattr_tph_en_read == true)
+            {
+                overrides_r.tph_override_op = PCIE_LAATTR_OVERRIDE;
+            }
+            else
+            {
+                overrides_r.tph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+            }
+            // Read notph
+            if (rpss_workarounds->prod_rp_cfgs[i].lattr_notph_en_read == true)
+            {
+                overrides_r.notph_override_op = PCIE_LAATTR_OVERRIDE;
+            }
+            else
+            {
+                overrides_r.notph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+            }
+            // Read no snoop
+            if (rpss_workarounds->prod_rp_cfgs[i].lattr_nosnoop_en_read == true)
+            {
+                overrides_r.nosnoop_override_op = PCIE_LAATTR_OVERRIDE;
+            }
+            else
+            {
+                overrides_r.nosnoop_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+            }
+            sts = oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides_r, false);
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+
+            // Apply force write allocate
+            pcie_laattr_ovrd_t overrides_w = {0};
+            overrides_w.tph_override = PCIE_LAATTR_WB_A_OS;
+            overrides_w.notph_override = PCIE_LAATTR_WB_A_OS;
+            overrides_w.nosnoop_override = PCIE_LAATTR_WB_A_OS;
+
+            // Read tph
+            if (rpss_workarounds->prod_rp_cfgs[i].lattr_tph_en_write == true)
+            {
+                overrides_w.tph_override_op = PCIE_LAATTR_OVERRIDE;
+            }
+            else
+            {
+                overrides_w.tph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+            }
+            // Read notph
+            if (rpss_workarounds->prod_rp_cfgs[i].lattr_notph_en_write == true)
+            {
+                overrides_w.notph_override_op = PCIE_LAATTR_OVERRIDE;
+            }
+            else
+            {
+                overrides_w.notph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+            }
+            // Read no snoop
+            if (rpss_workarounds->prod_rp_cfgs[i].lattr_nosnoop_en_write == true)
+            {
+                overrides_w.nosnoop_override_op = PCIE_LAATTR_OVERRIDE;
+            }
+            else
+            {
+                overrides_w.nosnoop_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
+            }
+            sts = oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides_w, true);
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+        }
+    }
+    else
+    {
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: ----------- WARM BOOT[RSS POST RP_READY] ------------- \n",
+                           r->rpss_index,
+                           r->rp_index);
+        sts = pciess_rps_post_rp_ready_init_scp_warm_reset(rpss);
+        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
+    }
 
     /* Enable RPSS VAB ISRs now as the rpss is programmed and ready to go */
     enable_vab_isrs((1 << rpss->id));
-
-    pcie_prod_cfg_workarounds_t* rpss_workarounds = get_workaround_for_rpss(rpss->id);
-
-    for (uint8_t i = 0; i < PCIESS_NUM_PORTS; i++)
-    {
-        if (rpss_workarounds->prod_rp_cfgs[i].hide_dpc == true)
-        {
-            sts = oi_pcie_rp_dbi_hide_dpc_cap(&(rpss->rps[i]));
-            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
-        }
-        /* TODO: If mscp is going to have complete control over this register set by knobs,
-         *   the interface enums for this call must be passed up by silibs knobs headers
-         *   to mscp xml
-         */
-
-        // Apply force read allocate
-        pcie_laattr_ovrd_t overrides_r = {0};
-        // Default override values, matches POR values
-        overrides_r.tph_override = PCIE_LAATTR_WB_A_OS;
-        overrides_r.notph_override = PCIE_LAATTR_WB_A_OS;
-        overrides_r.nosnoop_override = PCIE_LAATTR_WB_A_OS;
-
-        // Read tph
-        if (rpss_workarounds->prod_rp_cfgs[i].lattr_tph_en_read == true)
-        {
-            overrides_r.tph_override_op = PCIE_LAATTR_OVERRIDE;
-        }
-        else
-        {
-            overrides_r.tph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
-        }
-        // Read notph
-        if (rpss_workarounds->prod_rp_cfgs[i].lattr_notph_en_read == true)
-        {
-            overrides_r.notph_override_op = PCIE_LAATTR_OVERRIDE;
-        }
-        else
-        {
-            overrides_r.notph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
-        }
-        // Read no snoop
-        if (rpss_workarounds->prod_rp_cfgs[i].lattr_nosnoop_en_read == true)
-        {
-            overrides_r.nosnoop_override_op = PCIE_LAATTR_OVERRIDE;
-        }
-        else
-        {
-            overrides_r.nosnoop_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
-        }
-        sts = oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides_r, false);
-        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
-
-        // Apply force write allocate
-        pcie_laattr_ovrd_t overrides_w = {0};
-        overrides_w.tph_override = PCIE_LAATTR_WB_A_OS;
-        overrides_w.notph_override = PCIE_LAATTR_WB_A_OS;
-        overrides_w.nosnoop_override = PCIE_LAATTR_WB_A_OS;
-
-        // Read tph
-        if (rpss_workarounds->prod_rp_cfgs[i].lattr_tph_en_write == true)
-        {
-            overrides_w.tph_override_op = PCIE_LAATTR_OVERRIDE;
-        }
-        else
-        {
-            overrides_w.tph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
-        }
-        // Read notph
-        if (rpss_workarounds->prod_rp_cfgs[i].lattr_notph_en_write == true)
-        {
-            overrides_w.notph_override_op = PCIE_LAATTR_OVERRIDE;
-        }
-        else
-        {
-            overrides_w.notph_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
-        }
-        // Read no snoop
-        if (rpss_workarounds->prod_rp_cfgs[i].lattr_nosnoop_en_write == true)
-        {
-            overrides_w.nosnoop_override_op = PCIE_LAATTR_OVERRIDE;
-        }
-        else
-        {
-            overrides_w.nosnoop_override_op = PCIE_LAATTR_OVERRIDE_DISABLE;
-        }
-        sts = oi_pcie_ss_set_laattr_rp_overrides(rpss, i, &overrides_w, true);
-        BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
-    }
 
     return sts;
 }

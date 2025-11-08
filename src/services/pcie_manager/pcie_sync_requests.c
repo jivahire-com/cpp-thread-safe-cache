@@ -37,7 +37,8 @@
 silibs_status_t send_generic_ss_sync_req(PDFWK_INTERFACE_HEADER iface,
                                          RPSS_INSTANCE rpss_idx,
                                          pcie_rp_sync_request_t req,
-                                         void* data,
+                                         void* req_data,
+                                         void* sent_data,
                                          bool no_silibs_check)
 {
     int32_t dfwk_status = DFWK_SUCCESS;
@@ -48,7 +49,11 @@ silibs_status_t send_generic_ss_sync_req(PDFWK_INTERFACE_HEADER iface,
         BUG_ASSERT_PARAM((rpss_idx < NUM_RPSS), rpss_idx, 0);
     }
 
-    pcie_sync_request_t sync_req = {.header = {.RequestType = req}, .rpss_index = rpss_idx, .req_type = req, .p_requested_data = data};
+    pcie_sync_request_t sync_req = {.header = {.RequestType = req},
+                                    .rpss_index = rpss_idx,
+                                    .req_type = req,
+                                    .p_requested_data = req_data,
+                                    .p_sent_data = sent_data};
 
     dfwk_status = DfwkInterfaceSendSync(iface, &sync_req.header);
     if (DFWK_FAILED(dfwk_status) || ((sync_req.status != SILIBS_SUCCESS) && !no_silibs_check))
@@ -69,34 +74,34 @@ silibs_status_t send_generic_ss_sync_req(PDFWK_INTERFACE_HEADER iface,
 pcie_ss_entity_t* send_sync_rpss_get_entity(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx)
 {
     pcie_ss_entity_t* rpss_ent = NULL;
-    silibs_status_t status = send_generic_ss_sync_req(iface, rpss_idx, GET_RPSS_ENTITY_REQUEST, &rpss_ent, false);
+    silibs_status_t status = send_generic_ss_sync_req(iface, rpss_idx, GET_RPSS_ENTITY_REQUEST, &rpss_ent, NULL, false);
     BUG_ASSERT_PARAM((rpss_ent != NULL), status, rpss_idx);
     return rpss_ent;
 }
 
-silibs_status_t send_sync_rpss_initial_config(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx)
+silibs_status_t send_sync_rpss_initial_config(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx, bool* is_cold_boot)
 {
-    return send_generic_ss_sync_req(iface, rpss_idx, INITIAL_CONFIG_REQUEST, NULL, false);
+    return send_generic_ss_sync_req(iface, rpss_idx, INITIAL_CONFIG_REQUEST, NULL, (void*)(is_cold_boot), false);
 }
 
 silibs_status_t send_sync_rpss_pre_rp_init_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx)
 {
-    return send_generic_ss_sync_req(iface, rpss_idx, PRE_RP_INIT_REQUEST, NULL, false);
+    return send_generic_ss_sync_req(iface, rpss_idx, PRE_RP_INIT_REQUEST, NULL, NULL, false);
 }
 
-silibs_status_t send_sync_rpss_post_rp_init_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx)
+silibs_status_t send_sync_rpss_post_rp_init_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx, bool* is_cold_boot)
 {
-    return send_generic_ss_sync_req(iface, rpss_idx, POST_RP_INIT_REQUEST, NULL, false);
+    return send_generic_ss_sync_req(iface, rpss_idx, POST_RP_INIT_REQUEST, NULL, (void*)(is_cold_boot), false);
 }
 
 silibs_status_t send_sync_rpss_inject_pcie_error(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx, ras_einj_info_t* einj_payload)
 {
-    return send_generic_ss_sync_req(iface, rpss_idx, INJECT_PCIE_ERROR, einj_payload, true);
+    return send_generic_ss_sync_req(iface, rpss_idx, INJECT_PCIE_ERROR, einj_payload, NULL, true);
 }
 
 silibs_status_t send_sync_rpss_get_ready_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx)
 {
-    return send_generic_ss_sync_req(iface, rpss_idx, GET_RPSS_READY_REQUEST, NULL, true);
+    return send_generic_ss_sync_req(iface, rpss_idx, GET_RPSS_READY_REQUEST, NULL, NULL, true);
 }
 
 /*--------------- Root port (RP) level synchronous requests -----------------*/

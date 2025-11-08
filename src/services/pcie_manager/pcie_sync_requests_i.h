@@ -38,11 +38,12 @@ pcie_ss_entity_t* send_sync_rpss_get_entity(PDFWK_INTERFACE_HEADER iface, RPSS_I
  *
  * @param[in] rpss_idx  - The RPSS instance index.
  * @param[in] iface     - The interface header for the PCIe subsystem.
+ * @param[in] is_cold_boot - Indicator if its a Cold/Warm Boot
  *
  * @retval SILIBS_SUCCESS: Initial configuration sent successfully.
  * @retval Other:          Error occurred while sending initial configuration.
  */
-silibs_status_t send_sync_rpss_initial_config(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx);
+silibs_status_t send_sync_rpss_initial_config(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx, bool *is_cold_boot);
 
 /**
  * @brief Send a synchronous request to initiate the RPSS pre-RP initialization
@@ -61,11 +62,12 @@ silibs_status_t send_sync_rpss_pre_rp_init_request(PDFWK_INTERFACE_HEADER iface,
  *
  * @param[in] iface     - Pointer to the driver interface header for this RPSS.
  * @param[in] rpss_idx  - The RPSS instance index.
+ * @param[in] is_cold_boot - Indicator if its a Cold/Warm Boot
  *
  * @retval SILIBS_SUCCESS: Post-RP initialization sent successfully.
  * @retval Other:          Error occurred while sending post-RP initialization.
  */
-silibs_status_t send_sync_rpss_post_rp_init_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx);
+silibs_status_t send_sync_rpss_post_rp_init_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx, bool *is_cold_boot);
 
 /**
  * @brief Send a synchronous request to inject a PCIe error for the specified RPSS instance.

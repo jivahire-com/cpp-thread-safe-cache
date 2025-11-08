@@ -47,37 +47,10 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-static void send_full_pciess_init(pcie_manager_context_t* ctx)
+static void full_pciess_init_scp_cold_boot(pcie_manager_context_t* ctx)
 {
     unsigned long elapsed_ticks = 0;
     silibs_status_t status = SILIBS_SUCCESS;
-
-    /*
-     * Send initial configuration request - this is the first step in pcie init.
-     * As this step will also populate all pcie configurations, set a bit in
-     * the configuration event flag to signal that PCIe configs are now populated.
-     *
-     * To allow full initialization to complete, we can yield the thread once
-     * initial rpss configuration is complete.
-     */
-    send_sync_rpss_initial_config((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx);
-    tx_event_flags_set(ctx->event_ptr, (1 << ctx->rpss_idx), TX_OR);
-
-    /*
-     * TODO WI: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2777075/
-     * Timing impact of aux_clk_active never going low on the PHYs is being
-     * investigated.
-     *
-     * Yielding the thread here for some time allow aux_clk_active to go low.
-     */
-    tx_thread_sleep(PRE_RPSS_INIT_WORKER_YIELD_TICKS);
-
-    /* Pre and Post RPSS Init should be skipped if IFT is enabled */
-    if (ift_is_enabled())
-    {
-        return;
-    }
-
     /*
      * Send pre root port initialization request to setup the RPSS.
      *
@@ -112,9 +85,74 @@ static void send_full_pciess_init(pcie_manager_context_t* ctx)
     {
         FPFW_DBGPRINT_INFO("RPSS[%d]: RPSS is ready! Elapsed ticks: %lu\n", ctx->rpss_idx, elapsed_ticks);
     }
+}
+
+static void send_full_pciess_init(pcie_manager_context_t* ctx)
+{
+    /*
+     * Send initial configuration request - this is the first step in pcie init.
+     * As this step will also populate all pcie configurations, set a bit in
+     * the configuration event flag to signal that PCIe configs are now populated.
+     *
+     * To allow full initialization to complete, we can yield the thread once
+     * initial rpss configuration is complete.
+     */
+
+    FPFW_DBGPRINT_INFO("RPSS[%d]: Cold Boot : 0x%d\n", ctx->rpss_idx, (uint8_t)ctx->is_cold_boot);
+    send_sync_rpss_initial_config((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, &ctx->is_cold_boot);
+    tx_event_flags_set(ctx->event_ptr, (1 << ctx->rpss_idx), TX_OR);
+
+    /*
+     * TODO WI: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2777075/
+     * Timing impact of aux_clk_active never going low on the PHYs is being
+     * investigated.
+     *
+     * Yielding the thread here for some time allow aux_clk_active to go low.
+     */
+    tx_thread_sleep(PRE_RPSS_INIT_WORKER_YIELD_TICKS);
+
+    /* Pre and Post RPSS Init should be skipped if IFT is enabled */
+    if (ift_is_enabled())
+    {
+        return;
+    }
+
+    // Perform the following only when cold booting
+    if (ctx->is_cold_boot)
+    {
+        full_pciess_init_scp_cold_boot(ctx);
+    }
 
     /* RPSS is ready, initialize all enabled root ports on it */
-    send_sync_rpss_post_rp_init_request((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx);
+    send_sync_rpss_post_rp_init_request((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, &ctx->is_cold_boot);
+}
+
+static void rpss_init_scp_cold_boot(pcie_manager_context_t* ctx)
+{
+    /* Wait for the PCIe phy firmware load event - set within the AP core firmware load module */
+    FPFW_DBGPRINT_INFO("RPSS[%d]: Waiting for phy firmware load\n", ctx->rpss_idx);
+    pcie_phyfw_wait_load_event(ctx->phyfw_load_event_ptr);
+
+    /* Start Initial PCIESS/RP Init */
+    send_full_pciess_init(ctx);
+
+    /* Initialize async request queue on the rpss to monitor events */
+    init_wait_for_event_queue_on_rpss(ctx);
+
+    /* Send Start LT */
+    initiate_link_training_on_rpss(ctx);
+
+    /* Complete the link training startup ssi phase */
+    complete_ssi_ltssm_startup_req(ctx->rpss_idx);
+}
+
+static void rpss_init_scp_warm_boot(pcie_manager_context_t* ctx)
+{
+    FPFW_DBGPRINT_INFO("RPSS[%d]: Warm Booting. \n", ctx->rpss_idx);
+    send_full_pciess_init(ctx);
+
+    /* Initialize async request queue on the rpss to monitor events */
+    init_wait_for_event_queue_on_rpss(ctx);
 }
 
 void rpss_service_thread_fn(ULONG thread_input)
@@ -136,21 +174,15 @@ void rpss_service_thread_fn(ULONG thread_input)
         return;
     }
 
-    /* Wait for the PCIe phy firmware load event - set within the AP core firmware load module */
-    FPFW_DBGPRINT_INFO("RPSS[%d]: Waiting for phy firmware load\n", ctx->rpss_idx);
-    pcie_phyfw_wait_load_event(ctx->phyfw_load_event_ptr);
-
-    /* Start Initial PCIESS/RP Init */
-    send_full_pciess_init(ctx);
-
-    /* Initialize async request queue on the rpss to monitor events */
-    init_wait_for_event_queue_on_rpss(ctx);
-
-    /* Send Start LT */
-    initiate_link_training_on_rpss(ctx);
-
-    /* Complete the link training startup ssi phase */
-    complete_ssi_ltssm_startup_req(ctx->rpss_idx);
+    if (ctx->is_cold_boot == true)
+    {
+        rpss_init_scp_cold_boot(ctx);
+    }
+    else
+    {
+        // SCP Warm Boot
+        rpss_init_scp_warm_boot(ctx);
+    }
 
     while (true)
     {

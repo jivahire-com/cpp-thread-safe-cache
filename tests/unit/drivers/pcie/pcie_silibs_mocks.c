@@ -109,6 +109,12 @@ silibs_status_t __wrap_pciess_config_entity(pcie_ss_entity_t* ss,
     return mock_type(silibs_status_t);
 }
 
+silibs_status_t __wrap_pciess_config_ss_for_scp_warm_reset(pcie_ss_entity_t* ss)
+{
+    assert_non_null(ss);
+    return mock_type(silibs_status_t);
+}
+
 silibs_status_t __wrap_pciess_config_ss_for_bifur(pcie_ss_entity_t* ss)
 {
     assert_non_null(ss);
@@ -159,6 +165,12 @@ silibs_status_t __wrap_pciess_rps_ready(pcie_ss_entity_t* ss)
 }
 
 silibs_status_t __wrap_pciess_rps_post_rp_ready_init(pcie_ss_entity_t* ss)
+{
+    assert_non_null(ss);
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_pciess_rps_post_rp_ready_init_scp_warm_reset(pcie_ss_entity_t* ss)
 {
     assert_non_null(ss);
     return mock_type(silibs_status_t);

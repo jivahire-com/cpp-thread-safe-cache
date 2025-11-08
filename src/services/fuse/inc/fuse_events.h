@@ -24,6 +24,16 @@
 #define FUSE_ET_WARN(type, param)          EventWriteFuseWarnParam((param), (type))
 #define FUSE_ET_STATUS(type)               EventWriteFuseStatus((type))
 #define FUSE_ET_STATUS_PARAM(type, param)  EventWriteFuseStatusParam((param), (type))
+#define FUSE_ET_LOG_TRACE_STATUS(type)    \
+    EventWriteFuseLogTraceStatus((type))
+#define FUSE_ET_LOG_TRACE_STR(message) \
+    EventWriteFuseLogTraceStr((message))
+#define FUSE_ET_LOG_TRACE_PARAM(type, param) \
+    EventWriteFuseLogTraceParam((param), (type))
+#define FUSE_ET_LOG_TRACE_CHANGE_STATE(loop_id, state) \
+    EventWriteFuseLogChangeState((loop_id), (state))
+#define FUSE_ET_LOG_TRACE_SIGNAL_EVT(event) \
+    EventWriteFuseLogSignalEvt((event))
 
 /*-------------- Typedefs ----------------*/
 
@@ -35,7 +45,13 @@ typedef enum
     FUSE_ET_TYPE_UNFUSED_WITH_OVERRIDES,
     FUSE_ET_TYPE_FUSED_NO_OVERRIDES,
     FUSE_ET_TYPE_FUSED_WITH_OVERRIDES,
+    FUSE_ET_TYPE_FUSED_OVERRIDES_FAIL,
     FUSE_ET_TYPE_FUSED_IGNORE_VALIDS,
+    FUSE_ET_TYPE_CORE_FUSES_READ_FAIL,
+    FUSE_ET_TYPE_HNS_FUSES_READ_FAIL,
+    FUSE_ET_TYPE_NO_FUSE_DISTRIBUTION,
+    FUSE_ET_TYPE_FUSE_ICC_BASE_SEND_FAIL,
+    FUSE_ET_TYPE_FUSE_SIZE_INVALID,
     FUSE_ET_TYPE_OVERRIDE_COMPLETE,
     FUSE_ET_TYPE_DISTRIBUTION_START,
     FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR0,
@@ -44,6 +60,9 @@ typedef enum
     FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR1,
     FUSE_ET_TYPE_DISTRIBUTION_END,
     FUSE_ET_TYPE_READ,
+    FUSE_ET_TYPE_REMOTE_DIE_CONFIG_FAIL,
+    FUSE_ET_TYPE_READ_CORE_DISABLE_FAIL,
+    FUSE_ET_TYPE_GET_EXCLUSION_LIST_FAIL,
     FUSE_ET_TYPE_COUNT
 }   FUSE_ET_TYPE_T;
 

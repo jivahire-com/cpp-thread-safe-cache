@@ -17,13 +17,12 @@
 #include <fuse_dma.h>    // apply copy fuse to ram
 #include <fuse_events.h> // apply event trace for fuse
 #include <fuse_init.h>   // fuse service API interface
-#include <idhw.h>
-// #include <fuse_knobs.h>
 #include <fuse_main_i.h>
 #include <fuse_struct.h>
 #include <fuses_top_regs.h>
 #include <icc_mhu.h> // for icc_mhu_packet_t
 #include <icc_platform_defines.h>
+#include <idhw.h>
 #include <idsw.h> // SW platform id
 #include <idsw_kng.h>
 #include <kingsgate_fuse_defines.h> // Test revision get
@@ -105,7 +104,7 @@ static struct ap_core_die_cfg_cb_t ap_core_die_cfg_completion = {.cb = NULL, .co
 void scp_remote_die_config_req_cb(void* context, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
-    printf(FUSE_NAME "Remote send completed 0x%" PRIx32 "\n", status);
+    FPFW_DBGPRINT_INFO(FUSE_NAME "Remote send completed 0x%" PRIx32 "\n", status);
 
     if (status == FPFW_ICC_TRANSPORT_STATUS_BUSY)
     {
@@ -239,50 +238,53 @@ void fuse_disable_cores_to_66(kng_fuse_disable_core_t* p_fuse_disable)
                               __builtin_popcount(p_fuse_disable->fuse_dis_core_95_64 & 0x0f);
     if (total_disable_cores == 0)
     {
-        printf(FUSE_NAME "total disable cores are 0 so we turn off Core26 and Core37\n");
+        FPFW_DBGPRINT_INFO(FUSE_NAME "total disable cores are 0 so we turn off Core26 and Core37\n");
         p_fuse_disable->fuse_dis_core_31_0 = p_fuse_disable->fuse_dis_core_31_0 | (1 << 26);
         p_fuse_disable->fuse_dis_core_63_32 = p_fuse_disable->fuse_dis_core_63_32 | (1 << 5);
-        printf(FUSE_NAME "DIE [%d] : core31-0=0x%" PRIx32 " core63-323=0x%" PRIx32 " core95-63=0x%" PRIx32
-                         " \n",
-               idsw_get_die_id(),
-               p_fuse_disable->fuse_dis_core_31_0,
-               p_fuse_disable->fuse_dis_core_63_32,
-               p_fuse_disable->fuse_dis_core_95_64);
+        FPFW_DBGPRINT_INFO(FUSE_NAME "DIE [%d] : core31-0=0x%" PRIx32 " core63-32=0x%" PRIx32
+                                     " core95-64=0x%" PRIx32 " \n",
+                           idsw_get_die_id(),
+                           p_fuse_disable->fuse_dis_core_31_0,
+                           p_fuse_disable->fuse_dis_core_63_32,
+                           p_fuse_disable->fuse_dis_core_95_64);
     }
     else if (total_disable_cores == 1)
     {
-        printf(FUSE_NAME "DIE [%d] :  core31-0=0x%" PRIx32 " core63-323=0x%" PRIx32 " core95-63=0x%" PRIx32 " \n",
-               idsw_get_die_id(),
-               p_fuse_disable->fuse_dis_core_31_0,
-               p_fuse_disable->fuse_dis_core_63_32,
-               p_fuse_disable->fuse_dis_core_95_64);
-        printf(FUSE_NAME "total disable cores are 1 so enter pickup algorithm\n");
+        FPFW_DBGPRINT_INFO(FUSE_NAME "DIE [%d] :  core31-0=0x%" PRIx32 " core63-32=0x%" PRIx32
+                                     " core95-64=0x%" PRIx32 " \n",
+                           idsw_get_die_id(),
+                           p_fuse_disable->fuse_dis_core_31_0,
+                           p_fuse_disable->fuse_dis_core_63_32,
+                           p_fuse_disable->fuse_dis_core_95_64);
+        FPFW_DBGPRINT_INFO(FUSE_NAME "total disable cores are 1 so enter pickup algorithm\n");
         fuse_disable_pick_algorithm(p_fuse_disable);
-        printf(FUSE_NAME "After : core31-0=0x%" PRIx32 " core63-323=0x%" PRIx32 " core95-63=0x%" PRIx32 " \n",
-               p_fuse_disable->fuse_dis_core_31_0,
-               p_fuse_disable->fuse_dis_core_63_32,
-               p_fuse_disable->fuse_dis_core_95_64);
+        FPFW_DBGPRINT_INFO(FUSE_NAME "After : core31-0=0x%" PRIx32 " core63-32=0x%" PRIx32
+                                     " core95-64=0x%" PRIx32 " \n",
+                           p_fuse_disable->fuse_dis_core_31_0,
+                           p_fuse_disable->fuse_dis_core_63_32,
+                           p_fuse_disable->fuse_dis_core_95_64);
     }
     else
     {
-        printf(FUSE_NAME "equal or above 2 cores selected : core31-0=0x%" PRIx32 " core64-32=0x%" PRIx32
-                         " core95-64=0x%" PRIx32 " \n",
-               p_fuse_disable->fuse_dis_core_31_0,
-               p_fuse_disable->fuse_dis_core_63_32,
-               p_fuse_disable->fuse_dis_core_95_64);
+        FPFW_DBGPRINT_INFO(FUSE_NAME "equal or above 2 cores selected : core31-0=0x%" PRIx32
+                                     " core63-32=0x%" PRIx32 " core95-64=0x%" PRIx32 " \n",
+                           p_fuse_disable->fuse_dis_core_31_0,
+                           p_fuse_disable->fuse_dis_core_63_32,
+                           p_fuse_disable->fuse_dis_core_95_64);
     }
 }
 
-// write recieived information via sds
+// write received information via sds
 void save_remote_die_config_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(output_size_bytes);
-    printf(FUSE_NAME "Remote die config received callback invoked with status 0x%" PRIx32 "\n", status);
+    FPFW_DBGPRINT_INFO(FUSE_NAME "Remote die config received callback invoked with status 0x%" PRIx32 "\n", status);
 
     icc_mhu_d2d_fuse_packet_t* req_params = (icc_mhu_d2d_fuse_packet_t*)context;
     if (status != FPFW_STATUS_SUCCESS)
     {
-        printf(FUSE_NAME "Failed to receive remote die config request\n");
+        FPFW_DBGPRINT_ERROR(FUSE_NAME "Failed to receive remote die config request\n");
+        FUSE_ET_STATUS_PARAM(FUSE_ET_TYPE_REMOTE_DIE_CONFIG_FAIL, status);
         return;
     }
 
@@ -365,7 +367,8 @@ static bool platform_requires_fuse_distribution()
         if (is_secure_state)
         {
             status = false;
-            printf(FUSE_NAME "Fuse distribution is not supported in secure state\n");
+            FPFW_DBGPRINT_INFO(FUSE_NAME "Fuse distribution is not supported in secure state\n");
+            FUSE_ET_STATUS_PARAM(FUSE_ET_TYPE_NO_FUSE_DISTRIBUTION, status);
         }
         else
         {
@@ -373,7 +376,8 @@ static bool platform_requires_fuse_distribution()
         }
         break;
     default:
-        printf(FUSE_NAME "Fuse distribution not supported in FW for platform\n");
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Fuse distribution not supported in FW for platform\n");
+        FUSE_ET_STATUS_PARAM(FUSE_ET_TYPE_NO_FUSE_DISTRIBUTION, status);
         break;
     }
     return status;
@@ -402,7 +406,8 @@ int read_core_disables()
                                         &(p_fuse_disable->fuse_dis_core_31_0));
         if (status != SILIBS_SUCCESS)
         {
-            printf(FUSE_NAME "Unable to read cores fuses for DIE%d\n", p_die_num);
+            FPFW_DBGPRINT_ERROR(FUSE_NAME "Unable to read cores fuses for DIE%d\n", p_die_num);
+            FUSE_ET_STATUS_PARAM(FUSE_ET_TYPE_CORE_FUSES_READ_FAIL, status);
             return status;
         }
 
@@ -419,7 +424,7 @@ int read_core_disables()
             ((p_fuse_disable->fuse_dis_core_95_64 & ~die0_config_spare_core_en_95_64) | 0xFFFFFFF0);
         p_fuse_disable->fuse_dis_core_127_96 = 0xFFFFFFFF;
 
-        printf(FUSE_NAME "Save Core Disable fuse and knob info for DIE%d done\n", p_die_num);
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Save Core Disable fuse and knob info for DIE%d done\n", p_die_num);
     }
     else
     {
@@ -432,7 +437,8 @@ int read_core_disables()
                                         &(p_fuse_disable->fuse_dis_core_31_0));
         if (status != SILIBS_SUCCESS)
         {
-            printf(FUSE_NAME "Unable to read cores fuses for DIE%d\n", p_die_num);
+            FPFW_DBGPRINT_ERROR(FUSE_NAME "Unable to read cores fuses for DIE%d\n", p_die_num);
+            FUSE_ET_STATUS_PARAM(FUSE_ET_TYPE_CORE_FUSES_READ_FAIL, status);
             return status;
         }
 
@@ -449,7 +455,7 @@ int read_core_disables()
             ((p_fuse_disable->fuse_dis_core_95_64 & ~die1_config_spare_core_en_95_64) | 0xFFFFFFF0);
         p_fuse_disable->fuse_dis_core_127_96 = 0xFFFFFFFF;
 
-        printf(FUSE_NAME "Save Core Disable fuse and knob info for DIE%d done\n", p_die_num);
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Save Core Disable fuse and knob info for DIE%d done\n", p_die_num);
     }
 
     return SILIBS_SUCCESS;
@@ -459,7 +465,8 @@ void fuse_register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx
 {
     if ((cb == NULL) || (ctx == NULL))
     {
-        printf(FUSE_NAME "AP core die cfg cb null\n");
+        FPFW_DBGPRINT_ERROR(FUSE_NAME "AP core die cfg cb null\n");
+        FUSE_ET_ERROR(FUSE_ET_TYPE_REMOTE_DIE_CONFIG_FAIL, 0);
         return;
     }
     // Register the callback to be called later after die 0 recvs fuse info from die 1
@@ -484,7 +491,8 @@ int write_fuse_info_to_ap()
         result = mesh_get_hns_sds_vector_from_hns_sparring(&DIE0_hns_fuses);
         if (result != SILIBS_SUCCESS)
         {
-            printf(FUSE_NAME "Unable to read HNS fuses for DIE%d\n", idsw_get_die_id());
+            FPFW_DBGPRINT_ERROR(FUSE_NAME "Unable to read HNS fuses for DIE%d\n", idsw_get_die_id());
+            FUSE_ET_ERROR(FUSE_ET_TYPE_HNS_FUSES_READ_FAIL, idsw_get_die_id());
             return result;
         }
         result = sds_block_creation(HNS_FUSES_DIE0_STRUCT_ID, HNS_FUSES_SIZE, PLATFORM_SDS_REGION_ARSM_DIE0);
@@ -521,7 +529,8 @@ int write_fuse_info_to_ap()
         result = mesh_get_hns_sds_vector_from_hns_sparring(&DIE1_hns_fuses);
         if (result != SILIBS_SUCCESS)
         {
-            printf(FUSE_NAME "Unable to read HNS fuses for DIE%d\n", idsw_get_die_id());
+            FPFW_DBGPRINT_ERROR(FUSE_NAME "Unable to read HNS fuses for DIE%d\n", idsw_get_die_id());
+            FUSE_ET_ERROR(FUSE_ET_TYPE_HNS_FUSES_READ_FAIL, idsw_get_die_id());
             return result;
         }
 
@@ -537,11 +546,12 @@ int write_fuse_info_to_ap()
         fpfw_status_t icc_status = fpfw_icc_base_send(icc_base_ctx_die2die, &scp_send_params);
         if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
-            printf(FUSE_NAME "send fuse info to primary die fail 0x%" PRIx32 "\n", icc_status);
+            FPFW_DBGPRINT_ERROR(FUSE_NAME "send fuse info to primary die fail 0x%" PRIx32 "\n", icc_status);
+            FUSE_ET_ERROR(FUSE_ET_TYPE_FUSE_ICC_BASE_SEND_FAIL, icc_status);
             BUG_ASSERT_PARAM((icc_status == FPFW_ICC_BASE_STATUS_SUCCESS), icc_status, icc_mhu_send_die2die_payload);
         }
     }
-    printf(FUSE_NAME "DIE fuse info to ap successfully!\n");
+    FPFW_DBGPRINT_INFO(FUSE_NAME "DIE fuse info to ap successfully!\n");
     return result;
 }
 
@@ -550,7 +560,8 @@ int platform_read_for_fuse(const uintptr_t fuse_store_addr, const uint64_t fuse_
     uint64_t fuse_data = 0;
     if ((fuse_bit_size == 0) || (fuse_bit_size > MAX_BITS_PER_FUSE))
     {
-        printf(FUSE_NAME "Requested Fuse Size in bits not valid(Min:%d Max:%d bits) \n", 1, MAX_BITS_PER_FUSE);
+        FPFW_DBGPRINT_ERROR(FUSE_NAME "Requested Fuse Size in bits not valid(Min:%d Max:%d bits) \n", 1, MAX_BITS_PER_FUSE);
+        FUSE_ET_ERROR(FUSE_ET_TYPE_FUSE_SIZE_INVALID, fuse_bit_size);
         return FPFW_INIT_STATUS_E_UNKNOWN_ID;
     }
     fuse_data = fuse_read(fuse_bit_offset, fuse_bit_size);
@@ -580,7 +591,7 @@ int platform_fuse_override()
         // Cache base fuse data from efuse blocks into SoC RAM location
         status = platform_fuse_copy_to_ram();
         FUSE_ET_STATUS(FUSE_ET_TYPE_RAM_DMA_COPY);
-        printf(FUSE_NAME "copy_to_ram status=%d\n", status);
+        FPFW_DBGPRINT_INFO(FUSE_NAME "copy_to_ram status=%d\n", status);
         BUG_ASSERT_PARAM((status == SILIBS_SUCCESS), status, SILIBS_SUCCESS);
 
         /* Enable fuse feature once DMA fuse copy is successful */
@@ -590,59 +601,68 @@ int platform_fuse_override()
         {
             const bool is_fused_part =
                 (fuse_read(SILICON_ID_SILICON_MAJOR_REVISION_BIT_OFFSET, SILICON_ID_SILICON_MAJOR_REVISION_WIDTH) != 0);
-            printf(FUSE_NAME "if fused part [%d] \n", is_fused_part);
+            FPFW_DBGPRINT_INFO(FUSE_NAME "if fused part [%d] \n", is_fused_part);
 
             bool fuse_overrides_present = false;
             if (plat_id == PLATFORM_RVP_EVT_SILICON)
             {
-                printf("Skipping fuse override read from HSP because it has already been loaded & will crash "
-                       "HSP\n");
+                FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_WITH_OVERRIDES);
+                FPFW_DBGPRINT_INFO(
+                    FUSE_NAME
+                    "Skipping fuse override read from HSP because it has already been loaded & will crash "
+                    "HSP\n");
                 fuse_overrides_present = true;
             }
             else
             {
-                printf(FUSE_NAME "Non_support_machine! %d\n", plat_id);
+                FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_NO_OVERRIDES);
+                FPFW_DBGPRINT_INFO(FUSE_NAME "Non_support_machine! %d\n", plat_id);
                 fuse_overrides_present = false; // For other platforms, we assume fuse overrides are not present
             }
 
             if (!is_fused_part && !fuse_overrides_present)
             {
                 FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_NO_OVERRIDES);
-                printf(FUSE_NAME "fuse no override\n");
+                FPFW_DBGPRINT_INFO(FUSE_NAME "fuse no override\n");
                 if (status != SILIBS_SUCCESS)
                 {
-                    printf(FUSE_NAME "Fuse no override!\n");
+                    FPFW_DBGPRINT_ERROR(FUSE_NAME "Fuse no override, copy_to_ram status=%d\n", status);
                     status = FUSE_NO_OVERRIDES;
+                    FUSE_ET_STATUS_PARAM(FUSE_ET_TYPE_FUSED_NO_OVERRIDES, status);
                     return status;
                 }
             }
             else if (!is_fused_part && fuse_overrides_present)
             {
-                printf(FUSE_NAME "Unfused part with fuse overrides in SPI. Applying overrides ignoring "
-                                 "per-fuse valids.\n");
+                FPFW_DBGPRINT_INFO(FUSE_NAME
+                                   "Unfused part with fuse overrides in SPI. Applying overrides ignoring "
+                                   "per-fuse valids.\n");
                 status = fuse_override_ignoring_valids(die_id, Kingsgate_fuse_override_buffer_location);
                 FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_IGNORE_VALIDS);
                 if (status != SILIBS_SUCCESS)
                 {
-                    printf(FUSE_NAME "fuse_override_ignoring_valids fail!\n");
+                    FPFW_DBGPRINT_ERROR(FUSE_NAME "fuse_override_ignoring_valids fail!\n");
                     status = FUSE_ERROR_IGNORE_VALIDS;
+                    FUSE_ET_STATUS_PARAM(FUSE_ET_TYPE_FUSED_IGNORE_VALIDS, status);
                     return status;
                 }
             }
             else if (is_fused_part && !fuse_overrides_present)
             {
-                printf(FUSE_NAME "Fused part with no fuse overrides in SPI.\n");
+                FPFW_DBGPRINT_INFO(FUSE_NAME "Fused part with no fuse overrides in SPI.\n");
             }
             else
             {
-                printf(FUSE_NAME "Fused part with fuse overrides in SPI. Applying all valid overrides.\n");
+                FPFW_DBGPRINT_INFO(FUSE_NAME
+                                   "Fused part with fuse overrides in SPI. Applying all valid overrides.\n");
                 status = fuse_override(die_id, Kingsgate_fuse_override_buffer_location);
                 FUSE_ET_STATUS(FUSE_ET_TYPE_FUSED_WITH_OVERRIDES);
 
                 if (status != SILIBS_SUCCESS)
                 {
-                    printf(FUSE_NAME "fuse_override fail!\n");
+                    FPFW_DBGPRINT_ERROR(FUSE_NAME "fuse_override fail!\n");
                     status = FUSE_ERROR_WITH_OVERRIDES;
+                    FUSE_ET_STATUS_PARAM(FUSE_ET_TYPE_FUSED_OVERRIDES_FAIL, status);
                     return status;
                 }
             }
@@ -655,14 +675,15 @@ int platform_fuse_override()
             status = read_core_disables();
             if (status != SILIBS_SUCCESS)
             {
-                printf(FUSE_NAME "save disable knob failed\n");
+                FPFW_DBGPRINT_ERROR(FUSE_NAME "save disable knob failed\n");
                 status = FUSE_ERROR_DISABLE_KNOB;
+                FUSE_ET_STATUS_PARAM(FUSE_ET_TYPE_READ_CORE_DISABLE_FAIL, status);
                 return status;
             }
         }
     }
     FUSE_ET_STATUS(FUSE_ET_TYPE_OVERRIDE_COMPLETE);
-    printf(FUSE_NAME "Fuse Override complete\n");
+    FPFW_DBGPRINT_INFO(FUSE_NAME "Fuse Override complete\n");
     return status;
 }
 
@@ -677,19 +698,19 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
     switch (plat_id)
     {
     case PLATFORM_FPGA:
-        printf(FUSE_NAME " Platform is FPGA\n");
+        FPFW_DBGPRINT_INFO(FUSE_NAME " Platform is FPGA\n");
         status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_FPGA_LARGE:
-        printf(FUSE_NAME "Platform is FPGA_Large\n");
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Platform is FPGA_Large\n");
         status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_FPGA_LARGE_RVP:
-        printf(FUSE_NAME "Platform is FPGA_Large_RVP\n");
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Platform is FPGA_Large_RVP\n");
         status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_RVP_EVT_SILICON:
-        printf(FUSE_NAME "Platform is PLATFORM_RVP_EVT_SILICON\n");
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Platform is PLATFORM_RVP_EVT_SILICON\n");
         status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_EMU:
@@ -697,26 +718,28 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
     case PLATFORM_EMU_2D:
     case PLATFORM_EMU_1D_8C:
     case PLATFORM_EMU_2D_8C:
-        printf(FUSE_NAME "Platform is EMU\n");
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Platform is EMU\n");
         status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     case PLATFORM_SVP_SIM:
-        printf(FUSE_NAME "Platform is PLATFORM_SVP_SIM\n");
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Platform is PLATFORM_SVP_SIM\n");
         status = fuse_dist_get_exclusion_list_secure(die_id, plat_id, &fuse_dist_exclude_list, &exclude_list_count, is_secure_state);
         break;
     default:
         status = SILIBS_E_SUPPORT;
+        FUSE_ET_ERROR(FUSE_ET_TYPE_GET_EXCLUSION_LIST_FAIL, status);
         return status;
     }
 
     if (status != SILIBS_SUCCESS)
     {
-        printf(FUSE_NAME " GET_EXCLUSION_LIST Fail\n");
+        FPFW_DBGPRINT_ERROR(FUSE_NAME " GET_EXCLUSION_LIST Fail\n");
         status = FUSE_ERROR_GET_EXCLUSION_LIST;
+        FUSE_ET_ERROR(FUSE_ET_TYPE_GET_EXCLUSION_LIST_FAIL, status);
         return status;
     }
 
-    printf(FUSE_NAME "Fuse Distribution Start\n");
+    FPFW_DBGPRINT_INFO(FUSE_NAME "Fuse Distribution Start\n");
     FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_START);
 
     if (platform_requires_fuse_distribution())
@@ -727,8 +750,9 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR0);
             if (status != SILIBS_SUCCESS)
             {
-                printf(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR3_MINOR0 Fail\n");
+                FPFW_DBGPRINT_ERROR(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR3_MINOR0 Fail\n");
                 status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR0;
+                FUSE_ET_ERROR(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR0, status);
                 return status;
             }
         }
@@ -738,8 +762,9 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR1);
             if (status != SILIBS_SUCCESS)
             {
-                printf(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR3_MINOR1 Fail\n");
+                FPFW_DBGPRINT_ERROR(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR3_MINOR1 Fail\n");
                 status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR3_MINOR1;
+                FUSE_ET_ERROR(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR3_MINOR1, status);
                 return status;
             }
         }
@@ -749,8 +774,9 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR0);
             if (status != SILIBS_SUCCESS)
             {
-                printf(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR4_MINOR0 Fail\n");
+                FPFW_DBGPRINT_ERROR(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR4_MINOR0 Fail\n");
                 status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR0;
+                FUSE_ET_ERROR(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR0, status);
                 return status;
             }
         }
@@ -760,19 +786,21 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
             FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR1);
             if (status != SILIBS_SUCCESS)
             {
+                FPFW_DBGPRINT_ERROR(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR4_MINOR1 Fail\n");
                 status = FUSE_ERROR_DISTRIBUTION_PHASE_MAJOR4_MINOR1;
-                printf(FUSE_NAME "DISTRIBUTION_PHASE_MAJOR4_MINOR1 Fail\n");
+                FUSE_ET_ERROR(FUSE_ET_TYPE_DISTRIBUTION_PHASE_MAJOR4_MINOR1, status);
                 return status;
             }
-            printf(FUSE_NAME "Phase 3 fuse distribution complete\n");
+            FPFW_DBGPRINT_INFO(FUSE_NAME "Phase 3 fuse distribution complete\n");
         }
 
-        printf(FUSE_NAME "Phase [%d] fuse distribution complete\n", stage);
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Phase [%d] fuse distribution complete\n", stage);
         FUSE_ET_STATUS(FUSE_ET_TYPE_DISTRIBUTION_END);
     }
     else
     {
-        printf(FUSE_NAME "Platform does not support fuse distribution\n");
+        FPFW_DBGPRINT_ERROR(FUSE_NAME "Platform does not support fuse distribution\n");
+        FUSE_ET_ERROR(FUSE_ET_TYPE_NO_FUSE_DISTRIBUTION, status);
         return FUSE_ERROR_NO_DISTRIBUTION;
     }
 

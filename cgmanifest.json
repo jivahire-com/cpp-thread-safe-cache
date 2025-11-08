@@ -61,6 +61,16 @@
                 }
             },
             "DevelopmentDependency": true
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
+                    "RepositoryUrl": "https://github.com/eclipse-threadx/threadx",
+                    "CommitHash": "c4ad279b85fcf836c0b42d3e140fc32f0554e7b5"
+                }
+            },
+            "DevelopmentDependency": true
         }
     ]
 }

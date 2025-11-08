@@ -29,6 +29,12 @@ target_include_directories(${TARGET}
         ${REPO_ROOT_DIR}/src/externs/1pfw_fwlibs/ports/inc
 )
 
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+        PLDM_DRV_WORKAROUND
+)
+
 target_link_libraries(${TARGET}
     PUBLIC
         fwlib.service.iccBase
@@ -45,6 +51,7 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::idsw_kng
         silibs::spi_bridge
+        ms::driver::pldm    # PLDM_DRV_WORKAROUND
         ms::lib::accelerator_ip
         ms::lib::system_info
         ms::lib::crash_dump

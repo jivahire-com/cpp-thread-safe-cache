@@ -72,6 +72,7 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
     MCP_RUNTIME_INIT
+    PLDM_DRV_WORKAROUND
 )
 
 target_link_libraries(${TARGET}
@@ -85,6 +86,7 @@ target_link_libraries(${TARGET}
         fwlib.service.iccBase
         fwlib.service.pldm
         ms::cmocka::testrunner
+        ms::driver::pldm    # PLDM_DRV_WORKAROUND
         ms::lib::error_codes
         ms::lib::system_info
         ms::lib::threadx
@@ -107,11 +109,13 @@ mock_target(${TARGET}
     idsw_get_die_id
     idsw_get_cpu_type
     fpfw_icc_base_recv
-    fpfw_pldm_service_register_platform_event_ready_notification
+    pldm_drv_register_platform_event_ready_notification  # PLDM_DRV_WORKAROUND
+    # fpfw_pldm_service_register_platform_event_ready_notification # !PLDM_DRV_WORKAROUND
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize
     DfwkInterfaceOpen
+    DfwkAsyncRequestSetCompletionRoutine # PLDM_DRV_WORKAROUND
     FpFwCliRegisterTable
     FpFwLockInitialize
     FpFwLockAcquire

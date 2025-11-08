@@ -23,12 +23,17 @@
 #include <crash_dump_events.h> // for CRASH_DUMP_ET
 #include <crash_dump_memory.h> //for crashdump memory
 #include <fpfw_cfg_mgr.h>      // for knobs
-#include <fpfw_pldm_service.h> // pldm service
-#include <idsw_kng.h>          // for IS_PLATFORM_SVP
+#ifndef PLDM_DRV_WORKAROUND
+    #include <fpfw_pldm_service.h>
+#endif
+#include <idsw_kng.h> // for IS_PLATFORM_SVP
 #include <modules/CdDumpManager.h>
 #include <modules/CdMemory.h>
 #include <nvic.h> // for nvic_get_current_irq
 #include <platform_management_component/pldm_oem_event_types.h>
+#ifdef PLDM_DRV_WORKAROUND
+    #include <pldm_drv.h>
+#endif
 #include <stdint.h> // for uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -80,7 +85,12 @@ uint32_t crash_dump_pldm_transfer_dump()
     static pldm_platform_event_notification notification = {.CallBack = crash_dump_pldm_on_ppe_complete,
                                                             .context = &crash_dump_stream};
 
+#ifdef PLDM_DRV_WORKAROUND
+    static pldm_request_t request = {0};
+    fpfw_status_t status = pldm_drv_raise_platform_event(&request, &event, &notification);
+#else
     fpfw_status_t status = fpfw_pldm_service_raise_platform_event(&event, &notification);
+#endif
     if (FPFW_STATUS_FAILED(status))
     {
         CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_PLDM_START_TRANSFER_ERROR, status);

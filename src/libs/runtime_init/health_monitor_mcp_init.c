@@ -8,17 +8,23 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <FpFwUtils.h>
 #include <atu_api.h>
 #include <bug_check.h>
 #include <einj.h>
 #include <fpfw_init.h>
-#include <fpfw_pldm_service.h>
+#ifndef PLDM_DRV_WORKAROUND
+    #include <fpfw_pldm_service.h>
+#endif
 #include <health_monitor.h>
 #include <hm_cli.h>
 #include <idhw.h>
 #include <idsw.h>
 #include <mscp_exp_rmss_memory_map.h>
+#ifdef PLDM_DRV_WORKAROUND
+    #include <pldm_drv.h>
+#endif
 #include <semaphore_lib.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -71,6 +77,32 @@ FPFW_INIT_COMPONENT(hm_cli_init, FPFW_INIT_DEPENDENCIES("hm_svc"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
+#ifdef PLDM_DRV_WORKAROUND
+static void pldm_platform_event_ready_callback(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
+{
+    pldm_request_t* pldm_request = (pldm_request_t*)Request;
+    FPFW_UNUSED(CompletionContext);
+
+    BUG_ASSERT_PARAM(Request->RequestType == PLDM_GET_READY_ASYNC, Request->RequestType, 0);
+    BUG_ASSERT_PARAM(pldm_request->status == FPFW_STATUS_SUCCESS, pldm_request->status, 0);
+
+    hm_set_pldm_ready_status();
+}
+
+FPFW_INIT_COMPONENT(hm_pldm, FPFW_INIT_DEPENDENCIES("hm_svc", "pldm_drv"))
+{
+    if (idsw_get_die_id() == DIE_0)
+    {
+        static pldm_request_t ready_request = {0};
+
+        DfwkAsyncRequestSetCompletionRoutine(&ready_request.header, pldm_platform_event_ready_callback, NULL);
+        fpfw_status_t status = pldm_drv_register_platform_event_ready_notification(&ready_request);
+        BUG_ASSERT_PARAM(status == FPFW_STATUS_SUCCESS, status, 0);
+    }
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+#else
 static void pldm_platform_event_ready_callback(uint16_t event_id, void* context)
 {
     FPFW_UNUSED(event_id);
@@ -94,3 +126,4 @@ FPFW_INIT_COMPONENT(hm_pldm, FPFW_INIT_DEPENDENCIES("hm_svc", "pldm"))
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
+#endif

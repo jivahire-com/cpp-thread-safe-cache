@@ -54,6 +54,7 @@ target_link_libraries(${TARGET}
         ms::build_data
         ms::client_interface::startup_shutdown
         ms::cmsis::interface
+        ms::driver::pldm    # PLDM_DRV_WORKAROUND
         ms::lib::cortex_m7::nvic
         ms::lib::icc_platform_defines
         ms::lib::register_headers
@@ -70,6 +71,12 @@ target_link_libraries(${TARGET}
 target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
+)
+
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+        PLDM_DRV_WORKAROUND
 )
 
 lint_target(${TARGET})

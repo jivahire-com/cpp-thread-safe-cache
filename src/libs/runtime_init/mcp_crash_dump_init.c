@@ -18,7 +18,9 @@
 #include <crash_dump_memory.h>  // for CRASH_DUMP_MINI_HEADER_ADDR, CRASH_DUMP_MINI_HEADER_SIZE
 #include <exception_handler.h>  // for exception_handler_init
 #include <fpfw_init.h>          // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
-#include <fpfw_pldm_service.h>  // for pldm_platform_event_ready_notification
+#ifndef PLDM_DRV_WORKAROUND
+    #include <fpfw_pldm_service.h>
+#endif
 #include <fuses_csr_regs.h>
 #include <fuses_top_regs.h>
 #include <gpio.h>      // for gpio_device_init, gpio_interface_init
@@ -28,6 +30,9 @@
 #include <kng_error.h> // for KNG_SUCCESS
 #include <mcp_exp_csr_regs.h>
 #include <mscp_ras_and_init_ctrl_registers_regs.h>
+#ifdef PLDM_DRV_WORKAROUND
+    #include <pldm_drv.h>
+#endif
 #include <scf_mhu_regs.h>
 #include <silibs_mcp_exp_top_regs.h> // for MCP_EXP_TOP_SCF_RAM_ADDRESS, MCP_EXP_TOP_SCF_RAM_SIZE
 #include <silibs_mcp_top_regs.h>     // for MCP_TOP_MCP_EXP_ADDRESS
@@ -224,6 +229,32 @@ FPFW_INIT_COMPONENT(cd_gpio, FPFW_INIT_DEPENDENCIES("cd_drv", "gpio_dev"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
+#ifdef PLDM_DRV_WORKAROUND
+static void pldm_platform_event_ready_callback(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
+{
+    pldm_request_t* pldm_request = (pldm_request_t*)Request;
+    FPFW_UNUSED(CompletionContext);
+
+    BUG_ASSERT_PARAM(Request->RequestType == PLDM_GET_READY_ASYNC, Request->RequestType, 0);
+    BUG_ASSERT_PARAM(pldm_request->status == FPFW_STATUS_SUCCESS, pldm_request->status, 0);
+
+    crash_dump_transfer_full_dump_to_bmc();
+}
+
+FPFW_INIT_COMPONENT(cd_pldm, FPFW_INIT_DEPENDENCIES("cd_drv", "pldm_drv"))
+{
+    if (idsw_get_die_id() == DIE_0)
+    {
+        static pldm_request_t ready_request = {0};
+
+        DfwkAsyncRequestSetCompletionRoutine(&ready_request.header, pldm_platform_event_ready_callback, NULL);
+        fpfw_status_t status = pldm_drv_register_platform_event_ready_notification(&ready_request);
+        BUG_ASSERT_PARAM(status == FPFW_STATUS_SUCCESS, status, 0);
+    }
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+#else
 static void pldm_platform_event_ready_callback(uint16_t event_id, void* context)
 {
     FPFW_UNUSED(event_id);
@@ -248,3 +279,4 @@ FPFW_INIT_COMPONENT(cd_pldm, FPFW_INIT_DEPENDENCIES("cd_drv", "pldm"))
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
+#endif

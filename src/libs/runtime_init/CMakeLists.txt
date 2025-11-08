@@ -292,6 +292,7 @@ add_library(${TARGET}
         nvic_init.c
         pdr_repo_init.c
         power_pldm_mcp_init.c
+        pldm_drv_init.c
         tlm_fuses_init.c
         pwr_tlm_svc_mcp_init.c
         sel_init.c
@@ -361,6 +362,7 @@ target_link_libraries(
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::interface::mhu_icc_payloads
         ms::lib::mcp_interrupts
+        ms::driver::pldm
         ms::lib::pldm_pdr
         ms::lib::pldm_common_headers
         ms::lib::telemetry::fuses
@@ -435,6 +437,7 @@ target_compile_definitions(
        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE=MSCP_ATU_AP_WINDOW_VAR_SVC_DIE_SIZE
        SDM_DOMAIN=MCP_SDM_DOMAIN
        CDED_SDM_DOMAIN=MCP_CDED_SDM_DOMAIN
+       PLDM_DRV_WORKAROUND
 )
 
 # Define base addresses during compile time for respective core fw

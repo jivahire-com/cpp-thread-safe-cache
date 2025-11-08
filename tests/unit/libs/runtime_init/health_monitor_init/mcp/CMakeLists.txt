@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         silibs::idhw
         silibs::idsw
         ms::cmocka::testrunner
+        ms::driver::pldm # PLDM_DRV_WORKAROUND
         ms::lib::accelerator_ip
         ms::service::atu_service
         ms::service::health_monitor
@@ -29,6 +30,12 @@ target_link_libraries(${TARGET}
         ms::lib::pldm_pdr
         ms::lib::pldm_common_headers
         extern.libpldm
+)
+
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       PLDM_DRV_WORKAROUND
 )
 
 # Generic ports implmented within this project
@@ -50,6 +57,8 @@ mock_target(${TARGET}
     hm_post_intercore_init
     hm_cli_init
     idhw_is_single_die_boot_en
-    fpfw_pldm_service_register_platform_event_ready_notification
+    # fpfw_pldm_service_register_platform_event_ready_notification  # !PLDM_DRV_WORKAROUND
     hm_set_pldm_ready_status
+    DfwkAsyncRequestSetCompletionRoutine                # PLDM_DRV_WORKAROUND
+    pldm_drv_register_platform_event_ready_notification # PLDM_DRV_WORKAROUND
 )

@@ -20,6 +20,9 @@ extern "C" {
 #include <fpfw_pldm_service.h>
 #include <gpio_lib.h>
 #include <idsw_kng.h>
+#ifdef PLDM_DRV_WORKAROUND
+    #include <pldm_drv.h>
+#endif
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CRASH_DUMP_PAYLOAD_SIZE 512
@@ -68,6 +71,25 @@ uint8_t* __wrap_get_crash_dump_region_address(atu_map_entry_t* die1_entry, KNG_D
     return (uint8_t*)&crash_dump_region[(int)die_id * CRASH_DUMP_CORE_NUM + (int)core_id];
 }
 
+#ifdef PLDM_DRV_WORKAROUND
+static PlatformEventNotificationCb pldm_raise_event_cb;
+static void* pldm_raise_event_ctx;
+fpfw_status_t __wrap_pldm_drv_raise_platform_event(pldm_request_t* request,
+                                                   pldm_platform_event_config_t* pe_config,
+                                                   pldm_platform_event_notification* pe_notification)
+{
+    assert_non_null(request);
+    assert_non_null(pe_config);
+    assert_non_null(pe_notification);
+    request->header.RequestType = PLDM_SEND_PLATFORM_EVENT_ASYNC;
+    pldm_raise_event_cb = pe_notification->CallBack;
+    pldm_raise_event_ctx = pe_notification->context;
+
+    function_called();
+
+    return mock_type(fpfw_status_t);
+}
+#else
 fpfw_status_t __wrap_fpfw_pldm_service_raise_platform_event(pldm_platform_event_config_t* p_pe_config,
                                                             pldm_platform_event_notification* p_notification)
 {
@@ -78,6 +100,7 @@ fpfw_status_t __wrap_fpfw_pldm_service_raise_platform_event(pldm_platform_event_
 
     return mock_type(fpfw_status_t);
 }
+#endif
 
 void reset_crash_dump_region()
 {
@@ -156,8 +179,13 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump_error, test_setup, test_teardow
     // Set expectations
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
+#ifdef PLDM_DRV_WORKAROUND
+    will_return(__wrap_pldm_drv_raise_platform_event, FPFW_STATUS_FAIL);
+    expect_function_call(__wrap_pldm_drv_raise_platform_event);
+#else
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_FAIL);
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+#endif
 
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
@@ -178,8 +206,13 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump, test_setup, test_teardown)
     // Set expectations
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
 
+#ifdef PLDM_DRV_WORKAROUND
+    will_return(__wrap_pldm_drv_raise_platform_event, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_pldm_drv_raise_platform_event);
+#else
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+#endif
 
     expect_function_call(__wrap_gpio_set_output);
     expect_value(__wrap_gpio_set_output, gpio_pin_id, GPIO_CTRL_PIN_ID(MSCP_EXP_GPIO_6, 3));

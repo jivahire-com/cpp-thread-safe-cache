@@ -83,11 +83,15 @@ FPFW_INIT_COMPONENT(sel_m2as, FPFW_INIT_DEPENDENCIES("sel_mgr", "icc_mcp2aps"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-/**
- * @brief Register PLDM platform event ready notification for SEL manager
- *
- */
+    /**
+     * @brief Register PLDM platform event ready notification for SEL manager
+     *
+     */
+    #ifdef PLDM_DRV_WORKAROUND
+FPFW_INIT_COMPONENT(sel_pldm, FPFW_INIT_DEPENDENCIES("sel_mgr", "pldm_drv"))
+    #else
 FPFW_INIT_COMPONENT(sel_pldm, FPFW_INIT_DEPENDENCIES("sel_mgr", "pldm"))
+    #endif
 {
     KNG_STATUS status = sel_register_pldm();
     if (KNG_FAILED(status))

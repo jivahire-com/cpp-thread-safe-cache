@@ -15,10 +15,15 @@ extern "C" {
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <accelip_id.h> // for ACCEL_ID_SDM, ACCEL_ID_CDED
 #include <fpfw_init.h>  // for fpfw_init_result_t, fpfw_init_component_t
-#include <fpfw_pldm_service.h>
+#ifndef PLDM_DRV_WORKAROUND
+    #include <fpfw_pldm_service.h>
+#endif
 #include <health_monitor.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#ifdef PLDM_DRV_WORKAROUND
+    #include <pldm_drv.h>
+#endif
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -79,6 +84,40 @@ bool __wrap_idhw_is_single_die_boot_en(void)
     return mock_type(bool);
 }
 
+#ifdef PLDM_DRV_WORKAROUND
+PDFWK_ASYNC_REQUEST_HEADER __wrap_last_async_request_sent = NULL;
+DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE __wrap_pldm_platform_event_ready_callback = NULL;
+void* __wrap_CompletionContext = NULL;
+
+void __real_DfwkAsyncRequestSetCompletionRoutine(PDFWK_ASYNC_REQUEST_HEADER Request,
+                                                 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
+                                                 void* CompletionContext);
+
+void __wrap_DfwkAsyncRequestSetCompletionRoutine(PDFWK_ASYNC_REQUEST_HEADER Request,
+                                                 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE CompletionRoutine,
+                                                 void* CompletionContext)
+{
+    __real_DfwkAsyncRequestSetCompletionRoutine(Request, CompletionRoutine, CompletionContext);
+
+    function_called();
+}
+
+fpfw_status_t __wrap_pldm_drv_register_platform_event_ready_notification(pldm_request_t* request)
+{
+    assert_non_null(request);
+
+    __wrap_pldm_platform_event_ready_callback = request->header.CompletionRoutine;
+    __wrap_CompletionContext = request->header.CompletionContext;
+
+    request->header.RequestType = PLDM_GET_READY_ASYNC;
+    request->status = FPFW_STATUS_SUCCESS;
+    __wrap_last_async_request_sent = &request->header;
+
+    function_called();
+
+    return FPFW_STATUS_SUCCESS;
+}
+#else
 PlatformEventReadyNotificationCb __wrap_pldm_platform_event_ready_callback = NULL;
 
 fpfw_status_t __wrap_fpfw_pldm_service_register_platform_event_ready_notification(pldm_platform_event_ready_notification* p_notification)
@@ -92,6 +131,7 @@ fpfw_status_t __wrap_fpfw_pldm_service_register_platform_event_ready_notificatio
 
     return FPFW_STATUS_SUCCESS;
 }
+#endif
 
 void __wrap_hm_set_pldm_ready_status()
 {
@@ -137,9 +177,18 @@ TEST_FUNCTION(hm_pldm, nullptr, nullptr)
 {
     will_return(__wrap_idsw_get_die_id, DIE_0);
 
+#ifdef PLDM_DRV_WORKAROUND
+    expect_function_call(__wrap_DfwkAsyncRequestSetCompletionRoutine);
+    expect_function_call(__wrap_pldm_drv_register_platform_event_ready_notification);
+    _fpfw_component_hm_pldm.init_fn();
+
+    expect_function_call(__wrap_hm_set_pldm_ready_status);
+    __wrap_pldm_platform_event_ready_callback(__wrap_last_async_request_sent, NULL);
+#else
     expect_function_call(__wrap_fpfw_pldm_service_register_platform_event_ready_notification);
     _fpfw_component_hm_pldm.init_fn();
 
     expect_function_call(__wrap_hm_set_pldm_ready_status);
     __wrap_pldm_platform_event_ready_callback(0, NULL);
+#endif
 }

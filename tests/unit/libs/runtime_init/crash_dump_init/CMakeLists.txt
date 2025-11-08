@@ -105,6 +105,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::driver::gpio
+        ms::driver::pldm    # PLDM_DRV_WORKAROUND
         ms::lib::crash_dump
         ms::lib::system_info
         ms::lib::exception_handler::mcp
@@ -120,6 +121,7 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
        MCP_RUNTIME_INIT
+       PLDM_DRV_WORKAROUND
 )
 
 # Defining platform APIs
@@ -134,6 +136,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     DfwkClientInterfaceOpen
+    DfwkAsyncRequestSetCompletionRoutine    # PLDM_DRV_WORKAROUND
     crash_dump_bug_check
     crash_dump_init
     crash_dump_register_dump
@@ -141,7 +144,8 @@ mock_target(${TARGET}
     crash_dump_device_initialize
     crash_dump_interface_initialize
     exception_handler_init
-    fpfw_pldm_service_register_platform_event_ready_notification
+    pldm_drv_register_platform_event_ready_notification # PLDM_DRV_WORKAROUND
+    # fpfw_pldm_service_register_platform_event_ready_notification # !PLDM_DRV_WORKAROUND
     gpio_interface_init
     gpio_register_deferred_isr
     idsw_get_die_id

@@ -133,6 +133,8 @@ FPFW_NORETURN void crash_dump_bug_check_external()
  */
 __attribute__((__weak__)) FPFW_NORETURN void crash_dump_wait_forever()
 {
+    FPFwCDPrintf("crash_dump_wait_forever\n");
+
     while (true)
     {
         __WFI();

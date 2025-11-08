@@ -13,6 +13,12 @@ target_include_directories(
             ${REPO_ROOT_DIR}/src/services/sel_manager
 )
 
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       PLDM_DRV_WORKAROUND
+)
+
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
@@ -26,6 +32,7 @@ target_link_libraries(${TARGET}
         fwlib.service.iccBase
         ms::lib::utils
         ms::lib::error_codes
+        ms::driver::pldm    # PLDM_DRV_WORKAROUND
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
@@ -45,8 +52,10 @@ mock_target(${TARGET}
     idsw_get_cpu_type
     fpfw_icc_base_send
     fpfw_icc_base_recv
-    fpfw_pldm_service_register_platform_event_ready_notification
-    fpfw_pldm_service_raise_platform_event
+    pldm_drv_register_platform_event_ready_notification # PLDM_DRV_WORKAROUND
+    pldm_drv_raise_platform_event                       # PLDM_DRV_WORKAROUND
+    # fpfw_pldm_service_register_platform_event_ready_notification  # !PLDM_DRV_WORKAROUND
+    # fpfw_pldm_service_raise_platform_event                        # !PLDM_DRV_WORKAROUND
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize

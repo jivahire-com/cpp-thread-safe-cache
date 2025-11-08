@@ -18,6 +18,12 @@ target_include_directories(${TARGET}
         ${CRASH_DUMP_SOURCE_DIR}/inc
 )
 
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+        PLDM_DRV_WORKAROUND
+)
+
 target_link_libraries(${TARGET}
     PRIVATE
     fwlib.lib.assert
@@ -29,6 +35,7 @@ target_link_libraries(${TARGET}
     ms::client_interface::startup_shutdown
     ms::cmocka::testrunner
     ms::cmsis::interface
+    ms::driver::pldm    # PLDM_DRV_WORKAROUND
     ms::lib::cortex_m7::nvic
     ms::lib::crash_dump
     ms::lib::icc_platform_defines
@@ -116,7 +123,8 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     crash_dump_get_is_dump_complete
     crash_dump_get_dump_size
-    fpfw_pldm_service_raise_platform_event
+    pldm_drv_raise_platform_event   # PLDM_DRV_WORKAROUND
+    # fpfw_pldm_service_raise_platform_event    # !PLDM_DRV_WORKAROUND
     system_info_is_warm_start
     tlm_fuses_get_ecid
 )

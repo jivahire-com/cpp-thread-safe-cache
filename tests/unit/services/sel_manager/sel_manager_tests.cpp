@@ -13,9 +13,14 @@
 
 extern "C" {
 #include <FpFwUtils.h>
-#include <fpfw_pldm_service.h>
+#ifndef PLDM_DRV_WORKAROUND
+    #include <fpfw_pldm_service.h>
+#endif
 #include <idsw_kng.h>
 #include <kng_icc_shared.h>
+#ifdef PLDM_DRV_WORKAROUND
+    #include <pldm_drv.h>
+#endif
 #include <sel_i.h>
 #include <sel_init.h>
 
@@ -100,6 +105,42 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     return 0; // FPFW_ICC_BASE_STATUS_SUCCESS
 }
 
+#ifdef PLDM_DRV_WORKAROUND
+// PLDM Driver Mocks
+PDFWK_ASYNC_REQUEST_HEADER __wrap_last_pldm_request_sent = NULL;
+DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE __wrap_pldm_platform_event_ready_callback = NULL;
+void* __wrap_CompletionContext = NULL;
+fpfw_status_t __wrap_pldm_drv_register_platform_event_ready_notification(pldm_request_t* request)
+{
+    assert_non_null(request);
+    request->header.RequestType = PLDM_GET_READY_ASYNC;
+    __wrap_last_pldm_request_sent = &request->header;
+    __wrap_pldm_platform_event_ready_callback = request->header.CompletionRoutine;
+    __wrap_CompletionContext = request->header.CompletionContext;
+
+    function_called();
+
+    return FPFW_STATUS_SUCCESS;
+}
+
+static PlatformEventNotificationCb pldm_raise_event_cb;
+static void* pldm_raise_event_ctx;
+fpfw_status_t __wrap_pldm_drv_raise_platform_event(pldm_request_t* request,
+                                                   pldm_platform_event_config_t* pe_config,
+                                                   pldm_platform_event_notification* pe_notification)
+{
+    assert_non_null(request);
+    assert_non_null(pe_config);
+    assert_non_null(pe_notification);
+    request->header.RequestType = PLDM_SEND_PLATFORM_EVENT_ASYNC;
+    pldm_raise_event_cb = pe_notification->CallBack;
+    pldm_raise_event_ctx = pe_notification->context;
+
+    function_called();
+
+    return FPFW_STATUS_SUCCESS;
+}
+#else
 // PLDM Mocks
 static PlatformEventReadyNotificationCb pldm_ready_cb;
 static void* pldm_ready_cb_ctx;
@@ -128,6 +169,7 @@ fpfw_status_t __wrap_fpfw_pldm_service_raise_platform_event(pldm_platform_event_
 
     return 0; // FPFW_STATUS_SUCCESS
 }
+#endif
 
 // DFWK Mocks
 void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
@@ -291,7 +333,12 @@ static int test_setup_mcp(KNG_DIE_ID die_id)
     {
         // MCP0 registers PLDM ready callback
         will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+#ifdef PLDM_DRV_WORKAROUND
+        expect_function_call(__wrap_DfwkAsyncRequestSetCompletionRoutine);
+        expect_function_call(__wrap_pldm_drv_register_platform_event_ready_notification);
+#else
         expect_function_call(__wrap_fpfw_pldm_service_register_platform_event_ready_notification);
+#endif
     }
     status = sel_register_pldm();
     assert_true(KNG_SUCCEEDED(status));
@@ -315,7 +362,11 @@ static int test_setup_mcp(KNG_DIE_ID die_id)
         expect_function_call(__wrap_DfwkAsyncRequestSetCompletionRoutine);
         expect_function_call(__wrap_DfwkInterfaceSendAsync);
 
+#ifdef PLDM_DRV_WORKAROUND
+        __wrap_pldm_platform_event_ready_callback(__wrap_last_pldm_request_sent, __wrap_CompletionContext);
+#else
         pldm_ready_cb(0, pldm_ready_cb_ctx);
+#endif
 
         // Pop from queue
         will_return(__wrap_FpFwLockAcquire, 123);
@@ -635,7 +686,11 @@ TEST_FUNCTION(test_sel_mgr_log_sel_event_mcp0, test_setup_mcp0, test_teardown)
     expect_function_call(__wrap_FpFwLockRelease);
 
     // Expect PLDM raise event to BMC
+#ifdef PLDM_DRV_WORKAROUND
+    expect_function_call(__wrap_pldm_drv_raise_platform_event);
+#else
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+#endif
 
     assert_non_null(last_async_request_sent);
     sel_svc_dispatch(last_async_request_sent, sel_svc_dispatch_ctx);
@@ -797,7 +852,11 @@ TEST_FUNCTION(test_sel_mgr_icc_receive_event_mcp0, test_setup_mcp0, test_teardow
     expect_function_call(__wrap_FpFwLockRelease);
 
     // Expect PLDM raise event to BMC
+#ifdef PLDM_DRV_WORKAROUND
+    expect_function_call(__wrap_pldm_drv_raise_platform_event);
+#else
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+#endif
 
     assert_non_null(last_async_request_sent);
     sel_svc_dispatch(last_async_request_sent, sel_svc_dispatch_ctx);

@@ -24,6 +24,12 @@ set(SOURCES
 # Compile test
 add_executable(${TARGET} ${SOURCES})
 
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       PLDM_DRV_WORKAROUND
+)
+
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.dfwk
@@ -31,6 +37,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
         ms::cmocka::testrunner
+        ms::driver::pldm    # PLDM_DRV_WORKAROUND
         ms::service::health_monitor
         silibs::idsw_kng
         silibs::kng_silibs_platform
@@ -77,7 +84,8 @@ mock_target(${TARGET}
     AP_GHES_ADDR
     MSCP_GHES_ADDR
     idsw_get_platform_sdv
-    fpfw_pldm_service_raise_platform_event
+    pldm_drv_raise_platform_event # PLDM_DRV_WORKAROUND
+    # fpfw_pldm_service_raise_platform_event # !PLDM_DRV_WORKAROUND
     _txe_timer_create
     _txe_timer_deactivate
     system_info_get_mission_mode

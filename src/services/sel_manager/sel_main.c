@@ -15,11 +15,16 @@
 #include <FpFwLock.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
-#include <fpfw_pldm_service.h>
+#ifndef PLDM_DRV_WORKAROUND
+    #include <fpfw_pldm_service.h>
+#endif
 #include <icc_mhu.h>
 #include <idsw_kng.h>
 #include <kng_icc_shared.h>
 #include <platform_management_component/pldm_oem_event_types.h>
+#ifdef PLDM_DRV_WORKAROUND
+    #include <pldm_drv.h>
+#endif
 #include <sel.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -235,7 +240,13 @@ static KNG_STATUS sel_transfer_event_to_bmc(sel_event_record_t* event_record, PD
     static pldm_platform_event_notification notification = {.CallBack = sel_pldm_on_ppe_complete};
     notification.context = request;
 
+#ifdef PLDM_DRV_WORKAROUND
+    static pldm_request_t pldm_request = {0};
+
+    status = pldm_drv_raise_platform_event(&pldm_request, &event, &notification);
+#else
     status = fpfw_pldm_service_raise_platform_event(&event, &notification);
+#endif
 
     if (FPFW_STATUS_FAILED(status))
     {

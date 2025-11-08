@@ -14,7 +14,9 @@ extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <atu_api.h>
 #include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
-#include <fpfw_pldm_service.h>
+#ifndef PLDM_DRV_WORKAROUND
+    #include <fpfw_pldm_service.h>
+#endif
 #include <gicd_regs.h>
 #include <health_monitor.h>
 #include <health_monitor_i.h>
@@ -23,6 +25,9 @@ extern "C" {
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <libpldm/platform.h>
+#ifdef PLDM_DRV_WORKAROUND
+    #include <pldm_drv.h>
+#endif
 #include <ras.h>
 #include <stdint.h>
 #include <tx_timer.h>
@@ -40,6 +45,26 @@ VOID (*watchdog_function)(ULONG id) = nullptr;
 //
 // Mocks
 //
+#ifdef PLDM_DRV_WORKAROUND
+fpfw_status_t __wrap_pldm_drv_raise_platform_event(pldm_request_t* request,
+                                                   pldm_platform_event_config_t* pe_config,
+                                                   pldm_platform_event_notification* pe_notification)
+{
+    assert_non_null(request);
+    assert_non_null(pe_config);
+    assert_non_null(pe_notification);
+    request->header.RequestType = PLDM_SEND_PLATFORM_EVENT_ASYNC;
+
+    function_called();
+
+    assert_true(pe_config->p_descriptor->event_payload_size ==
+                sizeof(acpi_cper_record_t) + sizeof(struct pldm_platform_cper_event));
+
+    pe_notification->CallBack(FPFW_PLDM_CC_SUCCESS, pe_notification->context);
+
+    return mock_type(fpfw_status_t);
+}
+#else
 fpfw_status_t __wrap_fpfw_pldm_service_raise_platform_event(pldm_platform_event_config_t* p_pe_config,
                                                             pldm_platform_event_notification* p_notification)
 {
@@ -55,6 +80,7 @@ fpfw_status_t __wrap_fpfw_pldm_service_raise_platform_event(pldm_platform_event_
 
     return mock_type(fpfw_status_t);
 }
+#endif
 
 UINT __wrap__txe_timer_create(TX_TIMER* timer_ptr,
                               CHAR* name_ptr,
@@ -130,8 +156,13 @@ TEST_FUNCTION(test_pldm_from_primary_scp, post_ddr_setup, nullptr)
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
+#ifdef PLDM_DRV_WORKAROUND
+    will_return(__wrap_pldm_drv_raise_platform_event, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_pldm_drv_raise_platform_event);
+#else
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+#endif
 
     expect_string(__wrap__txe_timer_create, name_ptr, "hm_flush");
     expect_any(__wrap__txe_timer_create, expiration_input);
@@ -197,8 +228,13 @@ TEST_FUNCTION(test_pldm_from_primary_mcp, post_ddr_setup, nullptr)
 
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
+#ifdef PLDM_DRV_WORKAROUND
+    will_return(__wrap_pldm_drv_raise_platform_event, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_pldm_drv_raise_platform_event);
+#else
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+#endif
     expect_string(__wrap__txe_timer_create, name_ptr, "hm_flush");
     expect_any(__wrap__txe_timer_create, expiration_input);
     expect_any(__wrap__txe_timer_create, initial_ticks);
@@ -245,8 +281,13 @@ TEST_FUNCTION(test_pldm_OS_booted_pending_items, post_ddr_setup, nullptr)
 
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
+#ifdef PLDM_DRV_WORKAROUND
+    will_return(__wrap_pldm_drv_raise_platform_event, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_pldm_drv_raise_platform_event);
+#else
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+#endif
     expect_string(__wrap__txe_timer_create, name_ptr, "hm_flush");
     expect_any(__wrap__txe_timer_create, expiration_input);
     expect_any(__wrap__txe_timer_create, initial_ticks);
@@ -281,8 +322,13 @@ TEST_FUNCTION(test_pldm_OS_booted_no_pending_items, post_ddr_setup, nullptr)
 
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
+#ifdef PLDM_DRV_WORKAROUND
+    will_return(__wrap_pldm_drv_raise_platform_event, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_pldm_drv_raise_platform_event);
+#else
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+#endif
     expect_string(__wrap__txe_timer_create, name_ptr, "hm_flush");
     expect_any(__wrap__txe_timer_create, expiration_input);
     expect_any(__wrap__txe_timer_create, initial_ticks);

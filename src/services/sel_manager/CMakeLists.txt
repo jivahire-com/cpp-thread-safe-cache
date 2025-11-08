@@ -8,6 +8,12 @@ add_library(${TARGET}
         sel_main.c
 )
 
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+        PLDM_DRV_WORKAROUND
+)
+
 target_link_libraries(
     ${TARGET}
         PRIVATE
@@ -20,6 +26,7 @@ target_link_libraries(
           ms::lib::system_info
           ms::lib::utils
           ms::driver::icc_mhu_trans
+          ms::driver::pldm  # PLDM_DRV_WORKAROUND
           ms::driver::sensor_fifo
           silibs::icc_mhu
           silibs::kng_silibs_platform

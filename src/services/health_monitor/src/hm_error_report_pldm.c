@@ -12,13 +12,18 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <crash_dump.h>
-#include <fpfw_pldm_service.h>
+#ifndef PLDM_DRV_WORKAROUND
+    #include <fpfw_pldm_service.h>
+#endif
 #include <fpfw_status.h>
 #include <health_monitor_i.h>
 #include <health_monitor_icc.h>
 #include <icc_platform_defines.h>
 #include <libpldm/platform.h>
 #include <mscp_exp_rmss_memory_map.h>
+#ifdef PLDM_DRV_WORKAROUND
+    #include <pldm_drv.h>
+#endif
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -149,7 +154,13 @@ void hm_transfer_cper_to_bmc_internal(bool is_ue)
         static pldm_platform_event_notification notification = {.CallBack = hm_transfer_cper_completion_pldm_cb,
                                                                 .context = &full_pldm_cper};
 
+#ifdef PLDM_DRV_WORKAROUND
+        static pldm_request_t pldm_request = {0};
+
+        fpfw_status_t status = pldm_drv_raise_platform_event(&pldm_request, &event, &notification);
+#else
         fpfw_status_t status = fpfw_pldm_service_raise_platform_event(&event, &notification);
+#endif
 
         if (FPFW_STATUS_FAILED(status))
         {

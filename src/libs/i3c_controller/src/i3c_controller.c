@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <FPFwInterrupts.h>
 #include <MboxPrimitives.h> // for FPFW_MBX_PAYLOAD, FpFwMailbox...
+#include <boot_status.h>    // for boot_status_notify_extd
 #include <bug_check.h>
 #include <ddr_i3c.h>
 #include <fpfw_cfg_mgr.h>
@@ -48,6 +49,17 @@ static uint8_t g_dimm_cap_per_ch = 0x0;
 static uint8_t g_dimm_sku = 0x0;
 
 /*------------- Functions ----------------*/
+void i3c_send_error_boot_status(void)
+{
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_ERROR,
+                            GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP,
+                                                        MSCP_GENERIC,
+                                                        (idsw_get_die_id() == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY,
+                                                        MSCP_BOOT_STATUS_CODE_UNUSED));
+}
+
 /**
  * @brief I3C0 ISR handler
  *
@@ -208,6 +220,7 @@ int i3c_controller_verify_dimm_on_current_die(uint32_t ddrss_en)
                     MOD_NAME "ddr_i3c_interface_read_dimm_capacity failed for ddrss_index %d, status %d",
                     ddrss_index,
                     status);
+                i3c_send_error_boot_status();
                 BUG_ASSERT(false);
             }
         }
@@ -228,6 +241,7 @@ int i3c_controller_verify_dimm_on_current_die(uint32_t ddrss_en)
                     first_dimm_in_local,
                     dimm_cap_per_ch[first_dimm_in_local]);
                 status = SILIBS_E_NOMEM;
+                i3c_send_error_boot_status();
                 BUG_ASSERT(false);
             }
             if (dimm_sku[ddrss_index] != dimm_sku[first_dimm_in_local])
@@ -240,6 +254,7 @@ int i3c_controller_verify_dimm_on_current_die(uint32_t ddrss_en)
                                      first_dimm_in_local,
                                      dimm_sku[first_dimm_in_local]);
                 status = SILIBS_E_NOMEM;
+                i3c_send_error_boot_status();
                 BUG_ASSERT(false);
             }
         }
@@ -445,6 +460,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMMs Read Err, status 0x%x\n", status);
+                i3c_send_error_boot_status();
                 // Error or BUGCHECK
                 BUG_ASSERT(false);
             }
@@ -454,6 +470,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMMs Verify Err, status 0x%x\n", status);
+                i3c_send_error_boot_status();
                 // Error or BUGCHECK
                 BUG_ASSERT(false);
             }
@@ -465,6 +482,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Capacity/SKU Read Err, status 0x%x\n", status);
+                i3c_send_error_boot_status();
                 // Error or BUGCHECK
                 BUG_ASSERT(false);
             }

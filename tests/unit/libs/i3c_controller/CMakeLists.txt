@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
         ms::lib::cortex_m7::nvic
         ms::lib::scp_interrupts
         silibs_platform
+        ms::lib::boot_status
 )
 
 # @todo remove after completing task https://azurecsi.visualstudio.com/Dev/_workitems/edit/1933312/
@@ -63,4 +64,6 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     i3c_master_set_cfg_knobs
     crash_dump_bug_check
+    boot_status_notify_extd
+    idsw_get_die_id
 )

@@ -14,7 +14,7 @@
 #include <hsp_firmware_headers.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-//! These values will be programmed into boot status extended field of 
+//! These values will be programmed into boot status extended field of
 //! `kng_hsp_mailbox_boot_status_extd_notify` struct
 //! Generate status to display on LED, Bits 24-31 are programmed into LED
 #define GEN_BOOT_STATUS_EX_LED_CODE(group, subgroup, instance, status) \
@@ -81,7 +81,7 @@ typedef struct _boot_status_icc_ctx_t
 }boot_status_icc_ctx_t;
 
 /**
- * @brief As per FW architecture, Values agreed with HSP, 
+ * @brief As per FW architecture, Values agreed with HSP,
  * The component groups refers to individual domain reporting the status code
  * Ones supported by MSCP FW are listed here.
  * @note Do not change the values of the enum, as they are used in the HSP code.
@@ -146,6 +146,9 @@ typedef enum _mscp_boot_status_codes_t
     MSCP_BOOT_STATUS_CODE_SCP_COLD_BOOT,
     MSCP_BOOT_STATUS_CODE_SCP_WARM_BOOT,
     MSCP_BOOT_STATUS_CODE_SCP_IRQ_DISABLED,
+    MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_START,
+    MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_ERROR,
+    MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_END,
     MSCP_BOOT_STATUS_CODE_SCP_MESH_INIT_END,
     MSCP_BOOT_STATUS_CODE_SCP_TOWER_INIT_END,
     MSCP_BOOT_STATUS_CODE_SCP_ACCEL_INIT_END,
@@ -173,7 +176,7 @@ typedef enum _mscp_boot_status_codes_t
 
 /**
  * @brief Led status codes for the platform agnostic to die id.
- * These are evaluated to appropriate boot status code that is 
+ * These are evaluated to appropriate boot status code that is
  * used to program the LED status
  */
 typedef enum _led_status_codes_t
@@ -207,29 +210,29 @@ typedef enum _led_status_codes_t
 /*--------- Function Prototypes ----------*/
 /**
  * @brief Called in runtime init to cache the icc base contexts.
- * 
+ *
  * @param boot_status_ctx Pointer to the boot status context to be initialized.
  */
 void boot_status_init(boot_status_icc_ctx_t* boot_status_ctx);
-  
+
 /**
- * @brief Raw API to send boot status notification to HSP. 
+ * @brief Raw API to send boot status notification to HSP.
  * Programs the params into the boot_status & boot_status_ex fields of the
  * `kng_hsp_mailbox_boot_status_extd_notify` struct and sends it to HSP.
- * 
+ *
  * @param p_req_mem Pointer to the request memory. Client must provide this memory. No need to populate
  * This memory is used to send the request to HSP. The client must ensure that this memory is not used
  * until the request is completed. The memory is freed by the client after the request is completed.
- * 
+ *
  * @param boot_status MSCP FW status to send to HSP. This status can be
- * local to the platform, for eg given by the enum mscp_boot_status_code_t. HSP doesn't 
+ * local to the platform, for eg given by the enum mscp_boot_status_code_t. HSP doesn't
  * care about this field, it will buffer it however.
- * 
+ *
  * @param boot_status_ex status generated via the above macros. The last 8 bits
- * of this field (status field) are used to program the LED status code if non zero. The rest of the bit fields are 
- * stored in the history buffer. 
+ * of this field (status field) are used to program the LED status code if non zero. The rest of the bit fields are
+ * stored in the history buffer.
  * Generate using `GEN_BOOT_STATUS_EX_LED_CODE` or Generate using `GEN_BOOT_STATUS_EX_GENERIC_CODE`
- * When using GEN_BOOT_STATUS_EX_LED_CODE, for status bit field use values enum given 
+ * When using GEN_BOOT_STATUS_EX_LED_CODE, for status bit field use values enum given
  * in boot_status_codes.h from hsp artifacts
  */
 void boot_status_notify_extd(boot_status_req_t *p_req_mem, uint32_t boot_status, uint32_t boot_status_ex);

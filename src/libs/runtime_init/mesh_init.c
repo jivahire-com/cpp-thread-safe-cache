@@ -5,6 +5,7 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
+#include <boot_status.h>   // for post_led_status
 #include <fpfw_icc_base.h> // for fpfw_icc_base_init, fpfw_icc_ba...
 #include <fpfw_init.h>
 #include <idhw.h>
@@ -24,6 +25,8 @@ FPFW_INIT_COMPONENT(mesh_stg_1,
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
     FPFW_DBGPRINT_INFO("Mesh init, die_num: [%u]\n", die_num);
+    boot_status_req_t boot_status_req = {0};
+    post_led_status(&boot_status_req, LED_STATUS_CODE_SCP_MESH_INIT_START);
 
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
     mesh_init(die_num, icc_ctx);
@@ -37,5 +40,12 @@ FPFW_INIT_COMPONENT(mesh_stg_2, FPFW_INIT_DEPENDENCIES("tower_cfg"))
 
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
     d2d_init(die_num, icc_ctx);
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            MSCP_BOOT_STATUS_CODE_SCP_MESH_INIT_END,
+                            GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP,
+                                                        MSCP_GENERIC,
+                                                        (die_num == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY,
+                                                        MSCP_BOOT_STATUS_CODE_UNUSED));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

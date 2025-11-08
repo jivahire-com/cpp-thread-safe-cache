@@ -16,7 +16,8 @@ extern "C" {
 #include "silibs_scp_top_regs.h"     // for SCP_TOP_SCP_EXP_ADDRESS
 
 #include <FPFwInterrupts.h>
-#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <FpFwUtils.h>   // for FPFW_UNUSED
+#include <boot_status.h> // for boot_status_notify_extd
 #include <ddr_i3c.h>
 #include <i3c_controller.h> // for cmn800_sequence_params_t
 #include <idsw.h>           // for idsw_set_platform_sdv, PLATFORM_UN...
@@ -72,6 +73,15 @@ void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, u
 
     // Handle noreturn, allowing control to return to test
     longjmp(cd_mock_jump_buf, 1);
+}
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
 }
 
 //
@@ -151,6 +161,12 @@ static int setup_undefined_platform(void** pContext)
 //
 // Mocks
 //
+idsw_die_id_t __wrap_idsw_get_die_id(void)
+{
+    /* return current_die info */
+    return g_die_num;
+}
+
 int __wrap_i3c_initialize(i3c_instance_t* instance, i3c_config_t* i3c_config)
 {
     check_expected_ptr(instance);
@@ -350,6 +366,15 @@ void i3c_master_set_cfg_knobs_default_expect(void)
     expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_lcnt_timing, 0x20202020);
     expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->vdd, 0x0);
     expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->vddq, 0x0);
+}
+
+void expect_i3c_send_error_boot_status(void)
+{
+    const uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, SCP_PRIMARY, MSCP_BOOT_STATUS_CODE_UNUSED);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_ERROR);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 }
 
 // Tests
@@ -2574,6 +2599,8 @@ TEST_FUNCTION(test_i3c_controller_svp_die_0_verify_dimm, setup_svp_platform_dual
 // Test for verifying the dimm capacity read on die 0 failed
 TEST_FUNCTION(test_i3c_controller_soc_die_0_verify_dimm_capacity_Read_Fail, setup_soc_platform_dual_die, setup_undefined_platform)
 {
+    uint8_t die_num = SOC_D0;
+    g_die_num = die_num;
     uint32_t ddrss_en = 0x3F;
     uint8_t ddrss_index = 0x0;
     for (ddrss_index = 0; ddrss_index < DDRSS_DIMM_MAX; ddrss_index++)
@@ -2590,6 +2617,10 @@ TEST_FUNCTION(test_i3c_controller_soc_die_0_verify_dimm_capacity_Read_Fail, setu
                 will_return(__wrap_ddr_i3c_interface_read_dimm_capacity, SILIBS_SUCCESS);
             }
             expect_function_call(__wrap_ddr_i3c_interface_read_dimm_capacity);
+            if (ddrss_index == 5)
+            {
+                expect_i3c_send_error_boot_status();
+            }
         }
     }
     // Call the function under test
@@ -2617,6 +2648,10 @@ TEST_FUNCTION(test_i3c_controller_soc_die_0_verify_dimm_capacity_Check_Fail, set
             }
             will_return(__wrap_ddr_i3c_interface_read_dimm_capacity, SILIBS_SUCCESS);
             expect_function_call(__wrap_ddr_i3c_interface_read_dimm_capacity);
+            if (ddrss_index == 5)
+            {
+                expect_i3c_send_error_boot_status();
+            }
         }
     }
     // Call the function under test
@@ -2643,6 +2678,7 @@ TEST_FUNCTION(test_i3c_controller_soc_die_0_verify_dimm_sku_Check_Fail, setup_so
             expect_function_call(__wrap_ddr_i3c_interface_read_dimm_capacity);
         }
     }
+    expect_i3c_send_error_boot_status();
     // Call the function under test
     int status = i3c_controller_verify_dimm_on_current_die(ddrss_en);
     assert_int_equal(status, SILIBS_SUCCESS);

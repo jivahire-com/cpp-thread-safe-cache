@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
         ms::lib::scp_interrupts
         ms::lib::i3c_controller
         silibs_platform
+        ms::lib::boot_status
 )
 
 lint_target(${TARGET})
@@ -37,4 +38,5 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     i3c_controller
     idsw_get_die_id
+    boot_status_notify_extd
 )

@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
     kng_silibs_platform
     ms::cmocka::testrunner
     ms::lib::mesh
+    ms::lib::boot_status
     silibs_platform
     fwlib.service.iccBase
 )
@@ -39,4 +40,6 @@ mock_target(${TARGET}
     fpfw_init_get_handle
     mesh_init
     d2d_init
+    post_led_status
+    boot_status_notify_extd
 )

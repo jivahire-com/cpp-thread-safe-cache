@@ -12,7 +12,8 @@
 
 extern "C" {
 #include <FpFwUtils.h>     // for FPFW_UNUSED
-#include <fpfw_icc_base.h> // for fpfw_icc_base_init, fpfw_icc_ba...
+#include <boot_status.h>   // for post_led_status, boot_status_notify_extd
+#include <fpfw_icc_base.h> // for fpfw_icc_base_init, fpfw_icc_base_deinit
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <mesh.h>
@@ -58,11 +59,33 @@ KNG_DIE_ID __wrap_idhw_get_die_id()
     return mock_type(KNG_DIE_ID);
 }
 
+void __wrap_post_led_status(boot_status_req_t* p_req_mem, led_status_codes_t status)
+{
+    assert_non_null(p_req_mem);
+    check_expected(status);
+
+    function_called();
+}
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    FPFW_UNUSED(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
+/*------------- Test Cases ----------------*/
 TEST_FUNCTION(test_mesh_init, nullptr, nullptr)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idhw_get_die_id, test_die);
+
+    expect_value(__wrap_post_led_status, status, LED_STATUS_CODE_SCP_MESH_INIT_START);
+    expect_function_call(__wrap_post_led_status);
+
     expect_value(__wrap_mesh_init, die_num, test_die);
     _fpfw_component_mesh_stg_1.init_fn();
 }
@@ -73,6 +96,12 @@ TEST_FUNCTION(test_d2d_init, nullptr, nullptr)
     const auto test_die = (KNG_DIE_ID)1;
     will_return_always(__wrap_idhw_get_die_id, test_die);
     expect_value(__wrap_d2d_init, die_num, test_die);
+    const uint32_t expected_boot_status_ex = GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP,
+                                                                         MSCP_GENERIC,
+                                                                         (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY,
+                                                                         MSCP_BOOT_STATUS_CODE_UNUSED);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
     _fpfw_component_mesh_stg_2.init_fn();
 }
 }

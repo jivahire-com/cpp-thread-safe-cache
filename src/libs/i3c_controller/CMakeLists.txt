@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
     ms::lib::register_headers
     ms::lib::scp_interrupts
     ms::lib::system_info
+    ms::lib::boot_status
     silibs::lib_i3c
     silibs::ddr_i3c
     silibs::idhw

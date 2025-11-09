@@ -130,85 +130,111 @@ __attribute__((__weak__)) int get_active_exception(void)
     return (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) - NVIC_USER_IRQ_OFFSET;
 }
 
-#ifdef SCP_RUNTIME_INIT
 // #define DUMP_ARSM_ECC_STATUS_VERBOSE 1
-static bool check_shared_sram_ecc_ras_fault(void)
+static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm, atu_map_entry_t* atu_entry, acpi_err_sec_firmware_t* sec_fw_cper_section)
 {
+    atu_map(ATU_ID_MSCP, atu_entry);
+    uint32_t err_status =
+        MMIO_READ32(atu_entry->mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    uint32_t err_addr = MMIO_READ32(atu_entry->mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+
+#ifdef DUMP_ARSM_ECC_STATUS_VERBOSE
+    if (err_status != 0)
+    {
+        FPFwCDPrintf("type_0x%llx : SERR = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK);
+        FPFwCDPrintf("type_0x%llx : UET = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UET_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UET_LSB);
+        FPFwCDPrintf("type_0x%llx : PN = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_LSB);
+        FPFwCDPrintf("type_0x%llx : DE = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_DE_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_DE_LSB);
+        FPFwCDPrintf("type_0x%llx : CE = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_LSB);
+        FPFwCDPrintf("type_0x%llx : MV = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_MV_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_MV_LSB);
+        FPFwCDPrintf("type_0x%llx : OF = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_LSB);
+        FPFwCDPrintf("type_0x%llx : ER = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_LSB);
+        FPFwCDPrintf("type_0x%llx : UE = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_LSB);
+        FPFwCDPrintf("type_0x%llx : V = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_LSB);
+        FPFwCDPrintf("type_0x%llx : AV = 0x%08lx\n",
+                     atu_entry->ap_base_address,
+                     (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK) >>
+                         SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_LSB);
+    }
+#endif
+    atu_unmap(ATU_ID_MSCP, atu_entry);
+
+    if ((err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) &&
+        (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK))
+    {
+        sec_fw_cper_section->severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+
+#if defined(SCP_RUNTIME_INIT)
+        sec_fw_cper_section->record_id = (is_arsm) ? RECORD_ID_SCP_ARSM_RAM : RECORD_ID_SCP_RSM_RAM;
+#else
+        sec_fw_cper_section->record_id = (is_arsm) ? RECORD_ID_MCP_ARSM_RAM : RECORD_ID_MCP_RSM_RAM;
+#endif
+        sec_fw_cper_section->param[0] = err_status;
+        sec_fw_cper_section->param[1] = err_addr;
+        sec_fw_cper_section->param[2] = (is_arsm) ? KNG_HM_ARSM_UE : KNG_HM_RSM_UE;
+        sec_fw_cper_section->param[3] = 0;
+
+        return true;
+    }
+
+    return false;
+}
+
+static bool check_shared_sram_ecc_ras_fault(acpi_err_sec_firmware_t* sec_fw_cper_section)
+{
+    atu_map_entry_t atu_entry;
+
+    // Check ARSM range
     for (mscp_arsm_ram_type_t i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
     {
-        atu_map_entry_t atu_entry;
         get_arsm_ecc_atu_entry(i, &atu_entry);
-        atu_map(ATU_ID_MSCP, &atu_entry);
-        uint32_t err_status =
-            MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
-        uint32_t err_addr =
-            MMIO_READ32(atu_entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
-
-        if (err_status != 0)
+        if (check_shared_sram_ecc_ras_fault_internal(true, &atu_entry, sec_fw_cper_section))
         {
-            bool is_pending = false;
-            nvic_is_irq_pending(get_irq_num_for_scp_ecc_isr(i), &is_pending);
-
-            FPFwCDPrintf("type_%d : err_status = 0x%08lx at addr = 0x%08lx, irq = %s\n",
-                         i,
-                         err_status,
-                         err_addr,
-                         is_pending ? "PENDING" : "CLEAR");
-    #ifdef DUMP_ARSM_ECC_STATUS_VERBOSE
-            FPFwCDPrintf("type_%d : SERR = 0x%08lx\n", i, err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK);
-            FPFwCDPrintf("type_%d : UET = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UET_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UET_LSB);
-            FPFwCDPrintf("type_%d : PN = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_LSB);
-            FPFwCDPrintf("type_%d : DE = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_DE_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_DE_LSB);
-            FPFwCDPrintf("type_%d : CE = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_LSB);
-            FPFwCDPrintf("type_%d : MV = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_MV_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_MV_LSB);
-            FPFwCDPrintf("type_%d : OF = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_LSB);
-            FPFwCDPrintf("type_%d : ER = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_LSB);
-            FPFwCDPrintf("type_%d : UE = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_LSB);
-            FPFwCDPrintf("type_%d : V = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_LSB);
-            FPFwCDPrintf("type_%d : AV = 0x%08lx\n",
-                         i,
-                         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK) >>
-                             SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_LSB);
-    #endif
-        }
-        atu_unmap(ATU_ID_MSCP, &atu_entry);
-
-        if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) // SRAMECC_ERRSTATUS is valid
-        {
-            return true; // ECC error detected
+            return true;
         }
     }
 
-    return false; // No ECC error detected
+    // Check RSM range
+    for (mscp_rsm_ram_type_t i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
+    {
+        get_rsm_ecc_atu_entry(i, &atu_entry);
+        if (check_shared_sram_ecc_ras_fault_internal(false, &atu_entry, sec_fw_cper_section))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
-#endif
 
 /**
  * @brief Exception handler for Cortex-M7. This function is called when an exception occurs.
@@ -219,10 +245,9 @@ FPFW_NORETURN void exception_handler(exception_stack_frame_t* stack_frame)
 {
     save_crash_context(stack_frame);
 
-#ifdef SCP_RUNTIME_INIT
-    bool is_shared_sram_ecc_fault = check_shared_sram_ecc_ras_fault();
-    FPFwCDPrintf("Shared SRAM ECC RAS Fault: %s\n", is_shared_sram_ecc_fault ? "Detected" : "Not Detected");
-#endif
+    acpi_err_sec_firmware_t sec_fw_cper_section = {0};
+    bool is_shared_sram_ecc_ue_fault = check_shared_sram_ecc_ras_fault(&sec_fw_cper_section);
+    FPFwCDPrintf("Shared SRAM ECC RAS UE Fault: %s\n", is_shared_sram_ecc_ue_fault ? "Detected" : "Not Detected");
 
     // Disable Watchdog
     wdog_cmsdk_apb_disable();         // Disable watchdog
@@ -297,16 +322,18 @@ FPFW_NORETURN void exception_handler(exception_stack_frame_t* stack_frame)
 
     if (errorCode != KNG_CD_EXTERNAL_REQUEST && errorCode != KNG_CD_CTI_TRIGGER_ERROR_CODE)
     {
-        // Send CPER
-        acpi_err_sec_firmware_t sec_fw_cper_section = {
-            .severity = ACPI_ERROR_SEVERITY_CORRECTED,
-            .record_id = record_id,
-            .param = {errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2]}};
-
         acpi_cper_section_t cper_section;
-        cper_section.sec_fw = sec_fw_cper_section;
 
-        hm_submit_cper_cd_state(err_domain, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(cper_section));
+        if (!is_shared_sram_ecc_ue_fault)
+        {
+            sec_fw_cper_section = (acpi_err_sec_firmware_t){
+                .severity = ACPI_ERROR_SEVERITY_CORRECTED,
+                .record_id = record_id,
+                .param = {errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2]}};
+        }
+
+        cper_section.sec_fw = sec_fw_cper_section;
+        hm_submit_cper_cd_state(err_domain, sec_fw_cper_section.severity, &cper_section, sizeof(cper_section));
     }
 
     // Call the crash dump handler

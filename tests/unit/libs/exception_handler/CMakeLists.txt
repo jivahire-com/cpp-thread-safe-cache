@@ -50,6 +50,7 @@ mock_target(${TARGET}
     _tx_thread_stack_error_notify
     hm_submit_cper_cd_state
     get_arsm_ecc_atu_entry
+    get_rsm_ecc_atu_entry
     atu_map
     atu_unmap
     mmio_read32

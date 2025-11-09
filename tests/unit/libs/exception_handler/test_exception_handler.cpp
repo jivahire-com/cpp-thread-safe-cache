@@ -144,6 +144,16 @@ void __wrap_get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* a
     function_called();
 }
 
+void __wrap_get_rsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
+{
+    FPFW_UNUSED(type);
+    static atu_map_entry_t dummy_entry = {};
+    assert_non_null(atu_entry);
+    *atu_entry = dummy_entry; // Return a dummy entry for testing purposes
+
+    function_called();
+}
+
 uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
 {
     check_expected(addr);
@@ -165,7 +175,6 @@ void test_exception_handler_params(int exception, uint32_t error_code)
 {
     exception_stack_frame_t stack_frame = {1, 2, 3, 4, 5, 6, 7, 8};
 
-#ifdef SCP_RUNTIME_INIT
     // Set up expectations for check_shared_sram_ecc_ras_fault()
     for (int i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
     {
@@ -179,7 +188,19 @@ void test_exception_handler_params(int exception, uint32_t error_code)
         expect_function_call(__wrap_mmio_read32);
         expect_function_call(__wrap_atu_unmap);
     }
-#endif
+
+    for (int i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
+    {
+        expect_function_call(__wrap_get_rsm_ecc_atu_entry);
+        expect_function_call(__wrap_atu_map);
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+        will_return(__wrap_mmio_read32, 0); // Simulate no error status
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+        will_return(__wrap_mmio_read32, 0); // Simulate no error address
+        expect_function_call(__wrap_mmio_read32);
+        expect_function_call(__wrap_atu_unmap);
+    }
 
     // Set up expectations
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
@@ -251,20 +272,18 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     stack_frame.PSR = 16;
     g_core_crash_context.r4 = 4; // p4
 
-#ifdef SCP_RUNTIME_INIT
-    // Set up expectations for check_shared_sram_ecc_ras_fault()
+    // Set up expectations for shared ram UE
     expect_function_call(__wrap_get_arsm_ecc_atu_entry);
     expect_function_call(__wrap_atu_map);
     expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
     will_return(__wrap_mmio_read32,
                 SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
-                    SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK | 0x02);
+                    SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK | 0x02);
     expect_function_call(__wrap_mmio_read32);
     expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
     will_return(__wrap_mmio_read32, 0x12345678);
     expect_function_call(__wrap_mmio_read32);
     expect_function_call(__wrap_atu_unmap);
-#endif
 
     // Set up expectations
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
@@ -277,7 +296,7 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_function_call(__wrap_crash_dump_bug_check_initiated_dump);
     will_return(__wrap_crash_dump_bug_check_initiated_dump, true);
 
-    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
     expect_function_call(__wrap_hm_submit_cper_cd_state);
 
     expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_E_NOTIMPL);
@@ -292,20 +311,32 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     // Call API
     exception_handler(&stack_frame);
 
-#ifdef SCP_RUNTIME_INIT
-    // Set up expectations for check_shared_sram_ecc_ras_fault()
-    expect_function_call(__wrap_get_arsm_ecc_atu_entry);
-    expect_function_call(__wrap_atu_map);
-    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
-    will_return(__wrap_mmio_read32,
-                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
-                    SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK | 0x02);
-    expect_function_call(__wrap_mmio_read32);
-    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
-    will_return(__wrap_mmio_read32, 0x12345678);
-    expect_function_call(__wrap_mmio_read32);
-    expect_function_call(__wrap_atu_unmap);
-#endif
+    // Set up expectations for non shared ram ECC
+    for (int i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
+    {
+        expect_function_call(__wrap_get_arsm_ecc_atu_entry);
+        expect_function_call(__wrap_atu_map);
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_function_call(__wrap_atu_unmap);
+    }
+
+    for (int i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
+    {
+        expect_function_call(__wrap_get_rsm_ecc_atu_entry);
+        expect_function_call(__wrap_atu_map);
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+        will_return(__wrap_mmio_read32, 0);
+        expect_function_call(__wrap_mmio_read32);
+        expect_function_call(__wrap_atu_unmap);
+    }
 
     // Set up expectations
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);

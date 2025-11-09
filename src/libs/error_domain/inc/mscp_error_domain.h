@@ -80,18 +80,16 @@ fpfw_icc_base_ctx_t* get_mhu_handle(void);
  */
 void set_mhu_handle(fpfw_icc_base_ctx_t* icc_ctx);
 
+/**
+ * @brief Get Shared ATU entry for Shared SRAM, ARSM, ECC Registers.
+ */
+void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
+
 #if defined (SCP_RUNTIME_INIT)
 /**
  * @brief Register the SCP error domain.
  */
 void register_scp_error_domain(fpfw_icc_base_ctx_t* icc_ctx);
-/**
- * @brief Register the SCP error domain.
- */
-/**
- * @brief Get Shared ATU entry for Shared SRAM, ARSM, ECC Registers.
- */
-void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
 
 /**
  * @brief Get IRQ number for SCP ECC ISR based on the type of ARSM RAM.

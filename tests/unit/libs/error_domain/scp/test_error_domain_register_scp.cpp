@@ -795,7 +795,7 @@ void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offs
         will_return(__wrap_mmio_read32, 0);
         expect_function_call(__wrap_mmio_read32);
         expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
-        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK);
         expect_function_call(__wrap_mmio_write32);
 
         expect_value(__wrap_mmio_read32, addr, access_offset);
@@ -806,7 +806,7 @@ void test_trigger_shared_sram_arsm_fault(uint32_t err_mask, uint32_t access_offs
         will_return(__wrap_mmio_read32, 0);
         expect_function_call(__wrap_mmio_read32);
         expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS);
-        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+        expect_value(__wrap_mmio_write32, data, SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK);
         expect_function_call(__wrap_mmio_write32);
 
         expect_value(__wrap_mmio_read32, addr, access_offset);
@@ -2033,7 +2033,8 @@ TEST_FUNCTION(test_shared_sram_ecc_isr_of, test_setup, nullptr)
     expect_value(__wrap_mmio_write32,
                  data,
                  SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
-                     SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+                     SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK |
+                     SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
     expect_function_call(__wrap_mmio_write32);
 
     expect_function_call(__wrap_hm_submit_cper);

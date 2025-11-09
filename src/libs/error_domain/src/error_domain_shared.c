@@ -176,12 +176,12 @@ void trigger_shared_sram_fault(bool arsm, int type, uint32_t target_addr, uint32
     {
         nvic_global_disable();
         MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
-                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK,
-                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK);
         inject_err_by_access(target_addr);
         MMIO_UPDATE32(entry.mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_ADDRESS,
-                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK,
-                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_UE_MASK);
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK,
+                      SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRMISC1_INJECT_CE_MASK);
         inject_err_by_access(target_addr);
         nvic_global_enable();
     }
@@ -244,6 +244,8 @@ void shared_sram_ecc_isr(void* ctx)
         {
             severity = ACPI_ERROR_SEVERITY_CORRECTED;
             err_code = KNG_HM_ARSM_OF;
+            err_clr_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK |
+                            SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK; // bits [25:24] | [27]
         }
         else if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK)
         {
@@ -257,7 +259,7 @@ void shared_sram_ecc_isr(void* ctx)
         {
             severity = ACPI_ERROR_SEVERITY_CORRECTED;
             err_code = (is_rsm) ? KNG_HM_RSM_CE : KNG_HM_ARSM_CE;
-            err_clr_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK; // 0x11 is used to clear CE bit
+            err_clr_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK; // bits [25:24]
         }
 
         // Clear error status

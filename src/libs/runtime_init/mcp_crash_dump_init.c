@@ -185,6 +185,13 @@ FPFW_INIT_COMPONENT(cd_mhu_loc, FPFW_INIT_DEPENDENCIES("cd_init", "icc_mscp2mscp
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
+FPFW_INIT_COMPONENT(cd_hsp, FPFW_INIT_DEPENDENCIES("cd_init", "icc_hspmbx"))
+{
+    crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_HSP, fpfw_init_get_handle("icc_hspmbx"));
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
 FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk", "sos_int"))
 {
     // Initialize the crash dump driver

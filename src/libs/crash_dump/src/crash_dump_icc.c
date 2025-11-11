@@ -42,8 +42,8 @@ static void crash_dump_register_transfer_callback(crash_dump_icc_config_t type);
 /*------------- Functions ----------------*/
 static void icc_transfer_send_complete_cb(void* ctx, fpfw_status_t status)
 {
-    FPFW_UNUSED(ctx);
-    FPFwCDPrintf("%s: status = 0x%08lx\n", __FUNCTION__, status);
+    icc_mhu_header_t* msg = (icc_mhu_header_t*)ctx;
+    FPFwCDPrintf("%s: cmd=0x%08lx, status = 0x%08lx\n", __FUNCTION__, msg->msg_header.command, status);
 }
 
 static fpfw_status_t icc_mhu_send_cd_async(fpfw_icc_base_ctx_t* icc_ctx, uint32_t command)
@@ -54,7 +54,7 @@ static fpfw_status_t icc_mhu_send_cd_async(fpfw_icc_base_ctx_t* icc_ctx, uint32_
     static fpfw_icc_base_send_req_t icc_msg_ready_msg_req = {.payload_buffer = &transfer_msg,
                                                              .buffer_size = sizeof(transfer_msg),
                                                              .cb = icc_transfer_send_complete_cb,
-                                                             .cb_ctx = NULL};
+                                                             .cb_ctx = &transfer_msg};
 
     return fpfw_icc_base_send(icc_ctx, &icc_msg_ready_msg_req);
 }
@@ -108,7 +108,15 @@ static void cd_accel_recv_addr_notify_cb(void* context, size_t output_size_bytes
 
     hm_update_accel_fatal_cper_info((uint32_t)accel_type, msg->cper_buffer_offset, msg->cper_magic_nr_offset);
     crash_dump_register_post_dump_callback(crash_dump_copy_accel_cd_file, (void*)accel_type, CRASH_DUMP_TYPE_FULL);
-    crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_READY);
+    if (ctx->type_ctx[CRASH_DUMP_TYPE_FULL])
+    {
+        if (!(crash_dump_is_transferring(ctx->type_ctx[CRASH_DUMP_TYPE_FULL]) &&
+              crash_dump_core_state(CRASH_DUMP_TYPE_FULL, ctx->die_index, CRASH_DUMP_CORE_SDM + accel_type) == CRASH_DUMP_STATE_COMPLETED))
+        {
+            // If crash dump is in transferring, accel state will be set to ready after transfer complete
+            crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_READY);
+        }
+    }
     FPFwCDPrintf("[CD][Accel %u]: CD file offset 0x%lx size 0x%lx\n", accel_type, msg->cd_file_offset, msg->cd_file_size);
 }
 
@@ -133,7 +141,40 @@ static void crash_dump_transfer_req_cb(PDFWK_ASYNC_REQUEST_HEADER Request, void*
 }
 
 /*----------------------------------------*/
-static void crash_dump_send_hsp_command(uint32_t command, uint32_t flags)
+static void hsp_mbox_send_complete_cb(void* ctx, fpfw_status_t status)
+{
+    kng_hsp_mailbox_msg* msg = (kng_hsp_mailbox_msg*)ctx;
+    FPFwCDPrintf("%s: msg=0x%08lx, status = 0x%08lx\n", __FUNCTION__, msg->as_uint32[0], status);
+}
+
+static fpfw_status_t crash_dump_send_hsp_command_async(uint32_t command, uint32_t flags)
+{
+    fpfw_status_t status = FPFW_STATUS_SUCCESS;
+    crash_dump_context_t* ctx = crash_dump_context();
+
+    if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] != NULL)
+    {
+        static kng_hsp_mailbox_msg hsp_crash_dump_msg;
+        hsp_crash_dump_msg.as_uint32[0] = SET_HSP_MAILBOX_HEADER_ASUNIT32(command, 0, flags);
+
+        static fpfw_icc_base_send_req_t icc_msg_ready_msg_req = {.payload_buffer = &hsp_crash_dump_msg,
+                                                                 .buffer_size = sizeof(hsp_crash_dump_msg),
+                                                                 .cb = hsp_mbox_send_complete_cb,
+                                                                 .cb_ctx = &hsp_crash_dump_msg};
+
+        status = fpfw_icc_base_send(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP], &icc_msg_ready_msg_req);
+
+        if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
+        {
+            FPFwCDPrintf("Failed to send 0x%08lx command to HSP: status = 0x%08lx\n", command, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
+        }
+    }
+
+    return status;
+}
+
+static void crash_dump_send_hsp_command_sync(uint32_t command, uint32_t flags)
 {
     crash_dump_context_t* ctx = crash_dump_context();
 
@@ -366,8 +407,13 @@ void crash_dump_notify_hsp()
     {
         uint32_t flags = config_get_crash_dump_warm_reset() ? 0 : HSP_MAILBOX_FLAGS_CRASHDUMP_SKIP_WARM_RESET;
 
-        crash_dump_send_hsp_command(HSP_MAILBOX_CMD_CRASHDUMP_REQ, flags);
+        crash_dump_send_hsp_command_sync(HSP_MAILBOX_CMD_CRASHDUMP_REQ, flags);
     }
+}
+
+fpfw_status_t crash_dump_notify_hsp_transfer_complete(uint32_t flags)
+{
+    return crash_dump_send_hsp_command_async(HSP_MAILBOX_CMD_MCP_CRASHDUMP_COPY_COMPLETE_NOTIFY, flags);
 }
 
 /**

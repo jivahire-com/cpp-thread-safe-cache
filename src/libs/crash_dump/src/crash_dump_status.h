@@ -75,3 +75,11 @@ void crash_dump_dump_status(crash_dump_type_context_t *type_context);
  * @param state Desired state of the accelerator.
  */
 void crash_dump_update_accel_state(ACCEL_ID accel_type, crash_dump_core_state_t state);
+
+/**
+ * @brief Check the crash dump transfer is in progress
+ * 
+ * @param type_context crash dump type context
+ * @return true if crash dump is in progress, otherwise false
+ */
+bool crash_dump_is_transferring(crash_dump_type_context_t *type_context);

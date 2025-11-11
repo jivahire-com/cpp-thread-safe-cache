@@ -302,6 +302,7 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete, test_setup, test_teardown)
     crash_dump_header_t full_header = {.status = CRASH_DUMP_IN_TRANSFER};
     crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
     crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .core_index = CRASH_DUMP_CORE_MCP};
+    context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] = (fpfw_icc_base_ctx_t*)0x1; // Non-null to enable ICC send
     will_return_always(__wrap_crash_dump_context, &context);
 
     // Open the crash dump stream
@@ -322,6 +323,10 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete, test_setup, test_teardown)
     expect_function_call(__wrap_wait_for_semaphore);
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
+
+    expect_value(__wrap_fpfw_icc_base_send, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send);
 
     // Act
     crash_dump_pldm_on_ppe_complete(FPFW_PLDM_CC_SUCCESS, &crash_dump_stream);
@@ -335,6 +340,7 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete_with_fail, test_setup, test_t
     crash_dump_header_t full_header = {.status = CRASH_DUMP_IN_TRANSFER};
     crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
     crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .core_index = CRASH_DUMP_CORE_MCP};
+    context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP] = (fpfw_icc_base_ctx_t*)0x1; // Non-null to enable ICC send
     will_return_always(__wrap_crash_dump_context, &context);
 
     // Open the crash dump stream
@@ -350,6 +356,10 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete_with_fail, test_setup, test_t
     expect_function_call(__wrap_wait_for_semaphore);
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
+
+    expect_value(__wrap_fpfw_icc_base_send, icc_ctx, context.icc_ctx[CRASH_DUMP_ICC_CONFIG_HSP]);
+    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
+    expect_function_call(__wrap_fpfw_icc_base_send);
 
     // Act
     crash_dump_pldm_on_ppe_complete(FPFW_PLDM_CC_ERROR, &crash_dump_stream);

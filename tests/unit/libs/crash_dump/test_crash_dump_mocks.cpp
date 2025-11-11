@@ -564,7 +564,7 @@ fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     assert_non_null(params->payload_buffer);
     assert_true(params->buffer_size > 0);
     assert_non_null(params->cb);
-    assert_null(params->cb_ctx);
+    assert_non_null(params->cb_ctx);
 
     function_called();
 

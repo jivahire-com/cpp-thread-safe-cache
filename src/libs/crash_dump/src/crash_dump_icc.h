@@ -7,8 +7,9 @@
  * Crash dump internal APIs for ICC (Inter Core Communication).
  */
 #pragma once
-#include <stdbool.h> // for bool
-#include <stdint.h>  // for uint32_t
+#include <fpfw_status.h> // for fpfw_status_t
+#include <stdbool.h>     // for bool
+#include <stdint.h>      // for uint32_t
 
 /*---------- Nested Includes -------------*/
 
@@ -25,10 +26,10 @@
 void crash_dump_remote_trigger(bool is_ue);
 
 /**
- * @brief Requests HSP to perform a warm reset.
+ * @brief Notifies the HSP about crash dump events.
  * 
  */
-void crash_dump_request_hsp_warm_reset();
+fpfw_status_t crash_dump_notify_hsp_transfer_complete(uint32_t flags);
 
 /**
  * @brief Requests MCP0 to transfer crash dump to BMC.

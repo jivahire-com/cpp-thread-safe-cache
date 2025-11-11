@@ -18,6 +18,7 @@
 
 #include <CrashDump.h>
 #include <FpFwUtils.h>         // for FPFW_UNUSED
+#include <bug_check.h>         // for BUG_ASSERT_PARAM
 #include <cmsis_m7.h>          // for __WFI
 #include <crash_dump.h>        // for crash_dump_handler
 #include <crash_dump_events.h> // for CRASH_DUMP_ET
@@ -153,6 +154,10 @@ void crash_dump_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* ctx)
 
     // Reset Crash dump state to In Use, so that next crash dump can be captured.
     crash_dump_update_state(type_context, CRASH_DUMP_IN_USE);
+
+    // Notify transfer completion to the HSP
+    fpfw_status_t status = crash_dump_notify_hsp_transfer_complete(0);
+    BUG_ASSERT_PARAM(status == FPFW_STATUS_SUCCESS, status, 0);
 
     if (completionCode == FPFW_PLDM_CC_SUCCESS)
     {

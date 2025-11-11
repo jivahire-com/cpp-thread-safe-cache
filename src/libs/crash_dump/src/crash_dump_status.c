@@ -135,6 +135,8 @@ bool crash_dump_get_is_dump_transferring(crash_dump_type_context_t* type_context
 
 void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
 {
+    crash_dump_context_t* ctx = crash_dump_context();
+
     if (system_info_is_warm_start())
     {
         // Keep crash dump status if warm start.
@@ -154,6 +156,18 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
                     break;
                 }
             }
+
+            if (type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + ctx->core_index] == CRASH_DUMP_STATE_IN_PROGRESS)
+            {
+                // If core was warm reset in In-progress state, set it to Ready state to recover.
+                CRASH_DUMP_ET_WARNING_PARAM(CRASH_DUMP_ET_TYPE_IN_PROGRESS_RECOVERY,
+                                            CRASH_DUMP_PROCESSOR_ID(ctx->die_index, ctx->core_index));
+
+                type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + ctx->core_index] = CRASH_DUMP_STATE_READY;
+                uint8_t* crash_dump_payload =
+                    CRASH_DUMP_CORE_ADDRESS(MSCP_ATU_AP_WINDOW_CRASH_DUMP_BASE_ADDR, ctx->core_index);
+                memset(crash_dump_payload, 0, CRASH_DUMP_FULL_SIZE_PER_CORE);
+            }
             release_semaphore(type_context->semaphore.id);
 
             cd_gpio_assert_cd_available(cd_available);
@@ -161,8 +175,6 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
     }
     else
     {
-        crash_dump_context_t* ctx = crash_dump_context();
-
         if ((type_context->type == CRASH_DUMP_TYPE_MINI || ctx->die_index == DIE_0) && ctx->core_index == CRASH_DUMP_CORE_SCP)
         {
             // Initialize core status to CRASH_DUMP_STATE_NOT_AVAILABLE
@@ -334,4 +346,18 @@ void crash_dump_update_accel_state(ACCEL_ID accel_type, crash_dump_core_state_t 
         type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + accel_index] = (uint8_t)state;
         release_semaphore(type_context->semaphore.id);
     }
+}
+
+bool crash_dump_is_transferring(crash_dump_type_context_t* type_context)
+{
+    bool transferring = false;
+
+    if (type_context)
+    {
+        wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+        transferring = type_context->header->status == CRASH_DUMP_IN_TRANSFER;
+        release_semaphore(type_context->semaphore.id);
+    }
+
+    return transferring;
 }

@@ -203,6 +203,12 @@ static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm, atu_map_entry
         sec_fw_cper_section->param[2] = (is_arsm) ? KNG_HM_ARSM_UE : KNG_HM_RSM_UE;
         sec_fw_cper_section->param[3] = 0;
 
+        // clear UE
+        uint32_t err_clr_mask = err_status & ~SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK;
+        err_clr_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK;
+
+        MMIO_WRITE32(atu_entry->mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS, err_clr_mask);
+
         return true;
     }
 

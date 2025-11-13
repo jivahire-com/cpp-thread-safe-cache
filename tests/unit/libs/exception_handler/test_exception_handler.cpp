@@ -277,13 +277,19 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_function_call(__wrap_atu_map);
     expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
     will_return(__wrap_mmio_read32,
-                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
-                    SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK | 0x02);
+                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
     expect_function_call(__wrap_mmio_read32);
     expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
     will_return(__wrap_mmio_read32, 0x12345678);
     expect_function_call(__wrap_mmio_read32);
     expect_function_call(__wrap_atu_unmap);
+
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    expect_value(__wrap_mmio_write32,
+                 data,
+                 (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK |
+                  SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK));
+    expect_function_call(__wrap_mmio_write32);
 
     // Set up expectations
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);

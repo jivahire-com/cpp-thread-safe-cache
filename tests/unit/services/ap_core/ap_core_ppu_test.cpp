@@ -81,11 +81,6 @@ int __wrap_ppu_dynamic_enable(uintptr_t ppu_v1_base_addr, PPU_V1_MODE min_dyn_st
     return SILIBS_SUCCESS;
 }
 
-bool __wrap_ift_is_enabled(void)
-{
-    return mock_type(bool);
-}
-
 } // extern "C"
 
 //
@@ -123,8 +118,6 @@ AP_CORE_TEST(ap_core_ppu_clusters_on, NULL, NULL)
 
     // Mock idsw_get_platform_sdv to return PLATFORM_RVP_EVT_SILICON
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    // Mock IFT
-    will_return_always(__wrap_ift_is_enabled, false);
 
     // Enable cores 0 and 2
     corebits_set_bit(&context.enabled_cores, 0);
@@ -186,29 +179,6 @@ AP_CORE_TEST(ap_core_ppu_clusters_on, NULL, NULL)
     __real_ap_core_ppu_clusters_on(&context, timeout_ms);
 }
 
-AP_CORE_TEST(ap_core_ppu_clusters_on_ift_enabled, NULL, NULL)
-{
-    // Arrange
-    ap_core_service_context_t context = {};
-    ap_core_service_config_t test_config = {
-        .cluster_pex_base = 0x1000,
-        .cluster_stride = 0x100,
-        .platform_die_core_count = 3,
-    };
-    uint32_t timeout_ms = 100;
-
-    context.p_config = &test_config;
-    // Enable cores 0 and 2
-    corebits_set_bit(&context.enabled_cores, 0);
-    corebits_set_bit(&context.enabled_cores, 2);
-
-    expect_value(__wrap_FpFwAssert, expression, 1);
-    will_return_always(__wrap_ift_is_enabled, true);
-
-    // Act
-    __real_ap_core_ppu_clusters_on(&context, timeout_ms);
-}
-
 AP_CORE_TEST(ap_core_ppu_disable_handshaking, NULL, NULL)
 {
     // Arrange
@@ -250,8 +220,6 @@ AP_CORE_TEST(ap_core_ppu_clusters_on_off, NULL, NULL)
     // Mock platform detection
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_value(__wrap_FpFwAssert, expression, 1);
-    // Mock IFT
-    will_return_always(__wrap_ift_is_enabled, false);
 
     // For all clusters: Expect ON sequence
     for (unsigned int core_idx = 0; core_idx < 3; ++core_idx)

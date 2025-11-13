@@ -94,6 +94,7 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     idsw_get_die_id
     idsw_get_platform_sdv
+    ift_is_enabled
     mmio_read8
     mmio_read16
     mmio_read32

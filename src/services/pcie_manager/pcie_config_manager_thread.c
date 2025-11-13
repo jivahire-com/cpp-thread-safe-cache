@@ -15,6 +15,7 @@
 #include <atu_api.h>
 #include <bug_check.h>
 #include <idsw_kng.h>
+#include <ift_fw.h> // for ift_is_enabled
 #include <kng_error.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <mu_public.h>
@@ -161,6 +162,11 @@ void config_variable_service_thread_fn(ULONG thread_input)
     rb_config_var = ctx->rb_config_var;
     vab_config_var = ctx->vab_config_var;
     KNG_DIE_ID current_die_instance = (KNG_DIE_ID)idsw_get_die_id();
+
+    if (ift_is_enabled())
+    {
+        return;
+    }
 
     bool sdm_enable = !(accel_is_isolation_enabled(ACCEL_ID_SDM)); // If SDM isolation enabled, sdm_enable == false
     bool cded_enable = !(accel_is_isolation_enabled(ACCEL_ID_CDED));

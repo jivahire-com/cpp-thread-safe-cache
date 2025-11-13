@@ -56,11 +56,6 @@ void __wrap_ift_dfwk_interface_initialize(pift_interface_t intf, pift_device_t d
     assert_non_null(device);
 }
 
-void __wrap_ift_setup_tests(void)
-{
-    function_called();
-}
-
 void __wrap_ift_init(fpfw_icc_base_ctx_t* hsp_icc_ctx)
 {
     assert_non_null(hsp_icc_ctx);
@@ -93,7 +88,6 @@ TEST_FUNCTION(test_ift_drv_init, nullptr, nullptr)
     // Set Expectations
     will_return(__wrap_ift_is_enabled, true);
     will_return(__wrap_fpfw_init_get_handle, 0x12345678);
-    expect_function_call(__wrap_ift_setup_tests);
 
     // Call API under test
     fpfw_init_result_t result = _fpfw_component_ift_drv.init_fn();

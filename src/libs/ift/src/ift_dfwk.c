@@ -12,7 +12,9 @@
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
 
 #include "ift_fw.h"
+#include "ift_i.h"
 
+#include <DbgPrint.h>      // for FPFW_DBGPRINT_INFO
 #include <DfwkClient.h>    // for DfwkClientInterfaceOpen
 #include <DfwkCommon.h>    // for DfwkAsyncRequestSetCompletionRoutine
 #include <DfwkDriver.h>    // for DfwkQueueInitialize, DfwkInterfaceInitialize
@@ -54,13 +56,16 @@ static void ift_dfwk_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context)
      * in MSCP EXP RAM die 1.
      */
 
+    FPFW_DBGPRINT_INFO("IFT: Dispatching request of type %d\n", request->RequestType);
+
     switch (request->RequestType)
     {
-    case IFT_RUN_MEM_TESTS_ASYNC:
-        ift_mem_test(request);
+    case IFT_MEM_TESTS_FW_LOAD_ASYNC:
+    case IFT_CORE_TESTS_FW_LOAD_ASYNC:
+        ift_load_fw_sos(request);
         break;
-    case IFT_RUN_CORE_TESTS_ASYNC:
-        ift_core_test(request);
+    case IFT_EXECUTE_FW_ASYNC:
+        ift_execute_test(request);
         break;
     default:
         /* Unsupported request type. Complete immediately. */

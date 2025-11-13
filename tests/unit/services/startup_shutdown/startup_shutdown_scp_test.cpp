@@ -173,8 +173,9 @@ SOS_TEST(sos_core_boot_stages, NULL, NULL)
         STARTUP_PHASE_AP_ASYNC,
         STARTUP_WARM_BOOT_SDM_ASYNC,
         STARTUP_WARM_BOOT_CDED_ASYNC,
-        STARTUP_PHASE_IFT_MEM_TEST_LOAD,
-        STARTUP_PHASE_IFT_CORE_TEST_LOAD,
+        STARTUP_PHASE_IFT_ASYNC,
+        STARTUP_PHASE_IFT_MEM_FW_LOAD,
+        STARTUP_PHASE_IFT_CORE_FW_LOAD,
     };
     const startup_shutdown_boot_stage_t* p_stages = __real_sos_core_boot_stages();
     const unsigned int stage_count = __real_sos_core_boot_stage_count();

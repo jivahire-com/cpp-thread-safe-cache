@@ -26,6 +26,7 @@ extern "C" {
 #include <ift_i.h>
 #include <kingsgate_fuse_defines.h> // for CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET
 #include <mpu.h>                    // for MPU_STATUS_SUCCESS
+#include <nvic.h>                   // for NVIC_STATUS_SUCCESS
 #include <setjmp.h>
 #include <startup_shutdown.h>
 #include <startup_shutdown_init.h>
@@ -65,6 +66,9 @@ PDFWK_ASYNC_REQUEST_HEADER g_ift_async_request = NULL;
 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE g_ift_sos_completion_cb = NULL;
 void* g_ift_sos_completion_ctx = NULL;
 PDFWK_ASYNC_REQUEST_HEADER g_ift_sos_request = NULL;
+
+icc_base_recv_complete_notify g_icc_send_recv_async_cb = NULL;
+void* g_icc_send_recv_async_ctx = NULL;
 
 /*--------------- Functions ------------------*/
 
@@ -230,6 +234,18 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, 
     return mock_type(fpfw_status_t);
 }
 
+fpfw_status_t __wrap_fpfw_icc_base_send_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_base_send_recv_req_t* params)
+{
+    assert_non_null(icc_ctx);
+    assert_non_null(params);
+
+    g_icc_recv_msg_buf = params->payload_buffer;
+    g_icc_send_recv_async_cb = params->cb;
+    g_icc_send_recv_async_ctx = params->cb_ctx;
+
+    return mock_type(fpfw_status_t);
+}
+
 void __wrap_DfwkAsyncRequestInitialize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
 {
     assert_non_null(Request);
@@ -311,9 +327,9 @@ void __wrap_sos_start_phase(PDFWK_INTERFACE_HEADER p_interface,
     assert_non_null(p_interface);
     assert_non_null(p_request);
     assert_true(boot_type == IFT_BOOT);
-    assert_true(startup_stage == STARTUP_PHASE_IFT_MEM_TEST_LOAD || startup_stage == STARTUP_PHASE_IFT_CORE_TEST_LOAD);
+    assert_true(startup_stage == STARTUP_PHASE_IFT_MEM_FW_LOAD || startup_stage == STARTUP_PHASE_IFT_CORE_FW_LOAD);
     assert_non_null(completion_routine);
-    assert_non_null(p_completion_context);
+    assert_null(p_completion_context);
 
     g_ift_sos_completion_cb = completion_routine;
     g_ift_sos_completion_ctx = p_completion_context;
@@ -393,16 +409,22 @@ void __wrap_SCB_EnableDCache()
     // Mock implementation
 }
 
+nvic_status_t __wrap_nvic_irq_disable(uint32_t irq_num)
+{
+    FPFW_UNUSED(irq_num);
+    return NVIC_STATUS_SUCCESS;
+}
+
 /*------------- Test Cases ----------------*/
 
 TEST_FUNCTION(test_ift_init, nullptr, nullptr)
 {
     assert_false(ift_is_enabled());
 
-    will_return(__wrap_mpu_init, MPU_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_INTENT_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_mpu_init, MPU_STATUS_SUCCESS);
 
     ift_init((fpfw_icc_base_ctx_t*)0xDEADBEEF);
 
@@ -453,40 +475,79 @@ TEST_FUNCTION(test_ift_mem_test_die0, setup_mem_test, cleanup)
     uint32_t result_index = 2;
 
     /* Schedule the mem IFT tests */
-    ift_setup_tests();
+    ift_start_tests();
 
-    /* Set expectations for ift_dfwk_dispatch()->ift_mem_test() */
+    /**
+     * First (n - 1) iterations of core will be the same i.e. to
+     * recursively call core test. For the last iteration we stop
+     * the recursion and send the IFT core test status to HSP.
+     */
+    for (uint32_t i = 0; i < NUM_IFT_MEM_TEST_FW_COUNT - 1; i++)
+    {
+        /* Set expectations for ift_dfwk_dispatch()->ift_load_fw_sos() */
+        will_return(__wrap_idsw_get_die_id, die_id);
+        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
+        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
+        /* Set expectations for ift_load_fw_sos() */
+        /* Set expectations for ift_d0_prepare_scp1() */
+        expect_value(__wrap_mmio_write32, addr, SCP_EXP_IFT_SYNC_MAGIC_NUM_ADDR);
+        expect_value(__wrap_mmio_write32, data, 0);
+        will_return(__wrap_spi_controller_bulk_write, SILIBS_SUCCESS);
+        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
+        will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+        /* Set expectations for ift_fw_load_done_sos_cb() */
+        g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
+        /* Set expectations for ift_execute_test() */
+        will_return(__wrap_idsw_get_die_id, die_id);
+        will_return(__wrap_ift_execute_ist, result_index);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        /** Set expectations for ift_wait_for_scp_die1() **/
+        will_return(__wrap_mmio_read32, 0);
+        will_return(__wrap_mmio_read32, SCP_EXP_IFT_SYNC_MAGIC_NUM);
+        /* Set expectations for ift_execute_test_dfwk() */
+        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
+    }
+
+    /* Set expectations for ift_dfwk_dispatch()->ift_load_fw_sos() */
     will_return(__wrap_idsw_get_die_id, die_id);
     will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
     g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-    /* Set expectations for ift_d0_mem_test_sos_cb() */
+    /* Set expectations for ift_load_fw_sos() */
     /* Set expectations for ift_d0_prepare_scp1() */
     expect_value(__wrap_mmio_write32, addr, SCP_EXP_IFT_SYNC_MAGIC_NUM_ADDR);
     expect_value(__wrap_mmio_write32, data, 0);
     will_return(__wrap_spi_controller_bulk_write, SILIBS_SUCCESS);
     will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-    /* Set expectations for ift_execute_mem_test() */
+    /* Set expectations for ift_fw_load_done_sos_cb() */
+    g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
+    /* Set expectations for ift_execute_test() */
+    will_return(__wrap_idsw_get_die_id, die_id);
     will_return(__wrap_ift_execute_ist, result_index);
     will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-    /** Set expectations for ift_wait_or_notify() **/
-    will_return(__wrap_idsw_get_die_id, die_id);
+    /** Set expectations for ift_wait_for_scp_die1() **/
     will_return(__wrap_mmio_read32, 0);
     will_return(__wrap_mmio_read32, SCP_EXP_IFT_SYNC_MAGIC_NUM);
+    will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+    will_return(__wrap_mmio_read32, 0x0);
+    will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    /* Set expectations for ift_execute_test_dfwk() */
+    g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
+
     /** Set expectations for ift_icc_send_test_results() **/
-    for (uint32_t i = 0; i < result_index; i++)
+    for (uint32_t i = 0; i < result_index - 1; i++)
     {
         will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
     }
-    /** Set expectations for ift_icc_send_test_status() **/
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_RUN_STATUS_RSP);
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-    g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
+
+    /* Set expectations for ift_icc_send_test_status() */
+    will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
+    /* Set expectations for ift_icc_recv_status_cb() */
+    will_return(__wrap_idsw_get_die_id, die_id);
+    g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
 
     /* Set expectations for ift_dfwk_test_complete_cb() */
     g_ift_async_request_completion_routine(g_ift_async_request, g_ift_async_request_completion_ctx);
@@ -498,341 +559,55 @@ TEST_FUNCTION(test_ift_mem_test_die1, setup_mem_test, cleanup)
     uint32_t result_index = 2;
 
     /* Schedule the mem IFT tests */
-    ift_setup_tests();
-
-    /* Set expectations for ift_dfwk_dispatch()->ift_mem_test() */
-    will_return(__wrap_idsw_get_die_id, die_id);
-    will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-    g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-    /* Set expectations for ift_recv_d2d_fw_done_cb()->ift_execute_mem_test() */
-    will_return(__wrap_ift_execute_ist, result_index);
-    will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-    /** Set expectations for ift_wait_or_notify() **/
-    will_return(__wrap_idsw_get_die_id, die_id);
-    will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-    /** Set expectations for ift_icc_send_test_results() **/
-    for (uint32_t i = 0; i < result_index; i++)
-    {
-        will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-    /** Set expectations for ift_icc_send_test_status() **/
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_RUN_STATUS_RSP);
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-    g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-
-    /* Set expectations for ift_dfwk_test_complete_cb() */
-    g_ift_async_request_completion_routine(g_ift_async_request, g_ift_async_request_completion_ctx);
-}
-
-TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
-{
-    uint32_t result_index = 1;
-
-    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
-
-    // Invalid Request type to DFWK
-    {
-        g_ift_async_request->RequestType = IFT_DFWK_REQUEST_TYPE_MAX;
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-    }
-
-    // NULL interface
-    if (!bugcheck_mock_return())
-    {
-        ift_dfwk_set_interface(NULL);
-        ift_setup_tests();
-    }
-
-    // spi_controller_bulk_write() failed
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_0);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        expect_value(__wrap_mmio_write32, addr, SCP_EXP_IFT_SYNC_MAGIC_NUM_ADDR);
-        expect_value(__wrap_mmio_write32, data, 0);
-        will_return(__wrap_spi_controller_bulk_write, SILIBS_E_PARAM);
-        g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
-    }
-
-    // fpfw_icc_base_send_sync() failed to send fw transfer done to SCP1
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_0);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        expect_value(__wrap_mmio_write32, addr, SCP_EXP_IFT_SYNC_MAGIC_NUM_ADDR);
-        expect_value(__wrap_mmio_write32, data, 0);
-        will_return(__wrap_spi_controller_bulk_write, SILIBS_SUCCESS);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_INVALID_SIZE_ARG_ERR);
-        g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
-    }
-
-    // spi_controller_write_direct_instruction() failed
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_E_PARAM);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-
-    // fpfw_icc_base_recv() failed to register fw transfer done callback
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_INVALID_ARG_ERR);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-    }
-
-    // Too many results generated
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        will_return(__wrap_ift_execute_ist, (SCP_EXP_IFT_RESULT_MAX << 1) + 1);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-
-    // Invalid response received from HSP for IFT run status
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-        will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_RUN_STATUS_REQ);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-
-    // No data received from HSP for IFT run status
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-        will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, 0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-
-    // ICC stack failed to send IFT run status
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-        will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_DISPATCHER_INIT_ERR);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-
-    // ICC stack failed to send IFT IST run status
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-        will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_DISPATCHER_INIT_ERR);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-
-    // Invalid response received from HSP for IFT run status
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-        will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_REQ);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-
-    // No data received from HSP for IFT run status
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-        will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, 0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-
-    // FW transfer done receive failed to register callback
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_TRANSPORT_STATUS_MBX_FLUSH_IS_REQUESTED);
-    }
-
-    // FW transfer done receive failed to register callback
-    if (!bugcheck_mock_return())
-    {
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
-
-        g_icc_recv_cb(g_icc_recv_ctx, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
-    }
-
-    // Invalid FW download size
-    if (!bugcheck_mock_return())
-    {
-        ift_set_current_fw_size(512 * SL_1KB + 1);
-    }
-
-    // Undo previous tests settings
-    static ift_interface_t ift_interface;
-    ift_dfwk_set_interface(&ift_interface);
-}
-
-TEST_FUNCTION(test_ift_core_test_die0, setup_core_test, cleanup)
-{
-    idsw_die_id_t die_id = DIE_0;
-    uint32_t result_index = 2;
-
-    /* Schedule the mem IFT tests */
-    ift_setup_tests();
-
-    /* Set expectations for ift_dfwk_dispatch()->ift_core_test() */
-    will_return_count(__wrap_idsw_get_die_id, die_id, NUM_IFT_CORE_TEST_FW_COUNT);
-    will_return_count(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE, NUM_IFT_CORE_TEST_FW_COUNT);
-    g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
+    ift_start_tests();
 
     /**
      * First (n - 1) iterations of core will be the same i.e. to
      * recursively call core test. For the last iteration we stop
      * the recursion and send the IFT core test status to HSP.
      */
-    for (uint32_t i = 0; i < NUM_IFT_CORE_TEST_FW_COUNT - 1; i++)
+    for (uint32_t i = 0; i < NUM_IFT_MEM_TEST_FW_COUNT; i++)
     {
-        /* Set expectations for ift_d0_core_test_sos_cb() */
-        /* Set expectations for ift_d0_prepare_scp1() */
-        expect_value(__wrap_mmio_write32, addr, SCP_EXP_IFT_SYNC_MAGIC_NUM_ADDR);
-        expect_value(__wrap_mmio_write32, data, 0);
-        will_return(__wrap_spi_controller_bulk_write, SILIBS_SUCCESS);
+        /* Set expectations for ift_dfwk_dispatch()->ift_load_fw_sos() */
+        will_return(__wrap_idsw_get_die_id, die_id);
         will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-        will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        /* Set expectations for ift_execute_core_test() */
+        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
+        /* Set expectations for ift_recv_d2d_fw_done_cb() */
+        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
+        /* Set expectations for ift_execute_test() */
+        will_return(__wrap_idsw_get_die_id, die_id);
         will_return(__wrap_ift_execute_ist, result_index);
         will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, die_id);
-        will_return(__wrap_mmio_read32, SCP_EXP_IFT_SYNC_MAGIC_NUM);
-        g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
+        if (i < NUM_IFT_MEM_TEST_FW_COUNT - 1)
+        {
+            will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+        }
+        else
+        {
+            will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+            will_return(__wrap_mmio_read32, 0x0);
+            will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        }
+        /* Set expectations for ift_execute_test_dfwk() */
+        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
     }
-    /* Set expectations for ift_d0_core_test_sos_cb() */
-    /** Set expectations for ift_d0_prepare_scp1() **/
-    expect_value(__wrap_mmio_write32, addr, SCP_EXP_IFT_SYNC_MAGIC_NUM_ADDR);
-    expect_value(__wrap_mmio_write32, data, 0);
-    will_return(__wrap_spi_controller_bulk_write, SILIBS_SUCCESS);
-    will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
-    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-    /** Set expectations for ift_execute_core_test() **/
-    will_return(__wrap_ift_execute_ist, result_index);
-    will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-    /** Set expectations for ift_wait_or_notify() **/
-    will_return(__wrap_idsw_get_die_id, die_id);
-    will_return(__wrap_mmio_read32, 0);
-    will_return(__wrap_mmio_read32, SCP_EXP_IFT_SYNC_MAGIC_NUM);
-    /** Set expectations for ift_get_core_defect_mfg_mask() **/
-    will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+
     /** Set expectations for ift_icc_send_test_results() **/
-    for (uint32_t i = 0; i < result_index; i++)
+    for (uint32_t i = 0; i < result_index - 1; i++)
     {
         will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
     }
-    /** Set expectations for ift_icc_send_test_status() **/
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_RUN_STATUS_RSP);
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-    g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
+
+    /* Set expectations for ift_icc_send_test_status() */
+    will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
+    /* Set expectations for ift_icc_recv_status_cb() */
+    will_return(__wrap_idsw_get_die_id, die_id);
+    will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+    g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
 
     /* Set expectations for ift_dfwk_test_complete_cb() */
     g_ift_async_request_completion_routine(g_ift_async_request, g_ift_async_request_completion_ctx);
@@ -844,104 +619,351 @@ TEST_FUNCTION(test_ift_core_test_die1, setup_core_test, cleanup)
     uint32_t result_index = 2;
 
     /* Schedule the mem IFT tests */
-    ift_setup_tests();
-
-    /* Set expectations for ift_dfwk_dispatch()->ift_core_test() */
-    will_return_count(__wrap_idsw_get_die_id, die_id, NUM_IFT_CORE_TEST_FW_COUNT);
-    will_return_count(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE, NUM_IFT_CORE_TEST_FW_COUNT);
-    will_return_count(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS, NUM_IFT_CORE_TEST_FW_COUNT);
-    g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
+    ift_start_tests();
 
     /**
      * First (n - 1) iterations of core will be the same i.e. to
      * recursively call core test. For the last iteration we stop
      * the recursion and send the IFT core test status to HSP.
      */
-    /* Set expectations for ift_recv_d2d_fw_done_cb()->ift_execute_core_test() */
-    for (uint32_t i = 0; i < NUM_IFT_CORE_TEST_FW_COUNT - 1; i++)
+    for (uint32_t i = 0; i < NUM_IFT_CORE_TEST_FW_COUNT; i++)
     {
+        /* Set expectations for ift_dfwk_dispatch()->ift_load_fw_sos() */
+        will_return(__wrap_idsw_get_die_id, die_id);
+        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
+        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
+        /* Set expectations for ift_recv_d2d_fw_done_cb() */
+        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
+        /* Set expectations for ift_execute_test() */
+        will_return(__wrap_idsw_get_die_id, die_id);
         will_return(__wrap_ift_execute_ist, result_index);
         will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, die_id);
-        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
+        if (i < NUM_IFT_CORE_TEST_FW_COUNT - 1)
+        {
+            will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+        }
+        else
+        {
+            will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+            will_return(__wrap_mmio_read32, 0x0);
+            will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        }
+        /* Set expectations for ift_execute_test_dfwk() */
+        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
     }
-    will_return(__wrap_ift_execute_ist, result_index);
-    will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-    will_return(__wrap_idsw_get_die_id, die_id);
-    will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-    /** Set expectations for ift_get_core_defect_mfg_mask() **/
-    will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+
     /** Set expectations for ift_icc_send_test_results() **/
-    for (uint32_t i = 0; i < result_index; i++)
+    for (uint32_t i = 0; i < result_index - 1; i++)
     {
         will_return(__wrap_mmio_read32, 0x0);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
     }
-    /** Set expectations for ift_icc_send_test_status() **/
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_RUN_STATUS_RSP);
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-    will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-    g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    /* Set expectations for ift_icc_send_test_status() */
+    will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
+    /* Set expectations for ift_icc_recv_status_cb() */
+    will_return(__wrap_idsw_get_die_id, die_id);
+    will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+    g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
 
     /* Set expectations for ift_dfwk_test_complete_cb() */
     g_ift_async_request_completion_routine(g_ift_async_request, g_ift_async_request_completion_ctx);
 }
 
-TEST_FUNCTION(test_ift_core_test_fail, setup_core_test, cleanup)
+TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
 {
     uint32_t result_index = 1;
+    DFWK_ASYNC_REQUEST_HEADER ift_async_request;
+
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
-    // Core test running for more than n number of iterations
+    // spi_controller_bulk_write() failed
     if (!bugcheck_mock_return())
     {
-        /* Schedule the core IFT tests */
-        ift_setup_tests();
+        expect_value(__wrap_mmio_write32, addr, SCP_EXP_IFT_SYNC_MAGIC_NUM_ADDR);
+        expect_value(__wrap_mmio_write32, data, 0);
+        will_return(__wrap_spi_controller_bulk_write, SILIBS_E_PARAM);
+        g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
+    }
 
-        /* Set expectations for ift_dfwk_dispatch()->ift_core_test() */
-        will_return_count(__wrap_idsw_get_die_id, DIE_1, NUM_IFT_CORE_TEST_FW_COUNT);
-        will_return_count(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE, NUM_IFT_CORE_TEST_FW_COUNT);
-        will_return_count(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS, NUM_IFT_CORE_TEST_FW_COUNT);
-        g_ift_async_request_dispatch(g_ift_async_request, g_ift_async_request_dispatch_ctx);
+    // fpfw_icc_base_send_sync() failed to send fw transfer done to SCP1
+    if (!bugcheck_mock_return())
+    {
+        expect_value(__wrap_mmio_write32, addr, SCP_EXP_IFT_SYNC_MAGIC_NUM_ADDR);
+        expect_value(__wrap_mmio_write32, data, 0);
+        will_return(__wrap_spi_controller_bulk_write, SILIBS_SUCCESS);
+        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
+        will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_INVALID_SIZE_ARG_ERR);
+        g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
+    }
 
-        /**
-         * First (n - 1) iterations of core will be the same i.e. to
-         * recursively call core test. For the last iteration we stop
-         * the recursion and send the IFT core test status to HSP.
-         */
-        /* Set expectations for ift_recv_d2d_fw_done_cb()->ift_execute_core_test() */
-        for (uint32_t i = 0; i < NUM_IFT_CORE_TEST_FW_COUNT - 1; i++)
-        {
-            will_return(__wrap_ift_execute_ist, result_index);
-            will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-            will_return(__wrap_idsw_get_die_id, DIE_1);
-            will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-            g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-        }
+    // Invalid Request type to DFWK
+    {
+        ift_async_request.RequestType = IFT_DFWK_REQUEST_TYPE_MAX;
+
+        g_ift_async_request_dispatch(&ift_async_request, NULL);
+    }
+
+    // spi_controller_write_direct_instruction() failed
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
         will_return(__wrap_ift_execute_ist, result_index);
         will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
-        /** Set expectations for ift_get_core_defect_mfg_mask() **/
-        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
-        /** Set expectations for ift_icc_send_test_results() **/
-        for (uint32_t i = 0; i < result_index; i++)
-        {
-            will_return(__wrap_mmio_read32, 0x0);
-            will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_IST_RUN_STATUS_RSP);
-            will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-            will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        }
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_RUN_STATUS_RSP);
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
-        will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
-        // This is the (n + 1)th iteration
-        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
+        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_E_PARAM);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
     }
+
+    // fpfw_icc_base_recv() failed to register fw transfer done callback
+    if (!bugcheck_mock_return())
+    {
+        ift_async_request.RequestType = IFT_CORE_TESTS_FW_LOAD_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_fpfw_init_get_handle, (void*)0xDEADCAFE);
+        will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_INVALID_ARG_ERR);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+    }
+
+    // Invalid response received from HSP for IFT IST run status
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 1);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_mmio_read32, 0x0);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_DISPATCHER_INIT_ERR);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+    }
+
+    // Invalid response received from HSP for IFT run status
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_INVALID_ARG_ERR);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+    }
+
+    // No data received from HSP for IFT result status
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 1);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_mmio_read32, 0x0);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
+    }
+
+    // Receive CD failed for HSP CB IFT result status
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 2);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_mmio_read32, 0x0);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_INVALID_ARG_ERR);
+    }
+
+    // No data received from HSP for IFT test status
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
+    }
+
+    // Receive CD failed for HSP CB IFT test status
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        g_icc_send_recv_async_cb(g_icc_send_recv_async_ctx, sizeof(struct kng_hsp_mailbox_msg_header), FPFW_ICC_BASE_STATUS_INVALID_ARG_ERR);
+    }
+
+    // Increment the FW index variable (s_ift_fw_idx) beyond max limit
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+    }
+
+    // FW transfer done receive failed to register callback
+    if (!bugcheck_mock_return())
+    {
+        g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_TRANSPORT_STATUS_MBX_FLUSH_IS_REQUESTED);
+    }
+
+    // FW transfer done receive failed to register callback
+    if (!bugcheck_mock_return())
+    {
+        g_icc_recv_cb(g_icc_recv_ctx, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
+    }
+
+    // Invalid FW download size
+    if (!bugcheck_mock_return())
+    {
+        ift_set_current_fw_size(512 * SL_1KB + 1);
+    }
+
+    // NULL interface
+    if (!bugcheck_mock_return())
+    {
+        ift_dfwk_set_interface(NULL);
+        ift_start_tests();
+    }
+
+    // Undo previous tests settings
+    static ift_interface_t ift_interface;
+    ift_dfwk_set_interface(&ift_interface);
+}
+
+TEST_FUNCTION(test_ift_core_test_fail, setup_core_test, cleanup)
+{
+    DFWK_ASYNC_REQUEST_HEADER ift_async_request;
+
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+
+    // Increment the FW index variable (s_ift_fw_idx) beyond max limit
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        for (uint32_t i = 0; i < NUM_IFT_CORE_TEST_FW_COUNT - 1; i++)
+        {
+            will_return(__wrap_idsw_get_die_id, DIE_1);
+            will_return(__wrap_ift_execute_ist, 0);
+            will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+            will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
+            g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+        }
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, 0);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+    }
+
+    // Too many results generated
+    if (!bugcheck_mock_return())
+    {
+        reset_core_test_fw_idx();
+        ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
+
+        will_return(__wrap_idsw_get_die_id, DIE_1);
+        will_return(__wrap_ift_execute_ist, (SCP_EXP_IFT_RESULT_MAX << 1) + 1);
+        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
+    }
+}
+
+TEST_FUNCTION(test_ift_sleep_ns, NULL, NULL)
+{
+    sleep_ns(1);
+    sleep_ns(1000);
 }
 
 } // extern "C"

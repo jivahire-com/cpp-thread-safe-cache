@@ -45,6 +45,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::event_trace::trace
         ms::lib::gtimer
+        ms::lib::ift
         ms::lib::hsp_firmware_headers
         ms::lib::i3c_controller
         ms::lib::icc_platform_defines

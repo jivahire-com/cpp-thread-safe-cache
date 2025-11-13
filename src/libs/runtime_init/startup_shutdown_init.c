@@ -49,8 +49,16 @@ void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_cont
 
 #ifdef SCP_RUNTIME_INIT
 
+void ift_sos_completion_cb(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    FPFW_UNUSED(request);
+    FPFW_UNUSED(p_completion_context);
+
+    ift_start_tests();
+}
+
 FPFW_INIT_COMPONENT(sos_int,
-                    FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift"))
+                    FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift_drv"))
 {
     static sos_interface_t sos_interface;
     sos_interface_init(fpfw_init_get_handle("sos_svc"), &sos_interface, true);
@@ -89,6 +97,10 @@ FPFW_INIT_COMPONENT(sos_int,
             sos_start_phase((void*)&sos_interface, NULL, WARM_BOOT_POST_AP, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL); // synchronous
             sos_start_phase((void*)&sos_interface, &startup_phase_request, WARM_BOOT_POST_AP, STARTUP_PHASE_AP_ASYNC, boot_completion, NULL); // asynchronous
         }
+    }
+    else
+    {
+        sos_start_phase((void*)&sos_interface, &startup_phase_request, IFT_BOOT, STARTUP_PHASE_IFT_ASYNC, ift_sos_completion_cb, NULL); // asynchronous
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &sos_interface};

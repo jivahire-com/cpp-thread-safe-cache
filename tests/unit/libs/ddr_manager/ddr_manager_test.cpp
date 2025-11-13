@@ -252,6 +252,11 @@ uint64_t __wrap_gtimer_prodfw_get_counter()
     return mock_type(uint64_t);
 }
 
+bool __wrap_ift_is_enabled(void)
+{
+    return mock_type(bool);
+}
+
 } // extern "C"
 
 //
@@ -577,6 +582,7 @@ TEST_FUNCTION(ddr_worker_thread_func_success, NULL, NULL)
     ddr_service_context_t ddr_service_ctx = {};
     ddr_service_ctx.work_queue.tx_queue_start = (ULONG*)0x1234;
 
+    will_return(__wrap_ift_is_enabled, false);
     expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
     expect_any(__wrap__txe_queue_receive, destination_ptr);
     expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_WAIT_FOREVER);
@@ -588,6 +594,16 @@ TEST_FUNCTION(ddr_worker_thread_func_success, NULL, NULL)
     {
         ddr_worker_thread_func((ULONG)&ddr_service_ctx);
     }
+}
+
+TEST_FUNCTION(ddr_worker_thread_func_ift_enabled, NULL, NULL)
+{
+    ddr_service_context_t ddr_service_ctx = {};
+    ddr_service_ctx.work_queue.tx_queue_start = (ULONG*)0x1234;
+
+    will_return(__wrap_ift_is_enabled, true);
+
+    ddr_worker_thread_func((ULONG)&ddr_service_ctx);
 }
 
 TEST_FUNCTION(ddr_create_bdat_test_single_die, NULL, NULL)
@@ -1018,6 +1034,7 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1, NULL, NULL)
     ddr_service_context_t ddr_service_ctx = {};
     ddr_service_ctx.work_queue.tx_queue_start = (ULONG*)0x1234;
 
+    will_return(__wrap_ift_is_enabled, false);
     expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
     expect_any(__wrap__txe_queue_receive, destination_ptr);
     expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_WAIT_FOREVER);
@@ -1116,6 +1133,7 @@ TEST_FUNCTION(ddr_start_i3c_and_ecc_ce_timer, NULL, NULL)
     ddr_service_context_t ddr_service_ctx = {};
     ddr_service_ctx.work_queue.tx_queue_start = (ULONG*)0x1234;
 
+    will_return(__wrap_ift_is_enabled, false);
     expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
     expect_any(__wrap__txe_queue_receive, destination_ptr);
     expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_WAIT_FOREVER);

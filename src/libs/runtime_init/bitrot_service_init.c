@@ -13,6 +13,9 @@
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <idsw.h>
+#ifdef SCP_RUNTIME_INIT
+    #include <ift_fw.h> // for ift_run_tests
+#endif
 
 // For memory address definitions
 #define __NO_CSR_TYPEDEFS__
@@ -34,9 +37,29 @@ static mscp_bitrotservice_ctx_t ctx = {
     .mem_table = mscp_mem_table,
 };
 /*-------------- Functions ---------------*/
+#ifdef SCP_RUNTIME_INIT
+FPFW_INIT_COMPONENT(brt_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "ift"))
+{
+
+    // Do not initialize bitrot service if IFT is enabled
+    if (ift_is_enabled())
+    {
+        FPFW_DBGPRINT_INFO("IFT enabled. Skip Bitrot service\n");
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
+    bitrot_thread_init(&ctx);
+
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+#elif MCP_RUNTIME_INIT
 
 FPFW_INIT_COMPONENT(brt_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver"))
 {
     bitrot_thread_init(&ctx);
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
+
+#endif

@@ -73,11 +73,6 @@ void ap_core_ppu_init(ap_core_service_context_t* p_context)
 // function to set the power state of a single cluster
 static void cluster_set_power_state(ap_core_service_context_t* p_context, unsigned cluster_idx, bool power_state_on, uint32_t timeout_ms)
 {
-    // Skip cluster PPU ON transition if IFT is enabled
-    if (ift_is_enabled())
-    {
-        return;
-    }
 
     // TODO: timeout_ms is now being interpreted as us - Need to update and also provide an appropriate timeout in us
     uintptr_t cluster_ppu_addr =

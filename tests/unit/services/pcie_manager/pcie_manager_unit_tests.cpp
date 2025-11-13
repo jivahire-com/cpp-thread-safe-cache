@@ -252,6 +252,17 @@ TEST_FUNCTION(config_service_thread_fail, NULL, NULL)
     }
 }
 
+TEST_FUNCTION(config_service_thread_ift_enabled, NULL, NULL)
+{
+    pcie_config_manager_context_t ctx;
+
+    ift_enabled = true;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    config_variable_service_thread_fn((ULONG)&ctx);
+
+    ift_enabled = false;
+}
+
 TEST_FUNCTION(config_service_thread_success_die0, NULL, NULL)
 {
     pcie_config_manager_context_t ctx;

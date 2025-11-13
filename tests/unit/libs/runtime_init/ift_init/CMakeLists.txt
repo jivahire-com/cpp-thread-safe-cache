@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         ms::lib::ift
+        ms::lib::scp_interrupts
         ms::cmocka::testrunner
         silibs::idsw_kng
         silibs::idsw
@@ -42,5 +43,4 @@ mock_target(${TARGET}
     ift_dfwk_set_interface
     ift_init
     ift_is_enabled
-    ift_setup_tests
 )

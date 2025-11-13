@@ -19,6 +19,7 @@
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <hsp_firmware_headers.h> // for mbox command codes
+#include <ift_fw.h>               // for ift_is_enabled
 #include <stdint.h>               // for uint32_t
 #include <stdio.h>                // for printf
 #include <system_info.h>
@@ -60,6 +61,11 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
     ddr_service_context_t* service_ctx = (ddr_service_context_t*)pddr_service_ctx;
     uint32_t received_message;
     UINT status;
+
+    if (ift_is_enabled())
+    {
+        return;
+    }
 
     while (1)
     {

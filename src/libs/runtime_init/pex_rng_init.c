@@ -18,6 +18,7 @@
 #include <corebits.h>
 #include <fpfw_init.h> // for fpfw_init_get_handle, FPFW_INIT_S...
 #include <idsw_kng.h>
+#include <ift_fw.h>
 #include <pex_rng.h>
 #define __NO_CSR_TYPEDEFS__
 #include <scp_top_regs.h>
@@ -30,6 +31,12 @@
 
 FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh_stg_2", "atu_svc", "core_info"))
 {
+    if (ift_is_enabled())
+    {
+        FPFW_DBGPRINT_INFO("IFT enabled. Skip PEX RNG\n");
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     corebits_t* sys_cores_in_die1 = core_info_get_enable_cores_result();
     static pex_rng_config_t rng_config;
 

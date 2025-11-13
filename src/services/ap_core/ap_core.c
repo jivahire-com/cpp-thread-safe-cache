@@ -476,8 +476,8 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
                 DfwkAsyncRequestComplete(p_request);
             }
             break;
-        case STARTUP_IFT_MEM_TEST_LOAD:
-            if (system_info_is_hsp_present())
+        case STARTUP_IFT_MEM_FW_LOAD:
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
             {
                 ap_core_request_load_ift_fw(s_icc_base_ctx, AP_IFT_FW_ID_IFT_MEM_TEST);
             }
@@ -486,8 +486,8 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
                 DfwkAsyncRequestComplete(p_request);
             }
             break;
-        case STARTUP_IFT_CORE_TEST_LOAD:
-            if (system_info_is_hsp_present())
+        case STARTUP_IFT_CORE_FW_LOAD:
+            if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
             {
                 ap_core_request_load_ift_fw(s_icc_base_ctx, AP_IFT_FW_ID_IFT_CORE_TEST);
             }

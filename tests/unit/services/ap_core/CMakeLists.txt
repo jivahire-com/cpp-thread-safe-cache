@@ -70,8 +70,6 @@ mock_target(${TARGET}
     fpfw_icc_base_recv
     fpfw_timer_enable
 
-    ift_is_enabled
-
     mmio_read32
     mmio_write32
     sds_block_creation

@@ -14,9 +14,11 @@ target_link_libraries(${TARGET}
         silibs::sdm_command_desc
         ms::client_interface::startup_shutdown
         ms::lib::cortex_m7::mpu
+        ms::lib::cortex_m7::nvic
         ms::lib::hsp_firmware_headers
         ms::lib::ift
         ms::lib::register_headers
+        ms::lib::scp_interrupts
         ms::lib::system_info
         ms::lib::utils
         ms::cmocka::testrunner
@@ -70,11 +72,13 @@ mock_target(${TARGET}
     fpfw_icc_base_send_sync
     fpfw_icc_base_recv
     fpfw_icc_base_send_recv_sync
+    fpfw_icc_base_send_recv
     fpfw_init_get_handle
 
     mmio_write32
     mmio_read32
     mpu_init
+    nvic_irq_disable
 
     sleep_us
     sos_start_phase

@@ -245,6 +245,14 @@ TEST_FUNCTION(sos_init_sos_ift_enabled_int, nullptr, nullptr)
     // Check if IFT is enabled
     will_return(__wrap_ift_is_enabled, true);
 
+    // asynchronous
+    expect_any(__wrap_sos_start_phase, p_interface);
+    expect_not_value(__wrap_sos_start_phase, p_request, NULL);
+    expect_value(__wrap_sos_start_phase, boot_type, IFT_BOOT);
+    expect_value(__wrap_sos_start_phase, startup_stage, STARTUP_PHASE_IFT_ASYNC);
+    expect_not_value(__wrap_sos_start_phase, completion_routine, NULL);
+    expect_any(__wrap_sos_start_phase, p_completion_context);
+
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_sos_int.init_fn();
 

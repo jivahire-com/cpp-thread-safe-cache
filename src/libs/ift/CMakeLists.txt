@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         ms::cmsis::interface
         ms::lib::crash_dump
         ms::lib::fuse_artifacts_lib
+        ms::lib::cortex_m7::nvic
         ms::lib::register_headers
         ms::lib::system_info
         ms::lib::utils

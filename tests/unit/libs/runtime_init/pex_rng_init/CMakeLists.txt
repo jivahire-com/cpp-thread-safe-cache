@@ -18,6 +18,7 @@ ms::cmocka::testrunner
 ms::lib::pex_rng
 ms::lib::core_info
 ms::lib::corebits
+ms::lib::ift
 ms::lib::register_headers
 ms::lib::system_info
 ms::service::atu_service
@@ -45,4 +46,5 @@ mock_target(${TARGET}
     system_info_is_warm_start
     register_pex_error_domain
     init_pex_rng
+    ift_is_enabled
 )

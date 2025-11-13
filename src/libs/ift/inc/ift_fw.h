@@ -47,8 +47,9 @@ typedef struct
 
 typedef enum
 {
-    IFT_RUN_MEM_TESTS_ASYNC,
-    IFT_RUN_CORE_TESTS_ASYNC,
+    IFT_MEM_TESTS_FW_LOAD_ASYNC,
+    IFT_CORE_TESTS_FW_LOAD_ASYNC,
+    IFT_EXECUTE_FW_ASYNC,
     IFT_DFWK_REQUEST_TYPE_MAX,
 } IFT_DFWK_REQUEST_TYPE;
 
@@ -62,14 +63,6 @@ typedef struct
     DFWK_INTERFACE_HEADER Header;
     pift_device_t Device;
 } ift_interface_t, *pift_interface_t;
-
-
-struct kng_hsp_mailbox_msg_req
-{
-    struct kng_hsp_mailbox_msg_header hdr;   /**< msg header containing cmd, seq, context and flags. */
-    uint32_t status;                         /**< Status of the processed incoming mailbox messages. */
-    uint32_t status_ex;                      /**< Additional status information or actions (e.g., goto recovery). */
-};
 
 union kng_hsp_mailbox_ift_intent_msg
 {
@@ -85,6 +78,13 @@ union kng_hsp_mailbox_ift_status_msg
     uint32_t as_uint32[4];                                        /**< Raw access to message as 4 uint32 words. */
 };
 
+union kng_hsp_mailbox_ift_ist_run_status_msg
+{
+    struct kng_hsp_mailbox_cmd_ift_ist_run_status_req ift_ist_run_status_req; /**< IFT IST run status request structure. */
+    struct kng_hsp_mailbox_msg_header ift_ist_run_status_rsp;                 /**< IFT IST run status response message header. */
+    uint32_t as_uint32[4];                                                    /**< Raw access to message as 4 uint32 words. */
+};
+
 /*--------- Function Prototypes ----------*/
 
 /**
@@ -95,9 +95,9 @@ union kng_hsp_mailbox_ift_status_msg
 void ift_init(fpfw_icc_base_ctx_t* hsp_icc_ctx);
 
 /**
- * @brief Sets up and queues IFT tests for execution based on the current intent type.
+ * @brief Start IFT tests based on the intent retrieved from HSP.
  */
-void ift_setup_tests(void);
+void ift_start_tests(void);
 
 /**
  * @brief Returns whether IFT is enabled.
@@ -109,7 +109,7 @@ bool ift_is_enabled(void);
  * @brief Gets the current index of the IFT core test firmware.
  * @return Index of the core test firmware.
  */
-uint16_t ift_get_core_test_fw_idx(void);
+uint16_t ift_get_fw_idx(void);
 
 /**
  * @brief Initiates the IFT memory test sequence.
@@ -147,10 +147,18 @@ void ift_dfwk_set_interface(pift_interface_t p_interface);
  * @brief Gets the base address of the IFT firmware binary in memory.
  * @return Base address of the IFT firmware binary.
  */
-uint32_t ift_get_ift_fw_addr(void);
+uint32_t ift_get_fw_addr(void);
 
 /**
  * @brief Sets the current IFT firmware binary size.
  * @param[in] size Size of the firmware binary in bytes.
  */
 void ift_set_current_fw_size(uint32_t size);
+
+/**
+ * @brief Sets the IRQ to skip for the IFT.
+ * IFT disabled all the interrupts except the specified one.
+ *
+ * @param skip_irq_num IRQ number to skip.
+ */
+void ift_set_skip_irq(uint32_t skip_irq_num);

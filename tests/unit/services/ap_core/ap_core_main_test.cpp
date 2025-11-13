@@ -61,6 +61,7 @@ struct kng_hsp_mailbox_cmd_load_fw_64bit_ift_rsp
 
 /*-- Declarations (Statics and globals) --*/
 bool should_mock_ap_core_ppu_init = true;
+bool g_is_primary_die = true;
 
 static DFWK_ASYNC_REQUEST_DISPATCH s_dispatch_routine = NULL;
 static DFWK_REQUEST_DISPATCH_SYNC s_dispatch_routine_sync = NULL;
@@ -349,6 +350,7 @@ static int setup(void** state)
     };
 
     DFWK_SCHEDULE test_schedule;
+    test_config.primary_boot_die = g_is_primary_die;
 
     expect_value(__wrap_DfwkDeviceInitialize, Device, &test_device.header);
     expect_value(__wrap_DfwkDeviceInitialize, Schedule, &test_schedule);
@@ -368,6 +370,20 @@ static int setup(void** state)
 
     ap_core_init(&test_device, &test_schedule, (fpfw_icc_base_ctx_t*)&icc_hspmbx_ctx, &test_config);
     return 0;
+}
+
+static int setup_die1(void** state)
+{
+    // Simulate secondary die
+    g_is_primary_die = false;
+
+    // Call common setup
+    int ret = setup(state);
+
+    // Restore primary die flag for other tests
+    g_is_primary_die = true;
+
+    return ret;
 }
 
 //
@@ -1160,7 +1176,7 @@ AP_CORE_TEST(dispatch_ift_mem_test_load, setup, NULL)
     ssi_startup_notification_request_t test_request;
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
-    test_request.stage = STARTUP_IFT_MEM_TEST_LOAD;
+    test_request.stage = STARTUP_IFT_MEM_FW_LOAD;
     test_request.boot_type = IFT_BOOT;
 
     // Set up expectations
@@ -1193,11 +1209,28 @@ AP_CORE_TEST(dispatch_ift_mem_test_hsp_not_present, setup, NULL)
     ssi_startup_notification_request_t test_request;
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
-    test_request.stage = STARTUP_IFT_MEM_TEST_LOAD;
+    test_request.stage = STARTUP_IFT_MEM_FW_LOAD;
     test_request.boot_type = IFT_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, false);
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_ift_mem_test_die1, setup_die1, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_IFT_MEM_FW_LOAD;
+    test_request.boot_type = IFT_BOOT;
+
+    // Set up expectations
     expect_any(__wrap_DfwkAsyncRequestComplete, Request);
 
     // Call API under test
@@ -1211,7 +1244,7 @@ AP_CORE_TEST(dispatch_ift_core_test_load, setup, NULL)
     ssi_startup_notification_request_t test_request;
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
-    test_request.stage = STARTUP_IFT_CORE_TEST_LOAD;
+    test_request.stage = STARTUP_IFT_CORE_FW_LOAD;
     test_request.boot_type = IFT_BOOT;
 
     // Set up expectations
@@ -1244,11 +1277,28 @@ AP_CORE_TEST(dispatch_ift_core_test_hsp_not_present, setup, NULL)
     ssi_startup_notification_request_t test_request;
     ap_core_service_t test_device;
     test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
-    test_request.stage = STARTUP_IFT_CORE_TEST_LOAD;
+    test_request.stage = STARTUP_IFT_CORE_FW_LOAD;
     test_request.boot_type = IFT_BOOT;
 
     // Set up expectations
     will_return(__wrap_system_info_is_hsp_present, false);
+    expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+
+    // Call API under test
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_ift_core_test_die1, setup_die1, NULL)
+{
+    // Set up pre-conditions
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_IFT_CORE_FW_LOAD;
+    test_request.boot_type = IFT_BOOT;
+
+    // Set up expectations
     expect_any(__wrap_DfwkAsyncRequestComplete, Request);
 
     // Call API under test

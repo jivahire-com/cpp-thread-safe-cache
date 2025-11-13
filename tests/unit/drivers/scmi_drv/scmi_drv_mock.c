@@ -32,6 +32,7 @@
 #include <scmi_prim_i.h>
 #include <startup_shutdown.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
+#include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -199,4 +200,9 @@ void __wrap_sos_shutdown(PDFWK_INTERFACE_HEADER p_interface,
     FPFW_UNUSED(shutdown_type);
     FPFW_UNUSED(completion_routine);
     FPFW_UNUSED(p_completion_context);
+}
+
+bool __wrap_system_info_is_warm_start(void)
+{
+    return mock_type(bool);
 }

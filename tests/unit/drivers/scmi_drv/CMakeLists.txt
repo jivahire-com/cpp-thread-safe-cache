@@ -60,4 +60,5 @@ mock_target(${TARGET}
     scmi_shutdown_completion
     scmi_warm_boot_completion
     sos_shutdown
+    system_info_is_warm_start
 )

@@ -33,6 +33,7 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         ms::client_interface::startup_shutdown
         ms::lib::crash_dump
+        ms::lib::system_info
         kng.lib.hsp_firmware_headers
     PUBLIC
         ms::cmsis::interface

@@ -34,6 +34,7 @@
 #include <startup_shutdown_init.h>
 #include <stdint.h>
 #include <string.h>
+#include <system_info.h>
 
 #define BIT_32(nr) (((uint32_t)(1U)) << (nr))
 #define SMT_CHANNEL_FREE \
@@ -575,7 +576,11 @@ void scmi_drv_init(DFWK_INTERFACE_HEADER* p_scp_tfa_interface)
 
     //! Set the recv channel status bit to reflect channel is free (set to 1), required to recv the very 1st message
     volatile scmi_local_packet_t* local_packet = (volatile scmi_local_packet_t*)scmi_recv_message->data;
-    SET_SCMI_SMT_CHANNEL_FREE(local_packet->smt_header.status);
+    //! skip SCMI channel free setting during warm start as the tfa may have already sent a message
+    if (!system_info_is_warm_start())
+    {
+        SET_SCMI_SMT_CHANNEL_FREE(local_packet->smt_header.status);
+    }
     __DSB();
 
     //! Spawn the 1st async recv request to receive messages over scp_tfa interface

@@ -27,6 +27,7 @@ extern "C" {
 #include <startup_shutdown_init.h>
 #include <stddef.h> // for NULL
 #include <stdint.h> // for uint32_t
+#include <system_info.h>
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -70,6 +71,19 @@ static mhu_icc_transport_intrf_t s_test_mscp2_tfa_if = {
     .device = &s_test_mscp2_tfa_dev,
 };
 
+typedef struct
+{
+    smt_header_t smt_header;
+    scmi_message_header_t header;
+    uint32_t payload[12];
+} test_scmi_local_packet_t;
+
+typedef struct
+{
+    icc_mhu_header_t header;
+    uint8_t data[64];
+} test_scmi_transport_message_t;
+
 static int test_setup(void** pContext)
 {
     FPFW_UNUSED(pContext);
@@ -78,6 +92,7 @@ static int test_setup(void** pContext)
     scmi_set_debug_mode(15);
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
     expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST));
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_fpfw_icc_transport_recv_async_req, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
     scmi_drv_init((DFWK_INTERFACE_HEADER*)&s_test_mscp2_tfa_if);
     return 0;
@@ -94,10 +109,24 @@ static int test_teardown(void** pContext)
 //
 TEST_FUNCTION(test_scmi_drv_init, nullptr, test_teardown)
 {
+    test_scmi_transport_message_t* recv_message = (test_scmi_transport_message_t*)s_test_mscp2_tfa_recv_data;
+    test_scmi_local_packet_t* local_packet = (test_scmi_local_packet_t*)recv_message->data;
+
+    local_packet->smt_header.status = 0;
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
     expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST));
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_fpfw_icc_transport_recv_async_req, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
     scmi_drv_init((DFWK_INTERFACE_HEADER*)&s_test_mscp2_tfa_if);
+    assert_int_equal(local_packet->smt_header.status, 1U);
+
+    local_packet->smt_header.status = 0xA5A5A5A5U;
+    expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
+    expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(FPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST));
+    will_return(__wrap_system_info_is_warm_start, true);
+    will_return(__wrap_fpfw_icc_transport_recv_async_req, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
+    scmi_drv_init((DFWK_INTERFACE_HEADER*)&s_test_mscp2_tfa_if);
+    assert_int_equal(local_packet->smt_header.status, 0xA5A5A5A5U);
 }
 
 TEST_FUNCTION(test_scmi_set_apcore_interface, test_setup, test_teardown)

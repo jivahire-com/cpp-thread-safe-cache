@@ -180,16 +180,18 @@ Function Install-AzCli()
 Function Install-Nuget()
 {
     $Message = "NuGet"
-    $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
-    Write-Host  $Message -NoNewLine -ForegroundColor Cyan
-    mkdir -ErrorAction SilentlyContinue "$env:REPO_APP_EXTERNS_DIR/tools" | Out-Null
+    $Message = $Message + (" " + "." * (80 - $Message.Length) + " ")
+    Write-Host $Message -NoNewLine -ForegroundColor Cyan
 
-    Get-FileFromWeb -OutDir "$env:REPO_APP_EXTERNS_DIR/tools" -DownloadUrl "https://microsoft.pkgs.visualstudio.com/_apis/public/nuget/client/CredentialProviderBundle.zip" -Unzip $true -DownloadName "nuget" -ErrorAction Stop
+    $toolsDir = "$env:REPO_APP_EXTERNS_DIR/tools"
+    mkdir -ErrorAction SilentlyContinue $toolsDir | Out-Null
 
-    $NugetToolDir = Join-Path "$env:REPO_APP_EXTERNS_DIR/tools" -ChildPath "\nuget" -Resolve
-    $env:REPO_APP_NUGET_EXE = Join-Path -Path $nugetToolDir -ChildPath "nuget.exe" -Resolve
+    $nugetDownloadUrl = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
+    $nugetExePath = Join-Path $toolsDir "nuget.exe"
 
-    $Result = Invoke-Expression "$env:REPO_APP_NUGET_EXE update -self"
+    Invoke-WebRequest -Uri $nugetDownloadUrl -OutFile $nugetExePath -UseBasicParsing
+
+    $env:REPO_APP_NUGET_EXE = $nugetExePath
 
     Write-Host "Done" -ForegroundColor Green
 }

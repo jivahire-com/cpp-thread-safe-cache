@@ -617,14 +617,17 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         return sts;
     }
 
-    if (mc_intu_sts & (1 << DDRSS_INTU_MC_FEDFLUSHDONE))
+    uint32_t int_mask;
+    int_mask = 1 << DDRSS_INTU_MC_FEDFLUSHDONE;
+    if (mc_intu_sts & int_mask)
     {
         // Warm reset is removed, this should not fire.
         printf("MC FEDB flush done int\n");
-        mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_FEDFLUSHDONE);
+        mc_intu_clr_sts |= int_mask;
     }
 
-    if (mc_intu_sts & (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL))
+    int_mask = 1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL;
+    if (mc_intu_sts & int_mask)
     {
         ddrss_rhm_tm_evt_t ddrss_rm_telemetry;
         printf("MC RM telemetry avail int\n");
@@ -633,7 +636,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         if (sub_sts != SILIBS_SUCCESS)
         {
             printf("sub_sts res %d\n", sub_sts);
-            mc_intu_err |= (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);
+            mc_intu_err |= int_mask;
         }
         else
         {
@@ -643,18 +646,19 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
             prod_ddrss_convert_rh_rec_to_rh_cper(mc, RHTLM_EVT, &ddrss_rm_telemetry, &rh_cper_section);
             hm_submit_cper(ACPI_ERROR_DOMAIN_RHTLM, ACPI_ERROR_SEVERITY_INFORMATIONAL, &cper_section, sizeof(cper_section));
         }
-        mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_RMTELEMETRYAVAIL);
+        mc_intu_clr_sts |= int_mask;
     }
 
-    if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED))
+    int_mask = 1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED;
+    if (mc_intu_sts & int_mask)
     {
         printf("MC media ESC trans changed int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_ECS_TRANS_CHANGED);
         if (sub_sts != SILIBS_SUCCESS)
         {
-            mc_intu_err |= (1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED);
+            mc_intu_err |= int_mask;
         }
-        mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED);
+        mc_intu_clr_sts |= int_mask;
 
         printf("CPER:MC media ESC trans changed");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED, &ddr_cper);
@@ -665,15 +669,16 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
-    if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED))
+    int_mask = 1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED;
+    if (mc_intu_sts & int_mask)
     {
         printf("MC media ref temp changed int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
         if (sub_sts != SILIBS_SUCCESS)
         {
-            mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
+            mc_intu_err |= int_mask;
         }
-        mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED);
+        mc_intu_clr_sts |= int_mask;
         // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
         // ADO Feature#1140772, Task#1494090
 
@@ -685,15 +690,16 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
-    if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH))
+    int_mask = 1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH;
+    if (mc_intu_sts & int_mask)
     {
         printf("MC media ref temp high int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_REF_TEMP_HIGH);
         if (sub_sts != SILIBS_SUCCESS)
         {
-            mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
+            mc_intu_err |= int_mask;
         }
-        mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH);
+        mc_intu_clr_sts |= int_mask;
         // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
         // ADO Feature#1140772, Task#1494090
 
@@ -705,27 +711,29 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         memset(&ddr_cper, 0, sizeof(ddr_cper));
     }
 
-    if (mc_intu_sts & (1 << DDRSS_INTU_MC_PHYINLP3))
+    int_mask = 1 << DDRSS_INTU_MC_PHYINLP3;
+    if (mc_intu_sts & int_mask)
     {
         // PHY in LP3 for media data preserving. Not supported in KNG.
         printf("MC PHY in LP3 int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_PHY_IN_LP3);
         if (sub_sts != SILIBS_SUCCESS)
         {
-            mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
+            mc_intu_err |= int_mask;
         }
-        mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_PHYINLP3);
+        mc_intu_clr_sts |= int_mask;
     }
 
-    if (mc_intu_sts & (1 << DDRSS_INTU_MC_MEDIASCRUBINITDONE))
+    int_mask = 1 << DDRSS_INTU_MC_MEDIASCRUBINITDONE;
+    if (mc_intu_sts & int_mask)
     {
         printf("MC media scrub init done int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_SCRUB_INIT_DONE);
         if (sub_sts != SILIBS_SUCCESS)
         {
-            mc_intu_err |= (1 << DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
+            mc_intu_err |= int_mask;
         }
-        mc_intu_clr_sts |= (1 << DDRSS_INTU_MC_MEDIASCRUBINITDONE);
+        mc_intu_clr_sts |= int_mask;
     }
 
     if (mc_intu_clr_sts)

@@ -199,30 +199,34 @@ TEST_FUNCTION(test_ddr_err_inj_mainline_traffic_ue_happy_path, NULL, NULL)
 
 TEST_FUNCTION(test_ddr_err_inj_ca_parity_persistent_happy_path, NULL, NULL)
 {
-    g_should_wrap_ddrss_inject_media_ca_err = true;
+    g_should_check_ras_agent_entity_id = true;
 
     const uint32_t mc = 0;
-    expect_function_call(__wrap_ddrss_inject_media_ca_err);
+    ras_agent_entity_t local_ras_agent = {0};
+    local_ras_agent.flags = RAS_AGENT_FLAG_LIVE;
+
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
+    will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
     ddr_err_inj_ca_parity_persistent(mc);
 
-    g_should_wrap_ddrss_inject_media_ca_err = false;
+    g_should_check_ras_agent_entity_id = false;
 }
 
 TEST_FUNCTION(test_ddr_err_inj_ca_parity_transient_happy_path, NULL, NULL)
 {
-    g_should_wrap_ddrss_get_config = true;
-    g_should_wrap_ddrss_inject_media_ca_err = true;
-
-    ddrss_cfg_knobs_t test_cfg_knobs = {};
-    test_cfg_knobs.ext_knobs.ca_parity_err_recovery_en = 0; // Set to 0 to allow transient error injection
-    will_return(__wrap_ddrss_get_config, &test_cfg_knobs);
+    g_should_check_ras_agent_entity_id = true;
 
     const uint32_t mc = 0;
-    expect_function_call(__wrap_ddrss_inject_media_ca_err);
+    ras_agent_entity_t local_ras_agent = {0};
+    local_ras_agent.flags = RAS_AGENT_FLAG_LIVE;
+
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
+    will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
     ddr_err_inj_ca_parity_transient(mc);
 
-    g_should_wrap_ddrss_inject_media_ca_err = false;
-    g_should_wrap_ddrss_get_config = false;
+    g_should_check_ras_agent_entity_id = false;
 }
 
 TEST_FUNCTION(test_ddr_err_rh_counters_sram_parity_happy_path, NULL, NULL)

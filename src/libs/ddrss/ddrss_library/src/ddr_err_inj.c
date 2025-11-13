@@ -54,14 +54,25 @@ bool ddr_ecc_err_inj_validation(uint32_t mc, uint16_t BIT)
     return ret;
 }
 
+uint64_t ddr_err_inj_get_default_address()
+{
+    KNG_DIE_ID die_id = idsw_get_die_id();
+    DDRSS_NUMA_CFG numa_cfg = ddrss_get_numa_cfg();
+    uint64_t p_addr;
+    p_addr = ((die_id == DIE_0) || (numa_cfg == DDRSS_NUMA_CFG_UMA)) ? DDR_MEMORY_NUMA_DOMAIN0_START + DDR_MEMORY_BELOW_4GB_START
+                                                                     : DDR_MEMORY_NUMA_DOMAIN1_START;
+    return p_addr;
+}
+
 void ddr_err_inj_ecc_ce(uint32_t mc)
 {
-    ddr_ecc_error_injection(0, mc, 0x0, BIT1);
+
+    ddr_ecc_error_injection(0, mc, ddr_err_inj_get_default_address(), BIT1);
 }
 
 void ddr_err_inj_ecc_ue(uint32_t mc)
 {
-    ddr_ecc_error_injection(0, mc, 0x0, BIT0);
+    ddr_ecc_error_injection(0, mc, ddr_err_inj_get_default_address(), BIT0 | BIT4 | BIT5);
 }
 
 void ddr_ecc_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit)
@@ -635,35 +646,61 @@ void ddr_err_inj_mainline_traffic_ue(uint32_t mc)
 // Support test case 2031571
 void ddr_err_inj_ca_parity_persistent(uint32_t mc)
 {
-    ddrss_cfg_knobs_t ddrss_cfgs;
+    ras_agent_entity_t* ddrss_ras_agent = {0};
+    uint64_t types = 0;
+    char* symdrome_name = "DDR_ERR_INJ_HKE_PERSISTENT_CA_PARITY_UE";
 
-    // Use API to inject CA parity error
-    ddrss_get_config(&ddrss_cfgs);
-
-    if (ddrss_cfgs.ext_knobs.ca_parity_err_recovery_en != 1)
+    int idx = get_syndrome_index(symdrome_name);
+    if (idx < 0)
     {
-        printf("Error: ca_parity_err_recovery_en must be 1 to support this type of error injection.  "
-               "Aborting.\n");
+        printf("Error: Syndrome %s not found\n", symdrome_name);
         return;
-    };
-    ddr_ca_parity_error_injection(mc, DDRSS_MEDIA_CA_INJ_CMD_RD);
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("Persistent CA parity error injected successfully\n");
+    }
 }
 
 // Support test case 2093837
 void ddr_err_inj_ca_parity_transient(uint32_t mc)
 {
-    ddrss_cfg_knobs_t ddrss_cfgs;
+    ras_agent_entity_t* ddrss_ras_agent = {0};
+    uint64_t types = 0;
+    char* symdrome_name = "DDR_ERR_INJ_HKE_TRANSIENT_CA_PARITY_UE";
 
-    // Use API to inject CA parity error
-    ddrss_get_config(&ddrss_cfgs);
-
-    if (ddrss_cfgs.ext_knobs.ca_parity_err_recovery_en != 0)
+    int idx = get_syndrome_index(symdrome_name);
+    if (idx < 0)
     {
-        printf("Error: ca_parity_err_recovery_en must be 0 to support this type of error injection.  "
-               "Aborting.\n");
+        printf("Error: Syndrome %s not found\n", symdrome_name);
         return;
-    };
-    ddr_ca_parity_error_injection(mc, DDRSS_MEDIA_CA_INJ_CMD_RD);
+    }
+    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to get RAS agent\n");
+        return;
+    }
+    types = named_syndrome[idx].ras_arm_err_bitmask;
+    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
+    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
+    {
+        printf("Error: Failed to trigger error injection\n");
+    }
+    else
+    {
+        printf("Transient CA parity error injected successfully\n");
+    }
 }
 
 // Support test case TBD

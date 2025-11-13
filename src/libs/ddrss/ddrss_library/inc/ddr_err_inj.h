@@ -133,5 +133,7 @@ void ddr_err_bcp_chi_unsupported_opcode(uint32_t mc);
 
 void ddr_err_inj_mrdp_parity_ue(uint32_t mc);
 
+uint64_t ddr_err_inj_get_default_address();
+
 acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx);
 int get_syndrome_index(const char* name);

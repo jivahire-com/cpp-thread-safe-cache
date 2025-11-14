@@ -94,7 +94,7 @@
     <!-- <Knob name="cmn_cxl_interleave" type="uint8_t" default="0" help="Selct CXL intearleave value 0,3 or 4" />
     <Knob name="cmn_cxl_device_interleave_size" type="uint8_t" default="2" help="This field controls the interleave size across all aggregated CXSA/CXLSA Devices 4'h0: 64B Interleaved 4'h1: 128B Interleaved 4'h2: 256B Interleaved 4'h3: 512B Interleaved 4'h4: 1KB Interleaved 4'h5: 2KB Interleaved 4'h6: 4KB Interleaved 4'h7: 8KB Interleaved 4'h8: 16KB" /> -->
     <Knob name="cxl_params_die0" type="cxl_region_params_t" help="cxl region parameters for die 0" default="{false, INTERLEAVE_NONE, INTERLEAVE_SIZE_256B, false, false, GENERAL_MEMORY, {CXL_PORT_EMPTY,CXL_PORT_EMPTY,CXL_PORT_EMPTY,CXL_PORT_EMPTY}}"/>
-    <Knob name="cxl_params_die1" type="cxl_region_params_t" help="cxl region parameters for die 1" default="{true, INTERLEAVE_2_WAYS, INTERLEAVE_SIZE_256B, false, false, GENERAL_MEMORY, {CXL_RPSS4_RP0,CXL_RPSS5_RP0,CXL_PORT_EMPTY,CXL_PORT_EMPTY}}"/>
+    <Knob name="cxl_params_die1" type="cxl_region_params_t" help="cxl region parameters for die 1" default="{false, INTERLEAVE_NONE, INTERLEAVE_SIZE_256B, false, false, GENERAL_MEMORY, {CXL_PORT_EMPTY,CXL_PORT_EMPTY,CXL_PORT_EMPTY,CXL_PORT_EMPTY}}"/>
 
     <Knob name="cmn_uma_arsm_htg_wa_disabled" type="uint8_t" default="0" help="Set value for UMA ARSM HTG CFG" />
     <Knob name="d2dss_system_counter_delay" type="d2dss_sys_counter_delay_t" help="System counter delay values for all d2dss" />

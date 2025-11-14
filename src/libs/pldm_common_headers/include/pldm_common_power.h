@@ -19,12 +19,13 @@
 
 /*-------------- Typedefs ----------------*/
 //!< Power performance states
-enum _pldm_performance_states
-{
+typedef enum {
+
     PLDM_PERFORMANCE_NORMAL = 1,
     PLDM_PERFORMANCE_THROTTLED,
     PLDM_PERFORMANCE_DEGRADED,
-};
+    PLDM_PERFORMANCE_THROTTLED_DEGRADED,
+}pldm_performance_states_t;
 
 //! ICC payload data format, sent by MCP to SCP to set the power cap
 typedef struct

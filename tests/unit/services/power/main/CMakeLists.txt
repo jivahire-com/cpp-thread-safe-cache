@@ -9,6 +9,7 @@ add_executable(${TARGET}
     power_main_test.cpp
     power_pid_test.cpp
     power_log_test.cpp
+    power_pldm_test.cpp
     ../mocks/mock_bug_check.c
 )
 
@@ -52,7 +53,6 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     FpFwAssert
-    
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize
@@ -100,6 +100,11 @@ mock_target(${TARGET}
     DfwkAsyncRequestComplete
     power_loops_warmstart_entry
     idsw_get_platform_sdv
+    get_current_soc_power_cap
+    power_control_loop_throttled
+    power_control_loop_degraded
+    fpfw_icc_base_send_resp
+    fpfw_icc_base_recv
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

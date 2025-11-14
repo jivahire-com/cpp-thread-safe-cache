@@ -22,3 +22,9 @@ format_target(${TARGET})
 coverage_target(${TARGET})
 
 add_library(ms::lib::stdio_textio ALIAS ${TARGET})
+
+# Ensure newlib_lock is linked whenever stdio_textio is linked
+target_link_libraries(${TARGET}
+    INTERFACE
+        ms::lib::newlib_lock
+)

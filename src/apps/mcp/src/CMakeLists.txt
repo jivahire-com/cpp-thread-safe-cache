@@ -35,6 +35,7 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::li
 target_link_libraries(
     ${TARGET}
         PRIVATE
+            ms::lib::newlib_lock
             ms::lib::event_trace::trace
             ms::lib::threadx
             ms::lib::stdio_textio
@@ -63,6 +64,16 @@ target_link_options(
             -L${CMAKE_BINARY_DIR}/ld/mcp
             -ereset_handler
             -Wl,--build-id
+            -Wl,--undefined=__retarget_lock_init
+            -Wl,--undefined=__retarget_lock_acquire
+            -Wl,--undefined=__retarget_lock_try_acquire
+            -Wl,--undefined=__retarget_lock_release
+            -Wl,--undefined=__retarget_lock_close
+            -Wl,--undefined=__retarget_lock_init_recursive
+            -Wl,--undefined=__retarget_lock_acquire_recursive
+            -Wl,--undefined=__retarget_lock_try_acquire_recursive
+            -Wl,--undefined=__retarget_lock_release_recursive
+            -Wl,--undefined=__retarget_lock_close_recursive
 )
 
 # Set rodata memory region

@@ -62,6 +62,8 @@ static void print_power_avs_ds_cfg(power_knobs_t* knobs);
 static void print_power_leakage_temp_scaler(power_knobs_t* knobs);
 static void print_power_force_vrs(power_knobs_t* knobs);
 static void print_power_adclk_offset_cfg(power_knobs_t* knobs);
+static void print_power_config_vsys_override(power_knobs_t* knobs);
+static void print_power_config_vsys_vid(power_fuse_data_t* fuses);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -95,7 +97,10 @@ const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_di
     {"vft",                 (print_function)print_power_config_vft,                 POWER_IF_CMD_GET_RUNCONFIG},
     {"vftpre",              (print_function)print_power_config_vftpre,              POWER_IF_CMD_GET_RUNCONFIG_VFTPRE},
     {"vcpucalc",            (print_function)print_power_config_vcpucalc,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"vsys_override",       (print_function)print_power_config_vsys_override,       POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
+    {"vsys_vid",            (print_function)print_power_config_vsys_vid,            POWER_IF_CMD_GET_RUNCONFIG_FUSES},
 };
+
 //clang-format on
 
 const uint32_t length_dictionary =
@@ -208,6 +213,14 @@ static PLACED_CODE void print_power_fuse_vcpu_interp_data(const power_fuse_data_
         const power_fuse_core_cdyn_t* c = &fuses->core_cdyn[i].cdyn;
         FpFwCliPrint("%2u   %6u   %9u\n", i, c->ldo_dac, c->cdyn_pf);
     }
+    FpFwCliPrint("\n");
+}
+
+static PLACED_CODE void print_power_config_vsys_vid(power_fuse_data_t* fuses)
+{
+    FpFwCliPrint("\nVSYS VID Fuse\n");
+    FpFwCliPrint("--------------\n");
+    FpFwCliPrint("VSYS VID (mV): %u\n", fuses->vsys_vid_mv);
     FpFwCliPrint("\n");
 }
 
@@ -558,6 +571,16 @@ static PLACED_CODE void print_power_adclk_offset_cfg(power_knobs_t* knobs)
     FpFwCliPrint("\n");
 }
 
+static PLACED_CODE void print_power_config_vsys_override(power_knobs_t* knobs)
+{
+    const power_force_vrs_t* force_vrs = &knobs->forced_vrs;
+    FpFwCliPrint("\nVSYS_vboot Override Config\n");
+    FpFwCliPrint("------------------------------\n");
+    FpFwCliPrint("VSYS Override Enabled : %s\n", knobs->enable_vsys_vboot_override ? s_true_str : s_false_str);
+    FpFwCliPrint("VSYS Override Value   : %u mV\n", force_vrs->vr[MPCL_VR_VSYS]);
+    FpFwCliPrint("\n");
+}
+
 static PLACED_CODE void print_power_config_knobs(power_knobs_t* knobs)
 {
     FpFwCliPrint("\n---------------------------All Power Knobs---------------------------\n");
@@ -577,6 +600,7 @@ static PLACED_CODE void print_power_config_knobs(power_knobs_t* knobs)
     print_power_leakage_temp_scaler(knobs);
     print_power_force_vrs(knobs);
     print_power_adclk_offset_cfg(knobs);
+    print_power_config_vsys_override(knobs);
 }
 
 static PLACED_CODE void print_power_config_max_allowed_plimit(power_knobs_t* knobs)

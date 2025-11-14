@@ -196,6 +196,7 @@
       <Member name="ldo_offset" type="int8_t" help="ldo dac code offset" />
       <Member name="itd_cfg" type="bool" help="Controls whether ITD is enabled or disabled" />
       <Member name="avs_ds" type="avs_ds_cfg_array_t" help="AVS drive strength" />
+      <Member name="enable_vsys_vboot_override" type="bool" help="Enable override for VSYS VBOOT" />
     </Struct>
 
   </Structs>
@@ -292,6 +293,7 @@
     <Knob name="power_c1_telemetry_enable" type="bool" default="false" help="Enable C1 telemetry in DVFS" />
     <Knob name="power_soc_static_rails" type="uint16_t" default="0" help="Static power in mW to add to SOC power calculations" />
     <Knob name="power_avs_ds" type="avs_ds_cfg_array_t" default="{{{2,2},{2,2},{2,2},{2,2}}}" help="AVS drive strength" />
+    <Knob name="power_enable_vsys_vboot_override" type="bool" default="false" help="If true and power_force_vrs knob for VSYS is zero update VSYS voltage from system Fuse field vsys_vid, else it relies of default setting of VSYS Vreg ie 921 mV" />
  
     <!-- Document Only
     <Knob name="power_itd_cfg" type="" default="" help="Inverse Temperature Dependence enable, configuration" />

@@ -209,6 +209,7 @@ typedef struct _power_fuse_data_t
     uint8_t v_ldo_dropout_mv;    // voltage in mV to add for ldo dropout
     uint8_t vcpu_guardband_mv;   // voltage in mV to add for Vin guardband
     int8_t  curve_max_temp[NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1];
+    uint16_t vsys_vid_mv;        // VSYS VID value from fuses
 } power_fuse_data_t;
 
 /**

@@ -264,6 +264,19 @@ void pwr_hw_vrs_init(void)
 
     int avs_bus;
     uint8_t vr_index;
+
+    //! Check if we need to override VSYS default (vsys vboot = 921 mV) voltage programmed at boot
+    //! Check if override is enabled and forced_vrs for VSYS is zero
+    //! If forced_vrs for VSYS is non-zero then it takes precedence over fuse value
+    if ((p_runconfig->knobs.enable_vsys_vboot_override) && (p_runconfig->knobs.forced_vrs.vr[MPCL_VR_VSYS] == 0))
+    {
+        POWER_LOG_INFO(" PWR AVS VSYS Vboot override enabled, setting VSYS VR to fuse VID %d mV \n",
+                       p_runconfig->fuses.vsys_vid_mv);
+        //! Update forced_vrs for VSYS to the fuse value, this will be used to program the VR in the next steps
+        p_runconfig->knobs.forced_vrs.vr[MPCL_VR_VSYS] = p_runconfig->fuses.vsys_vid_mv;
+    }
+
+    //! Iterate through all AVS buses and check if any VRs are forced to a value
     for (avs_bus = 0, vr_index = vr_start_index; avs_bus < (p_config->num_vr / MAX_AVS_RAILS); avs_bus++, vr_index++)
     {
         // Check to see if both VRs are forced to a value.  If so then write both VRs on the same AVSBus (scp_avs_client_write_multi)
@@ -306,10 +319,10 @@ void pwr_hw_vrs_init(void)
                 vr_index++; // pre-incremented to write the second VR on the same AVSBus
                 index_incremented = true;
             }
-            POWER_LOG_TRACE(" PWR AVS one knob not zero, vr_index = %d, knob = %d, avs_bus = %d \n",
-                            vr_index,
-                            p_runconfig->knobs.forced_vrs.vr[vr_index],
-                            avs_bus);
+            POWER_LOG_INFO(" PWR AVS one knob not zero, vr_index = %d, knob = %d, avs_bus = %d \n",
+                           vr_index,
+                           p_runconfig->knobs.forced_vrs.vr[vr_index],
+                           avs_bus);
 
             pwr_avs_request[p_config->avs_details[vr_index].bus_id].request.avs_response_single_resp.error.as_uint8 =
                 AVS_ERROR_NONE;

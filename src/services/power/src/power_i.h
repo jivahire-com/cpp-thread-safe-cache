@@ -244,6 +244,15 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config);
 int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset);
 
 /**
+ * @brief Reads VSYS VID from fuses
+ * 
+ * @param[out] vsys_vid  - Pointer to vsys vid value
+ * 
+ * @return FPFW_STATUS_SUCCESS or FPFW_STATUS_INVALID_ARGS 
+ */
+int32_t power_fuses_get_vsys_vid(uint16_t* vsys_vid);
+
+/**
  * @brief Get timestamp counter value
  *
  * \b Description:

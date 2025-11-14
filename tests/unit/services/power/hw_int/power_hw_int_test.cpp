@@ -1850,3 +1850,50 @@ POWER_TEST(power_hw_vrs_initialize, setup, teardown)
     // Call the function under test
     pwr_hw_vrs_init();
 }
+
+POWER_TEST(power_hw_vrs_initialize_vsys_override, setup, teardown)
+{
+    uint16_t mock_vsys_vid_from_fuse = 920;
+    scp_avs_device_t test_avs_device = {
+        .avs_bus_num = AVS_BUS0,
+    };
+    static avs_pwr_request_context_t test_avs_Request = {};
+
+    power_service_config_t sconfig = {};
+    sconfig.num_vr = MPCL_VR_COUNT;
+    power_runconfig_t test_runconfig = {.p_sconfig = &sconfig};
+
+    sconfig.avs_details[MPCL_VR_VSYS].bus_id = AVS_BUS1;
+    sconfig.avs_details[MPCL_VR_VSYS].rail_id = 0;
+
+    //! Set all VRs to zero except VSYS to test VSYS override path.
+    test_runconfig.knobs.forced_vrs.vr[10] = {0};
+    test_runconfig.knobs.forced_vrs.vr[MPCL_VR_VSYS] = 0; //!< Forced VSYS is zero
+    //! Set enable vsys override knob to true
+    test_runconfig.knobs.enable_vsys_vboot_override = true;
+    //! Set fuse value to mock value
+    test_runconfig.fuses.vsys_vid_mv = mock_vsys_vid_from_fuse;
+
+    //! Set initial test request values
+    test_avs_device.avs_bus_num = AVS_BUS1;
+    test_avs_Request.request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
+    test_avs_Request.in_use = true;
+    test_avs_Request.request.avs_params.avs_cmd_info.rail_id = 0;
+    test_avs_Request.request.avs_params.avs_cmd_info.cmd_type = AVS_VOLTAGE_RW;
+    test_avs_Request.request.avs_params.avs_data = mock_vsys_vid_from_fuse; //! Expect fused value to be written
+
+    //! Setup Mock APIs expected to be called
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+
+    expect_any(__wrap_scp_avs_client_write, Interface);
+    expect_memory(__wrap_scp_avs_client_write, Request, &test_avs_Request, sizeof(test_avs_Request));
+    expect_value(__wrap_scp_avs_client_write, CompletionRoutine, AVSPwrKnobWriteRequestCompletion);
+    expect_any(__wrap_scp_avs_client_write, CompletionContext);
+    expect_function_call(__wrap_scp_avs_client_write);
+
+    // Call the function under test
+    pwr_hw_vrs_init();
+
+    //! Validate that the VSYS VR was set to the fused value
+    assert_int_equal(test_avs_Request.request.avs_params.avs_data, mock_vsys_vid_from_fuse);
+}

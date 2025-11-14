@@ -827,6 +827,27 @@ int32_t power_fuses_get_curve_temp(int8_t* core_max_temp, uint32_t count)
     return FPFW_STATUS_SUCCESS;
 }
 
+int32_t power_fuses_get_vsys_vid(uint16_t* vsys_vid)
+{
+    if (!vsys_vid)
+    {
+        return FPFW_STATUS_NULL_POINTER;
+    }
+
+    uint64_t fuse_data = 0;
+
+    // read fuse for data
+    int32_t status = platform_read_fuse((uint32_t*)&fuse_data, VSYS_VID_BIT_OFFSET, VSYS_VID_WIDTH);
+    if (status != FPFW_STATUS_SUCCESS)
+    {
+        *vsys_vid = 0;
+        return status;
+    }
+
+    *vsys_vid = (uint16_t)fuse_data;
+    return FPFW_STATUS_SUCCESS;
+}
+
 void power_fuses_read(power_fuse_data_t* p_fuses)
 {
     power_runconfig_t* p_run_config = power_runconfig_get();
@@ -873,6 +894,8 @@ void power_fuses_read(power_fuse_data_t* p_fuses)
         status = power_fuses_get_tdp_config(&p_fuses->tdp_config); // read fuse - 3
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_get_curve_temp(&p_fuses->curve_max_temp[0], ARRAY_SIZE(p_fuses->curve_max_temp));
+        BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
+        status = power_fuses_get_vsys_vid(&p_fuses->vsys_vid_mv);
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
     }
     else

@@ -155,6 +155,8 @@ static PLACED_CODE FPFW_CLI_STATUS cli_power_config_command(int argc, const char
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg tdp", "TDP fuse config\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg ldo2volt", "LDO to voltage slope fuse config\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg vcpuinterp", "VCPU interpolation fuse config\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg vsys_override", "VSYS override config knobs\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg vsys_vid", "VSYS VID fuse value\n");
         FpFwCliPrint("\n");
 
         return CLI_SUCCESS;

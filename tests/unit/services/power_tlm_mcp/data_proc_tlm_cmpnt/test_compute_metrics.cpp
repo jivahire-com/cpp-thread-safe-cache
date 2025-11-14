@@ -22,6 +22,7 @@ extern "C" {
 #include <data_sampling_i.h>
 #include <data_utilities_i.h>
 #include <die_2_die_exchange_i.h>
+#include <power_telemetry_common.h>
 #include <stdint.h> // for uint32_t, uint64_t, int32_t
 }
 
@@ -238,31 +239,40 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails, test_setup, test_teardown)
     computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count = 0;
 
     // Arrange
-    uint16_t voltage[MAX_NUM_OF_VR_RAILS];
-    uint32_t current[MAX_NUM_OF_VR_RAILS];
-    uint32_t expected_total_power = 0;
+    uint16_t voltage_mV[MAX_NUM_OF_VR_RAILS];
+    uint32_t current_mA[MAX_NUM_OF_VR_RAILS];
+    uint32_t expected_total_power_mW = 0;
+    uint32_t loadline_loss_per_rail_mW = 10; // 10mW loss per rail
 
     for (uint16_t i = 0; i < NUM_DIE1_VR_RAILS; i++)
     {
-        voltage[i] = 1000 + i * 10; // 1000mV, 1010mV, ...
-        current[i] = 100 + i * 5;   // 100mA, 105mA, ...
-        expected_total_power += (voltage[i] * current[i]) / 1000;
+        voltage_mV[i] = 1000 + i * 10; // 1000mV, 1010mV, ...
+        current_mA[i] = 100 + i * 5;   // 100mA, 105mA, ...
+
+        uint32_t net_power_mW = (voltage_mV[i] * current_mA[i]) / 1000;
+        uint32_t effective_power_mW =
+            (net_power_mW > loadline_loss_per_rail_mW) ? (net_power_mW - loadline_loss_per_rail_mW) : 0;
+        expected_total_power_mW += effective_power_mW;
+
+        // Set up mock expectations for die 1 load line loss function
+        expect_value(__wrap_power_telemetry_loadline_loss_die1, rail_id, i);
+        expect_value(__wrap_power_telemetry_loadline_loss_die1, current_cA, current_mA[i] / 10); // Convert mA to cA
+        will_return(__wrap_power_telemetry_loadline_loss_die1, loadline_loss_per_rail_mW);
     }
 
-    // Act
-    comp_metrics_for_soc_rails(&voltage, &current);
+    comp_metrics_for_soc_rails(&voltage_mV, &current_mA);
 
     // Assert
-    assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum, expected_total_power);
+    assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum, expected_total_power_mW);
     assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count, 1);
 
     // Assert voltage and current values for each VR rail
     for (uint16_t i = 0; i < NUM_DIE1_VR_RAILS; i++)
     {
         assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg),
-                         voltage[i]);
+                         voltage_mV[i]);
         assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg),
-                         current[i]);
+                         current_mA[i]);
     }
 }
 
@@ -277,23 +287,32 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails_primary_die_inband_inactive, test_
     in_band_publishing_active = false;
 
     // Arrange
-    uint16_t voltage[MAX_NUM_OF_VR_RAILS];
-    uint32_t current[MAX_NUM_OF_VR_RAILS];
-    uint32_t expected_total_power = 0;
+    uint16_t voltage_mV[MAX_NUM_OF_VR_RAILS];
+    uint32_t current_mA[MAX_NUM_OF_VR_RAILS];
+    uint32_t expected_total_power_mW = 0;
+    uint32_t loadline_loss_per_rail_mW = 15; // 15mW loss per rail
 
     for (uint16_t i = 0; i < NUM_DIE0_VR_RAILS; i++)
     {
-        voltage[i] = 1200 + i * 15; // 1200mV, 1215mV, ...
-        current[i] = 150 + i * 10;  // 150mA, 160mA, ...
-        expected_total_power += (voltage[i] * current[i]) / 1000;
+        voltage_mV[i] = 1200 + i * 15; // 1200mV, 1215mV, ...
+        current_mA[i] = 150 + i * 10;  // 150mA, 160mA, ...
+
+        uint32_t net_power_mW = (voltage_mV[i] * current_mA[i]) / 1000;
+        uint32_t effective_power_mW =
+            (net_power_mW > loadline_loss_per_rail_mW) ? (net_power_mW - loadline_loss_per_rail_mW) : 0;
+        expected_total_power_mW += effective_power_mW;
+
+        // Set up mock expectations for die 0 load line loss function
+        expect_value(__wrap_power_telemetry_loadline_loss_die0, rail_id, i);
+        expect_value(__wrap_power_telemetry_loadline_loss_die0, current_cA, current_mA[i] / 10); // Convert mA to cA
+        will_return(__wrap_power_telemetry_loadline_loss_die0, loadline_loss_per_rail_mW);
     }
 
-    // Act
-    comp_metrics_for_soc_rails(&voltage, &current);
+    comp_metrics_for_soc_rails(&voltage_mV, &current_mA);
 
     // Assert
     // Out-of-band power metrics should still be updated
-    assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum, expected_total_power);
+    assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum, expected_total_power_mW);
     assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count, 1);
 
     // In-band voltage and current metrics should NOT be updated (should remain at initial values)
@@ -301,6 +320,52 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails_primary_die_inband_inactive, test_
     {
         assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg), 0);
         assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg), 0);
+    }
+}
+
+TEST_FUNCTION(test_comp_metrics_for_soc_rails_underflow_protection, test_setup, test_teardown)
+{
+    die_2_die_exch_init(1); // Die 1
+
+    computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum = 0;
+    computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count = 0;
+
+    // Arrange - test case where load line loss exceeds net power
+    uint16_t voltage_mV[MAX_NUM_OF_VR_RAILS];
+    uint32_t current_mA[MAX_NUM_OF_VR_RAILS];
+    uint32_t expected_total_power_mW = 0;
+
+    for (uint16_t i = 0; i < NUM_DIE1_VR_RAILS; i++)
+    {
+        voltage_mV[i] = 500; // Low voltage: 500mV
+        current_mA[i] = 50;  // Low current: 50mA
+
+        uint32_t net_power_mW = (voltage_mV[i] * current_mA[i]) / 1000; // 25mW
+        uint32_t loadline_loss_mW = 100; // High loss: 100mW (exceeds net power)
+
+        // Effective power should be 0 due to underflow protection
+        uint32_t effective_power_mW = (net_power_mW > loadline_loss_mW) ? (net_power_mW - loadline_loss_mW) : 0;
+        expected_total_power_mW += effective_power_mW; // Should be 0
+
+        // Set up mock expectations for die 1 load line loss function
+        expect_value(__wrap_power_telemetry_loadline_loss_die1, rail_id, i);
+        expect_value(__wrap_power_telemetry_loadline_loss_die1, current_cA, current_mA[i] / 10); // Convert mA to cA
+        will_return(__wrap_power_telemetry_loadline_loss_die1, loadline_loss_mW);
+    }
+
+    comp_metrics_for_soc_rails(&voltage_mV, &current_mA);
+
+    // Assert - total power should be 0 due to underflow protection
+    assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum, expected_total_power_mW);
+    assert_int_equal(computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count, 1);
+
+    // Assert voltage and current values are still recorded correctly
+    for (uint16_t i = 0; i < NUM_DIE1_VR_RAILS; i++)
+    {
+        assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg),
+                         voltage_mV[i]);
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg),
+                         current_mA[i]);
     }
 }
 
@@ -400,7 +465,6 @@ TEST_FUNCTION(test_comp_metrics_for_soc_top_temp_sensor, test_setup, test_teardo
         test_values[i] = 20 + i; // Assign unique values for each sensor
     }
 
-    // Act
     comp_metrics_for_soc_top_temp_sensor(&test_values);
 
     // Assert

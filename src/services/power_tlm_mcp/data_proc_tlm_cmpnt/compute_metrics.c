@@ -19,6 +19,7 @@
 #include <core_info.h>
 #include <corebits.h>
 #include <kng_scp_tfa_shared.h>
+#include <power_telemetry_common.h>
 #include <pwr_tlm_core_exchange.h>
 #include <stdbool.h> // for false, true
 #include <stddef.h>  // for size_t
@@ -27,6 +28,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MICROWATTS_PER_MILLIWATT (1000)
+#define MILLIAMP_TO_CENTIAMP(x)  ((x) / 10) // Convert milliamps to centiamps: 1 mA = 0.1 cA
 
 /*------------- Typedefs -----------------*/
 
@@ -326,11 +328,8 @@ void comp_metrics_for_single_hnf_channel(uint8_t hnf_channel, uint16_t latest_te
 void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR_RAILS],
                                 uint32_t (*latest_rail_current_mA)[MAX_NUM_OF_VR_RAILS])
 {
-    uint16_t num_rails = NUM_DIE0_VR_RAILS;
-    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
-    {
-        num_rails = NUM_DIE1_VR_RAILS;
-    }
+    uint8_t die_id = die_2_die_exch_get_this_die_id();
+    uint16_t num_rails = (die_id == PRIMARY_DIE_ID) ? NUM_DIE0_VR_RAILS : NUM_DIE1_VR_RAILS;
 
     uint32_t total_power_mW = 0;
 
@@ -347,18 +346,38 @@ void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR
                                    (*latest_rail_current_mA)[vr_index]);
         }
 
-        // Calculate the power for each rail
-        uint32_t rail_power_mW =
-            ((*latest_rail_voltage_mV)[vr_index] * (*latest_rail_current_mA)[vr_index]) / MICROWATTS_PER_MILLIWATT;
+        // Calculate the power for each rail - use 64-bit arithmetic to prevent overflow
+        uint64_t power_calculation = ((uint64_t)(*latest_rail_voltage_mV)[vr_index]) *
+                                     ((uint64_t)(*latest_rail_current_mA)[vr_index]) / MICROWATTS_PER_MILLIWATT;
+
+        uint32_t net_rail_power_mW = (uint32_t)power_calculation;
+
+        uint32_t loadline_loss_power_mW = 0;
+        if (die_id == PRIMARY_DIE_ID)
+        {
+            // die 0 vr_index maps to power_telemetry_rail_id_die0_t
+            loadline_loss_power_mW =
+                power_telemetry_loadline_loss_die0(vr_index, MILLIAMP_TO_CENTIAMP((*latest_rail_current_mA)[vr_index]));
+        }
+        else
+        {
+            // die 1 vr_index maps to power_telemetry_rail_id_die1_t
+            loadline_loss_power_mW =
+                power_telemetry_loadline_loss_die1(vr_index, MILLIAMP_TO_CENTIAMP((*latest_rail_current_mA)[vr_index]));
+        }
+
+        // Prevent underflow when subtracting load line loss
+        uint32_t effective_rail_power_mW =
+            (net_rail_power_mW > loadline_loss_power_mW) ? (net_rail_power_mW - loadline_loss_power_mW) : 0;
 
         // Accumulate the total power
-        total_power_mW += rail_power_mW;
+        total_power_mW += effective_rail_power_mW;
     }
 
     // Update the total power moving average
     data_util_mov_avg_u32_add_sample(&computed_metrics_oob.soc_total_pwr_mov_avg_mW, total_power_mW);
 
-    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    if (die_id != PRIMARY_DIE_ID)
     {
         die_2_die_exch_oob_write_window_soc_pwr(computed_metrics_oob.soc_total_pwr_mov_avg_mW.total_sum,
                                                 computed_metrics_oob.soc_total_pwr_mov_avg_mW.sample_count);

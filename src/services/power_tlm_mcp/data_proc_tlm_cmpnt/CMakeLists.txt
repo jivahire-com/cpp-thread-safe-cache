@@ -34,6 +34,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::event_trace::trace
         ms::lib::gtimer
+        ms::lib::power_telemetry_common
         ms::lib::pwr_tlm_core_ex
         ms::lib::telemetry::fuses
         silibs::dvfs

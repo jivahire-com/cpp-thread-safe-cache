@@ -17,6 +17,7 @@
 #include <corebits.h>
 #include <data_sampling_i.h>
 #include <kng_soc_constants.h>
+#include <power_telemetry_common.h>
 #include <semaphore_lib.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <stdint.h>              // for uint32_t, uint64_t, int32_t
@@ -322,4 +323,19 @@ int __wrap_d2dss_pmu_read(uint8_t d2dss_index, uint8_t event_number, uintptr_t c
     *counter_high_ptr = mock_type(uint32_t);
 
     return mock_type(int);
+}
+
+// Mock functions for power telemetry load line loss
+uint32_t __wrap_power_telemetry_loadline_loss_die0(power_telemetry_rail_id_die0_t rail_id, uint16_t current_cA)
+{
+    check_expected(rail_id);
+    check_expected(current_cA);
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_power_telemetry_loadline_loss_die1(power_telemetry_rail_id_die1_t rail_id, uint16_t current_cA)
+{
+    check_expected(rail_id);
+    check_expected(current_cA);
+    return mock_type(uint32_t);
 }

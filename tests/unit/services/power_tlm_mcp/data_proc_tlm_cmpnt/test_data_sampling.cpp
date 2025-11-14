@@ -913,6 +913,9 @@ TEST_FUNCTION(test_data_smpl_parse_vr_current_entry, test_setup, test_teardown)
 
 TEST_FUNCTION(test_data_smpl_process_vr_current_sensor_fifo, test_setup, test_teardown)
 {
+    // Initialize die ID for this test - use die 1 which has 2 VR rails
+    die_2_die_exch_init(1);
+
     // Test case 1: Process multiple FIFO entries
     sensor_ram_poll_status_t more_entries = {.curr_data_is_valid = true, .more_entries = true};
     sensor_ram_poll_status_t last_entry = {.curr_data_is_valid = true, .more_entries = false};
@@ -928,6 +931,29 @@ TEST_FUNCTION(test_data_smpl_process_vr_current_sensor_fifo, test_setup, test_te
         .vr_current_cA = {200, 0, 0, 0, 0, 0, 0, 0}, // Simple data for FIFO testing
         .vr_voltage_mV = {1100, 0, 0, 0, 0, 0, 0, 0},
     };
+
+    // Set up mock expectations for load line loss functions
+    // Die 1 has NUM_DIE1_VR_RAILS (2) active VR rails
+
+    // Entry 1: mock load line loss for die 1's 2 VR rails
+    for (uint8_t rail = 0; rail < NUM_DIE1_VR_RAILS; rail++)
+    {
+        expect_value(__wrap_power_telemetry_loadline_loss_die1, rail_id, rail);
+        expect_value(__wrap_power_telemetry_loadline_loss_die1,
+                     current_cA,
+                     (rail == 0) ? 100 : 0); // Only rail 0 has current (100 cA converted from 1000 mA)
+        will_return(__wrap_power_telemetry_loadline_loss_die1, 5); // 5mW loss
+    }
+
+    // Entry 2: mock load line loss for die 1's 2 VR rails
+    for (uint8_t rail = 0; rail < NUM_DIE1_VR_RAILS; rail++)
+    {
+        expect_value(__wrap_power_telemetry_loadline_loss_die1, rail_id, rail);
+        expect_value(__wrap_power_telemetry_loadline_loss_die1,
+                     current_cA,
+                     (rail == 0) ? 200 : 0); // Only rail 0 has current (200 cA converted from 2000 mA)
+        will_return(__wrap_power_telemetry_loadline_loss_die1, 8); // 8mW loss
+    }
 
     // Mock sequence for multiple entries
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &more_entries);

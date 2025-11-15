@@ -1,0 +1,25 @@
+--variable KEEP_SVP_ALIVE:TRUE
+--variable HOST_JSON:hsp_scp_bl_embed_fw_dual_die.json
+
+## HSP Mailbox Die1 Tests
+./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_die1.robot
+./../../../tests/functional/test_suites/hspmbx_tests/hsp_mailbox_cli_test_send_recv_die1.robot
+
+## Variable Service Tests
+./../../../tests/functional/test_suites/varserv_tests/varserv_dd_test.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+## Sensor FIFO short duration tests
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_mcp_scp_sync.robot
+## The following sensor fifo tests require an SVP Teardown before to ensure the early boot
+## logs the tests look for are present.
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/sensor_fifo_tests/sensor_fifo_cli.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+
+./../../../tests/functional/test_suites/power_tests/mod_power_control_loop_health.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/power_tests/mod_power_ft.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
+./../../../tests/functional/test_suites/power_tests/mod_power_pstate_transition.robot
+./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot

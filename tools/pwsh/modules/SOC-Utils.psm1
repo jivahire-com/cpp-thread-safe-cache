@@ -26,7 +26,9 @@ function Get-SOCSshIp {
         @{ "PC Name" = "C41431157B0204B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.117";  "RM IP" = "172.29.131.24"; "Node ID" = "30"},
         @{ "PC Name" = "C41431157B0204A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.21";  "RM IP" = "172.29.131.24"; "Node ID" = "6"},
         @{ "PC Name" = "C41431157B0209A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.45";  "RM IP" = "172.29.131.24"; "Node ID" = "12"},
-        @{ "PC Name" = "C41431157B0209B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.141";  "RM IP" = "172.29.131.24"; "Node ID" = "36"}
+        @{ "PC Name" = "C41431157B0209B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.141";  "RM IP" = "172.29.131.24"; "Node ID" = "36"},
+        @{ "PC Name" = "C41431157B0439A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.41";  "RM IP" = "10.199.88.18"; "Node ID" = "11"},
+        @{ "PC Name" = "C41431157B0439B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.137";  "RM IP" = "10.199.88.18"; "Node ID" = "35"}
     )
 
     # Find the matching PC Name and return both IsRM and IP

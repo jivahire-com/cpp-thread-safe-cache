@@ -845,10 +845,10 @@ Function Get-VersionData()
     # Install powershell-yaml if not available
     Install-Module powershell-yaml -Force -MinimumVersion "0.4.7" -Repository PSGallery -Scope CurrentUser -WarningAction SilentlyContinue
 
-    $ci_yml_data = Get-Content -Path './tools/pipelines/ci.yaml' | ConvertFrom-Yaml
+    $ci_yml_data = Get-Content -Path './tools/pipelines/pull_request.yaml' | ConvertFrom-Yaml
     $ci_version = $ci_yml_data.name
 
-    $release_yml_data = Get-Content -Path './tools/pipelines/release.yaml' | ConvertFrom-Yaml
+    $release_yml_data = Get-Content -Path './tools/pipelines/official.yaml' | ConvertFrom-Yaml
     $release_version = $release_yml_data.name
 
     if ($ci_version -ne $release_version)

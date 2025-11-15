@@ -118,6 +118,14 @@ extends:
           ArtifactName: SVP_Pythia_Tests_DualDie_1
           TestPlan: .\tests\functional\test_plan\svp_dual_die_1_test_plan.args
 
+    - stage: SVP_Pythia_Tests_DualDie_2
+      dependsOn: [Build_Arm_EABI_AARCH_Debug]
+      jobs:
+      - template: tools/pipelines/templates/svp_pythia_test.yaml@self
+        parameters:
+          ArtifactName: SVP_Pythia_Tests_DualDie_2
+          TestPlan: .\tests\functional\test_plan\svp_dual_die_2_test_plan.args
+
     - stage: MSCP_SOC_Pythia_Dualdie_Tests
       dependsOn: [Build_Arm_EABI_AARCH_Debug]
       jobs:

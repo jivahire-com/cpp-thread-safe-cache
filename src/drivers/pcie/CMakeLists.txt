@@ -18,29 +18,31 @@ add_library(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
-    fwlib.dfwk
-    fwlib.lib.cfg_mgr
-    fwlib.lib.interface.platform.dbgprint
-    fwlib.lib.interface.platform.errorhandler
-    fwlib.lib.utils
-    fwlib.platform.dfwkhost.threadx
-    silibs::atu
-    silibs::idsw
-    silibs::idsw_kng
-    silibs::intu
-    silibs::kng_silibs_platform
-    silibs::pcie
-    silibs::pciess
-    silibs::pcr_rpss
-    silibs::tower_rpss
-    ms::driver::vab
-    ms::lib::crash_dump
-    ms::lib::ift
-    ms::lib::scp_interrupts
-    ms::lib::system_info
-    ms::lib::threadx
-    ms::service::health_monitor
-    silibs_platform
+        fwlib.dfwk
+        fwlib.lib.cfg_mgr
+        fwlib.lib.interface.platform.dbgprint
+        fwlib.lib.interface.platform.errorhandler
+        fwlib.lib.utils
+        fwlib.platform.dfwkhost.threadx
+        silibs::atu
+        silibs::idsw
+        silibs::idsw_kng
+        silibs::intu
+        silibs::kng_silibs_platform
+        silibs::pcie
+        silibs::pciess
+        silibs::pcr_rpss
+        silibs::tower_rpss
+        ms::driver::vab
+        ms::lib::crash_dump
+        ms::lib::ift
+        ms::lib::scp_interrupts
+        ms::lib::system_info
+        ms::lib::threadx
+        ms::service::health_monitor
+        silibs_platform
+    PUBLIC
+        ms::cmsis::interface
 )
 
 target_include_directories(${TARGET}

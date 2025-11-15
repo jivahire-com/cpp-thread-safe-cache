@@ -30,6 +30,7 @@ extern "C" {
 #include <cper.h>
 #include <error_handler.h>
 #include <kng_soc_constants.h>
+#include <mscp_exp_rmss_memory_map.h>
 #include <pcie_bdat_i.h>
 #include <pcie_common.h>
 #include <pcie_config_i.h>
@@ -62,6 +63,8 @@ bool __real_config_get_pcie_configuration_mirroring(void);
 #define bugcheck_mock_return()  BUGCHECK_MOCK_RETURN
 #define MAX_ASYNC_REQ_POOL_SIZE (16)
 
+// #define SCP_EXP_PCIE_PHY_FW_SIZE (0x10)
+// #define SCP_EXP_PCIE_PHY_FW_BASE (0xDEADBEEF)
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -380,7 +383,6 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     assert_int_equal(rb_configs[0].flags.is_secondary_soc, false);
 }
 
-#if 1
 TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardown)
 {
     /* Setup the request for an rpss */
@@ -392,6 +394,9 @@ TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardow
 
     mock_pcie_ent.id = r.rpss_index;
 
+    expect_value(SCB_InvalidateDCache_by_Addr, addr, SCP_EXP_PCIE_PHY_FW_BASE);
+    expect_value(SCB_InvalidateDCache_by_Addr, dsize, SCP_EXP_PCIE_PHY_FW_SIZE);
+    expect_function_call(SCB_InvalidateDCache_by_Addr);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
@@ -402,7 +407,7 @@ TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success, test_setup, test_teardow
     assert_int_equal(ret, 0);
     assert_int_equal(r.status, SILIBS_SUCCESS);
 }
-
+#if 1
 TEST_FUNCTION(test_pcie_rpss_pre_rp_ready_init_success_sram_bypass, test_setup, test_teardown)
 {
     /* Setup the request for an rpss */

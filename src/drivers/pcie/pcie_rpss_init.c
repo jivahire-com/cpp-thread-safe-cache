@@ -16,6 +16,7 @@
 #include <DfwkPtrTypes.h>
 #include <ap_top_regs.h>
 #include <bug_check.h>
+#include <cmsis_m7.h>
 #include <fpfw_cfg_mgr.h>
 #include <idsw_kng.h>
 #include <ift_fw.h>
@@ -150,6 +151,8 @@ int begin_rpss_pre_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
 
         // There is no PHY Loaded other than the this, so any failure here should be
         // treated as FATAL
+        // We invalidate the cache to prevent any incorrect data from being written to PHY
+        SCB_InvalidateDCache_by_Addr((uint32_t*)(SCP_EXP_PCIE_PHY_FW_BASE), (int32_t)SCP_EXP_PCIE_PHY_FW_SIZE);
         sts = pciess_phys_program_fw(rpss, &phyfw);
         BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss->id, sts);
     }

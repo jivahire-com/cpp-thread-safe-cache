@@ -44,6 +44,10 @@
 // ddr_erg1
 #define DDRMCUPTOP_RASNERG1_ADDRESS (0xe8000U)
 
+#define DDRSS_RAS_ERR_HAS_UEU(err_sts)               \
+    (((err_sts) & DDR_ERG0_ERR0STATUS_LO_UE_MASK) && \
+     ((((err_sts) & DDR_ERG0_ERR0STATUS_LO_UET_MASK) >> DDR_ERG0_ERR0STATUS_LO_UET_LSB) < 2))
+
 #define DDRSS_MC_REG_OFF(x) ((uint32_t)(uintptr_t) & (((ptr_ddrmctop_reg)0)->x))  //sksk - this is in ddrmctop_regs_local_copy.h
 
 #define PROD_DDRSS_MC0_RASERG_REG_ADDR(base, reg) (base + DDRMCUPTOP_RASNERG0_ADDRESS + DDRSS_MC_RASERG0_OFF(reg))

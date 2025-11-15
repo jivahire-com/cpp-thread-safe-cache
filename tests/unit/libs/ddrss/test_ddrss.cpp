@@ -44,6 +44,7 @@ extern uint32_t g_intu_enable;
 extern uint32_t g_phy_int_sts;
 extern uint32_t g_mc_intu_sts;
 extern uint32_t g_mc_intu_dest_enable;
+extern uint64_t g_ras_err_sts;
 extern bool g_mmio_read32_mocktype;
 extern bool g_should_check_cper_section;
 extern bool g_should_check_ras_agent_entity_id;
@@ -59,6 +60,7 @@ static int setup(void** state)
     g_phy_int_sts = 0;
     g_mc_intu_sts = 0;
     g_mc_intu_dest_enable = 0;
+    g_ras_err_sts = 0;
     g_mmio_read32_mocktype = false;
 
     return 0;
@@ -72,6 +74,7 @@ static int teardown(void** state)
     g_phy_int_sts = 0;
     g_mc_intu_sts = 0;
     g_mc_intu_dest_enable = 0;
+    g_ras_err_sts = 0;
     g_mmio_read32_mocktype = false;
 
     return 0;
@@ -86,6 +89,8 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     uint8_t test_fips_kat_en = 0;
     int i = 0;
+
+    expect_function_call(__wrap_post_led_status);
 
     // ddrss init is skipped on svp, therefore no expectations
     idsw_set_platform_sdv(PLATFORM_SVP_SIM);
@@ -133,6 +138,8 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
 
     prod_ddrss_lib_init(test_die);
 
+    expect_function_call(__wrap_post_led_status);
+
     // ddrss init is skipped if not on an FPGA, therefore no expectations
     idsw_set_platform_sdv(PLATFORM_UNDEFINED);
 
@@ -158,6 +165,8 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
     uint8_t test_fips_kat_en = 0;
     int i = 0;
+
+    expect_function_call(__wrap_post_led_status);
 
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 1;
@@ -225,6 +234,8 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
     int i = 0;
     extern bool g_should_check_reset_reason_cfg_knobs;
     g_should_check_reset_reason_cfg_knobs = true;
+
+    expect_function_call(__wrap_post_led_status);
 
     // Get same starting values for knobs as code under test
     ddrss_cfg_knobs_t test_ddrss_knobs = {};
@@ -302,6 +313,8 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
     uint8_t test_fips_kat_en = 0;
     int i = 0;
 
+    expect_function_call(__wrap_post_led_status);
+
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 0;
     cmn800_snf_to_mc_config.map_size = 0;
@@ -367,6 +380,8 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
     uint8_t test_fips_kat_en = 0;
     int i = 0;
 
+    expect_function_call(__wrap_post_led_status);
+
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 1;
     cmn800_snf_to_mc_config.map_size = 0;
@@ -429,6 +444,8 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp_fips_kat_enable, setup, teardown)
     uint8_t test_fips_kat_en = 1;
     int i = 0;
 
+    expect_function_call(__wrap_post_led_status);
+
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 1;
     cmn800_snf_to_mc_config.map_size = 0;
@@ -490,6 +507,8 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure, setup, teardown)
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
     uint8_t test_fips_kat_en = 0;
     int i = 0;
+
+    expect_function_call(__wrap_post_led_status);
 
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 1;
@@ -561,6 +580,8 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure2, setup, teardown)
     uint8_t test_fips_kat_en = 0;
     int i = 0;
 
+    expect_function_call(__wrap_post_led_status);
+
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 1;
     cmn800_snf_to_mc_config.map_size = 0;
@@ -627,6 +648,8 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure_max_mc, setup, teardown)
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
     uint8_t test_fips_kat_en = 0;
     int i = 0;
+
+    expect_function_call(__wrap_post_led_status);
 
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 1;
@@ -696,6 +719,8 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
     uint8_t test_fips_kat_en = 0;
     int i = 0;
+
+    expect_function_call(__wrap_post_led_status);
 
     // initialize the CFG
     cmn800_snf_to_mc_config.is_numa_enabled = 1;
@@ -830,6 +855,102 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC1_CRI_INT, setup, teardown)
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC1_CRI_INT));
 
     prod_ddrss_interrupt_handler((void*)&ddrss_num[5]);
+}
+
+TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_FHI_UEU, setup, teardown)
+{
+    // Test DDRSS_INTU_SRA_ERI
+    g_mmio_read32_mocktype = true;
+    g_should_check_ras_agent_entity_id = true;
+    g_ddr_intu_sts = (1 << DDRSS_INTU_SRA_FHI);
+    g_intu_enable = 0xFFFFFFFF; // This is a mask
+    g_ras_err_sts = DDR_ERG0_ERR0STATUS_LO_V_MASK | (1 << DDR_ERG0_ERR0STATUS_LO_UE_LSB) |
+                    (1 << DDR_ERG0_ERR0STATUS_LO_UE_LSB) | (1 << DDR_ERG0_ERR0STATUS_LO_UET_LSB);
+
+    will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the MMIO_READ32
+
+    ras_agent_entity_t local_ras_agent = {0};
+    local_ras_agent.flags = RAS_AGENT_FLAG_LIVE;
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
+    will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+
+    expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
+    will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the second MMIO_READ32
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
+    will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+
+    expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_SRA_FHI));
+
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
+
+    // Test DDRSS_INTU_SRA_ERI - other path
+    g_ddr_intu_sts = (1 << DDRSS_INTU_SRA_ERI);
+    g_intu_enable = 0xFFFFFFFF; // This is a mask
+    g_ras_err_sts = 0;
+
+    will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the MMIO_READ32
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
+    will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+
+    expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
+    will_return(__wrap_mmio_read32, 1); // This is the (non-zero) mock return value for the second MMIO_READ32
+
+    expect_value(__wrap_ddrss_get_ras_agent, ras_agent_entity_id, ERG0);
+    will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
+    will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
+    expect_function_call(__wrap_ras_arm_agent_probe);
+    expect_function_call(__wrap_ras_print_record);
+    expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
+
+    // Std. CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+
+    // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
+
+    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_SRA_ERI));
+    prod_ddrss_interrupt_handler((void*)&ddrss_num[0]);
 }
 
 TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teardown)

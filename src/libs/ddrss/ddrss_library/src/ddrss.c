@@ -67,6 +67,9 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     const char* platform_str;
     const char* start_type;
 
+    boot_status_req_t ddr_bsc_req_mem = {0};
+    post_led_status(&ddr_bsc_req_mem, LED_STATUS_CODE_SCP_DDR_INIT_START);
+
     // 1 DDRSS contains 2 memory controllers
     // PHY level is under MC level in heirarchy, 1 PHY per DDRSS.
     // Register interrupt handler for DDRSS - Each DDRSS contains 2 memory controllers
@@ -484,7 +487,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
          */
         if (sts == SILIBS_E_STATE && (ddrss_get_phy_training_failure(&phy_err_info) == SILIBS_SUCCESS))
         {
-            bsc_status += DDRSS_GET_LOCAL_DDRSS(phy_err_info.mc);
+            bsc_status = LED_STATUS_CODE_SCP_E_DDR0_TRAINING + DDRSS_GET_LOCAL_DDRSS(phy_err_info.mc);
         }
 
         /**

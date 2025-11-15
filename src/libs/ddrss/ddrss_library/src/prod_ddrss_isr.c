@@ -40,13 +40,17 @@ volatile uint8_t prod_ddrss_mc_ras_ce_en[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_RAS_NOD
 /*-- Declarations (Statics and globals) --*/
 
 /*-------------- Functions ---------------*/
-static int ddrss_get_and_probe_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agent_entity_id, ras_agent_entity_t** ras_agent)
+static int ddrss_get_and_probe_ras_agent(uint32_t mc,
+                                         DDRSS_RAS_NODE_ID ras_agent_entity_id,
+                                         ras_agent_entity_t** ras_agent,
+                                         uint64_t* err_status)
 {
     uint32_t sub_sts;
     acpi_err_sec_memory_t ddr_ras_cper = {0};
     acpi_err_sec_mem_vendor_t ddr_vendor_cper = {0};
     ras_error_record_t record = {0};
 
+    *err_status = 0;
     sub_sts = ddrss_get_ras_agent(mc, ras_agent_entity_id, ras_agent);
     if (sub_sts == SILIBS_SUCCESS)
     {
@@ -66,6 +70,11 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc, DDRSS_RAS_NODE_ID ras_agen
             acpi_cper_section_t vendor_cper_section;
             vendor_cper_section.sec_ddr_mem_vendor = ddr_vendor_cper;
             hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, severity, &vendor_cper_section, sizeof(vendor_cper_section));
+
+            if (record.status_valid)
+            {
+                *err_status = record.status;
+            }
         }
 
         // For ER0/ER2 and ER4/ER6 of ERG0, need to reset the CEC threshold.
@@ -254,6 +263,7 @@ void prod_ddrss_interrupt_handler(void* context)
     uint32_t mc = ddrss * 2;
     uint32_t ddr_intu_sts = 0;
     uintptr_t ddrss_base = 0;
+    uint64_t err_status;
     ras_agent_entity_t* ras_agent[2] = {0};
     int sts = SILIBS_SUCCESS;
     int sub_sts = SILIBS_SUCCESS;
@@ -312,7 +322,7 @@ void prod_ddrss_interrupt_handler(void* context)
     if (ddr_intu_sts & int_mask)
     {
         printf("MC0 CRI int\n");
-        sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1]);
+        sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1], &err_status);
         if (sub_sts != SILIBS_SUCCESS)
         {
             ddr_intu_err |= int_mask;
@@ -324,7 +334,7 @@ void prod_ddrss_interrupt_handler(void* context)
     if (ddr_intu_sts & int_mask)
     {
         printf("MC1 CRI int\n");
-        sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1]);
+        sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1], &err_status);
         if (sub_sts != SILIBS_SUCCESS)
         {
             ddr_intu_err |= int_mask;
@@ -332,6 +342,8 @@ void prod_ddrss_interrupt_handler(void* context)
         ddr_intu_clr_sts |= int_mask;
     }
 
+    bool has_ueu = false;
+    uint32_t mc_ueu = 0;
     uint32_t grp_sts;
     uint32_t sra_ras_int_msk = (1 << DDRSS_INTU_SRA_ERI) | (1 << DDRSS_INTU_SRA_FHI);
     if (ddr_intu_sts & sra_ras_int_msk)
@@ -342,21 +354,31 @@ void prod_ddrss_interrupt_handler(void* context)
         grp_sts = MMIO_READ32(PROD_DDRSS_MC0_RASERG_REG_ADDR(ddrss_base, errgsr_lo));
         if (grp_sts)
         {
-            sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0]);
+            sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0], &err_status);
             if (sub_sts != SILIBS_SUCCESS)
             {
                 printf("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
                 ddr_intu_err |= sra_ras_int_msk;
             }
+            else
+            {
+                has_ueu = DDRSS_RAS_ERR_HAS_UEU(err_status);
+                mc_ueu = mc;
+            }
         }
         grp_sts = MMIO_READ32(PROD_DDRSS_MC1_RASERG_REG_ADDR(ddrss_base, errgsr_lo));
         if (grp_sts)
         {
-            sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0]);
+            sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0], &err_status);
             if (sub_sts != SILIBS_SUCCESS)
             {
                 printf("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
                 ddr_intu_err |= sra_ras_int_msk;
+            }
+            else
+            {
+                has_ueu = DDRSS_RAS_ERR_HAS_UEU(err_status);
+                mc_ueu = mc + 1;
             }
         }
         ddr_intu_clr_sts |= (ddr_intu_sts & sra_ras_int_msk);
@@ -461,6 +483,13 @@ void prod_ddrss_interrupt_handler(void* context)
         uint32_t mc_cri = mc + ((ddr_intu_clr_sts & (1 << DDRSS_INTU_MC0_CRI_INT)) ? 0 : 1);
         printf("Force CD due to fatal DDR CRI from MC%d\n", (unsigned int)mc_cri);
         BUG_CHECK(KNG_E_FAIL, mc_cri, ddr_intu_sts);
+    }
+
+    // For DDR RAS UEU, treat it as critical and generate crash dump.
+    if (has_ueu)
+    {
+        printf("Force CD due to DDR RAS UEU from MC%d\n", (unsigned int)mc_ueu);
+        BUG_CHECK(KNG_E_FAIL, mc_ueu, ddr_intu_sts);
     }
 
     printf("DDRSS %d ISR Exit with sts=%d\n\n", (int)ddrss, sts);

@@ -68,6 +68,7 @@ uint32_t g_intu_enable;
 uint32_t g_phy_int_sts;
 uint32_t g_mc_intu_sts;
 uint32_t g_mc_intu_dest_enable;
+uint64_t g_ras_err_sts;
 bool g_mmio_read32_mocktype;
 bool g_should_check_reset_reason_cfg_knobs = false;
 bool g_should_check_cper_section = false;
@@ -243,6 +244,8 @@ bool __wrap_ras_arm_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* r
 
     // Make record->reporting_agent non-NULL for later dereferencing
     record->reporting_agent = agent;
+    record->status_valid = 1;
+    record->status = g_ras_err_sts;
 
     return SILIBS_SUCCESS;
 }
@@ -414,7 +417,11 @@ void __wrap_FpFwAssert(int expression)
 void __wrap_post_led_status(boot_status_req_t* p_req_mem, led_status_codes_t status)
 {
     assert_non_null(p_req_mem);
-    assert_in_range(status, LED_STATUS_CODE_SCP_E_DDR0_TRAINING, LED_STATUS_CODE_SCP_E_DDR5_TRAINING);
+
+    if (status != LED_STATUS_CODE_SCP_DDR_INIT_START)
+    {
+        assert_in_range(status, LED_STATUS_CODE_SCP_E_DDR0_TRAINING, LED_STATUS_CODE_SCP_E_DDR5_TRAINING);
+    }
 
     function_called();
 }

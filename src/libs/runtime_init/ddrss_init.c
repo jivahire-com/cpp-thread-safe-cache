@@ -12,9 +12,7 @@
 #include <DbgPrint.h>
 #include <ddr_manager.h>
 #include <ddrss.h>
-#include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
-#include <idhw.h>
 #include <stdio.h>
 #include <system_info.h>
 

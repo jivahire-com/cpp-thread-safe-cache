@@ -20,6 +20,7 @@ set(LIBS
         ms::mocks::threadx
         ms::lib::config_manager
         ms::lib::stdio_textio
+        ms::lib::variable_services
         ms::driver::textio::pl011
         silibs::ddr_i3c
         silibs::atu
@@ -71,6 +72,7 @@ mock_target(${TARGET}
     config_get_erhm_en
     config_get_ras_init_en
     config_get_rh_tlm_service_period_ms
+    config_get_ddrmanager_sdl_en
     ddr_create_memory_map
     ddr_i3c_interface_read_spd_nvm_data
     ddr_i3c_interface_read_temp_sensor_mr_reg
@@ -111,12 +113,18 @@ mock_target(${TARGET}
     system_info_is_warm_start
     sensor_fifo_svc_add_dimm_info
     prod_ddrss_get_intr_event_cper
+    get_icc_base_ctx
     hm_submit_cper
     FPFwCoreInterruptIsEnabled
     FPFwCoreInterruptEnableVector
     FPFwCoreInterruptDisableVector
     ddrss_get_telemetry_record
     prod_ddrss_convert_rh_cfg_rec_to_rh_cper
+    variable_service_initialize_ctx
+    variable_service_sync_get_variable
+    variable_service_sync_set_variable
+    variable_service_unlock_get_var_ctx
+    sdl_get_mem_ctx
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

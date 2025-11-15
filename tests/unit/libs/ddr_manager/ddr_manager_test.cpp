@@ -27,6 +27,7 @@ extern "C" {
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <ddr_rhtlm_service.h>
 #include <ddrss_lib.h>
+#include <ddrss_sdl.h>
 #include <error_handler.h> // for set_error_handler_return
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>
@@ -75,6 +76,7 @@ uint8_t test_dq_training_margin[DDRSS_PHY_TRAINING_MARGIN_SIZE_BYTES] = {0};
 
 uint8_t ddr_test_stack[DDR_TEST_STACK_SIZE];
 static uint32_t ddr_queue_pool[10];
+MEMORY_DEFECT_LIST_HEADER empty_header = {0};
 ddr_service_config_t config = {.thread_config =
                                    {
                                        .p_stack = ddr_test_stack,
@@ -87,6 +89,8 @@ ddr_service_config_t config = {.thread_config =
                                    .msg_size = sizeof(ddr_queue_pool[0]) / sizeof(uint32_t),
                                    .queue_num_words = sizeof(ddr_queue_pool) / sizeof(uint32_t),
                                }};
+
+uint8_t sdl_test_buffer[SCP_EXP_SDL_LOAD_SIZE] = {0};
 
 /*------------- Functions ----------------*/
 //
@@ -267,6 +271,13 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     ddr_service_context_t ddr_service_context = {};
     ddr_service_config_t ddr_service_config = {};
 
+    will_return_always(__wrap_config_get_ddrmanager_sdl_en, true);
+
+    will_return_always(__wrap_variable_service_sync_get_variable, SILIBS_SUCCESS);
+    will_return_always(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
+    will_return(__wrap_atu_map, 0x012345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     // tx queue fails
@@ -379,7 +390,13 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     // Inside ddr_manager_i3c_init()
     will_return(__wrap_idhw_get_die_id, 0);
 
-    // will_return(__wrap_system_info_is_warm_start, false);
+    // SDL load
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
+    // SDL pointer variable write
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
 
     g_should_wrap_ddr_create_memory_map = true;
     expect_function_call(__wrap_ddr_create_memory_map);
@@ -405,6 +422,13 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
 {
     static ddr_service_context_t ddr_service_ctx = {};
 
+    will_return_always(__wrap_config_get_ddrmanager_sdl_en, true);
+
+    will_return_always(__wrap_variable_service_sync_get_variable, SILIBS_SUCCESS);
+    will_return_always(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
+    will_return(__wrap_atu_map, 0x012345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     expect_value(__wrap__txe_queue_create, queue_ptr, &ddr_service_ctx.work_queue);
@@ -457,6 +481,14 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     // Inside ddr_manager_i3c_init()
     will_return(__wrap_idhw_get_die_id, 0);
 
+    // SDL load
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
+    // SDL pointer variable write
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
     g_should_wrap_ddr_create_memory_map = true;
     expect_function_call(__wrap_ddr_create_memory_map);
 
@@ -484,6 +516,13 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
 {
     static ddr_service_context_t ddr_service_ctx = {};
 
+    will_return_always(__wrap_config_get_ddrmanager_sdl_en, true);
+
+    will_return_always(__wrap_variable_service_sync_get_variable, SILIBS_SUCCESS);
+    will_return_always(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
+    will_return(__wrap_atu_map, 0x012345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     expect_value(__wrap__txe_queue_create, queue_ptr, &ddr_service_ctx.work_queue);
@@ -523,6 +562,14 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
 
     // will_return(__wrap__txe_timer_create, TX_SUCCESS);
     will_return(__wrap_idhw_get_die_id, DIE_0);
+
+    // SDL load
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
+    // SDL pointer variable write
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
 
     g_should_wrap_ddr_create_memory_map = true;
     expect_function_call(__wrap_ddr_create_memory_map);
@@ -1315,4 +1362,84 @@ TEST_FUNCTION(ddr_telemetry_check_throttling_count, NULL, NULL)
     }
 
     ddr_telemetry_report();
+}
+
+// Tests aimed at increasing coverage for ddr_manager_platform.c
+
+TEST_FUNCTION(ddr_copy_empty_sdl_to_ddr, NULL, NULL)
+{
+    // Create a local copy of what the header should look like for checksum calculation
+    MEMORY_DEFECT_LIST_HEADER expected_header_for_checksum = {0};
+    expected_header_for_checksum.Signature = (uint32_t)PSHED_PI_DEFECT_LIST_SIGNATURE;
+    expected_header_for_checksum.Version = MEMORY_DEFECT_VERSION_20;
+    expected_header_for_checksum.Length = sizeof(MEMORY_DEFECT_LIST_HEADER);
+    expected_header_for_checksum.DefectCount = 0;
+    expected_header_for_checksum.Changed = 0;
+    expected_header_for_checksum.Checksum = 0; // This is 0 during checksum calculation
+    expected_header_for_checksum.Reserved1 = 0;
+    expected_header_for_checksum.Reserved2 = 0;
+
+    will_return_always(__wrap_mmio_read16, 0x0);
+
+    copy_empty_sdl_header_to_reserved_ddr((uintptr_t)&empty_header);
+
+    // Verify that the SDL header was copied correctly
+    assert_int_equal(empty_header.Signature, (uint32_t)PSHED_PI_DEFECT_LIST_SIGNATURE);
+    assert_int_equal(empty_header.Version, MEMORY_DEFECT_VERSION_20);
+    assert_int_equal(empty_header.Length, sizeof(MEMORY_DEFECT_LIST_HEADER));
+    assert_int_equal(empty_header.DefectCount, 0);
+    assert_int_equal(empty_header.Changed, 0);
+
+    // Calculate the expected checksum by using the same algorithm/endianess
+    uint16_t expected_checksum =
+        CalculateRemoteCheckSum16((uint32_t)&expected_header_for_checksum, sizeof(MEMORY_DEFECT_LIST_HEADER));
+
+    assert_int_equal(empty_header.Checksum, expected_checksum);
+}
+
+TEST_FUNCTION(ddr_sdl_load_success, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_atu_map, 0x012345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+
+    // SDL load
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
+    will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
+    will_return(__wrap_variable_service_sync_get_variable, SILIBS_SUCCESS);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    ddr_load_shared_defect_list();
+}
+
+TEST_FUNCTION(ddr_sdl_load_not_found, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_atu_map, &empty_header);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+
+    // SDL load
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
+    will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
+
+    will_return(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
+
+    // Expect to create empty SDL and copy to DDR
+    will_return_always(__wrap_mmio_read16, 0x0); // For CalculateRemoteCheckSum16
+
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    ddr_load_shared_defect_list();
+}
+
+TEST_FUNCTION(ddr_sdl_load_alternate_path_1, NULL, NULL)
+{
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
+
+    // Nothing happens for DIE_1 (noop)
+    ddr_load_shared_defect_list();
 }

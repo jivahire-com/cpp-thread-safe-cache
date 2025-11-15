@@ -24,6 +24,8 @@
     <Knob name="ddrmanager_dimm_temp_crit" type="uint32_t" default="95" help="Integer value representing critical DIMM temperature where bad things happen (95°C)" />
     <!-- DDR ECC CE HW Bug Workaround -->
     <Knob name="ddrmanager_ecc_ce_polling_timer_ms" type="uint32_t" default="5000" help="Milliseconds for checking DDR RAS ERG interrupt enabling for each MC - HW Workaround" />
+    <!-- SDL & PPR Related -->
+    <Knob name="ddrmanager_sdl_en" type="bool" default="false" help="Enable/Disable SDL support" />
 
     <!-- DDRSS knobs -->
     <Knob name="ddrss_init" type="uint8_t" default="0" help="DDRSS init enable. Used by DV only, ignored by silibs. 0 - Disable, 1 - Enable" />

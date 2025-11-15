@@ -16,7 +16,9 @@ endif()
 target_link_libraries(${TARGET}
     PUBLIC
     ms::lib::crash_dump
+    ms::lib::ddr_manager
     ms::lib::register_headers
+    ms::lib::variable_services
     ras_arm
     silibs::cmn800
     silibs::ddr_i3c
@@ -54,6 +56,7 @@ target_include_directories(${TARGET}
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/inc
         $<TARGET_PROPERTY:ms::service::health_monitor,INCLUDE_DIRECTORIES>
+        ${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )

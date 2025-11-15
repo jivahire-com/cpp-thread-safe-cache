@@ -728,7 +728,7 @@ void ddr_publish_prm_addr_trans_cfg()
 {
     ddrss_addr_trans_cfg_t addr_trans_cfg = {0};
     atu_map_entry_t prm_cfg_atu_map_struct;
-    atu_entry_attr_t prm_cfg_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
+    atu_entry_attr_t prm_cfg_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_NS};
 
     prm_cfg_atu_map_struct.ap_base_address = ALIGN_DOWN(DRAM_TRANSLATION_CONFIG_STRUCT_BASE, ATU_PAGE_SIZE);
     prm_cfg_atu_map_struct.mscp_start_address = 0;

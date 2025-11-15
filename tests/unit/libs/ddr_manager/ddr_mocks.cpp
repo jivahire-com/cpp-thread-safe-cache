@@ -15,11 +15,13 @@
 #include <atu_lib.h>
 #include <ddrss_lib.h>
 #include <ddrss_runtime_api.h>
+#include <fpfw_icc_base.h>
 #include <idsw_kng.h>
 #include <silibs_status.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <variable_services.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -129,6 +131,11 @@ uint64_t __wrap_config_get_rh_tlm_service_period_ms(void)
 }
 
 bool __wrap_config_get_erhm_en()
+{
+    return mock_type(bool);
+}
+
+bool __wrap_config_get_ddrmanager_sdl_en()
 {
     return mock_type(bool);
 }
@@ -363,6 +370,54 @@ void __wrap_prod_ddrss_convert_rh_cfg_rec_to_rh_cper(uint32_t mc, void* rh_cfg_r
     FPFW_UNUSED(rh_cper);
 
     function_called();
+}
+
+int32_t __wrap_variable_service_initialize_ctx(var_service_req_ctx_t* var_serv_ctx, var_service_shared_mem_t* mem_ctx)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(mem_ctx);
+
+    var_serv_ctx->is_initialized = true;
+
+    return mock_type(int32_t);
+}
+
+int32_t __wrap_variable_service_sync_get_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(req_params);
+
+    return mock_type(int32_t);
+}
+
+void __wrap_variable_service_unlock_get_var_ctx(var_service_req_ctx_t* var_serv_ctx)
+{
+    FPFW_UNUSED(var_serv_ctx);
+
+    var_serv_ctx->is_initialized = false;
+
+    return;
+}
+
+void __wrap_variable_service_sync_set_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(req_params);
+
+    return;
+}
+
+fpfw_icc_base_ctx_t* __wrap_get_icc_base_ctx(void)
+{
+    return mock_type(fpfw_icc_base_ctx_t*);
+}
+
+void __wrap_sdl_get_mem_ctx(var_service_shared_mem_t* mem_ctx)
+{
+    mem_ctx->payload_base = mock_type(uintptr_t);
+    mem_ctx->max_payload_size = mock_type(size_t);
+
+    return;
 }
 
 } // extern "C"

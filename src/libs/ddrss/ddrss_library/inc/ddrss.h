@@ -13,7 +13,9 @@
 #include <cper.h>
 #include <ddr_erg0_regs.h>
 #include <ddr_erg1_regs.h>
+#include <ddr_manager.h>
 #include <ddrmctop_regs.h>
+#include <ddrss_knobs.h>
 #include <ddrss_runtime_api.h>
 #include <idsw_kng.h>
 #include <silibs_platform.h>
@@ -21,6 +23,7 @@
 #include <hsp_firmware_headers.h> // for kng_hsp_mailbox_msg
 #include <stdbool.h>
 #include <stdint.h>
+#include <variable_services.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define DDRSS_PRINT(lvl, statement)
@@ -60,7 +63,18 @@
 
 #define tDRTUB 0xc0000u
 #define csr_ArcEccIndications_ADDR 0x82u
-/*-------------- Typedefs ----------------*/
+
+#define PPR_RUN_CFG_VAR_NAME                    \
+    {                                           \
+        'P', 'P', 'R', '_', 'R', 'U', 'N', '\0' \
+    }
+#define PPR_RUN_CFG_VAR_GUID                               \
+    {                                                      \
+        0xa3fcb701, 0x4e5f, 0x44db,                        \
+        {                                                  \
+            0x93, 0x2d, 0x8b, 0x2f, 0xca, 0x10, 0xd9, 0x45 \
+        }                                                  \
+    }/*-------------- Typedefs ----------------*/
 
 /* Internal parameters calculated from configurations */
 

@@ -11,6 +11,7 @@
 #include "ddr_atu_map.h"
 
 #include <FPFwInterrupts.h>
+#include <atu_api.h>
 #include <atu_lib.h>
 #include <boot_status.h>
 #include <bug_check.h>
@@ -18,17 +19,18 @@
 #include <cmsdk_wd.h> // for wdog_cmsdk_apb_disable
 #include <ddr_err_inj.h>
 #include <ddr_i3c.h>
+#include <ddr_manager.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <fpfw_cfg_mgr.h>
-#include <fpfw_init.h> // for fpfw_init_get_handle
-#include <idhw.h>      // for idhw_is_single_die_boot_en
+#include <fpfw_init.h>
+#include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw_kng.h>
 #include <interrupts.h>
+#include <kng_scp_tfa_shared.h>
 #include <memory_map/ddrss_reserved_regions.h>
-#include <memory_map/mscp_exp_rmss_memory_map.h>
+#include <mscp_exp_rmss_memory_map.h>
 #include <pcr_ddrss.h>
-#include <silibs_ap_top_regs.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

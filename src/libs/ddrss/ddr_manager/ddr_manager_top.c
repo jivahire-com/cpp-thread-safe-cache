@@ -398,6 +398,22 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     DDR_LOG_CRIT("DDR init, die_num: [%u]\n", die_id);
     prod_ddrss_lib_init(die_id);
 
+    // PPR will write updated SDL back to flash if it has run during prod_ddrss_lib_init
+    // load the SDL from flash to DDR reserved region
+    if (config_get_ddrmanager_sdl_en() == true)
+    {
+        DDR_LOG_INFO("Loading SDL from flash to DDR\n");
+        ddr_load_shared_defect_list();
+
+        DDR_LOG_INFO("Publishing SDL DDR location to UEFI variable\n");
+        ddr_publish_sdl_addr();
+    }
+    else
+    {
+        DDR_LOG_INFO("SDL support disabled by config knob\n");
+        DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_SDL_SKIPPED_CFG_KNOB_DISABLED);
+    }
+
     ddr_create_memory_map(); // Includes publishing the memory map to SDS
     hsp_send_ddr_init_notify(icc_ctx);
 

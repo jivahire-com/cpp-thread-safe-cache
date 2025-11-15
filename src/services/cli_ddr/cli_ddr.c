@@ -8,26 +8,45 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DfwkCommon.h>
 #include <FpFwCli.h>        // for FPFW_CLI_STATUS, CLI_SUCCESS, FpFwCliReg...
 #include <FpFwLinkedList.h> // for NULL_LIST_ENTRY
 #include <FpFwUtils.h>      // for FPFW_UNUSED, FPFW_ARRAY_SIZE
+#include <atu_api.h>
+#include <bug_check.h>
+#include <cli_ddr.h>
 #include <ddr_err_inj.h>
+#include <ddr_manager.h>
 #include <ddr_manager_bwl.h>
 #include <ddr_manager_i3c.h>
 #include <ddr_memory_map.h>
+#include <ddrss.h>
 #include <ddrss_lib.h>
-#include <idsw_kng.h> // for idsw_get_die_id
-#include <stdio.h>    // for printf
+#include <ddrss_sdl.h> // for SDL_VAR_NAME, SDL_VAR_GUID, MEMORY_DEFECT_LIST_HEADER
+#include <idsw_kng.h>  // for idsw_get_die_id
+#include <memory_map/mscp_exp_rmss_memory_map.h>
+#include <stdio.h> // for printf
 #include <stdlib.h>
 #include <utils.h>
+#include <variable_services.h> // for var_service_shared_mem_t, var_serv...
 
+/*-- Symbolic Constant Macros (defines) --*/
 #ifdef UNIT_TEST
     #define STATIC
 #else
     #define STATIC static
 #endif
 
-/*-- Symbolic Constant Macros (defines) --*/
+// Uncomment to add test features that should not be released
+// #define SDL_DEV_MODE (true)
+
+#ifdef SDL_DEV_MODE
+static var_service_shared_mem_t mem_ctx = {0};
+static var_service_req_ctx_t sdl_set_var_ctx = {0};
+static var_service_req_params_t req_params = {0};
+static uint16_t sdl_var_name[] = SDL_VAR_NAME;
+static const guid_t sdl_var_guid[] = {SDL_VAR_GUID};
+#endif
 
 /*-------------- Typedefs ----------------*/
 
@@ -60,6 +79,12 @@ STATIC FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** Argv);
 // BWL/Throttling Commands
 STATIC FPFW_CLI_STATUS ddr_manager_bwl_force(int Argc, const char** Argv);
 
+#ifdef SDL_DEV_MODE
+// Dont release this -- test only
+STATIC FPFW_CLI_STATUS write_sdl(int Argc, const char** Argv);
+void vs_sdl_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
+#endif
+
 /*-- Declarations (Statics and globals) --*/
 
 // TODO Silibs to provide APIs with arguments list
@@ -85,6 +110,9 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr", "rh_drfm", rh_drfm_sram_parity_error_injection, "Command Address Parity - Transient einj (TBD)", "Usage: rh_drfm <mc>"},
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     {NULL_LIST_ENTRY, "ddr", "bwl_force", ddr_manager_bwl_force, "Control BWL forced throttling state", "Usage: bwl_force <0|1>"},
+#ifdef SDL_DEV_MODE
+    {NULL_LIST_ENTRY, "ddr_ppr", "write_sdl", write_sdl, "(Over-)Writes an empty SDL variable to flash", "Usage: write_sdl >"},
+#endif
 };
 
 STATIC PLACED_CODE uint32_t get_default_error_injection_mc()
@@ -518,6 +546,75 @@ static bool is_mc_are_belong_to_die(uint32_t mc)
 
     return true;
 }
+
+#ifdef SDL_DEV_MODE
+void vs_sdl_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
+{
+    //! cb is raised when recieve is complete
+    //! check status & do work
+    FPFW_UNUSED(context);
+    FPFW_UNUSED(data_start_ptr);
+    FPFW_UNUSED(data_size);
+
+    const char* operation_str = (var_serv_ctx->operation_type == ASYNC_GET_VARIABLE) ? "Get" : "Set";
+    printf("SDL %s variable completion status = %x\n", operation_str, (int)var_serv_ctx->async_req_result);
+
+    // variable_service_unlock_get_var_ctx(var_serv_ctx);
+
+    FpFwCliPrint("SDL cb - read data = %d\n", (int)*data_start_ptr);
+    FpFwCliPrint("SDL cb - data size = %d\n", (int)data_size);
+
+    // Unlock the get variable context
+    variable_service_unlock_get_var_ctx(var_serv_ctx);
+}
+
+STATIC FPFW_CLI_STATUS write_sdl(int Argc, const char** Argv)
+{
+    FPFW_UNUSED(Argc);
+    FPFW_UNUSED(Argv);
+
+    KNG_DIE_ID die_id = idsw_get_die_id();
+    if (die_id == DIE_1)
+    {
+        return CLI_ERROR;
+    }
+
+    // var_service_shared_mem_t local_mem_ctx = {0};
+    mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_BASE;
+    mem_ctx.max_payload_size = SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_SIZE;
+
+    variable_service_initialize_ctx(&sdl_set_var_ctx, &mem_ctx);
+
+    MEMORY_DEFECT_LIST_HEADER empty_sdl_header = {0};
+    empty_sdl_header.Signature = (uint32_t)PSHED_PI_DEFECT_LIST_SIGNATURE;
+    empty_sdl_header.Version = MEMORY_DEFECT_VERSION_20;
+    empty_sdl_header.Length = sizeof(MEMORY_DEFECT_LIST_HEADER);
+    empty_sdl_header.DefectCount = 0;
+    empty_sdl_header.Changed = 0;
+    empty_sdl_header.Checksum = 0;
+
+    empty_sdl_header.Checksum =
+        (uint32_t)CalculateRemoteCheckSum16((uint32_t)&empty_sdl_header, sizeof(MEMORY_DEFECT_LIST_HEADER));
+
+    req_params.variable_name_ptr = (uint16_t*)sdl_var_name;
+    req_params.variable_name_size = sizeof(sdl_var_name);
+    memcpy(&req_params.vendor_namespace_guid, sdl_var_guid, sizeof(req_params.vendor_namespace_guid));
+    req_params.data = (uint8_t*)&empty_sdl_header;
+    req_params.data_size = sizeof(empty_sdl_header);
+    req_params.attributes.as_uint32 = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
+
+    FpFwCliPrint("Calling variable_service_async_set_variable to write empty SDL variable\n");
+    int status = variable_service_async_set_variable(&sdl_set_var_ctx, &req_params, vs_sdl_cb, NULL);
+    if (status != SILIBS_SUCCESS)
+    {
+        FpFwCliPrint("Failed to start async variable set: 0x%x\n", status);
+        return CLI_ERROR;
+    }
+    FpFwCliPrint("status = 0x%lx\n", status);
+
+    return CLI_SUCCESS;
+}
+#endif
 
 void cli_ddr_init(void)
 {

@@ -115,7 +115,6 @@ typedef enum
 } DIMM_VENDOR_IDX_t;
 
 /*-------- Function Prototypes -----------*/
-static uint16_t CalculateRemoteCheckSum16(uint32_t BufferAddr, uint32_t Length);
 const char* dimm_vendor_from_id(uint8_t id_byte);
 
 /*-- Declarations (Statics and globals) --*/

@@ -24,6 +24,7 @@ void __wrap_mmio_write16(volatile uint16_t* addr, uint16_t data);
 void __wrap_mmio_write32(void* addr, uint32_t data);
 bool __wrap_config_get_borgens_1gb_ddr_reserve_enable();
 bool __wrap_config_get_ddrmanager_bwl_polling_en();
+bool __wrap_config_get_ddrmanager_sdl_en();
 bool __wrap_config_get_ras_init_en();
 uint16_t __wrap_ddrss_get_ddrss_mask(void);
 uint16_t __real_ddrss_get_ddrss_mask(void);

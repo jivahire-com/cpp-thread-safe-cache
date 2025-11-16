@@ -1,0 +1,6 @@
+## Cold Start Tests
+./../../../tests/functional/test_suites/cold_start_tests/cold_start_test.robot
+
+## PLDM Tests
+./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
+./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot

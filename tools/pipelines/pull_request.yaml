@@ -126,13 +126,27 @@ extends:
           ArtifactName: SVP_Pythia_Tests_DualDie_2
           TestPlan: .\tests\functional\test_plan\svp_dual_die_2_test_plan.args
 
-    - stage: MSCP_SOC_Pythia_Dualdie_Tests
+    - stage: MSCP_SOC_Pythia_Dualdie_Tests_0
       dependsOn: [Build_Arm_EABI_AARCH_Debug]
       jobs:
       - template: tools/pipelines/templates/soc_pythia_test.yaml@self
         parameters:
-          ArtifactName: MSCP_SOC_Pythia_Dualdie_Tests
-          TestPlan: .\tests\functional\test_plan\soc_dual_die_test_plan.args
+          ArtifactName: MSCP_SOC_Pythia_Dualdie_Tests_0
+          TestPlan: .\tests\functional\test_plan\soc_dual_die_0_test_plan.args
+          TestVehicleCapability: 'SocDualDie'
+          Pool: '1pfw-kingsgate-soc'
+          tdk_repo_name: ${{ variables.tdk_repo_name }}
+          azure_subscription: ${{ variables.azure_subscription }}
+          nuget_service_connections: ${{ variables.nuget_service_connections }}
+          keyvault_name: ${{ variables.keyvault_name }}
+
+    - stage: MSCP_SOC_Pythia_Dualdie_Tests_1
+      dependsOn: [Build_Arm_EABI_AARCH_Debug]
+      jobs:
+      - template: tools/pipelines/templates/soc_pythia_test.yaml@self
+        parameters:
+          ArtifactName: MSCP_SOC_Pythia_Dualdie_Tests_1
+          TestPlan: .\tests\functional\test_plan\soc_dual_die_1_test_plan.args
           TestVehicleCapability: 'SocDualDie'
           Pool: '1pfw-kingsgate-soc'
           tdk_repo_name: ${{ variables.tdk_repo_name }}

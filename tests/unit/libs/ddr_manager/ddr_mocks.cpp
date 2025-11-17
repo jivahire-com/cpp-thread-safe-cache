@@ -310,6 +310,11 @@ uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum)
     return mock_type(uint32_t);
 }
 
+uint64_t __wrap_gtimer_prodfw_get_counter(void)
+{
+    return mock_type(uint64_t);
+}
+
 uint32_t __wrap_gtimer_prodfw_get_frequency(void)
 {
     return mock_type(uint32_t);

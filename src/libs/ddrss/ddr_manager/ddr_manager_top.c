@@ -18,6 +18,7 @@
 #include <ddrss.h>              // for ddr_manager_init
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
+#include <gtimer_prodfw.h>        // for gtimer_prodfw_get_counter
 #include <hsp_firmware_headers.h> // for mbox command codes
 #include <ift_fw.h>               // for ift_is_enabled
 #include <stdint.h>               // for uint32_t
@@ -392,6 +393,8 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_THREAD_CREATE_ERROR, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
+    // Record start timestamp
+    uint64_t start_timestamp = gtimer_prodfw_get_counter();
 
     ddr_manager_i3c_init();
 
@@ -421,7 +424,13 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     // Add crash dump pre-dump callback to check DDR RAS for UE
     crash_dump_register_pre_dump_callback(crash_dump_predump_cb, NULL, CRASH_DUMP_TYPE_FULL);
+
+    // Calculate DDR init duration in milliseconds
+    uint64_t duration_ms = ((gtimer_prodfw_get_counter() - start_timestamp) * 1000) / gtimer_prodfw_get_frequency();
+
     DDR_LOG_CRIT("DDR init, die_num: [%u] Done\n", die_id);
+    DDR_LOG_CRIT("DDR init duration: %llu ms\n", duration_ms);
+    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DDR_INIT_DURATION_MS, (int)duration_ms);
 }
 
 static void crash_dump_predump_cb(void* ctx)

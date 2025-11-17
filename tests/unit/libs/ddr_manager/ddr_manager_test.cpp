@@ -251,11 +251,6 @@ int32_t __wrap_ddr_i3c_interface_read_pmic_power(i3c_instance_t* instance,
     return SILIBS_SUCCESS;
 }
 
-uint64_t __wrap_gtimer_prodfw_get_counter()
-{
-    return mock_type(uint64_t);
-}
-
 bool __wrap_ift_is_enabled(void)
 {
     return mock_type(bool);
@@ -411,6 +406,11 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     crash_dump_init(&context);
 
+    // Mock gtimer for duration calculation
+    will_return(__wrap_gtimer_prodfw_get_counter, 1000000);     // start timestamp
+    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // end timestamp
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
+
     if (!set_error_handler_return())
     {
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
@@ -502,6 +502,11 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     crash_dump_init(&context);
 
+    // Mock gtimer for duration calculation
+    will_return(__wrap_gtimer_prodfw_get_counter, 1000000);     // start timestamp
+    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // end timestamp
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
+
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
     g_should_wrap_ddr_create_memory_map = false;
 }
@@ -583,6 +588,11 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
     // Crash dump pre-dump callback init
     crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
     crash_dump_init(&context);
+
+    // Mock gtimer for duration calculation
+    will_return(__wrap_gtimer_prodfw_get_counter, 1000000);     // start timestamp
+    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // end timestamp
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
 
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
     g_should_wrap_ddr_create_memory_map = false;

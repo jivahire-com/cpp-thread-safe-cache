@@ -99,7 +99,7 @@ static void mcp_cache_ecc_isr(const mcp_ecc_isr_params_t* params)
                                                    .record_id = params->err_source_id,
                                                    .param = {err_bank_register0, err_bank_register1, params->err_code, 0}};
 
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_fw = sec_fw_cper_section;
 
     hm_submit_cper(ACPI_ERROR_DOMAIN_MCP_PROC, params->err_severity, &cper_section, sizeof(cper_section));
@@ -126,7 +126,7 @@ static void mcp_ram_ecc_isr(const mcp_ecc_isr_params_t* params)
                                                        .record_id = params->err_source_id,
                                                        .param = {status, address, params->err_code, 0}};
 
-        acpi_cper_section_t cper_section;
+        acpi_cper_section_t cper_section = {0};
         cper_section.sec_fw = sec_fw_cper_section;
 
         hm_submit_cper(ACPI_ERROR_DOMAIN_MCP_PROC, params->err_severity, &cper_section, sizeof(cper_section));

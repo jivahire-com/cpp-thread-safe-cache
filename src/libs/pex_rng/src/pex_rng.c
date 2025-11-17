@@ -63,7 +63,7 @@ void pex_async_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context)
                                                        .record_id = RECORD_ID_PEX,
                                                        .param = {pex_base, KNG_PEX_RNG_ERR, 0}};
 
-        acpi_cper_section_t cper_section;
+        acpi_cper_section_t cper_section = {0};
         cper_section.sec_fw = sec_fw_cper_section;
 
         hm_submit_cper(ACPI_ERROR_DOMAIN_PEX, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(cper_section));

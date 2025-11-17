@@ -117,7 +117,7 @@ void hm_ap_wdt_isr()
                                                    .record_id = RECORD_ID_AP_WDT, // AP_WDT record ID
                                                    .param = {nvic_irq_num, 0, 0}};
 
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_fw = sec_fw_cper_section;
 
     // Submit CPER using AP_WDT error domain

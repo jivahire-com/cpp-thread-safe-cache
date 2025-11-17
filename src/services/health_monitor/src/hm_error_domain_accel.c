@@ -119,7 +119,7 @@ static void hm_accel_error_record_submit_listener_cb(void* context, size_t outpu
     memcpy((void*)&curr_cper_info->accel_err_payload, (void*)curr_cper_buffer_ptr, sizeof(acpi_err_sec_accel_vendor_t));
     curr_cper_info->err_severity = (uint32_t)(*((curr_cper_buffer_ptr) + sizeof(acpi_err_sec_accel_vendor_t)));
 
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_sdm = curr_cper_info->accel_err_payload;
 
     hm_submit_cper(curr_cper_info->error_domain_index, curr_cper_info->err_severity, &cper_section, sizeof(acpi_err_sec_accel_vendor_t));
@@ -325,7 +325,7 @@ bool hm_collect_accel_fatal_cper(uint32_t accel_id)
 
 void hm_send_accel_error_cper(uint32_t accel_id)
 {
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     hm_accel_cper_info_t* curr_cper_info = &accel_cper_info[accel_id];
     char* accel_name = (accel_id == ACCEL_ID_SDM) ? "SDM" : "CDED";
 

@@ -83,7 +83,7 @@ silibs_status_t vab_ras_node_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t bas
         /* We do not care about failures in the conversion since we want to log out anyway */
         ras_arm_record_to_cper(&record, &vab_cper.record, sizeof(vab_cper.record));
 
-        acpi_cper_section_t cper_section;
+        acpi_cper_section_t cper_section = {0};
         cper_section.sec_vab = vab_cper;
         hm_submit_cper(ACPI_ERROR_DOMAIN_VAB, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(cper_section));
         if (record.handler)
@@ -133,7 +133,7 @@ void hm_submit_smmu_cper(uint32_t err_status, SUBSYSTEM_WITH_VAB_ID vab_id)
 
     smmu_cper.param[0] = err_status;
 
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_fw = smmu_cper;
 
     hm_submit_cper(ACPI_ERROR_DOMAIN_SMMU, cper_section.sec_fw.severity, &cper_section, sizeof(cper_section));
@@ -206,7 +206,7 @@ static silibs_status_t vab_parity_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_
                                    .component = component,
                                    .parity_error_data = {.csr.raw_data = (data & 0x7), .fabric.raw_data = (data >> 4)},
                                    .record.flags.record_valid = false};
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_vab = vab_cper;
     hm_submit_cper(ACPI_ERROR_DOMAIN_VAB, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(cper_section));
 
@@ -251,7 +251,7 @@ silibs_status_t vab_integ_pcr_parity_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintp
                                    .parity_error_data = {.csr.raw_data = 0, .fabric.raw_data = 0},
                                    .record.flags.record_valid = false};
 
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_vab = vab_cper;
     hm_submit_cper(ACPI_ERROR_DOMAIN_VAB, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(cper_section));
 
@@ -272,7 +272,7 @@ silibs_status_t vab_integ_csr_parity_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintp
                                    // Note: Though these fields are RESERVED for the VAB_INTEG_PARITY_FAULT type, we set them to 0 for cleanliness
                                    .parity_error_data = {.csr.raw_data = 0, .fabric.raw_data = 0},
                                    .record.flags.record_valid = false};
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_vab = vab_cper;
     hm_submit_cper(ACPI_ERROR_DOMAIN_VAB, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(cper_section));
 

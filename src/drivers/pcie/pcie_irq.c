@@ -69,7 +69,7 @@ static bool rpss_record_callback(ras_error_record_t* record)
         rp_index = rp->id;
     }
 
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     acpi_err_sec_pcie_vendor_t* pcie_cper = &cper_section.sec_pcie_vendor;
     uint32_t severity;
     if (ras_agent_record_to_cper(record, pcie_cper, sizeof(acpi_err_sec_pcie_vendor_t), &severity))

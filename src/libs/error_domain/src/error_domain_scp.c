@@ -79,6 +79,7 @@ uint32_t get_irq_num_for_scp_ecc_isr(mscp_arsm_ram_type_t type)
 
     return irq_nums[type];
 }
+
 static void cache_ecc_isr(const mscp_ecc_isr_params_t* params)
 {
     // Save stored error info from DEBR0 and DEBR1
@@ -93,7 +94,7 @@ static void cache_ecc_isr(const mscp_ecc_isr_params_t* params)
                                                    .record_id = params->err_source_id,
                                                    .param = {err_bank_register0, err_bank_register1, params->err_code, 0}};
 
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_fw = sec_fw_cper_section;
 
     hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, params->err_severity, &cper_section, sizeof(cper_section));
@@ -120,7 +121,7 @@ static void ram_ecc_isr(const mscp_ecc_isr_params_t* params)
                                                        .record_id = params->err_source_id,
                                                        .param = {status, address, params->err_code, 0}};
 
-        acpi_cper_section_t cper_section;
+        acpi_cper_section_t cper_section = {0};
         cper_section.sec_fw = sec_fw_cper_section;
 
         hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, params->err_severity, &cper_section, sizeof(cper_section));
@@ -240,7 +241,7 @@ static void rmss_remote_scp_scfram_bootram_isr()
                                                    .record_id = RECORD_ID_SCP_REMOTE_RAM,
                                                    .param = {scf_status, ram0_status, ram1_status, KNG_HM_REMOTE_SCP_CE_OF}};
 
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_fw = sec_fw_cper_section;
 
     hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, sec_fw_cper_section.severity, &cper_section, sizeof(cper_section));

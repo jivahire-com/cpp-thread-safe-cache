@@ -417,6 +417,15 @@ static PLACED_CODE FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const cha
 
     acpi_cper_section_t general_cper_section = {0};
 
+    // Assign dummy pattern values to general_cper_section
+    uint8_t* section_ptr = (uint8_t*)&general_cper_section;
+    size_t section_size = sizeof(acpi_cper_section_t);
+
+    for (size_t i = 0; i < section_size; i++)
+    {
+        section_ptr[i] = (uint8_t)((i / 16) * 0x11);
+    }
+
     hm_submit_cper(err_domain_idx, err_severity, &general_cper_section, sizeof(acpi_cper_section_t));
 
     if (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL || err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)

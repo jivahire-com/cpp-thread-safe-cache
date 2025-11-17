@@ -61,6 +61,7 @@ target_link_libraries(${TARGET}
         kng.lib.hsp_firmware_headers
         fwlib.lib.pldm.protocol
         fwlib.service.pldm
+        ms::lib::cortex_m7::atomics
 )
 
 lint_target(${TARGET})

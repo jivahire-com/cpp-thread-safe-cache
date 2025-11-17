@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <bug_check.h>
+#include <cortex_m7_atomics.h>
 #include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <idhw.h>
@@ -384,6 +385,8 @@ void update_error_record_section(uint16_t error_domain_idx,
         // report AP for new CPER arrival
         if (error_domain_enabled)
         {
+            cortex_m7_atomic_call_data_synchronization_barrier();
+
             // Request ACK for the error to GHES
             volatile uint32_t* ack_base_addr =
                 (uint32_t*)MSCP_GHES_ADDR((uint32_t)current_error_domain_ghes_base->ack.address.address);

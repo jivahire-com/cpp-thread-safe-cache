@@ -223,7 +223,7 @@ void mesh_fault_isr(void* context)
     mesh_error_print(false);
 
     uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_mesh = mesh_cper;
     fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
     hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
@@ -253,7 +253,7 @@ void mesh_error_isr(void* context)
     mesh_error_print(false);
 
     uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_mesh = mesh_cper;
     fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
     hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
@@ -283,7 +283,7 @@ void mesh_ns_fault_isr(void* context)
     mesh_error_print(false);
 
     uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_mesh = mesh_cper;
     fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
     hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
@@ -313,7 +313,7 @@ void mesh_ns_error_isr(void* context)
     mesh_error_print(false);
 
     uint8_t acpi_severity = ACPI_ERROR_SEVERITY_INFORMATIONAL;
-    acpi_cper_section_t cper_section;
+    acpi_cper_section_t cper_section = {0};
     cper_section.sec_mesh = mesh_cper;
     fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
     hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
@@ -442,7 +442,7 @@ void d2d_error_isr(void* context)
                 print_mesh_cper(&mesh_cper);
                 mesh_error_print(false);
                 // Submit the CPER to the Health Monitor
-                acpi_cper_section_t cper_section;
+                acpi_cper_section_t cper_section = {0};
                 cper_section.sec_mesh = mesh_cper;
                 fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
                 hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));

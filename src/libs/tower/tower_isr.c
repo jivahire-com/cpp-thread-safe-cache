@@ -156,7 +156,7 @@ silibs_status_t tower_fmu_handler(TOWER_INSTANCE tower_id, DIE_INSTANCE die, uin
     {
         ras_print_record(&record);
 
-        acpi_cper_section_t cper_section;
+        acpi_cper_section_t cper_section = {0};
         acpi_err_sec_nitower_t* tower_cper = &cper_section.sec_nitower;
         uint32_t severity;
         if (ras_agent_record_to_cper(&record, tower_cper, sizeof(acpi_err_sec_nitower_t), &severity))

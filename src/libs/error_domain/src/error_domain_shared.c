@@ -276,7 +276,7 @@ void shared_sram_ecc_isr(void* ctx)
                                                        .record_id = err_record_id,
                                                        .param = {err_status, err_addr, err_code, 0}};
 
-        acpi_cper_section_t cper_section;
+        acpi_cper_section_t cper_section = {0};
         cper_section.sec_fw = sec_fw_cper_section;
 #if defined(SCP_RUNTIME_INIT)
         hm_submit_cper(ACPI_ERROR_DOMAIN_SCP_PROC, severity, &cper_section, sizeof(cper_section));

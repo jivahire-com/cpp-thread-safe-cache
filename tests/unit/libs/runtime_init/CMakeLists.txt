@@ -1,3 +1,7 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
 add_subdirectory(accel_atu_init)
 add_subdirectory(accel_intr_client_init)
 add_subdirectory(accel_intr_service_init)
@@ -45,6 +49,7 @@ add_subdirectory(system_info_init)
 add_subdirectory(systick_update_init)
 add_subdirectory(textio_init)
 add_subdirectory(tower_init)
+add_subdirectory(utc_sync_manager_init)
 add_subdirectory(vab_init)
 add_subdirectory(variable_services_init)
 add_subdirectory(sds_init)

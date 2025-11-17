@@ -1,3 +1,7 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
 enabled_on(arm-eabi-aarch)
 
 #
@@ -306,6 +310,7 @@ add_library(${TARGET}
         virt_irq_init.c
         watchdog_init.c
         systick_update_init.c
+        utc_sync_manager_init.c
 )
 
 target_link_libraries(
@@ -316,6 +321,7 @@ target_link_libraries(
         fwlib.driver.mboxIccTransport
         fwlib.lib.crashDump
         fwlib.lib.init
+        fwlib.lib.interface.utc_sync.common
         fwlib.lib.mboxPrimitives
         fwlib.lib.mctp
         fwlib.lib.mctp_uart_binding
@@ -334,6 +340,7 @@ target_link_libraries(
         fwlib.service.icc_dispatcher
         fwlib.service.mts.cli
         fwlib.service.pldm
+        fwlib.service.utc_sync.manager
         ms::build_data
         ms::driver::dma::mcp
         ms::driver::gpio
@@ -371,6 +378,7 @@ target_link_libraries(
         ms::lib::stdio_textio
         ms::lib::system_info
         ms::lib::threadx
+        ms::lib::utc_sync_manager
         ms::lib::variable_services
         ms::lib::systick_update
         ms::service::atu_service

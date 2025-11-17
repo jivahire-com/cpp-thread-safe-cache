@@ -313,6 +313,10 @@
                         "Pwr Tlm Data Proc Functional",
                         "kng.service.pwr_tlm_mcp.cmpnt.data_proc.functional.test"
                     ],
+                    [
+                        "UTC Sync Manager Init",
+                        "utc_sync_manager_init.test.exe"
+                    ]
                 ],
             },
         },

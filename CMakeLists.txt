@@ -1,3 +1,7 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
 cmake_minimum_required(VERSION 3.24)
 
 project(kingsgate.mscp VERSION $ENV{MajorVersion}.$ENV{MinorVersion}.$ENV{PatchVersion}.0 LANGUAGES C CXX ASM)

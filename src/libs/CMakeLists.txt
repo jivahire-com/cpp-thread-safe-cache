@@ -1,3 +1,6 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
 
 add_subdirectory(accelerator_ip)
 add_subdirectory(accel_intr)
@@ -56,3 +59,4 @@ add_subdirectory(error_domain)
 add_subdirectory(systick_update)
 add_subdirectory(bandgap)
 add_subdirectory(newlib_lock)
+add_subdirectory(utc_sync)

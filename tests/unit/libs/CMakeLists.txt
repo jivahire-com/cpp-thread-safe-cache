@@ -1,3 +1,6 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
 add_subdirectory(accelerator_ip)
 add_subdirectory(accel_intr)
 add_subdirectory(boot_loader)
@@ -34,3 +37,4 @@ add_subdirectory(bandgap)
 add_subdirectory(stdio)
 add_subdirectory(newlib_lock)
 add_subdirectory(power_telemetry_common)
+add_subdirectory(utc_sync)

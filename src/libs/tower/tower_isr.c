@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <tower_fmu_utility.h>
 #include <tower_isr.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -206,7 +207,7 @@ silibs_status_t tower_fmu_handler(TOWER_INSTANCE tower_id, DIE_INSTANCE die, uin
     return status;
 }
 
-acpi_einj_cmd_status_t tower_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t tower_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
     FPFW_DBGPRINT_INFO("|Tower| Info: Error Injection Callback Start\n");

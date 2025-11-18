@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define DDR_ASSERT    ASSERT_FAIL
@@ -75,7 +76,7 @@ void ddr_err_inj_ecc_ue(uint32_t mc)
     ddr_ecc_error_injection(0, mc, ddr_err_inj_get_default_address(), BIT0 | BIT4 | BIT5);
 }
 
-void ddr_ecc_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit)
+PLACED_CODE void ddr_ecc_error_injection(int32_t die_num, uint32_t mc, uint64_t p_addr, uint16_t Bit)
 {
     silibs_status_t sts;
     ddrss_media_addr_t m_addr;

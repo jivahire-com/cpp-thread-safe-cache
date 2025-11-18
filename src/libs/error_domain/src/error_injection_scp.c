@@ -28,6 +28,7 @@
 #include <fuses_top_regs.h>
 #include <scp_top_regs.h>
 #include <shared_sram_ecc_ras_registers_regs.h>
+#include <utils.h>
 
 // clang-format off
 #include <cmsis_m7.h>
@@ -112,7 +113,7 @@ static void trigger_arsm_fault(ras_einj_info_t* einj_payload, mscp_arsm_ram_type
     }
 }
 
-acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
 

@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <utils.h>
 #include <vab.h>
 #include <vab_atu_mappings.h>
 #include <vab_intu.h>
@@ -265,7 +266,7 @@ void enable_vab_isrs(uint16_t vab_instances_to_init)
     }
 }
 
-acpi_einj_cmd_status_t vab_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t vab_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
     FPFW_DBGPRINT_INFO("|VAB| Info: Error Injection Callback Start\n");

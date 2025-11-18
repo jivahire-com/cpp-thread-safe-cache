@@ -24,6 +24,7 @@
 #include <silibs_status.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -197,7 +198,7 @@ static RPSS_INSTANCE get_rpss_instance_from_sbdf(pcie_sbdf_t* sbdf)
     return rpss_idx;
 }
 
-acpi_einj_cmd_status_t pcie_error_injection_cb(ras_einj_info_t* einj_payload, void* error_domain_context)
+PLACED_CODE acpi_einj_cmd_status_t pcie_error_injection_cb(ras_einj_info_t* einj_payload, void* error_domain_context)
 {
     FPFW_UNUSED(error_domain_context);
 

@@ -14,6 +14,7 @@
 #include <bug_check.h>
 #include <cper.h>
 #include <error_domain_i.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -25,7 +26,7 @@
 
 /*-------------- Functions ---------------*/
 
-acpi_einj_cmd_status_t gic_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t gic_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
 

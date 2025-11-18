@@ -26,6 +26,7 @@
 #include <ap_top_regs.h>
 #include <ap_watchdog_timer_control_registers_regs.h>
 #include <scp_top_regs.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -37,7 +38,7 @@
 
 /*-------------- Functions ---------------*/
 
-acpi_einj_cmd_status_t hm_ap_wdt_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t hm_ap_wdt_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
 

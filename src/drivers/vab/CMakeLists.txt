@@ -27,6 +27,7 @@ target_link_libraries(
             ms::lib::register_headers
             ms::lib::scp_interrupts
             ms::lib::threadx
+            ms::lib::utils
             ms::service::health_monitor
             silibs::atu
             silibs::idhw

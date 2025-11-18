@@ -32,6 +32,7 @@
 #include <stdint.h>  // for uint8_t
 #include <stdio.h>   // for MESH_INFO
 #include <system_info.h>
+#include <utils.h>
 #include <vab_regs.h>
 /*------------- Defines -----------------*/
 
@@ -667,7 +668,7 @@ d2d_ras_error_inj_exit:
  * @param ctx
  * @return acpi_einj_cmd_status_t
  **/
-acpi_einj_cmd_status_t mesh_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t mesh_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
     MESH_INFO("Mesh Error Injection Callback Start\n");

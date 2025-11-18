@@ -17,6 +17,7 @@
 #include <error_domain_i.h>
 #include <error_domain_pex.h>
 #include <rng.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -28,7 +29,7 @@
 
 /*-------------- Functions ---------------*/
 
-acpi_einj_cmd_status_t pex_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t pex_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
 

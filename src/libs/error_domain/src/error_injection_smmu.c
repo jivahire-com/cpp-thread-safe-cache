@@ -22,6 +22,7 @@
 #include <mscp_error_domain.h>
 #include <nvic.h>
 #include <smmu_yardley_eac_vab_regs.h>
+#include <utils.h>
 #include <vab_tbu_ace_lite_regs.h>
 #include <vab_tbu_lti_x4_regs.h>
 #include <vab_tcu_x2_regs.h>
@@ -98,7 +99,7 @@ void unmap_ap_address(atu_map_entry_t* atu_entry)
  *  @return
  *      hm_cmd_status_t status of the injection request
  */
-acpi_einj_cmd_status_t hm_smmu_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t hm_smmu_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
     uint64_t err_ins_addr = 0;

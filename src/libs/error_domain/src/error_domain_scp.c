@@ -26,6 +26,7 @@
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
 #include <scp_top_regs.h>
 #include <shared_sram_ecc_ras_registers_regs.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define SCP_PROC_FRU "SCP_PROC"

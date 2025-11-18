@@ -15,11 +15,14 @@ extern "C" {
 #include <FpFwUtils.h>
 #include <atu_lib.h>
 #include <cmn_config.h>
+#include <cper.h>
+#include <ddr_manager_i3c.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
 #include <idsw_kng.h>
 #include <interrupts.h>
+#include <kng_error.h>
 #include <silibs_ap_top_regs.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -1373,5 +1376,122 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_pending, setup, teardown)
 
     result = prod_ddrss_interrupt_pending((void*)&ddrss_num[4]);
     assert_int_equal(result, true);
+}
+
+// Tests for ddrss_update_ppr_completion
+TEST_FUNCTION(test_ddrss_update_ppr_completion_success, setup, teardown)
+{
+    ddrs_spd_addr_info_t addr_info = {0};
+    addr_info.dimm = 0; // DIMM index
+    ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_PASSED, 0};
+    res_info.spd_ppr_status = E_PPR_STATUS_PASSED;
+    res_info.sel_ppr_status = (e_ppr_sel_status_t)E_DTR_STATUS_FAILURE_PPR_DONE_REPAIR_PASSED;
+    res_info.num_repair_rows = 3;
+
+    // Valid vendor ID path
+    will_return(__wrap_get_dimm_vendor_id, 0xAB);
+    // Read succeeds
+    will_return(__wrap_ddr_i3c_interface_read_spd_nvm_data, SILIBS_SUCCESS);
+
+    // Two writes (8 bytes each)
+    expect_any(__wrap_ddr_i3c_interface_write_spd_nvm_data, write_data);
+    will_return(__wrap_ddr_i3c_interface_write_spd_nvm_data, SILIBS_SUCCESS);
+    expect_any(__wrap_ddr_i3c_interface_write_spd_nvm_data, write_data);
+    will_return(__wrap_ddr_i3c_interface_write_spd_nvm_data, SILIBS_SUCCESS);
+
+    // SEL log
+    expect_value(__wrap_log_sel_event, sel_event->ddr_info.record_type, 0xCB); // SEL_RECORD_TYPE_DDR_PPR
+    expect_value(__wrap_log_sel_event, sel_event->ddr_info.oem_data_1, res_info.sel_ppr_status);
+    expect_value(__wrap_log_sel_event, sel_event->ddr_info.oem_data_2, res_info.num_repair_rows);
+    will_return(__wrap_log_sel_event, KNG_SUCCESS);
+
+    int32_t ret = ddrss_update_ppr_completion(&addr_info, &res_info);
+    assert_int_equal(ret, E_PPR_STATUS_UPDATE_OK);
+}
+
+TEST_FUNCTION(test_ddrss_update_ppr_completion_write_fail, setup, teardown)
+{
+    ddrs_spd_addr_info_t addr_info = {0};
+    addr_info.dimm = 0;
+    ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_FAILED, 0};
+    res_info.spd_ppr_status = E_PPR_STATUS_FAILED; // triggers failed occurrence increment path
+    res_info.sel_ppr_status = (e_ppr_sel_status_t)E_DTR_STATUS_FAILURE_PPR_FAIL_REPAIR_FAILED_HIGH_TEMPERATURE;
+    res_info.num_repair_rows = 7;
+
+    // Valid vendor ID path
+    will_return(__wrap_get_dimm_vendor_id, 0xAB);
+    will_return(__wrap_ddr_i3c_interface_read_spd_nvm_data, SILIBS_SUCCESS);
+
+    // First write success
+    expect_any(__wrap_ddr_i3c_interface_write_spd_nvm_data, write_data);
+    will_return(__wrap_ddr_i3c_interface_write_spd_nvm_data, SILIBS_SUCCESS);
+    // Second write fails
+    expect_any(__wrap_ddr_i3c_interface_write_spd_nvm_data, write_data);
+    will_return(__wrap_ddr_i3c_interface_write_spd_nvm_data, SILIBS_E_PARAM);
+
+    int32_t ret = ddrss_update_ppr_completion(&addr_info, &res_info);
+    assert_int_equal(ret, E_PPR_STATUS_UPDATE_SPD_WRITE_FAIL);
+}
+
+TEST_FUNCTION(test_ddrss_update_ppr_completion_sel_log_fail, setup, teardown)
+{
+    ddrs_spd_addr_info_t addr_info = {0};
+    addr_info.dimm = 0;
+    ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_PASSED, 0};
+    res_info.spd_ppr_status = E_PPR_STATUS_PASSED;
+    res_info.sel_ppr_status = (e_ppr_sel_status_t)E_DTR_STATUS_FAILURE_SPPR_DONE;
+    res_info.num_repair_rows = 2;
+
+    // Valid vendor ID path
+    will_return(__wrap_get_dimm_vendor_id, 0xAB);
+    will_return(__wrap_ddr_i3c_interface_read_spd_nvm_data, SILIBS_SUCCESS);
+
+    expect_any(__wrap_ddr_i3c_interface_write_spd_nvm_data, write_data);
+    will_return(__wrap_ddr_i3c_interface_write_spd_nvm_data, SILIBS_SUCCESS);
+    expect_any(__wrap_ddr_i3c_interface_write_spd_nvm_data, write_data);
+    will_return(__wrap_ddr_i3c_interface_write_spd_nvm_data, SILIBS_SUCCESS);
+
+    expect_value(__wrap_log_sel_event, sel_event->ddr_info.record_type, 0xCB);
+    expect_value(__wrap_log_sel_event, sel_event->ddr_info.oem_data_1, res_info.sel_ppr_status);
+    expect_value(__wrap_log_sel_event, sel_event->ddr_info.oem_data_2, res_info.num_repair_rows);
+    will_return(__wrap_log_sel_event, KNG_E_FAIL);
+
+    int32_t ret = ddrss_update_ppr_completion(&addr_info, &res_info);
+    assert_int_equal(ret, E_PPR_STATUS_UPDATE_SEL_LOG_FAIL);
+}
+
+TEST_FUNCTION(test_ddrss_update_ppr_completion_vendor_unknown, setup, teardown)
+{
+    ddrs_spd_addr_info_t addr_info = {0};
+    addr_info.dimm = 1; // arbitrary
+    ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_PASSED, 0};
+    res_info.spd_ppr_status = E_PPR_STATUS_PASSED;
+    res_info.sel_ppr_status = (e_ppr_sel_status_t)E_DTR_STATUS_FAILURE_SPPR_DONE;
+    res_info.num_repair_rows = 0; // not used
+
+    // Force vendor id unknown path
+    will_return(__wrap_get_dimm_vendor_id, DIMM_UNKNOWN);
+
+    // No I3C read/write or SEL expectations should occur; function should early return false
+    int32_t ret = ddrss_update_ppr_completion(&addr_info, &res_info);
+    assert_int_equal(ret, E_PPR_STATUS_UPDATE_INVALID_VENDOR_ID);
+}
+
+TEST_FUNCTION(test_ddrss_update_ppr_completion_spd_read_fail, setup, teardown)
+{
+    ddrs_spd_addr_info_t addr_info = {0};
+    addr_info.dimm = 0; // bit-field is 1 bit wide; use legal value
+    ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_PASSED, 0};
+    res_info.spd_ppr_status = E_PPR_STATUS_PASSED;
+    res_info.sel_ppr_status = (e_ppr_sel_status_t)E_DTR_STATUS_FAILURE_PPR_DONE_REPAIR_PASSED;
+    res_info.num_repair_rows = 5;
+
+    // Valid vendor id
+    will_return(__wrap_get_dimm_vendor_id, 0xAB); // some vendor
+    // Fail the SPD read
+    will_return(__wrap_ddr_i3c_interface_read_spd_nvm_data, SILIBS_E_PARAM);
+
+    int32_t ret = ddrss_update_ppr_completion(&addr_info, &res_info);
+    assert_int_equal(ret, E_PPR_STATUS_UPDATE_SPD_READ_FAIL);
 }
 }

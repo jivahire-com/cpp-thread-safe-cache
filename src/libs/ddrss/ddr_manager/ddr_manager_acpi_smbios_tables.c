@@ -90,6 +90,8 @@ static const uint8_t bdat_valid_bytes[1024/8] = {
 // Representation of the silk screen DIMM slot identifiers on the board
 static const char DIMM_SLOT_ID[12] = {'D', 'K', 'F', 'M', 'E', 'L', 'G', 'A', 'H', 'B', 'J', 'C'};
 
+static uint8_t dimm_vendor_id[DDRSS_SS_NUM_PER_DIE];
+
 /*------------- Typedefs -----------------*/
 typedef union _guid_bytes_t
 {
@@ -872,6 +874,9 @@ static uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
         //     Use a look-up from JEDEC JEP-106 for manufacturer ID byte assignment
         //     Only Samsung, Micron, and SK Hynix are translated here
         get_dimm_manufacturer_string(spd_buff, tempString, sizeof(tempString));
+        // Store the raw JEDEC manufacturer ID for use in SEL log
+        dimm_vendor_id[dimm_local_idx] = spd_buff[MODULE_MANUFACTURER_SPD_OFFSET - START_OF_VENDOR_INFO];
+
         for (size_t byte_idx = 0; byte_idx < strlen(tempString) + 1; byte_idx++)
         {
             MMIO_WRITE8(this_dies_smbios_next_addr++, *(tempString + byte_idx));
@@ -1059,6 +1064,7 @@ uint16_t CalculateRemoteCheckSum16(const uint32_t BufferAddr, uint32_t Length)
 
 const char* dimm_vendor_from_id(uint8_t id_byte)
 {
+    // the id_byte is the vendor ID to be used in SEL
     switch (id_byte)
     {
     case DIMM_SK_HYNIX:
@@ -1132,6 +1138,17 @@ size_t get_dimm_part_number_string(const uint8_t* spd_buff, char* buffer, size_t
 size_t get_dimm_phy_fw_version_string(char* buffer, size_t bufferSize)
 {
     return snprintf(buffer, bufferSize, "0x%08X", (unsigned int)ddrss_get_fw_version());
+}
+
+// The below logic is based on get_dimm_manufacturer_string() API
+uint8_t get_dimm_vendor_id(uint16_t dimm_local_idx)
+{
+    if (dimm_local_idx >= NUM_DIMM_PER_DIE)
+    {
+        return DIMM_UNKNOWN;
+    }
+
+    return dimm_vendor_id[dimm_local_idx];
 }
 
 bool dimm_is_present(uint32_t dimm_local_idx)

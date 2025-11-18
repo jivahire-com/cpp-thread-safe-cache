@@ -78,7 +78,73 @@
         {                                                  \
             0x93, 0x2d, 0x8b, 0x2f, 0xca, 0x10, 0xd9, 0x45 \
         }                                                  \
-    }/*-------------- Typedefs ----------------*/
+    }
+
+/*-------------- Typedefs ----------------*/
+
+typedef enum
+{
+    E_PPR_STATUS_UPDATE_OK = 0,
+    E_PPR_STATUS_UPDATE_INVALID_VENDOR_ID,
+    E_PPR_STATUS_UPDATE_SPD_READ_FAIL,
+    E_PPR_STATUS_UPDATE_SPD_WRITE_FAIL,
+    E_PPR_STATUS_UPDATE_SEL_LOG_FAIL,
+    E_PPR_STATUS_UPDATE_MAX = 0xFF,
+} e_ppr_status_update_t;
+
+typedef enum
+{
+    E_PPR_STATUS_NO_REPAIR = 0,
+    E_PPR_STATUS_PASSED = 1,
+    E_PPR_STATUS_FAILED = 2,
+    E_PPR_STATUS_FAILED_OVERFLOW = 3,
+    E_PPR_STATUS_FAILED_TEMPERATURE = 4,
+    E_PPR_STATUS_MAX = 0xFF,
+} e_ppr_spd_status_t;
+typedef enum
+{
+    E_DTR_STATUS_NO_REPAIR = 0,
+    E_DTR_STATUS_FAILURE_PPR_DONE_REPAIR_PASSED,
+    E_DTR_STATUS_FAILURE_FAIL_OVERFLOW_REPAIR_FAILED_PPR,
+    E_DTR_STATUS_FAILURE_TEMP_OVERFLOW,
+    E_DTR_STATUS_FAILURE_PPR_FAIL_REPAIR_FAILED_HIGH_TEMPERATURE ,
+    E_DTR_STATUS_FAILURE_SPPR_DONE,
+    E_DTR_STATUS_PENDING_PPR,
+    E_DTR_STATUS_INVALID = 0xFF,
+} e_ppr_sel_status_t;
+
+// Overall struct is 64-bits in size
+typedef struct {
+    uint64_t socket : 4;    //up to 16
+    uint64_t ch:4;          //up to 16
+    uint64_t dimm:1;        //primary/secondary 2dpc
+    uint64_t rank:2;        //front/back
+    uint64_t subrank:3;     //could be 8h 3ds
+    uint64_t subCh:1;       //left/right
+
+    uint64_t bankGroup:3;   //8 bank groups
+    uint64_t bank:2;        //4 banks
+    uint64_t row:17;        //0-16 (no 64Gb support)
+    uint64_t dq:7;          //allow 128 bits but only need 40 /subCh
+    uint64_t temp:8;        //-40 to 100 
+    uint64_t resrved:12;
+} ddrs_spd_addr_info_t;
+
+typedef struct
+{
+    uint8_t spd_version;
+    uint8_t ppr_count;
+    uint8_t status;
+    uint8_t ppr_fail_cnt;
+    uint8_t ppr_exec_cnt;
+} ddrss_spd_ppr_info_t;
+
+typedef struct
+{
+    e_ppr_sel_status_t sel_ppr_status;
+    e_ppr_spd_status_t spd_ppr_status;
+    uint8_t num_repair_rows;
+} ddrss_res_info_t;
 
 /* Internal parameters calculated from configurations */
 
@@ -118,3 +184,5 @@ int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us);
 // in ddrss_ras.c
 int ddrss_probe_ras_agent(uint32_t mc, uint32_t ras_agent_entity_id);
 ddrss_phy_training_dq_margin_t* ddrss_get_training_margin_base(void);
+
+int32_t ddrss_update_ppr_completion(ddrs_spd_addr_info_t *addr_info, ddrss_res_info_t *res_info);

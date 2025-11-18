@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include "ddr_atu_map.h"
 
+#include <DbgPrint.h>
 #include <FPFwInterrupts.h>
 #include <atu_api.h>
 #include <atu_lib.h>
@@ -20,10 +21,12 @@
 #include <ddr_err_inj.h>
 #include <ddr_i3c.h>
 #include <ddr_manager.h>
+#include <ddr_manager_i3c.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <fpfw_cfg_mgr.h>
-#include <fpfw_init.h>
+#include <fpfw_init.h> // for fpfw_init_get_handle
+#include <gtimer_prodfw.h>
 #include <idhw.h> // for idhw_is_single_die_boot_en
 #include <idsw_kng.h>
 #include <interrupts.h>
@@ -31,13 +34,21 @@
 #include <memory_map/ddrss_reserved_regions.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <pcr_ddrss.h>
+#include <sel.h>
+#include <silibs_ap_top_regs.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <system_info.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+// #define SPD_UPDATE_TESTING           // Defined to prevent SPD readback from being updated for testing
+// #define SPD_READ_DEBUGPRINT_ENABLE  // Define to enable debug prints for SPD readback
+#define SPD_VERSION                 (3U)
 #define TEXT_DDR_SPEED_GRADE_LOCKED "DDRSS - ddr_speed_grade locked to %s for %s\n"
+#define SEL_RECORD_TYPE_DDR_PPR     0xCB
+#define SPD_OFFSET_DDR5             (640U)
+#define SPD_STRUCT_SIZE_DDR5        SIZE_16_BYTES
 
 /*------------- Typedefs -----------------*/
 
@@ -651,4 +662,138 @@ int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
     }
 
     return sts;
+}
+
+int32_t ddrss_update_ppr_completion(ddrs_spd_addr_info_t* addr_info, ddrss_res_info_t* res_info)
+{
+    /**
+     * @brief
+     * This API updaets the SEL record and SPD status bytes after PPR completion.
+     * 1. The SEL record needs to be sent to MCP which will then update it in BMC.
+     * 2. The SEL service provides API to log the record which can be used here.
+     * 3. A lot of the SPD fields are read-write-modify, hence the bytes need to be read first.
+     * 4. To reduce I3C access to SPD region, plan is to read 16 bytes starting from byte 640 (DDR5).
+     * 5. Modify the required bytes in the read buffer and write back the entire buffer.
+     *
+     * SPD fields: (DDR4/DDR5)
+     *  Byte 384/640 = SPD Version
+
+        Byte 385/641 = PPR Count
+
+        Byte 386/642 = Status
+        0 no repair
+        1 ppr passed
+        2 ppr failed,
+        3 ppr failed overflow
+        4 ppr failed temperature
+
+        Byte 387/643 = number of failed PPR occurrences
+
+        Byte 388/644 = number of PPR executions
+
+        Byte 391:398/647:654 = address
+
+        address is a combination of the below fields and has a total size of 8-bytes
+
+        uint64_t socket : 4;    //up to 16
+        uint64_t ch:4;          //up to 16
+        uint64_t dimm:1;        //primary/secondary 2dpc
+        uint64_t rank:2;        //front/back
+        uint64_t subrank:3;     //could be 8h 3ds
+        uint64_t subCh:1;       //left/right
+
+        uint64_t bankGroup:3;   //8 bank groups
+        uint64_t bank:2;        //4 banks
+        uint64_t row:17;        //0-16 (no 64Gb support)
+        uint64_t dq:7;          //allow 128 bits but only need 40 /subCh
+        uint64_t temp:8;        //-40 to 100 
+        uint64_t resrved:12;
+     *
+     */
+
+    sel_event_record_t sel_event;
+    i3c_cmd_t s_i3c_cmd = {0};
+    int32_t status = E_PPR_STATUS_UPDATE_OK;
+    uint8_t spd_data[SIZE_16_BYTES];
+    uint16_t data_offset = SPD_OFFSET_DDR5;
+    uint16_t data_len = 0;
+    uint16_t vendor_id = get_dimm_vendor_id(addr_info->dimm);
+
+    // Vendor ID readback was not valid
+    if (vendor_id == DIMM_UNKNOWN)
+    {
+        // TODO ADO: 3144540 Add an event trace here?
+        status = E_PPR_STATUS_UPDATE_INVALID_VENDOR_ID;
+        goto exit;
+    }
+
+    status = ddr_i3c_interface_read_spd_nvm_data(&s_i3c_cmd, addr_info->dimm, spd_data, &data_len, &data_offset, SIZE_16_BYTES);
+    if (status != SILIBS_SUCCESS)
+    {
+        // TODO ADO: 3144540 Add an event trace here?
+        FPFW_DBGPRINT_ERROR("SPD_READ_FAIL: %d\r\n", status);
+        status = E_PPR_STATUS_UPDATE_SPD_READ_FAIL;
+        goto exit;
+    }
+
+#ifdef SPD_READ_DEBUGPRINT_ENABLE
+    FPFW_DBGPRINT_INFO("+++++++++++++++++++++++++++SPD_READ_BACK+++++++++++++++++++++++++++\r\n");
+    for (uint8_t i = 0; i < SIZE_16_BYTES; i++)
+    {
+        FPFW_DBGPRINT_INFO("SPD_DATA[%d]:0x%x\r\n", i, spd_data[i]);
+    }
+#endif
+
+// The ifdef is to allow for testing I3C write without modifying data hence avoiding any corruption as a precaution
+#ifndef SPD_UPDATE_TESTING
+    spd_data[0] = SPD_VERSION;
+    spd_data[1] += 1;                       // Increment PPR count
+    spd_data[2] = res_info->spd_ppr_status; // Update status
+    if (res_info->spd_ppr_status >= E_PPR_STATUS_FAILED)
+    {
+        spd_data[3] += 1; // Increment number of failed PPR occurrences
+    }
+    spd_data[4] += 1; // Increment number of PPR executions
+    memcpy(&spd_data[7], addr_info, sizeof(ddrs_spd_addr_info_t));
+#endif
+
+    // Write data has a max size of 8-bytes, hence executing a hardcoded 2-loop write of 8-bytes each
+    for (uint8_t i = 0; i < (SPD_STRUCT_SIZE_DDR5 / SIZE_8_BYTES); i++)
+    {
+        data_offset = SPD_OFFSET_DDR5 + (i * SIZE_8_BYTES);
+        status = ddr_i3c_interface_write_spd_nvm_data(&s_i3c_cmd,
+                                                      addr_info->dimm,
+                                                      &spd_data[(i * SIZE_8_BYTES)],
+                                                      &data_len,
+                                                      &data_offset,
+                                                      SIZE_8_BYTES);
+        if (status != SILIBS_SUCCESS)
+        {
+            // TODO ADO: 3144540 Add an event trace here?
+            FPFW_DBGPRINT_ERROR("SPD_WRITE_FAIL: %d\r\n", status);
+            status = E_PPR_STATUS_UPDATE_SPD_WRITE_FAIL;
+            goto exit;
+        }
+    }
+
+    sel_event.ddr_info.record_id = 0; // TODO ADO: 3144540
+    sel_event.ddr_info.record_type = SEL_RECORD_TYPE_DDR_PPR;
+    sel_event.default_info.timestamp = gtimer_prodfw_get_counter();
+    sel_event.ddr_info.manufacturer_id = 0x0; // TODO ADO: 3144540
+    sel_event.ddr_info.vendor_id = vendor_id;
+    sel_event.ddr_info.device_id = 0; // TODO ADO: 3144540
+    sel_event.ddr_info.oem_data_1 = res_info->sel_ppr_status;
+    sel_event.ddr_info.oem_data_2 = res_info->num_repair_rows;
+
+    // The SEL framework must queue the SEL log and transmit it to MCP once MCP boot is done
+    status = log_sel_event(&sel_event);
+    if (status != KNG_SUCCESS)
+    {
+        // TODO ADO: 3144540 Add an event trace here?
+        status = E_PPR_STATUS_UPDATE_SEL_LOG_FAIL;
+        FPFW_DBGPRINT_ERROR("SEL_LOG_FAIL: %d\r\n", status);
+    }
+
+exit:
+    return status;
 }

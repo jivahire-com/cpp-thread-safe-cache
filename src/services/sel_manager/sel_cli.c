@@ -45,17 +45,17 @@ static PLACED_CODE FPFW_CLI_STATUS sel_log_sel_event(int argc, const char** pp_a
         return CLI_ERROR;
     }
 
-    event_record.record_id = (uint16_t)strtoul(pp_argv[1], NULL, 0);     // 1-2: SEL Record ID
-    event_record.record_type = (uint8_t)strtoul(pp_argv[2], NULL, 0);    // 3: SEL Record Type
-    event_record.timestamp = 0;                                          // 4-7: Timestamp - ToDo: Fill UTC
-    event_record.generator_id = (uint16_t)strtoul(pp_argv[3], NULL, 0);  // 8-9: Generator ID
-    event_record.evm_rev = (uint8_t)strtoul(pp_argv[4], NULL, 0);        // 10: EVM Revision
-    event_record.sensor_type = (uint8_t)strtoul(pp_argv[5], NULL, 0);    // 11: Sensor Type
-    event_record.sensor_number = (uint8_t)strtoul(pp_argv[6], NULL, 0);  // 12: Sensor Number
-    event_record.event_dir_type = (uint8_t)strtoul(pp_argv[7], NULL, 0); // 13: Event Direction Type
-    event_record.event_data[0] = (uint8_t)strtoul(pp_argv[8], NULL, 0);  // 14: Event Data 1
-    event_record.event_data[1] = (uint8_t)strtoul(pp_argv[9], NULL, 0);  // 15: Event Data 2
-    event_record.event_data[2] = (uint8_t)strtoul(pp_argv[10], NULL, 0); // 16: Event Data 3
+    event_record.default_info.record_id = (uint16_t)strtoul(pp_argv[1], NULL, 0);  // 1-2: SEL Record ID
+    event_record.default_info.record_type = (uint8_t)strtoul(pp_argv[2], NULL, 0); // 3: SEL Record Type
+    event_record.default_info.timestamp = 0; // 4-7: Timestamp - ToDo: Fill UTC
+    event_record.default_info.generator_id = (uint16_t)strtoul(pp_argv[3], NULL, 0); // 8-9: Generator ID
+    event_record.default_info.evm_rev = (uint8_t)strtoul(pp_argv[4], NULL, 0);       // 10: EVM Revision
+    event_record.default_info.sensor_type = (uint8_t)strtoul(pp_argv[5], NULL, 0);   // 11: Sensor Type
+    event_record.default_info.sensor_number = (uint8_t)strtoul(pp_argv[6], NULL, 0); // 12: Sensor Number
+    event_record.default_info.event_dir_type = (uint8_t)strtoul(pp_argv[7], NULL, 0); // 13: Event Direction Type
+    event_record.default_info.event_data[0] = (uint8_t)strtoul(pp_argv[8], NULL, 0);  // 14: Event Data 1
+    event_record.default_info.event_data[1] = (uint8_t)strtoul(pp_argv[9], NULL, 0);  // 15: Event Data 2
+    event_record.default_info.event_data[2] = (uint8_t)strtoul(pp_argv[10], NULL, 0); // 16: Event Data 3
 
     log_sel_event(&event_record);
 

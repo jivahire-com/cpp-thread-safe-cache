@@ -111,4 +111,8 @@ mock_target(${TARGET}
     ddr_err_bcp_write_blocked_by_pas
     ddr_err_bcp_chi_unsupported_opcode
     ddr_err_inj_mrdp_parity_ue
+    ddr_i3c_interface_read_spd_nvm_data
+    ddr_i3c_interface_write_spd_nvm_data
+    log_sel_event
+    get_dimm_vendor_id
 )

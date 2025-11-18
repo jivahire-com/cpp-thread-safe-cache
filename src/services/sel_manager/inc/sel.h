@@ -35,7 +35,26 @@ typedef struct __attribute__((__packed__))
     uint8_t sensor_number;  // 12: Sensor Number
     uint8_t event_dir_type; // 13: Event Direction Type
     uint8_t event_data[3];  // 14-16: Event Data 1, 2, 3
+} sel_event_default_t;
+
+typedef struct __attribute__((__packed__))
+{
+    uint16_t record_id;                 // 1-2: SEL Record ID
+    uint8_t record_type;                // 3: SEL Record Type
+    uint32_t timestamp;                 // 4-7: Timestamp
+    uint32_t manufacturer_id : 24;      // 8-10: Manufacturer ID (3 bytes)
+    uint16_t vendor_id;                 // 11-12: Vendor ID
+    uint16_t device_id;                 // 13-14: Device ID
+    uint8_t oem_data_1;                 // 15: OEM Data 1
+    uint8_t oem_data_2;                 // 16: OEM Data 2
+} sel_event_ddr_info_t;
+
+typedef union
+{
+    sel_event_default_t default_info;
+    sel_event_ddr_info_t ddr_info;
 } sel_event_record_t;
+
 
 /*--------- Function Prototypes ----------*/
 /**

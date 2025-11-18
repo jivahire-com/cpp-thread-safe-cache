@@ -29,9 +29,12 @@ target_link_libraries(${TARGET}
     ms::lib::arm_intrinsic
     ms::lib::boot_status
     ms::lib::crash_dump
+    ms::lib::ddr_manager
+    ms::lib::gtimer
     ms::lib::scp_interrupts
     ms::lib::system_info
     ms::service::health_monitor
+    ms::service::sel_mgr
     silibs::platform
     kng_silibs_platform
     atu

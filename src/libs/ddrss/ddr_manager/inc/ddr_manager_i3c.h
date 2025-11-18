@@ -16,6 +16,8 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+#define DIMM_UNKNOWN (0xFF)
+
 /*-------------- Typedefs ----------------*/
 typedef enum {
     DDR_MANAGER_I3C_SUCCESS = 0,
@@ -97,6 +99,7 @@ typedef enum
 // TODO: Move below API to a Private API section
 int ddr_manager_temperature_sensor_read(int dimm_idx, int channel_idx, ddr_manager_i3c_temperature_t* ts_scaled_celsius);
 int ddr_manager_power_mw_read(int dimm_idx, uint16_t* power_mW);
+uint8_t get_dimm_vendor_id(uint16_t dimm_local_idx);
 /**
  *  API to initialize the DDR I3C interface
  */

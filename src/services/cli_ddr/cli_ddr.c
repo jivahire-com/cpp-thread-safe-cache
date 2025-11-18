@@ -38,7 +38,7 @@
 #endif
 
 // Uncomment to add test features that should not be released
-// #define SDL_DEV_MODE (true)
+#define SDL_DEV_MODE (true)
 
 #ifdef SDL_DEV_MODE
 static var_service_shared_mem_t mem_ctx = {0};
@@ -83,6 +83,7 @@ STATIC FPFW_CLI_STATUS ddr_manager_bwl_force(int Argc, const char** Argv);
 // Dont release this -- test only
 STATIC FPFW_CLI_STATUS write_sdl(int Argc, const char** Argv);
 void vs_sdl_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
+STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv);
 #endif
 
 /*-- Declarations (Statics and globals) --*/
@@ -112,7 +113,9 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr", "bwl_force", ddr_manager_bwl_force, "Control BWL forced throttling state", "Usage: bwl_force <0|1>"},
 #ifdef SDL_DEV_MODE
     {NULL_LIST_ENTRY, "ddr_ppr", "write_sdl", write_sdl, "(Over-)Writes an empty SDL variable to flash", "Usage: write_sdl >"},
+    {NULL_LIST_ENTRY, "ddr", "ppr", ddr_manager_ppr_status_update, "Invoke PPR status update", "Usage: ppr <dimm_num>"},
 #endif
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 };
 
 STATIC PLACED_CODE uint32_t get_default_error_injection_mc()
@@ -611,6 +614,35 @@ STATIC FPFW_CLI_STATUS write_sdl(int Argc, const char** Argv)
         return CLI_ERROR;
     }
     FpFwCliPrint("status = 0x%lx\n", status);
+
+    return CLI_SUCCESS;
+}
+
+STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv)
+{
+    ddrs_spd_addr_info_t addr_info;
+    ddrss_res_info_t res_info;
+
+    if (Argc != 2)
+    {
+        FpFwCliPrint("Invalid number of arguments.  Usage: prr <dimm_no>\n");
+        return CLI_ERROR;
+    }
+
+    char* endptr;
+    uint8_t dimm_num = (uint8_t)(strtoul(Argv[1], &endptr, 0));
+    if ((*endptr != '\0') || (dimm_num > 5))
+    {
+        FpFwCliPrint("Invalid argument - dimm_no must be between 0 and 5\n");
+        return CLI_ERROR;
+    }
+
+    addr_info.dimm = dimm_num;
+    res_info.sel_ppr_status = (e_ppr_sel_status_t)E_PPR_STATUS_NO_REPAIR;
+    res_info.spd_ppr_status = (e_ppr_spd_status_t)E_DTR_STATUS_NO_REPAIR;
+    res_info.num_repair_rows = 0x10;
+
+    ddrss_update_ppr_completion(&addr_info, &res_info);
 
     return CLI_SUCCESS;
 }

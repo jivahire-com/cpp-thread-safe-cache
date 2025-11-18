@@ -16,11 +16,13 @@
 #include <boot_status.h>
 #include <cmn800.h>
 #include <cmocka.h> // IWYU pragma: keep
+#include <ddr_i3c.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
 #include <ddrss_runtime_api.h>
 #include <nvic.h>
+#include <sel.h>
 #include <silibs_status.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -757,4 +759,73 @@ void __wrap_ddr_err_inj_mrdp_parity_ue(uint32_t mc)
     {
         __real_ddr_err_inj_mrdp_parity_ue(mc);
     }
+}
+
+// New mocks for ddrss_update_ppr_completion
+int __wrap_ddr_i3c_interface_read_spd_nvm_data(i3c_cmd_t* i3c_cmd,
+                                               uint8_t dimm,
+                                               uint8_t* read_data,
+                                               uint16_t* data_len,
+                                               uint16_t* data_offset,
+                                               uint16_t read_len)
+{
+    FPFW_UNUSED(i3c_cmd);
+    FPFW_UNUSED(dimm);
+    FPFW_UNUSED(read_len);
+    // Touch data_offset so compiler doesn't warn
+    if (data_offset != NULL)
+    {
+        uint16_t off_tmp = *data_offset;
+        FPFW_UNUSED(off_tmp);
+    }
+    // Simulate successful read; test will set expectations by will_return/mock_type sequence
+    // Provide deterministic buffer contents so test can validate modifications when needed.
+    for (uint8_t i = 0; i < SIZE_16_BYTES; i++)
+    {
+        read_data[i] = (uint8_t)i; // seed pattern
+    }
+    *data_len = SIZE_16_BYTES;
+    // data_offset passed in contains starting offset; leave unchanged
+    return mock_type(int);
+}
+
+int __wrap_ddr_i3c_interface_write_spd_nvm_data(i3c_cmd_t* i3c_cmd,
+                                                uint8_t dimm,
+                                                uint8_t* write_data,
+                                                uint16_t* data_len,
+                                                uint16_t* UNUSED_data_offset,
+                                                uint16_t write_len)
+{
+    FPFW_UNUSED(i3c_cmd);
+    FPFW_UNUSED(dimm);
+    // Touch data_offset to suppress unused warning even when FPFW_UNUSED treated as strict
+    if (UNUSED_data_offset != NULL)
+    {
+        uint16_t tmp_off = *UNUSED_data_offset;
+        FPFW_UNUSED(tmp_off);
+    }
+    FPFW_UNUSED(write_len);
+    // Capture what is being written for verification using check_expected_memory if desired.
+    check_expected_ptr(write_data);
+    // Assume successful write; length echoes back write size
+    *data_len = write_len;
+    return mock_type(int);
+}
+
+int __wrap_log_sel_event(sel_event_record_t* sel_event)
+{
+    assert_non_null(sel_event);
+    // Allow test validation of key fields
+    check_expected(sel_event->ddr_info.record_type);
+    check_expected(sel_event->ddr_info.oem_data_1);
+    check_expected(sel_event->ddr_info.oem_data_2);
+    return mock_type(int);
+}
+
+// Vendor ID helper mock
+uint8_t __wrap_get_dimm_vendor_id(uint16_t dimm_local_idx)
+{
+    // Provide path control for vendor id; tests will will_return desired value
+    FPFW_UNUSED(dimm_local_idx);
+    return mock_type(uint8_t);
 }

@@ -446,12 +446,12 @@ TEST_FUNCTION(test_sel_mgr_init_and_queue, nullptr, test_teardown)
     expect_function_call(__wrap_FpFwLockAcquire);
     expect_function_call(__wrap_FpFwLockRelease);
 
-    record[0].record_id = 1234;
+    record[0].default_info.record_id = 1234;
     bool ret = sel_push(&record[0]);
     assert_true(ret);
     ret = sel_pop(&out_record);
     assert_true(ret);
-    assert_int_equal(out_record.record_id, record[0].record_id);
+    assert_int_equal(out_record.default_info.record_id, record[0].default_info.record_id);
 
     // Head push into empty queue
     expect_function_call(__wrap_FpFwLockAcquire);
@@ -460,12 +460,12 @@ TEST_FUNCTION(test_sel_mgr_init_and_queue, nullptr, test_teardown)
     expect_function_call(__wrap_FpFwLockAcquire);
     expect_function_call(__wrap_FpFwLockRelease);
 
-    record[0].record_id = 5678;
+    record[0].default_info.record_id = 5678;
     ret = sel_push_head(&record[0]);
     assert_true(ret);
     ret = sel_pop(&out_record);
     assert_true(ret);
-    assert_int_equal(out_record.record_id, record[0].record_id);
+    assert_int_equal(out_record.default_info.record_id, record[0].default_info.record_id);
 
     // Multi push & pop test
     for (int i = 0; i < 5; i++) // Push
@@ -481,7 +481,7 @@ TEST_FUNCTION(test_sel_mgr_init_and_queue, nullptr, test_teardown)
 
     for (int i = 0; i < 5; i++)
     {
-        record[i].record_id = (uint16_t)(i + 1);
+        record[i].default_info.record_id = (uint16_t)(i + 1);
         ret = sel_push(&record[i]);
         assert_true(ret);
     }
@@ -489,7 +489,7 @@ TEST_FUNCTION(test_sel_mgr_init_and_queue, nullptr, test_teardown)
     {
         ret = sel_pop(&out_record);
         assert_true(ret);
-        assert_int_equal(out_record.record_id, record[i].record_id);
+        assert_int_equal(out_record.default_info.record_id, record[i].default_info.record_id);
     }
 
     // Overflow test
@@ -501,7 +501,7 @@ TEST_FUNCTION(test_sel_mgr_init_and_queue, nullptr, test_teardown)
 
     for (int i = 0; i < MAX_SEL_QUEUE_LENGTH + 1; i++)
     {
-        record[i].record_id = (uint16_t)(i + 1);
+        record[i].default_info.record_id = (uint16_t)(i + 1);
         ret = sel_push(&record[i]);
 
         if (i < MAX_SEL_QUEUE_LENGTH)
@@ -520,7 +520,7 @@ TEST_FUNCTION(test_sel_mgr_init_and_queue, nullptr, test_teardown)
 
     ret = sel_pop(&out_record);
     assert_true(ret);
-    assert_int_equal(out_record.record_id, record[1].record_id); // The oldest one is dropped.
+    assert_int_equal(out_record.default_info.record_id, record[1].default_info.record_id); // The oldest one is dropped.
 
     // Push head into only single slot left
     expect_function_call(__wrap_FpFwLockAcquire);
@@ -549,7 +549,7 @@ TEST_FUNCTION(test_sel_mgr_init_and_queue, nullptr, test_teardown)
         if (i < MAX_SEL_QUEUE_LENGTH)
         {
             assert_true(ret);
-            assert_int_equal(out_record.record_id, record[i + 1].record_id);
+            assert_int_equal(out_record.default_info.record_id, record[i + 1].default_info.record_id);
         }
         else
         {
@@ -575,7 +575,7 @@ TEST_FUNCTION(test_sel_mgr_log_sel_event_scp0, test_setup_scp, test_teardown)
     expect_function_call(__wrap_DfwkInterfaceSendAsync);
 
     sel_event_record_t record = {};
-    record.record_id = 0xABCD;
+    record.default_info.record_id = 0xABCD;
 
     log_sel_event(&record);
 
@@ -626,7 +626,7 @@ TEST_FUNCTION(test_sel_mgr_log_sel_event_scp1, test_setup_scp, test_teardown)
     expect_function_call(__wrap_DfwkInterfaceSendAsync);
 
     sel_event_record_t record = {};
-    record.record_id = 0xABCD;
+    record.default_info.record_id = 0xABCD;
 
     log_sel_event(&record);
 
@@ -676,7 +676,7 @@ TEST_FUNCTION(test_sel_mgr_log_sel_event_mcp0, test_setup_mcp0, test_teardown)
     expect_function_call(__wrap_DfwkInterfaceSendAsync);
 
     sel_event_record_t record = {};
-    record.record_id = 0xABCD;
+    record.default_info.record_id = 0xABCD;
 
     log_sel_event(&record);
 
@@ -730,7 +730,7 @@ TEST_FUNCTION(test_sel_mgr_log_sel_event_mcp1, test_setup_mcp1, test_teardown)
     expect_function_call(__wrap_DfwkInterfaceSendAsync);
 
     sel_event_record_t record = {};
-    record.record_id = 0xABCD;
+    record.default_info.record_id = 0xABCD;
 
     log_sel_event(&record);
 
@@ -769,7 +769,7 @@ TEST_FUNCTION(test_sel_mgr_icc_receive_event_scp0, test_setup_scp, test_teardown
     // Set up received packet
     icc_mhu_sel_ctx_t* icc_ctx = (icc_mhu_sel_ctx_t*)icc_recv_cb_ctx[(uint32_t)ICC_MSCP2MSCP_HANDLE];
     icc_ctx->payload.header.msg_header.command = ICC_SEL_TRANSFER_TO_BMC;
-    icc_ctx->payload.record.record_id = 0xABCD;
+    icc_ctx->payload.record.default_info.record_id = 0xABCD;
 
     will_return_always(__wrap_FpFwLockAcquire, 123);
     expect_value_count(__wrap_FpFwLockRelease, OldState, 123, -1);
@@ -825,7 +825,7 @@ TEST_FUNCTION(test_sel_mgr_icc_receive_event_mcp0, test_setup_mcp0, test_teardow
     // Set up received packet
     icc_mhu_sel_ctx_t* icc_ctx = (icc_mhu_sel_ctx_t*)icc_recv_cb_ctx[(uint32_t)ICC_DIE2DIE_HANDLE];
     icc_ctx->payload.header.msg_header.command = ICC_SEL_TRANSFER_TO_BMC;
-    icc_ctx->payload.record.record_id = 0xABCD;
+    icc_ctx->payload.record.default_info.record_id = 0xABCD;
 
     will_return_always(__wrap_FpFwLockAcquire, 123);
     expect_value_count(__wrap_FpFwLockRelease, OldState, 123, -1);

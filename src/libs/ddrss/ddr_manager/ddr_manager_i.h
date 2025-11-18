@@ -69,14 +69,14 @@ ddrss_memory_region_t* ddr_manager_get_outgoing_memory_map();
 
 /**
  * @brief Initializes DDR telemetry.
- * 
+ *
  * This function initializes the DDR telemetry module.
  */
 void ddr_init_telemetry(void);
 
 /**
  * @brief Reads the DIMMs temperature sensors.
- * 
+ *
  * This function polls the DIMMs to retrieve temperature sensor data.
  */
 void ddr_read_dimm_temperatures(void);
@@ -84,14 +84,14 @@ void ddr_read_dimm_temperatures(void);
 /**
  * @brief Checks the DIMM temperature thresholds.
  *
- * This function evaluates the current temperature data for each DIMM and 
+ * This function evaluates the current temperature data for each DIMM and
  * initiates appropriate corrective actions if any DIMM exceeds its thermal limits.
  */
 void check_dimm_temp_thresholds();
 
 /**
  * @brief Updates the telemetry snapshot for DIMM temps
- * 
+ *
  * @param dimm_idx The index of the DIMM.
  * @param ts_idx The index of the temperature sensor.
  * @param temp The temperature value to update.
@@ -100,7 +100,7 @@ void ddr_telemetry_update_dimm_temp(uint8_t dimm_idx, uint8_t ts_idx, ddr_manage
 
 /**
  * @brief Retrieves the temperature of a DIMM from the telemetry snapshot.
- * 
+ *
  * @param dimm_idx The index of the DIMM.
  * @param ts_idx The index of the temperature sensor.
  * @return The temperature of the DIMM.

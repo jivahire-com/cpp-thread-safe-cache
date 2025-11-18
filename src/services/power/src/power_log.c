@@ -50,7 +50,7 @@ int power_log_ddr_map_unmap(bool map, KNG_DIE_ID die_id)
 {
     int status = SILIBS_SUCCESS;
     atu_map_entry_t log_mem_atu_map_struct;
-    atu_entry_attr_t log_test_atu_root_attr = {ATU_BUS_ATTR_PRIV, ATU_BUS_ATTR_ROOT};
+    atu_entry_attr_t log_test_atu_root_attr = {ATU_BUS_ATTR_ROOT};
     uint64_t start_addr = 0;
     uint32_t size = 0;
 

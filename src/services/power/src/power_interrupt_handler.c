@@ -16,6 +16,7 @@
 #include <interrupts.h>
 #include <nvic.h>
 #include <pex_regs.h>
+#include <power_events.h>
 #include <power_runconfig.h>
 #include <power_runconfig_i.h>
 #include <scp_exp_csr_regs.h>
@@ -66,17 +67,16 @@ void core_pll_error_status(uint32_t core_idx, bool is_unlock)
     pll_error_sr.as_uint32 = MMIO_READ32((uint32_t*)&core_pll->pll_error_sr);
     pll_error_mask_cr.as_uint32 = MMIO_READ32((uint32_t*)&core_pll->pll_error_mask_cr);
 
-    POWER_LOG_INFO("core_idx = %u, core_pll_addr = 0x%lx, pll_error_sr = 0x%lx\n",
-                   (unsigned int)core_idx,
-                   (unsigned long)core_pll_base_addr,
-                   (unsigned long)&core_pll->pll_error_sr);
-    POWER_LOG_INFO("wait_pll_lock_timer_exp = 0x%x\n", pll_error_sr.wait_pll_lock_timer_exp);
-    POWER_LOG_INFO("wait_fll_lock_timer_exp = 0x%x\n", pll_error_sr.wait_fll_lock_timer_exp);
-    POWER_LOG_INFO("wait_fll_cal_timer_exp = 0x%x\n", pll_error_sr.wait_fll_cal_timer_exp);
-    POWER_LOG_INFO("wait_freq_change_timer_exp = 0x%x\n", pll_error_sr.wait_freq_change_timer_exp);
-    POWER_LOG_INFO("pllrawlockerror = 0x%x\n", pll_error_sr.pllrawlockerror);
-    POWER_LOG_INFO("fllrawlockerror = 0x%x\n", pll_error_sr.fllrawlockerror);
-    POWER_LOG_INFO("pll_error_mask_cr = 0x%x\n", (unsigned int)pll_error_mask_cr.as_uint32);
+    POWER_ET_LOG_TRACE_PLL_ERROR_STATUS(core_pll_base_addr,
+                                        pll_error_sr.as_uint32,
+                                        core_idx,
+                                        pll_error_sr.wait_pll_lock_timer_exp,
+                                        pll_error_sr.wait_fll_lock_timer_exp,
+                                        pll_error_sr.wait_fll_cal_timer_exp,
+                                        pll_error_sr.wait_freq_change_timer_exp,
+                                        pll_error_sr.pllrawlockerror,
+                                        pll_error_sr.fllrawlockerror,
+                                        (unsigned int)pll_error_mask_cr.as_uint32);
 }
 
 void pll_isr(void)
@@ -138,11 +138,6 @@ void pll_isr(void)
             core_idx++;
         }
     }
-
-    POWER_LOG_INFO("Status0 = 0x%x, Status1 = 0x%x, Status2 = 0x%x\n",
-                   (unsigned int)status[0],
-                   (unsigned int)status[1],
-                   (unsigned int)status[2]);
 }
 
 static void register_pll_isr(uint32_t irq_num, isr_callback_fn_sans_params_t isr)

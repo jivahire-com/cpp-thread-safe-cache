@@ -35,6 +35,12 @@
     EventWritePowerLogChangeState((loop_id), (state))
 #define POWER_ET_LOG_TRACE_SIGNAL_EVT(event) \
     EventWritePowerLogSignalEvt((event))
+#define POWER_ET_LOG_TRACE_PLL_ERROR_STATUS(core_pll_base_addr, pll_error_sr, core_idx, wait_pll_lock_timer_exp, wait_fll_lock_timer_exp, wait_fll_cal_timer_exp, wait_freq_change_timer_exp, pllrawlockerror, fllrawlockerror, pll_error_mask_cr) \
+    EventWritePowerLogPllErrorStatus((core_pll_base_addr), \
+                                    (pll_error_sr), (core_idx),(wait_pll_lock_timer_exp), \
+                                    (wait_fll_lock_timer_exp), (wait_fll_cal_timer_exp), \
+                                    (wait_freq_change_timer_exp), (pllrawlockerror), \
+                                    (fllrawlockerror), (pll_error_mask_cr))
 #ifdef COREBITS_FMT_DATA
     #define POWER_ET_AFFECTED_CORES(type, cores) EventWritePowerWarnParamAffectedCores(COREBITS_FMT_DATA(cores), (type))
 #endif
@@ -118,6 +124,7 @@ typedef enum {
     POWER_ET_ID_TYPE_LOG_TRACE_PARAM,
     POWER_ET_ID_TYPE_CHANGE_STATE,
     POWER_ET_ID_TYPE_SIGNAL_EVT,
+    POWER_ET_ID_TYPE_PLL_ERROR,
 
     POWER_ET_ID_TYPE_COUNT
 } E_POWER_ET_ID_TYPES_T;
@@ -222,5 +229,20 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID f
                      PowerLogSignalEvt,                             // Event Name
                      FPFW_ET_LEVEL_DEBUG,                       // Event Log Level, filterable by provider mask
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, event))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
+                     POWER_ET_ID_TYPE_PLL_ERROR,                // Event ID, for this provider
+                     PowerLogPllErrorStatus,                    // Event Name
+                     FPFW_ET_LEVEL_ERROR,                       // Event Log Level, filterable by provider mask
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, core_pll_base_addr),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pll_error_sr),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, core_idx),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, wait_pll_lock_timer_exp),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, wait_fll_lock_timer_exp),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, wait_fll_cal_timer_exp),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, wait_freq_change_timer_exp),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, pllrawlockerror),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, fllrawlockerror),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, pll_error_mask_cr))
 
 /*--------- Function Prototypes ----------*/

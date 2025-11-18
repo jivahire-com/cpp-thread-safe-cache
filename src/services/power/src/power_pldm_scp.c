@@ -175,9 +175,9 @@ pldm_performance_states_t handle_performance_state_request(icc_pwr_throt_state_r
     p_throt_request->soc_output.status = 0; //! unused ?
     p_throt_request->soc_output.throttled = power_control_loop_throttled();
     p_throt_request->soc_output.degraded = power_control_loop_degraded();
-    POWER_LOG_INFO("[PWR PLDM] Received Performance State Request: Throttled %d, Degraded %d\n",
-                   p_throt_request->soc_output.throttled,
-                   p_throt_request->soc_output.degraded);
+    POWER_LOG_TRACE("[PWR PLDM] Received Performance State Request: Throttled %d, Degraded %d\n",
+                    p_throt_request->soc_output.throttled,
+                    p_throt_request->soc_output.degraded);
 
     //! Print the contents of p_throt_request
     POWER_LOG_TRACE("[PWR PLDM] p_throt_request contents:\n");

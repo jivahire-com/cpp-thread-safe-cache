@@ -30,6 +30,7 @@ int __lock___sfp_recursive_mutex;
 int __lock___tz_mutex;
 
 static threadx_lock_t g_lock_pool[NEWLIB_LOCK_POOL_SIZE];
+extern TX_THREAD _tx_timer_thread;
 
 /*------------- Functions ----------------*/
 static threadx_lock_t* lock_alloc(void)
@@ -51,6 +52,16 @@ static inline threadx_lock_t* as_lock(_LOCK_T h)
     return (threadx_lock_t*)h;
 }
 
+int in_timer_context(void)
+{
+    return tx_thread_identify() == &_tx_timer_thread;
+}
+
+int in_isr_context(void)
+{
+    return (TX_THREAD_GET_SYSTEM_STATE() != 0);
+}
+
 void __retarget_lock_init(_LOCK_T* lock)
 {
     threadx_lock_t* threadx_lock = lock_alloc();
@@ -61,7 +72,7 @@ void __retarget_lock_init(_LOCK_T* lock)
         return;
     }
 
-    (void)tx_mutex_create(&threadx_lock->mutex, LOCK_NAME_NORMAL, TX_NO_INHERIT);
+    (void)tx_mutex_create(&threadx_lock->mutex, LOCK_NAME_NORMAL, TX_INHERIT);
     threadx_lock->owner = 0;
     threadx_lock->recursion = 0;
     *lock = (void*)threadx_lock;
@@ -83,7 +94,7 @@ void __retarget_lock_acquire(_LOCK_T lock)
 {
     threadx_lock_t* threadx_lock = as_lock(lock);
 
-    if (!threadx_lock || (TX_THREAD_GET_SYSTEM_STATE() != 0))
+    if (!threadx_lock || in_isr_context() || in_timer_context())
     {
         return;
     }
@@ -100,7 +111,7 @@ int __retarget_lock_try_acquire(_LOCK_T lock)
         return -1;
     }
 
-    if (TX_THREAD_GET_SYSTEM_STATE() != 0)
+    if (in_isr_context() || in_timer_context())
     {
         return 0;
     }
@@ -111,7 +122,7 @@ int __retarget_lock_try_acquire(_LOCK_T lock)
 void __retarget_lock_release(_LOCK_T lock)
 {
     threadx_lock_t* threadx_lock = as_lock(lock);
-    if (!threadx_lock || (TX_THREAD_GET_SYSTEM_STATE() != 0))
+    if (!threadx_lock || in_isr_context() || in_timer_context())
     {
         return;
     }
@@ -152,7 +163,7 @@ void __retarget_lock_acquire_recursive(_LOCK_T lock)
 {
     threadx_lock_t* threadx_lock = as_lock(lock);
 
-    if (!threadx_lock || (TX_THREAD_GET_SYSTEM_STATE() != 0))
+    if (!threadx_lock || in_isr_context() || in_timer_context())
     {
         return;
     }
@@ -178,7 +189,7 @@ int __retarget_lock_try_acquire_recursive(_LOCK_T lock)
         return -1;
     }
 
-    if (TX_THREAD_GET_SYSTEM_STATE() != 0)
+    if (in_isr_context() || in_timer_context())
     {
         return 0;
     }
@@ -205,7 +216,7 @@ void __retarget_lock_release_recursive(_LOCK_T lock)
 {
     threadx_lock_t* threadx_lock = as_lock(lock);
 
-    if (!threadx_lock || (TX_THREAD_GET_SYSTEM_STATE() != 0))
+    if (!threadx_lock || in_isr_context() || in_timer_context())
     {
         return;
     }

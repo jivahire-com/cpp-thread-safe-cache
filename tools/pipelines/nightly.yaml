@@ -78,7 +78,7 @@ stages:
 - stage: SVP_Pythia_Tests_DualDie_2
   dependsOn: [Build_Arm_EABI_AARCH_Debug]
   jobs:
-  - template: tools/pipelines/templates/svp_pythia_test.yaml@self
+  - template: templates/svp_pythia_test.yaml@self
     parameters:
       ArtifactName: SVP_Pythia_Tests_DualDie_2
       TestPlan: .\tests\functional\test_plan\svp_dual_die_2_test_plan.args

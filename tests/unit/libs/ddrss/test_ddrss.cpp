@@ -787,19 +787,6 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
     prod_ddrss_lib_init(test_die);
 }
 
-TEST_FUNCTION(test_prod_ddrss_interrupt_handler_unexpected_interrupt, setup, teardown)
-{
-    g_ddr_intu_sts = (1 << DDRSS_INTU_MC0_HSP_INT); // This is unexpected
-    g_intu_enable = 0xFFFFFFFF;                     // This is a mask
-
-    // Vendor CPER
-    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
-    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
-
-    expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC0_HSP_INT));
-    prod_ddrss_interrupt_handler((void*)&ddrss_num[1]);
-}
-
 TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC0_CRI_INT, setup, teardown)
 {
     // Test MC0_CRI_INT

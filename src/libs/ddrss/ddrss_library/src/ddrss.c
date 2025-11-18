@@ -354,7 +354,8 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 
     platform_id = idsw_get_platform_sdv();
 
-    if (system_info_is_warm_start())
+    bool is_warm_reset = system_info_is_warm_start() ? true : false;
+    if (is_warm_reset)
     {
         ddrss_cfgs.reset_reason = DDRSS_SYS_RESET_WARM;
         start_type = "warm start";
@@ -472,7 +473,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.dq_lane_margin_base = (uint64_t)(uintptr_t)&ddrss_phy_training_dq_margin;
 
     // Map both DDRSS fips test space through ATU
-    if (ddrss_cfgs.ext_knobs.fips_kat_en)
+    if (!is_warm_reset && ddrss_cfgs.ext_knobs.fips_kat_en)
     {
         if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP) ||
             ((platform_id == PLATFORM_RVP_EVT_SILICON) && (ddrss_cfgs.reset_reason == DDRSS_SYS_RESET_COLD)))
@@ -519,7 +520,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
     }
 
-    if (ddrss_cfgs.ext_knobs.fips_kat_en)
+    if (!is_warm_reset && ddrss_cfgs.ext_knobs.fips_kat_en)
     {
         // Unmap FIPS test space
         if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP) ||
@@ -582,6 +583,13 @@ int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
     // 'timeout_us' is reserved for future use to allow configurable timeouts.
     // Consider integrating it into the send/receive call when appropriate.
     (void)timeout_us;
+
+    if (system_info_is_warm_start())
+    {
+        // for warm reboot, skipping key loading.
+        printf("DDRSS key loading skipped for warm reset\n");
+        return SILIBS_SUCCESS;
+    }
 
     bool fips_kat_enabled = config_get_fips_kat_en();
     bool encryption_enabled = config_get_pas_encryption_en_mask() ? true : false;

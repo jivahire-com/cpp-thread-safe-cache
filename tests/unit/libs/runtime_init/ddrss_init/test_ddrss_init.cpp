@@ -202,6 +202,7 @@ TEST_FUNCTION(test_ddrss_load_crypto_key_fips_kat_enable_FIPS_KEYS_LOADED, nullp
 
     // Set up expectations : fips_kat_enable and pas_mask is non-zero on fpga : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
     msg = DDRSS_HSP_MSG_FIPS_KEYS_LOADED;
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, true);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
@@ -218,6 +219,7 @@ TEST_FUNCTION(test_ddrss_load_crypto_key_fips_kat_enable_FIPS_KEYS_LOADED, nullp
     // Set up expectations : fips_kat_enable and pas_mask is non-zero on silicon : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
     platform_id = PLATFORM_RVP_EVT_SILICON;
     msg = DDRSS_HSP_MSG_FIPS_KEYS_LOADED;
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, true);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
@@ -243,9 +245,11 @@ TEST_FUNCTION(test_ddrss_load_crypto_key_fips_kat_enable_PROD_KEYS_LOADED, nullp
 
     // Set up expectations : fips_kat_enable and pas_mask is non-zero on silicon : Run two times DDRSS_HSP_MSG_PROD_KEYS_LOADED
     msg = DDRSS_HSP_MSG_PROD_KEYS_LOADED;
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, true);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, true);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
@@ -271,6 +275,7 @@ TEST_FUNCTION(test_fips_kat_disable_ddrss_load_crypto_key, nullptr, nullptr)
 
     // Set up expectations : fips_kat_disable and pas_mask is zero on fpga : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
     msg = DDRSS_HSP_MSG_FIPS_KEYS_LOADED;
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
@@ -280,6 +285,7 @@ TEST_FUNCTION(test_fips_kat_disable_ddrss_load_crypto_key, nullptr, nullptr)
 
     // Set up expectations : fips_kat_disable and pas_mask is zero on fpga : DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE
     msg = DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE;
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
@@ -289,6 +295,7 @@ TEST_FUNCTION(test_fips_kat_disable_ddrss_load_crypto_key, nullptr, nullptr)
 
     // Set up expectations : fips_kat_disable and pas_mask is zero on fpga : DDRSS_HSP_MSG_PROD_KEYS_LOADED
     msg = DDRSS_HSP_MSG_PROD_KEYS_LOADED;
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
@@ -302,6 +309,7 @@ TEST_FUNCTION(test_fips_kat_disable_ddrss_load_crypto_key, nullptr, nullptr)
     // Set up expectations : fips_kat_disable and pas_mask is zero on silicon : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
     platform_id = PLATFORM_RVP_EVT_SILICON;
     msg = DDRSS_HSP_MSG_FIPS_KEYS_LOADED;
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
@@ -311,6 +319,7 @@ TEST_FUNCTION(test_fips_kat_disable_ddrss_load_crypto_key, nullptr, nullptr)
 
     // Set up expectations : fips_kat_disable and pas_mask is zero on silicon : DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE
     msg = DDRSS_HSP_MSG_FIPS_KEYS_TEST_COMPLETE;
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
@@ -320,12 +329,28 @@ TEST_FUNCTION(test_fips_kat_disable_ddrss_load_crypto_key, nullptr, nullptr)
 
     // Set up expectations : fips_kat_disable and pas_mask is zero on silicon : DDRSS_HSP_MSG_PROD_KEYS_LOADED
     msg = DDRSS_HSP_MSG_PROD_KEYS_LOADED;
+    will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
     will_return(__wrap_config_get_pas_encryption_en_mask, false);
     will_return(__wrap_idsw_get_platform_sdv, platform_id);
 
     expect_value(__wrap_fpfw_icc_base_send_recv_sync, buffer_size, (uint32_t)sizeof(kng_hsp_mailbox_msg));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    sts = ddrss_load_crypto_key(mc, msg, timeout_us);
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_fips_kat_ddrss_load_crypto_key_warm_reset, nullptr, nullptr)
+{
+    uint32_t mc = 0;
+    uint32_t msg = 0;
+    uint32_t timeout_us = 0;
+    int sts = SILIBS_E_SUPPORT;
+
+    // Set up expectations : fips_kat_disable and pas_mask is zero on fpga : DDRSS_HSP_MSG_FIPS_KEYS_LOADED
+    msg = DDRSS_HSP_MSG_FIPS_KEYS_LOADED;
+    will_return(__wrap_system_info_is_warm_start, true);
 
     sts = ddrss_load_crypto_key(mc, msg, timeout_us);
     assert_int_equal(sts, SILIBS_SUCCESS);

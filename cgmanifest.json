@@ -66,6 +66,16 @@
             "Component": {
                 "Type": "git",
                 "git": {
+                    "RepositoryUrl": "https://github.com/ARM-software/CMSIS_6",
+                    "CommitHash": "1da2c5d27af1f93b2a047ad3db5e563dd83f31ec"
+                }
+            },
+            "DevelopmentDependency": true
+        },
+        {
+            "Component": {
+                "Type": "git",
+                "git": {
                     "RepositoryUrl": "https://github.com/eclipse-threadx/threadx",
                     "CommitHash": "c4ad279b85fcf836c0b42d3e140fc32f0554e7b5"
                 }

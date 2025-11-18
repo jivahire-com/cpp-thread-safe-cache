@@ -2,5 +2,6 @@
 ./../../../tests/functional/test_suites/cold_start_tests/cold_start_test.robot
 
 ## PLDM Tests
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
+# Disabling while flaky. See ADO https://azurecsi.visualstudio.com/Dev/_workitems/edit/3124587/
+#./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
+#./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot

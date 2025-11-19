@@ -27,12 +27,14 @@ ${Failure}    ${False}
 
 *** Keywords *** 
 Setup Suite 
-    ${test_lib} =       Get Library Instance      pldm_base_lib
-    ${test_result} =    Call Method               ${test_lib}    setup
+    ${test_lib} =       Get Library Instance                 pldm_base_lib
+    ${test_result} =    Run Keyword And Return Status        Call Method    ${test_lib}    setup
+    Run Keyword If      not ${test_result}    Fail           Suite setup failed. Aborting all tests.
 
 Teardown Suite 
-    ${test_lib} =       Get Library Instance      pldm_base_lib
-    ${test_result} =    Call Method               ${test_lib}    teardown
+    ${test_lib} =       Get Library Instance                 pldm_base_lib
+    ${test_result} =    Run Keyword And Return Status        Call Method    ${test_lib}    teardown
+    Run Keyword If      not ${test_result}    Fail           Suite teardown failed.
 
 *** Test Cases ***
 Test Case - 1. Connect to the MCP (Management Controller Processor)

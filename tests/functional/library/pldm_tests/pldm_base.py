@@ -56,9 +56,14 @@ class pldm_base(EchoFallsBaseTest):
             host_name,
         )
         self.mctp_eids = []
+        self.creds = None
+        self.delay_15_minutes = 900
 
     def setup(self):
+        # Step 1: DUT setup
         self.dut.setup()
+
+        # Step 2: Perform reset based on DUT type
         if self.dut.get_dut_type() == DeviceType.BIGFPGA:
             self.log.warning(
                 "Device type is bigFPGA. Performing an additional OOB reset ..."
@@ -67,18 +72,31 @@ class pldm_base(EchoFallsBaseTest):
         elif self.dut.get_dut_type() == DeviceType.RVP:
             self.log.warning("Device type is RVP. Performing SoC Reset ...")
             cred_path = os.environ.get("SECURE_FILE_PATH")
-            creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
+            self.creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
             self.rscm_helper = RscmHelperLibrary(
                 rm_host=self.host_config.rack_scm.host,
                 bmc_host=self.dut.mb.node_0.dcscm.bmc.ip,
-                rm_user=creds["RM_USER"],
-                rm_password=creds["RM_PASSWORD"],
-                bmc_user=creds["BMC_USER"],
-                bmc_password=creds["BMC_PASSWORD"],
+                rm_user=self.creds["RM_USER"],
+                rm_password=self.creds["RM_PASSWORD"],
+                bmc_user=self.creds["BMC_USER"],
+                bmc_password=self.creds["BMC_PASSWORD"],
                 node=self.host_config.node_id,
             )
             self.rscm_helper.rscm_soc_reset()
 
+        # Step 3: Open MCP channel and wait for MCP boot complete
+        self.core_mcp_channel = (
+            self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
+        )
+        self.core_mcp_channel.open()
+        assert self.core_mcp_channel.is_open()
+
+        mcp_boot_status = self.__check_mcp_boot_complete(timeout=self.delay_15_minutes)
+        if mcp_boot_status is False:
+            self.log.info("MCP boot check failed during setup")
+            return False
+
+        # Step 4: Get BMC client object, wait for PLDM service to be active and stop pldmd service
         self.bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
         self.bmc_cli.open()
         assert self.bmc_cli.is_open()
@@ -86,26 +104,84 @@ class pldm_base(EchoFallsBaseTest):
         if self.dut.get_dut_type() == DeviceType.RVP:
             self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
 
-        self.core_mcp_channel = (
-            self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
-        )
-        self.core_mcp_channel.open()
-        assert self.core_mcp_channel.is_open()
+        pldm_status = self.__wait_for_pldm_active()
+        if pldm_status is False:
+            self.log.info("PLDM service is not active after waiting period")
+            return False
+        time.sleep(60)
 
+        result, _, _ = self.__bmc_execute_command(
+            command="systemctl stop xyz.openbmc_project.pldmd.service",
+            sudo_mode=True,
+        )
+        if result != 0:
+            self.log.info("Failed to stop pldmd service on BMC")
+            return False
+        time.sleep(5)
+
+        # Step 5: Load PLDM specification data and get MCP EID
         self.pldm_spec = pldm_spec_parser()
         self.pldm_spec.load_spec_data("pldm_spec_data.json")
-
-        delay_10_minutes = 10 * 60
-        self.core_mcp_channel.read_until(
-            key="StartupShutdownSvc::LocalCoreSyncStageRemoteEnd",
-            timeout_seconds=delay_10_minutes,
-        )
+        self.__pldm_get_mctp_id()
+        return True
 
     def teardown(self):
+        result, _, _ = self.__bmc_execute_command(
+            command="systemctl start xyz.openbmc_project.pldmd.service",
+            sudo_mode=True,
+        )
+        if result != 0:
+            self.log.info("Failed to start pldmd service on BMC")
+            return False
+
+        if not self.bmc_cli.is_open():
+            self.bmc_cli.open()
+            assert self.bmc_cli.is_open()
         if self.dut.get_dut_type() == DeviceType.RVP:
             self.rscm_helper.set_bmc_uart_mux_scp(self.bmc_cli)
+        self.bmc_cli.close()
         self.dut.teardown()
         time.sleep(10)
+        return True
+
+    def __wait_for_pldm_active(self):
+        _, stdout, _ = self.__bmc_execute_command(
+            command="systemctl is-active xyz.openbmc_project.pldmd.service",
+            sudo_mode=True,
+        )
+        if stdout.strip() == "active":
+            self.log.info("PLDM service is active.")
+            return True
+        self.log.info(f"Current PLDM state: {stdout.strip()}. Waiting...")
+        return False
+
+    def __check_mcp_boot_complete(self, timeout):
+        try:
+            self.core_mcp_channel.read_until(
+                key="StartupShutdownSvc::LocalCoreSyncStageRemoteEnd",
+                timeout_seconds=timeout,
+            )
+            self.log.info(
+                f"Boot message 'StartupShutdownSvc::LocalCoreSyncStageRemoteEnd' acknowledged from MCP"
+            )
+        except TimeoutError as e:
+            print(f"A TimeoutError occurred while reading a boot message from MCP: {e}")
+            return False
+        return True
+
+    def __check_mcp_health(self, waiting_time_seconds=20):
+        try:
+            self.core_mcp_channel.read_until(
+                key="MCP_MAIN::McpHeartBeat",
+                timeout_seconds=waiting_time_seconds,
+            )
+            self.log.info(
+                f"Health message 'MCP_MAIN::McpHeartBeat' acknowledged from MCP"
+            )
+        except TimeoutError as e:
+            print(f"A TimeoutError occurred while checking the health of the MCP: {e}")
+            return False
+        return True
 
     def __get_nth_last_byte_from_byte_string(self, data, n):
         # strip removes leading and trailing whitespaces
@@ -129,16 +205,73 @@ class pldm_base(EchoFallsBaseTest):
             return []
         return match.group(1)
 
-    def __bmc_execute_command(self, command):
+    def __bmc_execute_command(
+        self, command, timeout=180, sudo_mode=False, max_retries=10, retry_delay=10
+    ):
+        """
+        Execute a command on BMC with retry logic (fixed delay).
+
+        :param command: Command to execute
+        :param timeout: Timeout per attempt in seconds (default: 120s)
+        :param sudo_mode: Whether to run command with sudo
+        :param max_retries: Maximum retry attempts (default: 5)
+        :param retry_delay: Delay between retries in seconds (default: 10s)
+        """
         cmd_str = command
-        result, stdout, stderr = self.bmc_cli.execute_command(
-            command=cmd_str, command_args=[], timeout_secs=1
-        )
-        if result != 0:
-            self.log.info(f"~$ failed to execute command: {cmd_str}")
+        if not self.bmc_cli.is_open():
+            self.bmc_cli.open()
+            assert self.bmc_cli.is_open()
+
+        if sudo_mode:
+            try:
+                sudo_password = self.creds["BMC_PASSWORD"]
+                cmd_str = f"echo {sudo_password} | sudo -S su -c '{command}'"
+            except (TypeError, KeyError) as e:
+                self.log.info(f"Failed to get BMC sudo password: {e}")
+                self.bmc_cli.close()
+                raise AssertionError("Missing or invalid BMC password") from e
+
+        attempt = 0
+        while attempt < max_retries:
+            try:
+                self.log.info(
+                    f"Executing BMC command (Attempt {attempt+1}/{max_retries}): {cmd_str}"
+                )
+                result, stdout, stderr = self.bmc_cli.execute_command(
+                    command=cmd_str, command_args=[], timeout_secs=timeout
+                )
+
+                if result == 0:
+                    self.log.info("Command executed successfully.")
+                    break
+                else:
+                    self.log.warning(
+                        f"Command failed with result={result}. stderr={stderr}"
+                    )
+                    break
+
+            except TimeoutError as e:
+                attempt += 1
+                self.log.warning(
+                    f"TimeoutError on attempt {attempt}/{max_retries}: {e}"
+                )
+                if attempt == max_retries:
+                    self.log.error("Max retries reached. Command failed permanently.")
+                    self.bmc_cli.close()
+                    raise
+                self.log.info(f"Retrying after {retry_delay} seconds...")
+                time.sleep(retry_delay)
+
+        # MCP health check after command
+        mcp_health_status = self.__check_mcp_health()
+        if mcp_health_status is False:
+            self.log.info("MCP health check failed after executing command")
+            result = -1
+
+        self.bmc_cli.close()
         return result, stdout, stderr
 
-    def testcase1_pldm_get_mctp_id(self):
+    def __pldm_get_mctp_id(self):
         """
         Get MCP EID from the BMC
         """
@@ -165,6 +298,9 @@ class pldm_base(EchoFallsBaseTest):
             return False
         self.log.info(f"Found MCTP EIDs: {self.mctp_eids}")
         return True
+
+    def testcase1_pldm_get_mctp_id(self):
+        return len(self.mctp_eids) != 0
 
     def testcase2_get_pldm_tid(self):
         """

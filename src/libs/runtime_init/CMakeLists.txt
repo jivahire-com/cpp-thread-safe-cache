@@ -77,6 +77,7 @@ add_library(${TARGET}
         system_info_init.c
         textio_init.c
         tower_init.c
+        utc_sync_client_init.c
         vab_init.c
         variable_services_init.c
         variable_services_cli_init.c
@@ -105,6 +106,7 @@ target_link_libraries(
         fwlib.service.icc_dispatcher
         fwlib.service.iccBase
         fwlib.service.mts.cli
+        fwlib.service.utc_sync.client
         ms::build_data
         ms::driver::dma::scp
         ms::driver::gpio
@@ -306,11 +308,12 @@ add_library(${TARGET}
         system_info_init.c
         systick_update_init.c
         textio_init.c
+        utc_sync_client_init.c
+        utc_sync_manager_init.c
         variable_services_init.c
         virt_irq_init.c
         watchdog_init.c
         systick_update_init.c
-        utc_sync_manager_init.c
 )
 
 target_link_libraries(
@@ -340,6 +343,7 @@ target_link_libraries(
         fwlib.service.icc_dispatcher
         fwlib.service.mts.cli
         fwlib.service.pldm
+        fwlib.service.utc_sync.client
         fwlib.service.utc_sync.manager
         ms::build_data
         ms::driver::dma::mcp

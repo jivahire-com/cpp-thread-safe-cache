@@ -39,7 +39,7 @@
     <Knob name="dimm_sub_ch_swap" type="uint8_t" default="0" help="DIMM sub-channel swap mode. 0 - Disable, 1 - Enable, 2 - Auto (Enable for Die0, Disable for Die1)" />
     <Knob name="dram_init_mode" type="uint8_t" default="0" help="0 - Skip DIMM MR and CW init. 1 - Run DIMM CW init, 2 - RUN DIMM MR init, 3 - Run DIMM MR and CW init" />
     <Knob name="interleave_mc_cnt" type="uint8_t" default="0" help="Number of interleaved MCs. 0 means using all enabled MCs for interleaving. (0 ~ 24)" />
-    <Knob name="pas_encryption_en_mask" type="uint8_t" default="0" help="PAS encryption enabling mask, each bit indicates the encryption enabling state for each PAS (BIT0:S BIT1:NS  BIT2:ROOT  BIT3:REALM)." />
+    <Knob name="pas_encryption_en_mask" type="uint8_t" default="0xF" help="PAS encryption enabling mask, each bit indicates the encryption enabling state for each PAS (BIT0:S BIT1:NS  BIT2:ROOT  BIT3:REALM)." />
     <Knob name="address_map_mode" type="uint8_t" default="3" help="DDR media address map mode. (0 - 4)" />
     <Knob name="fips_kat_en" type="uint8_t" default="0" help="DDRSS FIPS KAT test enable. 0 - Disable, 1 - Enable" />
     <Knob name="perf_debug_profile" type="DDRSS_PERF_PROFILE" default="DDRSS_PERF_PROFILE_NONE" help="DDRSS performance profile select." />
@@ -86,7 +86,7 @@
     <Knob name="dram_active_power_down_en" type="uint8_t" default="0" help="Specify whether active power down is allowed. 0 - Always use precharged power down mode only, 1 - Allow both active power-down mode and precharge power-down mode are used" />
     <Knob name="dram_power_down_en" type="uint8_t" default="0" help="Enable automatic entry of DRAM power-down mode. 0 - Disable, 1 - Enable" />
     <Knob name="dram_power_down_entry_delay" type="uint8_t" default="16" help="Delay time for entering DRAM power down mode after entry conditions are satisfied. In multiple-of-8 memory controller cycles. (0 ~ 255)" />
-    <Knob name="keystore_scrub_en" type="uint8_t" default="0" help="Enable keystore patrol scrubbing. 0 - Disable, 1 - Enable" />
+    <Knob name="keystore_scrub_en" type="uint8_t" default="1" help="Enable keystore patrol scrubbing. 0 - Disable, 1 - Enable" />
     <Knob name="media_scrub_en" type="uint8_t" default="1" help="Enable media patrol scrubbing. 0 - Disable, 1 - Enable" />
     <Knob name="media_scrub_interval" type="uint8_t" default="0" help="Media patrol scrub interval in unit specified by media_scrub_interval_unit. 0: AUTO interval, 1 ~ 255: customized interval" />
     <Knob name="media_scrub_interval_unit" type="DDRSS_PATROL_SCRUB_INTERVAL_TIME_UNIT" default="DDRSS_PATROL_SCRUB_INTERVAL_UNIT_1US" help="Media patrol scrub interval unit" />

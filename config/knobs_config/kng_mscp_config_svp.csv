@@ -14,3 +14,4 @@ FE3ED49F-B173-41ED-9076-356661D46A42,die1_core_disable_value_95_64,0xFFFFFFFF,"o
 *,pcie_rpss5_cfg.pcie_bifurcation_mode,PCIE_BIFURCATION_4X4,"SVP supports 4x4 only"
 *,pcie_rpss6_cfg.pcie_bifurcation_mode,PCIE_BIFURCATION_4X4,"SVP supports 4x4 only"
 *,pcie_rpss7_cfg.pcie_bifurcation_mode,PCIE_BIFURCATION_4X4,"SVP supports 4x4 only"
+*,pas_encryption_en_mask,0,"disable DDR encryption on SVP"

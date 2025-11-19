@@ -8,6 +8,24 @@ add_library(${TARGET}
         src/ddr_err_inj.c
 )
 
+# Auto-generate ddrss_reserved_regions_version.h before building this target.
+set(GEN_VERSION_SCRIPT "${CMAKE_SOURCE_DIR}/tools/pwsh/generate_ddrss_reserved_regions_version.ps1")
+set(GENERATED_DDRSS_VERSION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/inc/ddrss_reserved_regions_version.h")
+
+add_custom_command(
+    OUTPUT ${GENERATED_DDRSS_VERSION_HEADER}
+    COMMAND pwsh -NoLogo -ExecutionPolicy Bypass -File ${GEN_VERSION_SCRIPT} -Force -VerboseOutput
+    DEPENDS ${GEN_VERSION_SCRIPT}
+    COMMENT "Generating ddrss_reserved_regions_version.h from silibs tag"
+    VERBATIM
+)
+
+add_custom_target(ddrss_reserved_regions_version
+    DEPENDS ${GENERATED_DDRSS_VERSION_HEADER}
+)
+
+add_dependencies(${TARGET} ddrss_reserved_regions_version)
+
 if (i386-pc-windows-msvc)
     set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
     message("Windows build detected - spoofing interrupt library.")

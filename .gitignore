@@ -49,6 +49,10 @@ tools/robot-secure-txt.yml
 /libs/build_data/build_data.h
 /libs/build_data/build_data.c
 
+# Generated DDRSS version header (auto-generated, ignore)
+src/libs/ddrss/ddrss_library/inc/ddrss_reserved_regions_version.h
+*/ddrss_reserved_regions_version.h
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -79,6 +79,10 @@ STATIC FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** Argv);
 // BWL/Throttling Commands
 STATIC FPFW_CLI_STATUS ddr_manager_bwl_force(int Argc, const char** Argv);
 
+// XTS AES Keystore Error Injection
+STATIC FPFW_CLI_STATUS xts_aes_keystore_ce_error_injection(int Argc, const char** Argv);
+STATIC FPFW_CLI_STATUS xts_aes_keystore_ue_error_injection(int Argc, const char** Argv);
+
 #ifdef SDL_DEV_MODE
 // Dont release this -- test only
 STATIC FPFW_CLI_STATUS write_sdl(int Argc, const char** Argv);
@@ -103,6 +107,9 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr_err_inj", "mrdp_parity_ue", mrdp_parity_ue_error_injection, "MRDP Parity UE error injection (1877181)", "Usage: mrdp_parity_ue <mc>"},
     {NULL_LIST_ENTRY, "ddr_err_inj", "ca_parity_persistent", ca_parity_persistent_error_injection, "Command Address Parity - Persistent einj (2031571)", "Usage: ca_parity_persistent <mc>"},
     {NULL_LIST_ENTRY, "ddr_err_inj", "ca_parity_transient", ca_parity_transient_error_injection, "Command Address Parity - Transient einj (2093837)", "Usage: ca_parity_transient <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "xts_aes_keystore_ce", xts_aes_keystore_ce_error_injection, "XTS AES Keystore CE error injection", "Usage: xts_aes_keystore_ce <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "xts_aes_keystore_ue", xts_aes_keystore_ue_error_injection, "XTS AES Keystore UE error injection", "Usage: xts_aes_keystore_ue <mc>"},
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     {NULL_LIST_ENTRY, "ddr", "read_dimm_pmic_power", read_dimm_pmic_power, "Read PMIC power", "Usage: read_dimm_pmic_power <dimm_idx>"},
     {NULL_LIST_ENTRY, "ddr", "read_dimm_temp_sensor", read_dimm_temp_sensor, "Read DIMM temperature sensor", "Usage: read_dimm_temp_sensor <dimm_idx> <channel_idx>"},
@@ -111,6 +118,7 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr", "rh_drfm", rh_drfm_sram_parity_error_injection, "Command Address Parity - Transient einj (TBD)", "Usage: rh_drfm <mc>"},
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     {NULL_LIST_ENTRY, "ddr", "bwl_force", ddr_manager_bwl_force, "Control BWL forced throttling state", "Usage: bwl_force <0|1>"},
+
 #ifdef SDL_DEV_MODE
     {NULL_LIST_ENTRY, "ddr_ppr", "write_sdl", write_sdl, "(Over-)Writes an empty SDL variable to flash", "Usage: write_sdl >"},
     {NULL_LIST_ENTRY, "ddr", "ppr", ddr_manager_ppr_status_update, "Invoke PPR status update", "Usage: ppr <dimm_num>"},
@@ -397,6 +405,28 @@ STATIC PLACED_CODE FPFW_CLI_STATUS rh_drfm_sram_parity_error_injection(int Argc,
         return CLI_ERROR;
     }
     ddr_err_rh_drfm_sram_parity(mc);
+    return CLI_SUCCESS;
+}
+
+STATIC PLACED_CODE FPFW_CLI_STATUS xts_aes_keystore_ce_error_injection(int Argc, const char** Argv)
+{
+    uint32_t mc = 0;
+    if (!check_params(Argc, Argv, &mc))
+    {
+        return CLI_ERROR;
+    }
+    ddr_err_xts_aes_keystore_ce(mc);
+    return CLI_SUCCESS;
+}
+
+STATIC PLACED_CODE FPFW_CLI_STATUS xts_aes_keystore_ue_error_injection(int Argc, const char** Argv)
+{
+    uint32_t mc = 0;
+    if (!check_params(Argc, Argv, &mc))
+    {
+        return CLI_ERROR;
+    }
+    ddr_err_xts_aes_keystore_ue(mc);
     return CLI_SUCCESS;
 }
 

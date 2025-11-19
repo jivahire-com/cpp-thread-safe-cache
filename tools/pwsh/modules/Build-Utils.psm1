@@ -356,7 +356,7 @@ Function Get-PipPackages($PackageFile)
         Write-Host  $Message -NoNewLine -ForegroundColor Cyan
 
         # See https://github.com/pypa/pip/issues/8559 for json2html dependency
-        $Command = "-m pip install $($Package.name)==$($Package.version) -i $($Package.source) --no-warn-script-location --disable-pip-version-check --use-pep517"
+        $Command = "-m pip install $($Package.name)==$($Package.version) -i $($Package.source) --no-warn-script-location --disable-pip-version-check --use-pep517 --no-compile"
 
         $Output = Invoke-Executable -exe "${env:REPO_APP_PATH_python.win64}/tools/python.exe" -exeArgs $Command
 

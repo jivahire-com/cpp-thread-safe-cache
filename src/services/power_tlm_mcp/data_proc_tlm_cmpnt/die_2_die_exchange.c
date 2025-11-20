@@ -39,6 +39,7 @@ typedef struct
     sliding_window_data_t oob_window_max_vr_temp_dC;   // sliding window for max voltage rail temperature
     sliding_window_data_t oob_window_avg_pstate;       // sliding window for average pstate
     dimm_data_t oob_dimm_info[NUMBER_OF_DIMMS];        // dimm channel information
+    pkg_mon_data_t ib_pkg_mon_data;                    // 24h package monitor data (PC3/PC4 durations)
 
 } secondary_mcp_to_die0_mcp_t;
 
@@ -273,6 +274,28 @@ void die_2_die_exch_ib_read_pwr_pkg_mpam_data(uint8_t die_id, mpam_data_t (*mpam
         mpam_data_write_occurred_since_last_read = false;
         mpam_data_read_occurred_since_last_write = true;
 
+        d2d_exch_release_sem();
+    }
+}
+
+void die_2_die_exch_ib_write_pwr_pkg_mon_data(p_pkg_mon_data_t pkg_mon_data)
+{
+    if (die_id_is_valid(this_die_id) && pkg_mon_data != NULL)
+    {
+        d2d_exch_wait_for_sem();
+        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].ib_pkg_mon_data = *pkg_mon_data;
+        d2d_exch_release_sem();
+    }
+}
+
+void die_2_die_exch_ib_read_pwr_pkg_mon_data(uint8_t die_id, p_pkg_mon_data_t pkg_mon_data)
+{
+    if (die_id_is_valid(die_id) && pkg_mon_data != NULL)
+    {
+        d2d_exch_wait_for_sem();
+        *pkg_mon_data = s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_pkg_mon_data;
+        // Clear the data after reading for next collection window
+        memset(&s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_pkg_mon_data, 0, sizeof(pkg_mon_data_t));
         d2d_exch_release_sem();
     }
 }

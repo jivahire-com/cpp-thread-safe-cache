@@ -819,3 +819,90 @@ TEST_FUNCTION(test_die_2_die_exch_ib_read_pwr_pkg_mpam_data_negative, test_setup
         assert_int_equal(verify_data_array[i].throttling, 1);
     }
 }
+
+// Test for die_2_die_exch_ib_write_pwr_pkg_mon_data and read - positive cases
+TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_mon_data, test_setup, test_teardown)
+{
+
+    // Test 1: Write C3 state from die 1 and read it back
+    die_2_die_exch_init(1);
+    pkg_mon_data_t write_data;
+    write_data.pkg_cstate = ALL_CORES_IN_C3_state;
+    die_2_die_exch_ib_write_pwr_pkg_mon_data(&write_data);
+
+    pkg_mon_data_t read_data;
+    die_2_die_exch_ib_read_pwr_pkg_mon_data(1, &read_data);
+
+    // Verify: Should read C3 state
+    assert_int_equal(read_data.pkg_cstate, ALL_CORES_IN_C3_state);
+
+    // Verify: Data cleared after read
+    pkg_mon_data_t read_data2;
+    die_2_die_exch_ib_read_pwr_pkg_mon_data(1, &read_data2);
+    assert_int_equal(read_data2.pkg_cstate, 0); // Should be cleared
+
+    // Test 2: Write C4 state and verify overwrite
+    die_2_die_exch_init(1);
+    pkg_mon_data_t write_data2;
+    write_data2.pkg_cstate = ALL_CORES_IN_C4_state;
+    die_2_die_exch_ib_write_pwr_pkg_mon_data(&write_data2);
+
+    pkg_mon_data_t read_data3;
+    die_2_die_exch_ib_read_pwr_pkg_mon_data(1, &read_data3);
+    assert_int_equal(read_data3.pkg_cstate, ALL_CORES_IN_C4_state);
+
+    // Test 3: Write mixed state
+    die_2_die_exch_init(1);
+    pkg_mon_data_t write_data3;
+    write_data3.pkg_cstate = ALL_CORES_MIXED_C3_C4_state;
+    die_2_die_exch_ib_write_pwr_pkg_mon_data(&write_data3);
+
+    pkg_mon_data_t read_data4;
+    die_2_die_exch_ib_read_pwr_pkg_mon_data(1, &read_data4);
+    assert_int_equal(read_data4.pkg_cstate, ALL_CORES_MIXED_C3_C4_state);
+}
+
+// Test for die_2_die_exch_ib_write_pwr_pkg_mon_data and read - negative cases
+TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_mon_data_negative, test_setup, test_teardown)
+{
+    // Test 1: Write from die 1, then try to read from invalid die 0
+    die_2_die_exch_init(1);
+    pkg_mon_data_t write_data;
+    write_data.pkg_cstate = ALL_CORES_MIXED_C3_C4_state;
+    die_2_die_exch_ib_write_pwr_pkg_mon_data(&write_data);
+
+    pkg_mon_data_t read_data;
+    read_data.pkg_cstate = (pkg_cstate_t)0xFF;              // Initialize with non-zero
+    die_2_die_exch_ib_read_pwr_pkg_mon_data(0, &read_data); // die 0 is invalid
+
+    // Verify: Data should be unchanged due to invalid die ID
+    assert_int_equal(read_data.pkg_cstate, 0xFF);
+
+    // Test 2: NULL pointer for read
+    die_2_die_exch_ib_read_pwr_pkg_mon_data(1, nullptr); // Should not crash
+
+    // Test 3: Write from invalid die 0 (primary die shouldn't write)
+    die_2_die_exch_init(0);
+    pkg_mon_data_t write_data2;
+    write_data2.pkg_cstate = ALL_CORES_IN_C4_state;
+    die_2_die_exch_ib_write_pwr_pkg_mon_data(&write_data2); // Should not write
+
+    // Test 4: Read from out-of-range die 2
+    die_2_die_exch_init(0);
+    pkg_mon_data_t read_data2;
+    read_data2.pkg_cstate = (pkg_cstate_t)0xFF;
+    die_2_die_exch_ib_read_pwr_pkg_mon_data(2, &read_data2); // die 2 doesn't exist
+
+    // Verify: Data should be unchanged
+    assert_int_equal(read_data2.pkg_cstate, 0xFF);
+
+    // Test 5: Write from out-of-range die 2
+    die_2_die_exch_init(2);
+    pkg_mon_data_t write_data3;
+    write_data3.pkg_cstate = ALL_CORES_IN_C4_state;
+    die_2_die_exch_ib_write_pwr_pkg_mon_data(&write_data3); // Should not write
+
+    // Test 6: NULL pointer for write
+    die_2_die_exch_init(1);
+    die_2_die_exch_ib_write_pwr_pkg_mon_data(nullptr); // Should not crash
+}

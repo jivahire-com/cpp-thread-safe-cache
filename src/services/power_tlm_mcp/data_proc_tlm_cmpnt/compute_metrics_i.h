@@ -109,6 +109,12 @@ typedef struct
 
 typedef struct
 {
+    uint32_t pc3_residency_mS;  // Accumulated PC3 residency in milliseconds
+    uint32_t pc4_residency_mS;  // Accumulated PC4 residency in milliseconds
+} computed_per_soc_24_hrs_metrics_t;
+
+typedef struct
+{
     die_mesh_pwr_metrics_t die_mesh_pwr;
 } computed_per_die_metrics_t;
 
@@ -161,6 +167,7 @@ typedef struct {
 typedef struct
 {
     computed_per_core_24_hrs_metrics_t cores[NUMBER_OF_CORES_PER_DIE];
+    computed_per_soc_24_hrs_metrics_t soc;
 } computed_metrics_24_hrs_t;
 
 typedef struct
@@ -527,3 +534,12 @@ void comp_metrics_for_single_d2dss_interface_all_links(uint8_t  d2dss_id,
                                                     uint64_t (*rx_res_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
                                                     uint64_t (*bw_tx_flit_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
                                                     uint64_t (*bw_rx_flit_counter_diff)[NUMBER_OF_D2D_LINKS_STATE]);
+                                                    
+/**
+ * @brief Update SoC-level PC3/PC4 residency metrics based on core C-state transitions.
+ *
+ * @param[in] current_cstate - The current C-state of the core
+ * @param[in] duration_mS - The duration in milliseconds spent in the current C-state
+ */
+void comp_metrics_for_soc_package_cstate(uint8_t pkg_cstate, uint32_t duration_mS);
+

@@ -155,6 +155,11 @@ void data_proc_tlm_cmpnt_process_input_data(void)
     // called here because need all voltage and temperatures to be processed from the sensor fifo's first
     data_smpl_update_core_histogram();
 
+    // get die 1 package cstate before residency update
+    data_smpl_get_secondary_die_package_cstate();
+    // called here to make sure all the cores(package Cstate ) on both dies are in CSTATE3 or CSTATE4 before
+    data_smpl_update_soc_package_cstate();
+
     if (update_max_die_temp)
     {
         // update the max die temp
@@ -305,6 +310,7 @@ void data_smpl_process_pstate_sensor_fifo(void)
     sensor_ram_poll_status_t status;
     pstate_telem_t* pstate_entry = (pstate_telem_t*)fifo_entry;
     core_state_entry_data_t entry_data;
+    bool cstate_changed = false;
     do
     {
         status = sensor_fifo_svc_poll_core_pstate(pstate_entry);
@@ -349,6 +355,10 @@ void data_smpl_process_pstate_sensor_fifo(void)
                                                            entry_data.cstate_time_diff_uS,
                                                            core_rt[core_id].latest_cstate,
                                                            entry_data.cstate_change);
+                if (entry_data.cstate_change)
+                {
+                    cstate_changed = true;
+                }
             }
 
             // update throttling compute.
@@ -379,6 +389,11 @@ void data_smpl_process_pstate_sensor_fifo(void)
             }
         }
     } while (status.more_entries == true);
+
+    if (cstate_changed)
+    {
+        data_smpl_process_package_cstates();
+    }
 }
 
 void data_smpl_process_core_current_sensor_fifo(void)
@@ -650,6 +665,70 @@ void data_smpl_reset_residency_timestamps(void)
     }
 }
 
+void data_smpl_process_package_cstates(void)
+{
+    if (in_band_tlm_cmpnt_is_power_record_enabled(POWER_TELEMETRY_ELEMENT_SOC_PKG_MON))
+    {
+        // Check if all cores are in C3 or C4 to track package-level PC3/PC4 residency
+        // First check if all cores in C3
+        pkg_cstate_t new_pkg_cstate = ALL_CORES_IN_C3_state;
+        core_runtime_info_t* core_ptr = core_rt;
+        for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            if (core_is_active[core_id])
+            {
+                if (core_ptr->latest_cstate != CSTATE_C3)
+                {
+                    // soc_rt.latest_pkg_cstate = ALL_CORES_MIXED_C3_C4_state;
+                    new_pkg_cstate = ALL_CORES_MIXED_C3_C4_state;
+                    // Note :  we can not return here because we need to check for C4 state below
+                    break; // exit the for loop as we know we are not all in C3, but check for C4 below
+                }
+            }
+            core_ptr++;
+        }
+        // update latest package cstate
+        soc_rt.latest_pkg_cstate = new_pkg_cstate;
+        // Check for state transitions and accumulate residency
+        if (new_pkg_cstate == ALL_CORES_IN_C3_state)
+        {
+
+            if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+            {
+                pkg_mon_data_t pkg_mon_data = {0};
+                pkg_mon_data.pkg_cstate = ALL_CORES_IN_C3_state;
+                die_2_die_exch_ib_write_pwr_pkg_mon_data(&pkg_mon_data);
+            }
+            return;
+        }
+
+        // soc_rt.latest_pkg_cstate = ALL_CORES_IN_C4_state;
+        //  Now check if all cores are in C4
+        new_pkg_cstate = ALL_CORES_IN_C4_state;
+        core_ptr = core_rt;
+        for (uint8_t core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; core_id++)
+        {
+            if (core_is_active[core_id])
+            {
+                if (core_ptr->latest_cstate != CSTATE_C4)
+                {
+                    new_pkg_cstate = ALL_CORES_MIXED_C3_C4_state;
+                    soc_rt.latest_pkg_cstate = new_pkg_cstate;
+                    return;
+                }
+            }
+            core_ptr++;
+        }
+        soc_rt.latest_pkg_cstate = new_pkg_cstate;
+        if (new_pkg_cstate == ALL_CORES_IN_C4_state && die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+        {
+            pkg_mon_data_t pkg_mon_data = {0};
+            pkg_mon_data.pkg_cstate = ALL_CORES_IN_C4_state;
+            die_2_die_exch_ib_write_pwr_pkg_mon_data(&pkg_mon_data);
+        }
+    }
+}
+
 void data_smpl_update_soc_avg_pstate(void)
 {
     uint8_t latest_pstate[NUMBER_OF_CORES_PER_DIE];
@@ -684,6 +763,48 @@ void data_smpl_update_core_histogram(void)
     {
         comp_metrics_for_single_core_histogram(core_id, core_ptr->latest_voltage_mV, core_ptr->latest_max_value_dC);
         core_ptr++;
+    }
+}
+
+void data_smpl_get_secondary_die_package_cstate(void)
+{
+    if (die_2_die_exch_get_this_die_id() == PRIMARY_DIE_ID)
+    {
+        soc_rt.die1_pkg_mon = (pkg_mon_data_t){0};
+        die_2_die_exch_ib_read_pwr_pkg_mon_data(1, &soc_rt.die1_pkg_mon);
+    }
+}
+
+void data_smpl_update_soc_package_cstate(void)
+{
+    // Compute the package cstate based on both die's cores states at the end of every 10ms period
+
+    if (in_band_tlm_cmpnt_is_power_record_enabled(POWER_TELEMETRY_ELEMENT_SOC_PKG_MON))
+    {
+        if (die_2_die_exch_get_this_die_id() == PRIMARY_DIE_ID)
+        {
+
+            if (soc_rt.latest_pkg_cstate == ALL_CORES_MIXED_C3_C4_state)
+            {
+                return;
+            }
+            // compare data from secondary die (die 1) collected via die-to-die exchange
+            if (soc_rt.die1_pkg_mon.pkg_cstate == ALL_CORES_MIXED_C3_C4_state)
+            {
+                return;
+            }
+            if (soc_rt.latest_pkg_cstate == ALL_CORES_IN_C3_state && soc_rt.die1_pkg_mon.pkg_cstate == ALL_CORES_IN_C3_state)
+            {
+                // update with a constant period of 10ms because we are called every 10ms
+                comp_metrics_for_soc_package_cstate(ALL_CORES_IN_C3_state, DATA_AGGR_PKG_PERIOD_MS);
+            }
+            if (soc_rt.latest_pkg_cstate == ALL_CORES_IN_C4_state && soc_rt.die1_pkg_mon.pkg_cstate == ALL_CORES_IN_C4_state)
+            {
+                // update with a constant period of 10ms because we are called every 10ms
+                comp_metrics_for_soc_package_cstate(ALL_CORES_IN_C4_state, DATA_AGGR_PKG_PERIOD_MS);
+            }
+            // no need to update for mixed state
+        }
     }
 }
 

@@ -1573,3 +1573,96 @@ TEST_FUNCTION(test_comp_metrics_reset_24_hrs_metrics_disabled, test_setup_single
 
     // If we reach here, the test passed - the function handled the disabled state gracefully
 }
+
+// Test for comp_metrics_for_soc_package_cstate - C3 accumulation
+TEST_FUNCTION(test_comp_metrics_for_soc_package_cstate_c3, test_setup, test_teardown)
+{
+    // Setup: Reset metrics and add C3 residency
+    comp_metrics_reset_24_hrs_metrics();
+
+    uint32_t duration_mS = 150;
+
+    // Call the function with C3 state
+    comp_metrics_for_soc_package_cstate(ALL_CORES_IN_C3_state, duration_mS);
+
+    // Verify: PC3 residency accumulated, PC4 unchanged
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, duration_mS);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, 0);
+
+    // Call again to verify accumulation
+    comp_metrics_for_soc_package_cstate(ALL_CORES_IN_C3_state, duration_mS);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, duration_mS * 2);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, 0);
+}
+
+// Test for comp_metrics_for_soc_package_cstate - C4 accumulation
+TEST_FUNCTION(test_comp_metrics_for_soc_package_cstate_c4, test_setup, test_teardown)
+{
+    // Setup: Reset metrics and add C4 residency
+    comp_metrics_reset_24_hrs_metrics();
+
+    uint32_t duration_mS = 200;
+
+    // Call the function with C4 state
+    comp_metrics_for_soc_package_cstate(ALL_CORES_IN_C4_state, duration_mS);
+
+    // Verify: PC4 residency accumulated, PC3 unchanged
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, 0);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, duration_mS);
+
+    // Call again to verify accumulation
+    comp_metrics_for_soc_package_cstate(ALL_CORES_IN_C4_state, duration_mS);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, 0);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, duration_mS * 2);
+}
+
+// Test for comp_metrics_for_soc_package_cstate - mixed C3 and C4
+TEST_FUNCTION(test_comp_metrics_for_soc_package_cstate_mixed, test_setup, test_teardown)
+{
+    // Setup: Reset metrics
+    comp_metrics_reset_24_hrs_metrics();
+
+    uint32_t c3_duration = 100;
+    uint32_t c4_duration = 250;
+
+    // Call with C3
+    comp_metrics_for_soc_package_cstate(ALL_CORES_IN_C3_state, c3_duration);
+
+    // Call with C4
+    comp_metrics_for_soc_package_cstate(ALL_CORES_IN_C4_state, c4_duration);
+
+    // Verify: Both accumulated independently
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, c3_duration);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, c4_duration);
+}
+
+// Test for comp_metrics_for_soc_package_cstate - invalid state
+TEST_FUNCTION(test_comp_metrics_for_soc_package_cstate_invalid_state, test_setup, test_teardown)
+{
+    // Setup: Reset metrics
+    comp_metrics_reset_24_hrs_metrics();
+
+    uint32_t duration_mS = 100;
+
+    // Call with invalid/mixed state (should not accumulate)
+    comp_metrics_for_soc_package_cstate(ALL_CORES_MIXED_C3_C4_state, duration_mS);
+
+    // Verify: No accumulation for invalid state
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, 0);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, 0);
+}
+
+// Test for comp_metrics_for_soc_package_cstate - 24hr metrics disabled
+TEST_FUNCTION(test_comp_metrics_for_soc_package_cstate_disabled, test_setup_single_die, test_teardown)
+{
+    // Setup: Initialize with 24hr metrics disabled (single die system)
+    will_return_always(__wrap_core_info_get_enable_cores_result, 0x00);
+    comp_metrics_init(true); // true = single die system (24hr metrics disabled)
+
+    uint32_t duration_mS = 100;
+
+    // Call the function - should return early without crashing
+    comp_metrics_for_soc_package_cstate(ALL_CORES_IN_C3_state, duration_mS);
+
+    // No assertions needed - if we reach here without crashing, test passed
+}

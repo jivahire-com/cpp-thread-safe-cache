@@ -99,6 +99,7 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg, test_setup, te
     will_return(__wrap_sensor_fifo_svc_is_empty, data_proc_snsr_fifo_is_empty);
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
     data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg();
 }
 

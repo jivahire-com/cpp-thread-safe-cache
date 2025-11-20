@@ -285,11 +285,6 @@ void data_proc_tlm_cmpnt_get_pwr_core_droop_count_data(uint16_t core_id, p_pwr_c
     }
 }
 
-void data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(p_pwr_soc_element_pkg_monitor_t soc_pkg_mon_data)
-{
-    FPFW_UNUSED(soc_pkg_mon_data);
-}
-
 void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_element_vr_rail_t rail_data)
 {
     // parameter check: rail_id, check if correct
@@ -427,6 +422,23 @@ void data_proc_tlm_cmpnt_get_pwr_soc_d2d_link_data(uint8_t interface_id,
             (*d2d_link_data)[i].bw_rx_flit_bytes =
                 D2DSS_FLIT_COUNT_TO_BYTES(computed_metrics_2_mins.d2dss[interface_id].d2d_link[i].bw_rx_flit_count);
         }
+    }
+}
+
+void data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(p_pwr_soc_element_pkg_monitor_t soc_pkg_mon_data)
+{
+    // This is a 24hr record, collected data from both dies and reported from die 0 only
+    // Similar pattern to SoC max temperature implementation
+
+    if (soc_pkg_mon_data == NULL)
+    {
+        FPFW_ET_LOG(DataPackagePWRrecordError, POWER_TELEMETRY_ELEMENT_SOC_PKG_MON);
+    }
+    else
+    {
+        // Aggregated data for both dies but reported from die 0 only
+        soc_pkg_mon_data->pc3_duration_mS = computed_metrics_24_hrs.soc.pc3_residency_mS;
+        soc_pkg_mon_data->pc4_duration_mS = computed_metrics_24_hrs.soc.pc4_residency_mS;
     }
 }
 

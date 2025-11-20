@@ -163,6 +163,7 @@ typedef struct {
 typedef struct {
     uint32_t soc_pc3_residency_mS;
     uint32_t soc_pc4_residency_mS;
+    pkg_mon_data_t die1_pkg_mon; // used only for Die 1 package monitor data for die 0 to read
     uint32_t latest_rail_current_mA[MAX_NUM_OF_VR_RAILS];
     uint16_t latest_rail_temperature_dC[MAX_NUM_OF_VR_RAILS];
     uint16_t latest_rail_voltage_mV[MAX_NUM_OF_VR_RAILS];
@@ -171,6 +172,7 @@ typedef struct {
     uint16_t latest_max_tile_temp_dC;
     uint16_t latest_max_soc_top_temp_dC;
     uint16_t latest_max_die_temp_dC; // max of latest_max_tile_temp_dC and latest_max_soc_top_temp_dC
+    uint8_t latest_pkg_cstate;
 } soc_runtime_info_t;
 
 typedef struct {
@@ -669,3 +671,23 @@ void data_smpl_update_metrics_for_d2d_link_telemetry(void);
  * @return none
  */
 void data_smpl_d2dss_link_tlm_reset(void);
+
+/**
+ * @brief Process PC3 and PC4 states.
+ *
+ * This function processes the telemetry data related to PC3 and PC4 states.
+ */
+void data_smpl_process_package_cstates(void);
+
+/* * 
+ * @brief Update SOC package C-state residency metrics.
+ *
+ * This function updates the SOC package C-state residency metrics based on the latest telemetry data.
+ */
+void data_smpl_update_soc_package_cstate(void);
+
+/**
+ * @brief Get the secondary die package C-state.
+ *
+ */
+void data_smpl_get_secondary_die_package_cstate(void);

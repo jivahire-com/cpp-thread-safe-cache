@@ -70,7 +70,6 @@ void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
     die_2_die_exch_ib_write_pwr_pkg_max_die_temp(max_soc_temp_avg_dC,
                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.max);
-
     comp_metrics_reset_d2d_2_min_metrics();
 }
 
@@ -536,6 +535,24 @@ void comp_metrics_for_single_core_aging_counters(uint8_t core_id,
     computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].timestamp_uS = this_pwr_pkg_timestamp_uS;
     computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].temperature_dC = latest_max_value_dC;
     computed_metrics_24_hrs.cores[core_id].core_aging_counters[counter_id].voltage_mV = latest_voltage_mV;
+}
+
+void comp_metrics_for_soc_package_cstate(uint8_t pkg_cstate, uint32_t duration_mS)
+{
+    if (!comp_metrics_24hrs_is_available())
+    {
+        return;
+    }
+
+    // Accumulate PC3/PC4 residency durations in 24-hour metrics
+    if (pkg_cstate == ALL_CORES_IN_C3_state)
+    {
+        computed_metrics_24_hrs.soc.pc3_residency_mS += duration_mS;
+    }
+    else if (pkg_cstate == ALL_CORES_IN_C4_state)
+    {
+        computed_metrics_24_hrs.soc.pc4_residency_mS += duration_mS;
+    }
 }
 
 void comp_metrics_for_single_d2dss_interface_all_links(uint8_t d2dss_id,

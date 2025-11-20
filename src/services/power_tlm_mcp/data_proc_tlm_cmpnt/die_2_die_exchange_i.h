@@ -21,6 +21,12 @@
 #define NUMBER_OF_DIMMS (6 )
 
 /*-------------- Typedefs ----------------*/
+typedef enum {
+    ALL_CORES_MIXED_C3_C4_state = 0,
+    ALL_CORES_IN_C3_state,
+    ALL_CORES_IN_C4_state
+} pkg_cstate_t;
+
 typedef struct __attribute__((packed))
 {
     uint16_t average_max_temp_dC;
@@ -54,6 +60,11 @@ typedef struct __attribute__((packed))
         uint8_t flags_byte;  // Access the entire byte directly
     };
 } mpam_data_t, *p_mpam_data_t;
+
+typedef struct __attribute__((packed))
+{
+    pkg_cstate_t pkg_cstate;   
+} pkg_mon_data_t, *p_pkg_mon_data_t;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -143,6 +154,24 @@ void die_2_die_exch_ib_write_pwr_pkg_mpam_data(mpam_data_t (*mpam_data_array)[NU
  * @param[out] mpam_data_array Pointer to an array to store the MPAM data structures.
  */
 void die_2_die_exch_ib_read_pwr_pkg_mpam_data(uint8_t die_id, mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS]);
+
+/**
+ * @brief Write the package monitor data to the die to die exchange.
+ * This function writes the package monitor data (PC3/PC4 durations) to the exchange. It writes the location for the
+ * die specified by `this_die_id`, which is initialized using `die_2_die_exch_init`.
+ *
+ * @param[in] pkg_mon_data The package monitor data.
+ */
+void die_2_die_exch_ib_write_pwr_pkg_mon_data(p_pkg_mon_data_t pkg_mon_data);
+
+/**
+ * @brief Read the package monitor data from the die to die exchange.
+ * This function reads the package monitor data for a specific die.
+ *
+ * @param[in] die_id The ID of the die to read the package monitor data from.
+ * @param[out] pkg_mon_data Pointer to a structure to store the package monitor data.
+ */
+void die_2_die_exch_ib_read_pwr_pkg_mon_data(uint8_t die_id, p_pkg_mon_data_t pkg_mon_data);
 
 /**
  * @brief Write the maximum die temperature window to the die to die exchange.

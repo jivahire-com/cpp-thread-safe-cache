@@ -145,6 +145,7 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data, test_setup, test_tear
     will_return(__wrap_sensor_fifo_svc_poll_vr_current, &no_entries);
     will_return(__wrap_sensor_fifo_svc_poll_soc_pvt_temperature, &no_entries);
     will_return(__wrap_sensor_fifo_svc_poll_dimm_info, &no_entries);
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
 
     data_proc_tlm_cmpnt_process_input_data();
 }
@@ -157,6 +158,7 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_process_input_data_all_empty, test_setup,
     }
 
     will_return(__wrap_sensor_fifo_svc_is_empty, test_snsr_fifo_is_empty);
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
 
     data_proc_tlm_cmpnt_process_input_data();
 }
@@ -3192,7 +3194,7 @@ TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo, test_setup, test_teardo
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &valid_entry);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &pstate_data);
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000); // For timestamp conversion
-
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
     data_smpl_process_pstate_sensor_fifo();
 
     // Should have processed pstate and cstate
@@ -3210,6 +3212,7 @@ TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo, test_setup, test_teardo
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &throttle_entry);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &pstate_data);
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
 
     data_smpl_process_pstate_sensor_fifo();
 
@@ -3229,6 +3232,7 @@ TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo, test_setup, test_teardo
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &rack_throttle_entry);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &pstate_data);
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
 
     data_smpl_process_pstate_sensor_fifo();
 
@@ -3247,6 +3251,7 @@ TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo, test_setup, test_teardo
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &overrun_entry);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &pstate_data);
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
 
     data_smpl_process_pstate_sensor_fifo();
 
@@ -3266,6 +3271,7 @@ TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo, test_setup, test_teardo
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &pstate_pending_entry);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &pstate_data);
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
 
     data_smpl_process_pstate_sensor_fifo();
 
@@ -3290,6 +3296,7 @@ TEST_FUNCTION(test_data_smpl_process_pstate_sensor_fifo, test_setup, test_teardo
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &second_entry);
     will_return(__wrap_sensor_fifo_svc_poll_core_pstate, &pstate_data);
     will_return(__wrap_gtimer_prodfw_get_frequency, 1000000);
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
 
     data_smpl_process_pstate_sensor_fifo();
 
@@ -4877,4 +4884,251 @@ TEST_FUNCTION(test_data_smpl_init_d2dss_pmu_counters_failure, test_setup, test_t
     data_smpl_init_d2dss_pmu_counters();
 
     // Function should handle failures gracefully and continue with remaining initializations
+}
+
+// Test for data_smpl_process_package_cstates - all cores in C3
+TEST_FUNCTION(test_data_smpl_process_package_cstates_all_cores_c3, test_setup, test_teardown)
+{
+    // Setup: Initialize die 1 (secondary die), set all cores to C3, enable power record
+    die_2_die_exch_init(1);
+
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        core_rt[i].latest_cstate = CSTATE_C3;
+        core_is_active[i] = true;
+    }
+
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+
+    // Call the function
+    data_smpl_process_package_cstates();
+
+    // Verify: latest_pkg_cstate should be ALL_CORES_IN_C3_state
+    assert_int_equal(soc_rt.latest_pkg_cstate, ALL_CORES_IN_C3_state);
+}
+
+// Test for data_smpl_process_package_cstates - all cores in C4
+TEST_FUNCTION(test_data_smpl_process_package_cstates_all_cores_c4, test_setup, test_teardown)
+{
+    // Setup: Initialize die 1 (secondary die), set all cores to C4, enable power record
+    die_2_die_exch_init(1);
+
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        core_rt[i].latest_cstate = CSTATE_C4;
+        core_is_active[i] = true;
+    }
+
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+
+    // Call the function
+    data_smpl_process_package_cstates();
+
+    // Verify: latest_pkg_cstate should be ALL_CORES_IN_C4_state
+    assert_int_equal(soc_rt.latest_pkg_cstate, ALL_CORES_IN_C4_state);
+}
+
+// Test for data_smpl_process_package_cstates - mixed states (C3 and C4)
+TEST_FUNCTION(test_data_smpl_process_package_cstates_mixed_states, test_setup, test_teardown)
+{
+    // Setup: Initialize die 1 (secondary die), set cores to mixed C-states
+    die_2_die_exch_init(1);
+
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        if (i < NUMBER_OF_CORES_PER_DIE / 2)
+        {
+            core_rt[i].latest_cstate = CSTATE_C3;
+        }
+        else
+        {
+            core_rt[i].latest_cstate = CSTATE_C4;
+        }
+        core_is_active[i] = true;
+    }
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+    // Call the function - with new implementation, returns early
+    data_smpl_process_package_cstates();
+
+    // Verify: latest_pkg_cstate should be ALL_CORES_MIXED_C3_C4_state
+    // The function detects mixed state in first loop (not all C3) and returns immediately
+    assert_int_equal(soc_rt.latest_pkg_cstate, ALL_CORES_MIXED_C3_C4_state);
+}
+
+// Test for data_smpl_process_package_cstates - mixed states (C0 and C3)
+TEST_FUNCTION(test_data_smpl_process_package_cstates_mixed_c0_c3, test_setup, test_teardown)
+{
+    // Setup: Mix of C0 and C3 states
+    die_2_die_exch_init(1);
+
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        if (i < NUMBER_OF_CORES_PER_DIE / 2)
+        {
+            core_rt[i].latest_cstate = CSTATE_C0;
+        }
+        else
+        {
+            core_rt[i].latest_cstate = CSTATE_C3;
+        }
+        core_is_active[i] = true;
+    }
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
+    // Call the function
+    data_smpl_process_package_cstates();
+
+    // Verify: Should detect mixed state (not all C3, not all C4)
+    assert_int_equal(soc_rt.latest_pkg_cstate, ALL_CORES_MIXED_C3_C4_state);
+}
+
+// Test for data_smpl_process_package_cstates - primary die doesn't write
+TEST_FUNCTION(test_data_smpl_process_package_cstates_primary_die_no_write, test_setup, test_teardown)
+{
+    // Setup: Initialize die 0 (primary die), set all cores to C3
+    die_2_die_exch_init(0);
+
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        core_rt[i].latest_cstate = CSTATE_C3;
+        core_is_active[i] = true;
+    }
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+
+    // Call the function - primary die should not write to exchange
+    data_smpl_process_package_cstates();
+
+    // Verify: latest_pkg_cstate should be set to ALL_CORES_IN_C3_state
+    assert_int_equal(soc_rt.latest_pkg_cstate, ALL_CORES_IN_C3_state);
+    // Primary die does not write to exchange (no assertion needed for write)
+}
+
+// Test for data_smpl_process_package_cstates - inactive cores ignored
+TEST_FUNCTION(test_data_smpl_process_package_cstates_inactive_cores, test_setup, test_teardown)
+{
+    // Setup: Initialize die 1, set some cores to C3, mark some as inactive
+    die_2_die_exch_init(1);
+
+    for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; i++)
+    {
+        if (i < NUMBER_OF_CORES_PER_DIE / 2)
+        {
+            core_rt[i].latest_cstate = CSTATE_C3;
+            core_is_active[i] = true;
+        }
+        else
+        {
+            core_rt[i].latest_cstate = CSTATE_C0; // Different state
+            core_is_active[i] = false;            // Inactive - should be ignored
+        }
+    }
+
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+
+    // Call the function
+    data_smpl_process_package_cstates();
+
+    // Verify: Should detect all ACTIVE cores in C3
+    assert_int_equal(soc_rt.latest_pkg_cstate, ALL_CORES_IN_C3_state);
+}
+
+// Test for data_smpl_update_soc_package_cstate - both dies in C3
+TEST_FUNCTION(test_data_smpl_update_soc_package_cstate_both_c3, test_setup, test_teardown)
+{
+    // Setup: Initialize die 0 (primary), set local die to C3, write C3 from die 1
+    die_2_die_exch_init(0);
+    soc_rt.latest_pkg_cstate = ALL_CORES_IN_C3_state;
+    soc_rt.die1_pkg_mon.pkg_cstate = ALL_CORES_IN_C3_state;
+
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+
+    // Call the function
+    data_smpl_update_soc_package_cstate();
+
+    // Verify: PC3 residency should be incremented by DATA_AGGR_PKG_PERIOD_MS (10ms)
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, DATA_AGGR_PKG_PERIOD_MS);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, 0);
+}
+
+TEST_FUNCTION(test_data_smpl_update_soc_package_cstate_both_C4, test_setup, test_teardown)
+{
+    // Setup: Initialize die 0 (primary), set local die to C3, write C3 from die 1
+    die_2_die_exch_init(0);
+    soc_rt.latest_pkg_cstate = ALL_CORES_IN_C4_state;
+    soc_rt.die1_pkg_mon.pkg_cstate = ALL_CORES_IN_C4_state;
+
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+
+    // Call the function
+    data_smpl_update_soc_package_cstate();
+
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, DATA_AGGR_PKG_PERIOD_MS);
+}
+
+// Test for data_smpl_update_soc_package_cstate - local die mixed state
+TEST_FUNCTION(test_data_smpl_update_soc_package_cstate_local_mixed, test_setup, test_teardown)
+{
+    // Reset metrics
+    comp_metrics_reset_24_hrs_metrics();
+    // Setup: Local die in mixed state
+    die_2_die_exch_init(0);
+    soc_rt.latest_pkg_cstate = ALL_CORES_MIXED_C3_C4_state;
+    soc_rt.die1_pkg_mon.pkg_cstate = ALL_CORES_MIXED_C3_C4_state;
+
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+
+    // Call the function - should return early
+    data_smpl_update_soc_package_cstate();
+
+    // Verify: No residency accumulated
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, 0);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, 0);
+}
+// Test for data_smpl_update_soc_package_cstate - local die mixed state
+TEST_FUNCTION(test_data_smpl_update_soc_package_cstate_remote_mixed, test_setup, test_teardown)
+{
+    // Reset metrics
+    comp_metrics_reset_24_hrs_metrics();
+    // Setup: Local die in mixed state
+    die_2_die_exch_init(0);
+    soc_rt.latest_pkg_cstate = ALL_CORES_IN_C3_state;
+    soc_rt.die1_pkg_mon.pkg_cstate = ALL_CORES_MIXED_C3_C4_state;
+
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+
+    // Call the function - should return early
+    data_smpl_update_soc_package_cstate();
+
+    // Verify: No residency accumulated
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, 0);
+    assert_int_equal(computed_metrics_24_hrs.soc.pc4_residency_mS, 0);
+}
+
+TEST_FUNCTION(test_data_smpl_get_secondary_die_package_cstate, test_setup, test_teardown)
+{
+    // Reset metrics
+    comp_metrics_reset_24_hrs_metrics();
+    // Setup: Local die in mixed state
+    die_2_die_exch_init(0);
+    data_smpl_get_secondary_die_package_cstate();
+    // Verify: No residency accumulated
+    assert_int_equal(soc_rt.die1_pkg_mon.pkg_cstate, 0);
+}
+
+// Test for data_smpl_update_soc_package_cstate - secondary die not primary
+TEST_FUNCTION(test_data_smpl_update_soc_package_cstate_secondary_die, test_setup, test_teardown)
+{
+    // Setup: Initialize as secondary die (die 1)
+    die_2_die_exch_init(1);
+    soc_rt.latest_pkg_cstate = ALL_CORES_IN_C3_state;
+
+    // Reset metrics
+    comp_metrics_reset_24_hrs_metrics();
+
+    will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, true);
+
+    // Call the function - secondary die should return early
+    data_smpl_update_soc_package_cstate();
+
+    // Verify: No accumulation on secondary die
+    assert_int_equal(computed_metrics_24_hrs.soc.pc3_residency_mS, 0);
 }

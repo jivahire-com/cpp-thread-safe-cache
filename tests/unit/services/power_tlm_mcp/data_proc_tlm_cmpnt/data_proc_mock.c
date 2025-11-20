@@ -325,6 +325,13 @@ int __wrap_d2dss_pmu_read(uint8_t d2dss_index, uint8_t event_number, uintptr_t c
     return mock_type(int);
 }
 
+bool __wrap_in_band_tlm_cmpnt_is_power_record_enabled(pwr_telemetry_element_id_t element_id)
+{
+    // check_expected_ptr(&element_id);
+    FPFW_UNUSED(element_id);
+    return mock_type(bool);
+}
+
 // Mock functions for power telemetry load line loss
 uint32_t __wrap_power_telemetry_loadline_loss_die0(power_telemetry_rail_id_die0_t rail_id, uint16_t current_cA)
 {

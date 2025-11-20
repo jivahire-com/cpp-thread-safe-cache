@@ -72,6 +72,7 @@ mock_target(${TARGET}
     mesh_get_telemetry_delivered_perf_count
     d2dss_pmu_init
     d2dss_pmu_read
+    in_band_tlm_cmpnt_is_power_record_enabled
     power_telemetry_loadline_loss_die0
     power_telemetry_loadline_loss_die1
 )

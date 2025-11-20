@@ -378,10 +378,73 @@ TEST_FUNCTION(test_get_pwr_core_histogram_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_pwr_soc_pkg_mon_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
-    pwr_soc_element_pkg_monitor_t pc3_data = {0};
-    data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(&pc3_data);
+    pwr_soc_element_pkg_monitor_t pkg_mon_data = {0};
+
+    // Test case 1: Valid data with PC3 and PC4 residency values
+    computed_metrics_24_hrs.soc.pc3_residency_mS = 500000; // 500 seconds in PC3
+    computed_metrics_24_hrs.soc.pc4_residency_mS = 300000; // 300 seconds in PC4
+
+    data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(&pkg_mon_data);
+
+    // Verify the data was copied correctly from computed_metrics_24_hrs
+    assert_int_equal(pkg_mon_data.pc3_duration_mS, 500000);
+    assert_int_equal(pkg_mon_data.pc4_duration_mS, 300000);
+
+    // Test case 2: Zero values
+    computed_metrics_24_hrs.soc.pc3_residency_mS = 0;
+    computed_metrics_24_hrs.soc.pc4_residency_mS = 0;
+
+    memset(&pkg_mon_data, 0xFF, sizeof(pkg_mon_data)); // Pre-fill to verify clearing
+
+    data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(&pkg_mon_data);
+
+    // Verify zero values are handled correctly
+    assert_int_equal(pkg_mon_data.pc3_duration_mS, 0);
+    assert_int_equal(pkg_mon_data.pc4_duration_mS, 0);
+
+    // Test case 3: Maximum uint32_t values
+    computed_metrics_24_hrs.soc.pc3_residency_mS = 0xFFFFFFFF; // uint32_t max
+    computed_metrics_24_hrs.soc.pc4_residency_mS = 0xFFFFFFFF;
+
+    data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(&pkg_mon_data);
+
+    // Verify that maximum uint32_t values are handled correctly
+    assert_int_equal(pkg_mon_data.pc3_duration_mS, 0xFFFFFFFF);
+    assert_int_equal(pkg_mon_data.pc4_duration_mS, 0xFFFFFFFF);
+
+    // Test case 4: Typical values - 24 hour monitoring period
+    // Assuming continuous PC3 for 12 hours and PC4 for 12 hours
+    computed_metrics_24_hrs.soc.pc3_residency_mS = 12U * 60 * 60 * 1000; // 12 hours in ms
+    computed_metrics_24_hrs.soc.pc4_residency_mS = 12U * 60 * 60 * 1000; // 12 hours in ms
+
+    data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(&pkg_mon_data);
+
+    assert_int_equal(pkg_mon_data.pc3_duration_mS, 43200000); // 12 hours = 43200000 ms
+    assert_int_equal(pkg_mon_data.pc4_duration_mS, 43200000);
+
+    // Test case 5: NULL pointer handling - should log error and not crash
+    data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(NULL);
+    // Function should handle NULL pointer gracefully (logs error via FPFW_ET_LOG)
+
+    // Test case 6: Asymmetric PC3/PC4 residency values
+    computed_metrics_24_hrs.soc.pc3_residency_mS = 1000000; // 1000 seconds
+    computed_metrics_24_hrs.soc.pc4_residency_mS = 50000;   // 50 seconds
+
+    data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(&pkg_mon_data);
+
+    assert_int_equal(pkg_mon_data.pc3_duration_mS, 1000000);
+    assert_int_equal(pkg_mon_data.pc4_duration_mS, 50000);
+
+    // Test case 7: Verify this is aggregated data from both dies (reported from die 0 only)
+    // The data in computed_metrics_24_hrs.soc should already be aggregated from both dies
+    // via data_smpl_update_soc_package_cstate() which accumulates from both die 0 and die 1
+    computed_metrics_24_hrs.soc.pc3_residency_mS = 86400000; // 24 hours in ms
+    computed_metrics_24_hrs.soc.pc4_residency_mS = 0;
+
+    data_proc_tlm_cmpnt_get_pwr_soc_pkg_mon_data(&pkg_mon_data);
+
+    assert_int_equal(pkg_mon_data.pc3_duration_mS, 86400000); // Full 24 hours in PC3
+    assert_int_equal(pkg_mon_data.pc4_duration_mS, 0);
 }
 
 TEST_FUNCTION(test_get_pwr_soc_vr_rail_data, test_setup, test_teardown)

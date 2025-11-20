@@ -360,9 +360,12 @@ uint32_t package_create_24hr_pkg(uintptr_t pkg_location, size_t pkg_available_si
 
     if (power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PKG_MON])
     {
-        p_pwr_soc_record_pkg_monitor_t pkg_mon_record = (p_pwr_soc_record_pkg_monitor_t)pkg_location;
-        pkg_location += package_create_pwr_soc_pkg_mon_record(pkg_mon_record);
-        package_hdr->payload_header.number_of_records++;
+        if (inband_die_id == 0)
+        {
+            p_pwr_soc_record_pkg_monitor_t pkg_mon_record = (p_pwr_soc_record_pkg_monitor_t)pkg_location;
+            pkg_location += package_create_pwr_soc_pkg_mon_record(pkg_mon_record);
+            package_hdr->payload_header.number_of_records++;
+        }
     }
 
     uint32_t pkg_size = pkg_location - (uintptr_t)package_hdr;

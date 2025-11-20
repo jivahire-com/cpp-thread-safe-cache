@@ -393,13 +393,19 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_THREAD_CREATE_ERROR, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
-    // Record start timestamp
-    uint64_t start_timestamp = gtimer_prodfw_get_counter();
 
     ddr_manager_i3c_init();
 
     DDR_LOG_CRIT("DDR init, die_num: [%u]\n", die_id);
+    // Record start timestamp
+    uint64_t start_timestamp = gtimer_prodfw_get_counter();
     prod_ddrss_lib_init(die_id);
+
+    // Calculate DDRSS init duration in milliseconds
+    uint64_t ddr_training_time_ms =
+        ((gtimer_prodfw_get_counter() - start_timestamp) * 1000) / gtimer_prodfw_get_frequency();
+    DDR_LOG_CRIT("DDR training time: %llu ms\n", ddr_training_time_ms);
+    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DDR_TRAINING_TIME_MS, (int)ddr_training_time_ms);
 
     // PPR will write updated SDL back to flash if it has run during prod_ddrss_lib_init
     // load the SDL from flash to DDR reserved region

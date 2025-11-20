@@ -408,7 +408,9 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
 
     // Mock gtimer for duration calculation
     will_return(__wrap_gtimer_prodfw_get_counter, 1000000);     // start timestamp
-    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // end timestamp
+    will_return(__wrap_gtimer_prodfw_get_counter, 4000000);     // ddr training timestamp
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
+    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // ddr init timestamp
     will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
 
     if (!set_error_handler_return())
@@ -504,7 +506,9 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
 
     // Mock gtimer for duration calculation
     will_return(__wrap_gtimer_prodfw_get_counter, 1000000);     // start timestamp
-    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // end timestamp
+    will_return(__wrap_gtimer_prodfw_get_counter, 4000000);     // ddr training timestamp
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
+    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // ddr init timestamp
     will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
 
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
@@ -591,7 +595,9 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
 
     // Mock gtimer for duration calculation
     will_return(__wrap_gtimer_prodfw_get_counter, 1000000);     // start timestamp
-    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // end timestamp
+    will_return(__wrap_gtimer_prodfw_get_counter, 4000000);     // ddr training timestamp
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
+    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // ddr init timestamp
     will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
 
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);

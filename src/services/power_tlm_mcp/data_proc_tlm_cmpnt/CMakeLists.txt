@@ -30,6 +30,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::cmsis::interface
         ms::lib::arm_intrinsic
+        ms::lib::config_manager
         ms::lib::core_info
         ms::lib::error_codes
         ms::lib::event_trace::trace

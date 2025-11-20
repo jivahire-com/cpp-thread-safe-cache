@@ -107,6 +107,51 @@ TEST_FUNCTION(test_mts_manager_handle_record_enable_disable, test_setup, test_te
     assert_false(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_PKG_MON]);
     assert_false(inst_pkg_element_enable[INST_TELEMETRY_ELEMENT_CORE]);
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+
+    // Test enabling POWER_TELEMETRY_ELEMENT_CORE_DROOPS - should send to SCP
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.number_of_events = 1;
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].provider_id = EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA;
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].event_id = POWER_TELEMETRY_ELEMENT_CORE_DROOPS;
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].state = DCP_EVENTS_ENABLE_STATE_ENABLE;
+
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    mts_manager_handle_record_enable_disable(&trp_msg);
+
+    assert_true(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_DROOPS]);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+
+    // Test disabling POWER_TELEMETRY_ELEMENT_CORE_DROOPS - should send to SCP
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].state = DCP_EVENTS_ENABLE_STATE_DISABLE;
+
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    mts_manager_handle_record_enable_disable(&trp_msg);
+
+    assert_false(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_DROOPS]);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+
+    // Test enabling POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER - should send to SCP
+    // Enable the MPAM VM memory reporting knob for this test
+    mpam_vm_mem_reporting_knob_enable = true;
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].event_id = POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER;
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].state = DCP_EVENTS_ENABLE_STATE_ENABLE;
+
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    mts_manager_handle_record_enable_disable(&trp_msg);
+
+    assert_true(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER]);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+
+    // Test disabling POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER - should send to SCP
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].state = DCP_EVENTS_ENABLE_STATE_DISABLE;
+
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    mts_manager_handle_record_enable_disable(&trp_msg);
+
+    assert_false(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER]);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+
+    // Reset the MPAM VM memory reporting knob
+    mpam_vm_mem_reporting_knob_enable = false;
 }
 
 TEST_FUNCTION(test_mts_manager_handle_record_enable_disable_fail, test_setup, test_teardown)
@@ -945,4 +990,15 @@ TEST_FUNCTION(test_mts_manager_handle_dcp_read_data_response_size_error_conditio
 
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_MORE);
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.payload_size, sizeof(dcp_msg_read_data_t));
+}
+
+TEST_FUNCTION(test_mts_manager_send_record_enables_to_scp, test_setup, test_teardown)
+{
+    tlm_scp_record_enables_t enables = {{0}};
+    enables.record.drop_count_en = 1;
+    enables.record.vm_memory_pwr_en = 1;
+
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+
+    mts_manager_send_record_enables_to_scp(&enables);
 }

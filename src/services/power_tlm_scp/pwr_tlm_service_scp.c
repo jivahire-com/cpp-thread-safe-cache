@@ -15,6 +15,7 @@
 #include <FpFwAssert.h>                  // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>                   // for FPFW_UNUSED
 #include <IFpFwEventTracingGeneration.h> // for FPFW_ET_LOG
+#include <fpfw_cfg_mgr.h>
 #include <message_transfer_service.h>
 #include <power_runconfig.h>
 #include <pwr_tlm_core_exchange.h>
@@ -43,6 +44,9 @@ uint8_t pwr_tlm_client_pool_mem[PWR_TLM_CLIENT_BLOCK_POOL_SIZE];
 static mts_client_t s_pwr_tlm_mts_client_scp = {
     .notify_from_drv_frmwk = pwr_tlm_scp_handle_incoming_mts_msgs,
 };
+
+tlm_scp_record_enables_t pwr_tlm_scp_record_enables = {0};
+
 /*------------- Functions ----------------*/
 
 void mts_manager_scp_init(void)
@@ -124,9 +128,21 @@ void mts_manager_scp_handle_trp_msg(p_trp_msg_t trp_msg)
 
         switch (tlm_client_msg->cmd)
         {
-        case TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH:
-            data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp();
+        case TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH:
+            data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(tlm_client_msg->payload.scp_records);
             break;
+
+        case TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH:
+            if (pwr_tlm_scp_record_enables.record.drop_count_en)
+            {
+                data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp();
+            }
+            if (pwr_tlm_scp_record_enables.record.vm_memory_pwr_en)
+            {
+                data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp();
+            }
+            break;
+
         default:
             FPFW_ET_LOG(ScpMtsMgrClientUnexpectedCmd, tlm_client_msg->cmd);
         }
@@ -144,6 +160,21 @@ void pwr_tlm_svc_scp_init(void)
     mts_manager_scp_init();
 }
 
+void data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(tlm_scp_record_enables_t enables)
+{
+    pwr_tlm_scp_record_enables = enables;
+    FPFW_ET_LOG(ScpMtsMgrEnablesUpdated, pwr_tlm_scp_record_enables.as_uint16);
+
+    // todo: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584713
+    // if (pwr_tlm_scp_record_enables.record.vm_memory_pwr_en)
+    // {
+    //     power_tlm_mpam_scp_knobs_t mpam_knobs = config_get_pwr_tlm_mpam_scp_knobs();
+    // }
+    // else
+    // {
+    // }
+}
+
 void data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp(void)
 {
     power_adclk_tel_t adclk_tel;
@@ -152,4 +183,9 @@ void data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp(void)
 
     // Write droop counts to SCP telemetry exchange
     pwr_tlm_core_exch_scp_write_droop_counts(&adclk_tel.droop_count);
+}
+
+void data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp(void)
+{
+    // todo: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584713
 }

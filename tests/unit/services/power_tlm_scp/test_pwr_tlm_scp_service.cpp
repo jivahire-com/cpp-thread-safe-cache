@@ -65,6 +65,43 @@ TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp, t
     // stub need to complete
 }
 
+TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_handle_enables_from_mcp, test_setup, test_teardown)
+{
+    tlm_scp_record_enables_t test_enables = {{0}};
+
+    // Test case 1: Enable drop_count_en only
+    test_enables.as_uint16 = 0x0001;
+    data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(test_enables);
+
+    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0001);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.drop_count_en, 1);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 0);
+
+    // Test case 2: Enable vm_memory_pwr_en only
+    test_enables.as_uint16 = 0x0002;
+    data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(test_enables);
+
+    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0002);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.drop_count_en, 0);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 1);
+
+    // Test case 3: Enable both flags
+    test_enables.as_uint16 = 0x0003;
+    data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(test_enables);
+
+    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0003);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.drop_count_en, 1);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 1);
+
+    // Test case 4: Disable all flags
+    test_enables.as_uint16 = 0x0000;
+    data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(test_enables);
+
+    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0000);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.drop_count_en, 0);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 0);
+}
+
 TEST_FUNCTION(test_pwr_tlm_scp_handle_incoming_mts_msgs_dcp_invalid_case, test_setup, nullptr)
 {
     trp_msg_t trp_msg = {{{{0}}}};
@@ -94,10 +131,32 @@ TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_client_defined, test_setup, nu
 {
     trp_msg_t trp_msg = {{{{0}}}};
 
+    // Test TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH
+    // This tests that the message routing correctly calls data_proc_scp_tlm_cmpnt_handle_enables_from_mcp
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
     p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH;
+    tlm_client_msg->payload.scp_records.as_uint16 = 0x0003; // Enable both flags
+
+    // Reset enables to ensure the function call has an effect
+    pwr_tlm_scp_record_enables.as_uint16 = 0x0000;
+
+    mts_manager_scp_handle_trp_msg(&trp_msg);
+
+    // Verify data_proc_scp_tlm_cmpnt_handle_enables_from_mcp was called and executed correctly
+    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0003);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.drop_count_en, 1);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 1);
+
+    // Test TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH with both flags enabled
     tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH;
 
+    // Since data_proc functions are not mocked, they will be called when flags are set
+    // No assertions needed as we're just verifying the function executes without error
+    mts_manager_scp_handle_trp_msg(&trp_msg);
+
+    // Test TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH with flags disabled
+    pwr_tlm_scp_record_enables.as_uint16 = 0x0000;
     mts_manager_scp_handle_trp_msg(&trp_msg);
 }
 

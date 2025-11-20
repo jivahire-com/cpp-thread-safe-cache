@@ -49,6 +49,7 @@ p_tlm_package_t in_flight_tlm_pkg;
 // for dcs client subscription
 p_trp_msg_t pwr_tlm_client_queue_mem[PWR_TLM_MAX_TRP_MESSAGES];
 uint8_t pwr_tlm_client_pool_mem[PWR_TLM_CLIENT_BLOCK_POOL_SIZE];
+bool mpam_vm_mem_reporting_knob_enable = false;
 
 /*-- Declarations (Statics and globals) --*/
 static mts_client_t s_pwr_tlm_mts_client = {
@@ -56,8 +57,9 @@ static mts_client_t s_pwr_tlm_mts_client = {
 };
 
 /*------------- Functions ----------------*/
-void mts_manager_init(void)
+void mts_manager_init(bool mpam_vm_mem_enable)
 {
+    mpam_vm_mem_reporting_knob_enable = mpam_vm_mem_enable;
     // create a list of free packages
     FpFwListInitialize(&pkg_free_list);
     for (size_t i = 0; i < MAX_PENDING_PACKAGES; i++)
@@ -445,6 +447,9 @@ void mts_manager_handle_record_enable_disable(p_trp_msg_t trp_msg)
 
     trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
 
+    tlm_scp_record_enables_t scp_enables = {0};
+    bool update_scp_records = false;
+
     for (uint16_t i = 0; i < trp_msg->payload.dcp_msg.payload.events_enable_disable.number_of_events; i++)
     {
         uint16_t provider_id = trp_msg->payload.dcp_msg.payload.events_enable_disable.events[i].provider_id;
@@ -454,6 +459,18 @@ void mts_manager_handle_record_enable_disable(p_trp_msg_t trp_msg)
 
         if (provider_id == EVENT_TRACE_PROVIDER_ID_MCP_POWER_TLM_SCHEMA)
         {
+            // scp needs notification as to whether to process these records
+            if (event_id == POWER_TELEMETRY_ELEMENT_CORE_DROOPS)
+            {
+                scp_enables.record.drop_count_en = enable_record ? 1 : 0;
+                update_scp_records = true;
+            }
+            else if ((event_id == POWER_TELEMETRY_ELEMENT_SOC_VM_MPAM_MEMORY_POWER) && mpam_vm_mem_reporting_knob_enable)
+            {
+                scp_enables.record.vm_memory_pwr_en = enable_record ? 1 : 0;
+                update_scp_records = true;
+            }
+
             package_create_enable_disable_pwr_record(event_id, enable_record);
         }
         else
@@ -461,6 +478,11 @@ void mts_manager_handle_record_enable_disable(p_trp_msg_t trp_msg)
             // validation above ensures this is EVENT_TRACE_PROVIDER_ID_MCP_INST_TLM_SCHEMA
             package_create_enable_disable_inst_record(event_id, enable_record);
         }
+    }
+
+    if (update_scp_records)
+    {
+        mts_manager_send_record_enables_to_scp(&scp_enables);
     }
 }
 
@@ -740,4 +762,22 @@ void mts_manager_send_prep_pwr_pkg_notification_to_scp(void)
         // api copies message, ok to use stack memory
         mts_client_send_new_trp_msg(&trp_msg);
     }
+}
+
+void mts_manager_send_record_enables_to_scp(p_tlm_scp_record_enables_t enables)
+{
+    trp_msg_t trp_msg = {0};
+    // overwrite broadcast to none below, other fields can be used
+    mts_manager_init_trp_header_for_broadcast(&trp_msg, sizeof(tlm_client_msg_t));
+    trp_msg.hdr.dest_node.die_id = mts_get_this_die_id();
+    trp_msg.hdr.dest_node.core_id = CPU_SCP;
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_NONE;
+
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH;
+
+    tlm_client_msg->payload.scp_records = *enables;
+
+    // api copies message, ok to use stack memory
+    mts_client_send_new_trp_msg(&trp_msg);
 }

@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.threadx
         kng_silibs_platform
+        ms::lib::config_manager
         ms::lib::event_trace::trace
         ms::lib::pwr_tlm_core_ex
         ms::service::mts

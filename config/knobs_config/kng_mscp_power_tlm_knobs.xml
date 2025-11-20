@@ -30,11 +30,28 @@
       <Member name="inst_samples_per_pkg" type="uint16_t" default="10" help="Package generated every n inst_sample_period" />
       <Member name="_24hr_sample_period" type="power_tlm_24hr_package_period_t" default="PWR_TLM_24HR_PKG_PERIOD_24_HR" help="24 Hr Package Sampling Period" />
     </Struct>
+
+    <Struct name="power_tlm_mpam_mcp_knobs_t" help="">
+      <Member name="fixed_pwr_mW" type="uint32_t" default="0" help="Memory Controller Power plus PHY Power" />
+      <Member name="mem_pwr_primary_enable" type="bool" default="false" help="Enable MPAM vM memory collection" />
+    </Struct>
+
+    <Struct name="power_tlm_mpam_scp_knobs_t" help="">
+      <Member name="T2_thresh" type="uint8_t" default="67" help="T2 Utilization Threshold" />
+      <Member name="T1_thresh" type="uint8_t" default="66" help="T1 Utilization Threshold" />
+      <Member name="T0_thresh" type="uint8_t" default="65" help="T0 Utilization Threshold" />
+      <Member name="enc_wr_rel_pwr" type="uint8_t" default="1" help="Encrypted Write Relative Power" />
+      <Member name="unenc_wr_rel_pwr" type="uint8_t" default="1" help="Unencrypted Write Relative Power" />
+      <Member name="enc_rd_rel_pwr" type="uint8_t" default="1" help="Encrypted Read Relative Power" />
+      <Member name="unenc_rd_rel_pwr" type="uint8_t" default="1" help="Unencrypted Read Relative Power" />
+    </Struct>
   </Structs>
 
   <!-- namespace indicates the GUID namespace the values are stored in -->
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <Knob name="pwr_tlm_knobs" type="power_tlm_knobs_t" help="Power Telemetry knobs"/>
+    <Knob name="pwr_tlm_mpam_mcp_knobs" type="power_tlm_mpam_mcp_knobs_t" help="Power Telemetry MCP Mpam VM knobs"/>
+    <Knob name="pwr_tlm_mpam_scp_knobs" type="power_tlm_mpam_scp_knobs_t" help="Power Telemetry SCP Mpam VM knobs"/>
   </Knobs>
 
 </ConfigSchema>

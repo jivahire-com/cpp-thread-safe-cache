@@ -25,9 +25,9 @@
 /*------------- Functions ----------------*/
 
 FPFW_INIT_COMPONENT(pwr_tlm_svc_scp,
-                    FPFW_INIT_DEPENDENCIES("mts_svc", "pwr_tlm_core_ex","hw_sem"))
+                    FPFW_INIT_DEPENDENCIES("mts_svc", "pwr_tlm_core_ex","hw_sem","cfg_mgr"))
 {
     pwr_tlm_svc_scp_init();
-    
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

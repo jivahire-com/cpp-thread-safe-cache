@@ -72,5 +72,12 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_TLM_SERVICE,
                     ScpMtsMgrClientUnexpectedCmd,
                     FPFW_ET_LEVEL_WARNING,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, cmd))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_TLM_SERVICE,
+                    7,
+                    ScpMtsMgrEnablesUpdated,
+                    FPFW_ET_LEVEL_INFO,
+                    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, enables))
+
 /*--------- Function Prototypes ----------*/
 

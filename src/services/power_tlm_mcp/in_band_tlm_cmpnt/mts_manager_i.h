@@ -16,6 +16,7 @@
 #include <FpFwLinkedList.h>
 #include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h>
+#include <pwr_tlm_core_exchange.h>
 #include <stdint.h>
 #include <transfer_relay_protocol.h>
 #include <tx_api.h>
@@ -47,6 +48,8 @@ extern FPFW_LIST_HANDLE pkg_active_list;
 
 extern p_tlm_package_t in_flight_tlm_pkg;
 
+extern bool mpam_vm_mem_reporting_knob_enable;
+
 /*--------- Function Prototypes ----------*/
 
 // *************************************************************************************************
@@ -55,8 +58,9 @@ extern p_tlm_package_t in_flight_tlm_pkg;
 
 /**
  * @brief Initialize the data collection service manager.
+ * @param[in] mpam_vm_mem_enable True to enable MPAM VM memory power reporting, false to disable.
  */
-void mts_manager_init(void);
+void mts_manager_init(bool mpam_vm_mem_enable);
 
 /**
  * @brief Queue a telemetry package for eventual transmission to the host.
@@ -196,4 +200,11 @@ void mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps(void);
  * @return None
  */
 void mts_manager_send_prep_pwr_pkg_notification_to_scp(void);
+
+/**
+ * @brief Send the record enables to the SCP.
+ *
+ * @param[in] enables - The record enables to send.
+ */
+void mts_manager_send_record_enables_to_scp(p_tlm_scp_record_enables_t enables);
 

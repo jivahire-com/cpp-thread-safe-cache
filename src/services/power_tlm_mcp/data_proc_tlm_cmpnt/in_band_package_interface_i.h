@@ -23,4 +23,8 @@
 
 /*--------- Function Prototypes ----------*/
 
-void package_inf_init(void);
+/**
+ * @brief Initialize the in band telemetry component.
+ * @param[in] mpam_vm_mem_fixed_pwr_mW The fixed power in mW for MPAM VM memory reporting.
+ */
+void package_inf_init(uint32_t mpam_vm_mem_fixed_pwr_mW);

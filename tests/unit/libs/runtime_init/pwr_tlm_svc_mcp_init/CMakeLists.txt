@@ -36,6 +36,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     config_get_pwr_tlm_knobs
+    config_get_pwr_tlm_mpam_mcp_knobs
     idsw_get_die_id
     idhw_is_single_die_boot_en
     telemetry_service_init

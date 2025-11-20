@@ -41,7 +41,7 @@
 /*------------- Functions ----------------*/
 
 FPFW_INIT_COMPONENT(pwr_tlm_svc_mcp,
-                    FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc", "gtimer", "hw_sem", "core_info", "tlm_fuses", "pldm"))
+                    FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc", "gtimer", "hw_sem", "core_info", "tlm_fuses", "pldm", "cfg_mgr"))
 {
     power_tlm_knobs_t pwr_tlm_knobs = config_get_pwr_tlm_knobs();
 
@@ -73,11 +73,15 @@ FPFW_INIT_COMPONENT(pwr_tlm_svc_mcp,
         _24_hr_pkg_sample_period_ms = 30 * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
     }
 
+    power_tlm_mpam_mcp_knobs_t mpam_knobs = config_get_pwr_tlm_mpam_mcp_knobs();
+
     telemetry_service_init(idsw_get_die_id(),
                            pwr_pkg_period_ms,
                            inst_pkg_sample_period_ms,
                            inst_samples_per_pkg,
                            _24_hr_pkg_sample_period_ms,
+                           mpam_knobs.fixed_pwr_mW,
+                           mpam_knobs.mem_pwr_primary_enable,
                            idhw_is_single_die_boot_en());
 
     pwr_tlm_cli_svc_init();

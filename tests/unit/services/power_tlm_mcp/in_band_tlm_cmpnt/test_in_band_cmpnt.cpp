@@ -84,7 +84,7 @@ TEST_FUNCTION(test_in_band_cmpnt_init, test_setup, test_teardown)
 
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
-    in_band_tlm_cmpnt_init(DIE_ID, 3);
+    in_band_tlm_cmpnt_init(DIE_ID, 3, false);
 }
 
 TEST_FUNCTION(test_gen_inst_report, test_setup, test_teardown)

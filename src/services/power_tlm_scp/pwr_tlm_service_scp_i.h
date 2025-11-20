@@ -10,11 +10,15 @@
 #pragma once
 
 /*----------- Nested includes ------------*/
+#include <pwr_tlm_core_exchange.h>
 #include <transfer_relay_protocol.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+
 /*-------------- Typedefs ----------------*/
+
 /*-- Declarations (Statics and globals) --*/
+extern tlm_scp_record_enables_t pwr_tlm_scp_record_enables;
 
 /*--------- Function Prototypes ----------*/
 /**
@@ -42,3 +46,16 @@ void pwr_tlm_scp_handle_incoming_mts_msgs(void);
  * @return None
  */
 void data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp(void);
+
+/**
+ * @brief API to prepare the VM memory power data received from MCP.
+ * @return None
+ */
+void data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp(void);
+
+/**
+ * @brief Handle the record enables sent from MCP to SCP.
+ *
+ * @param[in] enables - The record enables from MCP
+ */
+void data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(tlm_scp_record_enables_t enables);

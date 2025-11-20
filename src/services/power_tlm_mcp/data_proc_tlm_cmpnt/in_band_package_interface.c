@@ -30,12 +30,14 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+uint32_t local_mpam_vm_mem_fixed_pwr_mW;
 
 /*------------- Functions ----------------*/
 
-void package_inf_init(void)
+void package_inf_init(uint32_t mpam_vm_mem_fixed_pwr_mW)
 {
-    // need a call into this file, otherwise the linker will remove this file from the build
+    // todo will be used in https://azurecsi.visualstudio.com/Dev/_workitems/edit/2941640
+    local_mpam_vm_mem_fixed_pwr_mW = mpam_vm_mem_fixed_pwr_mW;
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_element_pstate_t (*pstate_array)[NUMBER_OF_PSTATES])

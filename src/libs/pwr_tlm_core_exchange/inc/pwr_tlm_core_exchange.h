@@ -43,20 +43,31 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
+
+typedef union
+{
+    struct {
+        uint16_t drop_count_en:1;
+        uint16_t vm_memory_pwr_en:1;
+        uint16_t reserved:14;
+    }record;
+    uint16_t as_uint16;
+}tlm_scp_record_enables_t, *p_tlm_scp_record_enables_t;
+
 typedef enum
 {
    TLM_CLIENT_CMD_SET_MODE_PUSH = 1,
    TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH = 2,
-   TLM_CLIENT_CMD_GEN_PWR_PACKAGE_PRIM_MCP_2_SEC_MCP_PUSH = 4,
-   TLM_CLIENT_CMD_GEN_24HR_PACKAGE_MCP_2_SCP_PUSH = 8,
-
-
+   TLM_CLIENT_CMD_GEN_PWR_PACKAGE_PRIM_MCP_2_SEC_MCP_PUSH = 3,
+   TLM_CLIENT_CMD_GEN_24HR_PACKAGE_MCP_2_SCP_PUSH = 4,
+   TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH = 5,
 } tlm_client_cmd_t;
 
 typedef struct __attribute__((packed)) tlm_client_msg_t{
     uint16_t cmd;                                                   // tlm_client_cmd_t
     union __attribute__((packed)) {
         uint16_t                       mode;                        // tlm_operating_mode_t
+        tlm_scp_record_enables_t       scp_records;
     } payload;
 } tlm_client_msg_t, *p_tlm_client_msg_t;
 

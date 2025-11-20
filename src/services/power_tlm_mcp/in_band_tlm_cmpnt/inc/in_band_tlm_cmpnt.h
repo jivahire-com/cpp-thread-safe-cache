@@ -26,8 +26,9 @@
  * @brief Initialize the in band telemetry component.
  * param[in] die_id The die id.
  * param[in] inst_samples_per_pkg The number of samples per instantaneous package.
+ * param[in] mpam_vm_mem_enable True to enable MPAM VM memory power reporting, false to disable.
  */
-void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg);
+void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg, bool mpam_vm_mem_enable);
 
 /**
  * @brief Generate instantaneous package.

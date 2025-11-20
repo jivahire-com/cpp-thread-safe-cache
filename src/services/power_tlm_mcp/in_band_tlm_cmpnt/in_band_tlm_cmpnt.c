@@ -34,7 +34,7 @@ uint16_t inband_inst_samples_per_pkg;
 
 /*------------- Functions ----------------*/
 
-void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
+void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg, bool mpam_vm_mem_enable)
 {
     inband_die_id = die_id;
     inband_inst_samples_per_pkg = inst_samples_per_pkg;
@@ -42,7 +42,7 @@ void in_band_tlm_cmpnt_init(uint8_t die_id, uint16_t inst_samples_per_pkg)
     FPFW_RUNTIME_ASSERT_EXT(inband_inst_samples_per_pkg <= MAX_INST_SAMPLES_PER_PACKAGE, inband_inst_samples_per_pkg, 0, 0, 0);
 
     ddr_manager_init();
-    mts_manager_init();
+    mts_manager_init(mpam_vm_mem_enable);
     package_creation_init();
 
     // since the telemetry schema events are not called within code, the linker will optimize out

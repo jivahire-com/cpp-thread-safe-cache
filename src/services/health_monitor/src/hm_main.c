@@ -33,6 +33,15 @@ static hm_config_t* health_monitor_config = NULL;
 static bool ddr_subsystem_up = false;
 
 /*------------- Functions ----------------*/
+static void setup_ghes_and_reset_last_cper_status()
+{
+    construct_mscp_ghes_table();
+
+    // No CPER retry transfer after warm reset, handled by HSP
+    hm_set_pldm_transfer_status(HM_PLDM_TRANSFER_STATUS_IDLE, true);
+    hm_set_pldm_transfer_status(HM_PLDM_TRANSFER_STATUS_IDLE, false);
+}
+
 hm_config_t* get_hm_config()
 {
     return health_monitor_config;
@@ -64,15 +73,13 @@ void hm_post_ddr_init()
     // Construct GHES table
     if (idhw_is_single_die_boot_en() == true)
     {
-        // Single die boot
-        construct_mscp_ghes_table();
+        setup_ghes_and_reset_last_cper_status();
     }
     else
     {
         if (hm_config->is_primary == true)
         {
-            // Primary scp start construct GHES table
-            construct_mscp_ghes_table();
+            setup_ghes_and_reset_last_cper_status();
         }
         else
         {

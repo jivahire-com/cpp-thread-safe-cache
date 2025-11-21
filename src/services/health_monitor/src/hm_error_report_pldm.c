@@ -246,14 +246,4 @@ void hm_cper_transfer_listener_from_scp(fpfw_icc_base_ctx_t* icc_ctx)
 void hm_set_pldm_ready_status()
 {
     pldm_stack_ready = true;
-
-    if (hm_get_pldm_cper_data(true, (uint8_t*)&full_pldm_cper.cper_record))
-    {
-        HM_LOG_INFO("Pending UE CPER found, rescheduling transfer\n");
-        // ToDo - when pldm scheduler available, delegate transfer
-    }
-    else
-    {
-        HM_LOG_INFO("UE CPER data not found\n");
-    }
 }

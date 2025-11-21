@@ -13,17 +13,12 @@
 #include <stdint.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
-#define ETR_LOG_ASCII_STRING_SIZE (32)
+#define ETR_LOG_ASCII_STRING_SIZE (64)
 
-#define FPFW_ET_LOG_ETR_ASCII_INFO(fmt, ...)    etr_log_ascii_info(fmt, ##__VA_ARGS__)
-#define FPFW_ET_LOG_ETR_ASCII_WARN(fmt, ...)    etr_log_ascii_warn(fmt, ##__VA_ARGS__)
-#define FPFW_ET_LOG_ETR_ASCII_ERROR(fmt, ...)   etr_log_ascii_error(fmt, ##__VA_ARGS__)
-#define FPFW_ET_LOG_ETR_ASCII_VERBOSE(fmt, ...) etr_log_ascii_verbose(fmt, ##__VA_ARGS__)
-
-/*-------------------------------- Typedefs ---------------------------------*/
-
-/*------------------- Symbolic Constant Macros (defines) --------------------*/
-#define ETR_LOG_ASCII_STRING_SIZE (32)
+#define FPFW_ET_LOG_ETR_ASCII_INFO    etr_log_ascii_info
+#define FPFW_ET_LOG_ETR_ASCII_WARN    etr_log_ascii_warn
+#define FPFW_ET_LOG_ETR_ASCII_ERROR   etr_log_ascii_error
+#define FPFW_ET_LOG_ETR_ASCII_VERBOSE etr_log_ascii_verbose
 
 /*-------------------------------- Typedefs ---------------------------------*/
 typedef enum

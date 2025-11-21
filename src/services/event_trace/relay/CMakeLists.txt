@@ -14,11 +14,14 @@ target_link_libraries(
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.specialization.mts
         fwlib.service.iccBase
+        ms::cmsis::interface
         ms::lib::crash_dump
         ms::lib::event_trace::trace
         ms::lib::hsp_firmware_headers
+        ms::lib::register_headers
         ms::lib::telemetry::fuses
         ms::service::atu_service
+        ms::service::event_trace::collector
         ms::service::mts
         silibs::idsw_kng
     PUBLIC

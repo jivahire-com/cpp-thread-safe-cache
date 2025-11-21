@@ -38,9 +38,6 @@ mock_target(${TARGET}
     _txe_thread_create
     _txe_queue_send
     _txe_queue_receive
-    _txe_event_flags_create
-    _txe_event_flags_get
-    _txe_queue_info_get
     
     fpfw_icc_base_recv
     fpfw_icc_base_send_sync
@@ -60,4 +57,8 @@ mock_target(${TARGET}
     crash_dump_bug_check
 
     idsw_get_die_id
+
+    SCB_InvalidateDCache_by_Addr
+
+    FPFwETControllerRecycleBuffer
 )

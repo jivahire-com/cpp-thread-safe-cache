@@ -162,6 +162,14 @@ void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
     // Do Nothing - just an empty mock
 }
 
+void __wrap_SCB_InvalidateDCache_by_Addr(uint32_t* addr, int32_t dsize)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(dsize);
+
+    function_called();
+}
+
 UINT __wrap__txe_block_pool_create(TX_BLOCK_POOL* pool_ptr, CHAR* name_ptr, ULONG block_size, VOID* pool_start, ULONG pool_size, UINT pool_control_block_size)
 {
     check_expected_ptr(pool_ptr);
@@ -203,6 +211,14 @@ void __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t client)
     FPFW_UNUSED(client);
 
     // Do Nothing - just an empty mock
+}
+
+fpfw_status_t __wrap_FPFwETControllerRecycleBuffer(void* pTraceController, uint32_t buffer_id)
+{
+    FPFW_UNUSED(pTraceController);
+    FPFW_UNUSED(buffer_id);
+
+    return mock_type(fpfw_status_t);
 }
 
 _Noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
@@ -255,11 +271,6 @@ int test_setup(void** ppContext)
     expect_any(__wrap__txe_thread_create, auto_start);
     expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
-
-    expect_any(__wrap__txe_event_flags_create, group_ptr);
-    expect_any(__wrap__txe_event_flags_create, name_ptr);
-    expect_any(__wrap__txe_event_flags_create, event_control_block_size);
-    will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
 
     // Setup ICC expectations
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -401,47 +412,15 @@ trp_msg_t trp_msg = {
                     }},
 };
 
-TEST_FUNCTION(test_etr_process_request_null_trp_msg, test_setup, test_teardown)
-{
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
-    // Set up expectations for a successful tx_queue_receive
-    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
-    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
-    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
-
-    will_return(set_tx_queue_receive_value, NULL);
-    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
-
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
-
-    etr_worker_thread_func((ULONG)&s_test_context);
-}
-
 TEST_FUNCTION(test_etr_process_request_unsupported_id, test_setup, test_teardown)
 {
     // Reset the message type to an unsupported ID
     trp_msg.hdr.trp_msg_id = 0xFF;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg);
@@ -468,18 +447,10 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_invalid_core, test_setup, tes
     // Reset the message type to intercore block notification
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg);
@@ -509,18 +480,10 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup, 
     etr_ddr_buffer_state_t pre_request_state = s_test_context.p_active_asic_buffer->state;
     uint64_t pre_request_size = s_test_context.p_active_asic_buffer->payload_management.size_bytes;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg);
@@ -559,18 +522,10 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup,
 
     fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg);
@@ -612,18 +567,10 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup,
 
     fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg);
@@ -674,18 +621,10 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
 
     fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg);
@@ -697,6 +636,9 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
 
     // Set up expectations for mts_get_this_die_id
     will_return_always(__wrap_mts_get_this_die_id, DIE_0);
+
+    // Since SCP, expect a Cache Invalidate call
+    expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -718,18 +660,10 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup, t
     // Reset the message type to read package complete
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_COMPLETE;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg);
@@ -764,18 +698,10 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending, tes
     trp_msg.payload.read_package_complete.phy_addr_offset =
         s_test_context.p_active_asic_buffer->payload_management.base_addr;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg);
@@ -791,6 +717,72 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending, tes
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete, test_setup, test_teardown)
+{
+    // Test with SDM Core
+    trp_msg.hdr.src_node.core_id = CPU_MCP;
+    trp_msg.hdr.src_node.die_id = DIE_0;
+    trp_msg.payload.read_intercore_block_complete.block_id = 0;
+    fake_core_buffer.CoreId = CPU_MCP;
+
+    // Reset the message type to read intercore block complete
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
+
+    will_return(__wrap_FPFwETControllerRecycleBuffer, FPFW_STATUS_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete_invalid_block, test_setup, test_teardown)
+{
+    // Test with SDM Core
+    trp_msg.hdr.src_node.core_id = CPU_MCP;
+    trp_msg.hdr.src_node.die_id = DIE_0;
+    trp_msg.payload.read_intercore_block_complete.block_id = 3;
+    fake_core_buffer.CoreId = CPU_MCP;
+
+    // Reset the message type to read intercore block complete
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_E_PARAM
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address, test_setup, test_teardown)
@@ -809,18 +801,10 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address, te
     // Set a good address for the host read request
     trp_msg.payload.read_package_complete.phy_addr_offset = 0xDEADBEEF; // Invalid address
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg);
@@ -858,18 +842,10 @@ TEST_FUNCTION(test_etr_process_request_host_request_capabilities, test_setup, te
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_CAPABILITIES;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg_host);
@@ -893,18 +869,10 @@ TEST_FUNCTION(test_etr_process_request_host_request_state, test_setup, test_tear
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg_host);
@@ -928,18 +896,10 @@ TEST_FUNCTION(test_etr_process_request_host_request_invalid, test_setup, test_te
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_START_STOP;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg_host);
@@ -968,18 +928,10 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup
     trp_msg_host.payload.intercore_block_notification.addr_offset =
         s_test_context.p_active_asic_buffer->payload_management.base_addr;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg_host);
@@ -1002,18 +954,10 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup
 
 TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending_primary_etr, test_setup, test_teardown)
 {
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg_host);
@@ -1029,7 +973,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending_primary_
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of the dcp read data request is set to success, and TRP Message status is set to success
-    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_NONE);
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
@@ -1042,18 +986,10 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     trp_msg_host.payload.dcp_msg.payload.read_data_complete.rd_data_addr_offset =
         s_test_context.p_active_asic_buffer->payload_management.base_addr - MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg_host);
@@ -1085,18 +1021,10 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, 
     // Set a bad address for the host read request
     trp_msg_host.payload.dcp_msg.payload.read_data_complete.rd_data_addr_offset = 0xDEADBEEF;
 
-    // Set Expectations for successful tx_event_flags_get
-    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
-    expect_any_always(__wrap__txe_event_flags_get, get_option);
-    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
-    expect_any_always(__wrap__txe_event_flags_get, wait_option);
-    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
-
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     will_return(set_tx_queue_receive_value, &trp_msg_host);

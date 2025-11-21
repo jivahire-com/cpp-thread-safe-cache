@@ -18,11 +18,10 @@
 
 /* Each core can queue 2 event trace buffers to MCP. 
    Number of cores per die = 5 (SCP, MCP, SDM, CDED, HSP)
-   +1 to account for the host read request and +1 for the request from MCP Die 1 to MCP Die 0.
-   So ETR_MAX_MTS_CLIENT_MESSAGES = 5 * 2 + 1 + 1 = 12 */
-#define ETR_MAX_MTS_CLIENT_MESSAGES (12)
-#define ET_MTS_CLIENT_BLOCK_POOL_SIZE \
-    ((sizeof(uint32_t) + MAX_TRP_MSG_BLOCK_SIZE) * ETR_MAX_MTS_CLIENT_MESSAGES)
+   +2 to account for the host read requests and +1 for the request from MCP Die 1 to MCP Die 0.
+   So ETR_MTS_CLIENT_MAX_MESSAGES = 5 * 2 + 2 + 1 = 13 */
+#define ETR_MTS_CLIENT_MAX_MESSAGES (13)
+#define ETR_MTS_CLIENT_BLOCK_POOL_SIZE (MAX_TRP_MSG_BLOCK_SIZE * ETR_MTS_CLIENT_MAX_MESSAGES)
 
 /* Event Flags for the ETR from the MTS Client */
 #define ETR_EVENT_FLAG_NEW_MTS_MSG    (0x1)

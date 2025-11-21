@@ -32,10 +32,14 @@
 #include <IFpFwEventTracingStatus.h>
 #include <atu_init.h>
 #include <bug_check.h>
+#include <cmsis_m7.h>
 #include <data_collection_protocol.h>
+#include <event_trace_collector.h>
 #include <event_trace_relay_events.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
+#include <inttypes.h>
+#include <mscp_exp_rmss_memory_map.h>
 #include <mts_platform_specialization.h>
 #include <sdm_ext_cfg_regs.h>
 
@@ -44,32 +48,19 @@
     ((die_id * IB_TELEMETRY_DDR_PER_DIE_SIZE) + (mscp_atu_mapped_addr - MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR))
 
 /*-------------------------------- Typedefs ---------------------------------*/
-typedef struct
-{
-    p_etr_service_context_t p_etr_context; // Pointer to the ETR service context
-    mts_client_t mts_client;               // MTS client for Event Trace Relay
-} event_trace_relay_mts_client_t;
 
 /*--------------------------- Function Prototypes ---------------------------*/
-static void etr_mts_rx_msg_handler(void);
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
-TX_EVENT_FLAGS_GROUP s_etr_mts_flags; // Event flags for synchronization
-
 /* MTS Client Definition for Event Trace */
-static event_trace_relay_mts_client_t s_event_trace_relay_mts_client = {
-    .mts_client =
-        {
-            .notify_from_drv_frmwk = etr_mts_rx_msg_handler, // Callback for receiving MTS messages
-        },
-};
+static mts_client_t s_event_trace_relay_mts_client = {0};
 
 /* Message Queue Memory for the ET MTS Client */
-static p_trp_msg_t g_etr_mts_client_queue_mem[ETR_MAX_MTS_CLIENT_MESSAGES];
+static p_trp_msg_t g_etr_mts_client_queue_mem[ETR_MTS_CLIENT_MAX_MESSAGES];
 
 /* Memory for the ET MTS Client Block Pool (used by the thread) */
-static uint8_t g_etr_mts_client_pool_mem[ET_MTS_CLIENT_BLOCK_POOL_SIZE];
+static uint8_t g_etr_mts_client_pool_mem[ETR_MTS_CLIENT_BLOCK_POOL_SIZE];
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -307,12 +298,12 @@ static void etr_handle_copy_buffer_request(etr_service_context_t* p_context, etr
     uint64_t size_left = p_context->p_active_asic_buffer->buffer.asic.asic_header.BufferSize -
                          p_context->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes;
 
-    FPFW_ET_LOG_ETR_ASCII_VERBOSE("Size left in ASIC buffer: %zu", size_left);
+    FPFW_ET_LOG_ETR_ASCII_INFO("ASIC Buff, Rem: %" PRIu64 " B. Req: %" PRIu32 " B", size_left, p_request->buffer_size_bytes);
 
     /* If it doesn't fit, complete the current asic buffer */
     if (size_left <= p_request->buffer_size_bytes)
     {
-        FPFW_ET_LOG_ETR_ASCII_VERBOSE("ASIC buff too small, refreshing");
+        FPFW_ET_LOG_ETR_ASCII_INFO("ASIC buff too small, refreshing");
         etr_complete_asic_buffer(p_context);
     }
 
@@ -358,7 +349,7 @@ static fpfw_status_t etr_handle_host_read_request(etr_service_context_t* p_conte
 
             if (p_context->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_HSP_TRACE)
             {
-                FPFW_ET_LOG_ETR_ASCII_INFO("Pending HSP buffer @%p\n",
+                FPFW_ET_LOG_ETR_ASCII_INFO("Pending HSP buffer @%p",
                                            (void*)p_pending_buffer->payload_management.base_addr);
                 p_request->p_trp_msg->payload.dcp_msg.payload.read_data.physical_buffer_size = IB_TLM_DDR_ATU_AP_WIN_TRACE_SIZE;
                 p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_size =
@@ -366,7 +357,7 @@ static fpfw_status_t etr_handle_host_read_request(etr_service_context_t* p_conte
             }
             else
             {
-                FPFW_ET_LOG_ETR_ASCII_INFO("Pending ASIC buffer @%p\n",
+                FPFW_ET_LOG_ETR_ASCII_INFO("Pending ASIC buffer @%p",
                                            (void*)p_pending_buffer->payload_management.base_addr);
                 p_context->p_active_asic_buffer = &p_context->ddr_buffers[i];
                 p_request->p_trp_msg->payload.dcp_msg.payload.read_data.physical_buffer_size =
@@ -394,15 +385,9 @@ static fpfw_status_t etr_handle_host_read_request(etr_service_context_t* p_conte
     }
 
     /* If no free buffers found */
-    FPFW_ET_LOG_ETR_ASCII_ERROR("No pending ASIC buffers found");
+    FPFW_ET_LOG_ETR_ASCII_WARN("No pending ASIC buffers found");
 
-    /* If this is not a primary instance, return dcp_msg msg_status as busy */
-    /* For the primary instance, the DCP request will be forwarded to the secondary instance, so retain state */
-    if (!mts_is_primary_instance())
-    {
-        p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_NONE;
-    }
-
+    p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_NONE;
     return FPFW_STATUS_FAIL;
 }
 
@@ -464,7 +449,7 @@ static void etr_handle_read_complete_response(etr_service_context_t* p_context, 
         {
             p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_RD_DATA_NONE;
         }
-        FPFW_ET_LOG_ETR_ASCII_ERROR("No pending ASIC buffers found");
+        FPFW_ET_LOG_ETR_ASCII_WARN("No pending ASIC buffers found");
     }
 }
 
@@ -511,15 +496,7 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
         break;
 
     case DCP_MSG_ID_READ_DATA:
-        /* If local ETR has no data to share, forward the request to the secondary and return.
-        The secondary ETR will handle the request if it has data available. No response expected */
-        if (etr_handle_host_read_request(p_context, p_request) != FPFW_STATUS_SUCCESS)
-        {
-            if (primary_instance)
-            {
-                mts_client_forward_trp_msg(p_trp_msg, TRP_BROADCAST_PRIM_TO_SEC_PEER_ONLY);
-            }
-        }
+        etr_handle_host_read_request(p_context, p_request);
 
         /* When not forwarding the message, update the response payload size */
         response_dcp_payload_size = sizeof(dcp_msg_read_data_t);
@@ -575,7 +552,7 @@ static void etr_initialize_worker_thread(etr_service_context_t* p_context, const
                                    p_config->thread_config.time_slice_option,
                                    TX_AUTO_START);
 
-    BUG_ASSERT(status == TX_SUCCESS);
+    BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
 }
 
 /**
@@ -605,6 +582,9 @@ fpfw_status_t decode_validate_buffer_metadata(etr_service_request_t* p_request)
         break;
 
     case CPU_SCP: /* For SCP, the addr_offset is a from scratch ram, which is mapped the same on both SCP and MCP. So use as is */
+        /* Invalidate cache for the Trace Buffer if the source is SCP, since data is written on the other side of the (cached) EXP RAM */
+        SCB_InvalidateDCache_by_Addr((uint32_t*)SCP_EXP_SCP_TRACE_BUFFER_BASE, SCP_EXP_SCP_TRACE_BUFFER_SIZE);
+        break;
     case CPU_MCP: /* For MCP, the addr_offset is a local address, use as it is */
         break;
 
@@ -617,14 +597,15 @@ fpfw_status_t decode_validate_buffer_metadata(etr_service_request_t* p_request)
     PFPFW_ET_CORE_BUFFER_HEADER p_etc_header = (PFPFW_ET_CORE_BUFFER_HEADER)p_request->buffer_addr;
     p_request->buffer_size_bytes = p_etc_header->UsedBytes;
 
-    /* Print the Event Trace Buffer Header metadata */
-    FPFW_ET_LOG_ETR_ASCII_VERBOSE("ETR Hdr:\n \
-        - Core ID: %2d\n    \
-        - Buffer ID: %2d, \n    \
-        - Buffer Size: %zu",
-                                  p_etc_header->CoreId,
-                                  p_etc_header->BufferId,
-                                  p_etc_header->BufferSize);
+    /* Print the Event Trace Buffer Header metadata. Split into multiple lines due to char length limitation */
+    FPFW_ET_LOG_ETR_ASCII_INFO("Buffer Address: %p", (void*)p_request->buffer_addr);
+    FPFW_ET_LOG_ETR_ASCII_INFO("Buff Hdr: Id: %" PRIu16 ", Core: %" PRIu16 ", Size: %" PRIu32 "",
+                               p_etc_header->BufferId,
+                               p_etc_header->CoreId,
+                               p_etc_header->BufferSize);
+    FPFW_ET_LOG_ETR_ASCII_INFO("Buff Hdr: UsedBytes: %" PRIu32 ", LostEvents: %" PRIu32 "",
+                               p_etc_header->UsedBytes,
+                               p_etc_header->LostEvents);
 
     /* Sanity Check the Buffer Header */
     if ((p_etc_header->CoreId != CPU_SCP && p_etc_header->CoreId != CPU_MCP &&
@@ -639,58 +620,39 @@ fpfw_status_t decode_validate_buffer_metadata(etr_service_request_t* p_request)
 }
 
 /**
- * @brief Driver Framework Callback to handle incoming MTS messages.
- *
- * @param None
- * @return None
- */
-static void etr_mts_rx_msg_handler(void)
-{
-    /* Set the event flag to indicate a new MTS message is available */
-    UINT txStatus = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_NEW_MTS_MSG, TX_OR);
-    BUG_ASSERT_PARAM(txStatus == TX_SUCCESS, txStatus, 0);
-}
-
-/**
  * @brief Initialize the MTS client for the Event Trace Relay.
  *
- * @param p_context Pointer to the ETR service context
+ * @param[in] None
  * @return None
  */
-static void etr_mts_client_init(p_etr_service_context_t p_context, const etr_service_config_t* p_config)
+static void etr_mts_client_init(void)
 {
-    FPFW_UNUSED(p_config);
-    s_event_trace_relay_mts_client.p_etr_context = p_context;
-
     /* Create a block pool for the MTS client to use for receiving messages */
-    UINT tx_status = tx_block_pool_create(&s_event_trace_relay_mts_client.mts_client.rx_pool, // pool_ptr
-                                          ETR_BLOCK_POOL_NAME,                                // name_ptr
-                                          MAX_TRP_MSG_BLOCK_SIZE,                             // block_size
-                                          g_etr_mts_client_pool_mem,                          // pool_start
-                                          sizeof(g_etr_mts_client_pool_mem));                 // pool_size
+    UINT tx_status = tx_block_pool_create(&s_event_trace_relay_mts_client.rx_pool, // pool_ptr
+                                          ETR_BLOCK_POOL_NAME,                     // name_ptr
+                                          MAX_TRP_MSG_BLOCK_SIZE,                  // block_size
+                                          g_etr_mts_client_pool_mem,               // pool_start
+                                          sizeof(g_etr_mts_client_pool_mem));      // pool_size
 
-    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_relay_mts_client.mts_client.rx_pool);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_relay_mts_client.rx_pool);
 
     /* Create a queue for receiving Event Trace MTS client messages */
-    tx_status = tx_queue_create(&s_event_trace_relay_mts_client.mts_client.rx_queue, // queue_ptr
-                                ETR_WORK_QUEUE_NAME,                                 // name_ptr
-                                sizeof(p_trp_msg_t) / sizeof(uint32_t),              // queue_message_size
-                                g_etr_mts_client_queue_mem,                          // queue_start
-                                sizeof(g_etr_mts_client_queue_mem));                 // queue_size
+    tx_status = tx_queue_create(&s_event_trace_relay_mts_client.rx_queue, // queue_ptr
+                                ETR_WORK_QUEUE_NAME,                      // name_ptr
+                                sizeof(p_trp_msg_t) / sizeof(uint32_t),   // queue_message_size
+                                g_etr_mts_client_queue_mem,               // queue_start
+                                sizeof(g_etr_mts_client_queue_mem));      // queue_size
 
-    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_relay_mts_client.mts_client.rx_queue);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_event_trace_relay_mts_client.rx_queue);
 
-    /* Create a flag group for synchronization between MTS and the ETR worker thread */
-    tx_status = tx_event_flags_create(&s_etr_mts_flags, "ETR MTS flags");
-    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_etr_mts_flags);
     /* Register the MTS client */
-    mts_client_register(MTS_CLIENT_ID_EVENT_TRACE, &s_event_trace_relay_mts_client.mts_client);
+    mts_client_register(MTS_CLIENT_ID_EVENT_TRACE, &s_event_trace_relay_mts_client);
 }
 
 /*----------------------------- Global Functions ----------------------------*/
 void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t* p_config)
 {
-    FPFW_ET_LOG_ETR_ASCII_INFO("Initializing ETR Svc and MTS Clnt");
+    FPFW_ET_LOG_ETR_ASCII_INFO("Initializing ETR SVC and MTS Client");
 
     BUG_ASSERT(p_context != NULL);
     BUG_ASSERT(p_config != NULL);
@@ -705,9 +667,9 @@ void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t
     etr_initialize_worker_thread(p_context, p_config);
 
     /* Initialize the MTS client for the Event Trace Relay */
-    etr_mts_client_init(p_context, p_config);
+    etr_mts_client_init();
 
-    FPFW_ET_LOG_ETR_ASCII_INFO("ETR Service and MTS Clnt Init done");
+    FPFW_ET_LOG_ETR_ASCII_INFO("ETR Service and MTS Client Init done");
 }
 
 /**
@@ -721,127 +683,34 @@ void etr_worker_thread_func(ULONG thread_input)
 {
     etr_service_context_t* p_context = (etr_service_context_t*)thread_input;
     etr_service_request_t etr_request = {0};
-    UINT queue_status = TX_SUCCESS;
     uint8_t this_die_id = mts_get_this_die_id();
 
     /* Infinite loop that will decode and recycle buffers marked as completed */
     while (true)
     {
-        ULONG event_flags = 0;
+        UINT queue_status =
+            tx_queue_receive(&s_event_trace_relay_mts_client.rx_queue, &etr_request.p_trp_msg, TX_WAIT_FOREVER);
 
-        /* Wait for a new message to be available. This will block until a new message is available from MTS */
-        UINT status = tx_event_flags_get(&s_etr_mts_flags, ETR_EVENT_FLAG_ANY_VALID, TX_OR_CLEAR, &event_flags, TX_WAIT_FOREVER);
-        BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
+        // Assert if the queue status is not TX_SUCCESS or TX_QUEUE_EMPTY
+        BUG_ASSERT_PARAM((queue_status == TX_SUCCESS), queue_status, 0);
 
-        /* Loop until all messages are processed and queue is empty */
-        /** Error Handling for tx_queue_receive
-         * 1. TX_QUEUE_EMPTY - This is expected when there are no messages in the queue, so we will exit the loop gracefully, waiting for a flag again.
-         * 2. TX_DELETED - Should not happen in this context as the queue is not handled by anyone else. This should be a fatal error since somehow the thread is deleted (which is unrecoverable)
-         * 3. TX_WAIT_ABORTED, TX_QUEUE_ERROR, TX_PTR_ERROR, TX_WAIT_ERROR - This should not happen in this context as we are not passing the correct pointers/values.
-         * This should be a fatal error since somehow the thread is deleted (which is unrecoverable)
-         */
-        do
+        FPFW_ET_LOG_ETR_ASCII_INFO("New ET MTS msg ID: %" PRIx16 ", core %" PRIx16 "",
+                                   etr_request.p_trp_msg->hdr.trp_msg_id,
+                                   etr_request.p_trp_msg->hdr.src_node.core_id);
+
+        switch (etr_request.p_trp_msg->hdr.trp_msg_id)
         {
-            queue_status =
-                tx_queue_receive(&s_event_trace_relay_mts_client.mts_client.rx_queue, &etr_request.p_trp_msg, TX_NO_WAIT);
+        case TRP_MSG_ID_DCP_FORWARD:
+            etr_handle_dcp_msg(p_context, &etr_request);
+            break;
+        case TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION:
+        case TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE:
+            /* Update p_trp_msg and respond with a TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE request */
+            etr_request.p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
 
-            // Assert if the queue status is not TX_SUCCESS or TX_QUEUE_EMPTY
-            BUG_ASSERT(((queue_status == TX_QUEUE_EMPTY) || (queue_status == TX_SUCCESS)));
-
-            if (queue_status == TX_QUEUE_EMPTY)
+            if (decode_validate_buffer_metadata(&etr_request) != FPFW_STATUS_SUCCESS)
             {
-                /* No more messages to process, exit the loop */
-                break;
-            }
-
-            if (etr_request.p_trp_msg == NULL)
-            {
-                FPFW_ET_LOG_ETR_ASCII_ERROR("NULL TRP message from MTS queue");
-                break;
-            }
-
-            FPFW_ET_LOG_ETR_ASCII_INFO("Processing new ET MTS msg ID: %2d, core %2d",
-                                       etr_request.p_trp_msg->hdr.trp_msg_id,
-                                       etr_request.p_trp_msg->hdr.src_node.core_id);
-
-            switch (etr_request.p_trp_msg->hdr.trp_msg_id)
-            {
-            case TRP_MSG_ID_DCP_FORWARD:
-                etr_handle_dcp_msg(p_context, &etr_request);
-                break;
-            case TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION:
-            case TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE:
-                /* Update p_trp_msg and respond with a TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE request */
-                etr_request.p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
-
-                if (decode_validate_buffer_metadata(&etr_request) != FPFW_STATUS_SUCCESS)
-                {
-                    FPFW_ET_LOG_ETR_ASCII_ERROR("[ETR] Buffer Metadata Invalid");
-
-                    /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
-                    etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
-                    etr_notify_etc(&etr_request);
-                    break;
-                }
-
-                /* Handle the copy buffer request */
-                etr_handle_copy_buffer_request(p_context, &etr_request);
-                break;
-
-            /* Handle the case where the MCP Die 0 signals the MCP Die 1 that ASIC buffer read is complete. */
-            case TRP_MSG_ID_READ_PACKAGE_COMPLETE:
-                if (this_die_id == DIE_1)
-                {
-                    etr_handle_read_complete_response(p_context, &etr_request, CPU_MCP);
-                }
-                else
-                {
-                    FPFW_ET_LOG_ETR_ASCII_ERROR("Rx TRP read package complete on D0");
-
-                    /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
-                    etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
-                    etr_notify_etc(&etr_request);
-                }
-                break;
-
-            case TRP_MSG_ID_PACKAGE_NOTIFICATION:
-            case TRP_MSG_ID_READ_PACKAGE_RESPONSE:
-                if (this_die_id == DIE_0)
-                {
-                    /* Update p_trp_msg and respond with a TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE request */
-                    /* TODO ADO2686477: Add logic to copy the ASIC buffers from Die 1 to Die 0 */
-                    etr_request.p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_COMPLETE;
-                }
-                else
-                {
-                    FPFW_ET_LOG_ETR_ASCII_ERROR("Rx TRP pkg notification on D1");
-
-                    /* Update the TRP message status to TRP_STATUS_E_PARAM*/
-                    etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
-                }
-
-                etr_notify_etc(&etr_request);
-                break;
-
-            case TRP_MSG_ID_READ_PACKAGE:
-                if (this_die_id == DIE_1)
-                {
-                    etr_request.p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_RESPONSE;
-                    /* TODO ADO2686477: Add logic to reply with the ASIC buffer location from Die 1 to Die 0 */
-                }
-                else
-                {
-                    /* If we receive a TRP_MSG_ID_READ_PACKAGE on Die 0, we ignore it */
-                    FPFW_ET_LOG_ETR_ASCII_ERROR("Rx TRP_MSG_ID_READ_PACKAGE on D0");
-
-                    /* Update the TRP message status to TRP_STATUS_E_PARAM */
-                    etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
-                }
-                etr_notify_etc(&etr_request);
-                break;
-
-            default:
-                FPFW_ET_LOG_ETR_ASCII_ERROR("Unsupported ET MTS ID: %d", etr_request.p_trp_msg->hdr.trp_msg_id);
+                FPFW_ET_LOG_ETR_ASCII_ERROR("Buffer Metadata Invalid");
 
                 /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
                 etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
@@ -849,15 +718,100 @@ void etr_worker_thread_func(ULONG thread_input)
                 break;
             }
 
-            /* Release the block back to the pool */
-            status = tx_block_release(etr_request.p_trp_msg);
-            BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
-
-#ifdef _WIN32
-            /* For unit tests, break out of the loop after processing one message */
+            /* Handle the copy buffer request */
+            etr_handle_copy_buffer_request(p_context, &etr_request);
             break;
-#endif
-        } while (queue_status == TX_SUCCESS);
+
+        /* Handle the case where the MCP Die 0 signals the MCP Die 1 that ASIC buffer read is complete. */
+        case TRP_MSG_ID_READ_PACKAGE_COMPLETE:
+            if (this_die_id == DIE_1)
+            {
+                etr_handle_read_complete_response(p_context, &etr_request, CPU_MCP);
+            }
+            else
+            {
+                FPFW_ET_LOG_ETR_ASCII_INFO("Rx TRP read package complete on D0");
+
+                /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
+                etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
+                etr_notify_etc(&etr_request);
+            }
+            break;
+
+        case TRP_MSG_ID_PACKAGE_NOTIFICATION:
+        case TRP_MSG_ID_READ_PACKAGE_RESPONSE:
+            if (this_die_id == DIE_0)
+            {
+                /* Update p_trp_msg and respond with a TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE request */
+                /* TODO ADO2686477: Add logic to copy the ASIC buffers from Die 1 to Die 0 */
+                etr_request.p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_COMPLETE;
+            }
+            else
+            {
+                FPFW_ET_LOG_ETR_ASCII_INFO("Rx TRP pkg notification on D1");
+
+                /* Update the TRP message status to TRP_STATUS_E_PARAM*/
+                etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
+            }
+
+            etr_notify_etc(&etr_request);
+            break;
+
+        case TRP_MSG_ID_READ_PACKAGE:
+            if (this_die_id == DIE_1)
+            {
+                etr_request.p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_RESPONSE;
+                /* TODO ADO2686477: Add logic to reply with the ASIC buffer location from Die 1 to Die 0 */
+            }
+            else
+            {
+                /* If we receive a TRP_MSG_ID_READ_PACKAGE on Die 0, we ignore it */
+                FPFW_ET_LOG_ETR_ASCII_INFO("Rx TRP_MSG_ID_READ_PACKAGE on D0");
+
+                /* Update the TRP message status to TRP_STATUS_E_PARAM */
+                etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
+            }
+            etr_notify_etc(&etr_request);
+            break;
+
+        case TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE:
+            /* Recycle the buffer. If the ETR returns a buffer that is not in the processing state,
+             * FPFwETControllerRecycleBuffer will handle error management
+             * An error in this case would indicate that the processing time from the MCP exceeds the time
+             * taken to fill the buffer, consider increasing the buffer size in that case.*/
+            if (etr_request.p_trp_msg->payload.read_intercore_block_complete.block_id >= ETC_SERVICE_CORE_BUFFER_COUNT)
+            {
+                /* Invalid Block ID, report error and drop the message */
+                FPFW_ET_LOG_ETR_ASCII_ERROR("Fail: Invalid ET Buffer: %1d",
+                                            etr_request.p_trp_msg->payload.read_intercore_block_complete.block_id);
+                etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
+                mts_client_send_trp_response(etr_request.p_trp_msg);
+            }
+            else
+            {
+                FPFW_ET_LOG_ETR_ASCII_INFO("Block Transfer Complete");
+
+                /* Recycle the buffer */
+                uint32_t buffer_id = etr_request.p_trp_msg->payload.read_intercore_block_complete.block_id;
+                FPFW_ET_LOG_ETR_ASCII_INFO("Recycling Buff %" PRIu32 "", buffer_id);
+
+                FPFW_ET_STATUS status = FPFwETControllerRecycleBuffer(FPFwETGetController(), buffer_id);
+                BUG_ASSERT_PARAM(status == FPFW_ET_SUCCESS, status, 0);
+            }
+            break;
+
+        default:
+            FPFW_ET_LOG_ETR_ASCII_ERROR("Unsupported ET MTS ID: %" PRIx16 "", etr_request.p_trp_msg->hdr.trp_msg_id);
+
+            /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
+            etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
+            etr_notify_etc(&etr_request);
+            break;
+        }
+
+        /* Release the block back to the pool */
+        UINT status = tx_block_release(etr_request.p_trp_msg);
+        BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
 
 /* For unit tests - break out of the loop */
 #ifdef _WIN32

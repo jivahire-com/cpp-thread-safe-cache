@@ -124,8 +124,8 @@ Function Install-AzCli()
     $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
     Write-Host $Message -NoNewLine -ForegroundColor Cyan
 
-    $ExpectedPath = "${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\CLI2\wbin\"
-
+    $ExpectedPath = "$env:TEMP\AzureCLI"
+    $zipPath = "$env:TEMP\AzureCLI.zip"
     if (-not (Test-Path $ExpectedPath))
     {
         # Uninstall existing Azure CLI if present
@@ -134,19 +134,16 @@ Function Install-AzCli()
             ForEach-Object {
                 $_.Uninstall() | Out-Null
             }
-
         # Install version 2.73.0
-        Invoke-WebRequest -Uri "https://azcliprod.blob.core.windows.net/msi/azure-cli-2.73.0.msi" -OutFile ".\AzureCLI.msi"
-        $Return = Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet /norestart' -PassThru
-        Remove-Item .\AzureCLI.msi
-
-        if ($Return.ExitCode -ne 0 -or -not (Test-Path $ExpectedPath))
-        {
-            Write-Host "Failed" -ForegroundColor Red
-            throw "Unable to install AzCli"
+        Invoke-WebRequest -Uri "https://azcliprod.blob.core.windows.net/zip/azure-cli-2.73.0-x64.zip" -OutFile $zipPath
+        Expand-Archive $zipPath -DestinationPath $ExpectedPath -Force
+        $azPath = Get-ChildItem -Path $ExpectedPath -Recurse -Filter "az.cmd" | Select-Object -First 1
+        Write-Host "azPath: $azPath"
+        if (-not $azPath) {
+            Write-Error "az.cmd not found after extraction."
+            exit 1
         }
-
-        $env:Path += ";$ExpectedPath"
+        $env:PATH = "$($azPath.Directory.FullName);$env:PATH"
         Write-Host "Done" -ForegroundColor Green
         # Show installed version
         try {
@@ -162,17 +159,22 @@ Function Install-AzCli()
     }
     else
     {
-        try
-        {
-            $Return = Invoke-Executable -exe "az" -exeArgs 'extension add --name azure-devops'
+       # Reuse az.cmd path if already installed
+        $azPath = Get-ChildItem -Path $ExpectedPath -Recurse -Filter "az.cmd" | Select-Object -First 1
+        if ($azPath) {
+            try {
+                $env:PATH = "$($azPath.Directory.FullName);$env:PATH"
+                & $azPath.FullName extension add --name azure-devops
+                Write-Host "Azure DevOps extension installed." -ForegroundColor Green
+            }
+            catch {
+                Write-Host "Azure DevOps extension install failed" -ForegroundColor Yellow
+            }
+            Write-Host "Exists" -ForegroundColor Green
         }
-        catch
-        {
-            Write-Host "Azure DevOps extension install failed" -ForegroundColor Yellow
-            Write-Host $Return
+        else {
+            Write-Host "az.cmd not found in $ExpectedPath" -ForegroundColor Red
         }
-        Write-Host "Exists" -ForegroundColor Green
-        $env:Path += ";$ExpectedPath"
     }
 
 }

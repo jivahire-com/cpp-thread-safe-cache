@@ -59,12 +59,12 @@ if (&debug==1)
     print ""
     print "ICC RECV Payload Addr [0x"+format.hex(8.,&recv_payload_addr)+"]"
     print ""
-    print "    Version [0x"+format.hex(8.,data.long(EOAXI:&recv_payload_addr+&version_offset))+"]"
-    print "    Token   [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&token_offset))+"]"
-    print "    Id      [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&id_offset))+"]"
-    print "    Command [0x"+format.hex(8.,data.long(EOAXI:&recv_payload_addr+&command_offset))+"]"
-    print "    Size    [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&payload_size_offset))+"]"
-    print "    STATUS  [0x"+format.hex(4.,data.word(EOAXI:&recv_payload_addr+&status_offset))+"]"
+    print "    Version [0x"+format.hex(8.,data.long(ENAXI:&recv_payload_addr+&version_offset))+"]"
+    print "    Token   [0x"+format.hex(4.,data.word(ENAXI:&recv_payload_addr+&token_offset))+"]"
+    print "    Id      [0x"+format.hex(4.,data.word(ENAXI:&recv_payload_addr+&id_offset))+"]"
+    print "    Command [0x"+format.hex(8.,data.long(ENAXI:&recv_payload_addr+&command_offset))+"]"
+    print "    Size    [0x"+format.hex(4.,data.word(ENAXI:&recv_payload_addr+&payload_size_offset))+"]"
+    print "    STATUS  [0x"+format.hex(4.,data.word(ENAXI:&recv_payload_addr+&status_offset))+"]"
     print ""
 )
 
@@ -84,9 +84,9 @@ if (&debug==1)
 //
 // This is inclusive, so subtract one from the end address.
 //
-Data.SAVE.Binary &file_name EOAXI:&recv_payload_addr--(&payload_end_addr-1)
+Data.SAVE.Binary &file_name ENAXI:&recv_payload_addr--(&payload_end_addr-1)
 
-Data.Dump EOAXI:&recv_payload_addr
+Data.Dump ENAXI:&recv_payload_addr
 
 if (&debug==1)
 (
@@ -116,7 +116,7 @@ if (&debug==1)
 &clear_reg_offset=0x8
 &ch_0_flag_0_clr_address=&mhu_address+&channels_offset+&clear_reg_offset
 
-data.set (EOAXI:&ch_0_flag_0_clr_address) %long 0x1
+data.set (ENAXI:&ch_0_flag_0_clr_address) %long 0x1
 
 // Validate the pending flag is now 0
 DO ./check_packet_pending.cmm recv

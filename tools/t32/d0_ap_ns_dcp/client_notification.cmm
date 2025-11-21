@@ -49,7 +49,7 @@ if (&dcp_payload_addr==-1)
 
 // The message id is in the DCP Header, which is before the payload, work backwards from the payload address
 &message_id_offset= 0x8
-&message_id= data.short(EOAXI:&dcp_payload_addr-&message_id_offset)
+&message_id= data.short(ENAXI:&dcp_payload_addr-&message_id_offset)
 
 // Message ID for CLIENT_NOTIFICATION
 if (&message_id!=0x000B)

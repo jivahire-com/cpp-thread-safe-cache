@@ -54,17 +54,17 @@ print  ""
 print  "Getting DCP Message."
 print  ""
 
-&message_status= data.short(EOAXI:&dcp_header_addr+&message_status_offset)
+&message_status= data.short(ENAXI:&dcp_header_addr+&message_status_offset)
 
 // Print the DCP Header information
 print ""
 print "DCP Message Header Addr [0x"+format.hex(8.,&dcp_header_addr)+"]"
 print "" 
-print "    Client ID      [0x"+format.hex(4.,data.short(EOAXI:&dcp_header_addr+&client_id_offset))+"]"
-print "    Message ID     [0x"+format.hex(4.,data.short(EOAXI:&dcp_header_addr+&message_id_offset))+"]"
-print "    Sequence Num   [0x"+format.hex(4.,data.short(EOAXI:&dcp_header_addr+&seq_num_offset))+"]"
-print "    Message Status [0x"+format.hex(4.,data.short(EOAXI:&dcp_header_addr+&message_status_offset))+"]"
-print "    Payload Size   [0x"+format.hex(4.,data.short(EOAXI:&dcp_header_addr+&payload_size_offset))+"]"
+print "    Client ID      [0x"+format.hex(4.,data.short(ENAXI:&dcp_header_addr+&client_id_offset))+"]"
+print "    Message ID     [0x"+format.hex(4.,data.short(ENAXI:&dcp_header_addr+&message_id_offset))+"]"
+print "    Sequence Num   [0x"+format.hex(4.,data.short(ENAXI:&dcp_header_addr+&seq_num_offset))+"]"
+print "    Message Status [0x"+format.hex(4.,data.short(ENAXI:&dcp_header_addr+&message_status_offset))+"]"
+print "    Payload Size   [0x"+format.hex(4.,data.short(ENAXI:&dcp_header_addr+&payload_size_offset))+"]"
 print ""
 
 //

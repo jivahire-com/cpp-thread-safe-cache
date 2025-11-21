@@ -113,7 +113,7 @@ if (&read_data_size!=0)
 	//
 	// This is inclusive, so subtract one from the end address.
 	//
-	Data.SAVE.Binary &file_name EOAXI:&data_start_addr--(&data_end_addr-1)
+	Data.SAVE.Binary &file_name ENAXI:&data_start_addr--(&data_end_addr-1)
 
 	print ""
 	print "Saved read data to "+"&file_name"

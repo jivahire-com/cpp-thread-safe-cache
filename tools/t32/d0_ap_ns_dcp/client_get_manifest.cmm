@@ -109,9 +109,9 @@ print ""
 //
 // This is inclusive, so subtract one from the end address
 //
-Data.SAVE.Binary &file_name EOAXI:&manifest_start_addr--(&manifest_end_addr-1)
+Data.SAVE.Binary &file_name ENAXI:&manifest_start_addr--(&manifest_end_addr-1)
 
-Data.Dump EOAXI:&manifest_start_addr
+Data.Dump ENAXI:&manifest_start_addr
 
 print ""
 print "Saved manifest to "+"&file_name"

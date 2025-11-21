@@ -58,7 +58,7 @@ else
 // We can use the Post Box Register for either a Recv or Send frame due to the IP being monolithic and the Recv and Send frames have the same offsets for channels
 // The channel status register offset: https://kingsgatedocs.azurewebsites.net/static/csrs/v1.6.0/ap_addr_map/html/D0_AP2MCP_MHU_SND_NS-PDBCW_page_Registers.html#PDBCW0_ST
 &ch_0_flag_0_pb_address = &mhu_address+&channels_offset+&channel_status_offset
-&ch_0_flag_0_pb_status = data.long(EOAXI:&ch_0_flag_0_pb_address)
+&ch_0_flag_0_pb_status = data.long(ENAXI:&ch_0_flag_0_pb_address)
 
 if (&debug==1)
 (

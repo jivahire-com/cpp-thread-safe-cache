@@ -59,7 +59,7 @@ if (&size>8)
 while (&byte_num<&size)
 (
 	&byte_address= &address+&byte_num
-	&byte_value= data.byte(EOAXI:&byte_address)
+	&byte_value= data.byte(ENAXI:&byte_address)
 	&value= &value|(&byte_value<<(8*&byte_num))
 	&byte_num= &byte_num+1
 )

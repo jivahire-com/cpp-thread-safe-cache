@@ -99,21 +99,21 @@ if (&debug==1)
 
 // Update the ICC + Message Header
 // The command is already in hex, so simply write it.
-data.set (EOAXI:&send_payload_addr+&command_offset) %long &command
+data.set (ENAXI:&send_payload_addr+&command_offset) %long &command
 // The payload size is in Decimal, so use the '.' at the end to ensure
 // it is converted to hex when being set.
-data.set (EOAXI:&send_payload_addr+&payload_size_offset) %long &payload_size.
+data.set (ENAXI:&send_payload_addr+&payload_size_offset) %long &payload_size.
 
 // Update the User Payload. Iterate over the payload, inserting each byte
 &index=0
 WHILE (&index<&payload_size)
 (
     &value=STRing.SPLIT("&payload"," ",&index)
-    data.set (EOAXI:&send_payload_addr+&payload_offset+&index) %byte &value
+    data.set (ENAXI:&send_payload_addr+&payload_offset+&index) %byte &value
     &index=&index+1
 )
 
-Data.dump EOAXI:&send_payload_addr
+Data.dump ENAXI:&send_payload_addr
 
 //
 // !!! If reproducing these scripts in firmware or software issue a Data Synchronization Barrier before writing to the MHU IP !!!
@@ -132,6 +132,6 @@ Data.dump EOAXI:&send_payload_addr
 &channel_set_offset=0xC
 
 // Set the channels set register to trigger the interrupt
-data.set (EOAXI:&mhu_address+&channels_offset+&channel_set_offset) %long 0x1
+data.set (ENAXI:&mhu_address+&channels_offset+&channel_set_offset) %long 0x1
 
 ENDDO &success_status

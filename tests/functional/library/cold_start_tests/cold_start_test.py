@@ -16,6 +16,7 @@ from RscmHelperLibrary import RscmHelperLibrary
 
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
+from library.utilities.bmc_utils import set_bmc_uart_mux
 
 # Class name must match file name for Robot Framework Library usage
 class cold_start_test(EchoFallsBaseTest):
@@ -75,6 +76,7 @@ class cold_start_test(EchoFallsBaseTest):
 
         scp_connection = self.dut.mb.node_0.soc.primary_die.scp.channel_manager
         apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
+        set_bmc_uart_mux(self.dut, self.log, "SCP")
 
         # Ensure the host config file used alongside this test has these connections defined.
         assert scp_connection is not None

@@ -9,13 +9,15 @@ add_library(${TARGET}
 )
 
 # Auto-generate ddrss_reserved_regions_version.h before building this target.
-set(GEN_VERSION_SCRIPT "${CMAKE_SOURCE_DIR}/tools/pwsh/generate_ddrss_reserved_regions_version.ps1")
-set(GENERATED_DDRSS_VERSION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/inc/ddrss_reserved_regions_version.h")
+set(GEN_VERSION_SCRIPT ${CMAKE_SOURCE_DIR}/tools/pwsh/generate_ddrss_reserved_regions_version.ps1)
+set(SILIBS_ROOT ${REPO_ROOT_DIR}/.externs/repo/silibs)
+set(RESERVED_REGIONS_HEADER ${SILIBS_ROOT}/soc_fw_shared/include/memory_map/ddrss_reserved_regions.h)
+set(GENERATED_DDRSS_VERSION_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/inc/ddrss_reserved_regions_version.h)
 
 add_custom_command(
     OUTPUT ${GENERATED_DDRSS_VERSION_HEADER}
     COMMAND pwsh -NoLogo -ExecutionPolicy Bypass -File ${GEN_VERSION_SCRIPT} -Force -VerboseOutput
-    DEPENDS ${GEN_VERSION_SCRIPT}
+    DEPENDS ${GEN_VERSION_SCRIPT} ${RESERVED_REGIONS_HEADER}
     COMMENT "Generating ddrss_reserved_regions_version.h from silibs tag"
     VERBATIM
 )

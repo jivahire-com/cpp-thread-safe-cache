@@ -1,6 +1,10 @@
 set(TARGET ddr_manager_library)
 set(LIBS PUBLIC fwlib.dfwk fwlib.lib.assert)
 
+# Define paths for reserved regions header dependency tracking
+set(SILIBS_ROOT ${REPO_ROOT_DIR}/.externs/repo/silibs)
+set(RESERVED_REGIONS_HEADER ${SILIBS_ROOT}/soc_fw_shared/include/memory_map/ddrss_reserved_regions.h)
+
 # Add target for the service
 add_library(${TARGET}
     STATIC
@@ -16,6 +20,9 @@ add_library(${TARGET}
         ddr_manager_telemetry.c
         ddr_manager_top.c
 )
+
+# Add dependency on the reserved regions header so target rebuilds when it changes
+target_sources(${TARGET} PRIVATE ${RESERVED_REGIONS_HEADER})
 
 target_include_directories(${TARGET}
     PUBLIC
@@ -70,7 +77,7 @@ coverage_target(${TARGET})
 
 ###### Extract all starting/ending reserved ranges to a separate file #######
 # Define the path to the .h file
-set(HEADER_FILE_PATH "${REPO_ROOT_DIR}/.externs/repo/silibs/soc_fw_shared/include/memory_map/ddrss_reserved_regions.h")
+set(HEADER_FILE_PATH ${RESERVED_REGIONS_HEADER})
 
 # Read the contents of the .h file
 file(READ ${HEADER_FILE_PATH} HEADER_CONTENTS)

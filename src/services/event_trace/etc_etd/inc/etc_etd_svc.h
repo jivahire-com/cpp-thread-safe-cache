@@ -49,13 +49,13 @@ void etc_svc_init(void);
 uint32_t get_etc_buffer_size(void);
 
 /**
- * @brief Gets the address of the ETC buffer.
+ * @brief Gets the address of the ETC buffer byte pool.
  * 
  * This function returns a pointer to the ETC buffer memory.
  * 
  * @return Pointer to the ETC buffer memory.
  */
-void* get_etc_buffer_address(void);
+uint8_t* get_etc_buffer_byte_pool_address(void);
 
 /**
  * @brief Gets the Event Trace Collection (ETC) service context.

@@ -18,15 +18,17 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET} 
     PRIVATE
         ms::build_data
+        ms::cmsis::interface
         ms::lib::crash_dump
         ms::lib::event_trace::trace
-        ms::lib::register_headers
         ms::lib::gtimer
+        ms::lib::register_headers
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::event_trace::etc_etd
         ms::service::mts
         silibs::idsw
+        silibs::idsw_kng
         silibs::platform
     PUBLIC
 )

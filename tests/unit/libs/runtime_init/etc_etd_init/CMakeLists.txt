@@ -18,12 +18,12 @@ target_link_libraries(${TARGET}
         fwlib.service.mts
         ms::cmocka::testrunner
         ms::lib::threadx
+        ms::mocks::event_trace
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
         ms::service::event_trace::etc_etd
         ms::service::event_trace::et_mts_clnt
         ms::service::event_trace::relay
-        ms::mocks::event_trace
 )
 
 lint_target(${TARGET})
@@ -39,6 +39,7 @@ mock_target(${TARGET}
 
     _txe_queue_create
     _txe_block_pool_create
+    _txe_thread_create
 
     crash_dump_bug_check
 )

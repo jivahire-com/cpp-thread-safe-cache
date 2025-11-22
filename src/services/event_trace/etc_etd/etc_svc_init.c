@@ -24,6 +24,7 @@
 /*-------------------------------- Typedefs ---------------------------------*/
 
 /*--------------------------- Function Prototypes ---------------------------*/
+uint64_t get_counter_ms();
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
@@ -34,8 +35,28 @@ static etc_service_context_t s_etc_service_ctx = {0};
 extern uint8_t _data_etproviderfilter_start; // Pointer to the start of the .ProviderFilter section
 extern uint8_t _data_etproviderfilter_end;   // Pointer to the end   of the .ProviderFilter section
 
+etc_service_config_t etc_config = {
+    .mode = ETC_SERVICE_MODE_STDIO,
+    .trace_buffer_memory = {.p_pool = s_etc_trace_buffer, .byte_count = sizeof(s_etc_trace_buffer)},
+    .thread_config =
+        {
+            .p_stack = s_etc_stack,
+            .stack_size = sizeof(s_etc_stack),
+            .priority = 10,
+            .time_slice_option = TX_NO_TIME_SLICE,
+        },
+    .provider_filters =
+        {
+            .start = (PFPFW_ET_PROVIDER_EVENT_FILTER)&_data_etproviderfilter_start,
+            .end = (PFPFW_ET_PROVIDER_EVENT_FILTER)&_data_etproviderfilter_end,
+        },
+    .callbacks =
+        {
+            .get_ticks_cb = get_counter_ms, // Use the system time in milliseconds
+        },
+};
+
 /*----------------------------- Static Functions ----------------------------*/
-/*------------- Functions ----------------*/
 uint64_t get_counter_ms()
 {
     return 1000 * gtimer_prodfw_get_counter() / gtimer_prodfw_get_frequency();
@@ -44,27 +65,6 @@ uint64_t get_counter_ms()
 /*----------------------------- Global Functions ----------------------------*/
 void etc_svc_init(void)
 {
-    etc_service_config_t etc_config = {
-        .mode = ETC_SERVICE_MODE_STDIO,
-        .trace_buffer_memory = {.p_pool = s_etc_trace_buffer, .byte_count = sizeof(s_etc_trace_buffer)},
-        .thread_config =
-            {
-                .p_stack = s_etc_stack,
-                .stack_size = sizeof(s_etc_stack),
-                .priority = 10,
-                .time_slice_option = TX_NO_TIME_SLICE,
-            },
-        .provider_filters =
-            {
-                .start = (PFPFW_ET_PROVIDER_EVENT_FILTER)&_data_etproviderfilter_start,
-                .end = (PFPFW_ET_PROVIDER_EVENT_FILTER)&_data_etproviderfilter_end,
-            },
-        .callbacks =
-            {
-                .get_ticks_cb = get_counter_ms, // Use the system time in milliseconds
-            },
-    };
-
     etc_config.core_id = idsw_get_cpu_type();
     etc_config.p_decoder_service = get_etd_service_context();
 
@@ -77,12 +77,12 @@ void etc_svc_init(void)
 
 uint32_t get_etc_buffer_size(void)
 {
-    return (uint32_t)ETC_CORE_BUFFER_SIZE;
+    return (uint32_t)(etc_config.trace_buffer_memory.byte_count / ETC_SERVICE_CORE_BUFFER_COUNT);
 }
 
-void* get_etc_buffer_address(void)
+uint8_t* get_etc_buffer_byte_pool_address(void)
 {
-    return (uint8_t*)&s_etc_trace_buffer;
+    return (uint8_t*)etc_config.trace_buffer_memory.p_pool;
 }
 
 etc_service_context_t* get_etc_service_context(void)

@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.service.mts
         ms::cmocka::mocks
         ms::cmocka::testrunner
+        ms::lib::register_headers
         ms::lib::telemetry::fuses
         ms::lib::threadx
         ms::mocks::event_trace
@@ -24,6 +25,7 @@ target_link_libraries(${TARGET}
         ms::service::event_trace::etc_etd
         ms::service::event_trace::et_mts_clnt
         ms::service::event_trace::relay
+        silibs::idsw_kng
     PUBLIC
 )
 
@@ -37,15 +39,22 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
-    _txe_queue_receive
+    _txe_block_pool_create
     _txe_block_release
+    _txe_queue_create
+    _txe_thread_create
+    _txe_queue_send
+    _txe_queue_receive
 
     mts_get_this_die_id
     mts_get_this_core_id
     fpfw_crc32
 
-    # get_etc_buffer_address
-    # get_etc_buffer_size
-
     mts_client_send_trp_response
+    mts_client_send_new_trp_msg
+
+    FPFwETControllerFlushBuffer
+    FPFwETControllerRecycleBuffer
+
+    SCB_CleanDCache_by_Addr
 )

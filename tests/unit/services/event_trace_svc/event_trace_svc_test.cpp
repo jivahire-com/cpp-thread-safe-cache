@@ -12,8 +12,10 @@
 #include <cstddef>         // for NULL
 
 extern "C" {
-#include <et_mts_client.h>               // for event_trace_mts_client_notify_new_msg_cb
-#include <etc_etd_svc.h>                 // for get_etc_buffer_size, get_etc_buffer_address
+#include <et_mts_client.h>               // for et_mts_rx_msg_handler
+#include <etc_etd_svc.h>                 // for get_etc_buffer_size, get_etc_buffer_byte_pool_address
+#include <idsw_kng.h>                    // for DIE_0, CPU_SCP, CPU_MCP
+#include <mscp_exp_rmss_memory_map.h>    // for ETC_CORE_BUFFERS_MEMORY_SIZE
 #include <mts_platform_specialization.h> // for p_trp_msg_t
 #include <thread_x_mocks.h>              // for set_txe_queue_receive_callback_func
 #include <transfer_relay_protocol.h> // for trp_msg_t, TRP_MSG_ID_READ_INTERCORE_BLOCK, TRP_MSG_ID_READ_INTERCORE_BLOCK_RESPONSE
@@ -42,7 +44,7 @@ uint32_t __wrap_mts_get_this_die_id()
 
 uint32_t __wrap_mts_get_this_core_id()
 {
-    return 0; // Return a fixed core ID for testing
+    return CPU_SCP; // Return a fixed core ID for testing
 }
 
 uint32_t __wrap_fpfw_crc32(uint32_t crc, const void* data, size_t length)
@@ -60,17 +62,38 @@ void __wrap_mts_client_send_trp_response(p_trp_msg_t p_trp_msg)
     FPFW_UNUSED(p_trp_msg);
 }
 
-// uint32_t __wrap_get_etc_buffer_size()
-// {
-//     // Return a fixed buffer size for testing purposes
-//     return ETC_CORE_BUFFERS_MEMORY_SIZE;
-// }
+void __wrap_mts_client_send_new_trp_msg(p_trp_msg_t p_trp_msg)
+{
+    FPFW_UNUSED(p_trp_msg);
+}
 
-// void* __wrap_get_etc_buffer_address()
-// {
-//     // Return a fixed buffer address for testing purposes
-//     return (void*)0x12345678;
-// }
+UINT __wrap__txe_block_pool_create(TX_BLOCK_POOL* pool_ptr, CHAR* name_ptr, ULONG block_size, VOID* pool_start, ULONG pool_size, UINT pool_control_block_size)
+{
+    check_expected_ptr(pool_ptr);
+    check_expected_ptr(name_ptr);
+    check_expected(block_size);
+    check_expected_ptr(pool_start);
+    check_expected(pool_size);
+    check_expected(pool_control_block_size);
+
+    return mock_type(UINT);
+}
+
+void __wrap_FPFwETControllerFlushBuffer(uint8_t die_id, uint8_t core_id, uintptr_t addr, uint32_t dsize)
+{
+    FPFW_UNUSED(die_id);
+    FPFW_UNUSED(core_id);
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(dsize);
+
+    function_called();
+}
+
+void __wrap_SCB_CleanDCache_by_Addr(uint32_t* addr, int32_t dsize)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(dsize);
+}
 }
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
@@ -85,97 +108,102 @@ void __wrap_mts_client_send_trp_response(p_trp_msg_t p_trp_msg)
 
 /*------------------------------- Test Functions ----------------------------*/
 
-/**
- * @brief Test function for getting the ETC buffer size
- *
- * @return * Test
- */
-
-TEST_FUNCTION(test_get_etc_buffer_size, NULL, NULL)
+int test_setup(void** ppContext)
 {
-    // Call the function to get the buffer size
-    size_t buffer_size = ETC_CORE_BUFFERS_MEMORY_SIZE;
+    FPFW_UNUSED(ppContext);
 
-    // Assert that the buffer size is equal to the expected size
-    assert_true(buffer_size == ETC_CORE_BUFFERS_MEMORY_SIZE);
+    // Setup the threadx expectations
+    expect_any(__wrap__txe_block_pool_create, pool_ptr);
+    expect_any(__wrap__txe_block_pool_create, name_ptr);
+    expect_value(__wrap__txe_block_pool_create, block_size, MAX_TRP_MSG_BLOCK_SIZE);
+    expect_any(__wrap__txe_block_pool_create, pool_start);
+    expect_any(__wrap__txe_block_pool_create, pool_size);
+    expect_any(__wrap__txe_block_pool_create, pool_control_block_size);
+    will_return(__wrap__txe_block_pool_create, TX_SUCCESS);
+
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
+    will_return(__wrap__txe_queue_create, TX_SUCCESS);
+
+    expect_any(__wrap__txe_thread_create, thread_ptr);
+    expect_any(__wrap__txe_thread_create, name_ptr);
+    expect_any(__wrap__txe_thread_create, entry_function);
+    expect_any(__wrap__txe_thread_create, entry_input);
+    expect_any(__wrap__txe_thread_create, stack_start);
+    expect_any(__wrap__txe_thread_create, stack_size);
+    expect_any(__wrap__txe_thread_create, priority);
+    expect_any(__wrap__txe_thread_create, preempt_threshold);
+    expect_any(__wrap__txe_thread_create, time_slice);
+    expect_any(__wrap__txe_thread_create, auto_start);
+    expect_any(__wrap__txe_thread_create, thread_control_block_size);
+    will_return(__wrap__txe_thread_create, TX_SUCCESS);
+
+    event_trace_mts_client_init();
+
+    return TX_SUCCESS;
 }
 
-/**
- * @brief Test function for getting the ETC buffer address
- *
- * @return * Test
- */
-
-TEST_FUNCTION(test_get_etc_buffer_address, NULL, NULL)
+int test_teardown(void** ppContext)
 {
-    // Call the function to get the buffer address
-    void* buffer_address = get_etc_buffer_address();
+    FPFW_UNUSED(ppContext);
 
-    // Assert that the buffer address is not NULL
-    assert_non_null(buffer_address);
+    return TX_SUCCESS;
 }
 
-TEST_FUNCTION(test_event_trace_mts_client_notify_new_msg_cb_queue_receive_fail, NULL, NULL)
+TEST_FUNCTION(test_et_mts_rx_msg_handler_trp_rd_intercore_block_complete, NULL, NULL)
 {
+    // Set up expectations for a queue receive error
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
-    will_return(__wrap__txe_queue_receive, TX_QUEUE_ERROR);
-
-    event_trace_mts_client_notify_new_msg_cb();
-}
-
-TEST_FUNCTION(test_event_trace_mts_client_notify_new_msg_cb_null_msg, NULL, NULL)
-{
-    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
-    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
-    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
-
-    event_trace_mts_client_notify_new_msg_cb();
-}
-
-TEST_FUNCTION(test_event_trace_mts_client_notify_new_msg_cb_rd_intercore_block_response, NULL, NULL)
-{
-    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
-    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
-    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
-
-    trp_msg_t trp_msg;
-    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK;
-    will_return(set_tx_queue_receive_value, (uint32_t)&trp_msg);
-    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
-
-    expect_function_calls(__wrap__txe_block_release, 1);
-    will_return(__wrap__txe_block_release, TX_SUCCESS);
-
-    event_trace_mts_client_notify_new_msg_cb();
-}
-
-TEST_FUNCTION(test_event_trace_mts_client_notify_new_msg_cb_rd_intercore_block_complete, NULL, NULL)
-{
-    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
-    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     trp_msg_t trp_msg;
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
+    trp_msg.payload.read_intercore_block_complete.block_id = ETC_SERVICE_CORE_BUFFER_COUNT - 1;
+    will_return(set_tx_queue_receive_value, (uint32_t)&trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    expect_any_always(__wrap_FPFwETControllerRecycleBuffer, pTraceController);
+    expect_any_always(__wrap_FPFwETControllerRecycleBuffer, bufIndex);
+    will_return(__wrap_FPFwETControllerRecycleBuffer, 0);
+
+    expect_function_calls(__wrap__txe_block_release, 1);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    et_mts_worker_thread_func(0);
+}
+
+TEST_FUNCTION(test_et_mts_rx_msg_handler_trp_rd_intercore_block_complete_invalid_block, NULL, NULL)
+{
+    // Set up expectations for queue receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    trp_msg_t trp_msg;
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
+    trp_msg.payload.read_intercore_block_complete.block_id = ETC_SERVICE_CORE_BUFFER_COUNT + 1;
     will_return(set_tx_queue_receive_value, (uint32_t)&trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
 
     expect_function_calls(__wrap__txe_block_release, 1);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    event_trace_mts_client_notify_new_msg_cb();
+    et_mts_worker_thread_func(0);
 }
 
-TEST_FUNCTION(test_event_trace_mts_client_notify_new_msg_cb_rd_default, NULL, NULL)
+TEST_FUNCTION(test_et_mts_rx_msg_handler_rd_default, NULL, NULL)
 {
+    // Set up expectations for queue receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_NO_WAIT);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
 
     trp_msg_t trp_msg;
@@ -186,5 +214,21 @@ TEST_FUNCTION(test_event_trace_mts_client_notify_new_msg_cb_rd_default, NULL, NU
     expect_function_calls(__wrap__txe_block_release, 1);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    event_trace_mts_client_notify_new_msg_cb();
+    et_mts_worker_thread_func(0);
+}
+
+TEST_FUNCTION(test_mts_notify_buffer_complete, NULL, NULL)
+{
+    FPFW_ET_CORE_BUFFER_HEADER core_buffer;
+
+    etc_service_completion_request_t completion_request = {.core_buffer_request = {
+                                                               .p_core_buffer = &core_buffer, // Use the valid core buffer
+                                                               .p_origin_controller = nullptr // No specific controller for this test
+                                                           }};
+
+    for (int i = 0; i < ETC_SERVICE_CORE_BUFFER_COUNT; i++)
+    {
+        core_buffer.BufferId = i; // Set a valid buffer ID
+        et_mts_notify_buffer_complete(nullptr, &completion_request);
+    }
 }

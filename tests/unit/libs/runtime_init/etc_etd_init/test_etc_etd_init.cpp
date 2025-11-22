@@ -90,6 +90,30 @@ UINT __wrap__txe_block_pool_create(TX_BLOCK_POOL* pool_ptr, CHAR* name_ptr, ULON
     return mock_type(UINT);
 }
 
+UINT __wrap__txe_thread_create(TX_THREAD* thread_ptr,
+                               CHAR* name_ptr,
+                               VOID (*thread_entry)(ULONG),
+                               ULONG thread_input,
+                               VOID* stack_start,
+                               ULONG stack_size,
+                               UINT priority,
+                               UINT preempt_threshold,
+                               ULONG time_slice,
+                               UINT auto_start)
+{
+    FPFW_UNUSED(thread_ptr);
+    FPFW_UNUSED(name_ptr);
+    FPFW_UNUSED(thread_entry);
+    FPFW_UNUSED(thread_input);
+    FPFW_UNUSED(stack_start);
+    FPFW_UNUSED(stack_size);
+    FPFW_UNUSED(priority);
+    FPFW_UNUSED(preempt_threshold);
+    FPFW_UNUSED(time_slice);
+    FPFW_UNUSED(auto_start);
+    return mock_type(UINT);
+}
+
 void __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t client)
 {
     check_expected(id);
@@ -125,6 +149,7 @@ TEST_FUNCTION(test_et_mts_clnt_init, nullptr, nullptr)
     // Set up expectations
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
     will_return(__wrap__txe_block_pool_create, TX_SUCCESS);
+    will_return(__wrap__txe_thread_create, TX_SUCCESS);
     expect_value(__wrap_mts_client_register, id, MTS_CLIENT_ID_EVENT_TRACE);
 
     // Call API under test

@@ -11,7 +11,7 @@
 #pragma once
 
 /*----------------------------- Nested includes -----------------------------*/  
-#include <stdint.h>
+#include <event_trace_collector.h> // for etc_service_completion_request_t
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -31,13 +31,22 @@
 void event_trace_mts_client_init(void);
 
 /**
- * @brief Callback function to notify about a new MTS message for Event Trace.
+ * @brief Notify the Event Trace MTS Client that a buffer is complete.
  *
- * This function is invoked when a new MTS message is received, allowing the client
- * to handle or process the message as needed.
+ * This function can be used to trigger processing of the buffer by the
+ * Event Trace MTS Client.
  *
  * @param[in] void
  *
+ * @retval fpfw_status_t indicating success or failure of the operation.
+ */
+fpfw_status_t et_mts_notify_buffer_complete (void* p_buffer, etc_service_completion_request_t* p_request);
+
+/**
+ * @brief Worker thread function for the Event Trace MTS client.
+ *
+ * @param[in] thread_input
+ *
  * @retval void
  */
-void event_trace_mts_client_notify_new_msg_cb(void);
+void et_mts_worker_thread_func(ULONG thread_input);

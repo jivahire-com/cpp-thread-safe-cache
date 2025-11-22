@@ -171,10 +171,12 @@
         },
         "env_vars": {
             "ARMLMD_LICENSE_FILE": "40002@wanlic.svceng.com",
-            "SNPSLMD_LICENSE_FILE": "40003@gem-lic-01.svceng.com;40003@wanlic.svceng.com",
+            "SNPSLMD_LICENSE_FILE": "40003@svc-lic-ent-proj-01.svceng.com;41003@svc-lic-ent-proj-01.svceng.com;40003@svc-lic-ent-proj-02.svceng.com;41003@svc-lic-ent-proj-02.svceng.com;40003@svc-lic-ent.proj-03.svceng.com;41003@svc-lic-ent.proj-03.svceng.com;40003@spd-lic-ent-proj-01.svceng.com;41003@spd-lic-ent-proj-01.svceng.com;40003@spd-lic-ent-proj-02.svceng.com;41003@spd-lic-ent-proj-02.svceng.com;40003@spd-lic-ent.proj-03.svceng.com;41003@spd-lic-ent.proj-03.svceng.com;40003@svc-lic-eval-temp-01.svceng.com;41003@svc-lic-eval-temp-01.svceng.com;40003@wanlic.svceng.com;40003@gem-lic-01.svceng.com;40003@gem-lic-03.svceng.com",
             "SNPS_VPX_START_SIMULATION_TIMEOUT": "300",
             "SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC": "300",
             "SNPS_VPX_DEFAULT_TIMEOUT": "300",
+            "FLEXLM_DIAGNOSTICS": "3",
+            "FLEXLM_BATCH": "1",
             "PYTHIA_DELAY_AFTER_SVP_LAUNCH": "60"
         }
     }

@@ -76,10 +76,12 @@ Function Invoke-Virtualizer(
 
     # Set License Servers and Search Paths
     $env:ARMLMD_LICENSE_FILE="40002@wanlic.svceng.com"
-    $env:SNPSLMD_LICENSE_FILE="40003@gem-lic-01.svceng.com;40003@wanlic.svceng.com"
+    $env:SNPSLMD_LICENSE_FILE="40003@svc-lic-ent-proj-01.svceng.com;41003@svc-lic-ent-proj-01.svceng.com;40003@svc-lic-ent-proj-02.svceng.com;41003@svc-lic-ent-proj-02.svceng.com;40003@svc-lic-ent.proj-03.svceng.com;41003@svc-lic-ent.proj-03.svceng.com;40003@spd-lic-ent-proj-01.svceng.com;41003@spd-lic-ent-proj-01.svceng.com;40003@spd-lic-ent-proj-02.svceng.com;41003@spd-lic-ent-proj-02.svceng.com;40003@spd-lic-ent.proj-03.svceng.com;41003@spd-lic-ent.proj-03.svceng.com;40003@svc-lic-eval-temp-01.svceng.com;41003@svc-lic-eval-temp-01.svceng.com;40003@wanlic.svceng.com;40003@gem-lic-01.svceng.com;40003@gem-lic-03.svceng.com"
     $env:SNPS_VPX_START_SIMULATION_TIMEOUT = 600
     $env:SNPS_VPSESSION_LAUNCH_TIMEOUT_SEC = 600
     $env:SNPS_VPX_DEFAULT_TIMEOUT = 600
+    $env:FLEXLM_DIAGNOSTICS=3
+    $env:FLEXLM_BATCH=1
 
     $env:SNPS_VS_VDK_SEARCH_PATHS=(Resolve-Path ${env:REPO_APP_PATH_microsoft.internal.virtualized.kingsgate.svp}\win\release\KingsgateSVP\*\*\).toString()
 
@@ -148,6 +150,7 @@ Function Invoke-Virtualizer(
             -d $using:workspace_dir `
             -s $using:svp_sim_dir\win\release\run_fixed_vdk.py `
             --pyargs `
+            --env "SNPSLMD_LICENSE_FILE=$env:SNPSLMD_LICENSE_FILE" `
             --debug `
             --template_name KingsgateSVP `
             --vpconfig $using:SimConfig `

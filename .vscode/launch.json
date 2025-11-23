@@ -316,7 +316,11 @@
                     [
                         "UTC Sync Manager Init",
                         "utc_sync_manager_init.test.exe"
-                    ]
+                    ],
+                    [
+                        "UTC Sync Client Init",
+                        "utc_sync_client_init.test.exe"
+                    ],
                 ],
             },
         },

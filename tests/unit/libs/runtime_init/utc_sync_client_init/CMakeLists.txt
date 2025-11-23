@@ -17,10 +17,19 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.status
         fwlib.lib.utils
+        fwlib.service.iccBase
         fwlib.service.mts
         fwlib.service.utc_sync.client
         ms::cmocka::testrunner
+        ms::lib::crash_dump
         ms::lib::gtimer
+        ms::lib::hsp_firmware_headers
+)
+
+# Setup the MCP Runtime Init Flag as it covers all code paths.
+target_compile_definitions(${TARGET}
+    PRIVATE
+       MCP_RUNTIME_INIT
 )
 
 # Defining platform APIs
@@ -35,6 +44,8 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 mock_target(${TARGET}
+    fpfw_icc_base_send_sync
+    fpfw_init_get_handle
     gtimer_prodfw_get_frequency
     utc_sync_client_init
 )

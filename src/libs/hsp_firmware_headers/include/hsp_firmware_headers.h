@@ -26,6 +26,7 @@ typedef struct kng_hsp_mailbox_cmd_get_variable kng_hsp_mailbox_cmd_get_variable
 typedef struct kng_hsp_mailbox_cmd_load_fw_64bit_req kng_hsp_mailbox_cmd_load_fw_64bit_req;
 typedef struct kng_hsp_mailbox_cmd_prepare_for_core_reset_req kng_hsp_mailbox_cmd_prepare_for_core_reset_req;
 typedef struct kng_hsp_mailbox_cmd_send_log_req kng_hsp_mailbox_cmd_send_log_req;
+typedef struct kng_hsp_mailbox_cmd_setutc_time kng_hsp_mailbox_cmd_setutc_time; 
 
 typedef struct hsp_log_payload_header hsp_log_payload_header_t;
 typedef struct hsp_log_payload_header* p_hsp_log_payload_header_t;
@@ -62,6 +63,7 @@ typedef union _kng_hsp_mailbox_msg {
 	struct kng_hsp_mailbox_msg_cmd_enable_smmu_access_req smmu_access_req;
 	struct kng_hsp_mailbox_msg_cmd_post_scp_init_tower_config_req tower_config_req;
 	struct kng_hsp_mailbox_cmd_ddrss_fips_key_test_status_notify fips_key_test_status_notify; /**< outgoing mailbox message to notify the status of the FIPS key test. */
+	struct kng_hsp_mailbox_cmd_setutc_time utc_time_set_req; /**< outgoing mailbox message to set the UTC time in HSP. */
 	uint32_t as_uint32[HSP_MBOX_FIFO_DEPTH];
 } kng_hsp_mailbox_msg;
 

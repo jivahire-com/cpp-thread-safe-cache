@@ -88,3 +88,17 @@ uint32_t gtimer_prodfw_get_frequency();
  * @return  current counter value of the gtimer
  */
 uint64_t gtimer_prodfw_get_counter();
+
+/**
+ * @brief Get the current timestamp in microseconds
+ * 
+ * @return uint64_t 
+ */
+uint64_t gtimer_get_timestamp_us();
+
+/**
+ * @brief Get the current timestamp in milliseconds
+ * 
+ * @return uint64_t 
+ */
+uint64_t gtimer_get_timestamp_ms();

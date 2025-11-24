@@ -335,6 +335,11 @@ bool __wrap_fuse_has_remote_die_config()
     return mock_type(bool);
 }
 
+uint64_t __wrap_gtimer_get_timestamp_us()
+{
+    return mock_type(uint64_t);
+}
+
 } // extern "C"
 
 static int setup(void** state)
@@ -883,6 +888,7 @@ AP_CORE_TEST(dispatch_sdm_dtcm_load, setup, NULL)
 
     expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_SDM);
     expect_function_call(__wrap_accel_disable_cpu_wait);
+    will_return(__wrap_gtimer_get_timestamp_us, 0xF25F5419D);
     will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
 
@@ -990,6 +996,7 @@ AP_CORE_TEST(dispatch_cded_dtcm_load, setup, NULL)
 
     expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_CDED);
     expect_function_call(__wrap_accel_disable_cpu_wait);
+    will_return(__wrap_gtimer_get_timestamp_us, 0xF25F5419D);
     will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
     expect_function_call(__wrap_accel_intr_scp_err_intr_enable);

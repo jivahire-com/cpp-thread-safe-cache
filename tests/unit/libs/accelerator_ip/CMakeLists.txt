@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         ms::lib::accelerator_ip
         ms::lib::boot_status
         ms::lib::cortex_m7::nvic
+        ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         ms::lib::system_info
         ms::lib::threadx
@@ -78,6 +79,7 @@ mock_target(${TARGET}
     fpfw_init_get_handle
     fpfw_timer_create
     fpfw_timer_reset
+    gtimer_get_timestamp_us
     idsw_get_die_id
     idsw_get_platform_sdv
     mmio_read32

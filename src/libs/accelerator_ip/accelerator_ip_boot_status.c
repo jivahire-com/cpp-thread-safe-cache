@@ -9,6 +9,7 @@
 
 /*-------------------------------- Includes ---------------------------------*/
 #include "accelerator_ip.h"
+#include "accelerator_ip_events.h"
 #include "accelerator_ip_priv.h"
 
 #include <DbgPrint.h>          // for FPFW_DBGPRINT_INFO, FPFW_DBGPRINT_ERROR
@@ -24,6 +25,7 @@
 #include <fpfw_timer.h>        // for fpfw_timer_create, fpfw_timer_enable...
 #include <fpfw_timer_port.h>   // for _fpfw_timer_t
 #include <fpfw_timer_types.h>  // for FPFW_TIMER_ONESHOT
+#include <gtimer_prodfw.h>     // for gtimer_get_timestamp_us
 #include <icc_platform_defines.h> // for accel_boot_status_msg
 #include <idsw_kng.h>             // for KNG_DIE_ID, idsw_get_die_id
 #include <kng_soc_constants.h>    // for NUM_DIE
@@ -35,7 +37,9 @@
  * 5 seconds is good enough time for accel cores to boot
  * TODO: Profile the boot time of accel cores during bring up
  */
-#define ACCEL_BOOT_TIMEOUT_MS 5000
+#define ACCEL_BOOT_TIMEOUT_S  5
+#define ACCEL_BOOT_TIMEOUT_MS FPFW_DUR_S_TO_MS(ACCEL_BOOT_TIMEOUT_S)
+#define ACCEL_BOOT_TIMEOUT_US FPFW_DUR_S_TO_US(ACCEL_BOOT_TIMEOUT_S)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -51,10 +55,31 @@ static accel_boot_status_msg ack[NUM_VALID_ACCEL_ID] = {0};
 static accel_cd_params recv_params[NUM_VALID_ACCEL_ID];
 static fpfw_icc_base_send_rsp_t send_params[NUM_VALID_ACCEL_ID];
 static boot_status_req_t boot_status_req[NUM_VALID_ACCEL_ID] = {0};
+static uint64_t boot_start_ts_us[NUM_VALID_ACCEL_ID] = {0};
 
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
+
+static void accel_log_boot_time(ACCEL_ID accel_type)
+{
+    uint64_t boot_time = gtimer_get_timestamp_us() - boot_start_ts_us[accel_type];
+    KNG_DIE_ID die_id = idsw_get_die_id();
+    uint8_t valid_flag = boot_time <= ACCEL_BOOT_TIMEOUT_US ? 1 : 0;
+
+    FPFW_ET_LOG(AccelBootTime, boot_time, accel_type, die_id, valid_flag);
+}
+
+static bool accel_is_ok_bsc(uint8_t boot_status_code)
+{
+    if (boot_status_code == BOOT_STATUS_CODE_SDM0_OK || boot_status_code == BOOT_STATUS_CODE_SDM1_OK ||
+        boot_status_code == BOOT_STATUS_CODE_CDED0_OK || boot_status_code == BOOT_STATUS_CODE_CDED1_OK)
+    {
+        return true;
+    }
+
+    return false;
+}
 
 static void accel_get_group_and_instance(ACCEL_ID accel_type, uint8_t* group, uint8_t* instance)
 {
@@ -162,6 +187,12 @@ static void accel_recv_boot_status_msg_icc_cb(void* context, size_t output_size_
     ack[accel_type].hdr = msg->hdr;
     ack[accel_type].hdr.cmd = LARGE_FIFO_MAILBOX_MSG_BOOT_STATUS_RSP;
 
+    // Log the boot time taken by accel core
+    if (accel_is_ok_bsc(msg->boot_status))
+    {
+        accel_log_boot_time(accel_type);
+    }
+
     // Send boot status code to HSP
     accel_send_boot_status(accel_type, msg->boot_status);
 }
@@ -230,5 +261,7 @@ fpfw_status_t accel_setup_boot_status_code(ACCEL_ID accel_type)
 
 fpfw_status_t accel_start_boot_status_timer(ACCEL_ID accel_type)
 {
+    boot_start_ts_us[accel_type] = gtimer_get_timestamp_us();
+
     return fpfw_timer_enable(&accel_boot_status_timers[accel_type], FPFW_DUR_MS(ACCEL_BOOT_TIMEOUT_MS));
 }

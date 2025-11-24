@@ -28,8 +28,6 @@
 /*-------------------------------- Typedefs ---------------------------------*/
 
 /*--------------------------- Function Prototypes ---------------------------*/
-/* TODO: Move this to utils/time utils: https://azurecsi.visualstudio.com/Dev/_workitems/edit/3146728 */
-static uint64_t get_counter_ms();
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
@@ -57,15 +55,11 @@ static etc_service_config_t etc_config = {
         },
     .callbacks =
         {
-            .get_ticks_cb = get_counter_ms, // Use the system time in milliseconds
+            .get_ticks_cb = gtimer_get_timestamp_ms, // Use the system time in milliseconds
         },
 };
 
 /*----------------------------- Static Functions ----------------------------*/
-static uint64_t get_counter_ms()
-{
-    return 1000 * gtimer_prodfw_get_counter() / gtimer_prodfw_get_frequency();
-}
 
 /*----------------------------- Global Functions ----------------------------*/
 void etc_svc_init(void)

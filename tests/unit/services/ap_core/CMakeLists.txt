@@ -70,6 +70,8 @@ mock_target(${TARGET}
     fpfw_icc_base_recv
     fpfw_timer_enable
 
+    gtimer_get_timestamp_us
+
     mmio_read32
     mmio_write32
     sds_block_creation

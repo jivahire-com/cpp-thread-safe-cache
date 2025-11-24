@@ -147,6 +147,12 @@ int __wrap_mscp_exp_spi_synchronize_dies(mscp_exp_spi_sync_point_t sync_point, i
     assert_int_equal(sync_point.value, D2D_SYS_CNT_START);
     return mock_type(int);
 }
+
+uint32_t __wrap_gtimer_get_frequency(uintptr_t timer_base_addr)
+{
+    FPFW_UNUSED(timer_base_addr);
+    return mock_type(uint32_t);
+}
 }
 
 //
@@ -296,4 +302,20 @@ TEST_FUNCTION(test_gtimer_add_periodic, nullptr, nullptr)
 
     // Call API under test
     gtimer_add_periodic(&tmr, tick_interval, cb, ctx);
+}
+
+TEST_FUNCTION(test_gtimer_get_timestamp_us, nullptr, nullptr)
+{
+    will_return(__wrap_gtimer_get_counter, 1000000000);
+    will_return(__wrap_gtimer_get_frequency, 1000000);
+
+    assert_true(gtimer_get_timestamp_us() == 1000000000);
+}
+
+TEST_FUNCTION(test_gtimer_get_timestamp_ms, nullptr, nullptr)
+{
+    will_return(__wrap_gtimer_get_counter, 1000000000);
+    will_return(__wrap_gtimer_get_frequency, 1000000);
+
+    assert_true(gtimer_get_timestamp_ms() == 1000000);
 }

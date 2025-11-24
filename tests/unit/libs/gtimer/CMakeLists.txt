@@ -40,6 +40,7 @@ mock_target(${TARGET}
     gtimer_enable_timer
     gtimer_set_timer
     gtimer_get_counter
+    gtimer_get_frequency
     FPFwCoreInterruptEnableVector
     FPFwCoreInterruptDisableVector
     FPFwCoreInterruptRegisterCallback

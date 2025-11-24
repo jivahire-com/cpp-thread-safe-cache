@@ -9,6 +9,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.status
         fwlib.lib.interface.platform.interrupts
+        fwlib.lib.utils
         silibs_platform
         ms::lib::crash_dump
         ms::lib::error_codes

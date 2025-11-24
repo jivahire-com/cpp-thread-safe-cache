@@ -6,6 +6,7 @@ add_library(
         STATIC
             accelerator_ip_boot_status.c
             accelerator_ip_configs.c
+            accelerator_ip_events.c
             accelerator_ip_init.c
             accelerator_ip_isolation.c
             accelerator_ip_knobs.c
@@ -51,6 +52,7 @@ target_link_libraries(
         ms::lib::crash_dump
         ms::lib::debug
         ms::lib::error_codes
+        ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         ms::lib::register_headers
         ms::lib::utils

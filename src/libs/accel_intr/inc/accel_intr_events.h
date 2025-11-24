@@ -26,7 +26,7 @@
 
 FPFW_ET_DEFINE_PROVIDER_EX(
     EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR, // ID
-    SCP_ACCEL,                              // Name
+    SCP_ACCEL_INTR,                         // Name
     ET_LEVEL_MASK_ALL                       // Logging Level Mask
 )
 

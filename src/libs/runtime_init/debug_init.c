@@ -23,10 +23,6 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-uint64_t dbgprint_counter_to_us()
-{
-    return US_PER_S * gtimer_prodfw_get_counter() / gtimer_prodfw_get_frequency();
-}
 
 FPFW_INIT_COMPONENT(debug, FPFW_INIT_DEPENDENCIES("std_io"))
 {
@@ -40,7 +36,7 @@ FPFW_INIT_COMPONENT(debug_print, FPFW_INIT_DEPENDENCIES("std_io", "gtimer", "sys
     fpfw_debug_print_config_t config = {
         // Set the default debug print level based on whether CLI is enabled or not
         .default_level = system_info_get_cli_enable() ? FPFW_DEBUG_PRINT_LEVEL_INFO : FPFW_DEBUG_PRINT_LEVEL_WARNING,
-        .timestamp_us_cb = dbgprint_counter_to_us,
+        .timestamp_us_cb = gtimer_get_timestamp_us,
     };
     DbgPrintInit(&config);
 

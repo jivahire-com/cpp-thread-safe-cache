@@ -29,6 +29,7 @@ extern "C" {
 #include <fpfw_timer_port.h>
 #include <hsp_firmware_headers.h>
 #include <icc_mhu.h>
+#include <icc_platform_defines.h>
 #include <idsw_kng.h> // for KNG_DIE_ID
 #include <nvic.h>     // for NVIC_STATUS_SUCCESS
 #include <pcr_rpss.h> // for pcr_rpss_entity_t
@@ -224,6 +225,12 @@ fpfw_status_t __wrap_fpfw_icc_base_recv(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
     mbox_recv_buffs = (kng_hsp_mailbox_msg*)params->payload_buffer;
     ((kng_hsp_mailbox_msg*)(params->payload_buffer))->header.cmd = HSP_MAILBOX_CMD_LOAD_FW_64BIT_RSP;
     ((kng_hsp_mailbox_msg*)(params->payload_buffer))->rsp.status = FPFW_STATUS_SUCCESS;
+
+    if (params->recv_cmd_code == LARGE_FIFO_MAILBOX_MSG_BOOT_STATUS_REQ)
+    {
+        accel_boot_status_msg* boot_status_msg = (accel_boot_status_msg*)params->payload_buffer;
+        boot_status_msg->boot_status = mock_type(uint8_t);
+    }
 
     return mock_type(fpfw_status_t);
 }
@@ -448,6 +455,11 @@ uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum)
     printf("Enabling IRQ %u\n", irqnum);
     check_expected(irqnum);
     return mock_type(uint32_t);
+}
+
+uint64_t __wrap_gtimer_get_timestamp_us()
+{
+    return mock_type(uint64_t);
 }
 
 } // end of extern "C"
@@ -995,6 +1007,7 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_sdm, nullptr, nullptr)
 
     // Unit test for accel_setup_boot_status_code API for SDM
     will_return_always(__wrap_fpfw_init_get_handle, 0xDEADDEED);
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_SDM0_BOOT_COMPLETE);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_timer_create, FPFW_STATUS_SUCCESS);
     assert_true(accel_setup_boot_status_code(accel_id) == FPFW_STATUS_SUCCESS);
@@ -1004,6 +1017,7 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_sdm, nullptr, nullptr)
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_SDM1_BOOT_COMPLETE);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
     s_boot_status_send_cb(s_boot_status_send_ctx);
@@ -1013,6 +1027,7 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_sdm, nullptr, nullptr)
     will_return(__wrap_idsw_get_die_id, SOC_D1);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_SDM1_BOOT_COMPLETE);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
     s_boot_status_send_cb(s_boot_status_send_ctx);
@@ -1031,6 +1046,7 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_cded, nullptr, nullptr)
 
     // Unit test for accel_setup_boot_status_code API for CDED
     will_return_always(__wrap_fpfw_init_get_handle, 0xDEADDEED);
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_CDED0_BOOT_COMPLETE);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_timer_create, FPFW_STATUS_SUCCESS);
     assert_true(accel_setup_boot_status_code(accel_id) == FPFW_STATUS_SUCCESS);
@@ -1040,6 +1056,7 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_cded, nullptr, nullptr)
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_CDED1_BOOT_COMPLETE);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
     s_boot_status_send_cb(s_boot_status_send_ctx);
@@ -1049,11 +1066,74 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_cded, nullptr, nullptr)
     will_return(__wrap_idsw_get_die_id, SOC_D1);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_CDED1_BOOT_COMPLETE);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
     s_boot_status_send_cb(s_boot_status_send_ctx);
 
     // Unit test accel_boot_status_timeout_cb() for CDED DIE0
+    expect_in_set(__wrap_post_led_status, status, expected_led_status);
+    s_timer_cb(NULL, 0);
+
+    // Unit test accel_empty_icc_cb()
+    s_icc_send_resp_cb(s_icc_send_resp_ctx, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_accel_boot_status_code_ok, nullptr, nullptr)
+{
+    ACCEL_ID accel_id = ACCEL_ID_SDM;
+
+    // Unit test for accel_setup_boot_status_code API for SDM
+    will_return_always(__wrap_fpfw_init_get_handle, 0xDEADDEED);
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_SDM0_OK);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_timer_create, FPFW_STATUS_SUCCESS);
+    assert_true(accel_setup_boot_status_code(accel_id) == FPFW_STATUS_SUCCESS);
+
+    // Unit test accel_recv_boot_status_msg_icc_cb() for SDM DIE0
+    will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D0, 2);
+    will_return(__wrap_gtimer_get_timestamp_us, 0xFFFFEFF1000);
+    expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    // Expectations for accel_boot_status_send_complete_cb()
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_SDM1_OK);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
+    s_boot_status_send_cb(s_boot_status_send_ctx);
+
+    // Unit test accel_recv_boot_status_msg_icc_cb() for SDM DIE1
+    will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D1, 2);
+    will_return(__wrap_gtimer_get_timestamp_us, 0xFFFFEFF1000);
+    expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    // Expectations for accel_boot_status_send_complete_cb()
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_CDED0_OK);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
+    s_boot_status_send_cb(s_boot_status_send_ctx);
+
+    // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE0
+    will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D0, 2);
+    will_return(__wrap_gtimer_get_timestamp_us, 0xFFFFEFF1000);
+    expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    // Expectations for accel_boot_status_send_complete_cb()
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_CDED1_OK);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
+    s_boot_status_send_cb(s_boot_status_send_ctx);
+
+    // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE1
+    will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D1, 2);
+    will_return(__wrap_gtimer_get_timestamp_us, 0xFFFFEFF1000);
+    expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+
+    // Unit test accel_boot_status_timeout_cb() for SDM DIE0
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
     s_timer_cb(NULL, 0);
 
@@ -1070,15 +1150,18 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_invalid_args, nullptr, nullptr)
 
     //! fpfw_icc_base_recv failed
     will_return_always(__wrap_fpfw_init_get_handle, 0xDEADDEED);
+    will_return(__wrap_fpfw_icc_base_recv, 0);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_STATUS_INVALID_ARGS);
     assert_true(accel_setup_boot_status_code(ACCEL_ID_CDED) != FPFW_STATUS_SUCCESS);
 
     //! fpfw_timer_create failed
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_CDED1_BOOT_COMPLETE);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_timer_create, FPFW_STATUS_INVALID_ARGS);
     assert_true(accel_setup_boot_status_code(ACCEL_ID_CDED) != FPFW_STATUS_SUCCESS);
 
     //! Setup the ICC recv callbacks
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_CDED1_BOOT_COMPLETE);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_timer_create, FPFW_STATUS_SUCCESS);
     assert_true(accel_setup_boot_status_code(ACCEL_ID_CDED) == FPFW_STATUS_SUCCESS);

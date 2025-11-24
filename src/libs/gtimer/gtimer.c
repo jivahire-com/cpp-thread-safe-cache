@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <FPFwInterrupts.h>
+#include <FpFwUtils.h>
 #include <bug_check.h>
 #include <fpfw_status.h>
 #include <fpfw_tmr_queue.h>
@@ -130,4 +131,24 @@ void gtimer_remove(fpfw_tmr_entry_t* tmr)
 uint32_t gtimer_prodfw_get_frequency()
 {
     return gtimer_get_frequency(s_timer_base_address);
+}
+
+/**
+ * @brief Get the current timestamp in microseconds
+ *
+ * @return uint64_t
+ */
+uint64_t gtimer_get_timestamp_us()
+{
+    return (FPFW_DUR_S_TO_US(1) * gtimer_prodfw_get_counter()) / gtimer_prodfw_get_frequency();
+}
+
+/**
+ * @brief Get the current timestamp in milliseconds
+ *
+ * @return uint64_t
+ */
+uint64_t gtimer_get_timestamp_ms()
+{
+    return (FPFW_DUR_S_TO_MS(1) * gtimer_prodfw_get_counter()) / gtimer_prodfw_get_frequency();
 }

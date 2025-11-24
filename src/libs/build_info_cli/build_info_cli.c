@@ -15,6 +15,7 @@
 #include <idhw.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <system_info.h>
 #include <utils.h>
@@ -121,6 +122,27 @@ static PLACED_CODE FPFW_CLI_STATUS whoami(int Argc, const char** Argv)
     // Print SoC secure state
     printf("SoC Secure State: [%d]\n", system_info_get_security_state());
     printf("SoC Mission Mode: %s\n", system_info_get_mission_mode() ? "true" : "false");
+
+    const NOTE_GNU_BUILD_ID* p_metadata = &g_note_gnu_build_id;
+
+    /* Print the build GUID in standard format 4Bytes-2Bytes-2Bytes-2Bytes-6Bytes */
+    printf("Build GUID: ");
+    uint32_t build_id_0_4_bytes = (p_metadata->BuildId[0] << 24) | (p_metadata->BuildId[1] << 16) |
+                                  (p_metadata->BuildId[2] << 8) | (p_metadata->BuildId[3]);
+    uint16_t build_id_1_2_bytes = (p_metadata->BuildId[4] << 8) | (p_metadata->BuildId[5]);
+    uint16_t build_id_2_2_bytes = (p_metadata->BuildId[6] << 8) | (p_metadata->BuildId[7]);
+    uint16_t build_id_3_2_bytes = (p_metadata->BuildId[8] << 8) | (p_metadata->BuildId[9]);
+    uint64_t build_id_4_6_bytes =
+        ((uint64_t)p_metadata->BuildId[10] << 40) | ((uint64_t)p_metadata->BuildId[11] << 32) |
+        ((uint64_t)p_metadata->BuildId[12] << 24) | ((uint64_t)p_metadata->BuildId[13] << 16) |
+        ((uint64_t)p_metadata->BuildId[14] << 8) | ((uint64_t)p_metadata->BuildId[15]);
+
+    printf("%08" PRIx32 "-%04" PRIx16 "-%04" PRIx16 "-%04" PRIx16 "-%012" PRIx64 "\n",
+           build_id_0_4_bytes,
+           build_id_1_2_bytes,
+           build_id_2_2_bytes,
+           build_id_3_2_bytes,
+           build_id_4_6_bytes);
 
     printf("----------------------------------------------------------------\n");
 

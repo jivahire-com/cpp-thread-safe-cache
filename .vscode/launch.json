@@ -270,6 +270,10 @@
                         "PCIe manager service",
                         "scp_pcie_manager.test.exe"
                     ],
+                    [
+                        "Event Trace Service",
+                        "event_trace_service.test.exe"
+                    ],
                 ],
             },
         },

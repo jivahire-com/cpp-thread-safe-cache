@@ -17,13 +17,17 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.assert
         ms::build_data
+        ms::lib::crash_dump
         ms::lib::event_trace::trace
         ms::lib::register_headers
         ms::lib::gtimer
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
+        ms::service::event_trace::et_mts_clnt
         ms::service::mts
         silibs::idsw
+        silibs::idsw_kng
+        silibs::kng_silibs_platform
         silibs::platform
     PUBLIC
 

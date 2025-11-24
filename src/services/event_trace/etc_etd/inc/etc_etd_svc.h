@@ -14,9 +14,6 @@
 #include <event_trace_decoder.h>      // for ETC_SERVICE_CORE_BUFFER_COUNT
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
-// Trace Buffer Sizes ==  (5 KB * Buffer Count (2)) == 10 KB
-#define ETC_CORE_BUFFER_SIZE ((5) * (FPFW_KB))
-#define ETC_CORE_BUFFERS_MEMORY_SIZE ((ETC_CORE_BUFFER_SIZE) * (ETC_SERVICE_CORE_BUFFER_COUNT))
 
 /*-------------------------------- Typedefs ---------------------------------*/
 

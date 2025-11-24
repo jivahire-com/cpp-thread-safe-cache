@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         ms::service::event_trace::etc_etd
         ms::service::event_trace::et_mts_clnt
         ms::service::event_trace::relay
+        silibs::idsw_kng
 )
 
 lint_target(${TARGET})
@@ -42,4 +43,6 @@ mock_target(${TARGET}
     _txe_thread_create
 
     crash_dump_bug_check
+
+    idsw_get_cpu_type
 )

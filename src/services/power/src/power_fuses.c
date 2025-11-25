@@ -39,7 +39,9 @@
 // default for TDP power
 #define TDP_DEFAULT_POWER_A 400
 
-#define VF_CURVE_TEMP_RANGE_OFFSET 0x7F // offset for VF curve temp ranges in fuses
+#define VF_CURVE_TEMP_RANGE_OFFSET    0x7F // offset for VF curve temp ranges in fuses
+#define ES1_CURVSET_OVERRIDE_INDEX    5    // index of curve set to override for es1 samples
+#define ES1_CURVSET_OVERRIDE_FREQ_MHZ 3600 // frequency in Mhz to set for es1 override
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -106,13 +108,13 @@ static const uint32_t core_memasst_valid_boundary_widths[] = {COREMEMASST_WIDTHS
         {VF_CURVE(5, f, t)}, {VF_CURVE(6, f, t)},
 
 // arrays for VF fuse offsets and widths
-static const uint32_t core_vft_fuse_freq_offsets[][VFT_CURVE_COUNT_PER_CURVESET * VFT_CURVESET_COUNT] = {
+static const uint32_t core_vft_fuse_freq_offsets[][VFT_CURVE_COUNT_PER_CURVESET * DVFS_FUSED_PAIRS_COUNT] = {
     VF_CURVES(FREQ, BIT_OFFSET)};
-static const uint32_t core_vft_fuse_ldodac_offsets[][VFT_CURVE_COUNT_PER_CURVESET * VFT_CURVESET_COUNT] = {
+static const uint32_t core_vft_fuse_ldodac_offsets[][VFT_CURVE_COUNT_PER_CURVESET * DVFS_FUSED_PAIRS_COUNT] = {
     VF_CURVES(LDO_DAC_CODE, BIT_OFFSET)};
-static const uint32_t core_vft_fuse_freq_widths[][VFT_CURVE_COUNT_PER_CURVESET * VFT_CURVESET_COUNT] = {
+static const uint32_t core_vft_fuse_freq_widths[][VFT_CURVE_COUNT_PER_CURVESET * DVFS_FUSED_PAIRS_COUNT] = {
     VF_CURVES(FREQ, WIDTH)};
-static const uint32_t core_vft_fuse_ldodac_widths[][VFT_CURVE_COUNT_PER_CURVESET * VFT_CURVESET_COUNT] = {
+static const uint32_t core_vft_fuse_ldodac_widths[][VFT_CURVE_COUNT_PER_CURVESET * DVFS_FUSED_PAIRS_COUNT] = {
     VF_CURVES(LDO_DAC_CODE, WIDTH)};
 
 // helpers for VPU_LEAKAGE offsets and widths
@@ -159,6 +161,9 @@ static const uint32_t core_cdyn_cdyn_offsets[] = {CC_OFFSETS(CDYN)};
 static const uint32_t core_cdyn_ldo_offsets[] = {CC_OFFSETS(LDO)};
 static const uint32_t core_cdyn_cdyn_widths[] = {CC_WIDTHS(CDYN)};
 static const uint32_t core_cdyn_ldo_widths[] = {CC_WIDTHS(LDO)};
+
+// helpers for ES1 fuse override
+static const uint32_t es1_ldo_dac_in_overrides[] = {478, 488, 490, 495};
 
 /*------------- Functions ----------------*/
 
@@ -721,7 +726,7 @@ int32_t power_fuses_get_curve_assignment(uint32_t core, uint32_t* curve_assignme
 }
 
 // NOTE: Currently the temperature curves are not considered and temp0 is used statically and hence hardcoded
-int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset)
+int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset, bool apply_es1_overrides)
 {
     // unexpected, but if something changes want to know about it
     // Checking that the size of pair index in the innermost struct matches with our array definitions
@@ -731,7 +736,6 @@ int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offs
          DIMOF(core_vft_fuse_freq_offsets)),
         DIMOF(((power_fuse_vf_curveset_t*)0)->curveset[VFT_CURVESET_COUNT].curve[VFT_CURVE_COUNT_PER_CURVESET].pair),
         DIMOF(core_vft_fuse_freq_offsets));
-    BUG_ASSERT_PARAM((DVFS_FUSED_PAIRS_COUNT >= VFT_CURVESET_COUNT), DVFS_FUSED_PAIRS_COUNT, VFT_CURVESET_COUNT);
 
     if (!vf_curves)
     {
@@ -744,6 +748,18 @@ int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offs
         POWER_LOG_WARN(MODULE_NAME "Fused LDO values offset by %d\n", ldo_offset);
     }
 
+    // Check customer sample version
+    uint64_t customer_fuse_data = 0;
+    uint8_t customer_sample_milestone = 0; // 0x0 = undefined; 0x1 = ES; 0x2 = PC; 0x3 = PR; >0x3 TBD
+    int32_t status = platform_read_fuse((uint32_t*)&customer_fuse_data,
+                                        CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_BIT_OFFSET,
+                                        CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_WIDTH);
+    if (status != FPFW_STATUS_SUCCESS)
+    {
+        return status;
+    }
+    customer_sample_milestone = (uint8_t)customer_fuse_data;
+
     // clear structure
     memset(vf_curves, 0, sizeof(power_fuse_vf_curveset_t));
     // iterate over fuses
@@ -752,7 +768,7 @@ int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offs
         for (uint32_t temp_idx = 0; temp_idx < VFT_CURVE_COUNT_PER_CURVESET; ++temp_idx)
         {
             uint64_t fuse_data = 0;
-            for (uint32_t pair_idx = 0; pair_idx < VFT_CURVESET_COUNT; ++pair_idx)
+            for (uint32_t pair_idx = 0; pair_idx < DVFS_FUSED_PAIRS_COUNT; ++pair_idx)
             {
 
                 // read fuse at index into temp fuse data
@@ -785,6 +801,21 @@ int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offs
                 vf_curves->curveset[curve_idx].curve[temp_idx].pair[pair_idx].ldo_dac_in = fuse_data;
             }
         }
+    }
+    // Apply overrides for ES1 samples if needed
+    if (customer_sample_milestone == 0x1 && apply_es1_overrides)
+    {
+        for (uint32_t curve_idx = 0; curve_idx < DIMOF(core_vft_fuse_freq_offsets); ++curve_idx)
+        {
+            for (uint32_t temp_idx = 0; temp_idx < VFT_CURVE_COUNT_PER_CURVESET; ++temp_idx)
+            {
+                vf_curves->curveset[curve_idx].curve[temp_idx].pair[ES1_CURVSET_OVERRIDE_INDEX].freq_Mhz =
+                    ES1_CURVSET_OVERRIDE_FREQ_MHZ;
+                vf_curves->curveset[curve_idx].curve[temp_idx].pair[ES1_CURVSET_OVERRIDE_INDEX].ldo_dac_in =
+                    es1_ldo_dac_in_overrides[temp_idx];
+            }
+        }
+        POWER_LOG_INFO(MODULE_NAME "ES1 sample - applied overrides\n");
     }
     return FPFW_STATUS_SUCCESS;
 }
@@ -869,7 +900,7 @@ void power_fuses_read(power_fuse_data_t* p_fuses)
         int32_t status = FPFW_STATUS_SUCCESS;
         // solve the bug2762916 [C4143] Core Disable Configuration Register doesn't reflect the core_defect_mask bit in fuses
         memcpy(&p_fuses->valid_cores, core_info_get_enable_cores_result(), sizeof(corebits_t));
-        status = power_fuses_read_vf(&p_fuses->vf, p_run_config->knobs.ldo_offset);
+        status = power_fuses_read_vf(&p_fuses->vf, p_run_config->knobs.ldo_offset, p_run_config->knobs.es1_fuse_overrides);
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_read_memasst(&p_fuses->memasst);
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);

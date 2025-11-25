@@ -190,7 +190,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     if (!bugcheck_mock_return())
     {
         // 1) read_vf -> fail on second call (ldo)
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 5);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 6);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 1);
         power_fuses_read(&test_fuses);
     }
@@ -199,7 +199,7 @@ POWER_TEST(read_fuse_func_failures, set_run_config_core_enabled, reset_run_confi
     {
         // 2) read_memasst -> fail in first entry (9 reads)
         // reach memasst: read_vf success = 392
-        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 392);
+        will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS, 393);
         will_return_count(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER, 9);
         power_fuses_read(&test_fuses);
     }
@@ -856,53 +856,107 @@ POWER_TEST(get_curve_assignment_fuse_read_success, NULL, NULL)
 POWER_TEST(read_vf_null_args, NULL, NULL)
 {
     int8_t ldo_offset = 0x1;
+    bool apply_fuse_override = true;
 
-    assert_true((power_fuses_read_vf(NULL, ldo_offset) == FPFW_STATUS_NULL_POINTER));
+    assert_true((power_fuses_read_vf(NULL, ldo_offset, apply_fuse_override) == FPFW_STATUS_NULL_POINTER));
 }
 
 POWER_TEST(read_vf_zero_first_fuse_read_fail, NULL, NULL)
 {
     power_fuse_vf_curveset_t vf;
     int8_t ldo_offset = 0x0;
-
-    expect_any_always(__wrap_platform_read_fuse, target_addr);
-    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
-    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
-
-    will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER);
-
-    assert_true((power_fuses_read_vf(&vf, ldo_offset) == FPFW_STATUS_NULL_POINTER));
-}
-
-POWER_TEST(read_vf_second_fuse_read_fail_non_zero_data, NULL, NULL)
-{
-    power_fuse_vf_curveset_t vf;
-    int8_t ldo_offset = 0x1;
+    bool apply_fuse_override = true;
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
 
     will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER);
+
+    assert_true((power_fuses_read_vf(&vf, ldo_offset, apply_fuse_override) == FPFW_STATUS_NULL_POINTER));
+}
+
+POWER_TEST(read_vf_second_fuse_read_fail_non_zero_data, NULL, NULL)
+{
+    power_fuse_vf_curveset_t vf;
+    int8_t ldo_offset = 0x1;
+    bool apply_fuse_override = true;
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
     will_return(__wrap_platform_read_fuse, FPFW_STATUS_NULL_POINTER);
 
-    assert_true((power_fuses_read_vf(&vf, ldo_offset) == FPFW_STATUS_NULL_POINTER));
+    assert_true((power_fuses_read_vf(&vf, ldo_offset, apply_fuse_override) == FPFW_STATUS_NULL_POINTER));
 }
 
 POWER_TEST(read_vf_success, set_fuse_data_to_zero, set_fuse_data_to_default)
 {
     power_fuse_vf_curveset_t vf;
     int8_t ldo_offset = 0x1;
+    bool apply_fuse_override = true;
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
 
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
     will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
 
-    assert_true((power_fuses_read_vf(&vf, ldo_offset) == FPFW_STATUS_SUCCESS));
+    assert_true((power_fuses_read_vf(&vf, ldo_offset, apply_fuse_override) == FPFW_STATUS_SUCCESS));
 }
 
+POWER_TEST(apply_es1_overrides, set_fuse_data_to_one, set_fuse_data_to_default)
+{
+    power_fuse_vf_curveset_t vf;
+    int8_t ldo_offset = 0x1;
+    bool apply_fuse_override = true;
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_read_vf(&vf, ldo_offset, apply_fuse_override) == FPFW_STATUS_SUCCESS));
+}
+POWER_TEST(apply_es1_overrides_additional_pair, set_fuse_data_to_one, set_fuse_data_to_default)
+{
+#define ES1_CURVSET_OVERRIDE_INDEX    5    // index of curve set to override for es1 samples
+#define ES1_CURVSET_OVERRIDE_FREQ_MHZ 3600 // frequency in Mhz to set for es1 override
+
+    power_fuse_vf_curveset_t vf = {};
+    int8_t ldo_offset = 0x0;
+    bool apply_fuse_override = true;
+    static const uint32_t expected_es1_ldo_dac_in_overrides[] = {478, 488, 490, 495};
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_read_vf(&vf, ldo_offset, apply_fuse_override) == FPFW_STATUS_SUCCESS));
+
+    for (unsigned curve_idx = 0; curve_idx < VFT_CURVESET_COUNT; ++curve_idx)
+    {
+        for (unsigned temp_idx = 0; temp_idx < VFT_CURVE_COUNT_PER_CURVESET; ++temp_idx)
+        {
+            assert_int_equal(vf.curveset[curve_idx].curve[temp_idx].pair[ES1_CURVSET_OVERRIDE_INDEX].freq_Mhz, 3600);
+            assert_int_equal(vf.curveset[curve_idx].curve[temp_idx].pair[ES1_CURVSET_OVERRIDE_INDEX].ldo_dac_in,
+                             expected_es1_ldo_dac_in_overrides[temp_idx]);
+        }
+    }
+}
 POWER_TEST(read_curve_temp_success, set_fuse_data_to_zero, set_fuse_data_to_default)
 {
     int8_t curve_max_temp[NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1];

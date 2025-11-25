@@ -241,7 +241,7 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config);
  * @return FPFW_STATUS_SUCCESS or FPFW_STATUS_INVALID_ARGS
  *
  */
-int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset);
+int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset, bool apply_es1_overrides);
 
 /**
  * @brief Reads VSYS VID from fuses

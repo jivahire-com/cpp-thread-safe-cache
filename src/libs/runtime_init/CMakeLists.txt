@@ -32,7 +32,6 @@ add_library(${TARGET}
         ddrss_init.c
         debug_init.c
         dfwk_init.c
-        dma_init.c
         d2d_cntr_sync_init.c
         err_domain_scp_init.c
         etc_etd_init.c
@@ -108,7 +107,6 @@ target_link_libraries(
         fwlib.service.mts.cli
         fwlib.service.utc_sync.client
         ms::build_data
-        ms::driver::dma::scp
         ms::driver::gpio
         ms::driver::icc_mhu_trans
         ms::driver::pcie
@@ -274,7 +272,6 @@ add_library(${TARGET}
         cli_tlm_fuses_init.c
         debug_init.c
         dfwk_init.c
-        dma_init.c
         err_domain_mcp_init.c
         etc_etd_init.c
         etr_init.c
@@ -348,7 +345,6 @@ target_link_libraries(
         fwlib.service.utc_sync.client
         fwlib.service.utc_sync.manager
         ms::build_data
-        ms::driver::dma::mcp
         ms::driver::gpio
         ms::driver::icc_mhu_trans
         ms::driver::sensor_fifo

@@ -850,6 +850,37 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         .rated_min = 300,
     };
 
+    static fpfw_pldm_pdr_effecter_auxiliary_name_t s_AP_ADVLOG_STATE_EFFECTER_pdr_aux_name = {
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_EFFECTER_AUXILIARY_NAMES_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_effecter_auxiliary_name_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+        .terminus_handle = 0,                       // Populated by PLDM lib
+        .effecter_id = PLDM_EFFECTER_ID_AP_FW_LOGS_STATE_EFFECTER, // Unique id across sensors. Used for registration in the PldmService API
+        .effecter_count = 1,
+        .name_string_count = 0x01,
+        .name_language_tag = "en", // Language tag for the name. 3 bytes, null terminated. "en" = English
+        .effecter_name = u"AP_ADVLOG_DUMP" // Effecter name in UTF-16 format
+    };
+
+    static fpfw_pldm_pdr_state_effecter_COMPOSITE_1_STATES_1_t s_AP_ADVLOG_STATE_EFFECTER_pdr = {
+        .hdr.record_handle = 0,
+        .hdr.version = PLDM_PLATFORM_EVENT_MESSAGE_FORMAT_VERSION,
+        .hdr.type = PLDM_STATE_EFFECTER_PDR,
+        .hdr.length = sizeof(fpfw_pldm_pdr_state_effecter_COMPOSITE_1_STATES_1_t) - sizeof(fpfw_pmc_pdr_header_t),
+        .hdr.record_change_num = 0,
+        .terminus_handle = 0, // Populated by PLDM lib
+        .effecter_id = PLDM_EFFECTER_ID_AP_FW_LOGS_STATE_EFFECTER, // Unique id across sensors. Used for registration in the PldmService API
+        .entity_type = PLDM_ENTITY_PROC_MODULE, // Entity for which this sensor is associated. Section 7.1 https://www.dmtf.org/sites/default/files/standards/documents/DSP0249_1.0.0.pdf
+        .entity_instance = 0, // Instance id in case there are multiple entities of the same time in the same container
+        .container_id = 0, // 0 = SYSTEM, related to entity associations in DSP0248_1.2.1 (Section 28)
+        .effecter_init = PLDM_NO_INIT, // Only no-init/enable supported
+        .auxiliar_description_pdr = true, // Required if effecter has an auxiliary name
+        .composite_effecter_count = 1,
+        .possible_states = {
+            {.state_set_id = PLDM_STATE_SET_SWITCH_STATE, .possible_states_size = 1, .possible_states = {0x2}}}
+    };
+
     static void* s_pdr_list[] = {
         &s_SOC_TMP_MAX_pdr,
         &s_SOC_TMP_MAX_pdr_aux_name,
@@ -939,6 +970,8 @@ FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
         &s_POWER_THROTTLING_STATE_pdr_aux_name,
         &s_POWER_CAP_NUM_EFFECTER_pdr,
         &s_POWER_CAP_NUM_EFFECTER_pdr_aux_name,
+        &s_AP_ADVLOG_STATE_EFFECTER_pdr,
+        &s_AP_ADVLOG_STATE_EFFECTER_pdr_aux_name,
         NULL
     };
 

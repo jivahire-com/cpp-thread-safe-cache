@@ -314,6 +314,8 @@ add_library(${TARGET}
         virt_irq_init.c
         watchdog_init.c
         systick_update_init.c
+        ap_advlog_pldm_mcp_init.c
+        ap_advlog_pldm_mcp_cli_init.c
 )
 
 target_link_libraries(
@@ -406,6 +408,8 @@ target_link_libraries(
         ms::service::wdog
         ms::service::health_monitor
         ms::service::health_monitor::cli
+        ms::service::ap_advlog_pldm
+        ms::service::ap_advlog_pldm::cli
         silibs::atu
         silibs::common::lib_uart_pl011
         silibs::fuse

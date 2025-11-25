@@ -738,7 +738,7 @@ class pldm_sensors_effecters(EchoFallsBaseTest):
         for mctp_id in self.mctp_eids:
             for state_effecter_id in self.state_effecter_ids[mctp_id]:
                 _, stdout, _ = self.__bmc_execute_command(
-                    f"pldmtool platform SetStateEffecterStates -m {mctp_id} -i {state_effecter_id} -c 1 -d 1 2 -v"
+                    f"pldmtool platform SetStateEffecterStates -m {mctp_id} -i {state_effecter_id} -c 1 -d 1 1 -v"
                 )
                 if "SUCCESS" not in stdout:
                     self.log.error("Failed to set state effecter states")

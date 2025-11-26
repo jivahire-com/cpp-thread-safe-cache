@@ -65,7 +65,7 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
                                                  : ACPI_ERROR_SEVERITY_CORRECTED;
             acpi_cper_section_t std_cper_section = {0};
             std_cper_section.sec_mem = ddr_ras_cper;
-            hm_submit_cper(ACPI_ERROR_DOMAIN_DDR, severity, &std_cper_section, sizeof(std_cper_section));
+            hm_submit_cper(ACPI_ERROR_DOMAIN_STD_MEMORY, severity, &std_cper_section, sizeof(std_cper_section));
 
             acpi_cper_section_t vendor_cper_section = {0};
             vendor_cper_section.sec_ddr_mem_vendor = ddr_vendor_cper;

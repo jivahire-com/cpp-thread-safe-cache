@@ -806,10 +806,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC0_CRI_INT, setup, teardown)
     expect_function_call(__wrap_crash_dump_bug_check);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC0_CRI_INT));
@@ -836,10 +838,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC1_CRI_INT, setup, teardown)
     expect_function_call(__wrap_crash_dump_bug_check);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, (1 << DDRSS_INTU_MC1_CRI_INT));
@@ -870,10 +874,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_FHI_UEU, setup, t
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
@@ -887,10 +893,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_FHI_UEU, setup, t
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
@@ -915,10 +923,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_FHI_UEU, setup, t
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
@@ -932,10 +942,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_FHI_UEU, setup, t
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
@@ -964,10 +976,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
@@ -981,10 +995,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
@@ -1005,10 +1021,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
@@ -1022,10 +1040,12 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
     // Vendor CPER
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
@@ -1043,6 +1063,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_phy, setup, teardown)
                     csr_PhyEccEn_MASK | csr_PhyPIEProgErrEn_MASK | csr_PhyTxPPTEn_MASK | csr_PhyAlertEn_MASK;
 
     // Vendor CPER - ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
 
@@ -1076,6 +1097,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc0_tlm, setup, teardown)
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
     will_return(__wrap_ddrss_get_telemetry_record, SILIBS_SUCCESS);
 
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
     // expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
@@ -1094,6 +1116,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_tlm, setup, teardown)
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
     will_return(__wrap_ddrss_get_telemetry_record, SILIBS_SUCCESS);
 
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_INFORMATIONAL);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
@@ -1110,6 +1133,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_mediacs, setup, teardown)
 
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
     expect_value(__wrap_ddrss_mc_event_clear_interrupt, intr_evt_mask, DDRSS_MC_INTR_EVT_ECS_TRANS_CHANGED);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
@@ -1126,6 +1150,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_tempch, setup, teardown)
 
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
     expect_value(__wrap_ddrss_mc_event_clear_interrupt, intr_evt_mask, DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
@@ -1142,6 +1167,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_mc1_temphigh, setup, teardown)
 
     expect_value(__wrap_ddrss_ddr_intu_clear_interrupt, intr_mask, g_ddr_intu_sts);
     expect_value(__wrap_ddrss_mc_event_clear_interrupt, intr_evt_mask, DDRSS_MC_INTR_EVT_REF_TEMP_HIGH);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
 
@@ -1195,6 +1221,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     ddr_vendor_cper.error_status.error_type = ddr_vendor_cper.error_type;
     ddr_vendor_cper.error_status.data = 1;
     ddr_vendor_cper.valid_error_status = 1;
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
@@ -1213,6 +1240,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     ddr_vendor_cper.error_status.control = 1;
     ddr_vendor_cper.valid_error_status = 1;
     ddr_vendor_cper.valid_vendor_err_info = 1;
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
@@ -1231,6 +1259,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     ddr_vendor_cper.error_status.control = 1;
     ddr_vendor_cper.valid_error_status = 1;
     ddr_vendor_cper.valid_vendor_err_info = 1;
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));
@@ -1249,6 +1278,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     ddr_vendor_cper.error_status.control = 1;
     ddr_vendor_cper.valid_error_status = 1;
     ddr_vendor_cper.valid_vendor_err_info = 1;
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
     expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_memory(__wrap_hm_submit_cper, err_record_section, &ddr_vendor_cper, sizeof(acpi_err_sec_mem_vendor_t));
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_err_sec_mem_vendor_t));

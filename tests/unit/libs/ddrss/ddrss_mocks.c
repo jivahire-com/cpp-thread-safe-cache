@@ -358,7 +358,7 @@ void __wrap_hm_submit_cper(uint16_t error_domain_idx,
                            acpi_cper_section_t* err_record_section,
                            uint32_t err_record_section_size)
 {
-    assert_true((error_domain_idx == ACPI_ERROR_DOMAIN_DDR) || (error_domain_idx == ACPI_ERROR_DOMAIN_RHTLM));
+    check_expected(error_domain_idx);
     check_expected(err_severity);
 
     if (g_should_check_cper_section)

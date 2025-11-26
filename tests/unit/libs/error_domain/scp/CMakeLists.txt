@@ -151,6 +151,7 @@ mock_target(${AP_WDT_TARGET}
     atu_map
     atu_unmap
     crash_dump_bug_check
+    crash_dump_context
     crash_dump_register_address32
     hm_submit_cper
     idsw_get_die_id
@@ -158,4 +159,5 @@ mock_target(${AP_WDT_TARGET}
     nvic_get_current_irq
     nvic_irq_clear_pending
     ws_data_put
+    CdRegisterCustomChunk
 )

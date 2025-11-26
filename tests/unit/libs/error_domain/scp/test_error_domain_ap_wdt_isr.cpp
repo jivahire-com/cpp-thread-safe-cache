@@ -12,6 +12,7 @@
 
 extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <ap_fw_crashdump.h>
 #include <ap_watchdog_timer_control_registers_regs.h>
 #include <atu_api.h>
 #include <atu_lib.h> // for atu_map_entry_t
@@ -34,18 +35,38 @@ extern "C" {
 
 // Mock FPFW_DBGPRINT_ERROR as empty macro
 #define FPFW_DBGPRINT_ERROR(...)
+#define FPFW_DBGPRINT_INFO(...)
 
 /*------------- Typedefs -----------------*/
+// Add missing typedef for ap_wdt_chunk_t
+typedef struct
+{
+    uint32_t size;
+} ap_wdt_chunk_t;
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
 static bool test_ap_wdt_occurred = false;
 
+// Mock crash dump context
+static FPFwCrashDumpCtx mock_crash_dump_ctx;
+static crash_dump_type_context_t mock_type_ctx;
+static crash_dump_context_t mock_cd_context;
+
+// Mock AP FW crashdump header buffer
+static uint8_t mock_crashdump_buffer[256];
+
 /*------------- Functions ----------------*/
 //
 // Mocks
 //
+
+crash_dump_context_t* __wrap_crash_dump_context(void)
+{
+    function_called();
+    return &mock_cd_context;
+}
 
 nvic_status_t __wrap_nvic_get_current_irq(uint32_t* irq_num)
 {
@@ -137,12 +158,47 @@ KNG_DIE_ID __wrap_idsw_get_die_id(void)
     function_called();
     return mock_type(KNG_DIE_ID);
 }
+
+bool __wrap_CdRegisterCustomChunk(FPFwCrashDumpCtx* ctx,
+                                  GUID signature,
+                                  void* clientContext,
+                                  uint32_t payloadSize,
+                                  FPFW_CD_CUSTOM_CHUNK_GET_SIZE_CALLBACK getSizeCallback,
+                                  FPFW_CD_CUSTOM_CHUNK_UPDATE_CALLBACK updateCallback,
+                                  FPFwCdDumpPriority priority)
+{
+    FPFW_UNUSED(signature);
+    assert_non_null(ctx);
+    assert_non_null(clientContext);
+    assert_non_null(getSizeCallback);
+    assert_non_null(updateCallback);
+    assert_int_equal(payloadSize, 0); // Size is determined by callback
+    assert_int_equal(priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    function_called();
+    return true;
+}
 }
 /*------------- Test Functions -----------*/
 
 TEST_FUNCTION(test_hm_ap_wdt_isr_success, nullptr, nullptr)
 {
     test_ap_wdt_occurred = false;
+
+    // Initialize mock crash dump context
+    memset(&mock_crash_dump_ctx, 0, sizeof(mock_crash_dump_ctx));
+    memset(&mock_type_ctx, 0, sizeof(mock_type_ctx));
+    memset(&mock_cd_context, 0, sizeof(mock_cd_context));
+    mock_type_ctx.crash_dump_ctx = mock_crash_dump_ctx;
+    mock_cd_context.type_ctx[CRASH_DUMP_TYPE_FULL] = &mock_type_ctx;
+
+    // Initialize mock crashdump buffer with completed status
+    memset(mock_crashdump_buffer, 0, sizeof(mock_crashdump_buffer));
+    kng_ap_fw_hdr* mock_fw_hdr = (kng_ap_fw_hdr*)mock_crashdump_buffer;
+    mock_fw_hdr->magic = 0xDEADBEEF;                  // Magic value
+    mock_fw_hdr->version_major = 1;                   // Version
+    mock_fw_hdr->version_minor = 0;                   // Version
+    mock_fw_hdr->size = 0x100;                        // Test payload size (256 bytes)
+    mock_fw_hdr->cd_status = KNG_CD_STATUS_COMPLETED; // Crashdump completed
 
     // Mock nvic_get_current_irq to return success
     expect_function_call(__wrap_nvic_get_current_irq);
@@ -203,7 +259,27 @@ TEST_FUNCTION(test_hm_ap_wdt_isr_success, nullptr, nullptr)
     expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
     expect_function_call(__wrap_atu_unmap);
 
+    // Third call to idsw_get_die_id for AP FW crashdump mapping
+    will_return(__wrap_idsw_get_die_id, 0);
+    expect_function_call(__wrap_idsw_get_die_id);
+
+    // Expect atu_map for AP FW crashdump region
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, (uint32_t)mock_crashdump_buffer); // Return address of mock buffer
+    expect_function_call(__wrap_atu_map);
+
+    // Expect crash_dump_context call
+    expect_function_call(__wrap_crash_dump_context);
+
+    // Expect custom chunk registration
+    expect_function_call(__wrap_CdRegisterCustomChunk);
+
+    // Expect crash dump bug check (since cd_status is KNG_CD_STATUS_COMPLETED)
     expect_function_call(__wrap_crash_dump_bug_check);
+
+    // Expect atu_unmap after reading cd_status
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
 
     // Call the ISR
     hm_ap_wdt_isr();

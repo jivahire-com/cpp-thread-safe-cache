@@ -12,10 +12,12 @@
 #include <FPFwInterrupts.h> // for FPFwCoreInterruptRegisterCallback
 #include <FpFwAssert.h>     // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>
+#include <ap_fw_crashdump.h>
 #include <atu_api.h>
 #include <bug_check.h>
 #include <cper.h>
-#include <crash_dump.h>
+#include <crash_dump.h> // for crash_dump_type_context_t
+#include <ddrss_reserved_regions.h>
 #include <error_domain_ap_wdt.h>
 #include <error_domain_i.h>
 #include <fpfw_init.h>
@@ -60,7 +62,30 @@
 /*-- Declarations (Statics and globals) --*/
 static guid_t AP_WDT_GUID = ACPI_ERROR_TYPE_VENDOR_AP_WDT;
 
+// GUID for AP WDT custom chunk
+// {4E4E2C2B-5416-4800-B1D1-59B2C87B3614}
+static const GUID CD_AP_WDT_CHUNK_GUID = {0x4e4e2c2b, 0x5416, 0x4800, {0xb1, 0xd1, 0x59, 0xb2, 0xc8, 0x7b, 0x36, 0x14}};
+
 /*-------------- Functions ---------------*/
+
+// Callback to get payload size
+static uint32_t ap_wdt_chunk_get_size(void* userContext)
+{
+    kng_ap_fw_hdr* fw_hdr = (kng_ap_fw_hdr*)userContext;
+
+    // Return the size from the mapped header, rounded up to natural alignment
+    return DUMP_ROUND_UP(fw_hdr->size, DUMP_NATURAL_ALIGNMENT);
+}
+
+// Callback to write payload
+static void ap_wdt_chunk_write(FPFwCrashDumpCtx* ctx, uint64_t dumpOffset, void* userContext, uint32_t payloadSize)
+{
+    FPFW_UNUSED(payloadSize);
+    kng_ap_fw_hdr* fw_hdr = (kng_ap_fw_hdr*)userContext;
+
+    // Copy the entire payload from the mapped AP_FW_CRASHDUMP_LOCATION
+    ctx->memAPIs.FPFwCDMemcpyLocalToGlobal(&ctx->memAPIs, dumpOffset, fw_hdr, fw_hdr->size);
+}
 
 uint32_t map_ap_wdog_address(atu_map_entry_t* atu_entry, bool secure)
 {
@@ -129,13 +154,13 @@ void hm_ap_wdt_isr()
 
     // Map Non-Secure watchdog
     uint32_t ns_base = map_ap_wdog_address(&ap_wdog_ns_atu_entry, false);
-    ap_watchdog_timer_control_registers_wcs ns_wcs = {
-        .as_uint32 = MMIO_READ32(ns_base + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS)};
+    static ap_watchdog_timer_control_registers_wcs ns_wcs;
+    ns_wcs.as_uint32 = MMIO_READ32(ns_base + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS);
 
     // Map Secure watchdog
     uint32_t s_base = map_ap_wdog_address(&ap_wdog_s_atu_entry, true);
-    ap_watchdog_timer_control_registers_wcs s_wcs = {
-        .as_uint32 = MMIO_READ32(s_base + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS)};
+    static ap_watchdog_timer_control_registers_wcs s_wcs;
+    s_wcs.as_uint32 = MMIO_READ32(s_base + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS);
 
     // Register crash dump data
     crash_dump_register_address32(&ns_wcs, sizeof(ns_wcs), FPFW_CD_DUMP_PRIORITY_CRITICAL);
@@ -145,8 +170,46 @@ void hm_ap_wdt_isr()
     unmap_ap_wdog_address(&ap_wdog_ns_atu_entry);
     unmap_ap_wdog_address(&ap_wdog_s_atu_entry);
 
-    // Trigger bug check for AP watchdog timeout
-    BUG_CHECK(KNG_BGCHK_BUGCHECK, nvic_irq_num, RECORD_ID_AP_WDT); // Using generic bug check code
+    KNG_DIE_ID die_id = idsw_get_die_id();
+
+    if (die_id == 0)
+    {
+        // Map AP FW crashdump header
+        atu_map_entry_t crashdump_atu_entry;
+        int status = SILIBS_SUCCESS;
+
+        crashdump_atu_entry = (atu_map_entry_t)ATU_MAPPING(AP_FW_CRASHDUMP_LOCATION,
+                                                           0,
+                                                           (ALIGN_UP(AP_FW_CRASHDUMP_REGION_SIZE, ATU_PAGE_SIZE) - 1),
+                                                           {ATU_BUS_ATTR_S});
+
+        status = atu_map(ATU_ID_MSCP, &crashdump_atu_entry);
+        BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
+
+        kng_ap_fw_hdr* fw_hdr = (kng_ap_fw_hdr*)crashdump_atu_entry.mscp_start_address;
+
+        // Check cd_status before bug check
+        if (fw_hdr->cd_status == KNG_CD_STATUS_COMPLETED)
+        {
+            // Register custom chunk with mapped crashdump address as userContext
+            CdRegisterCustomChunk(&crash_dump_context()->type_ctx[CRASH_DUMP_TYPE_FULL]->crash_dump_ctx,
+                                  (GUID)CD_AP_WDT_CHUNK_GUID,
+                                  fw_hdr,
+                                  0,
+                                  ap_wdt_chunk_get_size,
+                                  ap_wdt_chunk_write,
+                                  FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        }
+        else
+        {
+            FPFW_DBGPRINT_WARNING("AP crashdump transfer not complete, skipping BUG_CHECK.\n");
+        }
+
+        // Trigger bug check for AP watchdog timeout
+        BUG_CHECK(KNG_BGCHK_BUGCHECK, nvic_irq_num, RECORD_ID_AP_WDT);
+        // Unmap after reading
+        atu_unmap(ATU_ID_MSCP, &crashdump_atu_entry);
+    }
 }
 
 /**

@@ -14,6 +14,7 @@
 #include <ErrorHandler.h> // for FPFwErrorRaise
 #include <bug_check.h>
 #include <crash_dump.h>
+#include <ddr_manager_dfwk.h>
 #include <ddr_manager_events.h> // for DDR_MANAGER_ET_FATAL, DDR_MANAGER_ET_TYPE_CURVE_H...
 #include <ddrss.h>              // for ddr_manager_init
 #include <fpfw_cfg_mgr.h>

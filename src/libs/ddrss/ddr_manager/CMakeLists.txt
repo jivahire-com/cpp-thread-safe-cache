@@ -10,6 +10,7 @@ add_library(${TARGET}
     STATIC
         ddr_manager_acpi_smbios_tables.c
         ddr_manager_bwl.c
+        ddr_manager_dfwk.c
         ddr_manager_events.c
         ddr_manager_gpio.c
         ddr_manager_i3c.c
@@ -58,6 +59,7 @@ target_link_libraries(${TARGET}
         ms::lib::icc_platform_defines
         ms::lib::scp_interrupts
         ms::lib::system_info
+        ms::service::scp_startup_shutdown
         ms::service::sds_service
     PUBLIC
         ms::service::sensor_fifo

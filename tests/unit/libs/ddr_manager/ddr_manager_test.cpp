@@ -24,6 +24,7 @@ extern "C" {
 #include <ddr_i3c.h>
 #include <ddr_manager.h> // for ddr_manager_init, ddr_service_context_t
 #include <ddr_manager_bwl.h>
+#include <ddr_manager_dfwk.h>
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
 #include <ddr_rhtlm_service.h>
 #include <ddrss_lib.h>
@@ -31,6 +32,7 @@ extern "C" {
 #include <error_handler.h> // for set_error_handler_return
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>
+#include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
 #include <kingsgate_hsp_mailbox_commands.h>
@@ -38,6 +40,7 @@ extern "C" {
 #include <mscp_exp_spi_synchronize_dies.h>
 #include <sensor_fifo_service.h>
 #include <smbios_structs.h>
+#include <startup_shutdown.h>
 #include <thread_x_mocks.h>
 #include <tx_api.h> // for TX_SUCCESS, ULONG, TX_NOT_DONE, TX_NO_MEMORY
 
@@ -254,6 +257,28 @@ int32_t __wrap_ddr_i3c_interface_read_pmic_power(i3c_instance_t* instance,
 bool __wrap_ift_is_enabled(void)
 {
     return mock_type(bool);
+}
+
+int32_t __wrap_sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
+                                pstartup_ssi_registration_t p_registration,
+                                PDFWK_INTERFACE_HEADER p_ssi_interface)
+{
+    check_expected_ptr(p_interface);
+    check_expected_ptr(p_registration);
+    check_expected_ptr(p_ssi_interface);
+    return mock_type(int32_t);
+}
+
+void* __wrap_fpfw_init_get_handle(const fpfw_init_component_id_t id)
+{
+    FPFW_UNUSED(id);
+    return mock_type(void*);
+}
+
+void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
+{
+    check_expected_ptr(Request);
+    function_called();
 }
 
 } // extern "C"
@@ -1458,4 +1483,33 @@ TEST_FUNCTION(ddr_sdl_load_alternate_path_1, NULL, NULL)
 
     // Nothing happens for DIE_1 (noop)
     ddr_load_shared_defect_list();
+}
+
+TEST_FUNCTION(ddr_ddr_manager_dfwk_init_test, NULL, NULL)
+{
+    DFWK_INTERFACE_HEADER ssi_interface = {};
+    DFWK_THREADX_HOST mock_dfwk_host;
+    memset(&mock_dfwk_host, 0, sizeof(mock_dfwk_host));
+
+    will_return(__wrap_fpfw_init_get_handle, &mock_dfwk_host);
+    will_return(__wrap_fpfw_init_get_handle, &ssi_interface);
+
+    expect_value(__wrap_sos_register_ssi, p_interface, &ssi_interface);
+    expect_any(__wrap_sos_register_ssi, p_registration);
+    expect_any(__wrap_sos_register_ssi, p_ssi_interface);
+    will_return(__wrap_sos_register_ssi, FPFW_INIT_STATUS_SUCCESS);
+
+    ddr_manager_dfwk_init();
+}
+
+TEST_FUNCTION(ddr_manager_dfwk_dispatch_test, NULL, NULL)
+{
+    ssi_shutdown_notification_request_t mock_request = {};
+    mock_request.header.RequestType = SSI_QUIESCE_ASYNC;
+    mock_request.shutdown_type = SHUTDOWN_SCP_INITIATED;
+
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);
+    expect_function_call(__wrap_DfwkAsyncRequestComplete);
+
+    ddr_manager_dfwk_dispatch(&mock_request.header, NULL);
 }

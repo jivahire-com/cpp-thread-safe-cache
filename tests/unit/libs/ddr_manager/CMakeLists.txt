@@ -125,6 +125,9 @@ mock_target(${TARGET}
     variable_service_sync_set_variable
     variable_service_unlock_get_var_ctx
     sdl_get_mem_ctx
+    fpfw_init_get_handle
+    sos_register_ssi
+    DfwkAsyncRequestComplete
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

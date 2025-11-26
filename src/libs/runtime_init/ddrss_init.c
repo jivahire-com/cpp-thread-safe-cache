@@ -11,6 +11,7 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <ddr_manager.h>
+#include <ddr_manager_dfwk.h>
 #include <ddrss.h>
 #include <fpfw_init.h>
 #include <stdio.h>
@@ -69,5 +70,11 @@ FPFW_INIT_COMPONENT(
 
     // Initialize DDR Manager - prod_ddrss_lib_init is moved to inside this init
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(ddr_dfwk, FPFW_INIT_DEPENDENCIES("ddr", "dfwk", "sos_int"))
+{
+    ddr_manager_dfwk_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

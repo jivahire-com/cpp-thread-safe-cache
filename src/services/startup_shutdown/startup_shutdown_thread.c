@@ -81,7 +81,7 @@ void sos_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_conte
 {
     FPFW_UNUSED(request);
     uint32_t interface_unique_flag = (uint32_t)p_completion_context;
-    SOS_LOG_TRACE("Request to an SSI %08lx completed (%x)", interface_unique_flag, (uintptr_t)request);
+    SOS_LOG_TRACE("Request to an SSI %08lx completed (%x)", (unsigned long)interface_unique_flag, (uintptr_t)request);
     int status = tx_event_flags_set(&s_sos_thread_ctx.ssi_flags, interface_unique_flag, TX_OR);
     FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
 }
@@ -180,7 +180,7 @@ void wait_ssi_complete(sos_stage_timeout_t current_stage)
         current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
     }
 
-    SOS_LOG_TRACE("SSI completion - Expected flags: %lx", s_sos_thread_ctx.expected_complete_flags);
+    SOS_LOG_TRACE("SSI completion - Expected flags: %lx", (unsigned long)s_sos_thread_ctx.expected_complete_flags);
     int status = tx_event_flags_get(&s_sos_thread_ctx.ssi_flags,
                                     s_sos_thread_ctx.expected_complete_flags,
                                     TX_AND_CLEAR,

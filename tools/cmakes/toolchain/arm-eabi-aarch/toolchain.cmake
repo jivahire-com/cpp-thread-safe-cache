@@ -45,15 +45,7 @@ set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS TRUE)
 set(CMAKE_NINJA_FORCE_RESPONSE_FILE TRUE)
 
 # Set repo utilities
-set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/clang-tidy.cmd"
-    "--quiet"
-    "--extra-arg=--target=thumb"
-    "--extra-arg=-mfloat-abi=soft"
-    "--extra-arg=-Qunused-arguments"
-    "--extra-arg=-isystem"
-    "--extra-arg=$ENV{REPO_APP_PATH_gcc.arm.eabi.aarch-win64}/arm-none-eabi/include"
-    "-p"
-    "${CMAKE_BINARY_DIR}/compile_commands.json")
+set(REPO_CLANG_TIDY "${CMAKE_SOURCE_DIR}/tools/cmakes/toolchain/arm-eabi-aarch/clang-tidy.cmd")
 
 # TODO: Enable IWYU once IWYU fails builds on warnings
 # ADO: 1967581

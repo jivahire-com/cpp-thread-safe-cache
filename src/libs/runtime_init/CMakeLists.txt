@@ -85,6 +85,7 @@ add_library(${TARGET}
         warm_start_init.c
         watchdog_init.c
         systick_update_init.c
+        accel_boot_notify_init.c
 )
 
 target_link_libraries(
@@ -191,6 +192,7 @@ target_link_libraries(
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli
         ms::service::wdog
+        ms::service::accel_boot_notify
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::crypto::rng

@@ -2,6 +2,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 #
 
+add_subdirectory(accel_boot_notify_init)
 add_subdirectory(accel_atu_init)
 add_subdirectory(accel_intr_client_init)
 add_subdirectory(accel_intr_service_init)

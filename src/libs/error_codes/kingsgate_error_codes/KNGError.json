@@ -477,6 +477,18 @@
           "Description": "Do not use, defined to prevent use of 0 as error code."
         }
       ]
+    },
+    {
+      "Facility_Name": "ACCEL_NOTIFY_BOOT_COMPLETE",
+      "Facility_Value": 61,
+      "Facility_Description": "This is for Notifying Accelerator of Boot Complete error codes.",
+      "Errors": [
+        {
+          "Name": "KNG_ACCEL_NOTIFY_BOOT_COMPLETE_ERR",
+          "Value": 1,
+          "Description": "UEFI Boot Complete is not notified to accelerator."
+        }
+      ]
     }
   ]
 }

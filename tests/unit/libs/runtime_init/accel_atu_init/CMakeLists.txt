@@ -51,4 +51,5 @@ mock_target(${TARGET}
     crash_dump_bug_check
     idsw_get_die_id
     atu_map
+    atu_unmap
 )

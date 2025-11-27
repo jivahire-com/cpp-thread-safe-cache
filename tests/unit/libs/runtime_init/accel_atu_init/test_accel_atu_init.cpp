@@ -54,6 +54,15 @@ int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     return mock_type(int);
 }
 
+int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    FPFW_UNUSED(atu_id);
+
+    atu_map_entry->mscp_start_address = 0;
+
+    return mock_type(int);
+}
+
 void __wrap_FpFwAssert(int expression)
 {
     check_expected(expression);
@@ -162,4 +171,61 @@ TEST_FUNCTION(test_atu_svc_accel_atu_addr_fail2, nullptr, nullptr)
 
     // Perform necessary assertions on result
     assert_null(atu_svc_accel_atu_addr(ACCEL_ID_SDM));
+}
+
+TEST_FUNCTION(test_atu_svc_accel_ap_pf_cfg_atu_addr_die0, nullptr, nullptr)
+{
+    will_return_always(__wrap_idsw_get_die_id, 0);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    int result = accel_atu_pf_ap_config(ACCEL_ID_SDM, ATU_IO_REQUEST_MAP_SYNC); // Calls the mock
+    assert_int_equal(result, SILIBS_SUCCESS);                                   // Verify return is 0
+    // Perform necessary assertions on result
+    assert_non_null(atu_svc_accel_ap_pf_cfg_atu_addr(ACCEL_ID_SDM));
+
+    result = accel_atu_pf_ap_config(ACCEL_ID_SDM, ATU_IO_REQUEST_UNMAP_SYNC); // Calls the mock
+    assert_int_equal(result, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_atu_svc_accel_ap_pf_cfg_atu_addr_die1, nullptr, nullptr)
+{
+    will_return_always(__wrap_idsw_get_die_id, 1);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    int result = accel_atu_pf_ap_config(ACCEL_ID_CDED, ATU_IO_REQUEST_MAP_SYNC); // Calls the mock
+    assert_int_equal(result, SILIBS_SUCCESS);
+    // Perform necessary assertions on result
+    assert_non_null(atu_svc_accel_ap_pf_cfg_atu_addr(ACCEL_ID_CDED));
+
+    result = accel_atu_pf_ap_config(ACCEL_ID_CDED, ATU_IO_REQUEST_UNMAP_SYNC); // Calls the mock
+    assert_int_equal(result, SILIBS_SUCCESS);
+}
+
+TEST_FUNCTION(test_atu_svc_accel_ap_pf_cfg_atu_addr_fail1, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, 0);
+    expect_value(__wrap_FpFwAssert, expression, false);
+
+    // Perform necessary assertions on result
+    assert_null(atu_svc_accel_ap_pf_cfg_atu_addr(NUM_VALID_ACCEL_ID));
+}
+
+TEST_FUNCTION(test_atu_svc_accel_ap_pf_cfg_atu_addr_fail2, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, 2);
+    expect_value(__wrap_FpFwAssert, expression, false);
+
+    // Perform necessary assertions on result
+    assert_null(atu_svc_accel_ap_pf_cfg_atu_addr(ACCEL_ID_SDM));
+}
+
+TEST_FUNCTION(test_accel_atu_pf_ap_config_fail, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, 2);
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+
+    int result = accel_atu_pf_ap_config(ACCEL_ID_SDM, ATU_IO_REQUEST_MAP_SYNC); // Calls the mock
+    assert_int_equal(result, SILIBS_E_PARAM);
 }

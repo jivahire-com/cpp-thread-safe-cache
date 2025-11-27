@@ -27,6 +27,7 @@
 #include <shared_sds_def.h>
 #include <silibs_ap_top_regs.h>
 #include <silibs_common.h>
+#include <silibs_kng_soc.h>
 #include <silibs_status.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -62,6 +63,12 @@
 
 #define CRASH_DUMP_DDR_DIE_1_AP_BASE_ADDR (CRASH_DUMP_DDR_DIE_0_AP_END_ADDR)
 #define CRASH_DUMP_DDR_DIE_1_AP_END_ADDR  (CRASH_DUMP_DDR_TOTAL_AP_END_ADDR)
+
+#define ATU_MAPPING_AP_SDM_MMIO_BASE(die_id) \
+    ATU_MAPPING((die_id == 0 ? D0_SDM_PF_CFG_START : D1_SDM_PF_CFG_START), 0, D0_SDM_PF_CFG_SIZE, {ATU_BUS_ATTR_NS})
+
+#define ATU_MAPPING_AP_CDED_MMIO_BASE(die_id) \
+    ATU_MAPPING((die_id == 0 ? D0_CDED_PF_CFG_START : D1_CDED_PF_CFG_START), 0, D0_CDED_PF_CFG_SIZE, {ATU_BUS_ATTR_NS})
 
 static_assert((IB_TELEMETRY_DDR_TOTAL_SIZE) ==
                   ((IB_TELEMETRY_DDR_DIE_0_AP_END_ADDR - IB_TELEMETRY_DDR_DIE_0_AP_BASE_ADDR) +
@@ -500,6 +507,20 @@ atu_map_entry_t atu_map_accel_die1[NUM_VALID_ACCEL_ID] = {
     [ACCEL_ID_CDED] = ATU_MAPPING_CDEDSS_BASE(SOC_D1),
 };
 
+atu_map_entry_t atu_map_ap_accel_cfg_die0[NUM_VALID_ACCEL_ID] = {
+    // AP CDED PF SPACE on DIE0
+    [ACCEL_ID_SDM] = ATU_MAPPING_AP_SDM_MMIO_BASE(SOC_D0),
+    // AP CDED PF SPACE on DIE0
+    [ACCEL_ID_CDED] = ATU_MAPPING_AP_CDED_MMIO_BASE(SOC_D0),
+};
+
+atu_map_entry_t atu_map_ap_accel_cfg_die1[NUM_VALID_ACCEL_ID] = {
+    // AP CDED PF SPACE on DIE1
+    [ACCEL_ID_SDM] = ATU_MAPPING_AP_SDM_MMIO_BASE(SOC_D1),
+    // AP CDED PF SPACE on DIE1
+    [ACCEL_ID_CDED] = ATU_MAPPING_AP_CDED_MMIO_BASE(SOC_D1),
+};
+
 /*------------- Functions ----------------*/
 
 static void atu_service_dispatch_async(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
@@ -614,6 +635,48 @@ void accel_atu_config(ACCEL_ID accel_id)
     BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
 }
 
+int accel_atu_pf_ap_config(ACCEL_ID accel_id, atu_api_type_t operation)
+{
+    uint8_t die_num = (uint8_t)idsw_get_die_id();
+    atu_map_entry_t* atu_accel_map = NULL;
+    int status = SILIBS_E_PARAM;
+
+    BUG_ASSERT_PARAM(accel_id < NUM_VALID_ACCEL_ID, accel_id, NUM_VALID_ACCEL_ID);
+
+    if (die_num == 0)
+    {
+        atu_accel_map = atu_map_ap_accel_cfg_die0;
+    }
+    else if (die_num == 1)
+    {
+        atu_accel_map = atu_map_ap_accel_cfg_die1;
+    }
+    else
+    {
+        BUG_ASSERT_PARAM(false, die_num, 0);
+        return status;
+    }
+
+    switch (operation)
+    {
+    case ATU_IO_REQUEST_MAP_SYNC:
+        // Initialize SDM/CDED ATU PF CFG
+        status = atu_map(ATU_ID_MSCP, &atu_accel_map[accel_id]);
+        break;
+
+    case ATU_IO_REQUEST_UNMAP_SYNC:
+        // DeInitialize SDM/CDED ATU PF CFG
+        status = atu_unmap(ATU_ID_MSCP, &atu_accel_map[accel_id]);
+        break;
+
+    default:
+        break;
+    }
+
+    BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, SILIBS_SUCCESS);
+    return status;
+}
+
 void atu_svc_init(atu_service_t* atu_service, PDFWK_SCHEDULE schedule)
 {
 
@@ -632,6 +695,34 @@ void atu_svc_init(atu_service_t* atu_service, PDFWK_SCHEDULE schedule)
 
     uint8_t die_num = (uint8_t)idsw_get_die_id();
     static_atu_config(die_num);
+}
+
+uint32_t atu_svc_accel_ap_pf_cfg_atu_addr(ACCEL_ID accel_id)
+{
+    atu_map_entry_t* atu_accel_map;
+    uint8_t die_num = (uint8_t)idsw_get_die_id();
+
+    if (accel_id >= NUM_VALID_ACCEL_ID)
+    {
+        FPFW_RUNTIME_ASSERT(false);
+        return 0;
+    }
+
+    if (die_num == 0)
+    {
+        atu_accel_map = atu_map_ap_accel_cfg_die0;
+    }
+    else if (die_num == 1)
+    {
+        atu_accel_map = atu_map_ap_accel_cfg_die1;
+    }
+    else
+    {
+        FPFW_RUNTIME_ASSERT(false);
+        return 0;
+    }
+
+    return atu_accel_map[accel_id].mscp_start_address;
 }
 
 uint32_t atu_svc_accel_atu_addr(ACCEL_ID accel_id)

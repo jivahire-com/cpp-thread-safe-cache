@@ -12,13 +12,13 @@
 #include <accelip_id.h>
 #include <atu_init.h>
 #include <cli_power_accel.h>
+#include <sdm_pf_cfg_regs.h>
 #include <sdm_qos.h>
 #include <stdio.h>
 #include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define POWER_CLI_STR "PWR CLI"
-
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -45,23 +45,34 @@ PLACED_CODE void cli_power_accel_complete(PDFWK_ASYNC_REQUEST_HEADER p_request, 
     switch (p_cli_request->power_ext_if_cmd_id)
     {
     case POWER_IF_CMD_ACCEL_BW_REDUCE: {
-        uintptr_t sdm_pf_cfg_addr = atu_svc_accel_atu_addr(p_cli_request->pwrset_sub_command_args.accelparams.accel_id);
         silibs_status_t silibs_status;
+        uintptr_t sdm_pf_cfg_addr;
+        int atu_cfg_status;
 
-        FPFW_DBGPRINT_VERBOSE("[%s] sdm_pf_cfg_addr: %x\n", POWER_CLI_STR, sdm_pf_cfg_addr);
-        FPFW_DBGPRINT_VERBOSE("[%s] accel_id: %x\n",
+        atu_cfg_status = accel_atu_pf_ap_config(p_cli_request->pwrset_sub_command_args.accelparams.accel_id,
+                                                ATU_IO_REQUEST_MAP_SYNC);
+
+        if (atu_cfg_status != SILIBS_SUCCESS)
+        {
+            FPFW_DBGPRINT_ERROR("[%s] Error while mapping pf cfg space. Error code: %d\n", POWER_CLI_STR, atu_cfg_status);
+            break;
+        }
+
+        sdm_pf_cfg_addr = atu_svc_accel_ap_pf_cfg_atu_addr(p_cli_request->pwrset_sub_command_args.accelparams.accel_id);
+
+        FPFW_DBGPRINT_VERBOSE("[%s] accel_id: %x bw_reduction: %d dual: %d pf_cfg_addr %x \n",
                               POWER_CLI_STR,
-                              p_cli_request->pwrset_sub_command_args.accelparams.accel_id);
-        FPFW_DBGPRINT_VERBOSE("[%s] bw_reduction: %d\n",
-                              POWER_CLI_STR,
-                              p_cli_request->pwrset_sub_command_args.accelparams.bw_reduction_perc);
-        FPFW_DBGPRINT_VERBOSE("[%s] accel_id: %d\n",
-                              POWER_CLI_STR,
-                              p_cli_request->pwrset_sub_command_args.accelparams.dual_bus);
+                              p_cli_request->pwrset_sub_command_args.accelparams.accel_id,
+                              p_cli_request->pwrset_sub_command_args.accelparams.bw_reduction_perc,
+                              p_cli_request->pwrset_sub_command_args.accelparams.dual_bus,
+                              sdm_pf_cfg_addr);
 
         silibs_status = sdm_bw_management(sdm_pf_cfg_addr,
                                           p_cli_request->pwrset_sub_command_args.accelparams.bw_reduction_perc,
                                           p_cli_request->pwrset_sub_command_args.accelparams.dual_bus);
+
+        MEMORY_BARRIER();
+
         if (silibs_status != SILIBS_SUCCESS)
         {
             FPFW_DBGPRINT_ERROR("[%s] Error while setting bandwidth management. Error code: %d\n", POWER_CLI_STR, silibs_status);
@@ -69,6 +80,20 @@ PLACED_CODE void cli_power_accel_complete(PDFWK_ASYNC_REQUEST_HEADER p_request, 
         else
         {
             FPFW_DBGPRINT_INFO("[%s] Accelerator bandwidth power reduction complete\n", POWER_CLI_STR);
+
+            FPFW_DBGPRINT_VERBOSE(
+                "[%s] tr: %x ir: %x \n",
+                POWER_CLI_STR,
+                *((uint32_t*)(sdm_pf_cfg_addr + SDM_PF_CFG_REGS_CPT_PF_SINGLES_ENTRY_GLOBAL_READ_TRACKER_REG_ADDRESS)),
+                *((uint32_t*)(sdm_pf_cfg_addr + SDM_PF_CFG_REGS_CPT_PF_SINGLES_ENTRY_GLOBAL_READ_INC_REG_ADDRESS)));
+        }
+
+        atu_cfg_status = accel_atu_pf_ap_config(p_cli_request->pwrset_sub_command_args.accelparams.accel_id,
+                                                ATU_IO_REQUEST_UNMAP_SYNC);
+        if (atu_cfg_status != SILIBS_SUCCESS)
+        {
+            FPFW_DBGPRINT_ERROR("[%s] Error while unmapping pf cfg space. Error code: %d\n", POWER_CLI_STR, atu_cfg_status);
+            break;
         }
         break;
     }

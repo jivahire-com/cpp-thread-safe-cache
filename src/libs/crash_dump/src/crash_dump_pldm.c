@@ -169,4 +169,5 @@ void crash_dump_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* ctx)
     }
 
     transfer_completed = true;
+    FPFwCDPrintf("PLDM crash dump transfer completed with code: 0x%08lx\n", completionCode);
 }

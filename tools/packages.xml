@@ -18,6 +18,7 @@
         <package name="kingsgate.sprt.release" version="1.90.0.31" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
         <package name="kingsgate.firmware.a0rom" version="1.0.0.40" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
         <package name="kingsgate.headers.a0rom" version="1.0.0.40" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/kingsgate.hsp/nuget/v3/index.json"/>
+        <package name="chie.echo_falls.windows.cd.tool" version="0.0.93" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/nuget/v3/index.json"/>
     </nuget_packages>
 
     <git>
@@ -40,7 +41,6 @@
         <package name="init_graph_tool" version="1.1.*" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
         <package name="xmlschema" version="3.3.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
         <package name="fpfw_adoutils" version="0.*" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
-        <package name="crash-dump-analysis-tool" version="0.6.129" source="https://pkgs.dev.azure.com/AzureCSI/DuvallFw/_packaging/chie.duvall.1pfw/pypi/simple/" />
         <package name="PyYAML" version="6.0.2" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/" />
     </pip_packages>
 

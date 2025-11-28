@@ -499,7 +499,7 @@ void ap_core_request_load_ift_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_ift_fw_
     switch (fw_id)
     {
     case AP_IFT_FW_ID_IFT_MEM_TEST:
-        send_request.id = HSP_FIRMWARE_ID_MEM_TEST + ift_get_fw_idx();
+        send_request.id = HSP_FIRMWARE_ID_MEM_TEST_0 + ift_get_fw_idx();
         break;
     case AP_IFT_FW_ID_IFT_CORE_TEST:
         send_request.id = HSP_FIRMWARE_ID_CORE_SCAN_TEST_1 + ift_get_fw_idx();

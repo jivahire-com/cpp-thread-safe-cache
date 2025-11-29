@@ -47,10 +47,9 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "icc_mscp2mscp", "i
 
     static hm_config_t hm_config = {0};
     hm_config.mscp_ghes_base = (acpi_ghes_t*)mscp_ghes_base;
-    hm_config.mscp_ghes_error_record_addr_table_base = (uint32_t*)mscp_ghes_error_record_addr_table_base;
+    hm_config.mscp_ghes_error_record_addr_table_base = (uint64_t*)mscp_ghes_error_record_addr_table_base;
     hm_config.mscp_ghes_ack_addr_table_base = (uint64_t*)mscp_ghes_ack_addr_table_base;
-    hm_config.mscp_ghes_error_record_addr_base = (uint32_t*)mscp_ghes_error_record_addr_base;
-    hm_config.mscp_ghes_base_apcore_offset = 0;
+    hm_config.mscp_ghes_error_record_addr_base = (uint64_t*)mscp_ghes_error_record_addr_base;
     hm_config.mscp_error_injection_addr_base = 0;
     hm_config.mscp_hsp_ras_payload_base = (uint8_t*)SCP_EXP_HSP_RAS_PAYLOAD_BASE;
     hm_config.mscp_full_cper_record_base = (uint8_t*)mscp_full_cper_record_base;

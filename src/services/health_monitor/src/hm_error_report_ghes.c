@@ -81,8 +81,8 @@ void construct_mscp_ghes_table()
     hm_config_t* hm_config = get_hm_config();
 
     volatile acpi_ghes_t* current_ghes_base = hm_config->mscp_ghes_base;
-    volatile uint32_t* current_ghes_error_record_base = hm_config->mscp_ghes_error_record_addr_base;
-    volatile uint32_t* current_ghes_error_record_location = hm_config->mscp_ghes_error_record_addr_table_base;
+    volatile uint64_t* current_ghes_error_record_base = hm_config->mscp_ghes_error_record_addr_base;
+    volatile uint64_t* current_ghes_error_record_location = hm_config->mscp_ghes_error_record_addr_table_base;
     volatile uint64_t* current_ghes_ack_base = hm_config->mscp_ghes_ack_addr_table_base;
 
     // default ghes values
@@ -126,7 +126,7 @@ void construct_mscp_ghes_table()
     default_ghes.ack.address.space_id = 0;
     default_ghes.ack.address.reg_bit_width = 0x40;
     default_ghes.ack.address.reg_bit_offset = 0;
-    default_ghes.ack.address.access_size = 2;
+    default_ghes.ack.address.access_size = 4;
     default_ghes.ack.rd_ack_preserve = 0;
     default_ghes.ack.rd_ack_wr = 0;
 
@@ -149,14 +149,15 @@ void construct_mscp_ghes_table()
         {
             // GHES Structure update for current error domain
             default_ghes.source_id = error_domain_idx;
-            default_ghes.address.address = (uint32_t)AP_GHES_ADDR((uint32_t)current_ghes_error_record_location);
-            default_ghes.ack.address.address = (uint32_t)AP_GHES_ADDR((uint32_t)current_ghes_ack_base);
-            *(uint32_t*)current_ghes_ack_base++ = GHES_ACK_UNSET_VALUE;
+            default_ghes.address.address = AP_GHES_ADDR((uint32_t)current_ghes_error_record_location);
+            default_ghes.ack.address.address = AP_GHES_ADDR((uint32_t)current_ghes_ack_base);
+            *current_ghes_ack_base++ = GHES_ACK_UNSET_VALUE;
 
             for (size_t i = 0; i < sizeof(acpi_ghes_t); i++)
             {
                 ((volatile uint8_t*)current_ghes_base)[i] = ((const uint8_t*)&default_ghes)[i];
             }
+
             current_ghes_base++;
 
             // Error status block update for current error domain
@@ -178,14 +179,12 @@ void construct_mscp_ghes_table()
             }
 
             // update error record location table for current error domain
-            *current_ghes_error_record_location++ = (uint32_t)AP_GHES_ADDR(
-                (uint32_t)(current_ghes_error_record_base - hm_config->mscp_ghes_base_apcore_offset));
-            *current_ghes_error_record_location++ = 0; // 64 bit address
+            *current_ghes_error_record_location++ = AP_GHES_ADDR((uint32_t)current_ghes_error_record_base);
 
             // get ghes error record base for next error domain
-            current_ghes_error_record_base = (uint32_t*)FPFW_ALIGN_BY(
-                sizeof(uint32_t),
-                ((uint32_t)current_ghes_error_record_base + default_ghes.error_status_block_length));
+            current_ghes_error_record_base = (uint64_t*)FPFW_ALIGN_BY(
+                sizeof(uint64_t),
+                ((uintptr_t)current_ghes_error_record_base + default_ghes.error_status_block_length));
         }
 
         set_ghes_table_ready();
@@ -212,11 +211,11 @@ void activate_error_domain(uint16_t error_domain_idx, const guid_t* error_domain
     current_error_domain_ghes_base += error_domain_idx;
 
     // locate error record base of current error domain
-    uint32_t error_record_base_addr = MSCP_GHES_ADDR((uint32_t)current_error_domain_ghes_base->address.address);
-    uint32_t error_record_base = MSCP_GHES_ADDR(*(uint32_t*)error_record_base_addr);
+    uint32_t error_record_base_addr = MSCP_GHES_ADDR(current_error_domain_ghes_base->address.address);
+    uint32_t error_record_base = MSCP_GHES_ADDR((uint64_t)(*(uint32_t*)error_record_base_addr));
 
     volatile acpi_ghes_error_record_dual_die_t* current_error_domain_error_record_base =
-        (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+        (acpi_ghes_error_record_dual_die_t*)(error_record_base);
 
     // lock before updating error domain information
     wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
@@ -312,11 +311,11 @@ void update_error_record_section(uint16_t error_domain_idx,
         current_error_domain_ghes_base += error_domain_idx;
 
         // locate error record base of current error domain
-        uint32_t error_record_base_addr = MSCP_GHES_ADDR((uint32_t)current_error_domain_ghes_base->address.address);
-        uint32_t error_record_base = MSCP_GHES_ADDR(*(uint32_t*)error_record_base_addr);
+        uint32_t error_record_base_addr = MSCP_GHES_ADDR(current_error_domain_ghes_base->address.address);
+        uint32_t error_record_base = MSCP_GHES_ADDR((uint64_t)(*(uint32_t*)error_record_base_addr));
 
         volatile acpi_ghes_error_record_dual_die_t* current_domain_error_record_base =
-            (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+            (acpi_ghes_error_record_dual_die_t*)(error_record_base);
 
         // lock before updating error record information
         wait_for_semaphore(hm_config->semaphore_id, hm_config->semaphore_key);
@@ -385,12 +384,11 @@ void update_error_record_section(uint16_t error_domain_idx,
         // report AP for new CPER arrival
         if (error_domain_enabled)
         {
-            cortex_m7_atomic_call_data_synchronization_barrier();
-
             // Request ACK for the error to GHES
-            volatile uint32_t* ack_base_addr =
-                (uint32_t*)MSCP_GHES_ADDR((uint32_t)current_error_domain_ghes_base->ack.address.address);
+            uint64_t* ack_base_addr = (uint64_t*)MSCP_GHES_ADDR(current_error_domain_ghes_base->ack.address.address);
             *ack_base_addr = GHES_ACK_SET_VALUE;
+
+            cortex_m7_atomic_call_data_synchronization_barrier();
 
             hm_report_error_event(HM_ERROR_REPORT_INTERRUPT, true);
             HM_LOG_INFO("CPER reported, inband(domain=%s, sev=%d)", get_error_domain_name(error_domain_idx), err_severity);

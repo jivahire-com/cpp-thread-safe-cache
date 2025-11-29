@@ -311,14 +311,14 @@ void create_full_mscp_cper_record(acpi_error_domain_t err_domain_idx,
 
     // FRU Info update from GHES
     hm_config_t* hm_config = get_hm_config();
-    acpi_ghes_t* current_ghes_base = hm_config->mscp_ghes_base;
-    current_ghes_base += err_domain_idx;
+    volatile acpi_ghes_t* current_error_domain_ghes_base = hm_config->mscp_ghes_base;
+    current_error_domain_ghes_base += err_domain_idx;
 
-    uint32_t error_record_base_addr = MSCP_GHES_ADDR((uint32_t)current_ghes_base->address.address);
-    uint32_t error_record_base = MSCP_GHES_ADDR(*(uint32_t*)error_record_base_addr);
+    uint32_t error_record_base_addr = MSCP_GHES_ADDR(current_error_domain_ghes_base->address.address);
+    uint32_t error_record_base = MSCP_GHES_ADDR((uint64_t)(*(uint32_t*)error_record_base_addr));
 
     acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base =
-        (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+        (acpi_ghes_error_record_dual_die_t*)(error_record_base);
 
     if (current_ghes_error_record_base->data[0].valid_fru)
     {

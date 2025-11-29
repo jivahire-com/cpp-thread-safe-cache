@@ -40,7 +40,7 @@ static void hm_flush_ghes_callback(ULONG input)
     for (uint32_t error_domain_idx = 0; error_domain_idx < ACPI_ERROR_DOMAIN_COUNT; error_domain_idx++)
     {
         volatile acpi_ghes_error_record_dual_die_t* current_error_status_block =
-            (volatile acpi_ghes_error_record_dual_die_t*)MSCP_GHES_ADDR(*(uint32_t*)err_record_addr);
+            (volatile acpi_ghes_error_record_dual_die_t*)MSCP_GHES_ADDR(*err_record_addr);
 
         if (current_error_status_block->block_status_entry_count != 0)
         {

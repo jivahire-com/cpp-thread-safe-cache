@@ -109,19 +109,16 @@ static PLACED_CODE FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
     uint64_t* err_record_table_addr = (uint64_t*)hm_config->mscp_ghes_error_record_addr_table_base;
     for (uint32_t error_domain_idx = 0; error_domain_idx < ACPI_ERROR_DOMAIN_COUNT; error_domain_idx++)
     {
-        FpFwCliPrint(" err domain idx: %d at %p\n", error_domain_idx, (void*)(uintptr_t)(err_record_table_addr[error_domain_idx]));
+        FpFwCliPrint(" err domain idx: %d at 0x%" PRIx64 "\n", error_domain_idx, err_record_table_addr[error_domain_idx]);
     }
     FpFwCliPrint("\n");
 
     // dump the ack addr table
     FpFwCliPrint("ACK addr \n");
-    uint64_t* err_record_ack_addr = (uint64_t*)hm_config->mscp_ghes_ack_addr_table_base;
+    uint64_t* err_record_ack_addr = hm_config->mscp_ghes_ack_addr_table_base;
     for (uint32_t error_domain_idx = 0; error_domain_idx < ACPI_ERROR_DOMAIN_COUNT; error_domain_idx++)
     {
-        FpFwCliPrint(" err domain idx: %d at %p, value: %ld\n",
-                     error_domain_idx,
-                     (void*)(err_record_ack_addr),
-                     *(volatile uint32_t*)err_record_ack_addr);
+        FpFwCliPrint(" err domain idx: %d at %p, value: 0x%" PRIx64 "\n", error_domain_idx, err_record_ack_addr, *err_record_ack_addr);
         err_record_ack_addr++;
     }
     FpFwCliPrint("\n");
@@ -129,14 +126,13 @@ static PLACED_CODE FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv)
     // calculate the total size of GHES and Error record
     acpi_ghes_t* current_ghes_base = hm_config->mscp_ghes_base;
     acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base = NULL;
+
     for (uint32_t error_domain_idx = 0; error_domain_idx < ACPI_ERROR_DOMAIN_COUNT; error_domain_idx++)
     {
-        uint32_t error_record_base_addr = MSCP_GHES_ADDR((uint32_t)current_ghes_base->address.address);
-        uint32_t error_record_base = MSCP_GHES_ADDR(*(uint32_t*)error_record_base_addr);
+        uint32_t error_record_base_addr = MSCP_GHES_ADDR(current_ghes_base->address.address);
+        uint32_t error_record_base = MSCP_GHES_ADDR((uint64_t)(*(uint32_t*)error_record_base_addr));
 
-        current_ghes_error_record_base =
-            (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
-
+        current_ghes_error_record_base = (acpi_ghes_error_record_dual_die_t*)(error_record_base);
         current_ghes_base++;
     }
 
@@ -445,7 +441,10 @@ void dump_ghes(uint32_t ghes_idx)
     acpi_ghes_t* current_ghes_base = hm_config->mscp_ghes_base;
     current_ghes_base += ghes_idx;
 
-    FpFwCliPrint("GHES (%d): addr: %p\n", (int)ghes_idx, (void*)current_ghes_base);
+    FpFwCliPrint("GHES (%d): mscp_addr: %p, ap_addr:0x%" PRIx64 "\n",
+                 (int)ghes_idx,
+                 (void*)current_ghes_base,
+                 AP_GHES_ADDR((uint32_t)current_ghes_base));
     FpFwCliPrint(" type:%d\n", current_ghes_base->type);
     FpFwCliPrint(" src_id:%d\n", current_ghes_base->source_id);
     FpFwCliPrint(" rel_src_id:0x%X\n", current_ghes_base->related_source_id);
@@ -459,7 +458,7 @@ void dump_ghes(uint32_t ghes_idx)
     FpFwCliPrint(" addr.width:%d\n", current_ghes_base->address.reg_bit_width);
     FpFwCliPrint(" addr.offset:%d\n", current_ghes_base->address.reg_bit_offset);
     FpFwCliPrint(" addr.size:%d\n", current_ghes_base->address.access_size);
-    FpFwCliPrint(" addr.addr:%p\n", (void*)(uintptr_t)current_ghes_base->address.address);
+    FpFwCliPrint(" addr.ap_addr:0x%" PRIx64 "\n", current_ghes_base->address.address);
     FpFwCliPrint(" noti.type:%d\n", current_ghes_base->notification.type);
     FpFwCliPrint(" noti.len:%d\n", current_ghes_base->notification.length);
     FpFwCliPrint(" noti.cfg_type:%d\n", current_ghes_base->notification.cfg_wr_enable_type);
@@ -477,7 +476,7 @@ void dump_ghes(uint32_t ghes_idx)
     FpFwCliPrint(" ack.addr.id:%d\n", current_ghes_base->ack.address.space_id);
     FpFwCliPrint(" ack.addr.width:%d\n", current_ghes_base->ack.address.reg_bit_width);
     FpFwCliPrint(" ack.addr.offset:%d\n", current_ghes_base->ack.address.reg_bit_offset);
-    FpFwCliPrint(" ack.addr.size:%d, addr:0x%08X\n",
+    FpFwCliPrint(" ack.addr.size:%d, ap_addr:0x%" PRIx64 "\n",
                  current_ghes_base->ack.address.access_size,
                  current_ghes_base->ack.address.address);
     FpFwCliPrint(" ack.rd_ack_pre:0x%08X, Wr:0x%08X\n\n",
@@ -493,11 +492,11 @@ void dump_ghes(uint32_t ghes_idx)
     }
 
     // error record populate via GHES
-    uint32_t error_record_base_addr = MSCP_GHES_ADDR((uint32_t)current_ghes_base->address.address);
-    uint32_t error_record_base = MSCP_GHES_ADDR(*(uint32_t*)error_record_base_addr);
+    uint32_t error_record_base_addr = MSCP_GHES_ADDR(current_ghes_base->address.address);
+    uint32_t error_record_base = MSCP_GHES_ADDR((uint64_t)(*(uint32_t*)error_record_base_addr));
 
     acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base =
-        (acpi_ghes_error_record_dual_die_t*)(error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+        (acpi_ghes_error_record_dual_die_t*)(error_record_base);
 
     // Dump Error record associated with current GHES
     dump_ghes_error_record(current_ghes_error_record_base, current_ghes_base->max_sections_per_record);
@@ -525,7 +524,7 @@ void dump_ghes(uint32_t ghes_idx)
 
 void dump_ghes_error_record(acpi_ghes_error_record_dual_die_t* ghes_error_record_base, uint32_t max_section_count)
 {
-    FpFwCliPrint("Err block(%p):\n", ghes_error_record_base);
+    FpFwCliPrint("Err block(mscp_%p):\n", ghes_error_record_base);
     FpFwCliPrint(" UE=%d, CE=%d, Mul_UE=%d, Mul_CE=%d, Ctn=%d\n",
                  ghes_error_record_base->block_status_ue,
                  ghes_error_record_base->block_status_ce,

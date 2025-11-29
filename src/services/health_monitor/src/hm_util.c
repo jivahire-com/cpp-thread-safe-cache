@@ -51,14 +51,22 @@ const char* get_error_domain_name(acpi_error_domain_t domain)
     return "NA";
 }
 
-uint32_t AP_GHES_ADDR(uint32_t mscp_addr)
+uint64_t AP_GHES_ADDR(uint32_t mscp_addr)
 {
-    return mscp_addr - MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR;
+#ifdef GHES_USE_ARSM_DIE_0
+    return (mscp_addr - MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR) + (uint64_t)D0_MSCP_ARSM_SRAM_BASE;
+#else
+    return (mscp_addr - MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR) + (uint64_t)D1_MSCP_ARSM_SRAM_BASE;
+#endif
 }
 
-uint32_t MSCP_GHES_ADDR(uint32_t ap_addr)
+uint32_t MSCP_GHES_ADDR(uint64_t ap_addr)
 {
-    return MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ap_addr;
+#ifdef GHES_USE_ARSM_DIE_0
+    return (uint32_t)MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + (uint32_t)(ap_addr - (uint64_t)D0_MSCP_ARSM_SRAM_BASE);
+#else
+    return (uint32_t)MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + (uint32_t)(ap_addr - (uint64_t)D1_MSCP_ARSM_SRAM_BASE);
+#endif
 }
 
 void hm_map_error_injection_payload()

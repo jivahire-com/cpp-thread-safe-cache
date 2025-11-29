@@ -66,9 +66,9 @@ TEST_FUNCTION(test_hm_register_error_domain, post_ddr_setup, nullptr)
 
     assert_true(current_ghes_base->enabled == true);
 
-    uint32_t error_record_base = (uint32_t)(current_ghes_base->address.address);
+    uint32_t error_record_base = MSCP_GHES_ADDR(current_ghes_base->address.address);
     acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base =
-        (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+        (acpi_ghes_error_record_dual_die_t*)MSCP_GHES_ADDR((uint64_t)(*(uint32_t*)error_record_base));
 
     for (uint32_t section_count = 0; section_count < current_ghes_base->max_sections_per_record; section_count++)
     {
@@ -96,9 +96,9 @@ TEST_FUNCTION(test_hm_register_error_domain_nofru, post_ddr_setup, nullptr)
 
     assert_true(current_ghes_base->enabled == true);
 
-    uint32_t error_record_base = (uint32_t)(current_ghes_base->address.address);
+    uint32_t error_record_base = MSCP_GHES_ADDR(current_ghes_base->address.address);
     acpi_ghes_error_record_dual_die_t* current_ghes_error_record_base =
-        (acpi_ghes_error_record_dual_die_t*)(*(uint32_t*)error_record_base + hm_config->mscp_ghes_base_apcore_offset);
+        (acpi_ghes_error_record_dual_die_t*)MSCP_GHES_ADDR((uint64_t)(*(uint32_t*)error_record_base));
 
     for (uint32_t section_count = 0; section_count < current_ghes_base->max_sections_per_record; section_count++)
     {

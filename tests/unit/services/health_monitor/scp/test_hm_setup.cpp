@@ -42,10 +42,9 @@ int pre_ddr_setup(void** state)
     FPFW_UNUSED(state);
 
     hm_config_test.mscp_ghes_base = (acpi_ghes_t*)ghes_local;
-    hm_config_test.mscp_ghes_error_record_addr_table_base = (uint32_t*)ghes_record_addr_table_local;
+    hm_config_test.mscp_ghes_error_record_addr_table_base = (uint64_t*)ghes_record_addr_table_local;
     hm_config_test.mscp_ghes_ack_addr_table_base = (uint64_t*)ghes_ack_addr_table_local;
-    hm_config_test.mscp_ghes_error_record_addr_base = (uint32_t*)ghes_error_record_local;
-    hm_config_test.mscp_ghes_base_apcore_offset = 0;
+    hm_config_test.mscp_ghes_error_record_addr_base = (uint64_t*)ghes_error_record_local;
     hm_config_test.mscp_error_injection_addr_base = 0;
     hm_config_test.mscp_hsp_ras_payload_base = (uint8_t*)hsp_ras_payload;
     hm_config_test.mscp_full_cper_record_base = (uint8_t*)mscp_cper_record;
@@ -62,7 +61,6 @@ int pre_ddr_setup(void** state)
     assert_true(hm_config->mscp_ghes_error_record_addr_table_base == hm_config_test.mscp_ghes_error_record_addr_table_base);
     assert_true(hm_config->mscp_ghes_ack_addr_table_base == hm_config_test.mscp_ghes_ack_addr_table_base);
     assert_true(hm_config->mscp_ghes_error_record_addr_base == hm_config_test.mscp_ghes_error_record_addr_base);
-    assert_true(hm_config->mscp_ghes_base_apcore_offset == hm_config_test.mscp_ghes_base_apcore_offset);
 
     return 0;
 }

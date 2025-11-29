@@ -52,10 +52,9 @@ typedef struct {
     // GHES table related
     acpi_ghes_t* mscp_ghes_base;
     ras_einj_info_t* mscp_error_injection_addr_base;
-    uint32_t* mscp_ghes_error_record_addr_base;
-    uint32_t* mscp_ghes_error_record_addr_table_base;
+    uint64_t* mscp_ghes_error_record_addr_base;
+    uint64_t* mscp_ghes_error_record_addr_table_base;
     uint64_t* mscp_ghes_ack_addr_table_base;
-    uint32_t mscp_ghes_base_apcore_offset;
     // ICC context for intercore communication
     fpfw_icc_base_ctx_t *icc_ctx[HM_INTERCORE_TYPE_MAX];
     // HSP ICC Payload related
@@ -128,8 +127,8 @@ void hm_post_intercore_init(hm_intercore_type_t intercore_type, fpfw_icc_base_ct
 void hm_map_error_injection_payload();
 void hm_unmap_error_injection_payload();
 void hm_set_pldm_ready_status();
-uint32_t AP_GHES_ADDR(uint32_t mscp_addr);
-uint32_t MSCP_GHES_ADDR(uint32_t ap_addr);
+uint64_t AP_GHES_ADDR(uint32_t mscp_addr);
+uint32_t MSCP_GHES_ADDR(uint64_t ap_addr);
 
 void hm_update_accel_fatal_cper_info(uint32_t accel_id, uint32_t cper_buffer_offset, uint32_t cper_magic_nr_offset);
 

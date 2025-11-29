@@ -212,7 +212,7 @@ Function Write-SOCFlash(
                 catch {
                     Write-Error "Failed to install Posh-SSH module: $($_.Exception.Message)"
                     Write-Host -ForegroundColor Red "Please install Posh-SSH manually: Install-Module -Name Posh-SSH -Force -Scope CurrentUser"
-                    return
+                    throw "Failed to install Posh-SSH module. Please install manually: Install-Module -Name Posh-SSH -Force -Scope CurrentUser"
                 }
             }
 
@@ -232,7 +232,7 @@ Function Write-SOCFlash(
                 Write-Host -ForegroundColor Red "File transfer to RM failed."
                 Remove-SFTPSession -SFTPSession $RmSFTPSession | Out-Null
                 Remove-SSHSession -SSHSession $RmSSHSession | Out-Null
-                return
+                Throw "File transfer to RM failed: $($_.Exception.Message)"
             }
             Write-Host -ForegroundColor Green "File transfer to RM successful."
 
@@ -260,6 +260,10 @@ Function Write-SOCFlash(
 
             if (-not $success) {
                 Write-Host -ForegroundColor Red "Failed to flash Ifwi tar."
+                Remove-SFTPSession -SFTPSession $RmSFTPSession | Out-Null
+                Remove-SSHSession -SSHSession $RmSSHSession | Out-Null
+
+                throw "Failed to flash Ifwi tar after $maxRetries attempts."
             }
             else {
                 Write-Host -ForegroundColor Green "Ifwi tar successfully flashed."

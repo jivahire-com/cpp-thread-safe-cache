@@ -23,7 +23,6 @@ add_library(${TARGET}
         boot_status_init.c
         cfg_mgr_init.c
         core_info_init.c
-        cli_accel_intr_init.c
         cli_crash_dump_init.c
         cli_ddr_init.c
         cli_init.c
@@ -67,6 +66,7 @@ add_library(${TARGET}
         scmi_cli_init.c
         scp_crash_dump_init.c
         scp_mpu_init.c
+        rtosmon_init.c
         sds_init.c
         sel_init.c
         sensor_fifo_init.c
@@ -119,7 +119,6 @@ target_link_libraries(
         ms::lib::accelerator_ip
         ms::lib::boot_status
         ms::lib::build_info_cli
-        ms::lib::cli_accel_int
         ms::lib::config_manager
         ms::lib::core_info
         ms::lib::config_manager::cli
@@ -185,6 +184,7 @@ target_link_libraries(
         ms::service::power
         ms::service::pwr_tlm_scp
         ms::service::rhtlm_service::cli
+        ms::service::m7_rtosmon
         ms::service::scp_startup_shutdown
         ms::service::sds_service
         ms::service::sel_mgr
@@ -293,6 +293,7 @@ add_library(${TARGET}
         mcp_clock_init.c
         mcp_crash_dump_init.c
         mcp_mpu_init.c
+        rtosmon_init.c
         mts_init.c
         nvic_init.c
         pdr_repo_init.c
@@ -396,6 +397,7 @@ target_link_libraries(
         ms::service::mem::cli
         ms::service::mts
         ms::service::pwr_pldm_mcp
+        ms::service::m7_rtosmon
         ms::service::sel_mgr
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli

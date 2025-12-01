@@ -795,6 +795,7 @@ AP_CORE_TEST(dispatch_mcp_load, setup, NULL)
     // Set up expectations
     will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
     expect_any(__wrap_DfwkAsyncRequestComplete, Request);
+    will_return(__wrap_system_info_is_hsp_present, false);
 
     // Call API under test
     assert_non_null(s_dispatch_routine);

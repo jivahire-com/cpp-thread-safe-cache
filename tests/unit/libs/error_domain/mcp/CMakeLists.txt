@@ -4,6 +4,8 @@ set(SOURCES
     test_error_domain_register_mcp.cpp
     ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_domain_mcp.c
     ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_injection_mcp.c
+    # Include silibs_platform.c directly so mmio_read32/mmio_write32 calls from mmio_update32 can be wrapped
+    ${CMAKE_SOURCE_DIR}/.externs/repo/cortex_m7/src/externs/silibs_common/silibs_platform/silibs_platform.c
 )
 
 # Compile test
@@ -19,7 +21,6 @@ target_link_libraries(${TARGET}
         silibs::atu
         silibs::idsw_kng
         silibs::semaphore
-        silibs::kng_silibs_platform
         silibs::idhw
         silibs::idsw
         ms::cmocka::testrunner
@@ -31,6 +32,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_domain::mcp
         ms::lib::crash_dump
         ms::lib::scp_interrupts
+        ms::cmsis::interface
 )
 
 # Generic ports implement within this project
@@ -41,6 +43,10 @@ target_include_directories(${TARGET}
     PRIVATE
         $<TARGET_PROPERTY:ms::lib::error_domain::mcp,INCLUDE_DIRECTORIES>
         ./
+    SYSTEM PRIVATE
+        # Include dirs for silibs_platform.c that we compile directly
+        ${CMAKE_SOURCE_DIR}/.externs/repo/silibs/silibs_platform/include
+        ${CMAKE_SOURCE_DIR}/.externs/repo/cortex_m7/src/externs/silibs_common/silibs_platform/inc
 )
 
 target_compile_definitions(

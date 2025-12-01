@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <system_info.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 // Default value for all workaround knobs
@@ -476,7 +477,7 @@ static void apply_mirrored_configurations(uint8_t rpss_id,
     pcie_cfg_workarounds->prod_rp_cfgs[3] = rp_knobs[3].prod_rp_cfg;
 }
 
-void override_default_pcie_cfg(uint8_t rpss_id)
+void PLACED_CODE override_default_pcie_cfg(uint8_t rpss_id)
 {
     pcie_cfg_t* pcie_cfg = &pcie_cfg_np[rpss_id];
     pcie_prod_cfg_t pcie_cfg_knob;

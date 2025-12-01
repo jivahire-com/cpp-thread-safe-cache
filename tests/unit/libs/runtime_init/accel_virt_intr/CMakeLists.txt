@@ -63,6 +63,7 @@ unit_test_target(${TARGET})
 # Mock the functions needed
 mock_target(${TARGET}
     accelerator_ip_get_atu_mapped_cfg_address
+    accel_is_isolation_enabled
     atu_svc_accel_atu_addr
     mmio_read32
     nvic_irq_set_isr_with_param

@@ -22,12 +22,12 @@ __RMSSDATASTART__    = 0x0134D000;
 __RMSSDATAEND__      = 0x0139BFFF;
 
 /*
- * ADO 2809728 - Rollback original reserved space 
+ * ADO 2809728 - Rollback original reserved space
  * after create a new section in RMSS ro region for functions,
  */
 __RESERVED_CODE_SIZE = 0;
 
-/* 
+/*
  * CODE and DATA sizes map directly to the sizes of the respective TCM (plus one for size).
  * The STACKSIZE maps to the System Stack used by ThreadX, set to 4 KB.
  *

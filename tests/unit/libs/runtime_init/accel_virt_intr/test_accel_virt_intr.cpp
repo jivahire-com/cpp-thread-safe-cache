@@ -167,6 +167,12 @@ uint32_t __wrap_atu_svc_accel_atu_addr(ACCEL_ID accel_id)
 
     return mock_type(uint32_t);
 }
+
+bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
+{
+    FPFW_UNUSED(accel_type);
+    return mock_type(bool);
+}
 }
 
 static void sdm_virt_isr_fun(void* args)
@@ -191,6 +197,7 @@ TEST_FUNCTION(test_accel_virt_irq_test, nullptr, nullptr)
     expect_value(__wrap_nvic_irq_set_isr_with_param, parameter, (void*)HW_INT_CDED_SDM_NVIC_INT);
 
     will_return_always(__wrap_nvic_irq_set_isr_with_param, NVIC_STATUS_ERROR);
+    will_return_always(__wrap_accel_is_isolation_enabled, false);
 
     _fpfw_component_virt_irq.init_fn();
 

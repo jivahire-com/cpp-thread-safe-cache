@@ -3,6 +3,8 @@ set(TARGET gpio_init.test)
 set(SOURCES
     test_gpio_init.cpp
     ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/gpio_init.c
+    # Include silibs_platform.c directly so mmio function calls can be wrapped by linker
+    ${CMAKE_SOURCE_DIR}/.externs/repo/cortex_m7/src/externs/silibs_common/silibs_platform/silibs_platform.c
 )
 
 # Compile test
@@ -11,6 +13,9 @@ add_executable(${TARGET} ${SOURCES})
 target_include_directories(${TARGET}
     PRIVATE
         ${CRASH_DUMP_SOURCE_DIR}/inc
+    SYSTEM PRIVATE
+        ${CMAKE_SOURCE_DIR}/.externs/repo/cortex_m7/src/externs/silibs_common/silibs_platform
+        ${CMAKE_SOURCE_DIR}/.externs/repo/cortex_m7/src/externs/silibs_common/silibs_common
 )
 
 target_link_libraries(${TARGET}
@@ -21,6 +26,7 @@ target_link_libraries(${TARGET}
         fwlib.platform.dfwkhost.threadx
         fwlib.service.cli
         ms::cmocka::testrunner
+        ms::cmsis::interface
         ms::driver::gpio
         ms::lib::crash_dump
         ms::lib::interrupts

@@ -61,7 +61,7 @@ target_link_options(
             -L${CMAKE_CURRENT_SOURCE_DIR}/../inc
             -L${CMAKE_BINARY_DIR}/ld/scp
             -ereset_handler
-            -Wl,--build-id        
+            -Wl,--build-id
             -Wl,--undefined=__retarget_lock_init
             -Wl,--undefined=__retarget_lock_acquire
             -Wl,--undefined=__retarget_lock_try_acquire

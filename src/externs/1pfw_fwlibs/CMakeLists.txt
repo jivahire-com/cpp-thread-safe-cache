@@ -101,8 +101,37 @@ add_subdirectory(message_transfer_service)
 
 if (NOT ${TARGET}_POPULATED)
     FetchContent_Populate(${TARGET})
+    # To ensure ThreadX includes the tx_user.h in cm7, we must disable the 1pfwlibs tx_user.h
+    # found in ".externs\repo\1pfw_fwlibs\src\libs\rtosmon\inc\tx_user.h."
+    set(PORT_TX_USER_FILEPATH
+        "${TARGET_DIR}/src/libs/rtosmon/inc/tx_user.h")
+
+    message("Renaming 1PFWLIB tx_user.h: " ${PORT_TX_USER_FILEPATH} " to tx_user.h.disabled")
+    message("This is to prevent tx_api.h structs expanding to incorrect sizes")
+
+    if(EXISTS "${PORT_TX_USER_FILEPATH}")
+        file(RENAME
+            "${PORT_TX_USER_FILEPATH}"
+            "${PORT_TX_USER_FILEPATH}.disabled"
+        )
+    endif()
+
+    set(RTOSMON_PLATFORM_DEFINES
+        RTOSMON_FASTHISTO_MAX_BINS=10
+        RTOSMON_FASTHISTO_MAX_THREADS=6
+    )
+
     add_subdirectory(${TARGET_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/1pfw.fwlibs EXCLUDE_FROM_ALL)
 endif()
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    message("Sys name ${CMAKE_SYSTEM_NAME}")
+    target_include_directories(
+        fwlib.lib.rtosmon PUBLIC
+            ${REPO_ROOT_DIR}/tests/unit/libs/runtime_init/rtosmon_init
+    )
+endif()
+
 
 
 include($ENV{REPO_APP_CMAKE_TOOLCHAIN_DIR}/cmake/lint.cmake)

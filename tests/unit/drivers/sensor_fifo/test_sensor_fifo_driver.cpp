@@ -278,10 +278,12 @@ TEST_FUNCTION(test_request_dispatch_write_read_entry, fw_fifo_setup, fw_fifo_tea
 TEST_FUNCTION(test_request_dispatch_set_fifo_enable, fw_fifo_setup, fw_fifo_teardown)
 {
     sensor_fifo_drv_inf_fifo_enable fifo_enable_req;
+    bool is_enabled[DEVICE_FIFO_MAX_ID] = {0};
 
     fifo_enable_req.header.RequestType = SENSOR_FIFO_SYNC_SET_FIFO_ENABLE;
     fifo_enable_req.input.fifo_id = DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD;
     fifo_enable_req.input.enable = true;
+    fifo_enable_req.output.is_enabled = &is_enabled;
 
     assert_false(hw_fifo_is_enabled(DEVICE_FIFO_PVT_TEMP_TLM_FW_PROD));
 

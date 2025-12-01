@@ -39,6 +39,7 @@ target_link_libraries(${TARGET}
         ms::lib::scp_interrupts
         ms::lib::system_info
         ms::lib::threadx
+        ms::lib::utils
         ms::service::health_monitor
         silibs_platform
     PUBLIC

@@ -432,7 +432,7 @@ static PLACED_CODE FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const cha
     return CLI_SUCCESS;
 }
 
-void dump_ghes(uint32_t ghes_idx)
+void PLACED_CODE dump_ghes(uint32_t ghes_idx)
 {
     hm_config_t* hm_config = get_hm_config();
     BUG_ASSERT_PARAM(hm_config != NULL, hm_config, 0);
@@ -522,7 +522,7 @@ void dump_ghes(uint32_t ghes_idx)
     FpFwCliPrint("\n");
 }
 
-void dump_ghes_error_record(acpi_ghes_error_record_dual_die_t* ghes_error_record_base, uint32_t max_section_count)
+void PLACED_CODE dump_ghes_error_record(acpi_ghes_error_record_dual_die_t* ghes_error_record_base, uint32_t max_section_count)
 {
     FpFwCliPrint("Err block(mscp_%p):\n", ghes_error_record_base);
     FpFwCliPrint(" UE=%d, CE=%d, Mul_UE=%d, Mul_CE=%d, Ctn=%d\n",
@@ -660,7 +660,7 @@ void print_section_as_byte_view(const acpi_cper_section_t* section)
     FpFwCliPrint("\n");
 }
 
-void print_einj_payload(ras_einj_info_t* payload)
+void PLACED_CODE print_einj_payload(ras_einj_info_t* payload)
 {
     if (payload == NULL)
     {

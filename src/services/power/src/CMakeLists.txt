@@ -42,7 +42,7 @@ target_link_libraries(${TARGET}
     PUBLIC
         fwlib.lib.cfg_mgr
         ms::lib::corebits
-        ms::lib::core_info 
+        ms::lib::core_info
         ms::lib::scp_avs
         ms::lib::scp_avs::cli
         silibs::atu

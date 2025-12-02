@@ -26,6 +26,10 @@
 
 FPFW_INIT_COMPONENT(rtosmon, FPFW_INIT_DEPENDENCIES("etc", "systick_upd"))
 {
+#ifndef SCP_RUNTIME_INIT
     rtosmon_plugin_init();
+#else
+    rtosmon_disabled_init();
+#endif
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

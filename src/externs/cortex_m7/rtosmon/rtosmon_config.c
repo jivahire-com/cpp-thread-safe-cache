@@ -32,9 +32,13 @@
 
 /*-------- Function Prototypes -----------*/
 
-/*-- Declarations (Statics and globals) --*/
+/*-- Declarations (Statics, globals and externs) --*/
 static uint8_t s_rtosmon_stack[RTOSMON_STACK_SIZE];
 static rtosmon_data_t s_rtosmon_data;
+
+#ifdef _WIN32
+extern uint64_t (*_tx_execution_time_source)(void);
+#endif
 
 /*------------- Functions ----------------*/
 /*
@@ -144,4 +148,9 @@ void rtosmon_plugin_init(void)
 
     set_rtosmon_context_switch_work_enabled(true);
     BUG_ASSERT(rtosmon_init(&rtosmon_config, &s_rtosmon_data) == FPFW_STATUS_SUCCESS);
+}
+
+void rtosmon_disabled_init()
+{
+    _tx_execution_time_source = systick_time_source;
 }

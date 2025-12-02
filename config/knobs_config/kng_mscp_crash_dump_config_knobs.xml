@@ -15,6 +15,7 @@
     <Knob name="crash_dump_enable" type="bool" default="true" help="Enable/Disable Crash Dump when crash occurs." />
     <Knob name="crash_dump_warm_reset" type="bool" default="true" help="Enable/Disable warm reset after Crash Dump is complete." />
     <Knob name="crash_dump_emit_only_minidump" type="bool" default="false" help="Only emit minidump, even if full dump is available" />
+    <Knob name="crash_dump_transfer_try_interval_ms" type="uint32_t" default="1000" help="Interval in milliseconds between transfer attempts of crash dump data." />
     <!-- end crash dump config knobs -->
   </Knobs>
 

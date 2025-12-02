@@ -83,3 +83,10 @@ void crash_dump_update_accel_state(ACCEL_ID accel_type, crash_dump_core_state_t 
  * @return true if crash dump is in progress, otherwise false
  */
 bool crash_dump_is_transferring(crash_dump_type_context_t *type_context);
+
+/**
+ * @brief Check if there are dumps to be oob transferred to BMC
+ * 
+ * @return true - if there are dumps to be transferred, false - otherwise
+ */
+bool crash_dump_oob_transfer(void);

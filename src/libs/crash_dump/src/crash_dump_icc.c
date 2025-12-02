@@ -38,6 +38,7 @@ static fpfw_status_t icc_mhu_send_cd_async(fpfw_icc_base_ctx_t* icc_ctx, uint32_
 static void crash_dump_register_transfer_callback(crash_dump_icc_config_t type);
 
 /*-- Declarations (Statics and globals) --*/
+static TX_TIMER cd_oob_timer;
 
 /*------------- Functions ----------------*/
 static void icc_transfer_send_complete_cb(void* ctx, fpfw_status_t status)
@@ -563,6 +564,32 @@ uint32_t crash_dump_transfer_full_dump_to_bmc()
     static crash_dump_request_t cd_request = {};
 
     return crash_dump_start_transfer_async(cd_iface, &cd_request, crash_dump_transfer_req_cb, NULL);
+}
+
+static void crash_dump_oob_transfer_cb(ULONG input)
+{
+    FPFW_UNUSED(input);
+
+    if (crash_dump_oob_transfer())
+    {
+        crash_dump_transfer_full_dump_to_bmc();
+    }
+}
+
+uint32_t crash_dump_start_oob_transfer_agent()
+{
+    uint32_t interval = config_get_crash_dump_transfer_try_interval_ms() * TX_TIMER_TICKS_PER_SECOND / 1000;
+
+    UINT ret = tx_timer_create(&cd_oob_timer,              // timer_ptr
+                               "cd_oob_tx",                // name_ptr
+                               crash_dump_oob_transfer_cb, // expiration_function
+                               0,                          // input
+                               1,                          // initial_ticks
+                               interval,                   // reschedule_ticks
+                               TX_AUTO_ACTIVATE);          // auto_activate
+    BUG_ASSERT(ret == TX_SUCCESS);
+
+    return ret;
 }
 
 uint32_t crash_dump_request_transfer_dump()

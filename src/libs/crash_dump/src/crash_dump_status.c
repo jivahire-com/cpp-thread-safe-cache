@@ -361,3 +361,34 @@ bool crash_dump_is_transferring(crash_dump_type_context_t* type_context)
 
     return transferring;
 }
+
+bool crash_dump_oob_transfer(void)
+{
+    crash_dump_context_t* ctx = crash_dump_context();
+    bool has_completed_cd = false;
+    bool has_inprogress_cd = false;
+
+    if (ctx != NULL && ctx->type_ctx[CRASH_DUMP_TYPE_FULL] != NULL)
+    {
+        crash_dump_type_context_t* type_context = ctx->type_ctx[CRASH_DUMP_TYPE_FULL];
+
+        wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+        if (type_context->header->status == CRASH_DUMP_IN_USE)
+        {
+            for (uint16_t i = 0; i < CRASH_DUMP_CORE_NUM * 2; i++)
+            {
+                if (type_context->header->cores[i] == CRASH_DUMP_STATE_COMPLETED)
+                {
+                    has_completed_cd = true;
+                }
+                else if (type_context->header->cores[i] == CRASH_DUMP_STATE_IN_PROGRESS)
+                {
+                    has_inprogress_cd = true;
+                }
+            }
+        }
+        release_semaphore(type_context->semaphore.id);
+    }
+
+    return has_completed_cd && !has_inprogress_cd;
+}

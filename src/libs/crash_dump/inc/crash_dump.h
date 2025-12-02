@@ -372,6 +372,13 @@ uint32_t crash_dump_transfer_accel_cd_to_BMC(ACCEL_ID accel_type);
 uint32_t crash_dump_transfer_full_dump_to_bmc();
 
 /**
+ * @brief Start OOB Transfers full crash dump to BMC agent.
+ * 
+ * @return uint32_t Status of the operation.
+ */
+uint32_t crash_dump_start_oob_transfer_agent();
+
+/**
  * @brief Set Uncorrectable Error (UE) flag
  * 
  * @param is_ue true if UE is set, false otherwise

@@ -143,6 +143,7 @@ mock_target(${TARGET}
     crash_dump_config_icc
     crash_dump_device_initialize
     crash_dump_interface_initialize
+    crash_dump_oob_transfer
     exception_handler_init
     pldm_drv_register_platform_event_ready_notification # PLDM_DRV_WORKAROUND
     # fpfw_pldm_service_register_platform_event_ready_notification # !PLDM_DRV_WORKAROUND
@@ -153,4 +154,5 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     crash_dump_transfer_full_dump_to_bmc
     sos_register_ssi
+    _txe_timer_create
 )

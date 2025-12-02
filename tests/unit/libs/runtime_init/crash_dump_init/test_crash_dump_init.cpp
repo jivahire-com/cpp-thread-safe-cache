@@ -203,6 +203,37 @@ void __wrap_crash_dump_transfer_full_dump_to_bmc()
     function_called();
 }
 
+bool __wrap_crash_dump_oob_transfer(void)
+{
+    return mock_type(bool);
+}
+
+void (*__wrap_expiration_function)(ULONG input) = NULL;
+
+UINT __wrap__txe_timer_create(TX_TIMER* timer_ptr,
+                              CHAR* name_ptr,
+                              VOID (*expiration_function)(ULONG id),
+                              ULONG expiration_input,
+                              ULONG initial_ticks,
+                              ULONG reschedule_ticks,
+                              UINT auto_activate,
+                              UINT timer_control_block_size)
+{
+    assert_non_null(timer_ptr);
+    assert_non_null(name_ptr);
+    assert_non_null(expiration_function);
+    FPFW_UNUSED(expiration_input);
+    FPFW_UNUSED(initial_ticks);
+    FPFW_UNUSED(reschedule_ticks);
+    FPFW_UNUSED(auto_activate);
+    FPFW_UNUSED(timer_control_block_size);
+
+    __wrap_expiration_function = expiration_function;
+    function_called();
+
+    return 0;
+}
+
     #ifdef PLDM_DRV_WORKAROUND
 PDFWK_ASYNC_REQUEST_HEADER __wrap_last_async_request_sent = NULL;
 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE __wrap_pldm_platform_event_ready_callback = NULL;
@@ -430,8 +461,13 @@ TEST_FUNCTION(test_cd_bmc, nullptr, nullptr)
 
     _fpfw_component_cd_pldm.init_fn();
 
-    expect_function_call(__wrap_crash_dump_transfer_full_dump_to_bmc);
+    expect_function_call(__wrap__txe_timer_create);
     __wrap_pldm_platform_event_ready_callback(__wrap_last_async_request_sent, NULL);
+
+    will_return(__wrap_crash_dump_oob_transfer, true);
+    expect_function_call(__wrap_crash_dump_transfer_full_dump_to_bmc);
+    __wrap_expiration_function(0);
+
     #else
     expect_function_call(__wrap_fpfw_pldm_service_register_platform_event_ready_notification);
     // Check dependencies
@@ -440,8 +476,13 @@ TEST_FUNCTION(test_cd_bmc, nullptr, nullptr)
 
     _fpfw_component_cd_pldm.init_fn();
 
-    expect_function_call(__wrap_crash_dump_transfer_full_dump_to_bmc);
+    expect_function_call(__wrap__txe_timer_create);
     __wrap_pldm_platform_event_ready_callback(0, NULL);
+
+    will_return(__wrap_crash_dump_oob_transfer, true);
+    expect_function_call(__wrap_crash_dump_transfer_full_dump_to_bmc);
+    __wrap_expiration_function(0);
+
     #endif
 }
 #endif

@@ -90,14 +90,13 @@ class warm_start_test(EchoFallsBaseTest):
             core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=1500)
             self.log.info("Waiting for SCP-AP Core Power ON Msg")
             core_com_channel.read_until(key="Primary AP core power on", timeout_seconds=500)
-            command="\r\n"
-            hsp_connection.write_line(write_string=command)
-            command="reset 4 2 0x9A 1"
-            hsp_connection.write_line(write_string=command)
-            self.log.info("Waiting for Quiesce completion Msg after warm reset")
-            core_com_channel.read_until(key="Reset complete, waiting forever", timeout_seconds=500)
-            self.log.info("Waiting for SCP-Heartbeat Msg after warm reset")
-            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=500)
+            command="warm_start wsreset subsys"
+            core_com_channel.write_line(write_string=command)
+            core_com_channel.read_until(key="[SoS] Reset complete notification sent successfully", timeout_seconds=500)
+            self.log.info("Mailbox cmd sent to HSP requesting MSCP subsys reset.. ")
+            self.log.info("Waiting until SCP is released out of reset.. ")
+            core_com_channel.read_until(key="Hello World - SCP!", timeout_seconds=500)
+            self.log.info("SCP released out of reset")
         except Exception as e:
             self.log.error(f"Error reading self.dut.mb.node_0.soc.primary_die.scp.channel_manager UART: {e}")
             self.test_notify(step="Warm Reset Test", msg="Test Fail", _is_error=True)
@@ -107,6 +106,7 @@ class warm_start_test(EchoFallsBaseTest):
         
         core_com_channel.close()
         hsp_connection.close()
+        apns_connection.close()
         self.test_notify(step="Warm start CLI tests done", msg="Test Done", _is_error=False)
         self.dut.teardown()
         time.sleep(30)

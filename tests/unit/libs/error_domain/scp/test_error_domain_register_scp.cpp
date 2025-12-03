@@ -74,10 +74,12 @@ extern "C" {
 #define SCP_FUSES_CSR_ERRCTRL_REG   (SCP_FUSES_CSR_ADDRESS + FUSES_CSR_SFCRAM_ERRCTRL_ADDRESS)
 #define SCP_FUSES_CSR_ERRSTATUS_REG (SCP_FUSES_CSR_ADDRESS + FUSES_CSR_ERRSTATUS_ADDRESS)
 #define SCP_FUSES_CSR_ERRADDR_REG   (SCP_FUSES_CSR_ADDRESS + FUSES_CSR_SFCRAM_ERRADDR_ADDRESS)
+#define SCP_FUSES_CSR_ERRENBL_REG   (SCP_FUSES_CSR_ADDRESS + FUSES_CSR_ERRENABLE_ADDRESS)
 #define SCP_FUSES_RAM_ADDRESS \
     (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_FUSE_ADDRESS + FUSES_TOP_FUSE_RAM_SPACE_ADDRESS)
 
 /*------------- Typedefs -----------------*/
+typedef void (*crash_dump_register_pre_dump_callback_t)(void*);
 
 /*-------- Function Prototypes -----------*/
 void test_dcache_ue_isr();
@@ -121,6 +123,7 @@ isr_callback_fn_with_params_t g_s_arsm_ecc_isr = NULL;
 isr_callback_fn_sans_params_t g_s_rsm_ecc_isr = NULL;
 isr_callback_fn_sans_params_t g_pll_isr = NULL;
 isr_callback_fn_sans_params_t g_fuses_ecc_isr = NULL;
+crash_dump_register_pre_dump_callback_t g_crash_dump_pre_dump_callback = NULL;
 
 static void (*g_pex_timer_callback)(ULONG) = NULL;
 
@@ -434,6 +437,13 @@ UINT __wrap__txe_timer_create(TX_TIMER* timer_ptr,
 
     return 0;
 }
+
+void __wrap_crash_dump_register_pre_dump_callback(void cb(void*), void* ctx)
+{
+    g_crash_dump_pre_dump_callback = cb;
+    FPFW_UNUSED(ctx);
+    function_called();
+}
 }
 //
 // Tests
@@ -691,6 +701,7 @@ TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
         expect_function_call(__wrap_atu_unmap);
     }
 
+    // Fuses ECC
     expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRCTRL_REG);
     will_return(__wrap_mmio_read32, 0);       // scp_exp_fuses_regs->sfcram_errctrl
     expect_function_call(__wrap_mmio_read32); // scp_exp_fuses_regs->sfcram_errctrl
@@ -698,6 +709,16 @@ TEST_FUNCTION(test_register_scp_error_domain, nullptr, nullptr)
     expect_value(__wrap_mmio_write32, data, FUSES_CSR_SFCRAM_ERRCTRL_ECC_ENABLE_MASK);
     expect_function_call(__wrap_mmio_write32);
 
+    // Fuses ECC ISR
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRENBL_REG);
+    will_return(__wrap_mmio_read32, 0);       // scp_exp_fuses_regs->sfcram_errctrl
+    expect_function_call(__wrap_mmio_read32); // scp_exp_fuses_regs->sfcram_errctrl
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_FUSES_CSR_ERRENBL_REG);
+    expect_value(__wrap_mmio_write32, data, FUSES_CSR_ERRENABLE_CE_MASK | FUSES_CSR_ERRENABLE_UE_MASK | FUSES_CSR_ERRENABLE_OF_MASK);
+    expect_function_call(__wrap_mmio_write32);
+
+    //
+    expect_function_call(__wrap_crash_dump_register_pre_dump_callback);
     register_scp_error_domain((fpfw_icc_base_ctx_t*)1234);
 }
 
@@ -1238,7 +1259,27 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_mmio_read32);
             break;
         case SCP_ERROR_TYPE_FUSE_UE:
+            // const uint32_t index_a = 1;
+            // const uint32_t index_b = (index_a << 1);
+
             will_return(__wrap_is_cached_space, false);
+            // index A
+            expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRCTRL_REG);
+            will_return(__wrap_mmio_read32, 0);
+            expect_function_call(__wrap_mmio_read32);
+            expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_FUSES_CSR_ERRCTRL_REG);
+            expect_value(__wrap_mmio_write32, data, 0x01 << FUSES_CSR_SFCRAM_ERRCTRL_INDEX_A_LSB);
+            expect_function_call(__wrap_mmio_write32);
+
+            // index B
+            expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRCTRL_REG);
+            will_return(__wrap_mmio_read32, 0);
+            expect_function_call(__wrap_mmio_read32);
+            expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_FUSES_CSR_ERRCTRL_REG);
+            expect_value(__wrap_mmio_write32, data, (0x01 << 1) << FUSES_CSR_SFCRAM_ERRCTRL_INDEX_B_LSB);
+            expect_function_call(__wrap_mmio_write32);
+
+            // UE injection
             expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRCTRL_REG);
             will_return(__wrap_mmio_read32, 0);
             expect_function_call(__wrap_mmio_read32);
@@ -1371,7 +1412,6 @@ TEST_FUNCTION(test_fuses_ecc_ce_isr, test_setup, nullptr)
     expect_function_call(__wrap_nvic_irq_clear_pending);
 
     expect_function_call(__wrap_hm_submit_cper);
-    expect_function_call(__wrap_crash_dump_bug_check);
     g_fuses_ecc_isr();
 }
 
@@ -1404,30 +1444,89 @@ TEST_FUNCTION(test_fuses_ecc_ue_isr, test_setup, nullptr)
     g_fuses_ecc_isr();
 }
 
-TEST_FUNCTION(test_fuses_ecc_ue_of_isr, test_setup, nullptr)
+TEST_FUNCTION(test_fuses_ecc_ue_isr_predump, test_setup, nullptr)
 {
     expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
-    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK);
-    expect_function_call(__wrap_mmio_read32);
-
-    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRADDR_REG);
-    will_return(__wrap_mmio_read32, FUSES_CSR_SFCRAM_ERRADDR_UE_OF_MASK);
+    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_UE_MASK);
     expect_function_call(__wrap_mmio_read32);
 
     expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
-    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK);
+    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_read32);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRADDR_REG);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
+    will_return(__wrap_mmio_read32, 0);
+    expect_function_call(__wrap_mmio_read32);
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
+    expect_value(__wrap_mmio_write32, data, FUSES_CSR_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_write32);
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SYSFUSE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    expect_function_call(__wrap_hm_submit_cper);
+    g_crash_dump_pre_dump_callback(nullptr);
+}
+
+TEST_FUNCTION(test_fuses_ecc_ce_of_isr, test_setup, nullptr)
+{
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
+    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK | FUSES_CSR_ERRSTATUS_CE_MASK);
     expect_function_call(__wrap_mmio_read32);
 
     expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRADDR_REG);
-    will_return(__wrap_mmio_read32, FUSES_CSR_SFCRAM_ERRADDR_UE_OF_MASK);
+    will_return(__wrap_mmio_read32, FUSES_CSR_SFCRAM_ERRADDR_CE_OF_MASK);
     expect_function_call(__wrap_mmio_read32);
 
     expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
-    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK);
+    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK | FUSES_CSR_ERRSTATUS_CE_MASK);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRADDR_REG);
+    will_return(__wrap_mmio_read32, FUSES_CSR_SFCRAM_ERRADDR_CE_OF_MASK);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
+    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK | FUSES_CSR_ERRSTATUS_CE_MASK);
     expect_function_call(__wrap_mmio_read32);
 
     expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
-    expect_value(__wrap_mmio_write32, data, FUSES_CSR_ERRSTATUS_OF_MASK | FUSES_CSR_ERRSTATUS_OF_MASK);
+    expect_value(__wrap_mmio_write32, data, FUSES_CSR_ERRSTATUS_OF_MASK | FUSES_CSR_ERRSTATUS_CE_MASK);
+    expect_function_call(__wrap_mmio_write32);
+
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SYSFUSE_INT);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    expect_function_call(__wrap_hm_submit_cper);
+
+    g_fuses_ecc_isr();
+}
+
+TEST_FUNCTION(test_fuses_ecc_ue_of_isr, test_setup, nullptr)
+{
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
+    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK | FUSES_CSR_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRADDR_REG);
+    will_return(__wrap_mmio_read32, FUSES_CSR_SFCRAM_ERRADDR_UE_OF_MASK);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
+    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK | FUSES_CSR_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRADDR_REG);
+    will_return(__wrap_mmio_read32, FUSES_CSR_SFCRAM_ERRADDR_UE_OF_MASK);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
+    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK | FUSES_CSR_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
+    expect_value(__wrap_mmio_write32, data, FUSES_CSR_ERRSTATUS_OF_MASK | FUSES_CSR_ERRSTATUS_UE_MASK);
     expect_function_call(__wrap_mmio_write32);
 
     expect_value(__wrap_nvic_irq_clear_pending, irq_num, HW_INT_SYSFUSE_INT);
@@ -1435,14 +1534,6 @@ TEST_FUNCTION(test_fuses_ecc_ue_of_isr, test_setup, nullptr)
 
     expect_function_call(__wrap_hm_submit_cper);
     expect_function_call(__wrap_crash_dump_bug_check);
-
-    expect_value(__wrap_mmio_read32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
-    will_return(__wrap_mmio_read32, FUSES_CSR_ERRSTATUS_OF_MASK);
-    expect_function_call(__wrap_mmio_read32);
-
-    expect_value(__wrap_mmio_write32, addr, (uint32_t)SCP_FUSES_CSR_ERRSTATUS_REG);
-    expect_value(__wrap_mmio_write32, data, FUSES_CSR_ERRSTATUS_OF_MASK & ~FUSES_CSR_ERRSTATUS_UE_MASK);
-    expect_function_call(__wrap_mmio_write32);
 
     g_fuses_ecc_isr();
 }

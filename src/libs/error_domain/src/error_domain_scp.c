@@ -297,27 +297,9 @@ static void sys_fuse_ecc_isr(void)
 
     mscp_ecc_isr_params_t params = {.err_source_irq = HW_INT_SYSFUSE_INT,
                                     .err_severity = ACPI_ERROR_SEVERITY_CORRECTED,
-                                    .bugcheck_required = true,
+                                    .bugcheck_required = false,
                                     .param1 = (uint32_t*)&scp_exp_fuses_regs->errstatus,
                                     .param2 = (uint32_t*)&scp_exp_fuses_regs->sfcram_erraddr};
-
-    /* Correctable ECC error (CE) detected */
-    if (status_reg & FUSES_CSR_ERRSTATUS_CE_MASK)
-    {
-        params.err_source_id = RECORD_ID_MCP_FUSES_CE;
-        params.err_code = KNG_HM_SYSFUSE_TAG_CE;
-        params.err_status_mask = FUSES_CSR_ERRSTATUS_CE_MASK;
-        ram_ecc_isr(&params);
-    }
-
-    /* Uncorrectable ECC error (UE) detected */
-    if (status_reg & FUSES_CSR_ERRSTATUS_UE_MASK)
-    {
-        params.err_source_id = RECORD_ID_MCP_FUSES_UE;
-        params.err_code = KNG_HM_SYSFUSE_TAG_UE;
-        params.err_status_mask = FUSES_CSR_ERRSTATUS_UE_MASK;
-        ram_ecc_isr(&params);
-    }
 
     /* Overflow error occurs */
     if (status_reg & FUSES_CSR_ERRSTATUS_OF_MASK)
@@ -327,20 +309,37 @@ static void sys_fuse_ecc_isr(void)
         if (addr_reg & FUSES_CSR_SFCRAM_ERRADDR_UE_OF_MASK)
         {
             /* Un-Correctable ECC overflow error detected (UE_OF) */
-            params.err_source_id = RECORD_ID_MCP_FUSES_OF_UE;
-            params.err_code = KNG_HM_SYSFUSE_TAG_UE;
+            params.err_source_id = RECORD_ID_FUSES;
+            params.err_status_mask |= FUSES_CSR_ERRSTATUS_UE_MASK;
+            params.err_code = KNG_HM_SYSFUSE_TAG_UE_OF;
+            params.bugcheck_required = true;
             ram_ecc_isr(&params);
-            MMIO_CLEAR_MASK32(&scp_exp_fuses_regs->errstatus, FUSES_CSR_ERRSTATUS_UE_MASK);
         }
         else if (addr_reg & FUSES_CSR_SFCRAM_ERRADDR_CE_OF_MASK)
         {
             /* Correctable ECC overflow error detected (CE_OF) */
-            params.err_source_id = RECORD_ID_MCP_FUSES_OF_CE;
-            params.err_status_mask = FUSES_CSR_ERRSTATUS_CE_MASK;
-            params.err_code = KNG_HM_SYSFUSE_TAG_CE;
+            params.err_source_id = RECORD_ID_FUSES;
+            params.err_status_mask |= FUSES_CSR_ERRSTATUS_CE_MASK;
+            params.err_code = KNG_HM_SYSFUSE_TAG_CE_OF;
             ram_ecc_isr(&params);
-            MMIO_CLEAR_MASK32(&scp_exp_fuses_regs->errstatus, FUSES_CSR_ERRSTATUS_CE_MASK);
         }
+    }
+    else if (status_reg & FUSES_CSR_ERRSTATUS_CE_MASK)
+    {
+        /* Correctable ECC error (CE) detected */
+        params.err_source_id = RECORD_ID_FUSES;
+        params.err_code = KNG_HM_SYSFUSE_TAG_CE;
+        params.err_status_mask = FUSES_CSR_ERRSTATUS_CE_MASK;
+        ram_ecc_isr(&params);
+    }
+    else if (status_reg & FUSES_CSR_ERRSTATUS_UE_MASK)
+    {
+        /* Uncorrectable ECC error (UE) detected */
+        params.err_source_id = RECORD_ID_FUSES;
+        params.err_code = KNG_HM_SYSFUSE_TAG_UE;
+        params.err_status_mask = FUSES_CSR_ERRSTATUS_UE_MASK;
+        params.bugcheck_required = true;
+        ram_ecc_isr(&params);
     }
 }
 
@@ -479,6 +478,10 @@ static void enable_scp_ecc_error()
 
     // Enable ECC System fuse errors (EC & UE)
     MMIO_SET_MASK32(&scp_exp_fuses_regs->sfcram_errctrl, FUSES_CSR_SFCRAM_ERRCTRL_ECC_ENABLE_MASK);
+
+    // Enable ECC System fuse ISR
+    MMIO_SET_MASK32(&scp_exp_fuses_regs->errenable,
+                    FUSES_CSR_ERRENABLE_CE_MASK | FUSES_CSR_ERRENABLE_UE_MASK | FUSES_CSR_ERRENABLE_OF_MASK);
 }
 
 static void register_scp_ecc_isr(uint32_t irq_num, isr_callback_fn_sans_params_t isr)
@@ -577,4 +580,35 @@ void register_scp_error_domain(fpfw_icc_base_ctx_t* icc_ctx)
 
     // Enable ECC error injection
     enable_scp_ecc_error();
+
+    // Register predump callback
+    crash_dump_register_pre_dump_callback(err_domain_scp_predump_cb, NULL, CRASH_DUMP_TYPE_FULL);
+}
+
+void err_domain_scp_predump_cb(void* ctx)
+{
+    FPFW_UNUSED(ctx);
+
+    // Check FUSE UE ECC
+    uint32_t status_reg = MMIO_READ32((uint32_t*)&scp_exp_fuses_regs->errstatus);
+
+    if (status_reg & FUSES_CSR_ERRSTATUS_UE_MASK)
+    {
+        mscp_ecc_isr_params_t params = {.err_source_id = RECORD_ID_FUSES,
+                                        .err_source_irq = HW_INT_SYSFUSE_INT,
+                                        .err_severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
+                                        .err_code = KNG_HM_SYSFUSE_TAG_UE,
+                                        .bugcheck_required = false,
+                                        .param1 = (uint32_t*)&scp_exp_fuses_regs->errstatus,
+                                        .param2 = (uint32_t*)&scp_exp_fuses_regs->sfcram_erraddr,
+                                        .err_status_mask = FUSES_CSR_ERRSTATUS_UE_MASK};
+
+        if (status_reg & FUSES_CSR_ERRSTATUS_OF_MASK)
+        {
+            params.err_code = KNG_HM_SYSFUSE_TAG_UE_OF;
+            params.err_status_mask |= FUSES_CSR_ERRSTATUS_OF_MASK;
+        }
+
+        ram_ecc_isr(&params);
+    }
 }

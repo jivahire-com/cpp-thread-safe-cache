@@ -66,3 +66,4 @@ acpi_einj_cmd_status_t gic_error_injection_handler(ras_einj_info_t* einj_payload
 acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx);
 uint32_t get_arsm_attr_address(uint32_t attributes, atu_map_entry_t* atu_entry, atu_map_entry_t* atu_recover_entry);
 acpi_einj_cmd_status_t pex_error_injection_handler(ras_einj_info_t* einj_payload, void* ctx);
+void err_domain_scp_predump_cb(void* ctx);

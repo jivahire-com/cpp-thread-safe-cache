@@ -387,6 +387,25 @@ PLACED_CODE acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t*
         break;
     }
     case SCP_ERROR_TYPE_FUSE_UE: {
+        // index_a : Bit index of the error when injecting a CE error. Valid values are 0-31.
+        const uint32_t index_a = 1;
+        static_assert((index_a <= 31), "Invalid range on Index A");
+
+        // index_b : Bit index of second error when injecting a UE error. Valid values are 0-31
+        // Must be different than Index A. if same UE will downgrade to CE.
+        const uint32_t index_b = (index_a << 1);
+        static_assert((index_b <= 31 && index_b != index_a), "Invalid range on Index B");
+
+        /* Update Index A */
+        MMIO_UPDATE32(&scp_exp_fuses_regs->sfcram_errctrl,
+                      FUSES_CSR_SFCRAM_ERRCTRL_INDEX_A_MASK,
+                      (index_a << FUSES_CSR_SFCRAM_ERRCTRL_INDEX_A_LSB));
+
+        /* Update Index B */
+        MMIO_UPDATE32(&scp_exp_fuses_regs->sfcram_errctrl,
+                      FUSES_CSR_SFCRAM_ERRCTRL_INDEX_B_MASK,
+                      (index_b << FUSES_CSR_SFCRAM_ERRCTRL_INDEX_B_LSB));
+
         MMIO_UPDATE32(&scp_exp_fuses_regs->sfcram_errctrl, FUSES_CSR_SFCRAM_ERRCTRL_INJECT_ERROR_MASK, MASK_UE);
         inject_err_by_access(FUSES_RAM_ADDRESS);
         break;

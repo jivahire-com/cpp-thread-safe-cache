@@ -92,6 +92,7 @@ mock_target(${TARGET}
     is_cached_space
     _txe_timer_create
     fpfw_init_get_handle
+    crash_dump_register_pre_dump_callback
 )
 
 # AP Watchdog ISR Test

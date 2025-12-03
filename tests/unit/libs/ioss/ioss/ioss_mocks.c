@@ -29,22 +29,6 @@
 // Mocks
 //
 
-int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
-{
-    FPFW_UNUSED(atu_id);
-    FPFW_UNUSED(atu_map_entry);
-
-    return mock_type(int);
-}
-
-int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
-{
-    FPFW_UNUSED(atu_id);
-    FPFW_UNUSED(atu_map_entry);
-
-    return mock_type(int);
-}
-
 int __wrap_variable_service_initialize_ctx(var_service_req_ctx_t* var_serv_ctx, var_service_shared_mem_t* mem_ctx)
 {
     check_expected(var_serv_ctx);

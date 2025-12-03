@@ -141,11 +141,11 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
-    // HW Semaphore region on DIE0
+    // IOSS region on DIE0
     {
-        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_END_ADDR,
+        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_D0_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
     // CHBCR for CXL
@@ -254,18 +254,18 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
-    // HW Semaphore region on DIE0
+    // IOSS region on DIE0
     {
-        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_END_ADDR,
+        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_D0_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
-    // HW Semaphore region on DIE1
+    // IOSS region on DIE1
     {
-        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE1_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE1_END_ADDR,
+        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_D1_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
     // CHBCR for CXL
@@ -356,11 +356,11 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
-    // HW Semaphore region on DIE1
+    // IOSS region on DIE1
     {
-        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_END_ADDR,
+        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_D1_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
     // CHBCR for CXL
@@ -462,18 +462,18 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_ICC_MHU_MCP2MCP_SEND_FRAME_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
-    // HW Semaphore region on DIE0
+    // IOSS region on DIE0
     {
-        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_END_ADDR,
+        .ap_base_address = AP_TOP_D0_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_D0_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
-    // HW Semaphore region on DIE1
+    // IOSS region on DIE1
     {
-        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS + IOSS_TOP_IOSS_CSR_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE1_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE1_END_ADDR,
+        .ap_base_address = AP_TOP_D1_VAB_CDED_IOSS_ADDRESS + VAB_CDED_IOSS_TOP_IOSS_ADDRESS,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_IOSS_D1_END_ADDR,
         .attribute = {ATU_BUS_ATTR_ROOT},
     },
     // CHBCR for CXL

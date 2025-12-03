@@ -22,6 +22,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_handler
         ms::lib::hsp_firmware_headers
         ms::lib::tower
+        ms::service::atu_service
         ms::service::health_monitor
         silibs::atu
         silibs::idhw

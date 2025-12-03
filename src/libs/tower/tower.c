@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 
 #include <accelerator_ip.h>
+#include <atu_api.h>
 #include <atu_lib.h> // for atu_map, atu_unmap, atu_map_entry_t
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
@@ -347,10 +348,9 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     }
 
     // IOSS tower
-    printf("Configure IOSS tower ATU map\n");
-    atu_map_entry_t ioss_tower_map = ATU_MAPPING_IOSS_TOWER((die_num == 0 ? D0_IOSS : D1_IOSS));
-    BUG_ASSERT(!atu_map(ATU_ID_MSCP, &ioss_tower_map));
-    tower_sequence_params.tower_ioss_tower_resolved_addr = ioss_tower_map.mscp_start_address;
+    // Assume IOSS mapping is always present
+    tower_sequence_params.tower_ioss_tower_resolved_addr =
+        (die_num == 0 ? MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR : MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR);
     tower_sequence_params.tower_configure_ioss_sam = !is_warm_start;
     tower_sequence_params.tower_configure_ioss_apu = !is_warm_start;
     tower_sequence_params.tower_configure_ioss_fmu = true;
@@ -399,6 +399,5 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         }
     }
     BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &sdmss_tower_map));
-    BUG_ASSERT(!atu_unmap(ATU_ID_MSCP, &ioss_tower_map));
     printf("Towers unmapped\n");
 }

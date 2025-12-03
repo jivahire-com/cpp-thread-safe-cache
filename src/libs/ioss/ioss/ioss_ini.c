@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include "ioss_ini.h"
 
+#include <atu_api.h>
 #include <atu_lib.h>
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
@@ -29,9 +30,6 @@
 /*------------- Typedefs -----------------*/
 
 /*-- Declarations (Statics and globals) --*/
-// D0-IOSS0
-static atu_map_entry_t atu_ioss_map = ATU_MAPPING_IOSS_TOP(0);
-
 static USB_CFG_DATA uefi_knobs;
 static usb_cfg_t usb_prod_knobs = DEFAULT_USB_CFG_T;
 static var_service_req_ctx_t req_ctx = {};
@@ -50,10 +48,7 @@ void ioss_ini()
 {
     silibs_status_t sts = SILIBS_SUCCESS;
 
-    sts = atu_map(ATU_ID_MSCP, &atu_ioss_map);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
-
-    uint32_t resolved_ioss_base_addr = atu_ioss_map.mscp_start_address;
+    uint32_t resolved_ioss_base_addr = MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR;
 
     // Override USB and GPIO knobs
     usb_prod_knobs = config_get_usb_knobs();
@@ -101,8 +96,5 @@ void ioss_ini()
 
     // Enable IOSS IPs
     sts = ioss_init(D0_IOSS, &init);
-    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
-
-    sts = atu_unmap(ATU_ID_MSCP, &atu_ioss_map);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 }

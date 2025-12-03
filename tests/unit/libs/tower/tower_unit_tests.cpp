@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h> // for expect_value, check_expected, CmockaWra...
+#include <atu_api.h>
 #include <fpfw_cfg_mgr.h>
 
 extern "C" {
@@ -114,7 +115,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -181,7 +184,9 @@ TEST_FUNCTION(test_tower_sequence_init_die1_silicon, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -248,7 +253,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -315,7 +322,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_1d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -382,7 +391,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -449,7 +460,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -516,7 +529,9 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -583,7 +598,9 @@ TEST_FUNCTION(test_tower_sequence_init_die1_emu_2d_8c, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -649,7 +666,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -713,7 +732,9 @@ TEST_FUNCTION(test_tower_sequence_init_die1_fpga, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -780,7 +801,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -847,7 +870,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_svp_sdm_isolation_enable, nullptr, n
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -914,7 +939,9 @@ TEST_FUNCTION(test_tower_sequence_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -976,7 +1003,9 @@ TEST_FUNCTION(test_tower_sequence_init_die0_invalid_platform, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -1038,7 +1067,9 @@ TEST_FUNCTION(test_tower_sequence_init_die1_invalid_platform, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, true);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -1129,7 +1160,9 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -1219,7 +1252,9 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die0_svp_isolation_enable, n
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 
@@ -1310,7 +1345,9 @@ TEST_FUNCTION(test_tower_sequence_cdedss_tower_init_die1_svp, nullptr, nullptr)
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_sam, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_apu, true);
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_configure_ioss_fmu, false);
-    expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->tower_ioss_tower_resolved_addr, 0xffffffff);
+    expect_value(__wrap_tower_sequence_configure_towers,
+                 tower_sequence_param->tower_ioss_tower_resolved_addr,
+                 MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR);
 
     expect_value(__wrap_tower_sequence_configure_towers, tower_sequence_param->die_id, test_die);
 

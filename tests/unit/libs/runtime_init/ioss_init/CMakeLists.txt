@@ -27,6 +27,8 @@ target_link_libraries(${TARGET}
         silibs::usb_init
         ms::lib::variable_services
         ms::lib::error_codes
+        ms::service::atu_service
+        ms::lib::crash_dump
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")

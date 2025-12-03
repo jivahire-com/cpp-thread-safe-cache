@@ -25,7 +25,7 @@
 /*------------- Functions ----------------*/
 FPFW_INIT_COMPONENT(boot_notify, FPFW_INIT_DEPENDENCIES("icc_sdm_mbx", "icc_cded_mbx", "sysinfo"))
 {
-    if (system_info_is_warm_start())
+    if (system_info_is_warm_start() || IS_PLATFORM_SVP())
     {
         return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
     }

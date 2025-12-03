@@ -182,7 +182,7 @@ Function Install-AzCli()
 Function Install-Nuget()
 {
     $Message = "NuGet"
-    $Message = $Message + (" " + "." * (80 - $Message.Length) + " ")
+    $Message = $Message + (" " + "." * (70 - $Message.Length) + " ")
     Write-Host $Message -NoNewLine -ForegroundColor Cyan
 
     $toolsDir = "$env:REPO_APP_EXTERNS_DIR/tools"

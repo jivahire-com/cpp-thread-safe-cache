@@ -13,6 +13,7 @@
 #include <idhw.h>
 #include <idsw_kng.h>
 #include <ioss_csr_regs.h>
+#include <ioss_top_regs.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -46,7 +47,8 @@ KNG_STATUS init_hw_semaphore()
         // Set semaphore group base address for DIE0 IOSS
         // Kingsgate does not support single-die DIE1 only boot.
         silibs_status = set_semaphore_group_base(SEM_GRP_ID_DIE0_IOSS,
-                                                 MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR + IOSS_CSR_SEMAPHORE_0_GET_ADDRESS);
+                                                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR + IOSS_TOP_IOSS_CSR_ADDRESS +
+                                                     IOSS_CSR_SEMAPHORE_0_GET_ADDRESS);
 
         max_semaphore_id = SEM_ID_DIE0_IOSS_7;
     }
@@ -54,13 +56,14 @@ KNG_STATUS init_hw_semaphore()
     {
         // Set semaphore group base address for DIE0 IOSS
         silibs_status = set_semaphore_group_base(SEM_GRP_ID_DIE0_IOSS,
-                                                 MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE_BASE_ADDR + IOSS_CSR_SEMAPHORE_0_GET_ADDRESS);
+                                                 MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR + IOSS_TOP_IOSS_CSR_ADDRESS +
+                                                     IOSS_CSR_SEMAPHORE_0_GET_ADDRESS);
 
         if (silibs_status == SILIBS_SUCCESS)
         {
             // Set semaphore group base address for DIE1 IOSS
             silibs_status = set_semaphore_group_base(SEM_GRP_ID_DIE1_IOSS,
-                                                     MSCP_ATU_AP_WINDOW_IOSS_SEMAPHORE1_BASE_ADDR +
+                                                     MSCP_ATU_AP_WINDOW_IOSS_D1_BASE_ADDR + IOSS_TOP_IOSS_CSR_ADDRESS +
                                                          IOSS_CSR_SEMAPHORE_0_GET_ADDRESS);
         }
     }

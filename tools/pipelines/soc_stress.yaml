@@ -1,0 +1,64 @@
+
+name: $(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd).$(Rev:r)
+
+trigger: none
+
+resources:
+  pipelines:
+  - pipeline: CIPipeline
+    source: Kingsgate.MSCP-Official
+    branch: main  
+
+variables:
+- group: ef-pipeline-config-azurekv    # Centralized PAT Library Group
+- name: OfficialBuild
+  value : $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+- name: BUILD_ID
+  value : $(resources.pipeline.CIPipeline.runID)
+- ${{ if variables['OfficialBuild'] }}:
+  - name: BuildVersion
+    value: $[ variables['Build.BuildNumber'] ]
+- ${{ else }}:
+  - name: BuildVersion
+    value:  $[format('{0}-dev', variables['Build.BuildNumber'])]
+- name: tdk_repo_name
+  value: pythia_tdks
+- name: azure_subscription
+  value: "Test Firmware Central 2-Woodinville"
+- name: nuget_service_connections
+  value: ""
+- name: keyvault_name
+  value: "chie-1pfw"
+- name: tdk_repo_name
+  value: "$(System.DefaultWorkingDirectory)/"
+
+stages:
+- stage: SOC_Weekend_Stress_DualDie_Tests_0
+  dependsOn: []
+  jobs:
+  - template: templates/soc_pythia_test.yaml
+    parameters:
+      ArtifactName: SOC_Weekend_Stress_DualDie_Tests_0
+      build_id: $(BUILD_ID)
+      TestPlan: .\tests\functional\test_plan\soc_dual_die_0_weekend_test_plan.args
+      TestVehicleCapability: 'SocDualDie'
+      Pool: '1pfw-kingsgate-soc'
+      tdk_repo_name: ${{ variables.tdk_repo_name }}
+      azure_subscription: ${{ variables.azure_subscription }}
+      nuget_service_connections: ${{ variables.nuget_service_connections }}
+      keyvault_name: ${{ variables.keyvault_name }}
+
+- stage: SOC_Weekend_Stress_DualDie_Tests_1
+  dependsOn: []
+  jobs:
+  - template: templates/soc_pythia_test.yaml
+    parameters:
+      ArtifactName: SOC_Weekend_Stress_DualDie_Tests_1
+      build_id: $(BUILD_ID)
+      TestPlan: .\tests\functional\test_plan\soc_dual_die_1_weekend_test_plan.args
+      TestVehicleCapability: 'SocDualDie'
+      Pool: '1pfw-kingsgate-soc'
+      tdk_repo_name: ${{ variables.tdk_repo_name }}
+      azure_subscription: ${{ variables.azure_subscription }}
+      nuget_service_connections: ${{ variables.nuget_service_connections }}
+      keyvault_name: ${{ variables.keyvault_name }}

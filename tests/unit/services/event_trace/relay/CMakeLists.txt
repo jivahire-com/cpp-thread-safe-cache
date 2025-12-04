@@ -59,6 +59,7 @@ mock_target(${TARGET}
     idsw_get_die_id
 
     SCB_InvalidateDCache_by_Addr
+    SCB_CleanDCache_by_Addr
 
     FPFwETControllerRecycleBuffer
 )

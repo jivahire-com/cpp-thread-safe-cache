@@ -34,7 +34,7 @@ extern "C" {
 
 /*--------- Function Prototypes ----------*/
 
-int test_setup(void** ppContext);
+int test_setup_die0(void** ppContext);
 int test_teardown(void** ppContext);
 
 /*-- Declarations (Statics and globals) --*/
@@ -105,7 +105,7 @@ uint8_t __wrap_idsw_get_die_id(void)
 
 uint32_t __wrap_mts_get_this_core_id(void)
 {
-    return 0x01; // Mocked to return core ID 0x01 for testing purposes
+    return CPU_MCP;
 }
 
 bool __wrap_transfer_rly_is_primary_node(void)
@@ -130,7 +130,7 @@ void __wrap_mts_client_send_new_trp_msg(p_trp_msg_t trp_msg)
 {
     FPFW_UNUSED(trp_msg);
 
-    // Do Nothing - just an empty mock
+    function_called();
 }
 
 void __wrap_mts_client_forward_trp_msg(p_trp_msg_t trp_msg, trp_broadcast_t broadcast_option)
@@ -163,6 +163,14 @@ void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
 }
 
 void __wrap_SCB_InvalidateDCache_by_Addr(uint32_t* addr, int32_t dsize)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(dsize);
+
+    function_called();
+}
+
+void __wrap_SCB_CleanDCache_by_Addr(uint32_t* addr, int32_t dsize)
 {
     FPFW_UNUSED(addr);
     FPFW_UNUSED(dsize);
@@ -233,11 +241,8 @@ _Noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint
 }
 
 } // extern "C"
-
-int test_setup(void** ppContext)
+static inline void test_setup_common()
 {
-    FPFW_UNUSED(ppContext);
-
     memset(&s_test_context, 0, sizeof(s_test_context));
     memset(&s_asic_ddr_memory, 0, sizeof(s_asic_ddr_memory));
     memset(&s_hsp_ddr_memory, 0, sizeof(s_hsp_ddr_memory));
@@ -276,6 +281,28 @@ int test_setup(void** ppContext)
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
 
     etr_initialize(&s_test_context, &s_test_config);
+}
+
+int test_setup_die0(void** ppContext)
+{
+    FPFW_UNUSED(ppContext);
+
+    will_return_always(__wrap_transfer_rly_is_primary_node, true);
+    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
+
+    test_setup_common();
+
+    return TX_SUCCESS;
+}
+
+int test_setup_die1(void** ppContext)
+{
+    FPFW_UNUSED(ppContext);
+
+    will_return_always(__wrap_transfer_rly_is_primary_node, false);
+    will_return_always(__wrap_mts_get_this_die_id, DIE_1);
+
+    test_setup_common();
 
     return TX_SUCCESS;
 }
@@ -353,7 +380,7 @@ TEST_FUNCTION(test_etr_init_bad_ddr_config, nullptr, nullptr)
     }
 }
 
-TEST_FUNCTION(test_etr_init_nominal, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_init_nominal, test_setup_die0, test_teardown)
 {
     // validate that the ddr buffer information was setup
     for (uint32_t i = 0; i < TEST_ASIC_COUNT; i++)
@@ -412,7 +439,7 @@ trp_msg_t trp_msg = {
                     }},
 };
 
-TEST_FUNCTION(test_etr_process_request_unsupported_id, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_unsupported_id, test_setup_die0, test_teardown)
 {
     // Reset the message type to an unsupported ID
     trp_msg.hdr.trp_msg_id = 0xFF;
@@ -430,15 +457,13 @@ TEST_FUNCTION(test_etr_process_request_unsupported_id, test_setup, test_teardown
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_E_PARAM
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
 }
 
-TEST_FUNCTION(test_etr_process_request_copy_buffer_invalid_core, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_copy_buffer_invalid_core, test_setup_die0, test_teardown)
 {
     // Test with AP Core
     trp_msg.hdr.src_node.core_id = CPU_AP;
@@ -460,15 +485,13 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_invalid_core, test_setup, tes
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_E_PARAM
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
 }
 
-TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup_die0, test_teardown)
 {
     // Test with SDM Core
     trp_msg.hdr.src_node.core_id = CPU_SDM;
@@ -493,8 +516,6 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup, 
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     etr_ddr_buffer_state_t post_request_state = s_test_context.p_active_asic_buffer->state;
@@ -507,7 +528,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup, 
     assert_memory_equal(&fake_core_buffer, asic_buffer_addr, sizeof(fake_core_buffer));
 }
 
-TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_die0, test_teardown)
 {
     // Run test case with CDED Core.
     trp_msg.hdr.src_node.core_id = CPU_CDED_SDM;
@@ -535,9 +556,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup,
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    // Set up expectations for mts_get_this_die_id
-    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
-
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -552,7 +571,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup,
     assert_memory_equal(&p_old_asic_buffer->buffer.asic, p_old_asic_buffer->payload_management.base_addr, sizeof(asic_buffer_info_t));
 }
 
-TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup_die1, test_teardown)
 {
     // Run test case with CDED Core.
     trp_msg.hdr.src_node.core_id = CPU_CDED_SDM;
@@ -580,8 +599,9 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup,
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    // Set up expectations for mts_get_this_die_id
-    will_return_always(__wrap_mts_get_this_die_id, DIE_1);
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
+
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -595,7 +615,7 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup,
     assert_memory_equal(&p_old_asic_buffer->buffer.asic, p_old_asic_buffer->payload_management.base_addr, sizeof(asic_buffer_info_t));
 }
 
-TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die0, test_teardown)
 {
     // Run test case with SCP Core
     trp_msg.hdr.src_node.core_id = CPU_SCP;
@@ -634,11 +654,9 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    // Set up expectations for mts_get_this_die_id
-    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
-
     // Since SCP, expect a Cache Invalidate call
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -650,9 +668,8 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup, te
     assert_int_equal(s_test_context.health_stats.asic_buffers_reused, 1);
 }
 
-TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup_die0, test_teardown)
 {
-    // Test with SDM Core
     trp_msg.hdr.src_node.core_id = CPU_MCP;
     trp_msg.hdr.src_node.die_id = DIE_1;
     fake_core_buffer.CoreId = CPU_MCP;
@@ -673,17 +690,19 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup, t
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
     etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of DCP Message status is set to DATA_COLLECTION_RD_DATA_NONE
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_NONE);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_E_PARAM
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
 }
 
-TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending_die1, test_setup_die1, test_teardown)
 {
-    // Test with SDM Core
     trp_msg.hdr.src_node.core_id = CPU_MCP;
     trp_msg.hdr.src_node.die_id = DIE_0;
     fake_core_buffer.CoreId = CPU_MCP;
@@ -711,17 +730,14 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending, tes
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return_always(__wrap_mts_get_this_die_id, DIE_1);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
-    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
-    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+    // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
 }
 
-TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete, test_setup_die0, test_teardown)
 {
-    // Test with SDM Core
     trp_msg.hdr.src_node.core_id = CPU_MCP;
     trp_msg.hdr.src_node.die_id = DIE_0;
     trp_msg.payload.read_intercore_block_complete.block_id = 0;
@@ -743,19 +759,16 @@ TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete, test_setup
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
-
     will_return(__wrap_FPFwETControllerRecycleBuffer, FPFW_STATUS_SUCCESS);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
-    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
-    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+    // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
 }
 
-TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete_invalid_block, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete_invalid_block, test_setup_die1, test_teardown)
 {
-    // Test with SDM Core
     trp_msg.hdr.src_node.core_id = CPU_MCP;
     trp_msg.hdr.src_node.die_id = DIE_0;
     trp_msg.payload.read_intercore_block_complete.block_id = 3;
@@ -777,17 +790,14 @@ TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete_invalid_blo
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
-    // Expect that the status of TRP Message status is set to TRP_STATUS_E_PARAM
-    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+    // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
 }
 
-TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address_die1, test_setup_die1, test_teardown)
 {
-    // Test with SDM Core
     trp_msg.hdr.src_node.core_id = CPU_MCP;
     trp_msg.hdr.src_node.die_id = DIE_1;
     fake_core_buffer.CoreId = CPU_MCP;
@@ -814,12 +824,139 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address, te
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_1);
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
+}
+
+TEST_FUNCTION(test_etr_process_request_read_package_notification, test_setup_die0, test_teardown)
+{
+    trp_msg.hdr.src_node.core_id = CPU_MCP;
+    trp_msg.hdr.src_node.die_id = DIE_1;
+    fake_core_buffer.CoreId = CPU_MCP;
+
+    // Reset the message type to package notification
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_PACKAGE_NOTIFICATION;
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+}
+
+TEST_FUNCTION(test_etr_process_request_read_package_no_pending_buffer, test_setup_die1, test_teardown)
+{
+    // Test with MCP Core
+    trp_msg.hdr.src_node.core_id = CPU_MCP;
+    trp_msg.hdr.src_node.die_id = DIE_0;
+    fake_core_buffer.CoreId = CPU_MCP;
+
+    // Reset the message type to read package
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE;
+
+    // Fake out the active buffer to be free
+    s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_FREE;
+
+    // Set an invalid address for the host read request
+    trp_msg.payload.read_package_complete.phy_addr_offset = 0xDEADBEEF; // Invalid address
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
-    // Expect that the status of TRP Message status is set to DATA_COLLECTION_RD_DATA_NONE
+    // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
+}
+
+TEST_FUNCTION(test_etr_process_request_read_package_buffer_pending, test_setup_die1, test_teardown)
+{
+    // Test with MCP Core
+    trp_msg.hdr.src_node.core_id = CPU_MCP;
+    trp_msg.hdr.src_node.die_id = DIE_0;
+    fake_core_buffer.CoreId = CPU_MCP;
+
+    // Reset the message type to read package
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE;
+
+    // Fake out the active buffer to be pending
+    s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
+
+    // Set a good address for the host read request
+    trp_msg.payload.read_package_complete.phy_addr_offset =
+        s_test_context.p_active_asic_buffer->payload_management.base_addr;
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_etr_process_request_read_package_response, test_setup_die0, test_teardown)
+{
+    trp_msg.hdr.src_node.core_id = CPU_MCP;
+    trp_msg.hdr.src_node.die_id = DIE_0;
+    fake_core_buffer.CoreId = CPU_MCP;
+
+    // Reset the message type to read package response
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_RESPONSE;
+
+    // Fake out the active buffer to be pending
+    s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
+
+    // Set a good address for the host read request
+    trp_msg.payload.read_package_complete.phy_addr_offset = 0xDEADBEEF; // Invalid address
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 trp_msg_t trp_msg_host = {.hdr = {
@@ -838,7 +975,7 @@ trp_msg_t trp_msg_host = {.hdr = {
                               .payload_size = sizeof(fake_core_buffer),
                           }};
 
-TEST_FUNCTION(test_etr_process_request_host_request_capabilities, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_host_request_capabilities, test_setup_die0, test_teardown)
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_CAPABILITIES;
 
@@ -855,17 +992,13 @@ TEST_FUNCTION(test_etr_process_request_host_request_capabilities, test_setup, te
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
-
-    will_return_always(__wrap_transfer_rly_is_primary_node, true);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to success
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_etr_process_request_host_request_state, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_host_request_state, test_setup_die0, test_teardown)
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
 
@@ -882,17 +1015,13 @@ TEST_FUNCTION(test_etr_process_request_host_request_state, test_setup, test_tear
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
-
-    will_return_always(__wrap_transfer_rly_is_primary_node, true);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
-    // Expect that the status of TRP Message status is set to success
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_etr_process_request_host_request_invalid, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_host_request_invalid, test_setup_die0, test_teardown)
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_START_STOP;
 
@@ -909,17 +1038,13 @@ TEST_FUNCTION(test_etr_process_request_host_request_invalid, test_setup, test_te
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
-
-    will_return_always(__wrap_transfer_rly_is_primary_node, true);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_E_DCP_ERROR
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_E_DCP_ERROR);
 }
 
-TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup_die0, test_teardown)
 {
     s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_READ_DATA;
@@ -941,10 +1066,6 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
-
-    will_return_always(__wrap_transfer_rly_is_primary_node, true);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of the dcp read data request is set to success, and TRP Message status is set to success
@@ -952,7 +1073,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending_primary_etr, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending_primary_etr, test_setup_die0, test_teardown)
 {
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -963,21 +1084,22 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending_primary_
     will_return(set_tx_queue_receive_value, &trp_msg_host);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
 
+    // Fake out the active buffer to be free
+    s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_FREE;
+
+    // Set an invalid address for the host read request
+    trp_msg.payload.read_package_complete.phy_addr_offset = 0xDEADBEEF; // Invalid address
+
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return_always(__wrap_mts_get_this_die_id, DIE_0);
-    will_return_always(__wrap_transfer_rly_is_primary_node, true);
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
     etr_worker_thread_func((ULONG)&s_test_context);
-
-    // Expect that the status of the dcp read data request is set to success, and TRP Message status is set to success
-    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_NONE);
-    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, test_setup_die0, test_teardown)
 {
     s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_READ_DATA_COMPLETE;
@@ -999,10 +1121,6 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
-
-    will_return_always(__wrap_transfer_rly_is_primary_node, true);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the active buffer is set to free
@@ -1013,7 +1131,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, test_setup_die0, test_teardown)
 {
     s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_READ_DATA_COMPLETE;
@@ -1034,9 +1152,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, 
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    will_return(__wrap_mts_get_this_die_id, DIE_0);
-
-    will_return_always(__wrap_transfer_rly_is_primary_node, true);
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -1047,7 +1163,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, 
     assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_NONE);
 }
 
-TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup_die0, test_teardown)
 {
     // The HSP ICC interface simply handles a request, sends a response, and sets up another receive
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -1063,16 +1179,19 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup, test_teardown)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     etr_set_override_atu_test_address(&test_payload);
 
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_etr_icc_handle_hsp_secondary_die, test_setup, test_teardown)
+TEST_FUNCTION(test_etr_icc_handle_hsp_secondary_die, test_setup_die1, test_teardown)
 {
     // The HSP ICC interface simply handles a request, sends a response, and sets up another receive
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
     static hsp_log_payload_header_t test_payload = {
         .output_header =
@@ -1083,6 +1202,8 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_secondary_die, test_setup, test_teardown)
     };
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
     etr_set_override_atu_test_address(&test_payload);
+
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
     etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
 }

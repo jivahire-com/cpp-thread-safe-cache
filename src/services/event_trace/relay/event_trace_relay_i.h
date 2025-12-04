@@ -22,16 +22,6 @@
 /*--------------------------- Function Prototypes ---------------------------*/
 
 /**
- * @brief Process a request from the thread request queue.
- *
- * @param p_context  The service context.
- * @param p_request  The request data.
- * @param request_type The type of request being processed.
- * @return None
- */
-void etr_process_request(etr_service_context_t* p_context, etr_service_request_t* p_request, ETR_SERVICE_REQUEST_TYPE request_type);
-
-/**
  * @brief Handle an incoming HSP message.
  * @note This function is non-static only for unit testing purposes.
  *
@@ -49,6 +39,13 @@ void etr_icc_handle_hsp(void* context, size_t output_size_bytes, fpfw_status_t s
  * @return None -> This function runs in an infinite loop, so should never return
  */
 void etr_worker_thread_func(ULONG thread_input);
+
+/**
+ * @brief Notify that a HSP DDR buffer or an ASIC DDR buffer is available to be read.
+ *
+ * @return None
+ */
+void notify_ddr_buffer_available();
 
 #ifdef _WIN32   // Unit Test Only
 /**

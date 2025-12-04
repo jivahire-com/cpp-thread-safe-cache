@@ -12,6 +12,7 @@
 
 #include <IFpFwEventTracingStatus.h>
 #include <bug_check.h>
+#include <cmsis_m7.h>
 #include <event_trace_relay_events.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
@@ -92,9 +93,13 @@ static fpfw_status_t etr_copy_hsp_telemetry(etr_service_context_t* p_service_con
                                                                  p_payload_header->output_header.log_size +
                                                                  (uint64_t)sizeof(hsp_log_payload_header_t);
 
-            memcpy((void*)p_active_hsp_buffer->payload_management.base_addr,
-                   (void*)p_payload_header,
-                   p_active_hsp_buffer->payload_management.size_bytes);
+            void* src = (void*)p_payload_header;
+            void* dst = (void*)p_active_hsp_buffer->payload_management.base_addr;
+            size_t size = p_active_hsp_buffer->payload_management.size_bytes;
+            memcpy(dst, src, size);
+
+            /* Flush Cache so that the data is written to DDR - Address and size aligned to 32 Byte boundaries */
+            SCB_CleanDCache_by_Addr((uint32_t*)FPFW_ALIGN_BY(32, (uint32_t)dst), (int32_t)FPFW_ALIGN_BY(32, size));
 
             /* Log the contents of payload_header */
             FPFW_ET_LOG(HspBufferProc,
@@ -140,7 +145,6 @@ void etr_icc_handle_hsp(void* context, size_t output_size_bytes, fpfw_status_t s
 
     /* ATU Map the payload address */
     p_hsp_log_payload_header_t hsp_payload_atu_addr = decode_hsp_telemetry_atu_mapped_address(hsp_payload_addr);
-    FPFW_ET_LOG(HspReq, hsp_payload_addr, (uint32_t)hsp_payload_atu_addr);
 
 #ifdef _WIN32 // Unit Test Only
     if (override_atu_test_addr != NULL)
@@ -151,19 +155,10 @@ void etr_icc_handle_hsp(void* context, size_t output_size_bytes, fpfw_status_t s
     /* Copy the payload data to the appropriate location */
     fpfw_status_t status_copy_hsp_buffer = etr_copy_hsp_telemetry(p_service_context, hsp_payload_atu_addr);
 
-    /* Send a notification to AP */
-    if (idsw_get_die_id() == DIE_0)
+    /* Send a notification to that a HSP Buffer is available */
+    if (status_copy_hsp_buffer == FPFW_STATUS_SUCCESS)
     {
-        if (status_copy_hsp_buffer == FPFW_STATUS_SUCCESS)
-        {
-            FPFW_ET_LOG_ETR_ASCII_INFO("Die 0 - notifying AP");
-            mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
-        }
-    }
-    else
-    {
-        FPFW_ET_LOG_ETR_ASCII_INFO("Die 1 - notifying MCP D0");
-        /* This is a stub, update later (TODO) */
+        notify_ddr_buffer_available();
     }
 }
 

@@ -49,13 +49,9 @@
 
 /**
  * Sizing and capacity for DDR Buffers
- * - How big, including the Diag Header and any HSP Headers, the DDR Buffer Payload is.
  * - How many DDR Buffers we can fit into DDR.
 */
-#define ETR_CORE_BUFFERS_CAPACITY (8)
 #define ETR_DDR_BUFFERS_CAPACITY_MAX (ASIC_BUFFER_DDR_CAPACITY_MAX + HSP_BUFFER_DDR_CAPACITY_MAX)
-
-#define ETR_WORK_QUEUE_CAPACITY (ETR_CORE_BUFFERS_CAPACITY + ETR_DDR_BUFFERS_CAPACITY_MAX)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -65,8 +61,7 @@ typedef struct
     uint32_t die_id;
 } soc_info_t;
 
-// Ensure the soc_id size matches the FPFW_ET_ASIC_BUFFER_HEADER::SocId size
-// and that the ECID struct can fit into the soc_id array
+// Ensure the soc_id size matches the FPFW_ET_ASIC_BUFFER_HEADER::SocId size and that the ECID struct can fit into the soc_id array
 static_assert(sizeof(((soc_info_t *)0)->soc_id) == sizeof(((FPFW_ET_ASIC_BUFFER_HEADER*)0)->SocId), "SocId needs to match size of FPFW_ET_ASIC_BUFFER_HEADER::SocId");
 static_assert(sizeof(((soc_info_t *)0)->soc_id) >= sizeof(ecid_t), "SocId needs to be able to fit the ECID");
 
@@ -103,14 +98,6 @@ typedef struct {
         hsp_buffer_info_t hsp;
     } buffer;
 } ddr_buffer_info_t, *p_ddr_buffer_info_t;
-
-/* Types of requests the ETR Worker Thread Processes */
-typedef enum
-{
-    ETR_SERVICE_REQUEST_TYPE_COPY_BUFFER,
-    ETR_SERVICE_REQUEST_TYPE_HOST_READ,
-    ETR_SERVICE_REQUEST_TYPE_INVALID
-} ETR_SERVICE_REQUEST_TYPE;
 
 typedef struct {
     p_trp_msg_t p_trp_msg; // Pointer to the TRP message to process

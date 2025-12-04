@@ -82,7 +82,6 @@ void et_mts_worker_thread_func(ULONG thread_input)
              * FPFwETControllerRecycleBuffer will handle error management
              * An error in this case would indicate that the processing time from the MCP exceeds the time
              * taken to fill the buffer, consider increasing the buffer size in that case.*/
-            ET_LOG_ET_SVC(MTSClientInfo, "Read Intercore Block Complete");
             if (p_trp_msg->payload.read_intercore_block_complete.block_id >= ETC_SERVICE_CORE_BUFFER_COUNT)
             {
                 /* Invalid Block ID, report error and drop the message */
@@ -94,8 +93,6 @@ void et_mts_worker_thread_func(ULONG thread_input)
             {
                 /* Recycle the buffer */
                 uint32_t buffer_id = p_trp_msg->payload.read_intercore_block_complete.block_id;
-                ET_LOG_ET_SVC(MTSClientInfo, "Recycling Buff %" PRIu32, buffer_id);
-
                 FPFW_ET_STATUS status = FPFwETControllerRecycleBuffer(FPFwETGetController(), buffer_id);
                 BUG_ASSERT_PARAM(status == FPFW_ET_SUCCESS, status, buffer_id);
             }
@@ -207,7 +204,8 @@ fpfw_status_t et_mts_notify_buffer_complete(void* p_buffer, etc_service_completi
     /* Flush Cache on SCP since data is read on the other side of the (cached) EXP RAM */
     if (core_id == CPU_SCP)
     {
-        SCB_CleanDCache_by_Addr((uint32_t*)et_buffer_addr, block_size);
+        /* Flush Cache so that the data is written to memory - Address and size aligned to 32 Byte boundaries */
+        SCB_CleanDCache_by_Addr((uint32_t*)FPFW_ALIGN_BY(32, et_buffer_addr), FPFW_ALIGN_BY(32, block_size));
     }
 
     mts_client_send_new_trp_msg(&send_msg);

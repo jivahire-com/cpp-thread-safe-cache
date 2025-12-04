@@ -11,6 +11,7 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         IFPFW.EventTracing
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.specialization.mts
         fwlib.service.iccBase

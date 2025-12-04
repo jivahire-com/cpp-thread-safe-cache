@@ -190,12 +190,10 @@ sequenceDiagram
             ETR -->> ETR: Complete ASIC buffer, mark as pending
             ETR -->> ETR: Switch to new ASIC Buffer
             alt On Die 0
-                ETR -->> Host: DCP Message (DCP_NOTIFICATION_TYPE_DATA_AVAILABLE)
-                ETR -->> Host: Buffer Location and Description
+                ETR -->> Host: DCP Message (DCP_NOTIFICATION_TYPE_DATA_AVAILABLE with address, size, crc)
             end
             alt On Die 1
                 ETR -->> Primary ETR: TRP Message (TRP_MSG_ID_PACKAGE_NOTIFICATION)
-                ETR -->> Primary ETR: Buffer Location and Description
             end
         end
         ETR -->> DDR: Copy Core's ET Buffer to DDR ASIC Buffer
@@ -222,13 +220,14 @@ sequenceDiagram
     
     alt SoC ASIC Buffer Full
         ETR -->> ETR: Mark ASIC Buffer as PENDING
-        ETR -->> Host: DCP Message DCP_NOTIFICATION_TYPE_DATA_AVAILABLE
-        ETR -->> Host: Buffer Location and Description
+        ETR -->> Host: DCP Message DCP_NOTIFICATION_TYPE_DATA_AVAILABLE with address, size, crc
         ETR -->> ETR: Fetch free ASIC Buffer
         ETR -->> ETR: Start populating new ASIC Buffer
     end
         
     note over ETR, DDR: Sometime later
+    Host -->> ETR: DCP_MSG_ID_READ_DATA
+    ETR -->> Host: Response to DCP_MSG_ID_READ_DATA with address, size, crc
     Host -->> DDR: Read ASIC Buffer
     Host -->> ETR: DCP Message DCP_MSG_ID_READ_DATA_COMPLETE
     ETR -->> ETR: Free ASIC Buffer
@@ -265,7 +264,7 @@ sequenceDiagram
                 ETR -->> ETR: Complete ASIC buffer, mark as pending
                 ETR -->> ETR: Switch to new ASIC Buffer
                 alt On Die 0
-                    ETR -->> Host: DCP Message (DCP_NOTIFICATION_TYPE_DATA_AVAILABLE)
+                    ETR -->> Host: DCP Message (DCP_NOTIFICATION_TYPE_DATA_AVAILABLE with address, size, crc)
                 end
                 alt On Die 1
                     ETR -->> Primary ETR: TRP Message (TRP_MSG_ID_PACKAGE_NOTIFICATION)
@@ -278,10 +277,38 @@ sequenceDiagram
     end
         
     note over ETR, DDR: When DCP_NOTIFICATION_TYPE_DATA_AVAILABLE received
+    Host -->> ETR: DCP_MSG_ID_READ_DATA
+    ETR -->> Host: Response to DCP_MSG_ID_READ_DATA with address, size, crc
     Host -->> DDR: Read ASIC Buffer
     Host -->> ETR: DCP Message DCP_MSG_ID_READ_DATA_COMPLETE
     ETR -->> ETR: Free ASIC Buffer
 :::
+
+#### Event Trace Telemetry for a remote ETR (ETR not on MCP 0)
+
+In the case of the remote ETR, data cannot be directly transmitted to the Host via DCP. In this case, the remote ETR communicates to the primary ETR, which manages the DCP interface with the host. The following diagram illustrates the sequence with which the remote ETR communicates to the host via the primary ETR.
+
+:::mermaid
+sequenceDiagram
+    participant Remote ETR
+    participant Primary ETR
+    participant Host
+
+    alt ASIC Buffer Ready
+        Remote ETR -->> Primary ETR: TRP_MSG_ID_PACKAGE_NOTIFICATION
+        Primary ETR -->> Host: DCP_NOTIFICATION_TYPE_DATA_AVAILABLE
+    end
+
+    Host -->> Primary ETR: DCP_MSG_ID_READ_DATA
+    Primary ETR -->> Remote ETR: TRP_MSG_ID_READ_PACKAGE
+    Remote ETR -->> Primary ETR: TRP_MSG_ID_READ_PACKAGE_RESPONSE with address, size, crc
+    Primary ETR -->> Host: Response to DCP_MSG_ID_READ_DATA
+    Host -->> DDR: Read ASIC buffer from Remote ETR
+    Host -->> Primary ETR: DCP_MSG_ID_READ_DATA_COMPLETE
+    Primary ETR -->> Remote ETR: TRP_MSG_ID_READ_PACKAGE_COMPLETE
+    Remote ETR -->> Remote ETR: Free up ASIC Buffer
+:::
+
 
 ## Event Trace Manifest
 

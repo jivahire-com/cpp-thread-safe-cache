@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 
 *** Settings ***
-Documentation    Verifies that power control loop health status reports no errors
+Documentation    Verifies that power telemetry loop health status reports no errors
 
 # Import the python library, class must match filename when filepaths of full files.
 # Importing also calls __init__().
@@ -14,7 +14,7 @@ Library     library.power_tests.mod_power_telemetry_loop_health
 ...         WITH NAME    mod_power_telemetry_loop_health_lib
 
 *** Test Cases ***
-Test Case - SCP: Power module functional tests
+Test Case - SCP: Power Telemetry Loop Health tests
     # Get an instance of the test library
     ${test_lib} =    Get Library Instance    mod_power_telemetry_loop_health_lib
     

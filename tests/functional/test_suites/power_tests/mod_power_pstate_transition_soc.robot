@@ -10,11 +10,11 @@ Library     library.power_tests.mod_power_pstate_transition
 ...         workspace_config=${WORKSPACE_CONFIG}
 ...         default_log_home=${LOG_DIR}
 ...         fw_payload_path=${PAYLOAD_DIR}
-...         host_config=${HOST_CONFIG_DIR}/hsp_scp_bl_embed_fw.json
+...         host_config=${HOST_CONFIG_DIR}/${HOST_FILE_NAME}
 ...         WITH NAME    mod_power_pstate_transition_lib
 
 *** Test Cases ***
-Test Case - SCP: Power Pstate Transition tests
+Test Case - SCP: Power module pstate transition test
     # Get an instance of the test library
     ${test_lib} =    Get Library Instance    mod_power_pstate_transition_lib
     

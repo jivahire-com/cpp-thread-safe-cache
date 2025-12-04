@@ -192,28 +192,29 @@ static uint16_t power_distribution_distribute_nominal(power_ctrl_loop_detail_t* 
                                                       unsigned* distributed_plimit)
 {
     uint16_t total_required_resources = 0;
-    *distributed_plimit = nominal_plimit;
+    *distributed_plimit = nominal_plimit; //! Initialize to nominal at 1st
 
     // loop through all throttling priorities attempting to distribute nominal performance
     for (unsigned throttle_pri_idx = 0; throttle_pri_idx < VM_THROT_COUNT; ++throttle_pri_idx)
     {
-        // we track the last distributed plimit for each priority, a lower priority can not be given a higher performance that previous priority
+        //! we track the last distributed plimit for each priority, a lower priority (higher number) can not
+        //! be given a higher performance than previous priority 0 is the highest priority & 7 is the lowest
         const unsigned last_distributed = *distributed_plimit;
         // find the number of cores at this priority level on local and remote core
         const unsigned total_cores_at_pri = (p_ctrlloop->local.pri_counts.throt_pri_count[throttle_pri_idx] +
                                              p_ctrlloop->remote.pri_counts.throt_pri_count[throttle_pri_idx]);
-        // track how many cores we have found with alternative base nominal perf levels as we climb from MAX_PLIMIT up to nominal
-        unsigned found_count_in_pri = 0;
-        // track the number of resources required so far to achieve nominal; only the found cores are included
-        unsigned found_required_resources = 0;
-        unsigned previous_required_for_remaining_cores = 0;
-
         if (total_cores_at_pri == 0)
         {
             // if there are no cores ar this priority, just assign the last distributed plimit to this priority
             p_per_pri_selections[throttle_pri_idx] = last_distributed;
             continue;
         }
+
+        // track how many cores we have found with alternative base nominal perf levels as we climb from MAX_PLIMIT up to nominal
+        unsigned found_count_in_pri = 0;
+        // track the number of resources required so far to achieve nominal; only the found cores are included
+        unsigned found_required_resources = 0;
+        unsigned previous_required_for_remaining_cores = 0;
 
         // search from MAX_PLIMIT up to nominal (or the last achieved plimit) to find the plimit that can be distributed to all cores at this priority
         for (unsigned plimit_idx = MAX_PLIMIT; plimit_idx >= last_distributed; plimit_idx--)
@@ -281,9 +282,11 @@ static void power_distribution_distribute_turbo(power_ctrl_loop_detail_t* p_ctrl
         // first loop is to bring all cores in this priority to nominal (cores that had base perf lower than nominal)
         for (unsigned plimit_idx = MAX_PLIMIT - 1; (plimit_idx > first_turbo_plimit) && (!exhausted); plimit_idx--)
         {
+            //! This is 1
             unsigned required_delta = PLIMIT_TO_RESOURCES(plimit_idx) - PLIMIT_TO_RESOURCES(plimit_idx + 1);
 
             // nominal and below entries in the required_for_boost table indicate cores with nominal at a particular plimit
+            //! for plimits above nominal (lower perf levels), required_for_boost retain their original values and are not accumulated.
             const unsigned cores_with_nominal_at_prev_plimit =
                 (p_ctrlloop->local.pri_counts.required_for_boost[plimit_idx + 1][boost_pri_idx] +
                  p_ctrlloop->remote.pri_counts.required_for_boost[plimit_idx + 1][boost_pri_idx]);
@@ -291,6 +294,8 @@ static void power_distribution_distribute_turbo(power_ctrl_loop_detail_t* p_ctrl
             // update found count to increase to this performance level
             found_count_in_pri += cores_with_nominal_at_prev_plimit;
 
+            //! We have already calculated resources required for cores with base perf at prev plimit in the nominal distribution
+            //! Now we are calculating additional resources required to raise the cores's perf to current plimit
             // cores with nominal at this plimit have already been accounted for in the nominal distribution, so we only need to account for cores found in previous iterations
             const unsigned required_resources = (required_delta * found_count_in_pri);
             if ((required_resources + total_required_resources) > p_ctrlloop->curr_resources)

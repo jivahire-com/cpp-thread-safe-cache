@@ -12,6 +12,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs')
 
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
+from RscmHelperLibrary import RscmHelperLibrary
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 import re
@@ -62,7 +63,17 @@ class mod_power_ft(EchoFallsBaseTest):
             4. Teardown Test.
         """
         self.log.info("Running Power module functional tests  . . .")
+        
         self.dut.setup()
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+        elif self.dut.get_dut_type() == DeviceType.RVP:
+            self.log.warning("Device type is RVP. Performing SoC Reset ...")
+            cred_path = os.environ.get('SECURE_FILE_PATH')
+            creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
+            rscm_helper = RscmHelperLibrary(rm_host=self.host_config.rack_scm.host, bmc_host=self.dut.mb.node_0.dcscm.bmc.ip, rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'], node=self.host_config.node_id)
+            rscm_helper.rscm_soc_reset()
             
         core_com_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         core_com_channel.open()

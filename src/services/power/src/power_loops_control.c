@@ -841,7 +841,7 @@ void message_update_callback(unsigned int core_id, uint8_t desired_pstate, uint8
     power_runconfig_t* p_runconfig = power_runconfig_get();
 
     // base pstate must be nominal or greater (less perf)
-    base_pstate = MAX(base_pstate, p_runconfig->derived.pnominal);
+    base_pstate = MAX(base_pstate, p_runconfig->derived.pnominal); //! According to spec, base pstate can't be less than pnominal
     // qualify priorities with config, etc
     throttle_pri = throt_pri_for_tracking(p_runconfig, throttle_pri);
     boost_pri = boost_pri_for_tracking(p_runconfig, boost_pri);

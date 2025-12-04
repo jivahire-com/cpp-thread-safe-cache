@@ -200,13 +200,10 @@ static PLACED_CODE uint8_t cli_power_cmd_arg_count(int subcommand_id)
             expected_argc = 6;
             break;
 
-        case POWER_IF_CMD_STATUS_DROOPCOUNT:
-        case POWER_IF_CMD_STATUS_DVFS_THROT_SR:
-            expected_argc = 1;
-            break;
         case POWER_IF_CMD_SET_ALARM_THRESHOLD:
             expected_argc = 9;
             break;
+            
         case POWER_IF_CMD_ACCEL_BW_REDUCE:
             expected_argc = 5;
         default:
@@ -689,7 +686,7 @@ static PLACED_CODE FPFW_CLI_STATUS cli_power_status_command(int argc, const char
         FpFwCliPrint("%-72s%s", "Usage: pwr status prio_cnt", "Priority count info\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr status vr_inst", "VR instance info\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr status pstate2cppc", "Pstate to CPPC mapping info\n");
-        FpFwCliPrint("%-72s%s", "Usage: pwr status dvfs_throt_sr", "DVFS throttle status info\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status dvfs_throt_sr <core>", "DVFS throttle status info for core\n");
         FpFwCliPrint("\n");
 
         return CLI_SUCCESS;
@@ -719,6 +716,15 @@ static PLACED_CODE FPFW_CLI_STATUS cli_power_status_command(int argc, const char
                 FpFwCliPrint("%-72s%s", "Usage: pwr status selections", "- Dump plimit selection counts\n");
                 pwrset_sub_command_args.minupdate_val = 0x0;
             }
+            break;
+        }
+        case POWER_IF_CMD_STATUS_DVFS_THROT_SR : {
+            if(argc != cli_power_cmd_arg_count(subcommand_id))
+            {
+                FpFwCliPrint("%-72s%s", "Usage: pwr status dvfs_throt_sr <core>", "- get DVFS throttle status info for a specific core\n");
+                return CLI_ERROR;
+            }
+            pwrset_sub_command_args.minupdate_val = (uint16_t)strtoul(argv[2],0,0);
             break;
         }
 

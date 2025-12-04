@@ -1,7 +1,7 @@
 --variable KEEP_SVP_ALIVE:TRUE
 --variable HOST_JSON:hsp_scp_bl_embed_fw_dual_die.json
 
-## Power Tests
+## Power Telemetry Tests
 ./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_loop_health.robot
 ./../../../tests/functional/test_suites/heart_beat/svp_teardown.robot
 

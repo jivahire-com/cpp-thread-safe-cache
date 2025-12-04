@@ -635,12 +635,12 @@ static PLACED_CODE void print_power_status_maxtemp_info(ppower_service_cli_reque
     power_ctrl_loop_detail_t* s_ctrl_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_ctrl_loop;
     power_telem_loop_detail_t* p_telem_loop = p_cli_request->fetch_data.pwr_intparams.p_pwrstatus_s_telem_loop;
     printf("\nLast iteration core max temp: ");
-    print_temp(p_telem_loop->soc_max_temp_dC * 10);  // core max temp is in degrees C and not tenths degrees C
+    print_temp(p_telem_loop->soc_max_temp_dC);  // core max temp is in degrees C and not tenths degrees C
     printf("\n\n");
     for (unsigned core_idx = 0; core_idx < NUM_AP_CORES_PER_DIE; ++core_idx) {
         power_core_t *core = &s_ctrl_loop->cores.core[core_idx];
         printf("\nCore %d temp: ", core_idx);
-        print_temp(core->temperature_dC * 10);  // core max temp is in degrees C and not tenths degrees C
+        print_temp(core->temperature_dC);  // core max temp is in degrees C and not tenths degrees C
         printf("\n");
     }
     printf("\n\n");

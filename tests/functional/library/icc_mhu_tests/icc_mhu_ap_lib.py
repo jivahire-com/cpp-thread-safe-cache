@@ -267,16 +267,16 @@ class ApCoreMemoryInterface(CoreMemoryMapInterface):
     from higher-level components.
 
     Responsibilities:
-    - Translate memory operations to T32 EOAXI commands
+    - Translate memory operations to T32 ENAXI commands
     - Parse T32 command responses and extract memory values
     - Handle unaligned memory access via byte-by-byte operations
     - Provide efficient bulk memory dumps using T32 binary save
     - Validate T32 responses and report meaningful errors
 
     T32 Command Usage:
-    - read(): 'data.in EOAXI:<address> /Byte' with regex parsing
-    - write(): 'data.set EOAXI:<address> %Byte <value>' for byte writes
-    - dump(): 'data.save.binary <file> EOAXI:<start>--<end>' for bulk data
+    - read(): 'data.in ENAXI:<address> /Byte' with regex parsing
+    - write(): 'data.set ENAXI:<address> %Byte <value>' for byte writes
+    - dump(): 'data.save.binary <file> ENAXI:<start>--<end>' for bulk data
 
     Args:
         t32_instance: Optional T32 instance (defaults to Trace32ApCore())
@@ -329,11 +329,11 @@ class ApCoreMemoryInterface(CoreMemoryMapInterface):
                 f"  Stderr:  {ret_tuple[2]!r}"
             )
 
-        # There is also an error if stdout contains 'bus error at address EOAXI'
+        # There is also an error if stdout contains 'bus error at address ENAXI'
         # which indicates a read/write failure. We only want to check for addresses
-        # that start with 'EOAXI' to avoid false positives. All address access by this
-        # class should be EOAXI.
-        if "bus error at address eoaxi" in ret_tuple[1].lower():
+        # that start with 'ENAXI' to avoid false positives. All address access by this
+        # class should be ENAXI.
+        if "bus error at address ENAXI" in ret_tuple[1].lower():
             raise RuntimeError(
                 f"T32 command failed - Bus Error:\n"
                 f"  Success: {ret_tuple[0]}\n"
@@ -361,19 +361,19 @@ class ApCoreMemoryInterface(CoreMemoryMapInterface):
         # Required Trace 32 Read Alignment requirements, reading each byte
         # at a time allows for unaligned reads of larger sizes.
         #
-        # Use the data.in EOAXI:<address> Trace 32 Command and parse the output
+        # Use the data.in ENAXI:<address> Trace 32 Command and parse the output
         # for a successful read.
         #
         # EX:
         # "2025-09-11 14:26:18 | Trace32API | miscellaneous message:
-        #   b'EOAXI:0000020111080003 = 00'\n2025-09-11 14:26:18"
+        #   b'ENAXI:0000020111080003 = 00'\n2025-09-11 14:26:18"
         #
         pattern = r"=\s*(\w{2})"
 
         return_bytes = bytearray()
         for byte_offset in range(0, size):
             ret = self.t32_instance.execute_command(
-                f"data.in EOAXI:{hex(address + byte_offset)} /Byte"
+                f"data.in ENAXI:{hex(address + byte_offset)} /Byte"
             )
             self._validate_t32_tuple(ret)
 
@@ -409,7 +409,7 @@ class ApCoreMemoryInterface(CoreMemoryMapInterface):
         for byte_offset in range(size):
             byte_val = value_bytes[byte_offset]
             ret = self.t32_instance.execute_command(
-                f"data.set EOAXI:{hex(address + byte_offset)} %Byte {hex(byte_val)}"
+                f"data.set ENAXI:{hex(address + byte_offset)} %Byte {hex(byte_val)}"
             )
             self._validate_t32_tuple(ret)
 
@@ -434,7 +434,7 @@ class ApCoreMemoryInterface(CoreMemoryMapInterface):
             tmp_file_path = tmp_file.name
 
         ret = self.t32_instance.execute_command(
-            f"data.save.binary {tmp_file_path} EOAXI:{hex(address)}--{hex(address + (size-1))}"
+            f"data.save.binary {tmp_file_path} ENAXI:{hex(address)}--{hex(address + (size-1))}"
         )
         self._validate_t32_tuple(ret)
 

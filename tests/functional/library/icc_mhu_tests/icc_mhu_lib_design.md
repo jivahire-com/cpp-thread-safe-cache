@@ -561,11 +561,11 @@ def _validate_t32_tuple(self, ret_tuple):
     # Single implementation used by all T32 operations
 
 def read(self, address: int, size: int = 4):
-    ret_tuple = self.t32_instance.execute_command(f"data.dump EOAXI:{address:08X}")
+    ret_tuple = self.t32_instance.execute_command(f"data.dump ENAXI:{address:08X}")
     self._validate_t32_tuple(ret_tuple)  # Reuse validation
 
 def write(self, address: int, value: int, size: int = 4):
-    ret_tuple = self.t32_instance.execute_command(f"data.set EOAXI:{address:08X} %{size_format} {value}")
+    ret_tuple = self.t32_instance.execute_command(f"data.set ENAXI:{address:08X} %{size_format} {value}")
     self._validate_t32_tuple(ret_tuple)  # Same validation logic
 ```
 

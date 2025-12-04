@@ -82,6 +82,7 @@ FPFW_INIT_COMPONENT(pwr_tlm_svc_mcp,
                            _24_hr_pkg_sample_period_ms,
                            mpam_knobs.fixed_pwr_mW,
                            mpam_knobs.mem_pwr_primary_enable,
+                           pwr_tlm_knobs.all_zero_filtering_enable,
                            idhw_is_single_die_boot_en());
 
     pwr_tlm_cli_svc_init();

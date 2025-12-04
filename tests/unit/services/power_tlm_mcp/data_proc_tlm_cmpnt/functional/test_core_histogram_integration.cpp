@@ -384,7 +384,7 @@ static int32_t test_setup(void** state)
     }
 
     // Initializing data processing component to set up tile-to-core mapping and internal state for temperature FIFO processing
-    data_proc_tlm_cmpnt_init(PRIMARY_DIE_ID, false, 0); // die_id=0, is_single_die=false, mpam_vm_mem_fixed_pwr_mW=0
+    data_proc_tlm_cmpnt_init(PRIMARY_DIE_ID, false, 0, true); // die_id=0, is_single_die=false, mpam_vm_mem_fixed_pwr_mW=0, all_zero_filtering_enable=true
 
     // Initializing comp_metrics to ensure metrics_24hrs_enabled is set
     // Do this AFTER reset to ensure clean state

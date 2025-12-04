@@ -30,7 +30,7 @@
 /*------------- Functions ----------------*/
 extern void oob_inf_init(void);
 
-void data_proc_tlm_cmpnt_init(uint8_t die_id, bool is_single_die_system, uint32_t mpam_vm_mem_fixed_pwr_mW)
+void data_proc_tlm_cmpnt_init(uint8_t die_id, bool is_single_die_system, uint32_t mpam_vm_mem_fixed_pwr_mW, bool all_zero_filtering_enable)
 {
     die_2_die_exch_init(die_id);
 
@@ -38,7 +38,7 @@ void data_proc_tlm_cmpnt_init(uint8_t die_id, bool is_single_die_system, uint32_
 
     comp_metrics_init(is_single_die_system);
 
-    package_inf_init(mpam_vm_mem_fixed_pwr_mW);
+    package_inf_init(mpam_vm_mem_fixed_pwr_mW, all_zero_filtering_enable);
 
     oob_inf_init();
 }

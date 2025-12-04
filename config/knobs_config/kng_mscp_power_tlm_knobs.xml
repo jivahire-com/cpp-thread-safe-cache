@@ -29,6 +29,7 @@
       <Member name="prod_pkg_period" type="power_tlm_prod_package_period_t" default="PWR_TLM_PROD_PKG_PERIOD_2_MIN" help="Production Package Period" />
       <Member name="inst_samples_per_pkg" type="uint16_t" default="10" help="Package generated every n inst_sample_period" />
       <Member name="_24hr_sample_period" type="power_tlm_24hr_package_period_t" default="PWR_TLM_24HR_PKG_PERIOD_24_HR" help="24 Hr Package Sampling Period" />
+      <Member name="all_zero_filtering_enable" type="bool" default="true" help="Enable/disable all zero filtering for diagnostic decoder, default true" />
     </Struct>
 
     <Struct name="power_tlm_mpam_mcp_knobs_t" help="">

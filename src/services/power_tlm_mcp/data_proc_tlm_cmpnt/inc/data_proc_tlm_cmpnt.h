@@ -26,8 +26,9 @@
  * @param[in] die_id The ID of the die to initialize.
  * @param[in] is_single_die_system True if the system is single die, false if dual die.
  * @param[in] mpam_vm_mem_fixed_pwr_mW The fixed power in mW for MPAM VM memory reporting.
+ * @param[in] all_zero_filtering_enable True to enable all-zero filtering for diagnostic decoder, false to disable.
  */
-void data_proc_tlm_cmpnt_init(uint8_t die_id, bool is_single_die_system, uint32_t mpam_vm_mem_fixed_pwr_mW);
+void data_proc_tlm_cmpnt_init(uint8_t die_id, bool is_single_die_system, uint32_t mpam_vm_mem_fixed_pwr_mW, bool all_zero_filtering_enable);
 
 /**
  * @brief Notification on telemetry mode transition.

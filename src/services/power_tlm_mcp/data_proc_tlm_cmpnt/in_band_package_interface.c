@@ -31,13 +31,15 @@
 
 /*-- Declarations (Statics and globals) --*/
 uint32_t local_mpam_vm_mem_fixed_pwr_mW;
+bool local_all_zero_filtering_enable = true;
 
 /*------------- Functions ----------------*/
 
-void package_inf_init(uint32_t mpam_vm_mem_fixed_pwr_mW)
+void package_inf_init(uint32_t mpam_vm_mem_fixed_pwr_mW, bool all_zero_filtering_enable)
 {
     // todo will be used in https://azurecsi.visualstudio.com/Dev/_workitems/edit/2941640
     local_mpam_vm_mem_fixed_pwr_mW = mpam_vm_mem_fixed_pwr_mW;
+    local_all_zero_filtering_enable = all_zero_filtering_enable;
 }
 
 void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_element_pstate_t (*pstate_array)[NUMBER_OF_PSTATES])
@@ -51,8 +53,6 @@ void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_ele
     {
         for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
         {
-            (*pstate_array)[pstate_index].pstate_id = pstate_index;
-
             (*pstate_array)[pstate_index].avg_power_mW = data_util_running_avg_u16_get(
                 &computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.running_avg);
 
@@ -62,13 +62,27 @@ void data_proc_tlm_cmpnt_get_pwr_core_pstate_data(uint16_t core_id, pwr_core_ele
             (*pstate_array)[pstate_index].max_power_mW =
                 computed_metrics_2_mins.cores[core_id].pstate[pstate_index].power_mW.max;
 
-            (*pstate_array)[pstate_index].frequency_Mhz = dvfs_get_freq_from_plimit(pstate_index);
-
             (*pstate_array)[pstate_index].residency_mS =
                 ROUND_USEC_TO_MSEC(computed_metrics_2_mins.cores[core_id].pstate[pstate_index].residency_uS);
 
             (*pstate_array)[pstate_index].entry_count =
                 computed_metrics_2_mins.cores[core_id].pstate[pstate_index].entry_count;
+
+            // Initialize to zero for filtering check
+            (*pstate_array)[pstate_index].pstate_id = 0;
+            (*pstate_array)[pstate_index].frequency_Mhz = 0;
+
+            // Compare fields after pstate_id and frequency_Mhz (remaining fields in the struct)
+            size_t compare_size = sizeof(pwr_core_element_pstate_t) - offsetof(pwr_core_element_pstate_t, max_power_mW);
+            uint8_t zero_buffer[sizeof(pwr_core_element_pstate_t) - offsetof(pwr_core_element_pstate_t, max_power_mW)] = {0};
+
+            // If filtering is disabled or any parameter is non-zero, set pstate_id and frequency to their actual values
+            if (!local_all_zero_filtering_enable ||
+                memcmp(&(*pstate_array)[pstate_index].max_power_mW, zero_buffer, compare_size) != 0)
+            {
+                (*pstate_array)[pstate_index].pstate_id = pstate_index;
+                (*pstate_array)[pstate_index].frequency_Mhz = dvfs_get_freq_from_plimit(pstate_index);
+            }
         }
     }
 }

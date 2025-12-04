@@ -26,5 +26,6 @@
 /**
  * @brief Initialize the in band telemetry component.
  * @param[in] mpam_vm_mem_fixed_pwr_mW The fixed power in mW for MPAM VM memory reporting.
+ * @param[in] all_zero_filtering_enable True to enable all-zero filtering for diagnostic decoder, false to disable.
  */
-void package_inf_init(uint32_t mpam_vm_mem_fixed_pwr_mW);
+void package_inf_init(uint32_t mpam_vm_mem_fixed_pwr_mW, bool all_zero_filtering_enable);

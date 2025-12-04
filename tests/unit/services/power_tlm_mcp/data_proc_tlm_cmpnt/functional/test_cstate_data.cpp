@@ -108,8 +108,8 @@ uint32_t expected_residency_mS[NUMBER_OF_CSTATES] = {0};
 static int32_t test_setup(void** state)
 {
     FPFW_UNUSED(state);
-    data_proc_tlm_cmpnt_init(0, false, 0); // die_id=0, is_single_die=false, mpam_vm_mem_fixed_pwr_mW=0
-    g_enable_mock_pstate = 1;              // Enable P-state mocking
+    data_proc_tlm_cmpnt_init(0, false, 0, true); // die_id=0, is_single_die=false, mpam_vm_mem_fixed_pwr_mW=0, all_zero_filtering_enable=true
+    g_enable_mock_pstate = 1; // Enable P-state mocking
 
     // Reset computed metrics using already defined standard functions
     comp_metrics_reset_local_2_min_metrics();

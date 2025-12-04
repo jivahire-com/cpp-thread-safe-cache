@@ -260,6 +260,7 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
 
     idsw_plat_id_t platform = idsw_get_platform_sdv();
     bool is_single_die = idhw_is_single_die_boot_en();
+    bool soc_stepping_id_a1 = idhw_is_stepping_a1();
 
     switch (platform)
     {
@@ -417,6 +418,33 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
                 temp_mesh_mxp_qos_cfg_knob.mesh_mxp_qos_cfg[i].qos_lat_range;
         }
 
+        // Override with A1 stepping specific knobs if A1 stepping is detected
+        if (soc_stepping_id_a1 == true)
+        {
+            // Mesh HNF knobs for A1 stepping
+            temp_cmn800_sam_cfg->mesh_hnf_cbusy_resp_ctl = config_get_a1_mesh_hnf_cbusy_resp_ctl();
+            temp_cmn800_sam_cfg->mesh_hnf_cbusy_sn_ctl = config_get_a1_mesh_hnf_cbusy_sn_ctl();
+            temp_cmn800_sam_cfg->mesh_hnf_cbusy_write_limit_ctl = config_get_a1_mesh_hnf_cbusy_write_limit_ctl();
+            temp_cmn800_sam_cfg->mesh_hnf_cbusy_mode_ctl = config_get_a1_mesh_hnf_cbusy_mode_ctl();
+            temp_cmn800_sam_cfg->mesh_hnf_aux_ctl = config_get_a1_mesh_hnf_aux_ctl();
+            temp_cmn800_sam_cfg->mesh_hnf_aux_ctl_1 = config_get_a1_mesh_hnf_aux_ctl_1();
+            temp_cmn800_sam_cfg->mesh_hnf_cfg_ctl = config_get_a1_mesh_hnf_cfg_ctl();
+            temp_cmn800_sam_cfg->mesh_hnf_lbt_cfg_ctl = config_get_a1_mesh_hnf_lbt_cfg_ctl();
+            temp_cmn800_sam_cfg->mesh_hnf_lbt_aux_ctl = config_get_a1_mesh_hnf_lbt_aux_ctl();
+            temp_cmn800_sam_cfg->mesh_hnf_lbt_cbusy_ctl = config_get_a1_mesh_hnf_lbt_cbusy_ctl();
+
+            // Mesh POCQ allocation knobs for A1 stepping
+            temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_class_dedicated =
+                config_get_a1_mesh_hnf_pocq_alloc_class_dedicated();
+            temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_class_max_allowed =
+                config_get_a1_mesh_hnf_pocq_alloc_class_max_allowed();
+            temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_class_contended_min =
+                config_get_a1_mesh_hnf_pocq_alloc_class_contended_min();
+            temp_cmn800_sam_cfg->mesh_hnf_pocq_alloc_misc_max_allowed =
+                config_get_a1_mesh_hnf_pocq_alloc_misc_max_allowed();
+            temp_cmn800_sam_cfg->mesh_hnf_pocq_qos_class_ctl = config_get_a1_mesh_hnf_pocq_qos_class_ctl();
+        }
+
         // Read and Update the Mesh RAS Knobs
         cmn800_ras_cfg_t* temp_cmn800_ras_cfg = cmn800_get_mesh_ras_cfg_knob();
         temp_cmn800_ras_cfg->mesh_RAS_Error_Detection_Disable = config_get_mesh_RAS_Error_Detection_Disable();
@@ -437,6 +465,17 @@ void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequence_para
         temp_ccg_cfg->por_ccg_ra_ccprtcl_link0_ctl = config_get_por_ccg_ra_ccprtcl_link0_ctl();
         temp_ccg_cfg->por_ccg_ra_cbusy_limit_ctl = config_get_por_ccg_ra_cbusy_limit_ctl();
         temp_ccg_cfg->por_ccla_aux_ctl = config_get_por_ccla_aux_ctl();
+
+        // Override with A1 stepping specific CCG knobs if A1 stepping is detected
+        if (soc_stepping_id_a1 == true)
+        {
+            temp_ccg_cfg->por_ccg_ha_aux_ctl = config_get_a1_por_ccg_ha_aux_ctl();
+            temp_ccg_cfg->por_ccg_ha_cfg_ctl = config_get_a1_por_ccg_ha_cfg_ctl();
+            temp_ccg_cfg->por_ccg_ra_cfg_ctl = config_get_a1_por_ccg_ra_cfg_ctl();
+            temp_ccg_cfg->por_ccg_ra_aux_ctl = config_get_a1_por_ccg_ra_aux_ctl();
+            temp_ccg_cfg->por_ccg_ra_ccprtcl_link0_ctl = config_get_a1_por_ccg_ra_ccprtcl_link0_ctl();
+            temp_ccg_cfg->por_ccg_ra_cbusy_limit_ctl = config_get_a1_por_ccg_ra_cbusy_limit_ctl();
+        }
 
         // Read and Update the D2D Knobs
         d2d_cfg_t* temp_d2d_cfg = get_default_d2d_cfg();

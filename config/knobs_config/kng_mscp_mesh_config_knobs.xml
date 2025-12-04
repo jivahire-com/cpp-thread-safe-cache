@@ -33,7 +33,7 @@
     <Enum name="MEMORY_TYPE" help="General Purpose Memory/Special Purpose Memory">
       <Value name="GENERAL_MEMORY" value="0"/>
       <Value name="SPECIAL_MEMORY" value="1"/>
-    </Enum>    
+    </Enum>
   </Enums>
 
   <Structs>
@@ -102,15 +102,25 @@
     <!-- Mesh -->
     <Knob name="mesh_hnf_cbusy_limit_ctl" type="uint64_t" default="0x302010" help="Cbusy threshold limits for POCQ entries"/>
     <Knob name="mesh_hnf_cbusy_resp_ctl" type="uint64_t" default="0x180400800040000" help="Contols the responses sent from HNS to RNF"/>
+    <Knob name="a1_mesh_hnf_cbusy_resp_ctl" type="uint64_t" default="0x180400800040000" help="Contols the responses sent from HNS to RNF"/>
     <Knob name="mesh_hnf_cbusy_sn_ctl" type="uint64_t" default="0x100001000200040" help="Controls the SN-F cbusy thresholds."/>
+    <Knob name="a1_mesh_hnf_cbusy_sn_ctl" type="uint64_t" default="0x100001000200040" help="Controls the SN-F cbusy thresholds."/>
     <Knob name="mesh_hnf_cbusy_write_limit_ctl" type="uint64_t" default="0x302010" help="Cbusy threshold limits for POCQ write entries."/>
+    <Knob name="a1_mesh_hnf_cbusy_write_limit_ctl" type="uint64_t" default="0x302010" help="Cbusy threshold limits for POCQ write entries."/>
     <Knob name="mesh_hnf_cbusy_mode_ctl" type="uint64_t" default="0x3000" help="Control register for additional CBusy controls"/>
+    <Knob name="a1_mesh_hnf_cbusy_mode_ctl" type="uint64_t" default="0x3000" help="Control register for additional CBusy controls"/>
     <Knob name="mesh_hnf_aux_ctl" type="uint64_t" default="0x2000001000200002" help="Auxiliary control register for HNF. Default val 0x2000_0010_0020_0002"/>
+    <Knob name="a1_mesh_hnf_aux_ctl" type="uint64_t" default="0x2000001000200002" help="Auxiliary control register for HNF. Default val 0x2000_0010_0020_0002"/>
     <Knob name="mesh_hnf_aux_ctl_1" type="uint64_t" default="0x3001005A900" help="Set value for por_hnf_aux_ctl_1"/>
+    <Knob name="a1_mesh_hnf_aux_ctl_1" type="uint64_t" default="0x3001005A900" help="Set value for por_hnf_aux_ctl_1"/>
     <Knob name="mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C01738921000" help="Set value for por_hnf_cfg_ctl"/>
+    <Knob name="a1_mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C01738921000" help="Set value for por_hnf_cfg_ctl"/>
     <Knob name="mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F00" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
+    <Knob name="a1_mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F00" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
     <Knob name="mesh_hnf_lbt_aux_ctl" type="uint64_t" default="0x440000000000006" help="Functions as the auxiliary control register for HN-F. Only applicable to LBT transactions"/>
+    <Knob name="a1_mesh_hnf_lbt_aux_ctl" type="uint64_t" default="0x440000000000006" help="Functions as the auxiliary control register for HN-F. Only applicable to LBT transactions"/>
     <Knob name="mesh_hnf_lbt_cbusy_ctl" type="uint64_t" default="0x0" help="Controls the CBusy response for LCN Bound Transactions"/>
+    <Knob name="a1_mesh_hnf_lbt_cbusy_ctl" type="uint64_t" default="0x0" help="Controls the CBusy response for LCN Bound Transactions"/>
     <Knob name="mesh_hni_cfg_ctl_knob" type="mesh_hni_cfg_ctl_t" default="{{0x1,0x1,0x1,0x1,0x1,0x1,0x21,0x21,0x21,0x21,0x21}}" help="Set HN-I Config CTL value"/>
     <Knob name="mesh_hni_aux_ctl_knob" type="mesh_hni_aux_ctl_t" default="{{0x1000,0x1000,0x1000,0x1000,0x1000,0x1000,0x0,0x0,0x0,0x0,0x0}}" help="Set HN-I AUX ctl value"/>
     <Knob name="mesh_hnt_dn_domain_cxra" type="uint64_t" default="0" help="Set value for cxra per HNT (There are 4 HNTs)"/>
@@ -119,11 +129,16 @@
     <Knob name="mesh_rnd_cfg_ctl_knob" type="mesh_rnd_cfg_ctl_t" default="{{0xd000802001c21,0xd000802001c01,0xd000802001c21,0xd000802001c21,0xd000802001c21,0xd000200401c01,0xd000802001c01}}" help="Set RN-D config control value(chip_id field will be ignored)"/>
     <Knob name="mesh_rnd_aux_ctl_knob" type="mesh_rnd_aux_ctl_t" default="{{0x4004012,0x4004012,0x4004012,0x4004012,0x4004012,0x4004012,0x4004012}}" help="Set RN-D auxiliary control value"/>
     <Knob name="mesh_hnf_pocq_alloc_class_dedicated" type="uint64_t" default="0x0" help="Controls Dedicated entries in POCQ for each class" />
+    <Knob name="a1_mesh_hnf_pocq_alloc_class_dedicated" type="uint64_t" default="0x0" help="Controls Dedicated entries in POCQ for each class" />
     <Knob name="mesh_hnf_pocq_alloc_class_max_allowed" type="uint64_t" default="0x8203E3F" />
+    <Knob name="a1_mesh_hnf_pocq_alloc_class_max_allowed" type="uint64_t" default="0x8203E3F" />
     <Knob name="mesh_hnf_pocq_alloc_class_contended_min" type="uint64_t" default="0x10101010" help=" Controls Contended minimum entries in POCQ for each class" />
+    <Knob name="a1_mesh_hnf_pocq_alloc_class_contended_min" type="uint64_t" default="0x10101010" help=" Controls Contended minimum entries in POCQ for each class" />
     <Knob name="mesh_hnf_pocq_alloc_misc_max_allowed" type="uint64_t" default="0x204" help="Controls Maximum allowed entries in POCQ for SNP, SEQ, and other misc req" />
+    <Knob name="a1_mesh_hnf_pocq_alloc_misc_max_allowed" type="uint64_t" default="0x204" help="Controls Maximum allowed entries in POCQ for SNP, SEQ, and other misc req" />
     <Knob name="mesh_hnf_class_ctl" type="uint64_t" default="0x0" help="Class misc controls" />
     <Knob name="mesh_hnf_pocq_qos_class_ctl" type="uint64_t" default="0x70B8ECFF" help="QoS bases class identification controls" />
+    <Knob name="a1_mesh_hnf_pocq_qos_class_ctl" type="uint64_t" default="0x70B8ECFF" help="QoS bases class identification controls" />
     <Knob name="mesh_hnf_class_pocq_arb_weight_ctl" type="uint64_t" default="0x0" help="Per Class weight controls for scheduling requests from POCQ" />
     <Knob name="mesh_hnf_class_retry_weight_ctl" type="uint64_t" default="0x0" help="Per Class weight controls for Retry Credit grant" />
     <Knob name="mesh_hnf_pocq_misc_retry_weight_ctl" type="uint64_t" default="0x0" help="Weight controls for Snoop, SEQ, Flush and other misc POCQ requests" />
@@ -143,12 +158,18 @@
 
     <!-- Mesh CCG -->
     <Knob name="por_ccg_ha_aux_ctl" type="uint64_t" default="0x3C0008" help="CCG HA aux control"/>
+    <Knob name="a1_por_ccg_ha_aux_ctl" type="uint64_t" default="0x3C0008" help="CCG HA aux control"/>
     <Knob name="por_ccg_ha_cfg_ctl" type="uint64_t" default="0x40040" help="CCG HA config control"/>
+    <Knob name="a1_por_ccg_ha_cfg_ctl" type="uint64_t" default="0x40040" help="CCG HA config control"/>
     <Knob name="por_ccg_ha_cxprtcl_link0_ctl" type="uint64_t" default="0x1C0000" help="CCG HA config control 1"/>
     <Knob name="por_ccg_ra_cfg_ctl" type="uint64_t" default="0x7C4007" help="CCG RA config control"/>
+    <Knob name="a1_por_ccg_ra_cfg_ctl" type="uint64_t" default="0x7C4007" help="CCG RA config control"/>
     <Knob name="por_ccg_ra_aux_ctl" type="uint64_t" default="0x1B1F343CC3846" help="CCG RA aux control"/>
+    <Knob name="a1_por_ccg_ra_aux_ctl" type="uint64_t" default="0x1B1F343CC3846" help="CCG RA aux control"/>
     <Knob name="por_ccg_ra_ccprtcl_link0_ctl" type="uint64_t" default="0x2C00000" help="CCG RA config control 1"/>
+    <Knob name="a1_por_ccg_ra_ccprtcl_link0_ctl" type="uint64_t" default="0x2C00000" help="CCG RA config control 1"/>
     <Knob name="por_ccg_ra_cbusy_limit_ctl" type="uint64_t" default="0x181008" help="CCG RA config control 2"/>
+    <Knob name="a1_por_ccg_ra_cbusy_limit_ctl" type="uint64_t" default="0x181008" help="CCG RA config control 2"/>
     <Knob name="por_ccla_aux_ctl" type="uint64_t" default="0x1220000000004" help="CCLA aux control"/>
 
     <!-- Mesh D2D -->

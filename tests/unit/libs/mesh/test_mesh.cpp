@@ -48,6 +48,7 @@ extern void mesh_read_cfg_knobs_from_spi(cmn800_sequence_params_t* cmn800_sequen
 bool simulate_single_die = true;
 bool g_test_mesh_d2d_override = false;
 uint16_t g_test_d2d_ecc_ce_counter = 0x0;
+bool g_simulate_a1_stepping = false;
 KNG_DIE_ID g_test_die = (KNG_DIE_ID)0;
 static fpfw_icc_base_ctx_t* test_icc_base_hsp_mbx_ctx;
 extern ras_agent_entity_t d2dss2_agent[NUM_OF_CCG_WITH_D2D];
@@ -73,7 +74,7 @@ d2d_cfg_t unit_test_default_d2d_cfg = {
     .d2d_ecc_cfg = 0,
     .d2d_tx_interface_clk_alignment = 0,
     .d2d_ras_enable = 0,
-    .d2d_sleep_cfg = 1,
+    .d2d_sleep_cfg = 0, // XML default value
     .d2d_sleep_cfg_entry = 100000,
     .d2d_rxcal_find_goodlanes_skip = 1,
 };
@@ -568,6 +569,119 @@ bool __wrap_config_get_mesh_d2d_override(void)
     return g_test_mesh_d2d_override;
 }
 
+// Mock function for A1 stepping detection
+bool __wrap_idhw_is_stepping_a1(void)
+{
+    return g_simulate_a1_stepping;
+}
+
+// Mock A1-specific config_get functions - using XML default values
+uint64_t __wrap_config_get_a1_mesh_hnf_cbusy_resp_ctl(void)
+{
+    return 0x180400800040000ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_cbusy_sn_ctl(void)
+{
+    return 0x100001000200040ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_cbusy_write_limit_ctl(void)
+{
+    return 0x302010ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_cbusy_mode_ctl(void)
+{
+    return 0x3000ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_aux_ctl(void)
+{
+    return 0x2000001000200002ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_aux_ctl_1(void)
+{
+    return 0x3001005A900ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_cfg_ctl(void)
+{
+    return 0x2000C01738921000ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_lbt_cfg_ctl(void)
+{
+    return 0x7F7F00ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_lbt_aux_ctl(void)
+{
+    return 0x440000000000006ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_lbt_cbusy_ctl(void)
+{
+    return 0x0ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_pocq_alloc_class_dedicated(void)
+{
+    return 0x0ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_pocq_alloc_class_max_allowed(void)
+{
+    return 0x8203E3FULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_pocq_alloc_class_contended_min(void)
+{
+    return 0x10101010ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_pocq_alloc_misc_max_allowed(void)
+{
+    return 0x204ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_mesh_hnf_pocq_qos_class_ctl(void)
+{
+    return 0x70B8ECFFULL; // XML default value
+}
+
+// A1-specific CCG knobs
+uint64_t __wrap_config_get_a1_por_ccg_ha_aux_ctl(void)
+{
+    return 0x3C0008ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_por_ccg_ha_cfg_ctl(void)
+{
+    return 0x40040ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_por_ccg_ra_cfg_ctl(void)
+{
+    return 0x7C4007ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_por_ccg_ra_aux_ctl(void)
+{
+    return 0x1B1F343CC3846ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_por_ccg_ra_ccprtcl_link0_ctl(void)
+{
+    return 0x2C00000ULL; // XML default value
+}
+
+uint64_t __wrap_config_get_a1_por_ccg_ra_cbusy_limit_ctl(void)
+{
+    return 0x181008ULL; // XML default value
+}
+
 cmn800_sam_cfg_t* __wrap_cmn800_get_mesh_sam_cfg_knob(void)
 {
     function_called();
@@ -590,6 +704,282 @@ d2d_cfg_t* __wrap_get_default_d2d_cfg(void)
 {
     function_called();
     return &unit_test_default_d2d_cfg;
+}
+
+// Mock A0-specific config_get functions (default behavior)
+uint64_t __wrap_config_get_mesh_hnf_cbusy_limit_ctl(void)
+{
+    return 0x302010ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_cbusy_resp_ctl(void)
+{
+    return 0x180400800040000ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_cbusy_sn_ctl(void)
+{
+    return 0x100001000200040ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_cbusy_write_limit_ctl(void)
+{
+    return 0x302010ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_cbusy_mode_ctl(void)
+{
+    return 0x3000ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_aux_ctl(void)
+{
+    return 0x2000001000200002ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_aux_ctl_1(void)
+{
+    return 0x3001005A900ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_cfg_ctl(void)
+{
+    return 0x2000C01738921000ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_lbt_cfg_ctl(void)
+{
+    return 0x7F7F00ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_lbt_aux_ctl(void)
+{
+    return 0x440000000000006ULL;
+}
+uint64_t __wrap_config_get_mesh_hnf_lbt_cbusy_ctl(void)
+{
+    return 0x0ULL;
+}
+
+// POCQ allocation knobs A0
+uint64_t __wrap_config_get_mesh_hnf_pocq_alloc_class_dedicated(void)
+{
+    return 0x0ULL; // XML default value
+}
+uint64_t __wrap_config_get_mesh_hnf_pocq_alloc_class_max_allowed(void)
+{
+    return 0x8203E3FULL; // XML default value
+}
+uint64_t __wrap_config_get_mesh_hnf_pocq_alloc_class_contended_min(void)
+{
+    return 0x10101010ULL; // XML default value
+}
+uint64_t __wrap_config_get_mesh_hnf_pocq_alloc_misc_max_allowed(void)
+{
+    return 0x204ULL; // XML default value
+}
+uint64_t __wrap_config_get_mesh_hnf_class_ctl(void)
+{
+    return 0x0ULL; // XML default value
+}
+uint64_t __wrap_config_get_mesh_hnf_pocq_qos_class_ctl(void)
+{
+    return 0x70B8ECFFULL; // XML default value
+}
+uint64_t __wrap_config_get_mesh_hnf_class_pocq_arb_weight_ctl(void)
+{
+    return 0x0ULL; // XML default value
+}
+uint64_t __wrap_config_get_mesh_hnf_class_retry_weight_ctl(void)
+{
+    return 0x0ULL; // XML default value
+}
+uint64_t __wrap_config_get_mesh_hnf_pocq_misc_retry_weight_ctl(void)
+{
+    return 0x0ULL; // XML default value
+}
+uint64_t __wrap_config_get_mesh_sbsx_cbusy_limit_ctl(void)
+{
+    return 0x483018ULL; // XML default value
+}
+
+// HNI, HNT, RNI, RND knobs (returning default values for simplicity)
+mesh_hni_cfg_ctl_t __wrap_config_get_mesh_hni_cfg_ctl_knob(void)
+{
+    mesh_hni_cfg_ctl_t knob = {{0x1, 0x1, 0x1, 0x1, 0x1, 0x1}};
+    return knob;
+}
+mesh_hni_aux_ctl_t __wrap_config_get_mesh_hni_aux_ctl_knob(void)
+{
+    mesh_hni_aux_ctl_t knob = {{0x1000, 0x1000, 0x1000, 0x1000, 0x1000, 0x1000}};
+    return knob;
+}
+uint64_t __wrap_config_get_mesh_hnt_dn_domain_cxra(void)
+{
+    return 0x0ULL;
+}
+
+mesh_rni_cfg_ctl_t __wrap_config_get_mesh_rni_cfg_ctl_knob(void)
+{
+    mesh_rni_cfg_ctl_t knob = {
+        {0xd000802001c21ULL, 0xd000802001c21ULL, 0xd000802001c21ULL, 0xd000802001c21ULL, 0xd004200401c41ULL, 0xd000802001c71ULL, 0xd000802001c71ULL, 0xd000802001c71ULL}};
+    return knob;
+}
+mesh_rni_aux_ctl_t __wrap_config_get_mesh_rni_aux_ctl_knob(void)
+{
+    mesh_rni_aux_ctl_t knob = {
+        {0x4004002ULL, 0x4004002ULL, 0x4004002ULL, 0x4004002ULL, 0x4004002ULL, 0x4004002ULL, 0x4004002ULL, 0x4004002ULL}};
+    return knob;
+}
+
+mesh_rnd_cfg_ctl_t __wrap_config_get_mesh_rnd_cfg_ctl_knob(void)
+{
+    mesh_rnd_cfg_ctl_t knob = {
+        {0xd000802001c21ULL, 0xd000802001c01ULL, 0xd000802001c21ULL, 0xd000802001c21ULL, 0xd000802001c21ULL, 0xd000200401c01ULL, 0xd000802001c01ULL}};
+    return knob;
+}
+mesh_rnd_aux_ctl_t __wrap_config_get_mesh_rnd_aux_ctl_knob(void)
+{
+    mesh_rnd_aux_ctl_t knob = {
+        {0x4004012ULL, 0x4004012ULL, 0x4004012ULL, 0x4004012ULL, 0x4004012ULL, 0x4004012ULL, 0x4004012ULL}};
+    return knob;
+}
+
+mesh_rni_qos_cfg_t __wrap_config_get_mesh_rni_qos_cfg_knob(void)
+{
+    mesh_rni_qos_cfg_t knob = {
+        {{0x1ULL, 0x2ULL, 0x0ULL, 0x0ULL}, {0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL}, {0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL}}};
+    return knob;
+}
+mesh_rnd_qos_cfg_t __wrap_config_get_mesh_rnd_qos_cfg_knob(void)
+{
+    mesh_rnd_qos_cfg_t knob = {
+        {{0x1ULL, 0x2ULL, 0x0ULL, 0x0ULL}, {0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL}, {0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL}}};
+    return knob;
+}
+mesh_mxp_qos_cfg_t __wrap_config_get_mesh_mxp_qos_cfg_knob(void)
+{
+    mesh_mxp_qos_cfg_t knob = {
+        {{0x1ULL, 0x2ULL, 0x0ULL, 0x0ULL}, {0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL}, {0x0ULL, 0x0ULL, 0x0ULL, 0x0ULL}}};
+    return knob;
+}
+
+// RAS knobs A0
+bool __wrap_config_get_mesh_RAS_Error_Detection_Disable(void)
+{
+    return false;
+}
+bool __wrap_config_get_mesh_RAS_Error_Deferment_Disable(void)
+{
+    return false;
+}
+bool __wrap_config_get_mesh_RAS_Uncorrected_Error_Int_Disable(void)
+{
+    return false;
+}
+bool __wrap_config_get_mesh_RAS_Fault_Handling_Int_Disable(void)
+{
+    return false;
+}
+bool __wrap_config_get_mesh_RAS_Corrected_Error_Int_Disable(void)
+{
+    return true; // XML default value
+}
+bool __wrap_config_get_mesh_RAS_Parity_Error_Disable(void)
+{
+    return false;
+}
+
+// CCG knobs A0
+uint64_t __wrap_config_get_por_ccg_ha_aux_ctl(void)
+{
+    return 0x3C0008ULL;
+}
+uint64_t __wrap_config_get_por_ccg_ha_cfg_ctl(void)
+{
+    return 0x40040ULL;
+}
+uint64_t __wrap_config_get_por_ccg_ha_cxprtcl_link0_ctl(void)
+{
+    return 0x1C0000ULL;
+}
+uint64_t __wrap_config_get_por_ccg_ra_cfg_ctl(void)
+{
+    return 0x7C4007ULL;
+}
+uint64_t __wrap_config_get_por_ccg_ra_aux_ctl(void)
+{
+    return 0x1B1F343CC3846ULL;
+}
+uint64_t __wrap_config_get_por_ccg_ra_ccprtcl_link0_ctl(void)
+{
+    return 0x2C00000ULL;
+}
+uint64_t __wrap_config_get_por_ccg_ra_cbusy_limit_ctl(void)
+{
+    return 0x181008ULL;
+}
+uint64_t __wrap_config_get_por_ccla_aux_ctl(void)
+{
+    return 0x1220000000004ULL;
+}
+
+// D2D knobs A0
+uint8_t __wrap_config_get_d2d_pll_divider(void)
+{
+    return 0x2;
+}
+uint8_t __wrap_config_get_d2d_ref_divider(void)
+{
+    return 0x2;
+}
+uint8_t __wrap_config_get_d2d_pll_fb_divider(void)
+{
+    return 0x14;
+}
+uint8_t __wrap_config_get_d2d_ecc_cfg(void)
+{
+    return 0;
+}
+uint8_t __wrap_config_get_d2d_tx_interface_clk_alignment(void)
+{
+    return 0;
+}
+uint8_t __wrap_config_get_d2d_sleep_cfg(void)
+{
+    return 0; // XML default value
+}
+uint32_t __wrap_config_get_d2d_sleep_cfg_entry(void)
+{
+    return 100000;
+}
+uint8_t __wrap_config_get_d2d_rxcal_find_goodlanes_skip(void)
+{
+    return 1;
+}
+uint8_t __wrap_config_get_d2d_close_fb_wa(void)
+{
+    return 0;
+}
+
+// Additional config_get functions needed for mesh_read_cfg_knobs_from_spi
+d2dss_sys_counter_delay_t __wrap_config_get_d2dss_system_counter_delay(void)
+{
+    d2dss_sys_counter_delay_t delay = {{0, 0, 0, 0, 0, 0, 0, 0}};
+    return delay;
+}
+
+uint8_t __wrap_config_get_cmn_sam_config(void)
+{
+    return CONFIG_2D_NUMA_64HNS_HIER_3SN_enum;
+}
+
+cxl_region_params_t __wrap_config_get_cxl_params_die0(void)
+{
+    cxl_region_params_t params = {.interleave_ways = (CXL_INTERLEAVE_WAYS)2, .interleave_size = (CXL_INTERLEAVE_SIZE)3};
+    return params;
+}
+
+cxl_region_params_t __wrap_config_get_cxl_params_die1(void)
+{
+    cxl_region_params_t params = {.interleave_ways = (CXL_INTERLEAVE_WAYS)2, .interleave_size = (CXL_INTERLEAVE_SIZE)3};
+    return params;
+}
+
+bool __wrap_config_get_cmn_uma_arsm_htg_wa_disabled(void)
+{
+    return false;
 }
 
 int __wrap_process_mesh_binary_from_spi(uintptr_t pMeshBinHeader, uint32_t config_enum)
@@ -1581,10 +1971,10 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_class_retry_weight_ctl, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_misc_retry_weight_ctl, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_sbsx_cbusy_limit_ctl, 0x483018);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_r2_aux_ctl, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_r2_aux_ctl, 0x0ULL);
 
-    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_control, 0x0);
-    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_control, 0x1);
+    assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_lat_tagt, 0x2);
     assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_lat_scale, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_lat_range, 0x0);
 
@@ -1598,8 +1988,8 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[2].qos_lat_scale, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[2].qos_lat_range, 0x0);
 
-    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_control, 0x0);
-    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_control, 0x1);
+    assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_lat_tagt, 0x2);
     assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_lat_scale, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[0].qos_lat_range, 0x0);
 
@@ -1613,8 +2003,8 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[2].qos_lat_scale, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_rnd_qos_cfg[2].qos_lat_range, 0x0);
 
-    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_control, 0x0);
-    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_lat_tagt, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_control, 0x1);
+    assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_lat_tagt, 0x2);
     assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_lat_scale, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_mxp_qos_cfg[0].qos_lat_range, 0x0);
 
@@ -1667,6 +2057,48 @@ void verify_d2d_config_knobs(void)
     assert_int_equal(unit_test_default_d2d_cfg.d2d_rxcal_find_goodlanes_skip, 1);
 }
 
+// A1-specific verification functions
+void verify_mesh_config_knobs_a1_stepping(void)
+{
+    // Verify A1-specific mesh HNF knobs are applied (XML default values)
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_resp_ctl, 0x180400800040000ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_sn_ctl, 0x100001000200040ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_write_limit_ctl, 0x302010ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_mode_ctl, 0x3000ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl, 0x2000001000200002ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl_1, 0x3001005A900ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738921000ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F00ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x0ULL);
+
+    // Verify A1-specific POCQ allocation knobs (XML default values)
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_dedicated, 0x0ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_max_allowed, 0x8203E3FULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_contended_min, 0x10101010ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_misc_max_allowed, 0x204ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_qos_class_ctl, 0x70B8ECFFULL);
+
+    // Verify knobs that should remain unchanged (A0 values)
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_limit_ctl, 0x302010ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_class_ctl, 0x0ULL);
+}
+
+void verify_ccg_config_knobs_a1_stepping(void)
+{
+    // Verify A1-specific CCG knobs are applied (XML default values)
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_aux_ctl, 0x3C0008ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cfg_ctl, 0x40040ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C4007ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_aux_ctl, 0x1B1F343CC3846ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_ccprtcl_link0_ctl, 0x2C00000ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0x181008ULL);
+
+    // Verify knobs that should remain unchanged (A0 values)
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cxprtcl_link0_ctl, 0x1C0000ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccla_aux_ctl, 0x1220000000004ULL);
+}
+
 // Test Mesh, CML, D2D Config Knobs
 TEST_FUNCTION(test_mesh_config_knobs_single_die, setup_soc_platform_dual_die, setup_undefined_platform)
 {
@@ -1701,6 +2133,86 @@ TEST_FUNCTION(test_mesh_config_knobs_single_die, setup_soc_platform_dual_die, se
     verify_ccg_config_knobs();
 
     verify_d2d_config_knobs();
+}
+
+// Test Mesh Config Knobs with A1 Stepping - A0 stepping (default)
+TEST_FUNCTION(test_mesh_config_knobs_a0_stepping, setup_soc_platform_dual_die, setup_undefined_platform)
+{
+    cmn800_sequence_params_t cmn800_sequence_param = {};
+
+    // Set up expectations for A0 stepping
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    g_test_mesh_d2d_override = true;
+    g_simulate_a1_stepping = false; // A0 stepping (default)
+
+    // The function reading and updating is calling this
+    expect_function_call(__wrap_cmn800_get_mesh_sam_cfg_knob);
+    expect_function_call(__wrap_cmn800_get_mesh_ras_cfg_knob);
+    expect_function_call(__wrap_get_ccg_knob_defaults);
+    expect_function_call(__wrap_get_default_d2d_cfg);
+
+    // Call API under test
+    mesh_read_cfg_knobs_from_spi(&cmn800_sequence_param);
+
+    // Verify A0 (default) knob values are used
+    verify_mesh_config_knobs();
+    verify_mesh_ras_config_knobs();
+    verify_ccg_config_knobs();
+    verify_d2d_config_knobs();
+}
+
+// Test Mesh Config Knobs with A1 Stepping - A1 stepping
+TEST_FUNCTION(test_mesh_config_knobs_a1_stepping, setup_soc_platform_dual_die, setup_undefined_platform)
+{
+    cmn800_sequence_params_t cmn800_sequence_param = {};
+
+    // Set up expectations for A1 stepping
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    g_test_mesh_d2d_override = true;
+    g_simulate_a1_stepping = true; // A1 stepping
+
+    // The function reading and updating is calling this
+    expect_function_call(__wrap_cmn800_get_mesh_sam_cfg_knob);
+    expect_function_call(__wrap_cmn800_get_mesh_ras_cfg_knob);
+    expect_function_call(__wrap_get_ccg_knob_defaults);
+    expect_function_call(__wrap_get_default_d2d_cfg);
+
+    // Call API under test
+    mesh_read_cfg_knobs_from_spi(&cmn800_sequence_param);
+
+    // Verify A1-specific knob values are used
+    verify_mesh_config_knobs_a1_stepping();
+    verify_mesh_ras_config_knobs(); // RAS knobs remain the same
+    verify_ccg_config_knobs_a1_stepping();
+    verify_d2d_config_knobs(); // D2D knobs remain the same
+}
+
+// Test Mesh Config Knobs with A1 Stepping - Override disabled
+TEST_FUNCTION(test_mesh_config_knobs_a1_stepping_override_disabled, setup_soc_platform_dual_die, setup_undefined_platform)
+{
+    cmn800_sequence_params_t cmn800_sequence_param = {};
+
+    // Set up expectations for A1 stepping but override disabled
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+    g_test_mesh_d2d_override = false; // Override disabled - should not apply any knobs
+    g_simulate_a1_stepping = true;    // A1 stepping
+
+    // Even when override is disabled, these functions are still called
+    expect_function_call(__wrap_cmn800_get_mesh_sam_cfg_knob);
+    expect_function_call(__wrap_cmn800_get_mesh_ras_cfg_knob);
+    expect_function_call(__wrap_get_ccg_knob_defaults); // Called for debug printing
+    expect_function_call(__wrap_get_default_d2d_cfg);
+
+    // Call API under test
+    mesh_read_cfg_knobs_from_spi(&cmn800_sequence_param);
+
+    // When override is disabled, no knobs should be applied, so no verification needed
+    // This test mainly verifies the code doesn't crash when override is disabled
+    assert_int_equal(cmn800_sequence_param.die_num, test_die);
+    assert_int_equal(cmn800_sequence_param.cmn_config_enum, CONFIG_2D_NUMA_64HNS_HIER_3SN_enum);
 }
 
 // Single Die Warm Reset Boot

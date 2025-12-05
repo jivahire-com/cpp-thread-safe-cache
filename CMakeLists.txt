@@ -18,6 +18,9 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install)
 # Steer SCP/MCP builds to use stdint data types when ingesting common headers shared with UEFI
 add_compile_definitions(SCP_CONFIG_VARIABLE_TYPE)
 
+# Suppress rtosmon log prints
+add_compile_definitions(SUPPRESS_RTOSMON_LOG_PRINT)
+
 # Verbosity levels for INFO, DEBUG and CRITICAL below
 # SILIBS_PRINT_VERBOSITY_LEVEL_NONE     0x0
 # SILIBS_PRINT_VERBOSITY_LEVEL_CRITICAL 0x1

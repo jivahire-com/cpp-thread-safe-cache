@@ -21,6 +21,7 @@
 #include <idsw.h>           // for idsw_get_platform_sdv, idsw...
 #include <stdint.h>         // for uint32_t
 #include <string.h>         // for memcpy, strlen
+#include <system_info.h>    // for system_info_get_security_state
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 #define BYTES_IN_32B_WORD 4
@@ -32,6 +33,14 @@
 #define STRING_BUFFER_LENGTH(x) (strlen(x) + 1) // +1 for NULL terminator
 
 /*-------------------------------- Typedefs ---------------------------------*/
+
+typedef struct
+{
+    uint32_t platform_id;
+    uint32_t soc_id;
+    uint8_t die_id;
+    uint8_t security_state;
+} accel_sys_info_t;
 
 /*--------------------------- Function Prototypes ---------------------------*/
 
@@ -51,8 +60,6 @@ const char* knob_transfer_list[] = {
 
 static uint32_t reboot_reason = E_REBOOT_COLD_BOOT;
 static uint32_t boot_type = E_COLD_BOOT;
-
-// Clean up FPFW_DBGPRINT_ after all PRs in the series are merged : ADO 2503735
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -94,16 +101,19 @@ static knob_transfer_status_t write_string_to_buff(uint8_t* p_addr, uint8_t* p_b
     return STATUS_KNOB_TRANSFER_SUCCESS;
 }
 
-static void init_accel_sys_info(uint32_t* platform_id, uint8_t* die_id, uint32_t* soc_id)
+static void init_accel_sys_info(accel_sys_info_t* accel_sys_info)
 {
     // Get the platform ID from IDSW
-    *platform_id = idsw_get_platform_sdv();
+    accel_sys_info->platform_id = idsw_get_platform_sdv();
 
     // Get the die ID from IDSW
-    *die_id = idsw_get_die_id();
+    accel_sys_info->die_id = idsw_get_die_id();
 
     // Get the SOC ID from IDHW
-    *soc_id = idhw_get_soc_id();
+    accel_sys_info->soc_id = idhw_get_soc_id();
+
+    // Get the security state from system info
+    accel_sys_info->security_state = system_info_get_security_state();
 }
 
 static knob_transfer_status_t write_knob_to_buffer(uint8_t* p_addr,
@@ -129,7 +139,6 @@ static knob_transfer_status_t write_knob_to_buffer(uint8_t* p_addr,
     p_addr += STRING_BUFFER_LENGTH(p_knob_name);
 
     // Copy the size of the knob data into the buffer
-    FPFW_DBGPRINT_INFO("Data Size: %d, Addr: %p, Dest Addr: %p \n", knob_size, &knob_size, p_addr);
     intercore_aligned_memcpy(p_addr, &knob_size, sizeof(uint8_t), BYTES_IN_32B_WORD);
     p_addr += sizeof(uint8_t);
 
@@ -145,24 +154,22 @@ static knob_transfer_status_t transfer_accel_sys_info(uint8_t* p_addr, uint8_t* 
     knob_transfer_status_t status;
     uint16_t bytes_written_temp = 0;
 
-    static uint32_t platform_id;
-    static uint8_t die_id;
-    static uint32_t soc_id;
+    static accel_sys_info_t accel_sys_info_data;
 
     static transfer_accel_sys_info_data_t accel_sys_info[] = {
         {"m7_sys_id", (uint8_t)(sizeof(uint8_t)), NULL},
-        {"m7_soc_id", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&soc_id},
-        {"m7_die_id", (uint8_t)(sizeof(uint8_t)), (uint8_t*)&die_id},
-        {"m7_plat_id", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&platform_id},
+        {"m7_soc_id", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&accel_sys_info_data.soc_id},
+        {"m7_die_id", (uint8_t)(sizeof(uint8_t)), (uint8_t*)&accel_sys_info_data.die_id},
+        {"m7_plat_id", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&accel_sys_info_data.platform_id},
         {"reboot_reason", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&reboot_reason},
         {"et_log_lvl", (uint8_t)(sizeof(uint32_t)), NULL},
         {"boot_type", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&boot_type},
-        {"soc_sec_state", (uint8_t)(sizeof(uint32_t)), NULL},
+        {"soc_sec_state", (uint8_t)(sizeof(uint8_t)), &accel_sys_info_data.security_state},
         {"sdm_emcpu_wdt_enable", (uint8_t)(sizeof(uint16_t)), NULL},
         {"cded_emcpu_wdt_enable", (uint8_t)(sizeof(uint16_t)), NULL},
     };
 
-    init_accel_sys_info(&platform_id, &die_id, &soc_id);
+    init_accel_sys_info(&accel_sys_info_data);
 
     // Compute the size of the runtime data to be loaded into the accelerator
     for (uint32_t index = 0; index < FPFW_ARRAY_SIZE(accel_sys_info); index++)
@@ -188,7 +195,7 @@ static knob_transfer_status_t transfer_accel_sys_info(uint8_t* p_addr, uint8_t* 
                                       (uint8_t*)accel_sys_info[index].p_data);
         if (status != STATUS_KNOB_TRANSFER_SUCCESS)
         {
-            FPFW_DBGPRINT_ERROR("Failed to write knob %s. Continuing . . .\n", accel_sys_info[index].p_name);
+            FPFW_DBGPRINT_INFO("No override for %s. Skip\n", accel_sys_info[index].p_name);
             continue;
         }
         bytes_written_temp +=
@@ -205,7 +212,6 @@ static knob_transfer_status_t transfer_knob_to_accel(uint8_t* p_addr, uint8_t* p
     knob_transfer_status_t status;
 
     // Search for the knob name in the cached knob data
-    FPFW_DBGPRINT_INFO("Searching for knob: %s\n", p_knob_name);
     for (uint32_t knob_index = 0; knob_index < cached_knob_data_size(); knob_index++)
     {
         // Get the pointer to the current knob data
@@ -214,8 +220,6 @@ static knob_transfer_status_t transfer_knob_to_accel(uint8_t* p_addr, uint8_t* p
         // Check if the knob name matches
         if (strcmp(cached_knob->name, p_knob_name) == 0)
         {
-            FPFW_DBGPRINT_INFO("Found Knob. Index: %d, ", (int)knob_index);
-
             status = write_knob_to_buffer(p_addr,
                                           p_buff_end_addr,
                                           cached_knob->name,
@@ -252,7 +256,6 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
     p_config_data_write_address += STRING_BUFFER_LENGTH(scp_start_magic_string);
 
     FPFW_DBGPRINT_INFO("Accel: Transfer config data for Accel %d, Die %d\n", accel_type, idsw_get_die_id());
-    FPFW_DBGPRINT_INFO("Buffer Address: %p, End: %p\n", p_config_data_start_address, p_config_data_end_address);
 
     status = transfer_accel_sys_info(p_config_data_write_address, p_config_data_end_address, &bytes_written);
     if (status != STATUS_KNOB_TRANSFER_SUCCESS)
@@ -277,7 +280,6 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
         p_config_data_write_address += bytes_written;
     }
 
-    FPFW_DBGPRINT_INFO("Writing %s to the buffer at %p\n", scp_end_magic_string, p_config_data_write_address);
     status = write_string_to_buff(p_config_data_write_address, p_config_data_end_address, scp_end_magic_string);
     if (status != STATUS_KNOB_TRANSFER_SUCCESS)
     {
@@ -285,8 +287,6 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
         return status;
     }
 
-    p_config_data_write_address = p_config_data_start_address;
-    FPFW_DBGPRINT_INFO("Writing %s to the buffer at %p\n", scp_start_magic_string, p_config_data_write_address);
     status = write_string_to_buff(p_config_data_start_address, p_config_data_end_address, scp_start_magic_string);
     if (status != STATUS_KNOB_TRANSFER_SUCCESS)
     {
@@ -299,6 +299,12 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
 
 void set_reboot_reason(E_REBOOT_REASON reason)
 {
+    // At SCP level, there are these reboot reasons defined:
+    // 1. case HSP_FIRMWARE_RESET_REASON_CRASH
+    // 2. HSP_FIRMWARE_RESET_REASON_UPDATE
+    // 3. HSP_FIRMWARE_RESET_REASON_WARM_RESET
+    // Leaving an ADO here to map these reasons as needed:
+    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/3207538 Refer system_info.c for more details
     reboot_reason = reason;
     boot_type = reason == E_REBOOT_COLD_BOOT ? E_COLD_BOOT : E_WARM_BOOT;
 }

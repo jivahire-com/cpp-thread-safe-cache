@@ -18,6 +18,7 @@
 #include <stdint.h>     // for uint32_t, uint64_t
 #include <stdio.h>      // for printf
 #include <tx_api.h>     // for tx_mutex_get, tx_mutex_put
+#include <utc_sync_client_service.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -155,13 +156,13 @@ bool postDumpCallbackOverride(void* postDumpCtx)
 }
 
 /**
- * @brief ToDo: Implement this function with the actual time implementation
+ * @brief Gets the current UTC time from the UTC Sync Client.
  *
- * @return
+ * @return Current UTC time represented as milliseconds since UNIX epoch.
  */
 uint64_t getCurTimeDefault(void)
 {
-    return 0;
+    return utc_sync_client_get_current_time_epoch_ms();
 }
 
 /*------- Utility Overrides -------*/

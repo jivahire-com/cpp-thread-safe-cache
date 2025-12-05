@@ -49,6 +49,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.pldm.protocol
         fwlib.service.cli
         fwlib.service.pldm
+        fwlib.service.utc_sync.client
         kng.lib.hsp_firmware_headers
         ms::lib::accel_intr
         ms::build_data

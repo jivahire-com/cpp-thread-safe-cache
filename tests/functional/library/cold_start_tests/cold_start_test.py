@@ -76,11 +76,13 @@ class cold_start_test(EchoFallsBaseTest):
 
         scp_connection = self.dut.mb.node_0.soc.primary_die.scp.channel_manager
         apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
+        hsp_connection = self.dut.mb.node_0.soc.primary_die.hsp.channel_manager
         set_bmc_uart_mux(self.dut, self.log, "SCP")
 
         # Ensure the host config file used alongside this test has these connections defined.
         assert scp_connection is not None
         assert apns_connection is not None
+        assert hsp_connection is not None
 
         for i in range(repeat_times):
             self.log.info("Running SOC Windows Dual Die cold boot test : repeat_times = %d" %(i))
@@ -99,6 +101,13 @@ class cold_start_test(EchoFallsBaseTest):
                 self.dut.teardown()
                 time.sleep(30)
                 return False
+            
+            hsp_connection.get_current_channel().open()
+            if not hsp_connection.get_current_channel().is_open():
+                self.log.error("hsp_connection is not open")
+                self.dut.teardown()
+                time.sleep(30)
+                return False
 
             self.log.info("Reading APNS UART for SAC")
             try:
@@ -113,6 +122,7 @@ class cold_start_test(EchoFallsBaseTest):
                 self.log.error(f"Error reading APNS UART: {e}")
                 apns_connection.get_current_channel().close()
                 scp_connection.get_current_channel().close()
+                hsp_connection.get_current_channel().close()
                 self.test_notify(step="Windows Boot Shell", msg="Test Fail", _is_error=True)
                 self.dut.teardown()
                 time.sleep(30)
@@ -120,6 +130,7 @@ class cold_start_test(EchoFallsBaseTest):
 
             scp_connection.get_current_channel().close()
             apns_connection.get_current_channel().close()
+            hsp_connection.get_current_channel().close()
             time.sleep(30)
             
         self.test_notify(step="Windows Boot Shell", msg="Test Done", _is_error=False)

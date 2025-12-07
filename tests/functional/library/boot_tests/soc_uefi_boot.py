@@ -64,10 +64,12 @@ class soc_uefi_boot(EchoFallsBaseTest):
 
         scp_connection=self.dut.mb.node_0.soc.primary_die.scp.channel_manager
         apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
+        hsp_connection = self.dut.mb.node_0.soc.primary_die.hsp.channel_manager
 
         # Ensure the host config file used alongside this test has these connections defined.
         assert scp_connection is not None
         assert apns_connection is not None
+        assert hsp_connection is not None
 
         self.dut.setup()
         self.log.warning("Device type is SOC. Performing SOC reset ...")
@@ -85,6 +87,11 @@ class soc_uefi_boot(EchoFallsBaseTest):
             self.dut.teardown()
             time.sleep(30)
             return False
+        hsp_connection.get_current_channel().open()
+        if not hsp_connection.get_current_channel().is_open():
+            self.dut.teardown()
+            time.sleep(30)
+            return False  
 
         bmc_helper.set_profile("General")
         bmc_helper.set_boot_option("ConfApp")
@@ -104,6 +111,7 @@ class soc_uefi_boot(EchoFallsBaseTest):
             self.log.error(f"Error reading APNS UART: {e}")
             apns_connection.get_current_channel().close()
             scp_connection.get_current_channel().close()
+            hsp_connection.get_current_channel().close()
             self.test_notify(step="UEFI_Interfactive_Shell", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             time.sleep(30)
@@ -111,6 +119,7 @@ class soc_uefi_boot(EchoFallsBaseTest):
 
         apns_connection.get_current_channel().close()
         scp_connection.get_current_channel().close()
+        hsp_connection.get_current_channel().close()
         self.test_notify(step="UEFI_Interactive_Shell", msg="Test Done", _is_error=False)
         self.dut.teardown()
         time.sleep(30)

@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <FpFwAssert.h>
+#include <bug_check.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_pldm_service.h>
 #include <icc_mhu.h>
@@ -18,42 +19,9 @@
 #include <pldm_common_power.h>
 #include <pldm_pdr.h>
 #include <power_pldm.h>
+#include <power_pldm_private.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-
-/*------------- Typedefs -----------------*/
-//! Structure grouping common metrics for power requests
-typedef struct
-{
-    fpfw_icc_base_send_req_t icc_send_req_params;
-    fpfw_icc_base_recv_req_t icc_recv_req_params;
-    FPFW_LOCK lock;
-    bool is_active;
-} common_request_ctx_t;
-
-//! Structure for power throttling requests
-typedef struct
-{
-    pldm_state_sensor_context_t sensor_ctx;
-    icc_pwr_throt_state_request_t icc_req_payload;
-    common_request_ctx_t params;
-} power_throttling_request_t;
-
-//! Structure for power cap requests
-typedef struct
-{
-    pldm_numeric_effecter_context_t effecter_ctx;
-    icc_pwr_cap_request_t icc_req_payload;
-    common_request_ctx_t params;
-} power_cap_request_t;
-
-//! Top level context for the power PLDM service
-typedef struct
-{
-    power_throttling_request_t pwr_throt;
-    power_cap_request_t pwr_cap;
-    fpfw_icc_base_ctx_t* icc_ctx;
-} power_pldm_context_t;
 
 /*-------- Function Prototypes -----------*/
 
@@ -63,22 +31,31 @@ static power_pldm_context_t pldm_ctx = {0};
 /*-------- Common Static Function-----------*/
 void common_send_complete_notify(void* context, fpfw_status_t status)
 {
-    FPFW_RUNTIME_ASSERT(context != NULL);
-    FPFW_RUNTIME_ASSERT(status == DFWK_SUCCESS);
+    BUG_ASSERT(context != NULL);
+    // Retry send if transport is busy
+    if (status == FPFW_ICC_TRANSPORT_STATUS_BUSY)
+    {
+        fpfw_status_t retry_status = fpfw_icc_base_send(pldm_ctx.icc_ctx, (fpfw_icc_base_send_req_t*)context);
+        BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(retry_status), retry_status, 0);
+        return;
+    }
+
+    BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, context);
+
     fpfw_icc_base_send_req_t* req_params = (fpfw_icc_base_send_req_t*)context; // NOLINT
     icc_mhu_header_t* mhu_payload = (icc_mhu_header_t*)req_params->payload_buffer;
     FPFW_DBGPRINT_VERBOSE("[PWR PLDM] Send Complete: Cmd[0x%x]\n", mhu_payload->msg_header.command);
 }
 
-static void common_icc_base_recv_send(uint32_t cmd_code,
-                                      common_request_ctx_t* params,
-                                      void* payload,
-                                      size_t payload_size,
-                                      icc_base_recv_complete_notify cb,
-                                      void* cb_ctx)
+void common_icc_base_recv_send(uint32_t cmd_code,
+                               common_request_ctx_t* params,
+                               void* payload,
+                               size_t payload_size,
+                               icc_base_recv_complete_notify cb,
+                               void* cb_ctx)
 {
-    FPFW_RUNTIME_ASSERT(params != NULL);
-    FPFW_RUNTIME_ASSERT(payload != NULL);
+    BUG_ASSERT(params != NULL);
+    BUG_ASSERT(payload != NULL);
 
     //! 1. Subscribe to the response 1st
     params->icc_recv_req_params.payload_buffer = payload;
@@ -87,7 +64,7 @@ static void common_icc_base_recv_send(uint32_t cmd_code,
     params->icc_recv_req_params.cb = cb;
     params->icc_recv_req_params.cb_ctx = cb_ctx;
     fpfw_status_t status = fpfw_icc_base_recv(pldm_ctx.icc_ctx, &params->icc_recv_req_params);
-    FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
+    BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, 0);
 
     //! 2. Prepare to send, Populate mhu payload packet
     icc_mhu_header_t* mhu_payload = (icc_mhu_header_t*)payload;
@@ -102,15 +79,15 @@ static void common_icc_base_recv_send(uint32_t cmd_code,
 
     //! 4. Send the payload/request
     status = fpfw_icc_base_send(pldm_ctx.icc_ctx, &params->icc_send_req_params);
-    FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
+    BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, 0);
 }
 
 /*-------- ICC Callbacks -----------*/
 static void pldm_set_cap_callback(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(output_size_bytes);
-    FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
-    FPFW_RUNTIME_ASSERT(context != NULL);
+    BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, 0);
+    BUG_ASSERT(context != NULL);
 
     //! Get the payload from the request, payload now contains the response from SCP
     power_cap_request_t* p_request = (power_cap_request_t*)context;
@@ -123,7 +100,7 @@ static void pldm_set_cap_callback(void* context, size_t output_size_bytes, fpfw_
 
     //! Notify the PLDM service that the effecter set operation is complete
     fpfw_status_t pldm_status = fpfw_pldm_service_numeric_effecter_set_complete(&p_request->effecter_ctx);
-    FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(pldm_status), pldm_status, 0, 0, 0);
+    BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(pldm_status), pldm_status, 0);
 
     //! Reset the request flag, dfwk request completion cb have reentrancy protection
     p_request->params.is_active = false;
@@ -132,8 +109,8 @@ static void pldm_set_cap_callback(void* context, size_t output_size_bytes, fpfw_
 static void pldm_get_perf_state(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(output_size_bytes);
-    FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
-    FPFW_RUNTIME_ASSERT(context != NULL);
+    BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, 0);
+    BUG_ASSERT(context != NULL);
 
     static uint8_t prev_state = PLDM_PERFORMANCE_NORMAL; //! keep track of prev state
     //! Get the payload from the request, payload now contains the response from SCP
@@ -160,7 +137,7 @@ static void pldm_get_perf_state(void* context, size_t output_size_bytes, fpfw_st
     //! Notify the PLDM service of the state change
     fpfw_status_t pldm_status =
         fpfw_pldm_service_state_sensor_set(&p_request->sensor_ctx, composite_value, 1 << PLDM_PERFORMANCE_COMP_STATE);
-    FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(pldm_status), pldm_status, 0, 0, 0);
+    BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(pldm_status), pldm_status, 0);
 
     //! Reset the request flag, dfwk request completion cb have reentrancy protection
     p_request->params.is_active = false;
@@ -183,7 +160,7 @@ static void pldm_get_perf_state(void* context, size_t output_size_bytes, fpfw_st
 static void power_cap_on_effecter_set(pldm_numeric_effecter_context_t* effecter, fpfw_pldm_composite_value_t value, void* p_context)
 {
     static uint32_t power_cap_set_count = 0;
-    FPFW_RUNTIME_ASSERT(p_context != NULL);
+    BUG_ASSERT(p_context != NULL);
     power_cap_request_t* p_request = (power_cap_request_t*)p_context;
     /**
      * @note: Check if the previous request is still active, highly unlikely scenario
@@ -217,11 +194,11 @@ static void power_cap_on_effecter_set(pldm_numeric_effecter_context_t* effecter,
                               p_request);
 }
 
-static void pldm_perf_state_query(pldm_state_sensor_context_t* p_sensor, void* p_context)
+void pldm_perf_state_query(pldm_state_sensor_context_t* p_sensor, void* p_context)
 {
     static uint32_t throttle_query_count = 0;
     static bool active_msg_printed = false;
-    FPFW_RUNTIME_ASSERT(p_context != NULL);
+    BUG_ASSERT(p_context != NULL);
     power_throttling_request_t* p_request = (power_throttling_request_t*)p_context;
     /**
      * @note: Check if the previous request is still active, highly unlikely scenario
@@ -264,7 +241,7 @@ static void pldm_perf_state_query(pldm_state_sensor_context_t* p_sensor, void* p
 /*-------- Public Functions -----------*/
 void power_pldm_init(fpfw_icc_base_ctx_t* icc_ctx)
 {
-    FPFW_RUNTIME_ASSERT(icc_ctx != NULL);
+    BUG_ASSERT(icc_ctx != NULL);
     pldm_ctx.icc_ctx = icc_ctx;
 
     if ((idsw_get_cpu_type() == CPU_MCP) && (idsw_get_die_id() == DIE_0))
@@ -276,14 +253,14 @@ void power_pldm_init(fpfw_icc_base_ctx_t* icc_ctx)
 
         fpfw_status_t status =
             fpfw_pldm_service_register_numeric_effecter(&pldm_ctx.pwr_cap.effecter_ctx, &pwr_cap_effecter_cfg);
-        FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
+        BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, 0);
 
         //! Initialize the power throttling state sensor
         pldm_state_sensor_config_t pwr_throt_state_cfg = {.sensor_id = PLDM_SENSOR_ID_POWER_THROTTLING_STATE_SENSOR,
                                                           .notifications.on_sensor_get = pldm_perf_state_query,
                                                           .notifications.context = &pldm_ctx.pwr_throt};
         status = fpfw_pldm_service_register_state_sensor(&pldm_ctx.pwr_throt.sensor_ctx, &pwr_throt_state_cfg);
-        FPFW_RUNTIME_ASSERT_EXT(FPFW_STATUS_SUCCEEDED(status), status, 0, 0, 0);
+        BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, 0);
 
         //! Initialize the locks
         FpFwLockInitialize(&pldm_ctx.pwr_throt.params.lock);

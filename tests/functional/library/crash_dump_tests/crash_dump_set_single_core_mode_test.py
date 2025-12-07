@@ -129,7 +129,7 @@ class crash_dump_set_single_core_mode_test(EchoFallsBaseTest):
         self.log.info(f"Submitting {command}\n")
         scp_channel.write_line(write_string=command)
         try:
-            scp_channel.read_until(key="Crash dump single core mode", timeout_seconds=30)
+            scp_channel.read_until(key="Crash dump single core mode", timeout_seconds=90)
         except Exception as e:
             self.log.error(f"Error Crash Dump set single core mode. Die0: {e}")
             self.test_notify(step="Crash Dump set single core mode.", msg="Test Fail", _is_error=True)

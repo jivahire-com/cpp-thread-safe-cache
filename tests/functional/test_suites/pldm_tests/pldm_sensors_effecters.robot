@@ -28,12 +28,14 @@ ${Failure}    ${False}
 Setup Suite 
     ${test_lib} =       Get Library Instance                 pldm_sensors_effecters_lib
     ${test_result} =    Run Keyword And Return Status        Call Method    ${test_lib}    setup
-    Run Keyword If      not ${test_result}    Fail           Suite setup failed. Aborting all tests.
+    Run Keyword If      not ${test_result}    Log            Suite setup failed. Aborting all tests.
+    Run Keyword If      not ${test_result}    Return From Keyword
 
 Teardown Suite 
     ${test_lib} =       Get Library Instance                 pldm_sensors_effecters_lib
     ${test_result} =    Run Keyword And Return Status        Call Method    ${test_lib}    teardown
-    Run Keyword If      not ${test_result}    Fail           Suite teardown failed.
+    Run Keyword If      not ${test_result}    Log            Suite teardown failed.
+    Run Keyword If      not ${test_result}    Return From Keyword
 
 *** Test Cases ***
 Test Case - 1. Set Numeric Sensor Enable

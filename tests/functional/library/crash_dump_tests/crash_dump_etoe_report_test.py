@@ -503,11 +503,9 @@ class crash_dump_etoe_report_test(EchoFallsBaseTest):
            self.log.error(f"Unexpected Product_Id: {product_id}")
            fail_flag = True
 
-        # TODO: Core count seems inconsistent; Commenting out until investigated
-        # ADO: 3212876
-        # if core_count != 8:
-        #    self.log.error(f"Unexpected core_count: {core_count}")
-        #    fail_flag = True
+        if core_count != 10:
+           self.log.error(f"Unexpected core_count: {core_count}")
+           fail_flag = True
 
         if fail_flag:
            self.test_notify(step="Crash Dump Validation", msg="Test Fail", _is_error=True)

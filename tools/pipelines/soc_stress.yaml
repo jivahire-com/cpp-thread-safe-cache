@@ -31,6 +31,8 @@ variables:
   value: "chie-1pfw"
 - name: tdk_repo_name
   value: "$(System.DefaultWorkingDirectory)/"
+- name: TimeoutInMinutes
+  value: 600
 
 stages:
 - stage: SOC_Weekend_Stress_DualDie_Tests_0
@@ -42,6 +44,7 @@ stages:
       build_id: $(BUILD_ID)
       TestPlan: .\tests\functional\test_plan\soc_dual_die_0_weekend_test_plan.args
       TestVehicleCapability: 'SocDualDie'
+      TimeoutInMinutes: ${{ variables.TimeoutInMinutes }}
       Pool: '1pfw-kingsgate-soc'
       tdk_repo_name: ${{ variables.tdk_repo_name }}
       azure_subscription: ${{ variables.azure_subscription }}
@@ -57,6 +60,7 @@ stages:
       build_id: $(BUILD_ID)
       TestPlan: .\tests\functional\test_plan\soc_dual_die_1_weekend_test_plan.args
       TestVehicleCapability: 'SocDualDie'
+      TimeoutInMinutes: ${{ variables.TimeoutInMinutes }}
       Pool: '1pfw-kingsgate-soc'
       tdk_repo_name: ${{ variables.tdk_repo_name }}
       azure_subscription: ${{ variables.azure_subscription }}

@@ -159,11 +159,13 @@ void ddr_create_memory_map()
 
     // Pass to TF-A in Shared SRAM via SDS structure service.
     // This is a prterequisite before notifying HSP that DDR init is complete.
-    if (MemoryMapPassToTFA(p_outgoing_memory_map) != DFWK_SUCCESS)
+    status = MemoryMapPassToTFA(p_outgoing_memory_map);
+    if (status != DFWK_SUCCESS)
     {
-        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_USING_SDS_STRUCTURE, ET_NOPARAM);
+        // # Bug 2453339 - Must be fatal if unable to write SDS structure
         DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 2); //"Error using SDS structure"
-        return;
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_USING_SDS_STRUCTURE, status);
+        BUG_ASSERT_PARAM(status == DFWK_SUCCESS, status, 0);
     }
 
     printf("Memory Map copied to SDS\n");

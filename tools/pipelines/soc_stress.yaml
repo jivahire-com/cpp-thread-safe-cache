@@ -32,7 +32,7 @@ variables:
 - name: tdk_repo_name
   value: "$(System.DefaultWorkingDirectory)/"
 - name: TimeoutInMinutes
-  value: 600
+  value: 1440
 
 stages:
 - stage: SOC_Weekend_Stress_DualDie_Tests_0

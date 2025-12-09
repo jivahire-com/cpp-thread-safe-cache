@@ -345,6 +345,7 @@ target_link_libraries(
         fwlib.service.icc_dispatcher
         fwlib.service.mts.cli
         fwlib.service.pldm
+        fwlib.service.utc.cli
         fwlib.service.utc_sync.client
         fwlib.service.utc_sync.manager
         ms::build_data

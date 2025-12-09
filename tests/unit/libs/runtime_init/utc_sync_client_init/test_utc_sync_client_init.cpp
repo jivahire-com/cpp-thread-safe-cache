@@ -34,6 +34,7 @@ extern "C" {
 /*-- Declarations (Statics and globals) --*/
 
 extern fpfw_init_component_t _fpfw_component_utc_client_svc;
+extern fpfw_init_component_t _fpfw_component_utc_cli;
 
 static utc_sync_client_config_t s_captured_config = {};
 
@@ -73,6 +74,11 @@ fpfw_status_t __wrap_utc_sync_client_init(utc_sync_client_config_t* p_config)
     s_captured_config = *p_config;
 
     return mock_type(fpfw_status_t);
+}
+
+void __wrap_utc_cli_svc_initialize(void)
+{
+    function_called();
 }
 
 //
@@ -124,6 +130,16 @@ TEST_FUNCTION(test_utc_sync_client_init_failed_init, nullptr, nullptr)
     fpfw_init_result_t result = _fpfw_component_utc_client_svc.init_fn();
 
     assert_true(result.status == (uint32_t)FPFW_INIT_STATUS_E_POINTER);
+    assert_true(result.associated_handle == NULL);
+}
+
+TEST_FUNCTION(test_utc_cli_init, nullptr, nullptr)
+{
+    expect_function_call(__wrap_utc_cli_svc_initialize);
+
+    fpfw_init_result_t result = _fpfw_component_utc_cli.init_fn();
+
+    assert_true(result.status == (uint32_t)FPFW_INIT_STATUS_SUCCESS);
     assert_true(result.associated_handle == NULL);
 }
 

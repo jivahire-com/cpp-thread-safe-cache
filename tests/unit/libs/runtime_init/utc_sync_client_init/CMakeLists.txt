@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         fwlib.service.iccBase
         fwlib.service.mts
+        fwlib.service.utc.cli
         fwlib.service.utc_sync.client
         ms::cmocka::testrunner
         ms::lib::crash_dump
@@ -47,5 +48,6 @@ mock_target(${TARGET}
     fpfw_icc_base_send_sync
     fpfw_init_get_handle
     gtimer_prodfw_get_frequency
+    utc_cli_svc_initialize
     utc_sync_client_init
 )

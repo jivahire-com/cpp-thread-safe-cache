@@ -139,3 +139,12 @@ FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer", "mts_svc"))
 
     return (fpfw_init_result_t){sc, NULL};
 }
+
+#ifdef MCP_RUNTIME_INIT
+    #include <utc_cli_service.h>
+FPFW_INIT_COMPONENT(utc_cli, FPFW_INIT_DEPENDENCIES("utc_client_svc"))
+{
+    utc_cli_svc_initialize();
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+#endif

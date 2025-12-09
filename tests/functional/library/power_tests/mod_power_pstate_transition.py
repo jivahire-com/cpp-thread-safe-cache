@@ -120,7 +120,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
         command="pwr set nominal 21"
         core_com_channel.write_line(write_string=command)
         try:
-            command_response_cli = core_com_channel.read_until(key=" nominal pstate", timeout_seconds=300)
+            command_response_cli = core_com_channel.read_until(key="nominal pstate", timeout_seconds=300)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set nominal cmd status: Fail", msg="Test Fail", _is_error=True)

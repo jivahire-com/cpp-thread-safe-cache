@@ -68,14 +68,19 @@ class pldm_common(EchoFallsBaseTest):
         # Step 1: DUT setup
         self.dut.setup()
 
-        # Step 2: Perform reset based on DUT type
-        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-            self.log.warning(
-                "Device type is bigFPGA. Performing an additional OOB reset ..."
-            )
-            KngPythiaTestSetup.fpga_oob_reset(self.log)
-        elif self.dut.get_dut_type() == DeviceType.RVP:
-            self.log.warning("Device type is RVP. Performing SoC Reset ...")
+        # Step 2: Open MCP channel and BMC client channel
+        self.core_mcp_channel = (
+            self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
+        )
+        self.core_mcp_channel.open()
+        assert self.core_mcp_channel.is_open()
+
+        self.bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
+        self.bmc_cli.open()
+        assert self.bmc_cli.is_open()
+        
+        # Step 3: Set BMC UART MUX to MCP for RVP
+        if self.dut.get_dut_type() == DeviceType.RVP:
             cred_path = os.environ.get("SECURE_FILE_PATH")
             self.creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
             self.rscm_helper = RscmHelperLibrary(
@@ -87,28 +92,25 @@ class pldm_common(EchoFallsBaseTest):
                 bmc_password=self.creds["BMC_PASSWORD"],
                 node=self.host_config.node_id,
             )
+            self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
+
+        # Step 4: Perform reset based on DUT type
+        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+            self.log.warning(
+                "Device type is bigFPGA. Performing an additional OOB reset ..."
+            )
+            KngPythiaTestSetup.fpga_oob_reset(self.log)
+        elif self.dut.get_dut_type() == DeviceType.RVP:
+            self.log.warning("Device type is RVP. Performing SoC Reset ...")
             self.rscm_helper.rscm_soc_reset()
 
-        # Step 3: Open MCP channel and wait for MCP boot complete
-        self.core_mcp_channel = (
-            self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
-        )
-        self.core_mcp_channel.open()
-        assert self.core_mcp_channel.is_open()
-
+        # Step 5: wait for MCP boot complete
         mcp_boot_status = self._check_mcp_boot_complete(timeout=self.delay_15_minutes)
         if mcp_boot_status is False:
             self.log.info("MCP boot check failed during setup")
             return False
-
-        # Step 4: Get BMC client object, wait for PLDM service to be active and stop pldmd service
-        self.bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
-        self.bmc_cli.open()
-        assert self.bmc_cli.is_open()
-
-        if self.dut.get_dut_type() == DeviceType.RVP:
-            self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
-
+        
+        # Step 6: Wait for PLDM and MCTPD services to be active
         pldm_status = self._wait_for_service_status(
             service_str="xyz.openbmc_project.pldmd.service",
             expect_active=True,
@@ -137,7 +139,7 @@ class pldm_common(EchoFallsBaseTest):
 
         time.sleep(30)
 
-        # Step 5: Load PLDM specification data and get MCP EID
+        # Step 7: Load PLDM specification data and get MCP EID
         self.pldm_spec = pldm_spec_parser()
         self.pldm_spec.load_spec_data("pldm_spec_data.json")
         mctp_id_status = self._pldm_get_mctp_id()

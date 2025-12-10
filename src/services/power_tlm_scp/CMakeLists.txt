@@ -31,6 +31,10 @@ target_link_libraries(${TARGET}
         ms::lib::pwr_tlm_core_ex
         ms::service::mts
         ms::service::power
+        silibs::ddrss
+        silibs::kng_silibs_platform
+        silibs::platform
+        silibs::ras_arm
 )
 
 add_library(ms::service::pwr_tlm_scp ALIAS ${TARGET})

@@ -12,8 +12,10 @@
 
 extern "C" {
 
-#include <FpFwCMocka.h>               // for check_expected_ptr, mock_type, function_called
-#include <FpFwUtils.h>                // for FPFW_UNUSED
+#include <FpFwCMocka.h>        // for check_expected_ptr, mock_type, function_called
+#include <FpFwUtils.h>         // for FPFW_UNUSED
+#include <ddrss_runtime_api.h> // for DDRSS_MAX_MC_NUM_PER_DIE, DDRSS_MAX_PWR_TEL_EVT
+#include <kng_soc_constants.h>
 #include <message_transfer_service.h> // for mts_client_flush_incoming_queue
 #include <mts_client.h>               // for MTS_CLIENT_ID_PWR_INST_TELEM
 #include <mts_manager_i.h>
@@ -60,40 +62,66 @@ static int test_teardown(void** pContext)
     return 0;
 }
 
-TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp, test_setup, test_teardown)
-{
-    // stub need to complete
-}
-
-TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_handle_enables_from_mcp, test_setup, test_teardown)
+TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_handle_enables_from_mcp_drop_count_only, test_setup, test_teardown)
 {
     tlm_scp_record_enables_t test_enables = {{0}};
 
-    // Test case 1: Enable drop_count_en only
-    test_enables.as_uint16 = 0x0001;
-    data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(test_enables);
+    // Enable vm_memory_pwr_en to take the positive path with all mocks
+    // DDRSS_MAX_MC_NUM_PER_DIE MCs per die, each with DDRSS_MAX_PWR_TEL_EVT PMUs
+    will_return(__wrap_mts_get_this_die_id, 0);
 
-    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0001);
-    assert_int_equal(pwr_tlm_scp_record_enables.record.drop_count_en, 1);
-    assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 0);
+    // Mock ddrss_set_power_telemetry_config for each MC
+    will_return_count(__wrap_ddrss_set_power_telemetry_config, 0, DDRSS_MAX_MC_NUM_PER_DIE); // SILIBS_SUCCESS
 
-    // Test case 2: Enable vm_memory_pwr_en only
-    test_enables.as_uint16 = 0x0002;
+    // Mock FPFW_RUNTIME_ASSERT_EXT for ddrss_set_power_telemetry_config
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE);
+
+    // Mock ddrss_set_power_telemetry_filter for each MC * event
+    will_return_count(__wrap_ddrss_set_power_telemetry_filter, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT); // SILIBS_SUCCESS
+
+    // Mock FPFW_RUNTIME_ASSERT_EXT for ddrss_set_power_telemetry_filter
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Mock ddrss_pmu_init for each MC * event
+    will_return_count(__wrap_ddrss_pmu_init, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT); // SILIBS_SUCCESS
+
+    // Mock FPFW_RUNTIME_ASSERT_EXT for ddrss_pmu_init
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Mock ddrss_pmu_set_event for each MC * event
+    will_return_count(__wrap_ddrss_pmu_set_event, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT); // SILIBS_SUCCESS
+
+    // Mock FPFW_RUNTIME_ASSERT_EXT for ddrss_pmu_set_event
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Mock ddrss_pmu_enable for each MC * event
+    will_return_count(__wrap_ddrss_pmu_enable, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT); // SILIBS_SUCCESS
+
+    // Mock FPFW_RUNTIME_ASSERT_EXT for ddrss_pmu_enable
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    test_enables.as_uint16 = 0x0002; // vm_memory_pwr_en is bit 1
     data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(test_enables);
 
     assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0002);
     assert_int_equal(pwr_tlm_scp_record_enables.record.drop_count_en, 0);
     assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 1);
+}
 
-    // Test case 3: Enable both flags
-    test_enables.as_uint16 = 0x0003;
-    data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(test_enables);
+TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_handle_enables_from_mcp_all_disabled, test_setup, test_teardown)
+{
+    tlm_scp_record_enables_t test_enables = {{0}};
 
-    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0003);
-    assert_int_equal(pwr_tlm_scp_record_enables.record.drop_count_en, 1);
-    assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 1);
+    // Disable all flags (DDRSS PMU disable calls expected for else path)
+    // DDRSS_MAX_MC_NUM_PER_DIE MCs per die, each with DDRSS_MAX_PWR_TEL_EVT PMUs
+    will_return(__wrap_mts_get_this_die_id, 0);
 
-    // Test case 4: Disable all flags
+    // Mock ddrss_pmu_enable for disabling PMUs (else branch)
+    will_return_count(__wrap_ddrss_pmu_enable, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT); // SILIBS_SUCCESS
+
+    // Mock FPFW_RUNTIME_ASSERT_EXT for ddrss_pmu_enable
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
     test_enables.as_uint16 = 0x0000;
     data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(test_enables);
 
@@ -127,36 +155,127 @@ TEST_FUNCTION(test_pwr_tlm_scp_handle_incoming_mts_msgs_dcp_invalid_case, test_s
     pwr_tlm_scp_handle_incoming_mts_msgs();
 }
 
-TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_client_defined, test_setup, nullptr)
+TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_sync_enables_disabled, test_setup, nullptr)
 {
     trp_msg_t trp_msg = {{{{0}}}};
 
-    // Test TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH
-    // This tests that the message routing correctly calls data_proc_scp_tlm_cmpnt_handle_enables_from_mcp
+    // Test TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH with disabled flags (else path)
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
     p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
     tlm_client_msg->cmd = TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH;
-    tlm_client_msg->payload.scp_records.as_uint16 = 0x0003; // Enable both flags
+    tlm_client_msg->payload.scp_records.as_uint16 = 0x0000; // Disable all flags
 
-    // Reset enables to ensure the function call has an effect
-    pwr_tlm_scp_record_enables.as_uint16 = 0x0000;
+    // Mocks for data_proc_scp_tlm_cmpnt_handle_enables_from_mcp with vm_memory_pwr_en disabled (else path)
+    will_return(__wrap_mts_get_this_die_id, 0);
+    will_return_count(__wrap_ddrss_pmu_enable, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
 
     mts_manager_scp_handle_trp_msg(&trp_msg);
 
-    // Verify data_proc_scp_tlm_cmpnt_handle_enables_from_mcp was called and executed correctly
-    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0003);
-    assert_int_equal(pwr_tlm_scp_record_enables.record.drop_count_en, 1);
-    assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 1);
+    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0000);
+}
 
-    // Test TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH with both flags enabled
+TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_sync_enables_vm_memory_enabled, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    // Test TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH with vm_memory_pwr_en enabled
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH;
+    tlm_client_msg->payload.scp_records.as_uint16 = 0x0002; // vm_memory_pwr_en only
+
+    // Mocks for data_proc_scp_tlm_cmpnt_handle_enables_from_mcp with vm_memory_pwr_en enabled
+    will_return(__wrap_mts_get_this_die_id, 0);
+    will_return_count(__wrap_ddrss_set_power_telemetry_config, 0, DDRSS_MAX_MC_NUM_PER_DIE);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE);
+    will_return_count(__wrap_ddrss_set_power_telemetry_filter, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    will_return_count(__wrap_ddrss_pmu_init, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    will_return_count(__wrap_ddrss_pmu_set_event, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    will_return_count(__wrap_ddrss_pmu_enable, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    mts_manager_scp_handle_trp_msg(&trp_msg);
+
+    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0002);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 1);
+}
+
+TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_gen_pwr_package_both_disabled, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    // Test TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH with both flags disabled
+    // No data processing functions should be called
+    pwr_tlm_scp_record_enables.as_uint16 = 0x0000;
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
     tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH;
 
-    // Since data_proc functions are not mocked, they will be called when flags are set
-    // No assertions needed as we're just verifying the function executes without error
     mts_manager_scp_handle_trp_msg(&trp_msg);
 
-    // Test TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH with flags disabled
-    pwr_tlm_scp_record_enables.as_uint16 = 0x0000;
+    // No assertions needed - test passes if no functions are called
+}
+
+TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_gen_pwr_package_drop_count_only, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    // Test TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH with drop_count_en only
+    pwr_tlm_scp_record_enables.as_uint16 = 0x0001; // drop_count_en only
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH;
+
+    // Mock for data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_droop_counts, 1);
+
+    mts_manager_scp_handle_trp_msg(&trp_msg);
+}
+
+TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_gen_pwr_package_vm_memory_only, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    // Test TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH with vm_memory_pwr_en only
+    pwr_tlm_scp_record_enables.as_uint16 = 0x0002; // vm_memory_pwr_en only
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH;
+
+    // Mocks for data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp
+    will_return(__wrap_mts_get_this_die_id, 0);
+    will_return_count(__wrap_ddrss_pmu_read_counter_snapshot, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    mts_manager_scp_handle_trp_msg(&trp_msg);
+}
+
+TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_gen_pwr_package_both_enabled, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    // Test TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH with both flags enabled
+    pwr_tlm_scp_record_enables.as_uint16 = 0x0003; // Both flags enabled
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH;
+
+    // Mock for data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_droop_counts, 1);
+
+    // Mocks for data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp
+    will_return(__wrap_mts_get_this_die_id, 0);
+    will_return_count(__wrap_ddrss_pmu_read_counter_snapshot, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
     mts_manager_scp_handle_trp_msg(&trp_msg);
 }
 
@@ -170,13 +289,11 @@ TEST_FUNCTION(test_mts_manager_scp_init, test_setup, test_teardown)
     expect_any_always(__wrap__txe_queue_create, queue_control_block_size);
     will_return_always(__wrap__txe_queue_create, TX_SUCCESS);
 
-    expect_value(__wrap_FpFwAssertWithArgs, expression, true);
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
     will_return_always(__wrap__txe_block_pool_create, TX_SUCCESS);
     expect_function_calls(__wrap__txe_block_pool_create, 1);
 
-    expect_value(__wrap_FpFwAssertWithArgs, expression, true);
     expect_function_calls(__wrap_FpFwAssertWithArgs, 1);
 
     mts_client_register(MTS_CLIENT_ID_PWR_INST_TELEM, &s_pwr_tlm_mts_client_scp_test);

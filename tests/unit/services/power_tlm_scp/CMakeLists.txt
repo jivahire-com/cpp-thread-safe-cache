@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::mocks
     ms::cmocka::testrunner
     ms::lib::error_handler
+    silibs::ddrss
 )
 
 # Defining platform APIs
@@ -51,4 +52,14 @@ mock_target(${TARGET}
     mts_get_this_die_id
     mts_get_this_core_id
     FpFwAssertWithArgs
+    ddrss_load_crypto_key
+    ddrss_set_power_telemetry_config
+    ddrss_set_power_telemetry_filter
+    ddrss_pmu_init
+    ddrss_pmu_enable
+    ddrss_pmu_read_counter_snapshot
+    ddrss_pmu_set_event
+    config_get_pwr_tlm_mpam_scp_knobs
+    power_get_adclk_telem
+    pwr_tlm_core_exch_scp_write_droop_counts
 )

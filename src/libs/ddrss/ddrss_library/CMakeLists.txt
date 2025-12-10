@@ -16,7 +16,7 @@ set(GENERATED_DDRSS_VERSION_HEADER ${CMAKE_CURRENT_SOURCE_DIR}/inc/ddrss_reserve
 
 add_custom_command(
     OUTPUT ${GENERATED_DDRSS_VERSION_HEADER}
-    COMMAND pwsh -NoLogo -ExecutionPolicy Bypass -File ${GEN_VERSION_SCRIPT} -Force -VerboseOutput
+    COMMAND pwsh -NoProfile -NoLogo -ExecutionPolicy Bypass -File ${GEN_VERSION_SCRIPT} -Force -VerboseOutput
     DEPENDS ${GEN_VERSION_SCRIPT} ${RESERVED_REGIONS_HEADER}
     COMMENT "Generating ddrss_reserved_regions_version.h from silibs tag"
     VERBATIM

@@ -37,14 +37,21 @@
       <Member name="mem_pwr_primary_enable" type="bool" default="false" help="Enable MPAM vM memory collection" />
     </Struct>
 
-    <Struct name="power_tlm_mpam_scp_knobs_t" help="">
-      <Member name="T2_thresh" type="uint8_t" default="67" help="T2 Utilization Threshold" />
-      <Member name="T1_thresh" type="uint8_t" default="66" help="T1 Utilization Threshold" />
-      <Member name="T0_thresh" type="uint8_t" default="65" help="T0 Utilization Threshold" />
+    <Struct name="power_tlm_rel_pwr_knobs_t" help="">
       <Member name="enc_wr_rel_pwr" type="uint8_t" default="1" help="Encrypted Write Relative Power" />
       <Member name="unenc_wr_rel_pwr" type="uint8_t" default="1" help="Unencrypted Write Relative Power" />
       <Member name="enc_rd_rel_pwr" type="uint8_t" default="1" help="Encrypted Read Relative Power" />
       <Member name="unenc_rd_rel_pwr" type="uint8_t" default="1" help="Unencrypted Read Relative Power" />
+    </Struct>
+
+    <Struct name="power_tlm_mpam_scp_knobs_t" help="">
+      <Member name="T2_thresh" type="uint8_t" default="67" help="T2 Utilization Threshold" />
+      <Member name="T1_thresh" type="uint8_t" default="66" help="T1 Utilization Threshold" />
+      <Member name="T0_thresh" type="uint8_t" default="65" help="T0 Utilization Threshold" />
+      <Member name="relative_pwr_0" type="power_tlm_rel_pwr_knobs_t" default="{1,1,1,1}" help="Range 0" />
+      <Member name="relative_pwr_1" type="power_tlm_rel_pwr_knobs_t" default="{1,1,1,1}" help="Range 1" />
+      <Member name="relative_pwr_2" type="power_tlm_rel_pwr_knobs_t" default="{1,1,1,1}" help="Range 2" />
+      <Member name="relative_pwr_3" type="power_tlm_rel_pwr_knobs_t" default="{1,1,1,1}" help="Range 3" />
     </Struct>
   </Structs>
 

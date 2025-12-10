@@ -15,11 +15,13 @@
 #include <FpFwAssert.h>                  // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>                   // for FPFW_UNUSED
 #include <IFpFwEventTracingGeneration.h> // for FPFW_ET_LOG
+#include <ddrss_runtime_api.h>
 #include <fpfw_cfg_mgr.h>
+#include <kng_soc_constants.h>
 #include <message_transfer_service.h>
 #include <power_runconfig.h>
 #include <pwr_tlm_core_exchange.h>
-#include <stdio.h>
+#include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -164,15 +166,119 @@ void data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(tlm_scp_record_enables_t en
 {
     pwr_tlm_scp_record_enables = enables;
     FPFW_ET_LOG(ScpMtsMgrEnablesUpdated, pwr_tlm_scp_record_enables.as_uint16);
+    int silibs_status = SILIBS_SUCCESS;
 
-    // todo: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584713
-    // if (pwr_tlm_scp_record_enables.record.vm_memory_pwr_en)
-    // {
-    //     power_tlm_mpam_scp_knobs_t mpam_knobs = config_get_pwr_tlm_mpam_scp_knobs();
-    // }
-    // else
-    // {
-    // }
+    if (pwr_tlm_scp_record_enables.record.vm_memory_pwr_en)
+    {
+        power_tlm_mpam_scp_knobs_t mpam_knobs = config_get_pwr_tlm_mpam_scp_knobs();
+
+        ddrss_pwr_tel_evt_fltr_t pwr_tel_evt_catch_all_filter = {0};
+        // for values, see Telemetry spec, Appendix section, Programming Configurations for VM Memory Collections
+        // https://microsoft.sharepoint.com/:w:/r/teams/EchoFalls/_layouts/15/doc2.aspx?sourcedoc=%7BFD425643-C61B-46E0-9AD0-93E10FAF5D0B%7D&file=1PFW_Kingsgate_Power_Telemetry_Requirements_And_Specifications%20V0.4%20WIP.docx&action=default&mobileredirect=true&DefaultItemOpen=1
+
+        pwr_tel_evt_catch_all_filter.mask_mpam_sp = 1;
+        pwr_tel_evt_catch_all_filter.mask_partid = 511;
+        pwr_tel_evt_catch_all_filter.mask_perf_mon_group = 0;
+        pwr_tel_evt_catch_all_filter.match_mpam_sp = 1;
+        pwr_tel_evt_catch_all_filter.match_partid = 0;
+        pwr_tel_evt_catch_all_filter.match_perf_mon_group = 0;
+        pwr_tel_evt_catch_all_filter.invert = 0;
+        pwr_tel_evt_catch_all_filter.no_event_en = 1;
+        pwr_tel_evt_catch_all_filter.mask_match_en = 0;
+
+        ddrss_pwr_tel_evt_fltr_t pwr_tel_evt_mpam_filter = {0};
+
+        // see power telemetry spec for values
+        pwr_tel_evt_mpam_filter.mask_mpam_sp = 1;
+        pwr_tel_evt_mpam_filter.mask_partid = 511;
+        pwr_tel_evt_mpam_filter.mask_perf_mon_group = 0;
+        pwr_tel_evt_mpam_filter.match_mpam_sp = 1;
+        pwr_tel_evt_mpam_filter.match_partid = 1; // initial mpam,  0 is catch all
+        pwr_tel_evt_mpam_filter.match_perf_mon_group = 0;
+        pwr_tel_evt_mpam_filter.invert = 0;
+        pwr_tel_evt_mpam_filter.no_event_en = 0;
+        pwr_tel_evt_mpam_filter.mask_match_en = 1;
+
+        ddrss_pwr_tel_cfg_t pwr_tel_cfg = {0};
+        pwr_tel_cfg.evt_sel_en = 1;
+        pwr_tel_cfg.th0 = mpam_knobs.T0_thresh;
+        pwr_tel_cfg.th1 = mpam_knobs.T1_thresh;
+        pwr_tel_cfg.th2 = mpam_knobs.T2_thresh;
+
+        pwr_tel_cfg.pwr_tel_rp[0].u_rd = mpam_knobs.relative_pwr_0.unenc_rd_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[0].e_rd = mpam_knobs.relative_pwr_0.enc_rd_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[0].u_wr = mpam_knobs.relative_pwr_0.unenc_wr_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[0].e_wr = mpam_knobs.relative_pwr_0.enc_wr_rel_pwr;
+
+        pwr_tel_cfg.pwr_tel_rp[1].u_rd = mpam_knobs.relative_pwr_1.unenc_rd_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[1].e_rd = mpam_knobs.relative_pwr_1.enc_rd_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[1].u_wr = mpam_knobs.relative_pwr_1.unenc_wr_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[1].e_wr = mpam_knobs.relative_pwr_1.enc_wr_rel_pwr;
+
+        pwr_tel_cfg.pwr_tel_rp[2].u_rd = mpam_knobs.relative_pwr_2.unenc_rd_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[2].e_rd = mpam_knobs.relative_pwr_2.enc_rd_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[2].u_wr = mpam_knobs.relative_pwr_2.unenc_wr_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[2].e_wr = mpam_knobs.relative_pwr_2.enc_wr_rel_pwr;
+
+        pwr_tel_cfg.pwr_tel_rp[3].u_rd = mpam_knobs.relative_pwr_3.unenc_rd_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[3].e_rd = mpam_knobs.relative_pwr_3.enc_rd_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[3].u_wr = mpam_knobs.relative_pwr_3.unenc_wr_rel_pwr;
+        pwr_tel_cfg.pwr_tel_rp[3].e_wr = mpam_knobs.relative_pwr_3.enc_wr_rel_pwr;
+
+        ddrss_pmu_evt_type_cfg_t evt_cfg = {0};
+
+        uint8_t die_id = mts_get_this_die_id();
+        uint16_t mc_start = die_id * DDRSS_MAX_MC_NUM_PER_DIE;
+        uint16_t mc_end = mc_start + DDRSS_MAX_MC_NUM_PER_DIE;
+        for (uint16_t mc = mc_start; mc < mc_end; mc++)
+        {
+            silibs_status = ddrss_set_power_telemetry_config(mc, &pwr_tel_cfg);
+            FPFW_RUNTIME_ASSERT_EXT(silibs_status == SILIBS_SUCCESS, silibs_status, mc, 0, 0);
+
+            for (uint16_t event_idx = 0; event_idx < DDRSS_MAX_PWR_TEL_EVT; event_idx++)
+            {
+                if (event_idx == DDRSS_MAX_PWR_TEL_EVT - 1)
+                {
+                    // for each memory controller, there are 8 pmu's. 7 are assigned to individual mpams, this
+                    // one is assigned to catch the rest.
+                    silibs_status = ddrss_set_power_telemetry_filter(mc, event_idx, &pwr_tel_evt_catch_all_filter);
+                }
+                else
+                {
+                    silibs_status = ddrss_set_power_telemetry_filter(mc, event_idx, &pwr_tel_evt_mpam_filter);
+                    pwr_tel_evt_mpam_filter.match_partid += 1; // next mpam partid
+                }
+
+                FPFW_RUNTIME_ASSERT_EXT(silibs_status == SILIBS_SUCCESS, silibs_status, mc, event_idx, 0);
+
+                // the first 8 pmu's are assigned to power telemetry events, so can use event_idx as pmu_en
+                // which is actually the pmu index.
+                silibs_status = ddrss_pmu_init(mc, event_idx);
+                FPFW_RUNTIME_ASSERT_EXT(silibs_status == SILIBS_SUCCESS, silibs_status, mc, event_idx, 0);
+
+                evt_cfg.evt_id = event_idx;
+                silibs_status = ddrss_pmu_set_event(mc, event_idx, &evt_cfg);
+                FPFW_RUNTIME_ASSERT_EXT(silibs_status == SILIBS_SUCCESS, silibs_status, mc, event_idx, 0);
+
+                silibs_status = ddrss_pmu_enable(mc, event_idx, 0x1);
+                FPFW_RUNTIME_ASSERT_EXT(silibs_status == SILIBS_SUCCESS, silibs_status, mc, event_idx, 0);
+            }
+        }
+    }
+    else
+    {
+        uint8_t die_id = mts_get_this_die_id();
+        uint16_t mc_start = die_id * DDRSS_MAX_MC_NUM_PER_DIE;
+        uint16_t mc_end = mc_start + DDRSS_MAX_MC_NUM_PER_DIE;
+        for (uint16_t mc = mc_start; mc < mc_end; mc++)
+        {
+            for (uint16_t pmu_idx = 0; pmu_idx < DDRSS_MAX_PWR_TEL_EVT; pmu_idx++)
+            {
+                silibs_status = ddrss_pmu_enable(mc, pmu_idx, 0x0);
+                FPFW_RUNTIME_ASSERT_EXT(silibs_status == SILIBS_SUCCESS, silibs_status, mc, pmu_idx, 0);
+            }
+        }
+    }
 }
 
 void data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp(void)
@@ -187,5 +293,17 @@ void data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp(void)
 
 void data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp(void)
 {
-    // todo: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584713
+    int silibs_status = SILIBS_SUCCESS;
+    uint64_t pmn_cnt = 0;
+    uint8_t die_id = mts_get_this_die_id();
+    uint16_t mc_start = die_id * DDRSS_MAX_MC_NUM_PER_DIE;
+    uint16_t mc_end = mc_start + DDRSS_MAX_MC_NUM_PER_DIE;
+    for (uint16_t mc = mc_start; mc < mc_end; mc++)
+    {
+        for (uint16_t pmu_idx = 0; pmu_idx < DDRSS_MAX_PWR_TEL_EVT; pmu_idx++)
+        {
+            silibs_status = ddrss_pmu_read_counter_snapshot(mc, pmu_idx, &pmn_cnt);
+            FPFW_RUNTIME_ASSERT_EXT(silibs_status == SILIBS_SUCCESS, silibs_status, mc, pmu_idx, 0);
+        }
+    }
 }

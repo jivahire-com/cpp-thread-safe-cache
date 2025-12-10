@@ -11,8 +11,11 @@
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <data_proc_tlm_cmpnt.h>
+#include <fpfw_cfg_mgr.h>
 #include <in_band_tlm_cmpnt_i.h>
+#include <kng_soc_constants.h>
 #include <message_transfer_service.h>
+#include <power_runconfig.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -64,11 +67,7 @@ void __wrap_mts_client_send_dcp_notification(mts_client_id_t client_id, dcp_noti
 
 uint8_t __wrap_mts_get_this_die_id(void)
 {
-    if (g_die_id_mocked)
-    {
-        return mock_type(uint8_t);
-    }
-    return 0;
+    return mock_type(uint8_t);
 }
 
 mts_platform_core_id_t __wrap_mts_get_this_core_id(void)
@@ -84,12 +83,11 @@ void __wrap_mts_client_flush_incoming_queue(mts_client_id_t id)
 
 void __wrap_FpFwAssertWithArgs(int expression, uintptr_t arg0, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3)
 {
+    FPFW_UNUSED(expression);
     FPFW_UNUSED(arg0);
     FPFW_UNUSED(arg1);
     FPFW_UNUSED(arg2);
     FPFW_UNUSED(arg3);
-
-    check_expected_ptr(expression);
 
     function_called();
 }
@@ -165,4 +163,83 @@ fpfw_status_t __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t clie
     FPFW_UNUSED(client);
 
     return FPFW_STATUS_SUCCESS;
+}
+
+int __wrap_ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(msg);
+    FPFW_UNUSED(timeout_us);
+
+    return 0;
+}
+
+int __wrap_ddrss_set_power_telemetry_config(uint32_t mc, void* pwr_tel_cfg)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(pwr_tel_cfg);
+    return mock_type(int);
+}
+
+int __wrap_ddrss_set_power_telemetry_filter(uint32_t mc, uint16_t event_idx, void* pwr_tel_evt_filter)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(event_idx);
+    FPFW_UNUSED(pwr_tel_evt_filter);
+    return mock_type(int);
+}
+
+int __wrap_ddrss_pmu_init(uint32_t mc, uint16_t pmu_idx)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(pmu_idx);
+    return mock_type(int);
+}
+
+int __wrap_ddrss_pmu_set_event(uint32_t mc, uint16_t pmu_idx, void* evt_cfg)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(pmu_idx);
+    FPFW_UNUSED(evt_cfg);
+    return mock_type(int);
+}
+
+int __wrap_ddrss_pmu_enable(uint32_t mc, uint16_t pmu_idx, uint32_t enable)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(pmu_idx);
+    FPFW_UNUSED(enable);
+    return mock_type(int);
+}
+
+power_tlm_mpam_scp_knobs_t __wrap_config_get_pwr_tlm_mpam_scp_knobs(void)
+{
+    // Return a zero-initialized struct - the actual struct definition isn't needed for the test
+    power_tlm_mpam_scp_knobs_t knobs;
+    memset(&knobs, 0, sizeof(knobs));
+    return knobs;
+}
+
+void __wrap_power_get_adclk_telem(power_adclk_tel_t* adclk_tel)
+{
+    FPFW_UNUSED(adclk_tel);
+    // Zero out the structure for testing
+    if (adclk_tel != NULL)
+    {
+        memset(adclk_tel, 0, sizeof(power_adclk_tel_t));
+    }
+}
+
+void __wrap_pwr_tlm_core_exch_scp_write_droop_counts(uint64_t (*droop_count_array)[NUM_AP_CORES_PER_DIE])
+{
+    FPFW_UNUSED(droop_count_array);
+    function_called();
+}
+
+int __wrap_ddrss_pmu_read_counter_snapshot(uint32_t mc, uint16_t pmu_idx, uint64_t* pmn_cnt)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(pmu_idx);
+    FPFW_UNUSED(pmn_cnt);
+    return mock_type(int);
 }

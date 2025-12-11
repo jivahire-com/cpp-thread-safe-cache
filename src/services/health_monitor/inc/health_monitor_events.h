@@ -24,7 +24,7 @@
 // clang-format off
 
 /**
- * Define Event Trace events for the Crash Dump Provider
+ * Define Event Trace events for the Health Monitor Provider
 */
 typedef enum {
     HM_ET_ID_TYPE_INFO_NOPARAMS,

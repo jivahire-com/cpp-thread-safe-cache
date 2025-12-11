@@ -16,6 +16,7 @@ add_library(${TARGET}
         pcie_rp_event_handler.c
         pcie_sync_requests.c
         pcie_phy_load_events.c
+        pcie_manager_events.c
 )
 
 target_link_libraries(

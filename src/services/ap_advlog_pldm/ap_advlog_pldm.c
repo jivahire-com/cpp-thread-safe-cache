@@ -9,6 +9,7 @@
 
 /*------------- Includes -----------------*/
 #include "ap_advlog_parse.h"
+#include "ap_advlog_pldm_events.h"
 
 #include <DbgPrint.h>
 #include <FpFwAssert.h>
@@ -49,6 +50,7 @@ static void ap_advlog_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* 
     }
     else
     {
+        AP_ADVLOG_PLDM_ET_ERROR_PARAM(AP_ADVLOG_PLDM_ET_TYPE_DUMP_TRANSFER_FAIL, completionCode);
         FPFW_DBGPRINT_ERROR("[AP_ADVLOG_PLDM] Failed to transfer AP advlog dump to BMC - PLDM CC 0x%x!\n", completionCode);
     }
 
@@ -57,6 +59,7 @@ static void ap_advlog_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* 
         pldm_status = fpfw_pldm_service_state_effecter_set_complete(&pldm_ctx.effecter_ctx);
         if (pldm_status != FPFW_STATUS_SUCCESS)
         {
+            AP_ADVLOG_PLDM_ET_ERROR_PARAM(AP_ADVLOG_PLDM_ET_TYPE_EFFECTER_COMPLETE_FAIL, pldm_status);
             FPFW_DBGPRINT_ERROR("[AP_ADVLOG_PLDM] Failed to complete effecter set - PLDM Status 0x%x\n", pldm_status);
         }
         else
@@ -91,12 +94,14 @@ void ap_advlog_pldm_transfer_dump()
 
     if (populate_advanced_logger_info() == false)
     {
+        AP_ADVLOG_PLDM_ET_ERROR(AP_ADVLOG_PLDM_ET_TYPE_INFO_RETRIEVE_FAIL);
         FPFW_DBGPRINT_ERROR("[AP_ADVLOG_PLDM] Failed to retrieve log info! Log will not be sent!\n");
         return;
     }
 
     if (logdump_in_progress == true)
     {
+        AP_ADVLOG_PLDM_ET_ERROR(AP_ADVLOG_PLDM_ET_TYPE_LOGDUMP_IN_PROGRESS);
         FPFW_DBGPRINT_ERROR(
             "[AP_ADVLOG_PLDM] Prior AP logdump is in progress, cannot start a new transfer!\n");
         return;
@@ -126,6 +131,7 @@ void ap_advlog_pldm_transfer_dump()
     }
     else
     {
+        AP_ADVLOG_PLDM_ET_ERROR_PARAM(AP_ADVLOG_PLDM_ET_TYPE_RAISE_PPE_FAIL, status);
         FPFW_DBGPRINT_ERROR("[AP_ADVLOG_PLDM] Failed to raise PPE! - PLDM Status 0x%x\n", status);
         logdump_in_progress = false;
     }

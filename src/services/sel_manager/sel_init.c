@@ -21,6 +21,7 @@
 #endif
 #include <sel.h>
 #include <sel_init.h>
+#include <sel_manager_events.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -85,6 +86,7 @@ KNG_STATUS sel_register_icc(sel_icc_type_t type, fpfw_icc_base_ctx_t* icc_ctx)
     if (icc_ctx == NULL || type >= SEL_ICC_MAX)
     {
         FPFW_DBGPRINT_ERROR("SEL: Invalid ICC ctx\n");
+        SEL_MANAGER_ET_ERROR_PARAM(SEL_MANAGER_ET_TYPE_INVALID_ICC_CTX, type);
         return KNG_E_INVALIDARG;
     }
 

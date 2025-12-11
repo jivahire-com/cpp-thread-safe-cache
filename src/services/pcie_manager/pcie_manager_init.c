@@ -20,6 +20,7 @@
 #include <pcie_dfwk.h>
 #include <pcie_error_injection_i.h>
 #include <pcie_lt_events.h>
+#include <pcie_manager_events.h>
 #include <pcie_manager_i.h>
 #include <pcie_phy_load_events.h>
 #include <scp_pcie_manager.h>
@@ -77,6 +78,7 @@ void scp_pcie_config_service_initialize(uint16_t rpss_to_init)
     if (status != TX_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("[PCIe Config] Failed to create event flags! TX_STATUS: %d\n", status);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_CONFIG_EVENT_FLAGS_CREATE_FAIL, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 
@@ -108,6 +110,7 @@ void scp_pcie_start_config_service_thread(void)
     if (status != TX_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("[PCIe Config] Failed to launch config service thread! TX_STATUS: %d\n", status);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_CONFIG_THREAD_CREATE_FAIL, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 }
@@ -124,6 +127,7 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
     if (schedule == NULL)
     {
         FPFW_DBGPRINT_ERROR("[PCIe Init] Failure - NULL driver framework schedule!\n");
+        PCIE_MANAGER_ET_ERROR(PCIE_MANAGER_ET_TYPE_NULL_SCHEDULE);
         FPFwErrorRaise(-EINVAL, 0, 0, 0, 0);
     }
 
@@ -190,6 +194,7 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
         if (status != TX_SUCCESS)
         {
             FPFW_DBGPRINT_ERROR("[PCIe Init] Failed to create work queues! TX_STATUS: %d\n", status);
+            PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_WORK_QUEUE_CREATE_FAIL, status);
             FPFwErrorRaise(status, 0, 0, 0, 0);
         }
 
@@ -207,6 +212,7 @@ void* scp_pcie_initialize(PDFWK_SCHEDULE schedule, uint16_t rpss_to_init, KNG_DI
         if (status != TX_SUCCESS)
         {
             FPFW_DBGPRINT_ERROR("[PCIe Init] Failed to create worker threads! TX_STATUS: %d\n", status);
+            PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_WORKER_THREAD_CREATE_FAIL, status);
             FPFwErrorRaise(status, 0, 0, 0, 0);
         }
     }

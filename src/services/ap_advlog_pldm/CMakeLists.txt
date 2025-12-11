@@ -4,6 +4,7 @@ set(TARGET kng.service.ap_advlog_pldm_mcp)
 set (SOURCES
         ap_advlog_pldm.c
         ap_advlog_parse.c
+        ap_advlog_pldm_events.c
 )
 add_library(${TARGET}  STATIC ${SOURCES})
 

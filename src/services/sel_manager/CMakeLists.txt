@@ -6,6 +6,7 @@ add_library(${TARGET}
         sel_dfwk.c
         sel_init.c
         sel_main.c
+        sel_manager_events.c
 )
 
 target_compile_definitions(

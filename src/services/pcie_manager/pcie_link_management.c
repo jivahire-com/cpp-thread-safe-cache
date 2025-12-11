@@ -16,6 +16,7 @@
 #include <fpfw_cfg_mgr.h>
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
+#include <pcie_manager_events.h>
 #include <pcie_manager_i.h>
 #include <pcie_rp_event_handler.h>
 #include <pcie_ss_common.h>
@@ -59,7 +60,7 @@ static void pcie_rp_timer_expiry_callback(unsigned long cb_val)
     pciess_completion_request_t cmpl = {0};
     pcie_manager_context_t* ctx = scp_pcie_get_manager_context(rpss_idx);
 
-    FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Link training timer expired!\n", rpss_idx, rp_idx);
+    PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_LINK_TRAINING_TIMER_EXPIRED, (uint32_t)((rpss_idx << 8) | rp_idx));
 
     /*
      * Even if the link training timer expires, we still need to check and log
@@ -72,7 +73,7 @@ static void pcie_rp_timer_expiry_callback(unsigned long cb_val)
     int status = tx_queue_send(&(ctx->work_queue), &(cmpl), TX_NO_WAIT);
     if (status != TX_SUCCESS)
     {
-        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: tx_queue_send error - %d\n", ctx->rpss_idx, cmpl.rp_index, status);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_TIMER_CALLBACK_QUEUE_SEND_FAIL, status);
         BUG_ASSERT_PARAM((status == TX_SUCCESS), status, 0);
     }
 }
@@ -93,6 +94,8 @@ static void start_link_training_timer_for_rp(pcie_manager_context_t* ctx, uint8_
     if (status != TX_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Failed to create link training timer! TX_STATUS: %d\n", ctx->rpss_idx, rp_idx, status);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_LINK_TRAINING_TIMER_CREATE_FAIL, status);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_LINK_TRAINING_TIMER_CREATE_FAIL, status);
         BUG_ASSERT_PARAM((status == TX_SUCCESS), status, 0);
     }
 }
@@ -158,6 +161,8 @@ void handle_pcie_link_down_event(pcie_manager_context_t* ctx, pciess_completion_
     if (send_sync_rp_is_ready((PDFWK_INTERFACE_HEADER)(ctx->iface), rpss_idx, rp_index) == false)
     {
         FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: root port not ready after linkdown - cannot re-train!\n", rpss_idx, rp_index);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_RP_NOT_READY_AFTER_LINK_DOWN,
+                                    (uint32_t)((rpss_idx << 8) | rp_index));
         return;
     }
 

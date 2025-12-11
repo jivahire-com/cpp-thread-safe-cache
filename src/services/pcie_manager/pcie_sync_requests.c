@@ -17,6 +17,7 @@
 #include <pcie_common.h>
 #include <pcie_dfwk.h>
 #include <pcie_einj_structs.h>
+#include <pcie_manager_events.h>
 #include <pcie_ss_common.h>
 #include <pcie_sync_requests_i.h>
 #include <pciess.h>
@@ -46,6 +47,7 @@ silibs_status_t send_generic_ss_sync_req(PDFWK_INTERFACE_HEADER iface,
     if (rpss_idx >= NUM_RPSS)
     {
         FPFW_DBGPRINT_ERROR("RPSS[%d]: Invalid RPSS index!\n", rpss_idx);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_SYNC_INVALID_RPSS_INDEX, rpss_idx);
         BUG_ASSERT_PARAM((rpss_idx < NUM_RPSS), rpss_idx, 0);
     }
 
@@ -118,6 +120,7 @@ silibs_status_t send_generic_rp_sync_req(PDFWK_INTERFACE_HEADER iface,
     if ((rpss_idx >= NUM_RPSS) || (rp_idx >= PCIESS_NUM_PORTS))
     {
         FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Invalid RPSS/RP index!\n", rpss_idx, rp_idx);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_SYNC_INVALID_RP_INDEX, (uint32_t)((rpss_idx << 8) | rp_idx));
         BUG_ASSERT_PARAM(((rpss_idx < NUM_RPSS) && (rp_idx < PCIESS_NUM_PORTS)), rpss_idx, rp_idx);
     }
 
@@ -136,6 +139,7 @@ silibs_status_t send_generic_rp_sync_req(PDFWK_INTERFACE_HEADER iface,
                             req,
                             dfwk_status,
                             sync_req.status);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_SYNC_RPSS_SEND_FAIL, dfwk_status);
         BUG_ASSERT_PARAM((((sync_req.status == SILIBS_SUCCESS) || no_silibs_check) && (dfwk_status == DFWK_SUCCESS)),
                          sync_req.status,
                          dfwk_status);
@@ -180,6 +184,7 @@ silibs_status_t send_sync_rp_get_link_status(PDFWK_INTERFACE_HEADER iface, uint8
     else
     {
         FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Link Training failure!\n", rpss_idx, rp_idx);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_LINK_TRAINING_FAIL, (uint32_t)((rpss_idx << 8) | rp_idx));
     }
     return status;
 }

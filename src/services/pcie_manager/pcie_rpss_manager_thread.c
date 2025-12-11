@@ -17,6 +17,7 @@
 #include <pcie_config_variable.h>
 #include <pcie_link_management_i.h>
 #include <pcie_lt_events.h>
+#include <pcie_manager_events.h>
 #include <pcie_manager_i.h>
 #include <pcie_phy_load_events.h>  // PhyFW load event
 #include <pcie_rp_event_handler.h> // Process Events/misc RP helper functions
@@ -79,6 +80,7 @@ static void full_pciess_init_scp_cold_boot(pcie_manager_context_t* ctx)
     if (status != SILIBS_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("RPSS[%d]: Timed out waiting for RPSS to get ready!\n", ctx->rpss_idx);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_RPSS_READY_TIMEOUT, ctx->rpss_idx);
         BUG_ASSERT_PARAM((status == SILIBS_SUCCESS), status, ctx->rpss_idx);
     }
     else

@@ -19,6 +19,7 @@
 #include <pldm_common_power.h>
 #include <pldm_pdr.h>
 #include <power_pldm.h>
+#include <power_pldm_events.h>
 #include <power_pldm_private.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -171,6 +172,7 @@ static void power_cap_on_effecter_set(pldm_numeric_effecter_context_t* effecter,
     if (p_request->params.is_active)
     {
         FPFW_DBGPRINT_ERROR("[PWR PLDM] Previous Pwr Cap Request is still active, dropping the request!");
+        POWER_PLDM_ET_ERROR(POWER_PLDM_ET_TYPE_PWR_CAP_REQUEST_ACTIVE);
         return;
     }
     //! Set the active flag
@@ -212,6 +214,7 @@ void pldm_perf_state_query(pldm_state_sensor_context_t* p_sensor, void* p_contex
         {
             FPFW_DBGPRINT_ERROR(
                 "[PWR PLDM] Previous Pwr Throt State Request is still active, dropping the request!");
+            POWER_PLDM_ET_ERROR(POWER_PLDM_ET_TYPE_PWR_THROT_REQUEST_ACTIVE);
             active_msg_printed = true;
         }
         return;

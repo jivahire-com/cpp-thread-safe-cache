@@ -56,6 +56,7 @@ static void boot_complete_polling_callback(ULONG input)
         }
         else
         {
+            ACCEL_BOOT_NOTIFY_ET_ERROR_PARAM(ACCEL_BOOT_NOTIFY_ET_TYPE_NOTIFY_UEFI_BOOT_COMPLETE_FAIL, accel_status);
             FPFW_DBGPRINT_ERROR("Error in notifying accelerator the uefi boot complete status");
             BUG_CHECK(KNG_ACCEL_NOTIFY_BOOT_COMPLETE_ERR, 0, 0);
         }
@@ -74,6 +75,7 @@ KNG_STATUS accel_boot_notify_service(void)
 
     if (ret != TX_SUCCESS)
     {
+        ACCEL_BOOT_NOTIFY_ET_ERROR_PARAM(ACCEL_BOOT_NOTIFY_ET_TYPE_TIMER_CREATE_FAIL, ret);
         FPFW_DBGPRINT_ERROR("Failed to create timer, error code: %u", ret);
         return KNG_E_FAIL;
     }

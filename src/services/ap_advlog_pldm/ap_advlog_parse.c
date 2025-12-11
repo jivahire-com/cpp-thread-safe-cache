@@ -11,6 +11,8 @@
 /*------------- Includes -----------------*/
 #include "ap_advlog_parse.h"
 
+#include "ap_advlog_pldm_events.h"
+
 #include <DbgPrint.h>
 #include <FpFwAssert.h>
 #include <atu_lib.h>
@@ -62,6 +64,7 @@ bool populate_advanced_logger_info()
 
     if (info.signature != ADVANCED_LOGGER_SIGNATURE)
     {
+        AP_ADVLOG_PLDM_ET_ERROR(AP_ADVLOG_PLDM_ET_TYPE_SIGNATURE_MISMATCH);
         FPFW_DBGPRINT_ERROR("[AP_ADVLOG_PLDM] Logger signature mismatch! Expected signature 0x%lx, got "
                             "0x%lx - payload will not be sent!\n",
                             ADVANCED_LOGGER_SIGNATURE,
@@ -90,6 +93,7 @@ uint64_t get_advanced_logger_size()
     {
         if ((current - base) > AP_ADV_LOGGER_BUFFER_SIZE)
         {
+            AP_ADVLOG_PLDM_ET_ERROR_PARAM(AP_ADVLOG_PLDM_ET_TYPE_SIZE_EXCEEDED, (uint32_t)((current - base) & UINT32_MAX));
             FPFW_DBGPRINT_ERROR("[AP_ADVLOG_PLDM] Log size exceeds maximum expected size! Size = 0x%llx\n",
                                 (current - base));
 
@@ -102,6 +106,7 @@ uint64_t get_advanced_logger_size()
     }
     else
     {
+        AP_ADVLOG_PLDM_ET_ERROR_PARAM(AP_ADVLOG_PLDM_ET_TYPE_CORRUPTED, (uint32_t)(current & UINT32_MAX));
         FPFW_DBGPRINT_ERROR("[AP_ADVLOG_PLDM] Log corrupted! Current (0x%llx) < Base (0x%llx)!\n", current, base);
     }
 

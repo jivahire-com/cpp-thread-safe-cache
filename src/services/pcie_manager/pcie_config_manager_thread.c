@@ -20,6 +20,7 @@
 #include <mscp_exp_rmss_memory_map.h>
 #include <mu_public.h>
 #include <pcie_config_variable.h>
+#include <pcie_manager_events.h>
 #include <pcie_manager_i.h>   // for rpss_req_completion_cb, rpss_service_t...
 #include <scp_pcie_manager.h> // for pcie_manager_context_t, pciess_complet...
 #include <silibs_kng_soc.h>
@@ -191,6 +192,7 @@ void config_variable_service_thread_fn(ULONG thread_input)
     if (status != TX_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("[PCIe Config] Failed to get event flags! TX_STATUS: %d\n", status);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_CONFIG_EVENT_FLAGS_WAIT_FAIL, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 

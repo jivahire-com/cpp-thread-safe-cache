@@ -1,0 +1,26 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
+
+/**
+ * @file power_pldm_events.c
+ * Instantiates the actual event trace functions and metadata for the Power PLDM service.
+ */
+
+/*------------- Includes -----------------*/
+
+// Instantiates the actual event trace functions
+#define FPFW_ET_IMPLEMENTATION
+#define FPFW_ET_METADATA
+
+#include "power_pldm_events.h" // IWYU pragma: keep
+
+/*-- Symbolic Constant Macros (defines) --*/
+
+/*------------- Typedefs -----------------*/
+
+/*-------- Function Prototypes -----------*/
+
+/*-- Declarations (Statics and globals) --*/
+
+/*------------- Functions ----------------*/

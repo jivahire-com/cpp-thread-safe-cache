@@ -17,10 +17,26 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 #define ACCEL_BOOT_NOTIFY_ET_INFO_PARAM(stage, type, boot_type)    EventWriteSosInfoParam((stage), (type), (boot_type))
+#define ACCEL_BOOT_NOTIFY_ET_ERROR_PARAM(type, param)              EventWriteAccelBootNotifyErrorParam((param), (type))
 
 // clang-format off
 
 /*-------------- Typedefs ----------------*/
+typedef enum
+{
+    ACCEL_BOOT_NOTIFY_ET_ID_INFO_PARAMS,
+    ACCEL_BOOT_NOTIFY_ET_ID_ERROR_PARAMS,
+
+    ACCEL_BOOT_NOTIFY_ET_ID_COUNT
+} ACCEL_BOOT_NOTIFY_EVENT_ID;
+
+typedef enum
+{
+    ACCEL_BOOT_NOTIFY_ET_TYPE_NOTIFY_UEFI_BOOT_COMPLETE_FAIL,
+    ACCEL_BOOT_NOTIFY_ET_TYPE_TIMER_CREATE_FAIL,
+
+    ACCEL_BOOT_NOTIFY_ET_TYPE_COUNT
+} ACCEL_BOOT_NOTIFY_ET_TYPE_T;
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -33,9 +49,16 @@ FPFW_ET_DEFINE_PROVIDER_EX(EVENT_TRACE_PROVIDER_ID_COMMON_ACCEL_BOOT_NOTIFY,
 //
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_ACCEL_BOOT_NOTIFY,
-                     0,
+                     ACCEL_BOOT_NOTIFY_ET_ID_INFO_PARAMS,
                      AccelBootNotifyParam,
                      FPFW_ET_LEVEL_INFO,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_ACCEL_BOOT_NOTIFY,
+                     ACCEL_BOOT_NOTIFY_ET_ID_ERROR_PARAMS,
+                     AccelBootNotifyErrorParam,
+                     FPFW_ET_LEVEL_ERROR,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, param),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
 
 /*--------- Function Prototypes ----------*/

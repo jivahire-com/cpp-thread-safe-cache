@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <bug_check.h>
+#include <pcie_manager_events.h>
 #include <pcie_phy_load_events.h>
 
 /*--------- Function Prototypes ----------*/
@@ -19,6 +20,7 @@ UINT pcie_phyfw_create_event(TX_EVENT_FLAGS_GROUP* pcie_phyfw_load_complete)
     if (tx_sts != TX_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("[PCIe PHY]: Failed to create PCIe phyfw load event! TX_STATUS: %d\n", tx_sts);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_PHYFW_LOAD_EVENT_CREATE_FAIL, tx_sts);
         BUG_ASSERT_PARAM((tx_sts == TX_SUCCESS), tx_sts, 0);
     }
 
@@ -32,6 +34,7 @@ UINT pcie_phyfw_wait_load_event(TX_EVENT_FLAGS_GROUP* pcie_phyfw_load_complete)
     if (tx_sts != TX_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("[PCIe PHY]: Failed to wait for PCIe phyfw load event! TX_STATUS: %d\n", tx_sts);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_PHYFW_LOAD_EVENT_WAIT_FAIL, tx_sts);
         BUG_ASSERT_PARAM((tx_sts == TX_SUCCESS), tx_sts, 0);
     }
 
@@ -44,6 +47,7 @@ UINT pcie_phyfw_set_load_event(TX_EVENT_FLAGS_GROUP* pcie_phyfw_load_complete)
     if (tx_sts != TX_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("[PCIe PHY]: Failed to set PCIe phyfw load event! TX_STATUS: %d\n", tx_sts);
+        PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_PHYFW_LOAD_EVENT_SET_FAIL, tx_sts);
         BUG_ASSERT_PARAM((tx_sts == TX_SUCCESS), tx_sts, 0);
     }
 

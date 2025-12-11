@@ -3,6 +3,7 @@ set(TARGET kng.service.power_pldm_mcp)
 
 set (SOURCES 
         power_pldm.c
+        power_pldm_events.c
 )
 add_library(${TARGET}  STATIC ${SOURCES})
 

@@ -26,6 +26,7 @@
     #include <pldm_drv.h>
 #endif
 #include <sel.h>
+#include <sel_manager_events.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MAX_SEL_QUEUE_LENGTH 32
@@ -101,6 +102,7 @@ bool sel_push_head(sel_event_record_t* event_record)
     if (g_sel_queue_size >= MAX_SEL_QUEUE_LENGTH)
     {
         FPFW_DBGPRINT_ERROR("SEL queue full, can not push to head\n");
+        SEL_MANAGER_ET_ERROR_PARAM(SEL_MANAGER_ET_TYPE_QUEUE_FULL, g_sel_queue_size);
         ret = false;
     }
     else
@@ -190,11 +192,13 @@ static void icc_recv_sel_log_req_cb(void* context, size_t output_size_bytes, fpf
         if (KNG_FAILED(status))
         {
             FPFW_DBGPRINT_ERROR("SEL flush_queue failed 0x%08lx\n", status);
+            SEL_MANAGER_ET_ERROR_PARAM(SEL_MANAGER_ET_TYPE_FLUSH_QUEUE_FAIL, status);
         }
     }
     else
     {
         FPFW_DBGPRINT_ERROR("SEL received 0x%08lx\n", status);
+        SEL_MANAGER_ET_ERROR_PARAM(SEL_MANAGER_ET_TYPE_RECEIVE_FAIL, status);
     }
 
     // Register transfer callback for this ICC context again.
@@ -223,6 +227,7 @@ static void sel_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* ctx)
     if (request->status != KNG_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("SEL report to BMC failed: PLDM CC = 0x%x\n", completionCode);
+        SEL_MANAGER_ET_ERROR_PARAM(SEL_MANAGER_ET_TYPE_REPORT_BMC_PLDM_CC_FAIL, completionCode);
     }
 
     // Complete the DFWK async request when PLDM transfer is complete.
@@ -253,6 +258,7 @@ static KNG_STATUS sel_transfer_event_to_bmc(sel_event_record_t* event_record, PD
         psel_svc_request_t sel_request = (psel_svc_request_t)request;
         sel_request->status = status;
         FPFW_DBGPRINT_ERROR("SEL report to BMC failed: status = 0x%08lx\n", status);
+        SEL_MANAGER_ET_ERROR_PARAM(SEL_MANAGER_ET_TYPE_REPORT_BMC_STATUS_FAIL, status);
         DfwkAsyncRequestComplete(request);
     }
 

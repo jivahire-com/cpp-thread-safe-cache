@@ -62,6 +62,7 @@ class pldm_common(EchoFallsBaseTest):
         self.core_scp_channel = None
         self.core_mcp_channel = None
         self.pldm_spec = None
+        self.delay_5_minutes = 300
         self.delay_15_minutes = 900
 
     def setup(self):
@@ -167,17 +168,31 @@ class pldm_common(EchoFallsBaseTest):
         time.sleep(10)
         return True
 
+    def _backoff_delay(
+        self,
+        attempt: int,
+        base_delay: float = 10.0,
+        max_delay: float = 300.0,
+        max_retries: int = 10,
+    ):
+        """
+        Exponential backoff delay calculation
+        """
+        growth_factor = (max_delay / base_delay) ** (1.0 / (max_retries - 1))
+        delay = base_delay * (growth_factor ** (attempt - 1))
+        return min(delay, max_delay)
+
     def _bmc_execute_command(
         self, command, timeout=180, sudo_mode=False, max_retries=10, retry_delay=10
     ):
         """
-        Execute a command on BMC with retry logic (fixed delay).
+        Execute a command on BMC with retry logic (exponential backoff delay).
 
         :param command: Command to execute
-        :param timeout: Timeout per attempt in seconds (default: 120s)
+        :param timeout: Timeout per attempt in seconds (default: 180s)
         :param sudo_mode: Whether to run command with sudo
-        :param max_retries: Maximum retry attempts (default: 5)
-        :param retry_delay: Delay between retries in seconds (default: 10s)
+        :param max_retries: Maximum retry attempts (default: 10)
+        :param retry_delay: Base delay between retries in seconds (default: 10s)
         """
         cmd_str = command
         if not self.bmc_cli.is_open():
@@ -204,7 +219,7 @@ class pldm_common(EchoFallsBaseTest):
                     command=cmd_str, command_args=[], timeout_secs=timeout
                 )
 
-                if result == 0:
+                if result == 0 and not self._pldm_failed(stdout, stderr):
                     self.log.info("Command executed successfully.")
                     break
                 else:
@@ -220,8 +235,15 @@ class pldm_common(EchoFallsBaseTest):
                     self.log.error("Max retries reached. Command failed permanently.")
                     self.bmc_cli.close()
                     return -1, "", f"TimeoutError: {e}"
-                self.log.info(f"Retrying after {retry_delay} seconds...")
-                time.sleep(retry_delay)
+
+            backoff_delay = self._backoff_delay(
+                attempt,
+                base_delay=retry_delay,
+                max_delay=self.delay_5_minutes,
+                max_retries=max_retries,
+            )
+            self.log.info(f"Retrying after {backoff_delay} seconds...")
+            time.sleep(backoff_delay)
 
         # MCP health check after command
         mcp_health_status = self._check_mcp_health()
@@ -279,6 +301,19 @@ class pldm_common(EchoFallsBaseTest):
                 f"~$ MCP, Unexpected error during MCP command '{cmd_str}': {e}. Test flow will continue."
             )
             return 1, "", str(e)
+
+    def _pldm_failed(self, stdout: str, stderr: str):
+        """
+        Return True if output contains signatures that indicate PLDM failure
+        even when the shell exit code is 0.
+        """
+        text = (stdout + "\n" + stderr).lower()
+        error_patterns = [
+            "error: failure to read response",
+            "failed to receive",
+            "input/output error",
+        ]
+        return any(p in text for p in error_patterns)
 
     def _pldm_get_mctp_id(self):
         """

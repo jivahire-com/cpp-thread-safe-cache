@@ -176,6 +176,13 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
+    // Advlogger compress buffer
+    {
+        .ap_base_address = AP_ADV_LOGGER_COMPRESS_BUFFER_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ADVLOG_COMPRESS_BUFFER_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ADVLOG_COMPRESS_BUFFER_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
     {0},
 };
 
@@ -296,6 +303,13 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
+    // Advlogger compress buffer
+    {
+        .ap_base_address = AP_ADV_LOGGER_COMPRESS_BUFFER_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ADVLOG_COMPRESS_BUFFER_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ADVLOG_COMPRESS_BUFFER_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
     {0},
 };
 
@@ -382,6 +396,13 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .ap_base_address = AP_CSTATE_BUFFER_DDR_DIE_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // Advlogger compress buffer
+    {
+        .ap_base_address = AP_ADV_LOGGER_COMPRESS_BUFFER_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ADVLOG_COMPRESS_BUFFER_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ADVLOG_COMPRESS_BUFFER_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},
@@ -495,6 +516,13 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .ap_base_address = AP_CSTATE_BUFFER_DDR_DIE_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_NS},
+    },
+    // Advlogger compress buffer
+    {
+        .ap_base_address = AP_ADV_LOGGER_COMPRESS_BUFFER_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ADVLOG_COMPRESS_BUFFER_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ADVLOG_COMPRESS_BUFFER_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     {0},

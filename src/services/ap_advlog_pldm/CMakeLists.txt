@@ -12,14 +12,18 @@ target_link_libraries(
     ${TARGET}
         PUBLIC
             fwlib.lib.status
+            ms::cmsis::interface
         PRIVATE
             fwlib.lib.assert
             fwlib.lib.utils
             fwlib.service.pldm
+            kng_silibs_platform
             ms::lib::crash_dump
+            ms::lib::cortex_m7::atomics
             ms::lib::pldm_pdr
             ms::lib::pldm_common_headers
             ms::lib::zlib
+            ms::service::atu_service
             silibs::idsw
             silibs::idsw_kng
             silibs::atu

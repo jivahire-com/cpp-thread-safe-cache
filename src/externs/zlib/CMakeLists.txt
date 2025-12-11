@@ -45,4 +45,8 @@ target_include_directories(
             ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../src/externs/zlib/zlib
 )
 
+# Disable HAVE_MEMCPY to force byte-by-byte copying for alignment safety
+# This avoids Usage Fault when strict alignment is enforced
+target_compile_definitions(${TARGET} PRIVATE NO_MEMCPY)
+
 add_library(ms::lib::zlib ALIAS extern.populate.zlib)

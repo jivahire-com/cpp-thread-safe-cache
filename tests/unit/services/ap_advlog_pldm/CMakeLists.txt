@@ -31,6 +31,7 @@ target_link_libraries(${TARGET}
         ms::lib::zlib
         ms::lib::crash_dump
         ms::lib::pldm_common_headers
+        ms::mocks::threadx
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
@@ -52,7 +53,18 @@ mock_target(${TARGET}
     fpfw_pldm_service_state_effecter_set_complete
     atu_map
     mmio_read8
+    mmio_write8
     FpFwCliRegisterTable
+    _txe_event_flags_create
+    _txe_event_flags_get
+    _txe_event_flags_set
+    _txe_thread_create
+    _tx_thread_sleep
+    deflateInit2_
+    deflate
+    deflateEnd
+    zlib_alloc
+    zlib_free
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

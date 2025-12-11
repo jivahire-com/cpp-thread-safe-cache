@@ -21,6 +21,7 @@ extern "C" {
 #include <fpfw_pldm_service.h>
 #include <idsw_kng.h>
 #include <silibs_platform.h>
+#include <zlib.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MAX_SEL_QUEUE_LENGTH 32 // From sel_main.c
@@ -47,6 +48,14 @@ extern "C" {
 
 #ifndef AP_ADV_LOGGER_BUFFER_SIZE
     #define AP_ADV_LOGGER_BUFFER_SIZE MOCK_AP_ADV_LOGGER_SIZE
+#endif
+
+#ifndef AP_ADV_LOGGER_OUTPUT_BUFFER_BASE
+    #define AP_ADV_LOGGER_OUTPUT_BUFFER_BASE (MOCK_AP_ADV_LOGGER_BASE + 0x200000)
+#endif
+
+#ifndef AP_ADV_LOGGER_OUTPUT_BUFFER_SIZE
+    #define AP_ADV_LOGGER_OUTPUT_BUFFER_SIZE MOCK_AP_ADV_LOGGER_SIZE
 #endif
 
 #ifndef ATU_BUS_ATTR_PRIV
@@ -149,14 +158,27 @@ fpfw_status_t __wrap_fpfw_pldm_service_state_effecter_set_complete(pldm_state_ef
     function_called();
 
     return mock_type(fpfw_status_t);
-} // ATU Mocks
+}
+
+// ATU Mocks
 int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 {
     assert_non_null(atu_map_entry);
     check_expected(atu_id);
 
-    // Set up the mapped address
-    atu_map_entry->mscp_start_address = MOCK_ATU_MAPPED_BASE;
+    // Set up the mapped address - always set to mock base, differentiating by order of calls
+    // First call is for input buffer, second is for output buffer
+    static int call_count = 0;
+    if (call_count == 0)
+    {
+        atu_map_entry->mscp_start_address = MOCK_ATU_MAPPED_BASE;
+        call_count++;
+    }
+    else
+    {
+        atu_map_entry->mscp_start_address = MOCK_ATU_MAPPED_BASE + 0x200000;
+        call_count++;
+    }
 
     function_called();
 
@@ -167,6 +189,200 @@ uint8_t __wrap_mmio_read8(volatile uint8_t* addr)
 {
     FPFW_UNUSED(addr);
     return mock_type(uint8_t);
+}
+
+void __wrap_mmio_write8(volatile uint8_t* addr, uint8_t value)
+{
+    FPFW_UNUSED(addr);
+    FPFW_UNUSED(value);
+}
+
+// ThreadX Mocks
+UINT __wrap__txe_event_flags_create(TX_EVENT_FLAGS_GROUP* group_ptr, CHAR* name_ptr, UINT flags_control_block_size)
+{
+    FPFW_UNUSED(group_ptr);
+    FPFW_UNUSED(name_ptr);
+    FPFW_UNUSED(flags_control_block_size);
+    function_called();
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_event_flags_set(TX_EVENT_FLAGS_GROUP* group_ptr, ULONG flags_to_set, UINT set_option)
+{
+    FPFW_UNUSED(group_ptr);
+    FPFW_UNUSED(flags_to_set);
+    FPFW_UNUSED(set_option);
+    function_called();
+    return TX_SUCCESS;
+}
+
+UINT __wrap__txe_event_flags_get(TX_EVENT_FLAGS_GROUP* group_ptr, ULONG requested_flags, UINT get_option, ULONG* actual_flags_ptr, ULONG wait_option)
+{
+    FPFW_UNUSED(group_ptr);
+    FPFW_UNUSED(requested_flags);
+    FPFW_UNUSED(get_option);
+    FPFW_UNUSED(actual_flags_ptr);
+    FPFW_UNUSED(wait_option);
+    function_called();
+    return TX_SUCCESS;
+}
+
+UINT __wrap__txe_thread_create(TX_THREAD* thread_ptr,
+                               CHAR* name_ptr,
+                               VOID (*entry_function)(ULONG),
+                               ULONG entry_input,
+                               VOID* stack_start,
+                               ULONG stack_size,
+                               UINT priority,
+                               UINT preempt_threshold,
+                               ULONG time_slice,
+                               UINT auto_start,
+                               UINT thread_control_block_size)
+{
+    FPFW_UNUSED(thread_ptr);
+    FPFW_UNUSED(name_ptr);
+    FPFW_UNUSED(entry_input);
+    FPFW_UNUSED(stack_start);
+    FPFW_UNUSED(stack_size);
+    FPFW_UNUSED(priority);
+    FPFW_UNUSED(preempt_threshold);
+    FPFW_UNUSED(time_slice);
+    FPFW_UNUSED(auto_start);
+    FPFW_UNUSED(thread_control_block_size);
+
+    // Note: Thread entry function is NOT called here during thread creation.
+    // Tests that need to verify thread behavior should explicitly call the entry function.
+    // This avoids blocking calls in the thread entry (like tx_event_flags_get with TX_WAIT_FOREVER).
+    FPFW_UNUSED(entry_function);
+    FPFW_UNUSED(entry_input);
+
+    function_called();
+    return mock_type(UINT);
+}
+
+UINT __wrap__tx_thread_sleep(ULONG timer_ticks)
+{
+    FPFW_UNUSED(timer_ticks);
+    return TX_SUCCESS;
+}
+
+// zlib Mocks for compression
+// Mock allocator for zlib - provides test buffers instead of hardware memory
+static uint8_t mock_input_buffer[0x20000];   // 128KB for input
+static uint8_t mock_output_buffer[0x100000]; // 1MB for output
+static uint8_t mock_zlib_internal[0x10000];  // 64KB for zlib internal structures
+static size_t mock_zlib_internal_offset = 0;
+static int mock_alloc_count = 0; // Track allocation count across calls
+
+void* __wrap_zlib_alloc(void* opaque, unsigned int items, unsigned int size)
+{
+    (void)opaque;
+    size_t total = items * size;
+
+    // First two calls are for input/output buffers (called directly by adv_logger_compress)
+    // Subsequent calls are from zlib for internal structures
+
+    if (mock_alloc_count == 0)
+    {
+        mock_alloc_count++;
+        if (total <= sizeof(mock_input_buffer))
+        {
+            memset(mock_input_buffer, 0, sizeof(mock_input_buffer));
+            return mock_input_buffer;
+        }
+    }
+    else if (mock_alloc_count == 1)
+    {
+        mock_alloc_count++;
+        if (total <= sizeof(mock_output_buffer))
+        {
+            memset(mock_output_buffer, 0, sizeof(mock_output_buffer));
+            // Initialize output buffer with test pattern so callback reads make sense
+            for (size_t i = 0; i < sizeof(mock_output_buffer); i++)
+            {
+                mock_output_buffer[i] = (uint8_t)(0x40 + (i & 0xFF));
+            }
+            return mock_output_buffer;
+        }
+    }
+    else
+    {
+        // Allocations from zlib for internal structures
+        size_t aligned_offset = (mock_zlib_internal_offset + 63) & ~63;
+        if (aligned_offset + total <= sizeof(mock_zlib_internal))
+        {
+            void* ptr = mock_zlib_internal + aligned_offset;
+            memset(ptr, 0, total);
+            mock_zlib_internal_offset = aligned_offset + total;
+            return ptr;
+        }
+    }
+
+    return NULL;
+}
+
+void __wrap_zlib_free(void* opaque, void* address)
+{
+    (void)opaque;
+    (void)address;
+    // No-op for test
+}
+
+int __wrap_deflateInit2_(void* strm, int level, int method, int windowBits, int memLevel, int strategy, const char* version, int stream_size)
+{
+    (void)level;
+    (void)method;
+    (void)windowBits;
+    (void)memLevel;
+    (void)strategy;
+    (void)version;
+    (void)stream_size;
+
+    // Reset mock allocator for this compression session
+    mock_alloc_count = 0;
+    mock_zlib_internal_offset = 0;
+
+    // Set up the allocator functions in the stream for zlib's internal allocations
+    // z_stream layout on 32-bit: zalloc at offset 48, zfree at 52, opaque at 56
+    if (strm)
+    {
+        void** zalloc_ptr = (void**)((char*)strm + 48);
+        void** zfree_ptr = (void**)((char*)strm + 52);
+        void** opaque_ptr = (void**)((char*)strm + 56);
+
+        *zalloc_ptr = (void*)__wrap_zlib_alloc;
+        *zfree_ptr = (void*)__wrap_zlib_free;
+        *opaque_ptr = NULL;
+    }
+
+    return mock_type(int);
+}
+
+int __wrap_deflate(void* strm, int flush)
+{
+    (void)flush;
+
+    // Simulate deflate consuming input and producing output
+    if (strm)
+    {
+        unsigned int* avail_in_ptr = (unsigned int*)((char*)strm + 4);
+        unsigned long* total_in_ptr = (unsigned long*)((char*)strm + 8);
+        unsigned int* avail_out_ptr = (unsigned int*)((char*)strm + 16);
+        unsigned long* total_out_ptr = (unsigned long*)((char*)strm + 20);
+
+        *avail_in_ptr = 0;         // Consumed all input
+        *total_in_ptr += 0x1000;   // Simulate some input processed
+        *avail_out_ptr = 0xF0000;  // Simulate some output space used (started with 0x100000)
+        *total_out_ptr += 0x10000; // Simulate some output produced
+    }
+
+    return mock_type(int);
+}
+
+int __wrap_deflateEnd(void* strm)
+{
+    (void)strm;
+    return mock_type(int);
 }
 
 // CLI Mocks
@@ -221,9 +437,25 @@ static void setup_mock_advlog_info(uint32_t signature, uint32_t log_buffer, uint
     }
 }
 
+// Helper to setup mock MMIO reads for compression input data
+static void setup_mock_compression_input_data(size_t data_size)
+{
+    // Provide mock data for compression to read from MMIO
+    // The compression loop reads in chunks of IN_CHUNK_BUFFER_SIZE (0x20000)
+    for (size_t i = 0; i < data_size; i++)
+    {
+        will_return(__wrap_mmio_read8, (uint8_t)(i & 0xFF));
+    }
+}
+
 TEST_FUNCTION(test_populate_advanced_logger_info_success, nullptr, nullptr)
 {
-    // First call should map ATU
+    // First call should map ATU for input buffer
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_map);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+
+    // Second call should map ATU for output buffer
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     expect_function_call(__wrap_atu_map);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
@@ -273,7 +505,8 @@ TEST_FUNCTION(test_populate_advanced_logger_info_already_mapped, nullptr, nullpt
 
 TEST_FUNCTION(test_get_advanced_logger_base, nullptr, nullptr)
 {
-    // Populate the logger info first
+    // Note: ATU is already mapped from first test, this test verifies get_advanced_logger_base()
+    // returns the cached address from that mapping
     setup_mock_advlog_info(ADVANCED_LOGGER_SIGNATURE,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET + MOCK_LOG_DATA_SIZE);
@@ -281,7 +514,8 @@ TEST_FUNCTION(test_get_advanced_logger_base, nullptr, nullptr)
     bool result = populate_advanced_logger_info();
     assert_true(result);
 
-    // get_advanced_logger_base() doesn't read from memory, just returns cached value
+    // get_advanced_logger_base() returns mscp_start_address which was set to MOCK_ATU_MAPPED_BASE
+    // by the mock during the first test's ATU mapping
     uint64_t base = get_advanced_logger_base();
     assert_int_equal(base, MOCK_ATU_MAPPED_BASE);
 }
@@ -340,6 +574,14 @@ TEST_FUNCTION(test_ap_advlog_pldm_init_mcp0, nullptr, nullptr)
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
     will_return(__wrap_idsw_get_die_id, DIE_0);
 
+    // Expect event flags creation
+    expect_function_call(__wrap__txe_event_flags_create);
+    will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
+
+    // Expect thread creation (thread entry function is NOT called during creation)
+    expect_function_call(__wrap__txe_thread_create);
+    will_return(__wrap__txe_thread_create, TX_SUCCESS);
+
     expect_function_call(__wrap_fpfw_pldm_service_register_state_effecter);
     will_return(__wrap_fpfw_pldm_service_register_state_effecter, FPFW_STATUS_SUCCESS);
 
@@ -374,6 +616,40 @@ TEST_FUNCTION(test_ap_advlog_pldm_transfer_dump_success, nullptr, nullptr)
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET + MOCK_LOG_DATA_SIZE);
 
+    // Setup MMIO reads for compression input (reads the log data)
+    size_t log_size = sizeof(advanced_logger_info) + MOCK_LOG_DATA_SIZE;
+    setup_mock_compression_input_data(log_size);
+
+    // Mock successful compression
+    will_return(__wrap_deflateInit2_, Z_OK);
+    will_return(__wrap_deflate, Z_STREAM_END);
+    will_return(__wrap_deflateEnd, Z_OK);
+
+    expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+    will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
+
+    ap_advlog_pldm_transfer_dump();
+
+    // Reset logdump_in_progress for next test by completing the transfer
+    if (pldm_raise_event_cb != nullptr)
+    {
+        expect_function_call(__wrap_fpfw_pldm_service_state_effecter_set_complete);
+        will_return(__wrap_fpfw_pldm_service_state_effecter_set_complete, FPFW_STATUS_SUCCESS);
+        pldm_raise_event_cb(FPFW_PLDM_CC_SUCCESS, pldm_raise_event_ctx);
+    }
+}
+
+TEST_FUNCTION(test_ap_advlog_pldm_transfer_dump_compression_failure, nullptr, nullptr)
+{
+    // Setup valid logger info
+    setup_mock_advlog_info(ADVANCED_LOGGER_SIGNATURE,
+                           MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET,
+                           MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET + MOCK_LOG_DATA_SIZE);
+
+    // Mock compression failure - deflateInit2 fails, so no deflate/deflateEnd calls
+    will_return(__wrap_deflateInit2_, Z_MEM_ERROR);
+
+    // Compression fails, so it proceeds with uncompressed data
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
 
@@ -449,6 +725,15 @@ TEST_FUNCTION(test_ap_advlog_pldm_event_cb, nullptr, nullptr)
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET + MOCK_LOG_DATA_SIZE);
 
+    // Setup MMIO reads for compression input
+    size_t log_size = sizeof(advanced_logger_info) + MOCK_LOG_DATA_SIZE;
+    setup_mock_compression_input_data(log_size);
+
+    // Mock successful compression
+    will_return(__wrap_deflateInit2_, Z_OK);
+    will_return(__wrap_deflate, Z_STREAM_END);
+    will_return(__wrap_deflateEnd, Z_OK);
+
     // Start a transfer to initialize the logger
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
@@ -495,6 +780,15 @@ TEST_FUNCTION(test_ap_advlog_pldm_on_ppe_complete_success, nullptr, nullptr)
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET + MOCK_LOG_DATA_SIZE);
 
+    // Setup MMIO reads for compression input
+    size_t log_size = sizeof(advanced_logger_info) + MOCK_LOG_DATA_SIZE;
+    setup_mock_compression_input_data(log_size);
+
+    // Mock successful compression
+    will_return(__wrap_deflateInit2_, Z_OK);
+    will_return(__wrap_deflate, Z_STREAM_END);
+    will_return(__wrap_deflateEnd, Z_OK);
+
     // Start a transfer
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
@@ -516,6 +810,14 @@ TEST_FUNCTION(test_ap_advlog_pldm_on_ppe_complete_success, nullptr, nullptr)
     setup_mock_advlog_info(ADVANCED_LOGGER_SIGNATURE,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET + MOCK_LOG_DATA_SIZE);
+
+    // Setup MMIO reads for compression input
+    size_t log_size2 = sizeof(advanced_logger_info) + MOCK_LOG_DATA_SIZE;
+    setup_mock_compression_input_data(log_size2);
+
+    will_return(__wrap_deflateInit2_, Z_OK);
+    will_return(__wrap_deflate, Z_STREAM_END);
+    will_return(__wrap_deflateEnd, Z_OK);
 
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
@@ -546,6 +848,14 @@ TEST_FUNCTION(test_ap_advlog_pldm_on_ppe_complete_failure, nullptr, nullptr)
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET + MOCK_LOG_DATA_SIZE);
 
+    // Setup MMIO reads for compression input
+    size_t log_size3 = sizeof(advanced_logger_info) + MOCK_LOG_DATA_SIZE;
+    setup_mock_compression_input_data(log_size3);
+
+    will_return(__wrap_deflateInit2_, Z_OK);
+    will_return(__wrap_deflate, Z_STREAM_END);
+    will_return(__wrap_deflateEnd, Z_OK);
+
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
     will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_SUCCESS);
 
@@ -567,9 +877,15 @@ TEST_FUNCTION(test_ap_advlog_pldm_on_ppe_complete_with_effecter, nullptr, nullpt
     will_return(__wrap_fpfw_pldm_service_state_effecter_set_complete, FPFW_STATUS_SUCCESS);
     pldm_raise_event_cb(FPFW_PLDM_CC_SUCCESS, pldm_raise_event_ctx);
 
-    // Re-initialize as MCP0 (effecter already registered, but init is idempotent)
+    // Re-initialize as MCP0 (will create thread and event flags again)
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
     will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    expect_function_call(__wrap__txe_event_flags_create);
+    will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
+
+    expect_function_call(__wrap__txe_thread_create);
+    will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
     expect_function_call(__wrap_fpfw_pldm_service_register_state_effecter);
     will_return(__wrap_fpfw_pldm_service_register_state_effecter, FPFW_STATUS_SUCCESS);
@@ -580,6 +896,15 @@ TEST_FUNCTION(test_ap_advlog_pldm_on_ppe_complete_with_effecter, nullptr, nullpt
     setup_mock_advlog_info(ADVANCED_LOGGER_SIGNATURE,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET,
                            MOCK_AP_ADV_LOGGER_BASE + MOCK_LOG_BUFFER_OFFSET + MOCK_LOG_DATA_SIZE);
+
+    // Setup MMIO reads for compression input
+    size_t log_size4 = sizeof(advanced_logger_info) + MOCK_LOG_DATA_SIZE;
+    setup_mock_compression_input_data(log_size4);
+
+    // Mock successful compression
+    will_return(__wrap_deflateInit2_, Z_OK);
+    will_return(__wrap_deflate, Z_STREAM_END);
+    will_return(__wrap_deflateEnd, Z_OK);
 
     // Start a transfer
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);

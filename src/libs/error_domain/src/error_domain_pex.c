@@ -214,7 +214,7 @@ static void enable_pex_polling()
     if (status != TX_SUCCESS)
     {
         FPFW_DBGPRINT_ERROR("Failed to start PEX polling, status: 0x%x\n", status);
-        BUG_CHECK(KNG_BGCHK_BUGCHECK, status, POLL_INTERVAL_MS);
+        BUG_CHECK(KNG_PEX_POLLING_FAILED, status, POLL_INTERVAL_MS);
     }
 }
 

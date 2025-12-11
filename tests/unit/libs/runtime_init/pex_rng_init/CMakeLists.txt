@@ -18,6 +18,7 @@ ms::cmocka::testrunner
 ms::lib::pex_rng
 ms::lib::core_info
 ms::lib::corebits
+ms::lib::crash_dump
 ms::lib::ift
 ms::lib::register_headers
 ms::lib::system_info
@@ -47,4 +48,7 @@ mock_target(${TARGET}
     register_pex_error_domain
     init_pex_rng
     ift_is_enabled
+    _tx_timer_create
+    _txe_timer_create
+    crash_dump_bug_check
 )

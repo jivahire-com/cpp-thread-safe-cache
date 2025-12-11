@@ -169,6 +169,26 @@
           "Name": "KNG_BGCHK_BUGLOG",
           "Value": 3,
           "Description": "Bug Log due to a condition evaluating to false. Trace event gets generated"
+        },
+        {
+          "Name": "KNG_PEX_POLLING_FAILED",
+          "Value": 4,
+          "Description": "PEX polling initialization failed"
+        },
+        {
+          "Name": "KNG_DDR_RAS_CRI_FATAL",
+          "Value": 5,
+          "Description": "DDR RAS Critical interrupt - fatal error detected"
+        },
+        {
+          "Name": "KNG_DDR_RAS_UEU_FATAL",
+          "Value": 6,
+          "Description": "DDR RAS Uncorrectable Error Uncontained - fatal error"
+        },
+        {
+          "Name": "KNG_AP_WDT_TIMEOUT",
+          "Value": 7,
+          "Description": "Application Processor watchdog timeout detected"
         }
       ]
     },
@@ -473,6 +493,11 @@
           "Name": "KNG_HM_SYSFUSE_TAG_UE_OF",
           "Value": 33,
           "Description": "Uncorrectable & Overflow Error in System Fuse"
+        },
+        {
+          "Name": "KNG_HM_CLI_CPER_UE",
+          "Value": 34,
+          "Description": "CLI Submitted Uncorrectable Error CPER to Error Domain"
         }
       ]
     },

@@ -427,7 +427,7 @@ static PLACED_CODE FPFW_CLI_STATUS hm_submit_sample_cper_cli(int argc, const cha
     if (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL || err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
     {
         FpFwCliPrint("Submitted UE CPER to error domain %d\n", err_domain_idx);
-        BUG_CHECK(KNG_E_FAIL, 0, 0);
+        BUG_CHECK(KNG_HM_CLI_CPER_UE, err_domain_idx, err_severity);
     }
     return CLI_SUCCESS;
 }

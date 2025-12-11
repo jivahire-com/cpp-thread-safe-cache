@@ -482,14 +482,14 @@ void prod_ddrss_interrupt_handler(void* context)
     {
         uint32_t mc_cri = mc + ((ddr_intu_clr_sts & (1 << DDRSS_INTU_MC0_CRI_INT)) ? 0 : 1);
         printf("Force CD due to fatal DDR CRI from MC%d\n", (unsigned int)mc_cri);
-        BUG_CHECK(KNG_E_FAIL, mc_cri, ddr_intu_sts);
+        BUG_CHECK(KNG_DDR_RAS_CRI_FATAL, mc_cri, ddr_intu_sts);
     }
 
     // For DDR RAS UEU, treat it as critical and generate crash dump.
     if (has_ueu)
     {
         printf("Force CD due to DDR RAS UEU from MC%d\n", (unsigned int)mc_ueu);
-        BUG_CHECK(KNG_E_FAIL, mc_ueu, ddr_intu_sts);
+        BUG_CHECK(KNG_DDR_RAS_UEU_FATAL, mc_ueu, ddr_intu_sts);
     }
 
     printf("DDRSS %d ISR Exit with sts=%d\n\n", (int)ddrss, sts);

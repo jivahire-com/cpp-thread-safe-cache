@@ -15,6 +15,7 @@ extern "C" {
 #include <FpFwUtils.h>
 #include <core_info.h>
 #include <corebits.h>
+#include <crash_dump.h>
 #include <fpfw_init.h>
 #include <pex_rng.h>
 #include <system_info.h>
@@ -24,6 +25,7 @@ extern "C" {
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
+void __real_register_pex_error_domain(pex_rng_config_t* pex_config);
 
 /*-- Declarations (Statics and globals) --*/
 extern fpfw_init_component_t _fpfw_component_pex_rng;
@@ -55,6 +57,55 @@ void __wrap_init_pex_rng(const pex_rng_config_t* rng_config)
 bool __wrap_ift_is_enabled(void)
 {
     return mock_type(bool);
+}
+
+static UINT mock_tx_timer_create(TX_TIMER* timer_ptr,
+                                 CHAR* name_ptr,
+                                 VOID (*expiration_function)(ULONG),
+                                 ULONG expiration_input,
+                                 ULONG initial_ticks,
+                                 ULONG reschedule_ticks,
+                                 UINT auto_activate)
+{
+    (void)timer_ptr;
+    (void)name_ptr;
+    (void)expiration_function;
+    (void)expiration_input;
+    (void)initial_ticks;
+    (void)reschedule_ticks;
+    (void)auto_activate;
+    return mock_type(UINT);
+}
+
+UINT __wrap__tx_timer_create(TX_TIMER* timer_ptr,
+                             CHAR* name_ptr,
+                             VOID (*expiration_function)(ULONG),
+                             ULONG expiration_input,
+                             ULONG initial_ticks,
+                             ULONG reschedule_ticks,
+                             UINT auto_activate)
+{
+    return mock_tx_timer_create(timer_ptr, name_ptr, expiration_function, expiration_input, initial_ticks, reschedule_ticks, auto_activate);
+}
+
+UINT __wrap__txe_timer_create(TX_TIMER* timer_ptr,
+                              CHAR* name_ptr,
+                              VOID (*expiration_function)(ULONG),
+                              ULONG expiration_input,
+                              ULONG initial_ticks,
+                              ULONG reschedule_ticks,
+                              UINT auto_activate)
+{
+    return mock_tx_timer_create(timer_ptr, name_ptr, expiration_function, expiration_input, initial_ticks, reschedule_ticks, auto_activate);
+}
+
+void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    (void)p1;
+    (void)p2;
+    check_expected(errorCode);
+    check_expected(p3);
+    check_expected(p4);
 }
 }
 
@@ -107,4 +158,25 @@ TEST_FUNCTION(test_pex_rng_init_ift_enabled, nullptr, nullptr)
     // Perform necessary assertions on result
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_null(result.associated_handle);
+}
+
+TEST_FUNCTION(test_register_pex_error_domain_timer_failure, nullptr, nullptr)
+{
+    pex_rng_config_t config = {0};
+    const int32_t timer_error_status = 0x15; // TX_TIMER_ERROR
+
+    will_return(mock_tx_timer_create, (UINT)timer_error_status);
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_PEX_POLLING_FAILED);
+    expect_value(__wrap_crash_dump_bug_check, p3, timer_error_status);
+    expect_value(__wrap_crash_dump_bug_check, p4, 100); // POLL_INTERVAL_MS
+
+    __real_register_pex_error_domain(&config);
+}
+
+TEST_FUNCTION(test_register_pex_error_domain_success, nullptr, nullptr)
+{
+    pex_rng_config_t config = {0};
+    will_return(mock_tx_timer_create, TX_SUCCESS);
+
+    __real_register_pex_error_domain(&config);
 }

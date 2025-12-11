@@ -206,7 +206,7 @@ void hm_ap_wdt_isr()
         }
 
         // Trigger bug check for AP watchdog timeout
-        BUG_CHECK(KNG_BGCHK_BUGCHECK, nvic_irq_num, RECORD_ID_AP_WDT);
+        BUG_CHECK(KNG_AP_WDT_TIMEOUT, nvic_irq_num, RECORD_ID_AP_WDT);
         // Unmap after reading
         atu_unmap(ATU_ID_MSCP, &crashdump_atu_entry);
     }

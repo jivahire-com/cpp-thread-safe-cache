@@ -76,6 +76,7 @@ mock_target(${TARGET}
     ddrss_probe_ras_agent
     hm_submit_cper
     idhw_is_single_die_boot_en
+    idhw_is_stepping_a1
     intu_get_interrupt_status
     mmio_read32
     mmio_write32

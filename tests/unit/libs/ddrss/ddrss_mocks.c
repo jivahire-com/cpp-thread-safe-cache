@@ -353,6 +353,11 @@ bool __wrap_system_info_is_warm_start(void)
     return mock_type(bool);
 }
 
+bool __wrap_idhw_is_stepping_a1(void)
+{
+    return mock_type(bool);
+}
+
 void __wrap_hm_submit_cper(uint16_t error_domain_idx,
                            acpi_error_severity_t err_severity,
                            acpi_cper_section_t* err_record_section,

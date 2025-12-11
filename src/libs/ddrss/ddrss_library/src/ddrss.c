@@ -353,6 +353,34 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.zq_cal_interval_unit = config_get_zq_cal_interval_unit();
     ddrss_cfgs.ext_knobs.alert_delay = config_get_alert_delay();
 
+    // Override with A1 stepping specific knobs if A1 stepping is detected
+    bool soc_stepping_id_a1 = idhw_is_stepping_a1();
+    if (soc_stepping_id_a1 == true)
+    {
+        ddrss_cfgs.ext_knobs.address_map_mode = config_get_a1_address_map_mode();
+        ddrss_cfgs.ext_knobs.address_hashing_mode = config_get_a1_address_hashing_mode();
+        ddrss_cfgs.ext_knobs.block_pre_conf_cmd_in_be = config_get_a1_block_pre_conf_cmd_in_be();
+        ddrss_cfgs.ext_knobs.busif_drop_pftgt_fecq_occ = config_get_a1_busif_drop_pftgt_fecq_occ();
+        ddrss_cfgs.ext_knobs.cob_occ_limit_prio0 = config_get_a1_cob_occ_limit_prio0();
+        ddrss_cfgs.ext_knobs.cob_occ_limit_prio1 = config_get_a1_cob_occ_limit_prio1();
+        ddrss_cfgs.ext_knobs.drop_prefetch_tgt = config_get_a1_drop_prefetch_tgt();
+        ddrss_cfgs.ext_knobs.fecq_congest_lvl_0 = config_get_a1_fecq_congest_lvl_0();
+        ddrss_cfgs.ext_knobs.fecq_fecqslicestartwr_count = config_get_a1_fecq_fecqslicestartwr_count();
+        ddrss_cfgs.ext_knobs.fecq_fecqslicestopwr_count = config_get_a1_fecq_fecqslicestopwr_count();
+        ddrss_cfgs.ext_knobs.fecq_rdwrpref_send_rd_max_idle_cycles =
+            config_get_a1_fecq_rdwrpref_send_rd_max_idle_cycles();
+        ddrss_cfgs.ext_knobs.fecq_rdwrpref_wr_time_out = config_get_a1_fecq_rdwrpref_wr_time_out();
+        ddrss_cfgs.ext_knobs.fecq_occ_limit_prio0 = config_get_a1_fecq_occ_limit_prio0();
+        ddrss_cfgs.ext_knobs.fecq_occ_limit_prio1 = config_get_a1_fecq_occ_limit_prio1();
+        ddrss_cfgs.ext_knobs.pcrdgrant_delay = config_get_a1_pcrdgrant_delay();
+        ddrss_cfgs.ext_knobs.rcb_en = config_get_a1_rcb_en();
+        ddrss_cfgs.ext_knobs.rcb_occ_limit_prio0 = config_get_a1_rcb_occ_limit_prio0();
+        ddrss_cfgs.ext_knobs.rcb_occ_limit_prio1 = config_get_a1_rcb_occ_limit_prio1();
+        ddrss_cfgs.ext_knobs.send_rd_max_cycles = config_get_a1_send_rd_max_cycles();
+        ddrss_cfgs.ext_knobs.send_wr_max_cycle = config_get_a1_send_wr_max_cycle();
+        ddrss_cfgs.ext_knobs.send_wr_max_idle_cycles = config_get_a1_send_wr_max_idle_cycles();
+    }
+
     platform_id = idsw_get_platform_sdv();
 
     bool is_warm_reset = system_info_is_warm_start() ? true : false;

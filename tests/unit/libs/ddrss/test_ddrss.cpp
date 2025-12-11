@@ -112,6 +112,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
     }
     will_return_always(__wrap_idhw_is_single_die_boot_en, true);
     will_return_always(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return_always(__wrap_idhw_is_stepping_a1, true);
     will_return_always(__wrap_system_info_is_warm_start, false);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
@@ -199,6 +200,7 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_idhw_is_stepping_a1, false);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -275,6 +277,7 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
     test_ddrss_knobs.ext_knobs.ddrss_mask = 0x03F;
     test_ddrss_knobs.die_id = (DIE_INSTANCE)test_die;
 
+    will_return(__wrap_idhw_is_stepping_a1, false);
     will_return(__wrap_system_info_is_warm_start, true);
     test_ddrss_knobs.reset_reason = DDRSS_SYS_RESET_WARM;
 
@@ -346,6 +349,7 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_idhw_is_stepping_a1, false);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -410,6 +414,7 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_idhw_is_stepping_a1, false);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -474,6 +479,7 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp_fips_kat_enable, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_idhw_is_stepping_a1, false);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -538,6 +544,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_idhw_is_stepping_a1, false);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -610,6 +617,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure2, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_idhw_is_stepping_a1, false);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -679,6 +687,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure_max_mc, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_idhw_is_stepping_a1, false);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
@@ -750,6 +759,7 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_idhw_is_stepping_a1, false);
     will_return(__wrap_system_info_is_warm_start, false);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);

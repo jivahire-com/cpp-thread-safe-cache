@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
         ms::lib::icc_platform_defines
         ms::lib::system_info
         ms::lib::cortex_m7::mpu
+        ms::lib::spi
 )
 
 target_include_directories(${TARGET}

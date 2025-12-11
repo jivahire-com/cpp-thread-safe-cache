@@ -184,11 +184,11 @@ void __wrap_write_override_knob_to_shared_rmss(void* rmss_base_addr, size_t rmss
     __real_write_override_knob_to_shared_rmss((void*)rmss_shared_ram_region, sizeof(rmss_shared_ram_region));
 }
 
-int __wrap_mscp_exp_spi_synchronize_dies(mscp_exp_spi_sync_point_t sync_point, int die_id)
+int __wrap_mscp_exp_spi_synchronize_dies_timeout(mscp_exp_spi_sync_point_t sync_point, int die_id)
 {
     FPFW_UNUSED(sync_point);
     FPFW_UNUSED(die_id);
-    return 0;
+    return mock_type(int);
 }
 
 int __wrap_spi_controller_read_direct_instruction(uintptr_t spi_master_reg, uint32_t ahbAddr32, uint32_t actualWaitCycles, uint32_t* readData)
@@ -296,6 +296,41 @@ TEST_FUNCTION(test_cfg_mgr_init_no_override, nullptr, nullptr)
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, 0);
+
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
+    will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
+    expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
+
+    expect_function_call_any(SCB_CleanInvalidateDCache_by_Addr);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, addr, (void*)ALIGN_DOWN(shared_mem.payload_base, 32), -1);
+    expect_value_count(SCB_CleanInvalidateDCache_by_Addr, dsize, shared_mem.max_payload_size, -1);
+
+    cfg_mgr_init(&config_manager_setting, &shared_mem);
+
+    assert_true(cached_knob_data_size() == KNOB_MAX);
+    assert_true(get_cached_knob_data() != NULL);
+    assert_true(hsp_variable_svc_invoke_count == cached_knob_data_size());
+
+    for (uint32_t idx = 0; idx < cached_knob_data_size(); idx++)
+    {
+        assert_true(get_cached_knob_data()[idx].overridden != true);
+    }
+}
+
+TEST_FUNCTION(test_cfg_mgr_init_spi_retry, nullptr, nullptr)
+{
+    hsp_variable_svc_invoke_count = 0;
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, -1);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, 0);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
@@ -327,6 +362,7 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die0, rmss_memory_map_setup, nullptr)
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_SUCCESS);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, 0);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
@@ -349,6 +385,7 @@ TEST_FUNCTION(test_cfg_mgr_init_override_die1, rmss_memory_map_setup, nullptr)
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, 0);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
@@ -371,6 +408,7 @@ TEST_FUNCTION(test_update_knob_in_cached_db_cb, nullptr, nullptr)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call(__wrap_update_knob_in_cached_db_cb);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, 0);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
@@ -399,6 +437,7 @@ TEST_FUNCTION(test_update_knob_data, nullptr, nullptr)
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_addr, SCP_EXP_CONFIG_KNOB_CACHE_BASE);
     expect_value(__wrap_fpfw_cfg_mgr_get_cached_knob_values, dest_size, KNOB_MAX);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, 0);
 
     cfg_mgr_init(&config_manager_setting, &shared_mem);
 
@@ -444,6 +483,7 @@ TEST_FUNCTION(test_check_var_store_knob_data_async, rmss_memory_map_setup, nullp
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
     expect_function_call_any(__wrap_variable_service_async_get_variable);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, 0);
 
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values_size, KNOB_MAX);
     will_return(__wrap_fpfw_cfg_mgr_get_cached_knob_values, FPFW_STATUS_SUCCESS);

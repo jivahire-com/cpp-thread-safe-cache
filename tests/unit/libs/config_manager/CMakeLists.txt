@@ -60,7 +60,7 @@ mock_target(${TARGET}
     idsw_get_die_id
     idhw_is_single_die_boot_en
     write_override_knob_to_shared_rmss
-    mscp_exp_spi_synchronize_dies
+    mscp_exp_spi_synchronize_dies_timeout
     apply_override_knob_from_primary_die
     spi_controller_read_direct_instruction
     idsw_get_cpu_type

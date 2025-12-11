@@ -12,7 +12,7 @@ set(LIBRARIES
     ms::cmocka::testrunner
     silibs::platform
     silibs::kng_silibs_platform
-    silibs::spi_bridge
+    ms::lib::spi
 )
 
 # Compile test

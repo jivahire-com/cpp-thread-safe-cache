@@ -165,6 +165,7 @@ target_link_libraries(
         ms::lib::warm_start
         ms::lib::warm_start::cli
         ms::lib::systick_update
+        ms::lib::spi
         ms::service::accel_intr_client
         ms::service::accel_intr_service
         ms::service::ap_core
@@ -207,7 +208,6 @@ target_link_libraries(
         silibs::platform
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
-        silibs::spi_bridge
         silibs::vab_init
 )
 
@@ -387,6 +387,7 @@ target_link_libraries(
         ms::lib::utc_sync_manager
         ms::lib::variable_services
         ms::lib::systick_update
+        ms::lib::spi
         ms::service::atu_service
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
@@ -424,7 +425,6 @@ target_link_libraries(
         silibs::platform
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
-        silibs::spi_bridge
         extern.libpldm
 )
 

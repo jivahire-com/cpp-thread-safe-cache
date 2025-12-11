@@ -23,8 +23,10 @@
 #include <mpu.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <mscp_exp_spi_synchronize_dies.h>
+#include <mscp_exp_top_regs.h>
 #include <silibs_common.h>
 #include <spi_bridge.h>
+#include <spi_ctrl_bridge.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,6 +36,8 @@
 #define SPI_DATA_ALIGNMENT_SIZE     4
 #define SPI_DATA_ALIGN(size)        (FPFW_ALIGN_BY(SPI_DATA_ALIGNMENT_SIZE, size))
 #define D2D_MBOX_SPI_CTRL_BASE_ADDR (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_CTRL_ADDRESS)
+// D2D sync timeout set to 30 seconds;KPI max timeout.
+#define CFG_MGR_D2D_SYNC_TIMEOUT (1000 * 30)
 
 /*-- Declarations (Statics and globals) --*/
 extern knob_data_t g_knob_data[];
@@ -302,8 +306,22 @@ void cfg_mgr_init(fpfw_cfg_mgr_config_t* cfg_mgr_config, var_service_shared_mem_
                 }
 
                 d2d_sync_point.value = RMSS_D2D_CFG_MGR_RELAY_SYNC_POINT;
-                int d2d_sync_status = mscp_exp_spi_synchronize_dies(d2d_sync_point, idsw_get_die_id());
-                BUG_ASSERT_PARAM(d2d_sync_status == SILIBS_SUCCESS, d2d_sync_status, SILIBS_SUCCESS);
+                int d2d_sync_status =
+                    mscp_exp_spi_synchronize_dies_timeout(d2d_sync_point, idsw_get_die_id(), CFG_MGR_D2D_SYNC_TIMEOUT);
+
+                if (d2d_sync_status != SILIBS_SUCCESS)
+                {
+                    //  reset SPI and retry
+                    const uint32_t spi_ctrl_base = SCP_TOP_SCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_CTRL_ADDRESS;
+                    const uint32_t spi_bridge_base = SCP_TOP_SCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS;
+
+                    d2d_sync_status = spi_controller_bridge_init(spi_ctrl_base, spi_bridge_base, 20);
+                    BUG_ASSERT_PARAM(d2d_sync_status == SILIBS_SUCCESS, d2d_sync_status, SILIBS_SUCCESS);
+
+                    d2d_sync_status =
+                        mscp_exp_spi_synchronize_dies_timeout(d2d_sync_point, idsw_get_die_id(), CFG_MGR_D2D_SYNC_TIMEOUT);
+                    BUG_ASSERT_PARAM(d2d_sync_status == SILIBS_SUCCESS, d2d_sync_status, SILIBS_SUCCESS);
+                }
 
                 if (idsw_get_die_id() != DIE_0)
                 {

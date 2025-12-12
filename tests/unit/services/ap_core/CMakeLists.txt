@@ -22,6 +22,9 @@ target_link_libraries(${TARGET}
         ms::service::ap_core
         ms::service::fuse
         ms::service::sds_service
+        silibs::idhw
+        silibs::idsw
+        silibs::idsw_kng
     PUBLIC
         fwlib.lib.assert
         fwlib.dfwk

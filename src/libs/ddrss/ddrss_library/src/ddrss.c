@@ -69,24 +69,15 @@ ddrss_phy_training_dq_margin_t ddrss_phy_training_dq_margin[6] = {0};
 static const guid_t STD_MEMORY_ERROR_DOMAIN_GUID = {0xB7E2A3C9, 0x4F1D, 0x4569, {0xA3, 0x9D, 0xD6, 0x5B, 0xAF, 0x10, 0x92, 0xEE}};
 static const guid_t DDR_ERROR_DOMAIN_FRU_GUID = {0x3AC75B2E, 0xC8F1, 0x43E1, {0x88, 0x7C, 0x9A, 0x12, 0x34, 0x56, 0x78, 0x9A}};
 static const guid_t DDR_RHTL_ERROR_DOMAIN_FRU_GUID = ACPI_ERROR_TYPE_VENDOR_RHTLM;
-/*------------- Functions ----------------*/
-void prod_ddrss_lib_init(KNG_DIE_ID die_num)
+
+static void prod_ddrss_register_isr_handler(void)
 {
-    int sts = SILIBS_SUCCESS;
-    ddrss_cfg_knobs_t ddrss_cfgs;
-    KNG_PLAT_ID platform_id;
-    uint32_t interrupt_idx;
-    const char* platform_str;
-    const char* start_type;
-
-    boot_status_req_t ddr_bsc_req_mem = {0};
-    post_led_status(&ddr_bsc_req_mem, LED_STATUS_CODE_SCP_DDR_INIT_START);
-
     // 1 DDRSS contains 2 memory controllers
     // PHY level is under MC level in heirarchy, 1 PHY per DDRSS.
     // Register interrupt handler for DDRSS - Each DDRSS contains 2 memory controllers
     // RAS level
     // MC level
+    uint32_t interrupt_idx;
     uint32_t intr_status = 0;
     const uint32_t FIRST_DDRSS_INT = HW_INT_DDRSS0_COMBINED_SCP_INT;
     const uint32_t LAST_DDRSS_INT = HW_INT_DDRSS5_COMBINED_SCP_INT;
@@ -100,6 +91,19 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 
         BUG_ASSERT_PARAM(intr_status == 0, intr_status, 0);
     }
+}
+
+/*------------- Functions ----------------*/
+void prod_ddrss_lib_init(KNG_DIE_ID die_num)
+{
+    int sts = SILIBS_SUCCESS;
+    ddrss_cfg_knobs_t ddrss_cfgs;
+    KNG_PLAT_ID platform_id;
+    const char* platform_str;
+    const char* start_type;
+
+    boot_status_req_t ddr_bsc_req_mem = {0};
+    post_led_status(&ddr_bsc_req_mem, LED_STATUS_CODE_SCP_DDR_INIT_START);
 
     // Get the default DDRSS cfgs
     sts = ddrss_get_config(&ddrss_cfgs);
@@ -514,6 +518,12 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         }
     }
 
+    if (ddrss_cfgs.reset_reason != DDRSS_SYS_RESET_WARM)
+    {
+        // For cold reset, register ISR before DDR init.
+        prod_ddrss_register_isr_handler();
+    }
+
     // Run DDRSS init
     sts = ddrss_init(&ddrss_cfgs);
     if (sts != SILIBS_SUCCESS)
@@ -547,6 +557,12 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         post_led_status(&bsc_req_mem, bsc_status);
 
         BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
+    }
+
+    if (ddrss_cfgs.reset_reason == DDRSS_SYS_RESET_WARM)
+    {
+        // For warm reset, register ISR after DDR init since DDRSS interrupt might be pending.
+        prod_ddrss_register_isr_handler();
     }
 
     if (!is_warm_reset && ddrss_cfgs.ext_knobs.fips_kat_en)

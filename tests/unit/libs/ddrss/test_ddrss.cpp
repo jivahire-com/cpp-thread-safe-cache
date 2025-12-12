@@ -147,19 +147,6 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
     // ddrss init is skipped if not on an FPGA, therefore no expectations
     idsw_set_platform_sdv(PLATFORM_UNDEFINED);
 
-    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
-    {
-        i = (this_irq_num - HW_INT_DDRSS0);
-
-        // FPFwCoreInterruptRegisterCallback
-        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
-        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
-        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
-
-        // FPFwCoreInterruptEnableVector
-        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
-        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
-    }
     prod_ddrss_lib_init(test_die);
 }
 
@@ -258,19 +245,6 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
     // ddrss init is not skipped on the Big FPGA, and the
     // atu map is fixed so no atu map / un map calls
     idsw_set_platform_sdv(PLATFORM_FPGA_LARGE);
-    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
-    {
-        i = (this_irq_num - HW_INT_DDRSS0);
-
-        // FPFwCoreInterruptRegisterCallback
-        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
-        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
-        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
-
-        // FPFwCoreInterruptEnableVector
-        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
-        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
-    }
 
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
@@ -307,6 +281,20 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
     }
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
 
     prod_ddrss_lib_init(test_die);
     g_should_check_reset_reason_cfg_knobs = false;

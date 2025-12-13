@@ -41,12 +41,12 @@ static FPFW_CLI_STATUS i3c_writeread(int argc, const char** argv);
 /*-- Declarations (Statics and globals) --*/
 
 static FPFW_CLI_COMMAND i3c_controller_cli_list[] = {
-    {NULL_LIST_ENTRY, "i3c", "i3c_echo", i3c_controller_echo_cli, "i3c echo cmd", "Usage: i3c_echo <addr(in Hex)> <data(in Hex)>"},
-    {NULL_LIST_ENTRY, "i3c", "i3c_rstdaa", i3c_rstdaa, "i3c RSTDAA cmd", "Usage: i3c_rstdaa <I3C_Bus 0/1>"},
-    {NULL_LIST_ENTRY, "i3c", "i3c_setaasa", i3c_setaasa, "i3c SETAASA cmd", "Usage: i3c_setaasa <I3C_Bus 0/1>"},
-    {NULL_LIST_ENTRY, "i3c", "i3c_rd_ts", i3c_read_temp_sensor, "i3c Read TS cmd", "Usage: i3c_rd_ts <I3C_Bus 0/1> <dev_id 0x3/0x4, 0x8/0x9, 0xD/0xE>"},
-    {NULL_LIST_ENTRY, "i3c", "i3c_rd_pwr", i3c_read_pmic_power, "i3c Read PMIC cmd", "Usage: i3c_rd_pwr <I3C_Bus 0/1> <dev_id 0x3/0x4, 0x8/0x9, 0xD/0xE>"},
-    {NULL_LIST_ENTRY, "i3c", "i3c_writeread", i3c_writeread, "i3c WriteRead cmd", "Usage: i3c_writeread <bus_idx> <device_idx> <rx_byte_count> <reg_addr> <w_byte0> .. <w_byte n>"},
+    {NULL_LIST_ENTRY, "i3c", "i3c_echo", i3c_controller_echo_cli, "i3c echo", "i3c_echo <addr(Hex)> <data(Hex)>"},
+    {NULL_LIST_ENTRY, "i3c", "i3c_rstdaa", i3c_rstdaa, "i3c RSTDAA ", "i3c_rstdaa <I3C_Bus 0/1>"},
+    {NULL_LIST_ENTRY, "i3c", "i3c_setaasa", i3c_setaasa, "i3c SETAASA", "i3c_setaasa <I3C_Bus 0/1>"},
+    {NULL_LIST_ENTRY, "i3c", "i3c_rd_ts", i3c_read_temp_sensor, "i3c Read TS", "i3c_rd_ts <I3C_Bus 0/1> <dev_id 0x3/0x4, 0x8/0x9, 0xD/0xE>"},
+    {NULL_LIST_ENTRY, "i3c", "i3c_rd_pwr", i3c_read_pmic_power, "i3c Read PMIC", "i3c_rd_pwr <I3C_Bus 0/1> <dev_id 0x3/0x4, 0x8/0x9, 0xD/0xE>"},
+    {NULL_LIST_ENTRY, "i3c", "i3c_writeread", i3c_writeread, "i3c WriteRead", "i3c_writeread <bus_idx> <device_idx> <rx_byte_count> <reg_addr> <w_byte0> - <w_byte n>"},
 };
 
 /*------------- Functions ----------------*/
@@ -89,13 +89,12 @@ static PLACED_CODE FPFW_CLI_STATUS i3c_setaasa(int argc, const char** argv)
         uint8_t i3c_bus = strtoul(argv[1], &endptr, 16);
         if (*endptr != '\0')
         {
-            FpFwCliPrint("1st arg %s is Invalid Hex value\n", argv[1]);
+            FpFwCliPrint("Invalid Hex value\n");
             return CLI_ERROR;
         }
         if (i3c_bus != 0 && i3c_bus != 1)
         {
             FpFwCliPrint("Invalid I3C Bus number\n");
-            FpFwCliPrint("Cmds: 1, <I3C_Bus 0/1>\n");
             return CLI_ERROR;
         }
         FpFwCliPrint("i3c_setaasa\n");
@@ -126,13 +125,12 @@ static PLACED_CODE FPFW_CLI_STATUS i3c_read_temp_sensor(int argc, const char** a
         uint8_t i3c_bus = strtoul(argv[1], &endptr, 16);
         if (*endptr != '\0')
         {
-            FpFwCliPrint("1st arg %s is Invalid Hex value\n", argv[1]);
+            FpFwCliPrint("Invalid Hex value\n");
             return CLI_ERROR;
         }
         if (i3c_bus != 0 && i3c_bus != 1)
         {
             FpFwCliPrint("Invalid I3C Bus number\n");
-            FpFwCliPrint("Cmds: 1, <I3C_Bus 0/1>\n");
             return CLI_ERROR;
         }
         uint8_t dev_id = strtoul(argv[2], &endptr, 16);
@@ -140,7 +138,6 @@ static PLACED_CODE FPFW_CLI_STATUS i3c_read_temp_sensor(int argc, const char** a
             (dev_id != DDR4_TS1) && (dev_id != DDR2_TS1))
         {
             FpFwCliPrint("Invalid Device ID\n");
-            FpFwCliPrint("Cmds: 2, <dev_id 0x3/0x4, 0x8/0x9, 0xD/0xE>\n");
             return CLI_ERROR;
         }
         FpFwCliPrint("i3c_rd_ts\n");
@@ -171,8 +168,7 @@ static PLACED_CODE FPFW_CLI_STATUS i3c_read_temp_sensor(int argc, const char** a
     }
     else
     {
-        FpFwCliPrint("i3c_rd_ts CLI Help\n");
-        FpFwCliPrint("Cmds: 2, <I3C_Bus 0/1> <dev_id 0x3/0x4, 0x8/0x9, 0xD/0xE>\n");
+        FpFwCliPrint("i3c_rd_ts CLI Err\n");
         return CLI_ERROR;
     }
     return CLI_SUCCESS;
@@ -186,20 +182,18 @@ static PLACED_CODE FPFW_CLI_STATUS i3c_read_pmic_power(int argc, const char** ar
         uint8_t i3c_bus = strtoul(argv[1], &endptr, 16);
         if (*endptr != '\0')
         {
-            FpFwCliPrint("1st arg %s is Invalid Hex value\n", argv[1]);
+            FpFwCliPrint("Invalid Hex value\n");
             return CLI_ERROR;
         }
         if (i3c_bus != 0 && i3c_bus != 1)
         {
             FpFwCliPrint("Invalid I3C Bus number\n");
-            FpFwCliPrint("Cmds: 1, <I3C_Bus 0/1>\n");
             return CLI_ERROR;
         }
         uint8_t dev_id = strtoul(argv[2], &endptr, 16);
         if ((dev_id != DDR0_PMIC) && (dev_id != DDR4_PMIC) && (dev_id != DDR2_PMIC))
         {
             FpFwCliPrint("Invalid Device ID\n");
-            FpFwCliPrint("Cmds: 2, <dev_id 0x1, 0x6, 0xB>\n");
             return CLI_ERROR;
         }
         FpFwCliPrint("i3c_rd_pwr\n");
@@ -225,8 +219,7 @@ static PLACED_CODE FPFW_CLI_STATUS i3c_read_pmic_power(int argc, const char** ar
     }
     else
     {
-        FpFwCliPrint("i3c_rd_pwr CLI Help\n");
-        FpFwCliPrint("Cmds: 2, <I3C_Bus 0/1> <dev_id 0x1, 0x6, 0xB>\n");
+        FpFwCliPrint("i3c_rd_pwr CLI Err\n");
         return CLI_ERROR;
     }
     return CLI_SUCCESS;
@@ -266,13 +259,12 @@ static PLACED_CODE FPFW_CLI_STATUS i3c_writeread(int argc, const char** argv)
     uint8_t i3c_bus = strtoul(argv[1], &endptr, 16);
     if (*endptr != '\0')
     {
-        FpFwCliPrint("1st arg %s is Invalid Hex value\n", argv[1]);
+        FpFwCliPrint("Invalid Hex value\n");
         return CLI_ERROR;
     }
     if (i3c_bus != 0 && i3c_bus != 1)
     {
         FpFwCliPrint("Invalid I3C Bus number\n");
-        FpFwCliPrint("Cmds: 1, <I3C_Bus 0/1>\n");
         return CLI_ERROR;
     }
     uint8_t dev_id = strtoul(argv[2], &endptr, 16);
@@ -337,8 +329,7 @@ static PLACED_CODE FPFW_CLI_STATUS i3c_controller_echo_cli(int argc, const char*
     }
     else
     {
-        FpFwCliPrint("i3c Echo CLI Help\n");
-        FpFwCliPrint("Cmds: 2, <32-bit address(in Hex)> <32-bit data(in Hex)\n");
+        FpFwCliPrint("i3c Echo CLI Err\n");
         return CLI_ERROR;
     }
     return CLI_SUCCESS;

@@ -35,11 +35,11 @@ static FPFW_CLI_STATUS cfg_mgr_reset_knob_cli(int argc, const char** argv);
 extern knob_data_t g_knob_data[];
 
 static FPFW_CLI_COMMAND cfg_mgr_cli_list[] = {
-    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_list", cfg_mgr_knob_list_cli, "show knobs list", "cfg_mgr_list"},
-    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_dump", cfg_mgr_knob_data_dump_cli, "show all knobs data", "cfg_mgr_dump <name or idx>"},
-    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_check_var_store", cfg_mgr_check_var_store_cli, "check variable store has same value", "cfg_mgr_check_var_store <name or idx>"},
-    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_set", cfg_mgr_set_knob_cli, "overwrites the value of the knob", "cfg_mgr_set <name or idx> <data>"},
-    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_reset", cfg_mgr_reset_knob_cli, "reset specified knob value", "Usage: cfg_mgr_reset <name or idx>"}};
+    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_list", cfg_mgr_knob_list_cli, "list knobs", "cfg_mgr_list"},
+    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_dump", cfg_mgr_knob_data_dump_cli, "dump knob data", "cfg_mgr_dump <name|idx>"},
+    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_check_var_store", cfg_mgr_check_var_store_cli, "check value form hsp", "cfg_mgr_check_var_store <name|idx>"},
+    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_set", cfg_mgr_set_knob_cli, "set new knob", "cfg_mgr_set <name|idx> <data>"},
+    {NULL_LIST_ENTRY, "cfg_mgr", "cfg_mgr_reset", cfg_mgr_reset_knob_cli, "reset knob", "cfg_mgr_reset <name|idx>"}};
 
 /*------------- Functions ----------------*/
 PLACED_CODE void print_primitive_data(const void* data, uint32_t size)

@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <system_info.h>
+#include <utils.h>
 
 /*-------------------------------- Typedefs ---------------------------------*/
 #define SPI_DATA_ALIGNMENT_SIZE     4
@@ -46,7 +47,7 @@ static FPFW_SPINLOCK lock;
 static uint32_t knob_index = 0;
 
 /*-------------- Functions ---------------*/
-void write_override_knob_to_shared_rmss(void* rmss_base_addr, size_t rmss_base_addr_size)
+PLACED_CODE void write_override_knob_to_shared_rmss(void* rmss_base_addr, size_t rmss_base_addr_size)
 {
     memset(rmss_base_addr, 0, rmss_base_addr_size);
 
@@ -86,7 +87,7 @@ void write_override_knob_to_shared_rmss(void* rmss_base_addr, size_t rmss_base_a
     SCB_CleanInvalidateDCache_by_Addr((void*)ALIGN_DOWN((uintptr_t)rmss_base_addr, 32), rmss_base_addr_size);
 }
 
-void apply_override_knob_from_primary_die(uint32_t rmss_base_addr)
+PLACED_CODE void apply_override_knob_from_primary_die(uint32_t rmss_base_addr)
 {
     int spi_status = 0;
     uint32_t master_regs = SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SPI_CTRL_ADDRESS;
@@ -242,7 +243,7 @@ bool update_knob_in_cached_db_cb(const fpfw_cfg_mgr_guid_t* knob_namespace,
     return true;
 }
 
-void apply_override_knob_from_hsp(bool mission_mode)
+PLACED_CODE void apply_override_knob_from_hsp(bool mission_mode)
 {
     if (mission_mode)
     {

@@ -65,13 +65,12 @@ uint64_t ddr_err_inj_get_default_address()
     return p_addr;
 }
 
-void ddr_err_inj_ecc_ce(uint32_t mc)
+PLACED_CODE void ddr_err_inj_ecc_ce(uint32_t mc)
 {
-
     ddr_ecc_error_injection(0, mc, ddr_err_inj_get_default_address(), BIT1);
 }
 
-void ddr_err_inj_ecc_ue(uint32_t mc)
+PLACED_CODE void ddr_err_inj_ecc_ue(uint32_t mc)
 {
     ddr_ecc_error_injection(0, mc, ddr_err_inj_get_default_address(), BIT0 | BIT4 | BIT5);
 }
@@ -181,7 +180,7 @@ PLACED_CODE void ddr_ecc_error_injection(int32_t die_num, uint32_t mc, uint64_t 
 }
 
 // Note that CA Parity errors are fatal
-int ddr_ca_parity_error_injection(uint32_t mc, DDRSS_MEDIA_CA_INJ_CMD cmd)
+PLACED_CODE int ddr_ca_parity_error_injection(uint32_t mc, DDRSS_MEDIA_CA_INJ_CMD cmd)
 {
     bool valid_cmd = false;
     int sts = SILIBS_SUCCESS;
@@ -221,7 +220,7 @@ int ddr_ca_parity_error_injection(uint32_t mc, DDRSS_MEDIA_CA_INJ_CMD cmd)
     return sts;
 }
 
-acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, void* ctx)
 {
     FPFW_UNUSED(ctx);
 
@@ -275,13 +274,12 @@ acpi_einj_cmd_status_t ddr_error_injection_cb(ras_einj_info_t* einj_payload, voi
     return ACPI_EINJ_SUCCESS;
 }
 
-// Support test case 1541196
-void ddr_err_inj_media_patrol_scrub_ce(uint32_t mc)
+PLACED_CODE static void ddr_err_inj_helper(const char* syndrome_name, uint32_t mc)
 {
     ras_agent_entity_t* ddrss_ras_agent = NULL; // Initialize to NULL
     uint64_t types = 0;
 
-    int idx = get_syndrome_index("DDR_ERR_INJ_MREB_PATROL_SCRUB_CE");
+    int idx = get_syndrome_index(syndrome_name);
     if (idx < 0)
     {
         printf("Error: Syndrome not found\n");
@@ -296,678 +294,148 @@ void ddr_err_inj_media_patrol_scrub_ce(uint32_t mc)
     types = named_syndrome[idx].ras_arm_err_bitmask;
     ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
 
+    char* p_einj_status = "Success";
     if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
     {
-        printf("Error: Failed to trigger error injection\n");
+        p_einj_status = "Error";
     }
-    else
-    {
-        printf("Patrol scrub CE injected successfully\n");
-    }
+
+    printf("DDR EINJ: %s: %s\n", syndrome_name, p_einj_status);
 }
 
-void ddr_err_inj_fedb_merge_data_ue(uint32_t mc)
+// Support test case 1541196
+PLACED_CODE void ddr_err_inj_media_patrol_scrub_ce(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = NULL; // Initialize to NULL
-    uint64_t types = 0;
+    ddr_err_inj_helper("DDR_ERR_INJ_MREB_PATROL_SCRUB_CE", mc);
+}
 
-    int idx = get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_UE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
-        ddrss_ras_agent == NULL)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("FEDB merge data UE injected successfully\n");
-    }
+PLACED_CODE void ddr_err_inj_fedb_merge_data_ue(uint32_t mc)
+{
+    ddr_err_inj_helper("DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_UE", mc);
 }
 
 // Support test case 1828223
-void ddr_err_inj_fedb_merge_data_ce(uint32_t mc)
+PLACED_CODE void ddr_err_inj_fedb_merge_data_ce(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = NULL; // Initialize to NULL
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_CE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
-        ddrss_ras_agent == NULL)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("FEDB merge data CE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_CE", mc);
 }
 
-void ddr_err_inj_fedb_merge_data_parity_ue(uint32_t mc)
+PLACED_CODE void ddr_err_inj_fedb_merge_data_parity_ue(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = NULL; // Initialize to NULL
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_PARITY_UE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
-        ddrss_ras_agent == NULL)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("FEDB merge data parity UE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_FECQ_FEDB_MERGE_DATA_PARITY_UE", mc);
 }
 
-void ddr_err_inj_fedb_merge_strobe_ue(uint32_t mc)
+PLACED_CODE void ddr_err_inj_fedb_merge_strobe_ue(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = NULL; // Initialize to NULL
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_MERGE_STROBE_UE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
-        ddrss_ras_agent == NULL)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("FEDB merge strobe UE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_FECQ_FEDB_MERGE_STROBE_UE", mc);
 }
 
-void ddr_err_inj_fedb_merge_strobe_parity_ue(uint32_t mc)
+PLACED_CODE void ddr_err_inj_fedb_merge_strobe_parity_ue(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = NULL; // Initialize to NULL
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_MERGE_STROBE_PARITY_UE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
-        ddrss_ras_agent == NULL)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("FEDB merge strobe parity UE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_FECQ_FEDB_MERGE_STROBE_PARITY_UE", mc);
 }
 
-void ddr_err_inj_fedb_strobe_array_ue(uint32_t mc)
+PLACED_CODE void ddr_err_inj_fedb_strobe_array_ue(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = NULL; // Initialize to NULL
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_STROBE_ARRAY_UE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
-        ddrss_ras_agent == NULL)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("FEDB strobe array UE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_FECQ_FEDB_STROBE_ARRAY_UE", mc);
 }
 
 // Support test case 1831500
-void ddr_err_inj_media_patrol_scrub_ue(uint32_t mc)
+PLACED_CODE void ddr_err_inj_media_patrol_scrub_ue(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_MREB_PATROL_SCRUB_UE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("Media Patrol Scrub UE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_MREB_PATROL_SCRUB_UE", mc);
 }
 
-void ddr_err_inj_fecq_fedb_data_array_ue(uint32_t mc)
+PLACED_CODE void ddr_err_inj_fecq_fedb_data_array_ue(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_FECQ_FEDB_DATA_ARRAY_UE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS ||
-        ddrss_ras_agent == NULL)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("FECQ FEDB DATA ARRAY UE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_FECQ_FEDB_DATA_ARRAY_UE", mc);
 }
 
 // Support test case 1877177
-void ddr_err_inj_mainline_traffic_ce(uint32_t mc)
+PLACED_CODE void ddr_err_inj_mainline_traffic_ce(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_MREB_MAINLINE_TRAFFIC_CE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("Mainline traffic CE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_MREB_MAINLINE_TRAFFIC_CE", mc);
 }
 
 // Support test case 1877181
-void ddr_err_inj_mrdp_parity_ue(uint32_t mc)
+PLACED_CODE void ddr_err_inj_mrdp_parity_ue(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
     KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
-
     if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP))
     {
         printf("Cannot support MRDP parity error injection in FPGA series platform!\n");
         return;
     }
 
-    int idx = get_syndrome_index("DDR_ERR_INJ_MRDP_PARITY_ERROR");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("MRDP Parity error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_MRDP_PARITY_ERROR", mc);
 }
 
 // Support test case 2031570
-void ddr_err_inj_mainline_traffic_ue(uint32_t mc)
+PLACED_CODE void ddr_err_inj_mainline_traffic_ue(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_MREB_MAINLINE_TRAFFIC_UE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("Mainline traffic CE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_MREB_MAINLINE_TRAFFIC_UE", mc);
 }
 
 // Support test case 2031571
-void ddr_err_inj_ca_parity_persistent(uint32_t mc)
+PLACED_CODE void ddr_err_inj_ca_parity_persistent(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-    char* symdrome_name = "DDR_ERR_INJ_HKE_PERSISTENT_CA_PARITY_UE";
-
-    int idx = get_syndrome_index(symdrome_name);
-    if (idx < 0)
-    {
-        printf("Error: Syndrome %s not found\n", symdrome_name);
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("Persistent CA parity error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_HKE_PERSISTENT_CA_PARITY_UE", mc);
 }
 
 // Support test case 2093837
-void ddr_err_inj_ca_parity_transient(uint32_t mc)
+PLACED_CODE void ddr_err_inj_ca_parity_transient(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-    char* symdrome_name = "DDR_ERR_INJ_HKE_TRANSIENT_CA_PARITY_UE";
-
-    int idx = get_syndrome_index(symdrome_name);
-    if (idx < 0)
-    {
-        printf("Error: Syndrome %s not found\n", symdrome_name);
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("Transient CA parity error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_HKE_TRANSIENT_CA_PARITY_UE", mc);
 }
 
 // Support test case TBD
-void ddr_err_rh_counters_sram_parity(uint32_t mc)
+PLACED_CODE void ddr_err_rh_counters_sram_parity(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_RH_COUNTERS_SRAM_PARITY");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("Row hammer counters SRAM parity error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_RH_COUNTERS_SRAM_PARITY", mc);
 }
 
 // Support test case TBD
-void ddr_err_rh_drfm_sram_parity(uint32_t mc)
+PLACED_CODE void ddr_err_rh_drfm_sram_parity(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_RH_DRFM_SRAM_PARITY");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("Row hammer DRFM SRAM parity error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_RH_DRFM_SRAM_PARITY", mc);
 }
 
-void ddr_err_xts_aes_keystore_ce(uint32_t mc)
+PLACED_CODE void ddr_err_xts_aes_keystore_ce(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_XTS_AES_KEYSTORE_CE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("XTS AES keystore CE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_XTS_AES_KEYSTORE_CE", mc);
 }
 
-void ddr_err_xts_aes_keystore_ue(uint32_t mc)
+PLACED_CODE void ddr_err_xts_aes_keystore_ue(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_XTS_AES_KEYSTORE_UE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("XTS AES keystore UE injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_XTS_AES_KEYSTORE_UE", mc);
 }
 
-void ddr_err_bcp_read_addr_not_in_ddr(uint32_t mc)
+PLACED_CODE void ddr_err_bcp_read_addr_not_in_ddr(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_BCP_READ_ADDR_NOT_IN_DDR");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("BCP read addr not in DDR error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_BCP_READ_ADDR_NOT_IN_DDR", mc);
 }
 
-void ddr_err_bcp_read_blocked_by_pas(uint32_t mc)
+PLACED_CODE void ddr_err_bcp_read_blocked_by_pas(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_BCP_READ_BLOCKED_BY_PAS");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("BCP read blocked by PAS error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_BCP_READ_BLOCKED_BY_PAS", mc);
 }
 
-void ddr_err_bcp_write_addr_not_in_ddr(uint32_t mc)
+PLACED_CODE void ddr_err_bcp_write_addr_not_in_ddr(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_BCP_WRITE_ADDR_NOT_IN_DDR");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("BCP write addr not in DDR error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_BCP_WRITE_ADDR_NOT_IN_DDR", mc);
 }
 
-void ddr_err_bcp_write_blocked_by_pas(uint32_t mc)
+PLACED_CODE void ddr_err_bcp_write_blocked_by_pas(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_BCP_WRITE_BLOCKED_BY_PAS");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("BCP write blocked by PAS error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_BCP_WRITE_BLOCKED_BY_PAS", mc);
 }
 
-void ddr_err_bcp_chi_unsupported_opcode(uint32_t mc)
+PLACED_CODE void ddr_err_bcp_chi_unsupported_opcode(uint32_t mc)
 {
-    ras_agent_entity_t* ddrss_ras_agent = {0};
-    uint64_t types = 0;
-
-    int idx = get_syndrome_index("DDR_ERR_INJ_BCP_CHI_UNSUPPORTED_OPCODE");
-    if (idx < 0)
-    {
-        printf("Error: Syndrome not found\n");
-        return;
-    }
-    if (ddrss_get_ras_agent(mc, (DDRSS_RAS_NODE_ID)named_syndrome[idx].erg, &ddrss_ras_agent) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to get RAS agent\n");
-        return;
-    }
-    types = named_syndrome[idx].ras_arm_err_bitmask;
-    ddrss_ras_agent->syn = &(named_syndrome[idx].syndrome);
-
-    if (ras_arm_agent_trigger_by_type(ddrss_ras_agent, types) != SILIBS_SUCCESS)
-    {
-        printf("Error: Failed to trigger error injection\n");
-    }
-    else
-    {
-        printf("BCP CHI unsupported opcode error injected successfully\n");
-    }
+    ddr_err_inj_helper("DDR_ERR_INJ_BCP_CHI_UNSUPPORTED_OPCODE", mc);
 }
 
-int get_syndrome_index(const char* name)
+PLACED_CODE int get_syndrome_index(const char* name)
 {
     for (int i = 0; i < (int)(sizeof(named_syndrome) / sizeof(named_syndrome[0])); i++)
     {

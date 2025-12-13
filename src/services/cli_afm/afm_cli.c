@@ -70,14 +70,14 @@ static void gpio_cli_d2d_recv_cb(void* context, size_t output_size_bytes, fpfw_s
 /* Retaining all commands in the gpio menu to support any legacy code. To confirm with FSE before moving to an `afm` menu */
 /* These are commands that can be run on any config - single die or dual die */
 static FPFW_CLI_COMMAND s_afm_cmd_list[] = {
-    {NULL_LIST_ENTRY, "afm", "uart_afm", gpio_cli_set_uart_afm, "Set UART AFM", "Usage: uart_afm <die_num> <afm_u0> <afm_u1> <afm_u2> <afm_u3>"},
-    {NULL_LIST_ENTRY, "afm", "get_uart_ownership", gpio_cli_get_uart_ownership, "Get UART ownership", "Usage: get_uart_ownership"},
-    {NULL_LIST_ENTRY, "afm", "get_uart_afm", gpio_cli_get_uart_afm, "Get UART AFM", "Usage: get_uart_afm"},
-    {NULL_LIST_ENTRY, "afm", "get_mux_table", print_uart_afm_mux_table, "Print UART Mux Table for this Die", "Usage: print_mux_table"}};
+    {NULL_LIST_ENTRY, "afm", "uart_afm", gpio_cli_set_uart_afm, "Set UART AFM", "uart_afm <die_num> <afm_u0> <afm_u1> <afm_u2> <afm_u3>"},
+    {NULL_LIST_ENTRY, "afm", "get_uart_ownership", gpio_cli_get_uart_ownership, "Get UART ownership", "get_uart_ownership"},
+    {NULL_LIST_ENTRY, "afm", "get_uart_afm", gpio_cli_get_uart_afm, "Get UART AFM", "get_uart_afm"},
+    {NULL_LIST_ENTRY, "afm", "get_mux_table", print_uart_afm_mux_table, "Print UART Mux Table for this Die", "print_mux_table"}};
 
 /* These are commands that require dual die config to run */
 static FPFW_CLI_COMMAND s_afm_dual_die_cmd_list[] = {
-    {NULL_LIST_ENTRY, "afm", "uart_die", gpio_cli_set_uart_die_config, "Set UART die configuration", "Usage: uart_die <die_id_u1> <die_id_u2>"}};
+    {NULL_LIST_ENTRY, "afm", "uart_die", gpio_cli_set_uart_die_config, "Set UART die config", "uart_die <die_id_u1> <die_id_u2>"}};
 
 static bool d2d_send_in_progress = false;
 

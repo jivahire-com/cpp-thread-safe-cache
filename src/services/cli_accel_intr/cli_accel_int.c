@@ -40,10 +40,10 @@ static FPFW_CLI_STATUS cli_accel_int_reg_clr(int argc, const char** argv);
 /*------------------- Declarations (Statics and globals) --------------------*/
 // clang-format off
 static FPFW_CLI_COMMAND s_accel_int_commands_table[] = {
-    {NULL_LIST_ENTRY, "accel_int", "reg_rd",  cli_accel_int_reg_rd,  "Read value at address",                       "Usage: reg_rd [Reg addr in hex]. Eg: reg_rd 0xBABABABA"},
-    {NULL_LIST_ENTRY, "accel_int", "reg_wr",  cli_accel_int_reg_wr,  "Write specif value at address",               "Usage: reg_wr [Reg addr in hex] [32b reg value]. Eg : reg_wr 0xBABABABA 0x12345678"},
-    {NULL_LIST_ENTRY, "accel_int", "reg_set", cli_accel_int_reg_set, "Set register bits based on bitmask input",    "Usage: reg_set [Reg addr in hex] [32 bit bitmask in hex]. Eg : reg_set 0xBABABABA 0x01010101"},
-    {NULL_LIST_ENTRY, "accel_int", "reg_clr", cli_accel_int_reg_clr, "Clr register bits based on bitmask input",    "Usage: reg_clr [Reg addr in hex] [32 bit bitmask in hex]. Eg : reg_clr 0xBABABABA 0x01010101"},
+    {NULL_LIST_ENTRY, "accel_int", "reg_rd",  cli_accel_int_reg_rd,  "Read value",                       "reg_rd [addr(hex)]"},
+    {NULL_LIST_ENTRY, "accel_int", "reg_wr",  cli_accel_int_reg_wr,  "Write value",               "reg_wr [addr(hex)] [value(hex)]"},
+    {NULL_LIST_ENTRY, "accel_int", "reg_set", cli_accel_int_reg_set, "Set register bits",    "reg_set [addr(hex)] [bitmask(hex)]"},
+    {NULL_LIST_ENTRY, "accel_int", "reg_clr", cli_accel_int_reg_clr, "Clr register bits",    "reg_clr [addr(hex)] [bitmask(hex)]"},
 };
 
 // Registers supported as a part of accel_interrupt_handler commands.

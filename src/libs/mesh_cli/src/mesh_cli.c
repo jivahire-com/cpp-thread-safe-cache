@@ -55,22 +55,21 @@ static FPFW_CLI_STATUS d2d_ecc_ce_counter_cli(int argc, const char** argv);
 /*-- Declarations (Statics and globals) --*/
 
 static FPFW_CLI_COMMAND mesh_cli_list[] = {
-    {NULL_LIST_ENTRY, "mesh", "mesh_echo", mesh_echo_cli, "mesh echo data", "Usage: mesh_echo <32-bit address(in Hex)> <32-bit data(in Hex)>"},
-    {NULL_LIST_ENTRY, "mesh", "mesh_isr", mesh_isr_cli, "mesh isr process", "Usage: mesh_isr <Error(0x0) or Fault(0x1)>"},
-    {NULL_LIST_ENTRY, "mesh", "mesh_error_inj", mesh_error_inj, "mesh error injection", "Usage: mesh_error_inj <node_type> <node_id> <node_control_reg> <err_inj> <byte_par_err_inj>"},
-    {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_inj", mesh_pseudo_error_inj, "mesh pseudo fault injection", "Usage: mesh_pseudo_error_inj <secure/non_secure> <node_type> <node_id> <node_control_reg> <err_inj> <err_cnt_down>"},
-    {NULL_LIST_ENTRY, "mesh", "mesh_ras_error_dump", mesh_ras_error_dump, "mesh ras error dump", "Usage: mesh_ras_error_dump <secure/non_secure> <node_type> <node_id>"},
+    {NULL_LIST_ENTRY, "mesh", "mesh_echo", mesh_echo_cli, "echo data", "mesh_echo <addr(Hex)> <data(in Hex)>"},
+    {NULL_LIST_ENTRY, "mesh", "mesh_isr", mesh_isr_cli, "isr process", "mesh_isr <err(0x0) or Fault(0x1)>"},
+    {NULL_LIST_ENTRY, "mesh", "mesh_error_inj", mesh_error_inj, "err injection", "mesh_error_inj <node_type> <node_id> <node_control_reg> <err_inj> <byte_par_err_inj>"},
+    {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_inj", mesh_pseudo_error_inj, "pseudo fault injection", "mesh_pseudo_error_inj <secure/non_secure> <node_type> <node_id> <node_control_reg> <err_inj> <err_cnt_down>"},
+    {NULL_LIST_ENTRY, "mesh", "mesh_ras_error_dump", mesh_ras_error_dump, "ras error dump", "mesh_ras_error_dump <secure/non_secure> <node_type> <node_id>"},
     {NULL_LIST_ENTRY,
      "mesh",
      "mesh_ras_hns_ce_counter_update",
      mesh_ras_hns_ce_counter_update,
-     "mesh ras hns ce counter update",
-     "Usage: mesh_ras_hns_ce_counter_update <secure/non_secure> <node_type> <node_id> <cecr> <ceco>"},
-    {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_test_suite", mesh_pseudo_error_inj_test_suite, "mesh pseudo fault injection test suite", "Usage: mesh_pseudo_error_test_suite <secure/non_secure> <node_type> <node_id_start> <node_id_end> <node_control_reg> <err_inj> <err_cnt_down>"},
-    {NULL_LIST_ENTRY, "mesh", "d2d_pseudo_error_inj", d2d_pseudo_error_inj, "d2d pseudo fault injection", "Usage: d2d_pseudo_error_inj <node_id> <err_inj> <err_cnt_down>"},
-    {NULL_LIST_ENTRY, "mesh", "print_mesh_numa_config", print_mesh_numa_config, "Print the Mesh NUMA config", "Usage: print_mesh_numa_config"},
-    {NULL_LIST_ENTRY, "mesh", "d2d_ecc_ce_counter_update", d2d_ecc_ce_counter_cli, "d2d ecc ce counter update", "Usage: d2d_ecc_ce_counter_update <d2d_subsystem> <cecr>"},
-
+     "ras hns ce counter update",
+     "mesh_ras_hns_ce_counter_update <secure/non_secure> <node_type> <node_id> <cecr> <ceco>"},
+    {NULL_LIST_ENTRY, "mesh", "mesh_pseudo_error_test_suite", mesh_pseudo_error_inj_test_suite, "pseudo fault injection test suite", "mesh_pseudo_error_test_suite <secure/non_secure> <node_type> <node_id_start> <node_id_end> <node_control_reg> <err_inj> <err_cnt_down>"},
+    {NULL_LIST_ENTRY, "mesh", "d2d_pseudo_error_inj", d2d_pseudo_error_inj, "d2d pseudo fault injection", "d2d_pseudo_error_inj <node_id> <err_inj> <err_cnt_down>"},
+    {NULL_LIST_ENTRY, "mesh", "print_mesh_numa_config", print_mesh_numa_config, "Print the Mesh NUMA config", "print_mesh_numa_config"},
+    {NULL_LIST_ENTRY, "mesh", "d2d_ecc_ce_counter_update", d2d_ecc_ce_counter_cli, "d2d ecc ce counter update", "d2d_ecc_ce_counter_update <d2d_subsystem> <cecr>"},
 };
 
 /*------------- Functions ----------------*/

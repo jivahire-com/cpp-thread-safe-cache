@@ -44,12 +44,12 @@ static bool parse_arg(const char* arg, uint32_t* out);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND cli_pwr_tlm_commands[] = {
-    {NULL_LIST_ENTRY, "pwrtlm", "info", show_info, "Show service info", "Usage: info"},
-    {NULL_LIST_ENTRY, "pwrtlm", "clear", clear_data, "Clear collected data", "Usage: clear"},
-    {NULL_LIST_ENTRY, "pwrtlm", "disable", disable_collection, "Disable data Collection", "Usage: disable"},
-    {NULL_LIST_ENTRY, "pwrtlm", "mode", change_mode, "Change Mode", "Usage: mode <disabled | publish | collect | snsr_fifo_dbg> "},
-    {NULL_LIST_ENTRY, "pwrtlm", "timers", change_timer_periods, "Change timer periods in mS", "Usage: timers (mS) <aggr_tmr> <inst_tmr> <pwr_tmr> <24hr_tmr> "},
-    {NULL_LIST_ENTRY, "pwrtlm", "ooblog", oob_log, "Log Out of Band Sensors", "Usage: ooblog <enable | disable> "},
+    {NULL_LIST_ENTRY, "pwrtlm", "info", show_info, "Show service info", "info"},
+    {NULL_LIST_ENTRY, "pwrtlm", "clear", clear_data, "Clear collected data", "clear"},
+    {NULL_LIST_ENTRY, "pwrtlm", "disable", disable_collection, "Disable data Collection", "disable"},
+    {NULL_LIST_ENTRY, "pwrtlm", "mode", change_mode, "Change Mode", "mode <disabled | publish | collect | snsr_fifo_dbg> "},
+    {NULL_LIST_ENTRY, "pwrtlm", "timers", change_timer_periods, "Change timer periods in mS", "timers (mS) <aggr_tmr> <inst_tmr> <pwr_tmr> <24hr_tmr> "},
+    {NULL_LIST_ENTRY, "pwrtlm", "ooblog", oob_log, "Log Out of Band Sensors", "ooblog <enable | disable> "},
 };
 
 /*------------- Functions ----------------*/

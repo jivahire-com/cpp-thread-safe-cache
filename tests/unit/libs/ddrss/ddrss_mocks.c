@@ -78,6 +78,9 @@ bool g_should_check_ras_agent_entity_id = false;
 bool g_should_wrap_ddrss_get_config = false;
 bool g_should_wrap_ddrss_inject_media_ca_err = false;
 bool g_should_check_ddrss_err_inj_function_ptrs = false;
+bool g_should_wrap_ras_arm_agent_trigger_by_type = false;
+bool g_should_wrap_ddrss_physical_to_media_addr = false;
+bool g_should_wrap_ddrss_find_next_physical_addr = false;
 
 /*------------- Functions ----------------*/
 
@@ -344,8 +347,41 @@ int __wrap_ddrss_physical_to_media_addr(uint64_t pa, ddrss_media_addr_t* ma, uin
 {
     FPFW_UNUSED(pa);
     FPFW_UNUSED(ma);
-    FPFW_UNUSED(mc);
+
+    if (g_should_wrap_ddrss_physical_to_media_addr)
+    {
+        *mc = mock_type(uint32_t);
+        return mock_type(int);
+    }
+
     return (SILIBS_SUCCESS);
+}
+
+int __wrap_ddrss_find_next_physical_addr(uint32_t mc, uint64_t pa, uint64_t* new_pa)
+{
+    FPFW_UNUSED(mc);
+    FPFW_UNUSED(pa);
+
+    if (g_should_wrap_ddrss_find_next_physical_addr)
+    {
+        *new_pa = mock_type(uint64_t);
+        return mock_type(int);
+    }
+
+    return (SILIBS_SUCCESS);
+}
+
+silibs_status_t __wrap_ras_arm_agent_trigger_by_type(ras_agent_entity_t* agent, uint64_t types)
+{
+    FPFW_UNUSED(agent);
+    FPFW_UNUSED(types);
+
+    if (g_should_wrap_ras_arm_agent_trigger_by_type)
+    {
+        return mock_type(silibs_status_t);
+    }
+
+    return SILIBS_SUCCESS;
 }
 
 bool __wrap_system_info_is_warm_start(void)

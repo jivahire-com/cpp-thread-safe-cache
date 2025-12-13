@@ -27,6 +27,7 @@ target_link_libraries(${TARGET}
         ms::lib::system_info
         ms::lib::cortex_m7::mpu
         ms::lib::spi
+        ms::lib::utils
 )
 
 target_include_directories(${TARGET}

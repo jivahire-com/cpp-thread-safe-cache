@@ -42,12 +42,12 @@ avs_cli_request_context_t cli_avs_request = {0};
 pscp_avs_interface_t cli_avs_interfaces[MAX_AVS_INST] = {0};
 
 static FPFW_CLI_COMMAND scp_avs_cli_list[] = {
-    {NULL_LIST_ENTRY, "avs", "avs_read", scp_avs_read_data_cli, "AVS read data", "Usage: avs_read <avs bus number> <rail number> <read command type>"},
-    {NULL_LIST_ENTRY, "avs", "avs_write", scp_avs_write_data_cli, "AVS write data", "Usage: avs_write <avs bus number> <rail number> <write command type> <data>"},
-    {NULL_LIST_ENTRY, "avs", "avs_read_all", scp_avs_read_vct_cli, "AVS read VCT", "Usage: avs_read_all <avs bus number> <rail number>"},
-    {NULL_LIST_ENTRY, "avs", "avs_read_m", scp_avs_read_multi_cli, "AVS read multi", "Usage: avs_read_m <avs bus number> <command count> <rail> <cmd> <rail> <cmd>... Max CLI cmds accepted = 6"},
-    {NULL_LIST_ENTRY, "avs", "avs_write_m", scp_avs_write_multi_cli, "AVS write multi", "Usage: avs_write_m <avs bus number> <data (rail 0)> <data (rail 1)>"},
-    {NULL_LIST_ENTRY, "avs", "avs_error_c", scp_avs_get_error_count_cli, "AVS error count", "Usage: avs_error_c"},
+    {NULL_LIST_ENTRY, "avs", "avs_read", scp_avs_read_data_cli, "read data", "avs_read <bus idx> <rail number> <read cmd>"},
+    {NULL_LIST_ENTRY, "avs", "avs_write", scp_avs_write_data_cli, "write data", "avs_write <bus idx> <rail number> <write cmd> <data>"},
+    {NULL_LIST_ENTRY, "avs", "avs_read_all", scp_avs_read_vct_cli, "read VCT", "avs_read_all <bus idx> <rail number>"},
+    {NULL_LIST_ENTRY, "avs", "avs_read_m", scp_avs_read_multi_cli, "read multi", "avs_read_m <bus idx> <cmd count> <rail> <cmd> <rail> <cmd>..upto 6"},
+    {NULL_LIST_ENTRY, "avs", "avs_write_m", scp_avs_write_multi_cli, "write multi", "avs_write_m <bus idx> <data (rail 0)> <data (rail 1)>"},
+    {NULL_LIST_ENTRY, "avs", "avs_error_c", scp_avs_get_error_count_cli, "error count", "avs_error_c"},
 };
 
 /*------------- Functions ----------------*/

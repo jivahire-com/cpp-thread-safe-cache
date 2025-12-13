@@ -52,13 +52,13 @@ static FPFW_CLI_STATUS submit_hm_rh_record(int Argc, const char** Argv);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND cli_rh_tlm_commands[] = {
-    {NULL_LIST_ENTRY, "rhtlm", "info", display_info, "Show service info", "Usage: info"},
-    {NULL_LIST_ENTRY, "rhtlm", "defaultcfg", default_rh_cfg, "Defaults config to specific mc", "Usage: defaultcfg <mc>"},
-    {NULL_LIST_ENTRY, "rhtlm", "readrhcfg", read_ddr_rh_config, "Read RowHammer cfg", "Usage: readrhcfg"},
-    {NULL_LIST_ENTRY, "rhtlm", "readrhevt", read_ddr_rh_evt, "Read RowHammer telemetry", "Usage: readrhevt"},
-    {NULL_LIST_ENTRY, "rhtlm", "setrhfiltermask", set_rh_filtermask, "Set RowHammer Filter Mask", "Usage: setrhfiltermask "},
-    {NULL_LIST_ENTRY, "rhtlm", "enableallfilter", enable_all_rh_filtermask, "Enable all filter mask", "Usage: enableallfilter "},
-    {NULL_LIST_ENTRY, "rhtlm", "rhcper", submit_hm_rh_record, "send RH Telemetry(dummy)", "Usage: rhcper "},
+    {NULL_LIST_ENTRY, "rhtlm", "info", display_info, "Show service info", "info"},
+    {NULL_LIST_ENTRY, "rhtlm", "defaultcfg", default_rh_cfg, "Defaults config to specific mc", "defaultcfg <mc>"},
+    {NULL_LIST_ENTRY, "rhtlm", "readrhcfg", read_ddr_rh_config, "Read RowHammer cfg", "readrhcfg"},
+    {NULL_LIST_ENTRY, "rhtlm", "readrhevt", read_ddr_rh_evt, "Read RowHammer telemetry", "readrhevt"},
+    {NULL_LIST_ENTRY, "rhtlm", "setrhfiltermask", set_rh_filtermask, "Set RowHammer Filter Mask", "setrhfiltermask "},
+    {NULL_LIST_ENTRY, "rhtlm", "enableallfilter", enable_all_rh_filtermask, "Enable all filter mask", "enableallfilter "},
+    {NULL_LIST_ENTRY, "rhtlm", "rhcper", submit_hm_rh_record, "send RH Telemetry(dummy)", "rhcper "},
 
 };
 

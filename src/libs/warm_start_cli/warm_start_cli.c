@@ -47,10 +47,10 @@ extern ws_data_list_t* p_ws_list;
     }
 
 static FPFW_CLI_COMMAND warm_start_cli_list[] = {
-    {NULL_LIST_ENTRY, "warm_start", "wsrd", ws_read_cli, "Warm Start Read Data", "syntax: wsrd <id>\n"},
-    {NULL_LIST_ENTRY, "warm_start", "wswr", ws_write_cli, "Warm Start Write Data", "syntax: wswr <id> <byte>..\n"},
-    {NULL_LIST_ENTRY, "warm_start", "wsdisp", ws_disp_cli, "Warm Start Display Data", "syntax: wsdisp\n"},
-    {NULL_LIST_ENTRY, "warm_start", "wsreset", ws_reset, "Warm Start Cli to perform Reset", "syntax: wsreset [cold, subsys, shutdown, quiesce]"},
+    {NULL_LIST_ENTRY, "warm_start", "wsrd", ws_read_cli, "Read WS Data", "wsrd <id>\n"},
+    {NULL_LIST_ENTRY, "warm_start", "wswr", ws_write_cli, "Write WS Data", "wswr <id> <byte>..\n"},
+    {NULL_LIST_ENTRY, "warm_start", "wsdisp", ws_disp_cli, "Display WS Data", "wsdisp\n"},
+    {NULL_LIST_ENTRY, "warm_start", "wsreset", ws_reset, "perform Reset", "wsreset [type]\n"},
 };
 
 char* ws_reason_strings[] = {"Reset Reason unknown\n",
@@ -85,7 +85,6 @@ static PLACED_CODE FPFW_CLI_STATUS ws_write_cli(int argc, const char** argv)
     if (argc < 3)
     {
         FpFwCliPrint("Incorrect args\n");
-        FpFwCliPrint("Syntax: wswr <ID> <space separated bytes data>\n");
         return CLI_SUCCESS;
     }
 
@@ -136,7 +135,6 @@ static PLACED_CODE FPFW_CLI_STATUS ws_read_cli(int argc, const char** argv)
     if (argc < 2)
     {
         FpFwCliPrint("Incorrect parameters\n");
-        FpFwCliPrint("Syntax: wsrd <ID>\n");
         return CLI_SUCCESS;
     }
 

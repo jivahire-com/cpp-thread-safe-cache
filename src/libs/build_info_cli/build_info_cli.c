@@ -28,7 +28,7 @@
 static FPFW_CLI_STATUS whoami(int Argc, const char** Argv);
 
 /*------------------- Declarations (Statics and globals) --------------------*/
-static FPFW_CLI_COMMAND s_build_info_commands = {NULL_LIST_ENTRY, "build_info", "whoami", whoami, "show build metadata", "Usage: whoami"};
+static FPFW_CLI_COMMAND s_build_info_commands = {NULL_LIST_ENTRY, "build_info", "whoami", whoami, "show build metadata", "whoami"};
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -38,7 +38,6 @@ static PLACED_CODE FPFW_CLI_STATUS whoami(int Argc, const char** Argv)
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
 
-    printf("----------------------------------------------------------------\n");
     printf("Build Version: %d.%d.%d\n", (int)MAJOR_VERSION, (int)MINOR_VERSION, (int)PATCH_VERSION);
     printf("Branch: %s\n", GIT_BRANCH);
     printf("Commit: %s\n", GIT_COMMIT_SHA);
@@ -143,8 +142,6 @@ static PLACED_CODE FPFW_CLI_STATUS whoami(int Argc, const char** Argv)
            build_id_2_2_bytes,
            build_id_3_2_bytes,
            build_id_4_6_bytes);
-
-    printf("----------------------------------------------------------------\n");
 
     return CLI_SUCCESS;
 }

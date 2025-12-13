@@ -95,33 +95,33 @@ STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv
 // TODO Silibs to provide APIs with arguments list
 // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
 STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
-    {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ce_err", ecc_ce_error_injection, "ECC CE error injection", "Usage: ecc_ce_err <parameter tbd>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ue_err", ecc_ue_error_injection, "ECC UE error injection", "Usage: ecc_ue_err <parameter tbd>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "capar_err", cmd_addr_parity_error_injection, "CAPAR error", "Usage: caddr_parity_err <optional mc> <optional injection cmd>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "wrrtydat_ue_err", wrrtydat_ue_error_injection, "WRRTYDAT UE error injection", "Usage: wrrtydat_ue_err <parameter tbd>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "media_patrol_scrub_ce", media_patrol_scrub_ce_error_injection, "Media Patrol Scrub CE error injection", "Usage: media_patrol_scrub_ce <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "merge_data_ce", fedb_merge_data_ce_error_injection, "FEDB Merge Data CE error injection (1828223)", "Usage: merge_data_ce <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "merge_data_ue", media_patrol_scrub_ue_error_injection, "FEDB Merge Data UE error injection (1831500)", "Usage: merge_data_ue <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "mainline_traffic_ce", mainline_traffic_ce_error_injection, "Mainline Traffic CE error injection (1877177)", "Usage: mainline_traffic_ce <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "mainline_traffic_ue", mainline_traffic_ue_error_injection, "Mainline Traffic UE error injection (2031570)", "Usage: mainline_traffic_ue <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "mrdp_parity_ue", mrdp_parity_ue_error_injection, "MRDP Parity UE error injection (1877181)", "Usage: mrdp_parity_ue <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "ca_parity_persistent", ca_parity_persistent_error_injection, "Command Address Parity - Persistent einj (2031571)", "Usage: ca_parity_persistent <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "ca_parity_transient", ca_parity_transient_error_injection, "Command Address Parity - Transient einj (2093837)", "Usage: ca_parity_transient <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "xts_aes_keystore_ce", xts_aes_keystore_ce_error_injection, "XTS AES Keystore CE error injection", "Usage: xts_aes_keystore_ce <mc>"},
-    {NULL_LIST_ENTRY, "ddr_err_inj", "xts_aes_keystore_ue", xts_aes_keystore_ue_error_injection, "XTS AES Keystore UE error injection", "Usage: xts_aes_keystore_ue <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ce_err", ecc_ce_error_injection, "CE injection", "ecc_ce_err <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "ecc_ue_err", ecc_ue_error_injection, "UE injection", "ecc_ue_err <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "capar_err", cmd_addr_parity_error_injection, "CAPAR error", "caddr_parity_err <mc> <einj_cmd>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "wrrtydat_ue_err", wrrtydat_ue_error_injection, "WRRTYDAT UE injection", "wrrtydat_ue_err"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "media_patrol_scrub_ce", media_patrol_scrub_ce_error_injection, "Media Patrol Scrub CE injection", "media_patrol_scrub_ce <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "merge_data_ce", fedb_merge_data_ce_error_injection, "FEDB Merge Data CE injection", "merge_data_ce <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "merge_data_ue", media_patrol_scrub_ue_error_injection, "FEDB Merge Data UE injection", "merge_data_ue <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "mainline_traffic_ce", mainline_traffic_ce_error_injection, "Mainline Traffic CE injection", "mainline_traffic_ce <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "mainline_traffic_ue", mainline_traffic_ue_error_injection, "Mainline Traffic UE injection", "mainline_traffic_ue <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "mrdp_parity_ue", mrdp_parity_ue_error_injection, "MRDP Parity UE injection", "mrdp_parity_ue <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "ca_parity_persistent", ca_parity_persistent_error_injection, "Command Address Parity - Persistent einj", "ca_parity_persistent <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "ca_parity_transient", ca_parity_transient_error_injection, "Command Address Parity - Transient einj", "ca_parity_transient <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "xts_aes_keystore_ce", xts_aes_keystore_ce_error_injection, "XTS AES Keystore CE injection", "xts_aes_keystore_ce <mc>"},
+    {NULL_LIST_ENTRY, "ddr_err_inj", "xts_aes_keystore_ue", xts_aes_keystore_ue_error_injection, "XTS AES Keystore UE injection", "xts_aes_keystore_ue <mc>"},
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    {NULL_LIST_ENTRY, "ddr", "read_dimm_pmic_power", read_dimm_pmic_power, "Read PMIC power", "Usage: read_dimm_pmic_power <dimm_idx>"},
-    {NULL_LIST_ENTRY, "ddr", "read_dimm_temp_sensor", read_dimm_temp_sensor, "Read DIMM temperature sensor", "Usage: read_dimm_temp_sensor <dimm_idx> <channel_idx>"},
+    {NULL_LIST_ENTRY, "ddr", "read_dimm_pmic_power", read_dimm_pmic_power, "Read PMIC power", "read_dimm_pmic_power <dimm_idx>"},
+    {NULL_LIST_ENTRY, "ddr", "read_dimm_temp_sensor", read_dimm_temp_sensor, "Read DIMM temperature sensor", "read_dimm_temp_sensor <dimm_idx> <channel_idx>"},
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    {NULL_LIST_ENTRY, "ddr", "rh_counters", rh_counters_sram_parity_error_injection, "Row hammer counters sram parity einj (TBD)", "Usage: rh_counters <mc>"},
-    {NULL_LIST_ENTRY, "ddr", "rh_drfm", rh_drfm_sram_parity_error_injection, "Command Address Parity - Transient einj (TBD)", "Usage: rh_drfm <mc>"},
+    {NULL_LIST_ENTRY, "ddr", "rh_counters", rh_counters_sram_parity_error_injection, "Row hammer counters sram parity einj (TBD)", "rh_counters <mc>"},
+    {NULL_LIST_ENTRY, "ddr", "rh_drfm", rh_drfm_sram_parity_error_injection, "Command Address Parity - Transient einj (TBD)", "rh_drfm <mc>"},
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    {NULL_LIST_ENTRY, "ddr", "bwl_force", ddr_manager_bwl_force, "Control BWL forced throttling state", "Usage: bwl_force <0|1>"},
+    {NULL_LIST_ENTRY, "ddr", "bwl_force", ddr_manager_bwl_force, "Control BWL forced throttling state", "bwl_force <0|1>"},
 
 #ifdef SDL_DEV_MODE
-    {NULL_LIST_ENTRY, "ddr_ppr", "write_sdl", write_sdl, "(Over-)Writes an empty SDL variable to flash", "Usage: write_sdl >"},
-    {NULL_LIST_ENTRY, "ddr", "ppr", ddr_manager_ppr_status_update, "Invoke PPR status update", "Usage: ppr <dimm_num>"},
+    {NULL_LIST_ENTRY, "ddr_ppr", "write_sdl", write_sdl, "(Over-)Writes an empty SDL variable to flash", "write_sdl >"},
+    {NULL_LIST_ENTRY, "ddr", "ppr", ddr_manager_ppr_status_update, "Invoke PPR status update", "ppr <dimm_num>"},
 #endif
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 };
@@ -185,7 +185,7 @@ STATIC PLACED_CODE FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char**
     }
 
     ddr_ecc_error_injection(die_id, mc, p_addr, BIT_Value);
-    FpFwCliPrint("DDR: ecc_ce_error_injection - Done!!\n");
+    FpFwCliPrint("ecc_ce_error_injection - Done\n");
 
     return CLI_SUCCESS;
 }
@@ -233,7 +233,7 @@ STATIC PLACED_CODE FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char**
     }
 
     ddr_ecc_error_injection(die_id, mc, p_addr, BIT_Value);
-    FpFwCliPrint("DDR: ecc_ue_error_injection - Done!!\n");
+    FpFwCliPrint("ecc_ue_error_injection - Done\n");
     return CLI_SUCCESS;
 }
 
@@ -274,12 +274,12 @@ STATIC PLACED_CODE FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, con
 
     if (cmd > DDRSS_MEDIA_CA_INJ_CMD_DRFMSB)
     {
-        FpFwCliPrint("Invalid Argument - cmd (if supplied) must be between [0 <= cmd <= 0x85]\n");
+        FpFwCliPrint("Invalid Argument\n");
         return CLI_ERROR;
     }
 
     ddr_ca_parity_error_injection(mc, cmd);
-    FpFwCliPrint("DDR: cmd_addr_parity_error_injection - Done!!\n");
+    FpFwCliPrint("cmd_addr_parity_error_injection - Done\n");
 
     return CLI_SUCCESS;
 }
@@ -292,7 +292,7 @@ STATIC PLACED_CODE FPFW_CLI_STATUS wrrtydat_ue_error_injection(int Argc, const c
     // TODO Silibs to provide APIs with exact arguments list
     // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
 
-    FpFwCliPrint("Work in progress: wrrtydat_ue_error_injection\n");
+    FpFwCliPrint("Work in progress\n");
 
     return CLI_SUCCESS;
 }
@@ -469,14 +469,14 @@ STATIC PLACED_CODE FPFW_CLI_STATUS read_dimm_pmic_power(int Argc, const char** A
 
     if (Argc != 2)
     {
-        FpFwCliPrint("Invalid number of arguments.  Usage: read_dimm_pmic_power <dimm_idx>\n");
+        FpFwCliPrint("Invalid arguments\n");
         return CLI_ERROR;
     }
 
     ddrss_index = (uint8_t)(strtoul(Argv[1], NULL, 0));
     if (ddrss_index > 5)
     {
-        FpFwCliPrint("Invalid argument. <dimm_idx> range = 0 - 5\n");
+        FpFwCliPrint("Invalid arguments\n");
         return CLI_ERROR;
     }
 
@@ -500,21 +500,21 @@ STATIC PLACED_CODE FPFW_CLI_STATUS read_dimm_temp_sensor(int Argc, const char** 
 
     if (Argc != 3)
     {
-        FpFwCliPrint("Invalid number of arguments.  Usage: read_dimm_temp_sensor <dimm_idx> <channel_idx>\n");
+        FpFwCliPrint("Invalid arguments\n");
         return CLI_ERROR;
     }
 
     ddrss_index = (uint8_t)(strtoul(Argv[1], NULL, 0));
     if (ddrss_index > 5)
     {
-        FpFwCliPrint("Invalid argument. <dimm_idx> range = 0 - 5\n");
+        FpFwCliPrint("Invalid arguments\n");
         return CLI_ERROR;
     }
 
     channel_idx = (uint8_t)(strtoul(Argv[2], NULL, 0));
     if (channel_idx > 1)
     {
-        FpFwCliPrint("Invalid argument. <channel_idx> range = 0 - 1\n");
+        FpFwCliPrint("Invalid arguments\n");
         return CLI_ERROR;
     }
 
@@ -533,7 +533,7 @@ STATIC FPFW_CLI_STATUS ddr_manager_bwl_force(int Argc, const char** Argv)
 {
     if (Argc != 2)
     {
-        FpFwCliPrint("Invalid number of arguments.  Usage: bwl_force <0|1>\n");
+        FpFwCliPrint("Invalid arguments\n");
         return CLI_ERROR;
     }
 
@@ -541,7 +541,7 @@ STATIC FPFW_CLI_STATUS ddr_manager_bwl_force(int Argc, const char** Argv)
     uint8_t force = (uint8_t)(strtoul(Argv[1], &endptr, 0));
     if (*endptr != '\0' || (force != 0 && force != 1))
     {
-        FpFwCliPrint("Invalid argument - force must be either 0 or 1\n");
+        FpFwCliPrint("Invalid arguments\n");
         return CLI_ERROR;
     }
 
@@ -564,7 +564,7 @@ static bool is_mc_are_belong_to_die(uint32_t mc)
     {
         if (mc > 11)
         {
-            FpFwCliPrint("Invalid Argument - mc (if supplied) must be between 0 and 11 for DIE 0");
+            FpFwCliPrint("Invalid arguments\n");
             return false;
         }
     }
@@ -572,7 +572,7 @@ static bool is_mc_are_belong_to_die(uint32_t mc)
     {
         if ((mc > 23) || (mc < 12))
         {
-            FpFwCliPrint("Invalid Argument - mc (if supplied) must be between 12 and 23 for DIE 1");
+            FpFwCliPrint("Invalid arguments\n");
             return false;
         }
     }
@@ -655,7 +655,7 @@ STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv
 
     if (Argc != 2)
     {
-        FpFwCliPrint("Invalid number of arguments.  Usage: prr <dimm_no>\n");
+        FpFwCliPrint("Invalid arguments\n");
         return CLI_ERROR;
     }
 
@@ -663,7 +663,7 @@ STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv
     uint8_t dimm_num = (uint8_t)(strtoul(Argv[1], &endptr, 0));
     if ((*endptr != '\0') || (dimm_num > 5))
     {
-        FpFwCliPrint("Invalid argument - dimm_no must be between 0 and 5\n");
+        FpFwCliPrint("Invalid arguments\n");
         return CLI_ERROR;
     }
 

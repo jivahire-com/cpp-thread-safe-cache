@@ -39,10 +39,10 @@ static void invalidate_cacheable_address(uint32_t addr, uint32_t width);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND s_mem_cmd_list[] = {
-    {NULL_LIST_ENTRY, "mem", "ap_mem_read", ap_mem_read, "Read AP memory", "Usage: ap_mem_read <size in 32-bit words> <addr>"},
-    {NULL_LIST_ENTRY, "mem", "ap_mem_write", ap_mem_write, "Write AP memory", "Usage: ap_mem_write <addr> <32-bit data>"},
-    {NULL_LIST_ENTRY, "mem", "readmem", local_mem_read, "Read Local memory", "Usage: readmem <addr> <width in bytes 1|2|4|8>\nWARNING: READING FROM ILLEGAL ADDRESSES CAN CRASH THE SYSTEM."},
-    {NULL_LIST_ENTRY, "mem", "writemem", local_mem_write, "Write Local memory", "Usage: writemem <base_addr> <width in bytes 1|2|4|8> <value to write>\nWARNING: WRITING ILLEGAL ADDRESSES CAN CRASH THE SYSTEM."}};
+    {NULL_LIST_ENTRY, "mem", "ap_mem_read", ap_mem_read, "Read AP mem", "Usage: ap_mem_read <size> <addr>"},
+    {NULL_LIST_ENTRY, "mem", "ap_mem_write", ap_mem_write, "Write AP mem", "Usage: ap_mem_write <addr> <32-bit data>"},
+    {NULL_LIST_ENTRY, "mem", "readmem", local_mem_read, "Read mem", "Usage: readmem <addr> <width in bytes 1|2|4|8>\n"},
+    {NULL_LIST_ENTRY, "mem", "writemem", local_mem_write, "Write mem", "Usage: writemem <addr> <width in bytes 1|2|4|8> <value>\n"}};
 
 /*------------- Functions ----------------*/
 // Command to read memory

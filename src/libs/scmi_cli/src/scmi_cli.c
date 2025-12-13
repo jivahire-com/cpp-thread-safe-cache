@@ -27,8 +27,8 @@ static FPFW_CLI_STATUS scmi_send(int argc, const char** argv);
 /*-- Declarations (Statics and globals) --*/
 
 static FPFW_CLI_COMMAND s_scmi_cmd_list[] = {
-    {NULL_LIST_ENTRY, "scmi", "scmi_setm", scmi_setm, "Sets SCMI Debug Mode", "Usage: scmi_setm <mode>"},
-    {NULL_LIST_ENTRY, "scmi", "scmi_send", scmi_send, "Sends SCMI response", "Usage: scmi_send <procol_id> <command> <size> <data0> .. <datan>"},
+    {NULL_LIST_ENTRY, "scmi", "scmi_setm", scmi_setm, "Sets SCMI Debug Mode", "scmi_setm <mode>"},
+    {NULL_LIST_ENTRY, "scmi", "scmi_send", scmi_send, "Sends SCMI response", "scmi_send <procol_id> <command> <size> <data0> .. <datan>"},
 };
 
 /*------------- Functions ----------------*/

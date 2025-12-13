@@ -17,6 +17,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <utils.h>
 
 /*-------------------------------- Typedefs ---------------------------------*/
 /*-- Declarations (Statics and globals) --*/
@@ -29,7 +30,10 @@ void hsp_variable_service_initialize(var_service_shared_mem_t* var_svc_mem_ctx)
     variable_service_initialize_ctx(&var_svc_ctx, var_svc_mem_ctx);
 }
 
-static void check_var_store_cb(void* context, struct _variable_service_req_ctx* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
+static PLACED_CODE void check_var_store_cb(void* context,
+                                           struct _variable_service_req_ctx* var_serv_ctx,
+                                           uint8_t* data_start_ptr,
+                                           size_t data_size)
 {
     cached_knob_data_t* current_entry = (cached_knob_data_t*)context;
 
@@ -60,7 +64,7 @@ static void check_var_store_cb(void* context, struct _variable_service_req_ctx* 
     variable_service_unlock_get_var_ctx(&var_svc_ctx);
 }
 
-void check_var_store_knob_data_async(cached_knob_data_t* current_entry)
+PLACED_CODE void check_var_store_knob_data_async(cached_knob_data_t* current_entry)
 {
     var_service_req_params_t var_svc_req = {};
     var_svc_req.variable_name_ptr = (uint16_t*)current_entry->name;
@@ -73,10 +77,10 @@ void check_var_store_knob_data_async(cached_knob_data_t* current_entry)
     BUG_ASSERT_PARAM(KNG_SUCCEEDED(result), result, KNG_SUCCESS);
 }
 
-static void write_knob_completion_routine(void* context,
-                                          struct _variable_service_req_ctx* var_serv_ctx,
-                                          uint8_t* data_start_ptr,
-                                          size_t data_size)
+static PLACED_CODE void write_knob_completion_routine(void* context,
+                                                      struct _variable_service_req_ctx* var_serv_ctx,
+                                                      uint8_t* data_start_ptr,
+                                                      size_t data_size)
 {
     BUG_ASSERT_PARAM(KNG_SUCCEEDED(var_serv_ctx->async_req_result), var_serv_ctx->async_req_result, var_serv_ctx);
 
@@ -89,7 +93,7 @@ static void write_knob_completion_routine(void* context,
     }
 }
 
-void read_knob_from_hsp(cached_knob_data_t* current_entry)
+PLACED_CODE void read_knob_from_hsp(cached_knob_data_t* current_entry)
 {
     // Retrieve the knob from HSP during init phase. make sure we update knobs before init phase completed.
     uint32_t var_name_length = strlen(current_entry->name);
@@ -130,7 +134,7 @@ void read_knob_from_hsp(cached_knob_data_t* current_entry)
     variable_service_unlock_get_var_ctx(&var_svc_ctx);
 }
 
-void write_knob_to_hsp(cached_knob_data_t* current_entry, update_knob_completion_routine cb)
+PLACED_CODE void write_knob_to_hsp(cached_knob_data_t* current_entry, update_knob_completion_routine cb)
 {
     static var_store_ctx_t var_ctx = {0};
     var_ctx.knob_item = current_entry;

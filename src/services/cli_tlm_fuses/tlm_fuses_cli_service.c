@@ -31,9 +31,9 @@ static FPFW_CLI_STATUS read_soc_dts_coeff(int Argc, const char** Argv);
 
 /*-- Declarations (Statics and globals) --*/
 static FPFW_CLI_COMMAND cli_tlm_fuses_commands[] = {
-    {NULL_LIST_ENTRY, "tlmFuses", "ecid", read_ecid, "Read the Electronic Chip Identifier (ECID)", "Usage: ecid"},
-    {NULL_LIST_ENTRY, "tlmFuses", "tileDtsCoeff", read_tile_dts_coeff, "Read tile dts coefficients", "Usage: tileDtsCoeff"},
-    {NULL_LIST_ENTRY, "tlmFuses", "socDtsCoeff", read_soc_dts_coeff, "Read soc top dts coefficients", "Usage: socDtsCoeff"},
+    {NULL_LIST_ENTRY, "tlmFuses", "ecid", read_ecid, "Read the ECID", "ecid"},
+    {NULL_LIST_ENTRY, "tlmFuses", "tileDtsCoeff", read_tile_dts_coeff, "Read tile dts coefficients", "tileDtsCoeff"},
+    {NULL_LIST_ENTRY, "tlmFuses", "socDtsCoeff", read_soc_dts_coeff, "Read soc top dts coefficients", "socDtsCoeff"},
 };
 
 /*------------- Functions ----------------*/

@@ -51,40 +51,40 @@ static FPFW_CLI_COMMAND pcie_cli_table[] = {
         .MenuName = "pcie",
         .Syntax = "dump_rpss_entity",
         .Routine = dump_rpss_entity,
-        .Description = "Shows rpss entity characteristics",
-        .Usage = "pcie dump_rpss_entity <rpss_number between 0-7>"
+        .Description = "RPSS entity info",
+        .Usage = "dump_rpss_entity <rpss_idx(0-7)>"
     },
     {
         .ListEntry = NULL_LIST_ENTRY,
         .MenuName = "pcie",
         .Syntax = "dump_rp_entity",
         .Routine = dump_rp_entity,
-        .Description = "Shows rp entity characteristics",
-        .Usage = "pcie dump_rp_entity <rpss_number between 0-7> <rp_number between 0-3>"
+        .Description = "RP entity info",
+        .Usage = "dump_rp_entity <rpss_idx(0-7)> <rp_idx(0-3)>"
     },
     {
         .ListEntry = NULL_LIST_ENTRY,
         .MenuName = "pcie",
         .Syntax = "dump_rp_link_info",
         .Routine = dump_rp_link_info,
-        .Description = "Shows link information for an enabled root port",
-        .Usage = "pcie dump_rp_link_info <rpss_number between 0-7> <rp_number between 0-3>"
+        .Description = "Show RP link info",
+        .Usage = "dump_rp_link_info <rpss_idx(0-7)> <rp_idx(0-3)>"
     },
     {
         .ListEntry = NULL_LIST_ENTRY,
         .MenuName = "pcie",
         .Syntax = "dump_rp_dbi_cfg_hdr",
         .Routine = dump_rp_dbi_cfg_hdr,
-        .Description = "Shows the root port type 1 configuration header (over DBI) for an enabled root port",
-        .Usage = "pcie dump_rp_dbi_cfg_hdr <rpss_number between 0-7> <rp_number between 0-3>"
+        .Description = "Show RP Type1 config (DBI)",
+        .Usage = "dump_rp_dbi_cfg_hdr <rpss_idx(0-7)> <rp_idx(0-3)>"
     },
     {
         .ListEntry = NULL_LIST_ENTRY,
         .MenuName = "pcie",
         .Syntax = "dump_pci_hsp_variables",
         .Routine = dump_pci_hsp_variables,
-        .Description = "Dumps the system variables used for PCIe. var_index values: 1 - DIE0 ROOT_BRIDGE, 2 - DIE0 VAB, 3 - DIE1 ROOT_BRIDGE, 4 - DIE1 VAB",
-        .Usage = "dump_pci_hsp_variables <var_index>"
+        .Description = "Dumps variables. var_idx values: 1 - DIE0 ROOT_BRIDGE, 2 - DIE0 VAB, 3 - DIE1 ROOT_BRIDGE, 4 - DIE1 VAB",
+        .Usage = "dump_pci_hsp_variables <var_idx>"
     },
 };
 /* clang-format on */
@@ -273,7 +273,7 @@ static PLACED_CODE FPFW_CLI_STATUS dump_rpss_entity(int argc, const char** argv)
     }
     else
     {
-        FpFwCliPrint("pcie cli: Failed to get entity from the PCIe driver! silibs_status: %d\n", (int)req.status);
+        FpFwCliPrint("Failed to get entity from the PCIe driver! (%d)\n", (int)req.status);
         return CLI_ERROR;
     }
     return CLI_SUCCESS;
@@ -309,7 +309,7 @@ static PLACED_CODE FPFW_CLI_STATUS dump_rp_entity(int argc, const char** argv)
     }
     else
     {
-        FpFwCliPrint("pcie cli: Failed to get entity from the PCIe driver! silibs_status: %d\n", (int)req.status);
+        FpFwCliPrint("Failed to get entity from the PCIe driver! (%d)\n", (int)req.status);
         return CLI_ERROR;
     }
 
@@ -345,7 +345,7 @@ static PLACED_CODE FPFW_CLI_STATUS dump_rp_link_info(int argc, const char** argv
     DfwkInterfaceSendSync((PDFWK_INTERFACE_HEADER)(&iface[rpss_idx % PCIE_RPSS_PER_DIE]), &req.header);
     if (req.status != SILIBS_SUCCESS)
     {
-        FpFwCliPrint("pcie cli: Failed to get ltssm state from the PCIe driver! silibs_status: %d\n", (int)req.status);
+        FpFwCliPrint("Failed to get ltssm state from the PCIe driver! (%d)\n", (int)req.status);
         return CLI_ERROR;
     }
 
@@ -392,8 +392,7 @@ static PLACED_CODE FPFW_CLI_STATUS dump_rp_dbi_cfg_hdr(int argc, const char** ar
     }
     else
     {
-        FpFwCliPrint("pcie cli: Failed to get root port config from the PCIe driver! silibs_status: %d\n",
-                     (int)req.status);
+        FpFwCliPrint("Failed to get root port config from the PCIe driver! (%d)\n", (int)req.status);
         return CLI_ERROR;
     }
 

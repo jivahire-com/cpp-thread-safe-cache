@@ -59,7 +59,9 @@ static vptr_fuses_csr_reg scp_exp_fuses_regs =
     (vptr_fuses_csr_reg)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_FUSE_ADDRESS + FUSES_TOP_FUSES_CSR_ADDRESS);
 
 /*-------------- Functions ---------------*/
-static uint32_t get_error_injection_address(ras_einj_info_t* einj_payload, atu_map_entry_t* atu_entry, atu_map_entry_t* atu_recover_entry)
+static PLACED_CODE uint32_t get_error_injection_address(ras_einj_info_t* einj_payload,
+                                                        atu_map_entry_t* atu_entry,
+                                                        atu_map_entry_t* atu_recover_entry)
 {
     uint32_t err_addr = 0;
 
@@ -101,7 +103,7 @@ static uint32_t get_error_injection_address(ras_einj_info_t* einj_payload, atu_m
     return err_addr;
 }
 
-static void trigger_arsm_fault(ras_einj_info_t* einj_payload, mscp_arsm_ram_type_t type, uint32_t err_mask)
+static PLACED_CODE void trigger_arsm_fault(ras_einj_info_t* einj_payload, mscp_arsm_ram_type_t type, uint32_t err_mask)
 {
     atu_map_entry_t arsm_atu_entry;
     atu_map_entry_t arsm_atu_recover_entry;
@@ -436,7 +438,7 @@ PLACED_CODE acpi_einj_cmd_status_t mscp_error_injection_handler(ras_einj_info_t*
     return ACPI_EINJ_SUCCESS;
 }
 
-static void mcp_error_injection_setup_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+PLACED_CODE static void mcp_error_injection_setup_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(output_size_bytes);
     FPFW_UNUSED(status);
@@ -484,7 +486,7 @@ static void mcp_error_injection_setup_cb(void* context, size_t output_size_bytes
     mcp_error_injection_setup_listener(get_mhu_handle());
 }
 
-void mcp_error_injection_setup_listener(fpfw_icc_base_ctx_t* icc_ctx)
+PLACED_CODE void mcp_error_injection_setup_listener(fpfw_icc_base_ctx_t* icc_ctx)
 {
     // Static buffer to hold the received message
     static uint8_t mcp_einj_recv_payload[32] = {0};

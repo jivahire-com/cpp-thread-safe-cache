@@ -153,7 +153,7 @@
     <Knob name="mesh_RAS_Error_Deferment_Disable" type="bool" default="0" help="If true, disable Mesh RAS Error Deferment in the Mesh RAS Control registers. Default: false."/>
     <Knob name="mesh_RAS_Uncorrected_Error_Int_Disable" type="bool" default="0" help="If true, disable Mesh RAS Uncorrected Error Interrupt in the Mesh RAS Control registers. Default: false."/>
     <Knob name="mesh_RAS_Fault_Handling_Int_Disable" type="bool" default="0" help="If true, disable Mesh RAS Fault Handling Interrupt in the Mesh RAS Control registers. Default: false."/>
-    <Knob name="mesh_RAS_Corrected_Error_Int_Disable" type="bool" default="1" help="If true, disable Mesh RAS Corrected Error Interrupt in the Mesh RAS Control registers. Default: true."/>
+    <Knob name="mesh_RAS_Corrected_Error_Int_Disable" type="bool" default="0" help="If true, disable Mesh RAS Corrected Error Interrupt in the Mesh RAS Control registers. Default: false."/>
     <Knob name="mesh_RAS_Parity_Error_Disable" type="bool" default="0" help="If true, disable External Logging Parity Errors in the Mesh RAS Control registers. Default: false."/>
 
     <!-- Mesh CCG -->

@@ -38,7 +38,7 @@ static uint8_t s_utc_sync_manager_stack[UTC_SYNC_MANAGER_STACK_SIZE];
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(utc_mngr_svc_mcp, FPFW_INIT_DEPENDENCIES("mts_svc", "gtimer", "mctp"))
+FPFW_INIT_COMPONENT(utc_mngr_svc_mcp, FPFW_INIT_DEPENDENCIES("mts_svc", "gtimer_stg_2", "mctp"))
 {
 
     fpfw_mctp* p_mctp_ctx = (fpfw_mctp*)fpfw_init_get_handle("mctp");

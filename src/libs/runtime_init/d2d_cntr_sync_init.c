@@ -17,7 +17,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(d2d_cntr_sync, FPFW_INIT_DEPENDENCIES("hw_ver", "debug_print", "gtimer", "cfg_mgr"))
+FPFW_INIT_COMPONENT(d2d_cntr_sync, FPFW_INIT_DEPENDENCIES("hw_ver", "debug_print", "gtimer_stg_2", "cfg_mgr"))
 {
     //! d2d sync counters are not supported on SVP currently
     if (idsw_get_platform_sdv() != PLATFORM_SVP_SIM)

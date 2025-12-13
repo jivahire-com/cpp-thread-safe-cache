@@ -30,6 +30,7 @@ typedef struct {
     uint32_t frequency_hz;
     uint8_t scaling_factor;
     uint32_t timer_irq;
+    bool d2d_sync_point_required;
 } gtimer_prodfw_init_config_t;
 
 /*--------- Function Prototypes ----------*/

@@ -171,6 +171,7 @@ TEST_FUNCTION(test_gtimer_init_single_die_scp, nullptr, nullptr)
         .frequency_hz = REFCLK_FREQUENCY_HZ * REFCLK_SCALING_FACTOR,
         .scaling_factor = REFCLK_SCALING_FACTOR,
         .timer_irq = 45,
+        .d2d_sync_point_required = false,
     };
 
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
@@ -234,6 +235,7 @@ TEST_FUNCTION(test_gtimer_init_dual_die_scp, nullptr, nullptr)
         .frequency_hz = REFCLK_FREQUENCY_HZ * REFCLK_SCALING_FACTOR,
         .scaling_factor = REFCLK_SCALING_FACTOR,
         .timer_irq = 45,
+        .d2d_sync_point_required = true,
     };
 
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);

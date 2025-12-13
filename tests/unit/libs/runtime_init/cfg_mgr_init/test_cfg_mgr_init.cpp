@@ -64,6 +64,7 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
     return mock_type(KNG_PLAT_ID);
 }
+}
 
 //
 // Tests
@@ -127,4 +128,34 @@ TEST_FUNCTION(test_cfg_mgr_init_bmc_compute, nullptr, nullptr)
     // Call API under test
     _fpfw_component_cfg_mgr.init_fn();
 }
+
+TEST_FUNCTION(test_cfg_mgr_init_init_tree, nullptr, nullptr)
+{
+    constexpr const char* expected_children[] =
+        {"dfwk", "atu_svc", "var_serv", "hw_ver", "spi_bridge", "sysinfo", "icc_d2dmbx", "systick_upd", "gtimer"};
+
+    bool found[_countof(expected_children)] = {false};
+
+    for (size_t i = 0;; ++i)
+    {
+        const char* child = _fpfw_component_cfg_mgr.children[i];
+        if (child[0] == '\0')
+        {
+            break;
+        }
+
+        for (size_t j = 0; j < _countof(expected_children); ++j)
+        {
+            if (strncmp(child, expected_children[j], FPFW_INIT_NODE_ID_LEN) == 0)
+            {
+                found[j] = true;
+                break;
+            }
+        }
+    }
+
+    for (size_t j = 0; j < _countof(expected_children); ++j)
+    {
+        assert_true(found[j]);
+    }
 }

@@ -41,7 +41,7 @@
 /*------------- Functions ----------------*/
 
 FPFW_INIT_COMPONENT(pwr_tlm_svc_mcp,
-                    FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc", "gtimer", "hw_sem", "core_info", "tlm_fuses", "pldm", "cfg_mgr"))
+                    FPFW_INIT_DEPENDENCIES("sensor_fifo", "mts_svc", "hw_ver", "atu_svc", "gtimer_stg_2", "hw_sem", "core_info", "tlm_fuses", "pldm", "cfg_mgr"))
 {
     power_tlm_knobs_t pwr_tlm_knobs = config_get_pwr_tlm_knobs();
 

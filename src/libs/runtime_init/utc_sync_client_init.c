@@ -105,9 +105,9 @@ static void hsp_utc_timestamp_cb(utc_timestamp_bundle_t* p_utc_timestamp, void* 
 //
 
 #ifdef MCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer", "icc_hspmbx", "mts_svc"))
+FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "icc_hspmbx", "mts_svc"))
 #else
-FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer", "mts_svc"))
+FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "mts_svc"))
 #endif
 {
     utc_sync_client_config_t config = {

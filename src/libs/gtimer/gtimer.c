@@ -78,9 +78,12 @@ void gtimer_prodfw_init(gtimer_prodfw_init_config_t* config)
     {
         if (!idhw_is_single_die_boot_en())
         {
-            //! SCP 0 & 1 must synchronize before system counter init & configuring the d2d counters
-            int d2d_sync_cntr_status = mscp_exp_spi_synchronize_dies(d2d_sync_point_sys_cnt, idsw_get_die_id());
-            BUG_ASSERT_PARAM(d2d_sync_cntr_status == SILIBS_SUCCESS, d2d_sync_cntr_status, SILIBS_SUCCESS);
+            if (config->d2d_sync_point_required == true)
+            {
+                //! SCP 0 & 1 must synchronize before system counter init & configuring the d2d counters
+                int d2d_sync_cntr_status = mscp_exp_spi_synchronize_dies(d2d_sync_point_sys_cnt, idsw_get_die_id());
+                BUG_ASSERT_PARAM(d2d_sync_cntr_status == SILIBS_SUCCESS, d2d_sync_cntr_status, SILIBS_SUCCESS);
+            }
         }
         //! Initialize & enable generic system counter & update frequency
         system_counter_init(config->counter_control_base, config->frequency_hz, config->scaling_factor);

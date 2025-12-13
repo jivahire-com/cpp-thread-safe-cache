@@ -31,7 +31,7 @@ FPFW_INIT_COMPONENT(debug, FPFW_INIT_DEPENDENCIES("std_io"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(debug_print, FPFW_INIT_DEPENDENCIES("std_io", "gtimer", "sysinfo"))
+FPFW_INIT_COMPONENT(debug_print, FPFW_INIT_DEPENDENCIES("std_io", "gtimer_stg_2", "sysinfo"))
 {
     fpfw_debug_print_config_t config = {
         // Set the default debug print level based on whether CLI is enabled or not

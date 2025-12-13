@@ -52,15 +52,13 @@ uint32_t __wrap_systick_get_emcpu_clock(void)
 /* Tests */
 TEST_FUNCTION(test_gtimer_init_soc, NULL, NULL)
 {
-
-    gtimer_prodfw_init_config_t test_config = {
-        .counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
-        .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
-        .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
-        .frequency_hz = (1 * 1000 * 1000 * 1000), /* 1GHz */
-        .scaling_factor = 4,
-        .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
-    };
+    gtimer_prodfw_init_config_t test_config = {.counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
+                                               .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
+                                               .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
+                                               .frequency_hz = (1 * 1000 * 1000 * 1000), /* 1GHz */
+                                               .scaling_factor = 4,
+                                               .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
+                                               .d2d_sync_point_required = false};
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
@@ -70,14 +68,13 @@ TEST_FUNCTION(test_gtimer_init_soc, NULL, NULL)
 
 TEST_FUNCTION(test_gtimer_init_fpga, NULL, NULL)
 {
-    gtimer_prodfw_init_config_t test_config = {
-        .counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
-        .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
-        .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
-        .frequency_hz = (10 * 1000 * 1000), /* 10 MHz */
-        .scaling_factor = 1,
-        .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
-    };
+    gtimer_prodfw_init_config_t test_config = {.counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
+                                               .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
+                                               .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
+                                               .frequency_hz = (10 * 1000 * 1000), /* 10 MHz */
+                                               .scaling_factor = 1,
+                                               .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
+                                               .d2d_sync_point_required = false};
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
@@ -87,14 +84,13 @@ TEST_FUNCTION(test_gtimer_init_fpga, NULL, NULL)
 
 TEST_FUNCTION(test_gtimer_init_svp, NULL, NULL)
 {
-    gtimer_prodfw_init_config_t test_config = {
-        .counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
-        .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
-        .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
-        .frequency_hz = (125 * 1000 * 1000), /* 125 MHz */
-        .scaling_factor = 1,
-        .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
-    };
+    gtimer_prodfw_init_config_t test_config = {.counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
+                                               .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
+                                               .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
+                                               .frequency_hz = (125 * 1000 * 1000), /* 125 MHz */
+                                               .scaling_factor = 1,
+                                               .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
+                                               .d2d_sync_point_required = false};
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
 
@@ -105,14 +101,13 @@ TEST_FUNCTION(test_gtimer_init_svp, NULL, NULL)
 
 TEST_FUNCTION(test_gtimer_init_svp_min_config, NULL, NULL)
 {
-    gtimer_prodfw_init_config_t test_config = {
-        .counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
-        .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
-        .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
-        .frequency_hz = (125 * 1000 * 1000), /* 125 MHz */
-        .scaling_factor = 1,
-        .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
-    };
+    gtimer_prodfw_init_config_t test_config = {.counter_control_base = SCP_TOP_GEN_CNTR_CTRL_ADDRESS,
+                                               .timer_control_base = SCP_TOP_SCP_TIMER_CTRL_ADDRESS,
+                                               .timer_base_address = SCP_TOP_SCP_TIMER_BASE_ADDRESS,
+                                               .frequency_hz = (125 * 1000 * 1000), /* 125 MHz */
+                                               .scaling_factor = 1,
+                                               .timer_irq = HW_INT_SCP_GENERIC_TIMER_INT,
+                                               .d2d_sync_point_required = false};
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_MIN_CONFIG_SIM);
 

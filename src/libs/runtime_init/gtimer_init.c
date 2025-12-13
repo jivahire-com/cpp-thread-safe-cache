@@ -54,9 +54,9 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge", "systick_upd"))
+void gtimer_init_internal(bool d2d_sync_point_required)
 {
-    gtimer_prodfw_init_config_t config;
+    gtimer_prodfw_init_config_t config = {0};
     config.frequency_hz = SOC_GTIMER_TARGET_FREQUENCY_HZ;
 
     if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON || IS_PLATFORM_EMU())
@@ -89,7 +89,18 @@ FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_brid
     config.timer_irq = HW_INT_MCP_GENERIC_TIMER_INT;
 #endif
 
+    config.d2d_sync_point_required = (d2d_sync_point_required) ? true : false;
     gtimer_prodfw_init(&config);
+}
 
+FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("hw_ver", "spi_bridge", "systick_upd"))
+{
+    gtimer_init_internal(false);
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+FPFW_INIT_COMPONENT(gtimer_stg_2, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge", "systick_upd"))
+{
+    gtimer_init_internal(true);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

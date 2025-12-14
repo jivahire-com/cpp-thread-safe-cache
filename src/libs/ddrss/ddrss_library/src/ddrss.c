@@ -651,7 +651,9 @@ int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
     BUG_ASSERT_PARAM(icc_ctx != NULL, icc_ctx, 0);
 
     if ((platform_id == PLATFORM_FPGA_LARGE) || (platform_id == PLATFORM_FPGA_LARGE_RVP) ||
-        (platform_id == PLATFORM_RVP_EVT_SILICON))
+        (platform_id == PLATFORM_RVP_EVT_SILICON) || (platform_id == PLATFORM_EMU) ||
+        (platform_id == PLATFORM_EMU_1D) || (platform_id == PLATFORM_EMU_2D) ||
+        (platform_id == PLATFORM_EMU_1D_8C) || (platform_id == PLATFORM_EMU_2D_8C))
     {
         if ((msg == DDRSS_HSP_MSG_FIPS_KEYS_LOADED) && fips_kat_enabled)
         {

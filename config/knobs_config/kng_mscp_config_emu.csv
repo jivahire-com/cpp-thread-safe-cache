@@ -19,3 +19,4 @@ FE3ED49F-B173-41ED-9076-356661D46A42,usb_knobs.power_on_port0,false,"override fo
 *,address_hashing_mode,DDRSS_ADDR_HASHING_MODE_DISABLED,"override DDR for emu"
 *,sub_bank_hashing_mode,DDRSS_SUB_BANK_HASHING_MODE_DISABLED,"override DDR for emu"
 *,media_scrambling_en,0,"override DDR for emu"
+*,pas_encryption_en_mask,0,"override DDR encryption mask for emu"

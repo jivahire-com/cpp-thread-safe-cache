@@ -25,6 +25,7 @@
 #include <mcp_telemetry_shared.h> //for cstate_instr_timestamp_t
 #include <mesh_d2d_telemetry.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
+#include <sensor_thresholds.h>   // for DIMM_MAX_TMP_XX_HIGH_CRITICAL_DC
 #include <stdbool.h>             // for false, true
 #include <stddef.h>              // for size_t
 #include <stdint.h>              // for uint8_t, uint16_t
@@ -1002,8 +1003,8 @@ bool data_smpl_parse_dimm_entry(sensor_ram_dimm_info_t* dimm_info_entry)
         dimm_rt.latest_dimm[dimm_info_entry->dimm_id].memory_freq_id = dimm_info_entry->dimm_memory_frequency_id;
         dimm_rt.latest_dimm[dimm_info_entry->dimm_id].throttle_source = dimm_info_entry->dimm_throttling;
 
-        // TODO:https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592610
-        dimm_rt.latest_dimm[dimm_info_entry->dimm_id].threshold_dC = 0;
+        // Set DIMM critical temperature threshold (85°C in deci-Celsius)
+        dimm_rt.latest_dimm[dimm_info_entry->dimm_id].threshold_dC = DIMM_MAX_TMP_XX_HIGH_CRITICAL_DC;
     }
     else
     {

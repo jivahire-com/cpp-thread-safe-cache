@@ -632,8 +632,6 @@ void data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(uint16_t dimm_idx, p_ins
         dimm_data->throttle_source = dimm_rt.latest_dimm[dimm_idx].throttle_source;
         dimm_data->memory_freq_id = dimm_rt.latest_dimm[dimm_idx].memory_freq_id;
         dimm_data->power_mW = dimm_rt.latest_dimm[dimm_idx].power_mW;
-
-        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2592610
         dimm_data->threshold_dC = dimm_rt.latest_dimm[dimm_idx].threshold_dC;
     }
 }

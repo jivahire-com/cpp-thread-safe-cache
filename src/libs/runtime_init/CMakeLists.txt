@@ -381,6 +381,7 @@ target_link_libraries(
         ms::lib::pldm_common_headers
         ms::lib::telemetry::fuses
         ms::lib::register_headers
+        ms::lib::sensor_thresholds
         ms::service::mcp_startup_shutdown
         ms::lib::stdio_textio
         ms::lib::system_info

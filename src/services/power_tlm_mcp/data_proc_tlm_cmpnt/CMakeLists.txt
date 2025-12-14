@@ -37,6 +37,7 @@ target_link_libraries(${TARGET}
         ms::lib::gtimer
         ms::lib::power_telemetry_common
         ms::lib::pwr_tlm_core_ex
+        ms::lib::sensor_thresholds
         ms::lib::telemetry::fuses
         silibs::dvfs
         silibs::mesh_d2d_telemetry

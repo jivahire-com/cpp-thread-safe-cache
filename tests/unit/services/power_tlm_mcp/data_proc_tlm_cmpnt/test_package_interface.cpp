@@ -35,6 +35,7 @@ extern "C" {
 extern core_runtime_info_t core_rt[NUMBER_OF_CORES_PER_DIE];
 extern tile_runtime_info_t tile_rt[NUMBER_OF_TILES_PER_DIE];
 extern soc_runtime_info_t soc_rt;
+extern dimm_runtime_info_t dimm_rt;
 }
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -1226,10 +1227,26 @@ TEST_FUNCTION(test_get_inst_soc_rail_data, test_setup, test_teardown)
 
 TEST_FUNCTION(test_get_inst_soc_dimm_runtime_data, test_setup, test_teardown)
 {
-    // the api is currently just stubbed out
-    // this test will be updated with https://dev.azure.com/AzureCSI/Dev/_workitems/edit/2031663
     inst_soc_element_dimm_runtime_t dimm_runtime_data = {0};
+
+    // Setup test data in dimm_rt global structure
+    dimm_rt.latest_dimm[TEST_DIMM_MOD_ID_3].temperature_dC = 750; // 75°C
+    dimm_rt.latest_dimm[TEST_DIMM_MOD_ID_3].power_mW = 5000;      // 5W
+    dimm_rt.latest_dimm[TEST_DIMM_MOD_ID_3].threshold_dC = 850;   // 85°C (critical threshold)
+    dimm_rt.latest_dimm[TEST_DIMM_MOD_ID_3].throttle_source = 2;
+    dimm_rt.latest_dimm[TEST_DIMM_MOD_ID_3].memory_freq_id = 1;
+
+    // Call the function under test
     data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(TEST_DIMM_MOD_ID_3, &dimm_runtime_data);
+
+    // Verify the threshold field is correctly retrieved (fixes Azure DevOps #3163284)
+    assert_int_equal(dimm_runtime_data.threshold_dC, 850);
+    assert_int_equal(dimm_runtime_data.temperature_dC, 750);
+    assert_int_equal(dimm_runtime_data.power_mW, 5000);
+    assert_int_equal(dimm_runtime_data.throttle_source, 2);
+    assert_int_equal(dimm_runtime_data.memory_freq_id, 1);
+
+    // Test boundary condition - invalid DIMM ID
     data_proc_tlm_cmpnt_get_inst_soc_dimm_runtime_data(NUMBER_OF_DIMMS_PER_DIE, &dimm_runtime_data);
 }
 

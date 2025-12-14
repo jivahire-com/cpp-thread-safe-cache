@@ -69,7 +69,7 @@
 
 //Every Flit count is 64 bytes for kingsgate
 #define D2DSS_FLIT_COUNT_TO_BYTES(count) ((count) * 64)
-
+ 
 /*-------------- Typedefs ----------------*/
 typedef enum
 {

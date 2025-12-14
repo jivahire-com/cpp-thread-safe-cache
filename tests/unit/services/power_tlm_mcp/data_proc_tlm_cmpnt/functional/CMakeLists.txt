@@ -26,6 +26,7 @@ set(SOURCES
     test_core_aging_counter_data.cpp
     log_vm_throttling_integration_test.cpp
     log_memory_throttling_integration_test.cpp
+    test_d2d_link_state_integration.cpp
     test_core_histogram_integration.cpp
     test_inst_soc_voltage_rails.cpp
     )
@@ -90,6 +91,8 @@ mock_target(${TARGET}
     die_2_die_exch_get_this_die_id
     in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg
     in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg
+    # D2D Link telemetry mocks (hardware register access)
+    d2dss_pmu_read
     # Semaphore mocks
     initialize_semaphore
     read_semaphore

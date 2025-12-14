@@ -16,6 +16,8 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+#define AP_ADVLOG_PLDM_ET_INFO(type)                  EventWriteApAdvlogPldmInfoNoParam((type))
+#define AP_ADVLOG_PLDM_ET_INFO_PARAM(type, param)     EventWriteApAdvlogPldmInfoParam((param), (type))
 #define AP_ADVLOG_PLDM_ET_ERROR(type)                 EventWriteApAdvlogPldmErrorNoParam((type))
 #define AP_ADVLOG_PLDM_ET_ERROR_PARAM(type, param)    EventWriteApAdvlogPldmErrorParam((param), (type))
 
@@ -25,6 +27,8 @@
 
 typedef enum
 {
+    AP_ADVLOG_PLDM_ET_ID_INFO_NOPARAMS,
+    AP_ADVLOG_PLDM_ET_ID_INFO_PARAMS,
     AP_ADVLOG_PLDM_ET_ID_ERROR_NOPARAMS,
     AP_ADVLOG_PLDM_ET_ID_ERROR_PARAMS,
 
@@ -41,6 +45,10 @@ typedef enum
     AP_ADVLOG_PLDM_ET_TYPE_INFO_RETRIEVE_FAIL,
     AP_ADVLOG_PLDM_ET_TYPE_LOGDUMP_IN_PROGRESS,
     AP_ADVLOG_PLDM_ET_TYPE_RAISE_PPE_FAIL,
+    AP_ADVLOG_PLDM_ET_TYPE_READY,
+    AP_ADVLOG_PLDM_ET_TYPE_START_TRANSFER,
+    AP_ADVLOG_PLDM_ET_TYPE_EFFECTER_COMPLETE,
+    AP_ADVLOG_PLDM_ET_TYPE_TRANSFER_COMPLETE,
 
     AP_ADVLOG_PLDM_ET_TYPE_COUNT
 } AP_ADVLOG_PLDM_ET_TYPE_T;
@@ -52,6 +60,19 @@ FPFW_ET_DEFINE_PROVIDER_EX(EVENT_TRACE_PROVIDER_ID_COMMON_AP_ADVLOG_PLDM,
                            FPFW_ET_LEVEL_MASK_INFO | FPFW_ET_LEVEL_MASK_WARNING |
                                FPFW_ET_LEVEL_MASK_ERROR | FPFW_ET_LEVEL_MASK_FATAL |
                                FPFW_ET_LEVEL_MASK_ALWAYS);
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_AP_ADVLOG_PLDM,
+                     AP_ADVLOG_PLDM_ET_ID_INFO_NOPARAMS,
+                     ApAdvlogPldmInfoNoParam,
+                     FPFW_ET_LEVEL_INFO,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_AP_ADVLOG_PLDM,
+                     AP_ADVLOG_PLDM_ET_ID_INFO_PARAMS,
+                     ApAdvlogPldmInfoParam,
+                     FPFW_ET_LEVEL_INFO,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, param),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_AP_ADVLOG_PLDM,
                      AP_ADVLOG_PLDM_ET_ID_ERROR_NOPARAMS,

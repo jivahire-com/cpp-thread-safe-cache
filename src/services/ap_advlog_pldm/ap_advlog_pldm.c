@@ -20,6 +20,7 @@
 #include <platform_management_component/pldm_oem_event_types.h>
 #include <pldm_common_power.h>
 #include <pldm_pdr.h>
+#include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define AP_ADVLOG_WORKER_THREAD_STACK_SIZE (3 * 1024)
@@ -57,6 +58,7 @@ static void ap_advlog_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* 
     if (completionCode == FPFW_PLDM_CC_SUCCESS)
     {
         FPFW_DBGPRINT_INFO("[AP_ADVLOG_PLDM] Done transferring AP advlog dump to BMC!\n");
+        AP_ADVLOG_PLDM_ET_INFO(AP_ADVLOG_PLDM_ET_TYPE_TRANSFER_COMPLETE);
     }
     else
     {
@@ -75,6 +77,7 @@ static void ap_advlog_pldm_on_ppe_complete(fpfw_pldm_cc_t completionCode, void* 
         else
         {
             FPFW_DBGPRINT_INFO("[AP_ADVLOG_PLDM] Effecter Set Complete\n");
+            AP_ADVLOG_PLDM_ET_INFO(AP_ADVLOG_PLDM_ET_TYPE_EFFECTER_COMPLETE);
         }
     }
 
@@ -163,6 +166,7 @@ void ap_advlog_pldm_transfer_dump()
     if (status == FPFW_STATUS_SUCCESS)
     {
         logdump_in_progress = true;
+        AP_ADVLOG_PLDM_ET_INFO_PARAM(AP_ADVLOG_PLDM_ET_TYPE_START_TRANSFER, (uint32_t)descriptor.event_payload_size);
     }
     else
     {
@@ -241,5 +245,6 @@ void ap_advlog_pldm_init()
         BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(status), status, 0);
 
         effecter_complete_pending = true;
+        AP_ADVLOG_PLDM_ET_INFO(AP_ADVLOG_PLDM_ET_TYPE_READY);
     }
 }

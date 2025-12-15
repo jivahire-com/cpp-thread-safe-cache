@@ -18,6 +18,7 @@
 #include <fpfw_status.h>
 #include <health_monitor_icc.h>
 #include <idsw_kng.h>
+#include <interrupts.h>
 #include <kng_icc_shared.h>
 #include <mcp_exp_top_regs.h>
 #include <mscp_error_domain.h>
@@ -45,7 +46,6 @@
 #define DTC_RAM_ADDRESS   (MCP_TOP_MCP_DATA_RAM_ADDRESS)
 
 /*-------- Function Prototypes -----------*/
-void request_mcp_error_injection_setup(mcp_proc_err_type_t mcp_error_type, uint32_t trigger_addr);
 
 /*-------------- Typedefs ----------------*/
 
@@ -53,6 +53,12 @@ void request_mcp_error_injection_setup(mcp_proc_err_type_t mcp_error_type, uint3
 
 static vptr_mscp_ras_and_init_ctrl_registers_reg mcp_ras_and_init_ctrl_registers_reg =
     (vptr_mscp_ras_and_init_ctrl_registers_reg)(MCP_TOP_SCP_RAS_INIT_CTRL_ADDRESS);
+
+typedef struct
+{
+    mcp_proc_err_type_t mcp_error_injection_type;
+    uint32_t trigger_addr;
+} mcp_error_injection_ctx_t;
 
 /*-------------- Functions ---------------*/
 static uint32_t get_error_injection_address(ras_einj_info_t* einj_payload, atu_map_entry_t* atu_entry, atu_map_entry_t* atu_recover_entry)
@@ -112,7 +118,6 @@ static void trigger_arsm_fault(ras_einj_info_t* einj_payload, mscp_arsm_ram_type
 
 static void mcp_error_injection_request_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
-    FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
 
     if (status == FPFW_STATUS_SUCCESS)
@@ -121,8 +126,6 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
 
         if (hm_err_injection_payload != NULL && hm_err_injection_payload->header.msg_header.command == ICC_HM_ERROR_INJECTION_MCP)
         {
-            // TODO: (https://azurecsi.visualstudio.com/Dev/_workitems/edit/2662274/?view=edit)
-            // Port SCP RAS handling to MCP (part 2) for error types with missing errctrl_reg
             switch (hm_err_injection_payload->error_injection_info.param_type.error_type)
             {
             case MCP_ERROR_TYPE_SCF_RAM_CE:
@@ -134,11 +137,8 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
                 break;
 
             case MCP_ERROR_TYPE_SCF_RAM_OVERFLOW:
-                nvic_global_disable();
                 // Request CE twice to trigger overflow
                 request_mcp_error_injection_setup(MCP_ERROR_TYPE_SCF_RAM_OVERFLOW, SCF_RAM_ADDRESS);
-                request_mcp_error_injection_setup(MCP_ERROR_TYPE_SCF_RAM_OVERFLOW, SCF_RAM_ADDRESS);
-                nvic_global_enable();
                 break;
 
             case MCP_ERROR_TYPE_RMSS_RAM0_CE:
@@ -150,11 +150,7 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
                 break;
 
             case MCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW:
-                nvic_global_disable();
-                // Request CE twice to trigger overflow
                 request_mcp_error_injection_setup(MCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW, RMSS_RAM0_ADDRESS);
-                request_mcp_error_injection_setup(MCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW, RMSS_RAM0_ADDRESS);
-                nvic_global_enable();
                 break;
 
             case MCP_ERROR_TYPE_RMSS_RAM1_CE:
@@ -166,11 +162,7 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
                 break;
 
             case MCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW:
-                nvic_global_disable();
-                // Request CE twice to trigger overflow
                 request_mcp_error_injection_setup(MCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW, RMSS_RAM1_ADDRESS);
-                request_mcp_error_injection_setup(MCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW, RMSS_RAM1_ADDRESS);
-                nvic_global_enable();
                 break;
 
             case MCP_ERROR_TYPE_TCM_CE:
@@ -442,29 +434,92 @@ void start_mcp_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx)
 
 void mcp_error_injection_setup_cb(void* context, fpfw_status_t status)
 {
+    mcp_error_injection_ctx_t* params = (mcp_error_injection_ctx_t*)context;
+    static uint8_t overflow_counter = 0;
     if (status == FPFW_ICC_BASE_STATUS_SUCCESS)
     {
-        uint32_t trigger_addr = (uint32_t)context;
-        FPFW_DBGPRINT_INFO("Access %p to trigger error\n", (void*)trigger_addr);
-        inject_err_by_access(trigger_addr);
+        uint32_t cb_trigger_addr = (uint32_t)params->trigger_addr;
+        FPFW_DBGPRINT_INFO("Access %p to trigger error\n", (void*)cb_trigger_addr);
+
+        if (params->mcp_error_injection_type == MCP_ERROR_TYPE_SCF_RAM_OVERFLOW ||
+            params->mcp_error_injection_type == MCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW ||
+            params->mcp_error_injection_type == MCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW)
+        {
+            uint32_t irq_num = 0;
+            if (params->mcp_error_injection_type == MCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW)
+            {
+                irq_num = HW_INT_MCP_RAM1_ECCCE_INT;
+                FPFW_DBGPRINT_INFO("Injecting MCP RMSS RAM1 OF errors\n");
+            }
+            else if (params->mcp_error_injection_type == MCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW)
+            {
+                irq_num = HW_INT_MCP_RAM0_ECCCE_INT;
+                FPFW_DBGPRINT_INFO("Injecting MCP RMSS RAM0 OF errors\n");
+            }
+            else // MCP_ERROR_TYPE_SCF_RAM_OVERFLOW
+            {
+                irq_num = HW_INT_MCP_SCFRAM_ECCCE_INT;
+                FPFW_DBGPRINT_INFO("Injecting MCP SCF RAM OF errors\n");
+            }
+            BUG_ASSERT_PARAM(irq_num != 0, irq_num, params->mcp_error_injection_type);
+            nvic_irq_disable(irq_num);
+            inject_err_by_access(cb_trigger_addr);
+            if (overflow_counter == 0)
+            {
+                overflow_counter++;
+                FPFW_DBGPRINT_INFO(" MCP error 1st injection for OF done\n");
+                request_mcp_error_injection_setup(params->mcp_error_injection_type, cb_trigger_addr);
+            }
+            else
+            {
+                overflow_counter = 0;
+                nvic_irq_enable(irq_num);
+                FPFW_DBGPRINT_INFO("MCP error injection setup for OF done\n");
+            }
+        }
+        else
+        {
+            inject_err_by_access(cb_trigger_addr);
+            FPFW_DBGPRINT_INFO("MCP error injection setup done (%d)\n", status);
+        }
     }
 }
 
 void request_mcp_error_injection_setup(mcp_proc_err_type_t mcp_error_type, uint32_t trigger_addr)
 {
     static uint8_t mcp_error_injection_setup_req_payload[32] = {0};
+
+    static mcp_error_injection_ctx_t mcp_error_injection_ctx = {0};
+    mcp_error_injection_ctx.mcp_error_injection_type = mcp_error_type;
+    mcp_error_injection_ctx.trigger_addr = trigger_addr;
+
     icc_mhu_mscp_err_injection_setup_packet_t* err_setup_msg =
         (icc_mhu_mscp_err_injection_setup_packet_t*)mcp_error_injection_setup_req_payload;
 
     err_setup_msg->header.msg_header.command = ICC_HM_ERROR_INJECTION_SETUP_REQ;
     err_setup_msg->header.msg_header.payload_size = sizeof(uint32_t);
+
+    // For Overflow, inject CE twice, so change error type to CE
+    if (mcp_error_type == MCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW)
+    {
+        mcp_error_type = MCP_ERROR_TYPE_RMSS_RAM1_CE;
+    }
+    else if (mcp_error_type == MCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW)
+    {
+        mcp_error_type = MCP_ERROR_TYPE_RMSS_RAM0_CE;
+    }
+    else if (mcp_error_type == MCP_ERROR_TYPE_SCF_RAM_OVERFLOW)
+    {
+        mcp_error_type = MCP_ERROR_TYPE_SCF_RAM_CE;
+    }
+
     err_setup_msg->mcp_error_type = mcp_error_type;
 
     static fpfw_icc_base_send_req_t mcp_send_params;
     mcp_send_params.payload_buffer = mcp_error_injection_setup_req_payload;
     mcp_send_params.buffer_size = sizeof(mcp_error_injection_setup_req_payload);
     mcp_send_params.cb = mcp_error_injection_setup_cb;
-    mcp_send_params.cb_ctx = (void*)trigger_addr;
+    mcp_send_params.cb_ctx = &mcp_error_injection_ctx;
 
     fpfw_icc_base_ctx_t* icc_ctx = get_mhu_handle();
     BUG_ASSERT_PARAM(icc_ctx != NULL, icc_ctx, 0);

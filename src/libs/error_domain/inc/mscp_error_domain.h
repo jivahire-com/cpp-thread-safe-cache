@@ -112,4 +112,6 @@ void register_mcp_error_domain(fpfw_icc_base_ctx_t* icc_ctx);
  */
 void start_mcp_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx);
 
+void request_mcp_error_injection_setup(mcp_proc_err_type_t mcp_error_type, uint32_t trigger_addr);
+
 #endif

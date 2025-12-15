@@ -18,6 +18,7 @@ extern "C" {
 #include <health_monitor_icc.h>
 #include <idsw_kng.h> // for KNG_DIE_ID, idsw_get_die_id
 #include <interrupts.h>
+#include <mcp_exp_top_regs.h>
 #include <mscp_error_domain.h>
 #include <nvic.h> // for nvic_status_t
 #include <scp_exp_csr_regs.h>
@@ -98,7 +99,6 @@ fpfw_status_t __wrap_fpfw_icc_base_send(fpfw_icc_base_ctx_t* icc_ctx, fpfw_icc_b
 
     assert_true(params != NULL);
     assert_true(params->payload_buffer != NULL);
-    assert_true(params->buffer_size == sizeof(hm_mhu_error_domain_register_payload_t));
 
     params->cb(params, FPFW_ICC_BASE_STATUS_SUCCESS);
 
@@ -892,16 +892,106 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             test_atu_error_handler();
             break;
         }
+        case MCP_ERROR_TYPE_SCF_RAM_CE: {
+            expect_any(__wrap_mmio_read32, addr);
+            will_return(__wrap_mmio_read32, 0x12345678);
+            expect_function_call(__wrap_mmio_read32);
 
-        default:
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_fpfw_icc_base_send);
+            will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
             break;
         }
+        case MCP_ERROR_TYPE_SCF_RAM_UE: {
+            expect_any(__wrap_mmio_read32, addr);
+            will_return(__wrap_mmio_read32, 0x87654321);
+            expect_function_call(__wrap_mmio_read32);
+
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_fpfw_icc_base_send);
+            will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+            break;
+        }
+        case MCP_ERROR_TYPE_SCF_RAM_OVERFLOW: {
+            expect_any(__wrap_mmio_read32, addr);
+            will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+            expect_function_call(__wrap_mmio_read32);
+
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_fpfw_icc_base_send);
+            will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+            break;
+        }
+        case MCP_ERROR_TYPE_RMSS_RAM0_CE: {
+            expect_any(__wrap_mmio_read32, addr);
+            will_return(__wrap_mmio_read32, 0x12345678);
+            expect_function_call(__wrap_mmio_read32);
+
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_fpfw_icc_base_send);
+            will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+            break;
+        }
+        case MCP_ERROR_TYPE_RMSS_RAM0_UE: {
+            expect_any(__wrap_mmio_read32, addr);
+            will_return(__wrap_mmio_read32, 0x87654321);
+            expect_function_call(__wrap_mmio_read32);
+
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_fpfw_icc_base_send);
+            will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+            break;
+        }
+        case MCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW: {
+            expect_any(__wrap_mmio_read32, addr);
+            will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+            expect_function_call(__wrap_mmio_read32);
+
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_fpfw_icc_base_send);
+            will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+            break;
+        }
+        case MCP_ERROR_TYPE_RMSS_RAM1_CE: {
+            expect_any(__wrap_mmio_read32, addr);
+            will_return(__wrap_mmio_read32, 0x12345678);
+            expect_function_call(__wrap_mmio_read32);
+
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_fpfw_icc_base_send);
+            will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+            break;
+        }
+        case MCP_ERROR_TYPE_RMSS_RAM1_UE: {
+            expect_any(__wrap_mmio_read32, addr);
+            will_return(__wrap_mmio_read32, 0x87654321);
+            expect_function_call(__wrap_mmio_read32);
+
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_fpfw_icc_base_send);
+            will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+            break;
+        }
+        case MCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW: {
+            expect_any(__wrap_mmio_read32, addr);
+            will_return(__wrap_mmio_read32, 0xFFFFFFFF);
+            expect_function_call(__wrap_mmio_read32);
+            will_return(__wrap_is_cached_space, false);
+            expect_function_call(__wrap_fpfw_icc_base_send);
+            will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
+            break;
+        }
+        default: {
+            // Handle unknown error types
+            break;
+        }
+        }
+
+        expect_function_call_any(__wrap_fpfw_icc_base_recv);
+        will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+        start_mcp_error_injection_listener((fpfw_icc_base_ctx_t*)1234);
     }
-
-    expect_function_call_any(__wrap_fpfw_icc_base_recv);
-    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-
-    start_mcp_error_injection_listener((fpfw_icc_base_ctx_t*)1234);
 }
 
 TEST_FUNCTION(test_mcp_error_injection_handler_1, test_setup, nullptr)
@@ -1032,6 +1122,51 @@ TEST_FUNCTION(test_mcp_error_injection_handler_25, test_setup, nullptr)
 TEST_FUNCTION(test_mcp_error_injection_handler_26, test_setup, nullptr)
 {
     test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_ATU_ERR);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_27, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_SCF_RAM_CE);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_28, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_SCF_RAM_UE);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_29, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_SCF_RAM_OVERFLOW);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_30, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_RMSS_RAM0_CE);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_31, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_RMSS_RAM0_UE);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_32, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_RMSS_RAM0_OVERFLOW);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_33, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_RMSS_RAM1_CE);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_34, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_RMSS_RAM1_UE);
+}
+
+TEST_FUNCTION(test_mcp_error_injection_handler_35, test_setup, nullptr)
+{
+    test_mcp_error_injection_handler(ACPI_ERROR_DOMAIN_MCP_PROC, MCP_ERROR_TYPE_RMSS_RAM1_OVERFLOW);
 }
 
 TEST_FUNCTION(test_start_mcp_error_injection_listener, nullptr, nullptr)

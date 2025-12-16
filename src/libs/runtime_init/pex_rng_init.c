@@ -29,7 +29,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh_stg_2", "atu_svc", "core_info"))
+FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh_stg_2", "atu_svc", "core_info", "ift"))
 {
     if (ift_is_enabled())
     {

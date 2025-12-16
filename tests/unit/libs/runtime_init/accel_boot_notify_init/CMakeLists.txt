@@ -12,7 +12,9 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
         fwlib.lib.utils
+        fwlib.lib.interface.platform.dbgprint
         ms::cmocka::testrunner
+        ms::lib::ift
         ms::service::accel_boot_notify
         silibs::platform
         ms::lib::system_info
@@ -29,5 +31,6 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
 accel_boot_notify_service
+ift_is_enabled
 system_info_is_warm_start
 )

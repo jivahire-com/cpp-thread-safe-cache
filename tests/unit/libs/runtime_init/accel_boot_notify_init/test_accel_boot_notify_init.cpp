@@ -41,12 +41,18 @@ bool __wrap_system_info_is_warm_start()
     return mock_type(bool);
 }
 
+bool __wrap_ift_is_enabled(void)
+{
+    return mock_type(bool);
+}
+
 //
 // Tests
 //
 TEST_FUNCTION(test_accel_boot_notify, nullptr, nullptr)
 {
     // Set up expectations
+    will_return(__wrap_ift_is_enabled, false); // IFT disabled
     expect_function_call(__wrap_system_info_is_warm_start);
     will_return(__wrap_system_info_is_warm_start, 0);
     expect_function_call(__wrap_accel_boot_notify_service);
@@ -58,8 +64,18 @@ TEST_FUNCTION(test_accel_boot_notify, nullptr, nullptr)
 TEST_FUNCTION(test_accel_boot_notify_warm_reset, nullptr, nullptr)
 {
     // Set up expectations
+    will_return(__wrap_ift_is_enabled, false); // IFT disabled
     expect_function_call(__wrap_system_info_is_warm_start);
     will_return(__wrap_system_info_is_warm_start, 1);
+
+    // Call API under test
+    _fpfw_component_boot_notify.init_fn();
+}
+
+TEST_FUNCTION(test_accel_boot_notify_ift_enabled, nullptr, nullptr)
+{
+    // Set up expectations
+    will_return(__wrap_ift_is_enabled, true); // IFT enabled
 
     // Call API under test
     _fpfw_component_boot_notify.init_fn();

@@ -8,8 +8,10 @@
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <accel_boot_notify.h>
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
+#include <ift_fw.h>
 #include <kng_error.h> // for KNG_SUCCESS
 #include <stddef.h>    // for NULL
 #include <system_info.h>
@@ -23,8 +25,15 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(boot_notify, FPFW_INIT_DEPENDENCIES("icc_sdm_mbx", "icc_cded_mbx", "sysinfo"))
+FPFW_INIT_COMPONENT(boot_notify, FPFW_INIT_DEPENDENCIES("icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift"))
 {
+
+    if (ift_is_enabled())
+    {
+        FPFW_DBGPRINT_INFO("IFT enabled. Skip Accel Boot Notify Service\n");
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
+
     if (system_info_is_warm_start() || IS_PLATFORM_SVP())
     {
         return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

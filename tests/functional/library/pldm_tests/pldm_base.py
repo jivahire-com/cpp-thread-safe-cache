@@ -61,7 +61,7 @@ class pldm_base(pldm_common):
 
     def teardown(self):
         return super().teardown()
-    
+
     def __get_nth_last_byte_from_byte_string(self, data, n):
         # strip removes leading and trailing whitespaces
         # while split creates a list of bytes strings, considering whitespaces as delimiter
@@ -267,7 +267,8 @@ class pldm_base(pldm_common):
         for mctp_id in self.mctp_eids:
             non_existing_pldm_id = 5000
             result, stdout, stderr = self._bmc_execute_command(
-                command=f"pldmtool base GetPLDMVersion -m {mctp_id} -t {non_existing_pldm_id} -v"
+                command=f"pldmtool base GetPLDMVersion -m {mctp_id} -t {non_existing_pldm_id} -v",
+                max_retries=1,
             )
             if "FAILED" not in stderr:
                 return False
@@ -323,13 +324,15 @@ class pldm_base(pldm_common):
             for _, pldm_type in enumerate(self.pldm_spec.get_all_pldm_types()):
                 result, stdout, stderr = self._bmc_execute_command(
                     command=f"pldmtool base GetPldmCommands -m {mctp_id} -t {non_existing_pldm_id} --version {pldm_type['version_encoded']} -v",
+                    max_retries=1,
                 )
                 if "FAILED" not in stderr:
                     self.log.info("Expected error not found when PLDM type is wrong")
                     return False
 
                 result, stdout, stderr = self._bmc_execute_command(
-                    command=f"pldmtool base GetPldmCommands -m {mctp_id} -t {pldm_type['id']} --version {non_existing_pldm_version} -v"
+                    command=f"pldmtool base GetPldmCommands -m {mctp_id} -t {pldm_type['id']} --version {non_existing_pldm_version} -v",
+                    max_retries=1,
                 )
                 rx_byte_str = self.__get_rx_byte_string_from_output(stdout)
                 actual_pldm_commands_version_error = (

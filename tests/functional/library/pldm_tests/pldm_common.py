@@ -178,6 +178,8 @@ class pldm_common(EchoFallsBaseTest):
         """
         Exponential backoff delay calculation
         """
+        if max_retries <= 1:
+            return min(base_delay, max_delay)
         growth_factor = (max_delay / base_delay) ** (1.0 / (max_retries - 1))
         delay = base_delay * (growth_factor ** (attempt - 1))
         return min(delay, max_delay)

@@ -690,15 +690,13 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup_di
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    expect_function_call(__wrap_mts_client_send_new_trp_msg);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of DCP Message status is set to DATA_COLLECTION_RD_DATA_NONE
     assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_NONE);
 
-    // Expect that the status of TRP Message status is set to TRP_STATUS_E_PARAM
-    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending_die1, test_setup_die1, test_teardown)
@@ -924,8 +922,8 @@ TEST_FUNCTION(test_etr_process_request_read_package_buffer_pending, test_setup_d
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
-    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
-    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+    // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_VALID_LAST
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_VALID_LAST);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_response, test_setup_die0, test_teardown)
@@ -1023,7 +1021,7 @@ TEST_FUNCTION(test_etr_process_request_host_request_state, test_setup_die0, test
 
 TEST_FUNCTION(test_etr_process_request_host_request_invalid, test_setup_die0, test_teardown)
 {
-    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_START_STOP;
+    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_UTC_SYNC;
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -1069,7 +1067,7 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of the dcp read data request is set to success, and TRP Message status is set to success
-    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_MORE);
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
@@ -1094,14 +1092,13 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending_primary_
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    expect_function_call(__wrap_mts_client_send_new_trp_msg);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, test_setup_die0, test_teardown)
 {
     s_test_context.p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
+    trp_msg_host.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_READ_DATA_COMPLETE;
 
     // Set a good address for the host read request
@@ -1126,8 +1123,10 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     // Expect that the active buffer is set to free
     assert_int_equal(s_test_context.p_active_asic_buffer->state, ETR_DDR_BUFFER_STATE_FREE);
 
-    // Expect that the status of the dcp read data request is set to success, and TRP Message status is set to success
-    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+    // Expect that the status of the dcp read data request is set to DATA_COLLECTION_RD_DATA_VALID_MORE
+    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_MORE);
+
+    // Expect that the status of TRP Message status is set to success
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
@@ -1152,15 +1151,10 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, 
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    expect_function_call(__wrap_mts_client_send_new_trp_msg);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the active buffer is still pending since the address was invalid
     assert_int_equal(s_test_context.p_active_asic_buffer->state, ETR_DDR_BUFFER_STATE_PENDING);
-
-    // Expect that the status of the dcp read data request is set to DATA_COLLECTION_RD_DATA_NONE
-    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_NONE);
 }
 
 TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup_die0, test_teardown)

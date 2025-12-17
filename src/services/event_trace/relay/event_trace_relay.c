@@ -77,6 +77,14 @@ static bool primary_instance = false;
 static uint8_t this_die = 0;
 static mts_platform_core_id_t this_core = 0;
 
+/**
+ * Initialize the DCP Client to be in Running State. This helps the ETR MTS Client work
+ * with both the original as well as the modified versions of the Telemetry Agent.
+ * TODO: Change default state to stopped after the telemetry agent update.
+ * https://azurecsi.visualstudio.com/Dev/_workitems/edit/3229579
+ */
+static dcp_client_state_t evt_dcp_clnt_state = DCP_CLIENT_STATE_RUNNING;
+
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
@@ -317,7 +325,7 @@ static void etr_handle_copy_buffer_request(etr_service_context_t* p_context, etr
  * Static Helper Functions for DCP <> TRP translation
  ************************************************************************/
 
-static void translate_trp_response_to_dcp(p_trp_msg_t p_trp_msg)
+static void translate_trp_response_to_dcp(p_trp_msg_t p_trp_msg, uint16_t translated_dcp_msg_id)
 {
     if (!primary_instance)
     {
@@ -325,63 +333,123 @@ static void translate_trp_response_to_dcp(p_trp_msg_t p_trp_msg)
         return;
     }
 
-    /* Convert message format and header*/
+    uint64_t rd_data_addr_offset = 0;
+    uint64_t rd_data_size = 0;
+    uint64_t physical_buffer_size = 0;
+    uint32_t block_crc = 0;
+
+    /* Convert message to DCP */
+
+    /* Update TRP Message Header */
+    p_trp_msg->hdr.src_node.core_id = CPU_MCP;
+    p_trp_msg->hdr.src_node.die_id = DIE_0;
     p_trp_msg->hdr.dest_node.core_id = CPU_AP;
     p_trp_msg->hdr.dest_node.die_id = DIE_0;
+    p_trp_msg->hdr.broadcast_type = TRP_BROADCAST_NONE;
+    p_trp_msg->hdr.mts_client_id = MTS_CLIENT_ID_EVENT_TRACE;
     p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
-    p_trp_msg->hdr.payload_size = sizeof(dcp_msg_t);
-    p_trp_msg->payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_READ_DATA;
 
-    /* Cache values from the TRP message */
-    uint64_t physical_buffer_size = p_trp_msg->payload.read_package_response.pkg_size;
-    uint64_t rd_data_addr_offset =
-        EVT_TELEMETRY_TRANSLATE_DIE1_OFF_TO_ABS_OFF(p_trp_msg->payload.read_package_response.local_mmap_addr);
-    uint64_t rd_data_size = p_trp_msg->payload.read_package_response.pkg_size;
-    uint32_t block_crc = p_trp_msg->payload.read_package_response.crc;
+    /* Update DCP Message Header */
+    p_trp_msg->payload.dcp_msg.hdr.client_id = MTS_CLIENT_ID_EVENT_TRACE;
+    p_trp_msg->payload.dcp_msg.hdr.msg_id = translated_dcp_msg_id;
 
-    /* Update DCP Message status based on TRP Message Status */
-    if (p_trp_msg->hdr.trp_msg_status == TRP_STATUS_SUCCESS)
+    switch (translated_dcp_msg_id)
     {
-        p_trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+    case DCP_MSG_ID_READ_DATA:
+        /* Update TRP Payload Size */
+        p_trp_msg->hdr.payload_size = sizeof(dcp_msg_hdr_t) + sizeof(dcp_msg_read_data_t);
+
+        /* Update DCP Payload Size */
         p_trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_read_data_t);
+
+        /* Cache values from the TRP message */
+        physical_buffer_size = p_trp_msg->payload.read_package_response.pkg_size;
+        rd_data_addr_offset =
+            EVT_TELEMETRY_TRANSLATE_DIE1_OFF_TO_ABS_OFF(p_trp_msg->payload.read_package_response.local_mmap_addr);
+        rd_data_size = p_trp_msg->payload.read_package_response.pkg_size;
+        block_crc = p_trp_msg->payload.read_package_response.crc;
+
+        /* Update DCP Message Payload */
         p_trp_msg->payload.dcp_msg.payload.read_data.physical_start_addr = IB_TELEMETRY_DDR_TOTAL_AP_BASE_ADDR;
         p_trp_msg->payload.dcp_msg.payload.read_data.physical_buffer_size = physical_buffer_size;
         p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_size = rd_data_size;
         p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_addr_offset = rd_data_addr_offset;
         p_trp_msg->payload.dcp_msg.payload.read_data.crc = block_crc;
+
+        break;
+
+    case DCP_MSG_ID_READ_DATA_COMPLETE:
+        /* Update TRP Payload Size */
+        p_trp_msg->hdr.payload_size = sizeof(dcp_msg_hdr_t) + sizeof(dcp_msg_read_data_complete_t);
+
+        /* Update DCP Payload Size */
+        p_trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_read_data_complete_t);
+
+        /* Cache values from the TRP message */
+        rd_data_addr_offset = p_trp_msg->payload.read_package_complete.local_mmap_addr;
+        rd_data_size = p_trp_msg->payload.read_package_complete.pkg_size;
+
+        /* Update DCP Message Payload */
+        p_trp_msg->payload.dcp_msg.payload.read_data_complete.rd_data_size = rd_data_size;
+        p_trp_msg->payload.dcp_msg.payload.read_data_complete.rd_data_addr_offset = rd_data_addr_offset;
+        p_trp_msg->payload.dcp_msg.payload.read_data_complete.reserved1 = 0;
+        p_trp_msg->payload.dcp_msg.payload.read_data_complete.reserved2 = 0;
+
+        break;
+
+    default:
+        /* Invalid DCP message ID */
+        return;
+    }
+
+    /* Update DCP Message status based on TRP Message Status */
+    if (p_trp_msg->hdr.trp_msg_status == TRP_STATUS_RD_DATA_VALID_MORE)
+    {
+        p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_VALID_MORE;
+    }
+    else if (p_trp_msg->hdr.trp_msg_status == TRP_STATUS_RD_DATA_VALID_LAST)
+    {
+        p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_VALID_LAST;
     }
     else
     {
-        p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_DCP_ERROR;
-        p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_NONE;
         p_trp_msg->payload.dcp_msg.hdr.payload_size = 0;
+        p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_NONE;
     }
+    p_trp_msg->hdr.trp_msg_status = TRP_STATUS_SUCCESS;
 
     mts_client_forward_trp_msg(p_trp_msg, TRP_BROADCAST_NONE);
 }
 
 static void translate_dcp_msg_to_trp(p_trp_msg_t p_trp_msg, uint16_t translated_trp_msg_id)
 {
-    trp_msg_t trp_msg = {.hdr = {
-                             .src_node = {.core_id = CPU_MCP, .die_id = this_die},
-                             .dest_node = {.core_id = CPU_MCP, .die_id = DIE_1},
-                             .trp_msg_status = TRP_STATUS_SUCCESS,
-                             .broadcast_type = TRP_BROADCAST_NONE,
-                             .mts_client_id = MTS_CLIENT_ID_EVENT_TRACE,
-                             .trp_msg_id = translated_trp_msg_id,
-                         }};
+    /* Update Source to MCP Die 0 */
+    p_trp_msg->hdr.src_node.core_id = CPU_MCP;
+    p_trp_msg->hdr.src_node.die_id = this_die;
+
+    /* Update Destination to MCP Die 1 */
+    p_trp_msg->hdr.dest_node.core_id = CPU_MCP;
+    p_trp_msg->hdr.dest_node.die_id = DIE_1;
+
+    /* Update trp_msg_id */
+    p_trp_msg->hdr.trp_msg_id = translated_trp_msg_id;
 
     switch (translated_trp_msg_id)
     {
     case TRP_MSG_ID_READ_PACKAGE:
-        /* Nothing to add */
+        p_trp_msg->hdr.payload_size = 0;
         break;
 
     case TRP_MSG_ID_READ_PACKAGE_COMPLETE:
-        trp_msg.hdr.payload_size = sizeof(trp_msg_read_pkg_rsp_t);
-        trp_msg.payload.read_package_complete.local_mmap_addr = EVT_TELEMETRY_TRANSLATE_ABS_OFF_TO_DIE1_OFF(
-            p_trp_msg->payload.dcp_msg.payload.read_data_complete.rd_data_addr_offset);
-        trp_msg.payload.read_package_complete.pkg_size = p_trp_msg->payload.dcp_msg.payload.read_data_complete.rd_data_size;
+        /* Cache TRP message response values */
+        uint64_t rd_data_addr_offset = p_trp_msg->payload.dcp_msg.payload.read_data_complete.rd_data_addr_offset;
+        uint64_t rd_data_size = p_trp_msg->payload.dcp_msg.payload.read_data_complete.rd_data_size;
+
+        /* Update values in the DCP Message */
+        p_trp_msg->hdr.payload_size = sizeof(trp_msg_read_pkg_rsp_t);
+        p_trp_msg->payload.read_package_complete.local_mmap_addr =
+            EVT_TELEMETRY_TRANSLATE_ABS_OFF_TO_DIE1_OFF(rd_data_addr_offset);
+        p_trp_msg->payload.read_package_complete.pkg_size = rd_data_size;
         break;
 
     default:
@@ -390,7 +458,7 @@ static void translate_dcp_msg_to_trp(p_trp_msg_t p_trp_msg, uint16_t translated_
         return;
     }
 
-    mts_client_send_new_trp_msg(&trp_msg);
+    mts_client_forward_trp_msg(p_trp_msg, TRP_BROADCAST_NONE);
 }
 
 /************************************************************************
@@ -405,44 +473,43 @@ static void translate_dcp_msg_to_trp(p_trp_msg_t p_trp_msg, uint16_t translated_
  * @param p_context -> Pointer to the ETR service context.
  * @param p_request -> Pointer to the host read service request
  *
- * @return true if a buffer was found and the request can be processed, false otherwise
+ * @return bool -> Result of the buffer search (found or not found)
  */
-fpfw_status_t etr_handle_host_read_request(etr_service_context_t* p_context, etr_service_request_t* p_request)
+static bool etr_handle_host_read_request(etr_service_context_t* p_context, etr_service_request_t* p_request)
 {
     uint64_t rd_data_size = 0;
     uintptr_t base_addr = 0;
     uint32_t block_crc = 0;
     uint64_t physical_buffer_size = 0;
-    bool buffer_found = false;
     char* payload_type_str = "None";
+    uint32_t num_buffers_pending = 0;
 
     /* Walk the buffer array to find the first pending buffer */
     for (uint32_t i = 0; i < ETR_DDR_BUFFERS_CAPACITY_MAX; i++)
     {
         if (p_context->ddr_buffers[i].state == ETR_DDR_BUFFER_STATE_PENDING)
         {
-            /* If a pending buffer is found, check if it is an ASIC buffer or HSP buffer */
-            p_ddr_buffer_info_t p_pending_buffer = &p_context->ddr_buffers[i];
-
-            base_addr = p_pending_buffer->payload_management.base_addr;
-            if (p_context->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_HSP_TRACE)
+            if (num_buffers_pending++ == 0)
             {
-                payload_type_str = "Rd HSP";
-                physical_buffer_size = IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE;
-                rd_data_size = p_pending_buffer->payload_management.size_bytes;
-            }
-            else
-            {
-                payload_type_str = "Rd ASIC";
-                p_context->p_active_asic_buffer = &p_context->ddr_buffers[i];
-                physical_buffer_size = IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE;
-                rd_data_size = p_pending_buffer->payload_management.size_bytes + sizeof(asic_buffer_info_t);
-            }
+                /* If a pending buffer is found, check if it is an ASIC buffer or HSP buffer */
+                p_ddr_buffer_info_t p_pending_buffer = &p_context->ddr_buffers[i];
 
-            block_crc = fpfw_crc32(0, (void*)base_addr, rd_data_size);
+                base_addr = p_pending_buffer->payload_management.base_addr;
+                if (p_context->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_HSP_TRACE)
+                {
+                    payload_type_str = "Rd HSP";
+                    physical_buffer_size = IB_TLM_DDR_ATU_AP_WIN_TRACE_HSP_SIZE;
+                    rd_data_size = p_pending_buffer->payload_management.size_bytes;
+                }
+                else
+                {
+                    payload_type_str = "Rd ASIC";
+                    physical_buffer_size = IB_TLM_DDR_ATU_AP_WIN_TRACE_ASIC_SIZE;
+                    rd_data_size = p_pending_buffer->payload_management.size_bytes + sizeof(asic_buffer_info_t);
+                }
 
-            buffer_found = true;
-            break;
+                block_crc = fpfw_crc32(0, (void*)base_addr, rd_data_size);
+            }
         }
     }
 
@@ -450,9 +517,11 @@ fpfw_status_t etr_handle_host_read_request(etr_service_context_t* p_context, etr
 
     if (primary_instance)
     {
-        if (buffer_found)
+        if (num_buffers_pending > 0)
         {
-            p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+            // Return DATA_COLLECTION_RD_DATA_VALID_MORE so that it queries the last buffer and then Die 1 buffers
+            p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_VALID_MORE;
+
             p_request->p_trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_read_data_t);
             p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_size = rd_data_size;
             p_request->p_trp_msg->payload.dcp_msg.payload.read_data.physical_buffer_size = physical_buffer_size;
@@ -460,29 +529,33 @@ fpfw_status_t etr_handle_host_read_request(etr_service_context_t* p_context, etr
             p_request->p_trp_msg->payload.dcp_msg.payload.read_data.rd_data_addr_offset =
                 EVT_TELEMETRY_GET_DDR_OFFSET(base_addr);
             p_request->p_trp_msg->payload.dcp_msg.payload.read_data.crc = block_crc;
-            return FPFW_STATUS_SUCCESS;
+            return true;
         }
     }
     else
     {
-        /* Set the status to TRP_STATUS_RD_DATA_NONE by default */
-        p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_RD_DATA_NONE;
         p_request->p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_RESPONSE;
         p_request->p_trp_msg->hdr.payload_size = sizeof(trp_msg_read_pkg_rsp_t);
+        p_request->p_trp_msg->payload.read_package_response.crc = block_crc;
+        p_request->p_trp_msg->payload.read_package_response.pkg_size = rd_data_size;
+        p_request->p_trp_msg->payload.read_package_response.source_die_id = this_die;
+        p_request->p_trp_msg->payload.read_package_response.source_core_id = this_core;
+        p_request->p_trp_msg->payload.read_package_response.local_mmap_addr = EVT_TELEMETRY_GET_DDR_OFFSET(base_addr);
 
-        if (buffer_found)
+        /* Set the status to TRP_STATUS_RD_DATA_NONE by default */
+        p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_RD_DATA_NONE;
+
+        if (num_buffers_pending == 1)
         {
-            p_request->p_trp_msg->payload.read_package_response.crc = block_crc;
-            p_request->p_trp_msg->payload.read_package_response.pkg_size = rd_data_size;
-            p_request->p_trp_msg->payload.read_package_response.source_die_id = this_die;
-            p_request->p_trp_msg->payload.read_package_response.source_core_id = this_core;
-            p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_SUCCESS;
-            p_request->p_trp_msg->payload.read_package_response.local_mmap_addr = EVT_TELEMETRY_GET_DDR_OFFSET(base_addr);
-            return FPFW_STATUS_SUCCESS;
+            p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_RD_DATA_VALID_LAST;
         }
+        else if (num_buffers_pending > 1)
+        {
+            p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_RD_DATA_VALID_MORE;
+        }
+        return true;
     }
-
-    return FPFW_STATUS_FAIL;
+    return false;
 }
 
 /**
@@ -492,9 +565,9 @@ fpfw_status_t etr_handle_host_read_request(etr_service_context_t* p_context, etr
  *
  * @param p_context -> Pointer to the ETR service context
  * @param p_request -> Pointer to the host read service request
- * @return None
+ * @return bool -> Result of the buffer search (found or not found)
  */
-static void etr_handle_read_complete_response(etr_service_context_t* p_context, etr_service_request_t* p_request)
+static bool etr_handle_read_complete_response(etr_service_context_t* p_context, etr_service_request_t* p_request)
 {
     bool buffer_found = false;
     uint64_t rd_addr = MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR;
@@ -502,12 +575,12 @@ static void etr_handle_read_complete_response(etr_service_context_t* p_context, 
 
     if (primary_instance)
     {
-        p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
+        p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_VALID_MORE;
         rd_addr += p_request->p_trp_msg->payload.dcp_msg.payload.read_data_complete.rd_data_addr_offset;
     }
     else
     {
-        p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_SUCCESS;
+        p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_RD_DATA_VALID_MORE;
         rd_addr += p_request->p_trp_msg->payload.read_package_complete.local_mmap_addr;
     }
 
@@ -542,15 +615,26 @@ static void etr_handle_read_complete_response(etr_service_context_t* p_context, 
         if (primary_instance)
         {
             /* Forward the read complete response to the remote ETR if primary instance */
-            p_request->p_trp_msg->payload.dcp_msg.hdr.msg_status = DATA_COLLECTION_RD_DATA_NONE;
             translate_dcp_msg_to_trp(p_request->p_trp_msg, TRP_MSG_ID_READ_PACKAGE_COMPLETE);
+            return false;
         }
-        else
-        {
-            /* For remote ETR, the response is handled in the MTS handling state machine. just set the status */
-            p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_RD_DATA_NONE;
-        }
+
+        /* For remote ETR, the response is handled in the MTS handling state machine. just set the status */
+        p_request->p_trp_msg->hdr.trp_msg_status = TRP_STATUS_RD_DATA_NONE;
     }
+
+    return true;
+}
+
+/**
+ * @brief Sets the DCP client state for the Event Trace telemetry client.
+ *
+ * @param state The new state to set for the Event Trace telemetry client.
+ * @return None
+ */
+static void set_evt_dcp_client_state(dcp_start_stop_state_t state)
+{
+    evt_dcp_clnt_state = (dcp_client_state_t)state;
 }
 
 /**
@@ -563,6 +647,7 @@ static void etr_handle_read_complete_response(etr_service_context_t* p_context, 
 static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_request_t p_request)
 {
     p_trp_msg_t p_trp_msg = p_request->p_trp_msg;
+    bool send_trp_response = true;
 
     switch (p_trp_msg->payload.dcp_msg.hdr.msg_id)
     {
@@ -572,6 +657,7 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
         get_caps->caps.DCP_MSG_ID_GET_CAPABILITIES = 1;
         get_caps->caps.DCP_MSG_ID_GET_STATE = 1;
         get_caps->caps.DCP_MSG_ID_READ_DATA = 1;
+        get_caps->caps.DCP_MSG_ID_START_STOP = 1;
         get_caps->caps.DCP_MSG_ID_READ_DATA_COMPLETE = 1;
 
         p_trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_get_caps_t);
@@ -579,25 +665,27 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
         break;
 
     case DCP_MSG_ID_GET_STATE:
-        /* The ET telemetry client is always running */
-        p_trp_msg->payload.dcp_msg.payload.get_state.state = DCP_CLIENT_STATE_RUNNING;
+        p_trp_msg->payload.dcp_msg.payload.get_state.state = evt_dcp_clnt_state;
 
         p_trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_get_client_state_t);
         p_trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
         break;
 
+    case DCP_MSG_ID_START_STOP:
+        set_evt_dcp_client_state((dcp_start_stop_state_t)p_trp_msg->payload.dcp_msg.payload.start_stop.state);
+        break;
+
     case DCP_MSG_ID_READ_DATA:
-        fpfw_status_t status = etr_handle_host_read_request(p_context, p_request);
-        if (status != FPFW_STATUS_SUCCESS)
+        send_trp_response = etr_handle_host_read_request(p_context, p_request);
+        if (!send_trp_response)
         {
-            /* Send a read_package message to the remote ETR via TRP */
-            translate_dcp_msg_to_trp(p_request->p_trp_msg, TRP_MSG_ID_READ_PACKAGE);
-            return;
+            /* If no local pending buffer found, send a read_package message to the remote ETR via TRP */
+            translate_dcp_msg_to_trp(p_trp_msg, TRP_MSG_ID_READ_PACKAGE);
         }
         break;
 
     case DCP_MSG_ID_READ_DATA_COMPLETE:
-        etr_handle_read_complete_response(p_context, p_request);
+        send_trp_response = etr_handle_read_complete_response(p_context, p_request);
         break;
 
     default:
@@ -606,18 +694,21 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
         break;
     };
 
-    if (p_trp_msg->payload.dcp_msg.hdr.msg_status < 0)
+    if (send_trp_response)
     {
-        p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_DCP_ERROR;
-        p_trp_msg->payload.dcp_msg.hdr.payload_size = 0; // no payload for errors and not forwarding
-    }
-    else
-    {
-        p_trp_msg->hdr.trp_msg_status = TRP_STATUS_SUCCESS;
-    }
-    p_trp_msg->hdr.payload_size = sizeof(dcp_msg_hdr_t) + p_trp_msg->payload.dcp_msg.hdr.payload_size;
+        if (p_trp_msg->payload.dcp_msg.hdr.msg_status < 0)
+        {
+            p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_DCP_ERROR;
+            p_trp_msg->payload.dcp_msg.hdr.payload_size = 0; // no payload for errors and not forwarding
+        }
+        else
+        {
+            p_trp_msg->hdr.trp_msg_status = TRP_STATUS_SUCCESS;
+        }
+        p_trp_msg->hdr.payload_size = sizeof(dcp_msg_hdr_t) + p_trp_msg->payload.dcp_msg.hdr.payload_size;
 
-    mts_client_send_trp_response(p_trp_msg);
+        mts_client_send_trp_response(p_trp_msg);
+    }
 }
 
 /************************************************************************
@@ -710,7 +801,6 @@ fpfw_status_t decode_and_validate_buffer_metadata(etr_service_request_t* p_reque
  * @param p_request Pointer to the service request containing the block information.
  * @return None
  */
-
 static void etr_handle_read_block_complete(etr_service_request_t* p_request)
 {
     /* Handle the case where the block ID is invalid, since this is not done by FPFwETControllerRecycleBuffer */
@@ -770,7 +860,10 @@ void notify_ddr_buffer_available()
      */
     if (primary_instance)
     {
-        mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+        if (evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING)
+        {
+            mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+        }
     }
     else
     {
@@ -852,7 +945,10 @@ void etr_worker_thread_func(ULONG thread_input)
             break;
 
         case TRP_MSG_ID_PACKAGE_NOTIFICATION:
-            mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+            if (evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING)
+            {
+                mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+            }
             break;
 
         case TRP_MSG_ID_READ_PACKAGE:
@@ -861,11 +957,20 @@ void etr_worker_thread_func(ULONG thread_input)
             break;
 
         case TRP_MSG_ID_READ_PACKAGE_COMPLETE:
-            etr_handle_read_complete_response(p_context, &etr_request);
+            /* If primary die, then forward to host via DCP, if secondary, respond via TRP */
+            if (primary_instance)
+            {
+                translate_trp_response_to_dcp(etr_request.p_trp_msg, DCP_MSG_ID_READ_DATA_COMPLETE);
+            }
+            else
+            {
+                etr_handle_read_complete_response(p_context, &etr_request);
+                mts_client_send_trp_response(etr_request.p_trp_msg);
+            }
             break;
 
         case TRP_MSG_ID_READ_PACKAGE_RESPONSE:
-            translate_trp_response_to_dcp(etr_request.p_trp_msg);
+            translate_trp_response_to_dcp(etr_request.p_trp_msg, DCP_MSG_ID_READ_DATA);
             break;
 
         default:

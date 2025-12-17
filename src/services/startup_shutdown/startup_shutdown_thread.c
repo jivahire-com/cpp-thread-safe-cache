@@ -336,6 +336,20 @@ void sos_worker_thread_function(ULONG service_ctx)
             current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
             wait_ssi_complete(current_stage);
 
+            // Add a delay for mcp quiesce to see if helps stop the
+            // reboot crashes
+            if (idsw_get_cpu_type() == CPU_MCP)
+            {
+                if (idsw_get_die_id() == DIE_0)
+                {
+                    tx_thread_sleep(MS_TO_TX_TICKS(20000));
+                }
+                else
+                {
+                    tx_thread_sleep(MS_TO_TX_TICKS(10000));
+                }
+            }
+
             break;
         }
 

@@ -11,6 +11,7 @@ add_library(${TARGET}
     pcie_cli_helpers.c
     pcie_dfwk_init.c
     pcie_einj_helpers.c
+    pcie_events.c
     pcie_irq.c
     pcie_rpss_init.c
     pcie_platform_overrides.c
@@ -35,6 +36,7 @@ target_link_libraries(${TARGET}
         silibs::tower_rpss
         ms::driver::vab
         ms::lib::crash_dump
+        ms::lib::event_trace::trace
         ms::lib::ift
         ms::lib::scp_interrupts
         ms::lib::system_info

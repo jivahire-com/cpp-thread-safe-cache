@@ -15,6 +15,7 @@
 #include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
 #include <oi_pcie.h>
+#include <pcie_events.h>
 #include <pcie_ss_common.h>
 #include <pciess_common.h>
 #include <silibs_status.h>
@@ -85,6 +86,7 @@ silibs_status_t publish_pcie_bdat_info_for_this_rp(pcie_ss_entity_t* rpss, uint8
     silibs_status_t sts = atu_map(ATU_ID_MSCP, &pcie_bdat_atu_map_struct);
     if (sts != SILIBS_SUCCESS)
     {
+        PCIE_ET_ERROR_PARAM(PCIE_ET_TYPE_BDAT_ATU_MAP_FAILED, sts);
         FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: BDAT ATU map failed with status: %d\n", rpss->id, rp_index, (int8_t)sts);
         return sts;
     }

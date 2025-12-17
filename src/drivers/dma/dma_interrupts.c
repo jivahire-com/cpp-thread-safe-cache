@@ -86,36 +86,43 @@ void dma_channel_isr(dma_device_t* device, uint32_t channel)
         if (status & DMAC_CH_INT_SHADOWREG_OR_LLI_INVALID_ERR)
         {
             DMA_LOG_CRIT("Chan %u: LLI found with 0 Valid Bit. DMA Tx suspended", (unsigned int)channel);
+            DMA_ET_ERROR_PARAM(DMA_ET_TYPE_LLI_INVALID, channel);
         }
 
         if (status & DMAC_CH_INT_LLI_WR_SLV_ERR)
         {
             DMA_LOG_CRIT("Chan %u: Unable to write-back to LLI tail. Chan Disabled", (unsigned int)channel);
+            DMA_ET_ERROR_PARAM(DMA_ET_TYPE_LLI_WR_SLV_ERR, channel);
         }
 
         if (status & DMAC_CH_INT_LLI_RD_SLV_ERR)
         {
             DMA_LOG_CRIT("Chan %u: Unable to read LLI. Chan Disabled", (unsigned int)channel);
+            DMA_ET_ERROR_PARAM(DMA_ET_TYPE_LLI_RD_SLV_ERR, channel);
         }
 
         if (status & DMAC_CH_INT_LLI_WR_DEC_ERR)
         {
             DMA_LOG_CRIT("Chan %u: LLI tail Addr inaccessible to Write-back. Chan Disabled", (unsigned int)channel);
+            DMA_ET_ERROR_PARAM(DMA_ET_TYPE_LLI_WR_DEC_ERR, channel);
         }
 
         if (status & DMAC_CH_INT_LLI_RD_DEC_ERR)
         {
             DMA_LOG_CRIT("Chan %u: LLI Addr inaccessible to Read. Chan Disabled", (unsigned int)channel);
+            DMA_ET_ERROR_PARAM(DMA_ET_TYPE_LLI_RD_DEC_ERR, channel);
         }
 
         if (status & DMAC_CH_INT_DST_SLV_ERR)
         {
             DMA_LOG_CRIT("Chan %u: Dest Addr inaccessible. Chan Disabled", (unsigned int)channel);
+            DMA_ET_ERROR_PARAM(DMA_ET_TYPE_DST_SLV_ERR, channel);
         }
 
         if (status & DMAC_CH_INT_SRC_SLV_ERR)
         {
             DMA_LOG_CRIT("Chan %u: Src Addr inaccessible. Chan Disabled", (unsigned int)channel);
+            DMA_ET_ERROR_PARAM(DMA_ET_TYPE_SRC_SLV_ERR, channel);
         }
 
         /* Notify Requestor that the DMA Tx failed */
@@ -125,6 +132,7 @@ void dma_channel_isr(dma_device_t* device, uint32_t channel)
     if (status & DMAC_CH_INT_CHANNEL_ABORTED)
     {
         DMA_LOG_WARN("Chan %u: Abort INT recvd. Chan Txfer has been Aborted", (unsigned int)channel);
+        DMA_ET_WARNING_PARAM(DMA_ET_TYPE_CHANNEL_ABORTED, channel);
         dma_complete_request(device, channel, FPFW_DMA_STATUS_FAIL);
     }
 

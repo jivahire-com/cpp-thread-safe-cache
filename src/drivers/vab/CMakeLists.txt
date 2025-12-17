@@ -4,6 +4,7 @@ add_library(${TARGET}
     STATIC
         vab_atu_mappings.c
         vab_common_setup.c
+        vab_events.c
         vab_irq.c
         vab_irq_common.c
         vab_rpss_irq.c
@@ -21,6 +22,7 @@ target_link_libraries(
             ms::driver::pcie
             ms::lib::debug
             ms::lib::crash_dump
+            ms::lib::event_trace::trace
             ms::lib::interrupts
             ms::lib::mesh
             ms::lib::tower

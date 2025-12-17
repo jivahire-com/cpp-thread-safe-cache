@@ -17,6 +17,7 @@
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
 #include <pcie_einj_helpers_i.h>
+#include <pcie_events.h>
 #include <pcie_rpss_init_i.h>
 #include <pcie_ss_common.h>
 #include <pciess.h>
@@ -43,6 +44,7 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
 
     if (r->rp_index >= PCIESS_NUM_PORTS || r->rpss_index >= PCIE_NUM_RPSS)
     {
+        PCIE_ET_ERROR_PARAM(PCIE_ET_TYPE_SYNC_REQUEST_OUT_OF_BOUNDS, r->rpss_index);
         FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: pcie sync request out of bounds!\n", r->rpss_index, r->rp_index);
         r->status = SILIBS_E_PARAM;
         return 0;
@@ -116,6 +118,7 @@ int32_t pcie_sched_sync_op(PDFWK_SYNC_REQUEST_HEADER incoming)
         sts = pcie_rp_sii_set_presence_detect_state(&(rpss->rps[r->rp_index]), DEVICE_PRESENT);
         break;
     default:
+        PCIE_ET_ERROR_PARAM(PCIE_ET_TYPE_BAD_SYNC_REQUEST, r->header.RequestType);
         FPFW_DBGPRINT_ERROR("RPSS[%d]: Bad sync req received!\n", r->rpss_index);
         sts = SILIBS_E_PARAM;
         break;

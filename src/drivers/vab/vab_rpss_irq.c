@@ -28,6 +28,7 @@
 #include <string.h>
 #include <tower_isr.h>
 #include <vab.h>
+#include <vab_events.h>
 #include <vab_init.h>
 #include <vab_intu.h>
 #include <vab_irq.h>
@@ -107,11 +108,13 @@ static silibs_status_t rpss_ras_node_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintp
         {
             if (record.handler(&record))
             {
+                VAB_ET_ERROR(VAB_ET_TYPE_RPSS_RAS_NODE_HANDLER_ERROR);
                 FPFW_DBGPRINT_ALWAYS("Error encountered while handling RPSS RAS Node record\n");
             }
         }
         else
         {
+            VAB_ET_ERROR(VAB_ET_TYPE_RPSS_RAS_NODE_INVALID_RECORD);
             FPFW_DBGPRINT_ALWAYS(
                 "RPSS RAS Node Record was marked as invalid! No further handling will be done\n");
             continue;
@@ -152,6 +155,7 @@ static silibs_status_t pcie_interrupt_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uint
     else
     {
         /* This is certainly unexpected, but should this be considered fatal? */
+        VAB_ET_ERROR_PARAM(VAB_ET_TYPE_RPSS_NO_VALID_INTERRUPT_SOURCE, rpss_id);
         FPFW_DBGPRINT_ALWAYS("RPSS[%d]: No valid interrupt source found!\n", rpss_id);
     }
 
@@ -171,6 +175,7 @@ void process_vab_rpss_probe(vab_isr_ctx_t* ctx)
             }
             else
             {
+                VAB_ET_WARNING_PARAM(VAB_ET_TYPE_RPSS_INTU0_UNSUPPORTED, idx);
                 FPFW_DBGPRINT_ALWAYS("|VAB_RPSS| INTU0 Index %d for VAB %d is not supported! Ignoring...\n", idx, ctx->vab_id);
             }
         }
@@ -186,6 +191,7 @@ void process_vab_rpss_probe(vab_isr_ctx_t* ctx)
             }
             else
             {
+                VAB_ET_WARNING_PARAM(VAB_ET_TYPE_RPSS_INTU1_UNSUPPORTED, idx);
                 FPFW_DBGPRINT_ALWAYS("|VAB_RPSS| INTU1 Index %d for VAB %d is not supported! Ignoring...\n", idx, ctx->vab_id);
             }
         }

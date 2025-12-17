@@ -14,6 +14,7 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <pldm_drv.h>
+#include <pldm_events.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -103,6 +104,7 @@ static void pldm_platform_event_async(PDFWK_ASYNC_REQUEST_HEADER request)
 
     if (FPFW_STATUS_FAILED(pldm_request->status))
     {
+        PLDM_ET_ERROR_PARAM(PLDM_ET_TYPE_RAISE_PLATFORM_EVENT_FAILED, pldm_request->status);
         FPFW_DBGPRINT_ERROR("PLDM: Failed to raise platform event: status = 0x%08lx\n", pldm_request->status);
         pldm_device.has_pending_request = false;
 
@@ -220,6 +222,7 @@ static void pldm_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context)
         }
         break;
     default:
+        PLDM_ET_ERROR_PARAM(PLDM_ET_TYPE_UNKNOWN_REQUEST_TYPE, request->RequestType);
         FPFW_DBGPRINT_ERROR("PLDM: Unknown request type: 0x%04lx\n", request->RequestType);
         break;
     }

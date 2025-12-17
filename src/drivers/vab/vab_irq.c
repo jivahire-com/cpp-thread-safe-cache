@@ -28,6 +28,7 @@
 #include <utils.h>
 #include <vab.h>
 #include <vab_atu_mappings.h>
+#include <vab_events.h>
 #include <vab_intu.h>
 #include <vab_irq.h>
 #include <vab_regs.h>
@@ -228,6 +229,7 @@ static SUBSYSTEM_WITH_VAB_ID convert_to_subsystem_with_vab_id(VAB_ID_PER_DIE id_
     case VAB5_CDEDSS_IOSS:
         return die ? D1_VAB5_CDEDSS_IOSS : D0_VAB5_CDEDSS_IOSS;
     default:
+        VAB_ET_ERROR(VAB_ET_TYPE_INVALID_VAB_INSTANCE);
         FPFW_DBGPRINT_ALWAYS("|VAB| Error: Invalid VAB instance\n");
         return MAX_VAB_INSTANCES;
     }
@@ -272,12 +274,14 @@ PLACED_CODE acpi_einj_cmd_status_t vab_error_injection_cb(ras_einj_info_t* einj_
     FPFW_DBGPRINT_INFO("|VAB| Info: Error Injection Callback Start\n");
     if (einj_payload == NULL)
     {
+        VAB_ET_ERROR(VAB_ET_TYPE_NULL_INJECTION_PAYLOAD);
         FPFW_DBGPRINT_ALWAYS("|VAB| Error: NULL injection payload\n");
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
     if (einj_payload->component_group != ACPI_ERROR_DOMAIN_VAB)
     {
+        VAB_ET_ERROR_PARAM(VAB_ET_TYPE_UNEXPECTED_ERROR_DOMAIN, einj_payload->component_group);
         FPFW_DBGPRINT_ALWAYS("|VAB| Error: Unexpected error domain: %d\n", einj_payload->component_group);
         return ACPI_EINJ_INVALID_ACCESS;
     }
@@ -291,6 +295,7 @@ PLACED_CODE acpi_einj_cmd_status_t vab_error_injection_cb(ras_einj_info_t* einj_
     {
         if (einj_payload->component_instance != idsw_get_die_id())
         {
+            VAB_ET_ERROR_PARAM(VAB_ET_TYPE_INVALID_COMPONENT_INSTANCE, einj_payload->component_instance);
             FPFW_DBGPRINT_ALWAYS("|VAB| Error: Invalid component instance %d\n", einj_payload->component_instance);
             return ACPI_EINJ_INVALID_ACCESS;
         }
@@ -315,6 +320,7 @@ PLACED_CODE acpi_einj_cmd_status_t vab_error_injection_cb(ras_einj_info_t* einj_
         status = vab_fabric_error_trigger_by_type(vab_base, params.component, params.error_type);
         if (status)
         {
+            VAB_ET_ERROR_PARAM(VAB_ET_TYPE_FABRIC_PARITY_INJECTION_FAILED, status);
             FPFW_DBGPRINT_ALWAYS("|VAB| Error: Unable to set fabric parity injection: (%d)\n", status);
             goto exit;
         }
@@ -326,6 +332,7 @@ PLACED_CODE acpi_einj_cmd_status_t vab_error_injection_cb(ras_einj_info_t* einj_
              * issued instead. Injections on RNI/RND side are not exercisable without loopback on RPSS or
              * forced MSIs, and for functional consistency we only arm the injection as requested.
              */
+            VAB_ET_WARNING(VAB_ET_TYPE_PARITY_ERROR_ARMED);
             FPFW_DBGPRINT_ALWAYS("|VAB| Warning: Parity error has been armed. An access on the interface "
                                  "will be required to trigger it.\n");
         }
@@ -336,12 +343,14 @@ PLACED_CODE acpi_einj_cmd_status_t vab_error_injection_cb(ras_einj_info_t* einj_
         status = vab_ras_trigger_by_type(vab_base, vab, params.component, params.error_type);
         if (status)
         {
+            VAB_ET_ERROR_PARAM(VAB_ET_TYPE_RAS_NODE_SPOOF_FAILED, status);
             FPFW_DBGPRINT_ALWAYS("|VAB| Error: Unable to set RAS Node spoof: (%d)\n", status);
             goto exit;
         }
     }
     else
     {
+        VAB_ET_ERROR_PARAM(VAB_ET_TYPE_INVALID_INJECTION_TARGET, params.target);
         FPFW_DBGPRINT_ALWAYS("|VAB| Error: Invalid injection target: (%d)\n", params.target);
         goto exit;
     }

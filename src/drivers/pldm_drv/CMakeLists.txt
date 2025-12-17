@@ -6,6 +6,7 @@ set(TARGET kng.driver.pldm)
 add_library(${TARGET}
     STATIC
     pldm_drv.c
+    pldm_events.c
 )
 
 target_include_directories(${TARGET}
@@ -23,6 +24,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.pldm.protocol
         fwlib.service.pldm
         ms::lib::crash_dump
+        ms::lib::event_trace::trace
         silibs::kng_silibs_platform
 )
 

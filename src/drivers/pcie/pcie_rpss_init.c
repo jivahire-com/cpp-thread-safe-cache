@@ -26,6 +26,7 @@
 #include <pcie_bdat_i.h>
 #include <pcie_config_i.h>
 #include <pcie_dfwk.h>
+#include <pcie_events.h>
 #include <pcie_platform_overrides_i.h>
 #include <pcie_rp_common.h>
 #include <pcie_rp_sii.h>
@@ -333,6 +334,7 @@ int begin_rp_post_link_up_init(PDFWK_SYNC_REQUEST_HEADER req)
     /* Do not fail boot in case we fail to add BDAT info, as this is non-fatal */
     if (publish_pcie_bdat_info_for_this_rp(rpss, r->rp_index) != SILIBS_SUCCESS)
     {
+        PCIE_ET_ERROR_PARAM(PCIE_ET_TYPE_BDAT_PUBLISH_FAILED, (uint32_t)sts);
         FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Publishing BDAT info returned error status: %d\n", rpss->id, r->rp_index, (int8_t)sts);
     }
 

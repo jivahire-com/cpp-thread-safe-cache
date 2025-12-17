@@ -19,6 +19,7 @@
 #include <kng_soc_constants.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
+#include <pcie_events.h>
 #include <pcie_irq.h>
 #include <pcie_rp_common.h>
 #include <pcie_ss_common.h>
@@ -127,6 +128,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
         {
             uint64_t status = info->rp_ints[rp_index].ints[PCIESS_RP_INT_GLOBAL_IDE].status;
             FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: Global IDE asserted! Sources: 0x%x\n", ss->id, rp_index, status);
+            PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_GLOBAL_IDE, (ss->id << 16) | rp_index);
 
             /* Iterate per IDE sub-domain */
             if (status & PCIE_IDE_SRAM_ECC_GLOBAL_INT)
@@ -187,6 +189,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
         {
             uint64_t status = info->rp_ints[rp_index].ints[PCIESS_RP_INT_AES_HCFG].status;
             FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: AES HCFG asserted! Sources: 0x%x\n", ss->id, rp_index, status);
+            PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_AES_HCFG, (ss->id << 16) | rp_index);
             /* Not all sources are errors (some are advisory) */
             while (ras_pcie_ide_agent_probe_by_type(ide_agent, RAS_PCIE_IDE_ALL_AES_HCFG_ERRORS, &record))
             {
@@ -204,12 +207,14 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
         if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_LINK_DOWN].asserted)
         {
             FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: Link Down asserted\n", ss->id, rp_index);
+            PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_LINK_DOWN, (ss->id << 16) | rp_index);
             int_mask |= 1 << PCIESS_RP_INT_LINK_DOWN;
         }
 
         if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_LINK_UP].asserted)
         {
             FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: Link Up asserted\n", ss->id, rp_index);
+            PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_LINK_UP, (ss->id << 16) | rp_index);
             int_mask |= 1 << PCIESS_RP_INT_LINK_UP;
         }
 
@@ -219,6 +224,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
                                  ss->id,
                                  rp_index,
                                  info->rp_ints[rp_index].ints[PCIESS_RP_INT_DTIM].status);
+            PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_DTIM, (ss->id << 16) | rp_index);
             while (ras_pcie_dtim_agent_probe_by_type(dtim_agent, RAS_PCIE_DTIM_ALL_TYPES, &record))
             {
                 bugcheck_required |= rpss_record_callback(&record);
@@ -231,6 +237,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
                                  ss->id,
                                  rp_index,
                                  info->rp_ints[rp_index].ints[PCIESS_RP_INT_LTIM].status);
+            PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_LTIM, (ss->id << 16) | rp_index);
             while (ras_pcie_ltim_agent_probe_by_type(ltim_agent, RAS_PCIE_LTIM_ALL_TYPES, &record))
             {
                 bugcheck_required |= rpss_record_callback(&record);
@@ -240,6 +247,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
         if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_RASDP].asserted)
         {
             FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: RASDP_ERR_MODE asserted!\n", ss->id, rp_index);
+            PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_RASDP, (ss->id << 16) | rp_index);
             /*
              * RASDP_ERR_MODE breaks the 'while' fetch pattern as the records fetched cannot be cleared
              * on a per-record basis. Instead, we gather the latest information for both CE and UE
@@ -269,6 +277,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
         {
             /* No action needs to be taken on DPC, an OS handles DPC recovery */
             FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: DPC asserted!\n", ss->id, rp_index);
+            PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_DPC, (ss->id << 16) | rp_index);
         }
 
         /*
@@ -288,6 +297,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
             info->rp_ints[rp_index].ints[PCIESS_RP_INT_SEND_F].asserted)
         {
             FPFW_DBGPRINT_ALWAYS("RP[%d, %d]: An unexpected interrupt has asserted!\n", ss->id, rp_index);
+            PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_UNEXPECTED, (ss->id << 16) | rp_index);
         }
 
         if (int_mask)

@@ -7,6 +7,7 @@ set (SOURCES
     dma_silibs_interface.c
     dma_timers.c
     dma_queue_management.c
+    dma_events.c
 )
 
 #
@@ -45,6 +46,7 @@ target_link_libraries(${TARGET}
         ms::lib::arm_intrinsic
         ms::lib::cortex_m7::nvic
         ms::lib::crash_dump
+        ms::lib::event_trace::trace
         ms::lib::scp_interrupts
         register_headers
 )
@@ -106,6 +108,7 @@ target_link_libraries(${TARGET}
         ms::lib::arm_intrinsic
         ms::lib::cortex_m7::nvic
         ms::lib::crash_dump
+        ms::lib::event_trace::trace
         ms::lib::mcp_interrupts
         register_headers
 )

@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <pcie_dfwk.h>
+#include <pcie_events.h>
 #include <pcie_rp_common.h>
 #include <pcie_rp_dbi.h>
 #include <pcie_rp_sii.h>
@@ -75,6 +76,7 @@ void handle_cli_request(pcie_sync_request_t* r)
     pcie_cli_req_op_t* p_cli_req = (pcie_cli_req_op_t*)(r->p_sent_data);
     if (p_cli_req == NULL)
     {
+        PCIE_ET_ERROR_PARAM(PCIE_ET_TYPE_CLI_REQ_NULL, 0);
         FPFW_DBGPRINT_ERROR("[PCIe CLI] p_cli_req is NULL - cannot process request!\n");
         return;
     }
@@ -91,6 +93,7 @@ void handle_cli_request(pcie_sync_request_t* r)
         get_rp_dbi_cfg_hdr(r);
         break;
     default:
+        PCIE_ET_ERROR_PARAM(PCIE_ET_TYPE_UNKNOWN_CLI_OP, *(p_cli_req));
         FPFW_DBGPRINT_ERROR("[PCIe CLI] Unknown CLI_REQUEST OP: %d\n", *(p_cli_req));
         break;
     }

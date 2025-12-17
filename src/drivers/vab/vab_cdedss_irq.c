@@ -26,6 +26,7 @@
 #include <string.h>
 #include <tower_isr.h>
 #include <vab.h>
+#include <vab_events.h>
 #include <vab_intu.h>
 #include <vab_irq.h>
 #include <vab_regs.h>
@@ -120,6 +121,7 @@ void process_vab_cdedss_probe(vab_isr_ctx_t* ctx)
             }
             else
             {
+                VAB_ET_WARNING_PARAM(VAB_ET_TYPE_CDEDSS_INTU0_UNSUPPORTED, idx);
                 FPFW_DBGPRINT_ALWAYS(
                     "|VAB_CDEDSS_IOSS| INTU0 Index %d for VAB %d is not supported! Ignoring...\n",
                     idx,
@@ -138,6 +140,7 @@ void process_vab_cdedss_probe(vab_isr_ctx_t* ctx)
             }
             else
             {
+                VAB_ET_WARNING_PARAM(VAB_ET_TYPE_CDEDSS_INTU1_UNSUPPORTED, idx);
                 FPFW_DBGPRINT_ALWAYS(
                     "|VAB_CDEDSS_IOSS| INTU1 Index %d for VAB %d is not supported! Ignoring...\n",
                     idx,

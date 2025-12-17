@@ -23,6 +23,7 @@
 #include <tower_isr.h>
 #include <vab.h>
 #include <vab_atu_mappings.h>
+#include <vab_events.h>
 #include <vab_init.h>
 #include <vab_intu.h>
 #include <vab_irq.h>
@@ -91,12 +92,14 @@ silibs_status_t vab_ras_node_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t bas
             status = record.handler(&record);
             if (status)
             {
+                VAB_ET_ERROR_PARAM(VAB_ET_TYPE_RAS_NODE_HANDLER_ERROR, status);
                 FPFW_DBGPRINT_ALWAYS("Error encountered while handling VAB RAS Node record: (%d)\n", status);
                 continue;
             }
         }
         else
         {
+            VAB_ET_ERROR(VAB_ET_TYPE_RAS_NODE_INVALID_RECORD);
             FPFW_DBGPRINT_ALWAYS(
                 "VAB RAS Node Record was marked as invalid! No further handling will be done\n");
             continue;
@@ -161,12 +164,14 @@ static silibs_status_t vab_record_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_
             status = record.handler(&record);
             if (status)
             {
+                VAB_ET_ERROR_PARAM(VAB_ET_TYPE_TBU_RECORD_HANDLER_ERROR, status);
                 FPFW_DBGPRINT_ALWAYS("Error encountered while handling TBU1 record\n");
                 return status;
             }
         }
         else
         {
+            VAB_ET_ERROR(VAB_ET_TYPE_TBU_INVALID_RECORD);
             FPFW_DBGPRINT_ALWAYS("TBU1 Record was marked as invalid! No further handling will be done\n");
             continue;
         }

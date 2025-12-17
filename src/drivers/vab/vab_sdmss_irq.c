@@ -27,6 +27,7 @@
 #include <string.h>
 #include <tower_isr.h>
 #include <vab.h>
+#include <vab_events.h>
 #include <vab_init.h>
 #include <vab_intu.h>
 #include <vab_irq.h>
@@ -145,6 +146,7 @@ void process_vab_sdmss_probe(vab_isr_ctx_t* ctx)
             }
             else
             {
+                VAB_ET_WARNING_PARAM(VAB_ET_TYPE_SDMSS_INTU0_UNSUPPORTED, idx);
                 FPFW_DBGPRINT_ALWAYS("|VAB_SDMSS| INTU0 Index %d for VAB %d is not supported! Ignoring...\n", idx, ctx->vab_id);
             }
         }
@@ -160,6 +162,7 @@ void process_vab_sdmss_probe(vab_isr_ctx_t* ctx)
             }
             else
             {
+                VAB_ET_WARNING_PARAM(VAB_ET_TYPE_SDMSS_INTU1_UNSUPPORTED, idx);
                 FPFW_DBGPRINT_ALWAYS("|VAB_SDMSS| INTU1 Index %d for VAB %d is not supported! Ignoring...\n", idx, ctx->vab_id);
             }
         }

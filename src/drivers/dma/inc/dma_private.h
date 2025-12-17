@@ -12,6 +12,7 @@
 /*----------- Nested includes ------------*/
 #include <DfwkDriver.h>
 #include "dma_dfwk.h"       // For dma_device_t, etc.
+#include "dma_events.h"     // For DMA event trace
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MODULE_NAME "[DMA] "

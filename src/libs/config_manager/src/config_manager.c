@@ -37,8 +37,8 @@
 #define SPI_DATA_ALIGNMENT_SIZE     4
 #define SPI_DATA_ALIGN(size)        (FPFW_ALIGN_BY(SPI_DATA_ALIGNMENT_SIZE, size))
 #define D2D_MBOX_SPI_CTRL_BASE_ADDR (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_CTRL_ADDRESS)
-// D2D sync timeout set to 30 seconds;KPI max timeout.
-#define CFG_MGR_D2D_SYNC_TIMEOUT (1000 * 30)
+// D2D sync timeout set to 60 seconds
+#define CFG_MGR_D2D_SYNC_TIMEOUT (1000 * 60)
 
 /*-- Declarations (Statics and globals) --*/
 extern knob_data_t g_knob_data[];

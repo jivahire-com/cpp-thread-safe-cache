@@ -21,7 +21,8 @@ variables:
   value: "chie-1pfw"
 - name: tdk_repo_name
   value: "$(System.DefaultWorkingDirectory)/"
-
+- name: TimeoutInMinutes
+  value: 500
 
 # Build stage
 stages:
@@ -89,9 +90,10 @@ stages:
   - template: templates/soc_pythia_test.yaml
     parameters:
       ArtifactName: MSCP_SOC_DualDie_0
-      TestPlan: .\tests\functional\test_plan\soc_dual_die_0_test_plan.args
+      TestPlan: .\tests\functional\test_plan\soc_dual_die_0_nightly_test_plan.args
       TestVehicleCapability: 'SocDualDie'
       Pool: '1pfw-kingsgate-soc'
+      TimeoutInMinutes: ${{ variables.TimeoutInMinutes }}
       tdk_repo_name: ${{ variables.tdk_repo_name }}
       azure_subscription: ${{ variables.azure_subscription }}
       nuget_service_connections: ${{ variables.nuget_service_connections }}
@@ -103,9 +105,10 @@ stages:
   - template: templates/soc_pythia_test.yaml
     parameters:
       ArtifactName: MSCP_SOC_DualDie_1
-      TestPlan: .\tests\functional\test_plan\soc_dual_die_1_test_plan.args
+      TestPlan: .\tests\functional\test_plan\soc_dual_die_1_nightly_test_plan.args
       TestVehicleCapability: 'SocDualDie'
       Pool: '1pfw-kingsgate-soc'
+      TimeoutInMinutes: ${{ variables.TimeoutInMinutes }}
       tdk_repo_name: ${{ variables.tdk_repo_name }}
       azure_subscription: ${{ variables.azure_subscription }}
       nuget_service_connections: ${{ variables.nuget_service_connections }}

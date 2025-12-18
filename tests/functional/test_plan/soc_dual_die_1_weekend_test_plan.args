@@ -1,4 +1,5 @@
-## Test iteration - 20. This is to run tests for ~24hrs.
+## Test iteration - 20. This is to run tests for ~24hrs. 
+## PLDM test iterations are reduced to 10 since the total run is taking more than 24 hrs. 
 
 ## Cold Start Tests
 ./../../../tests/functional/test_suites/cold_start_tests/cold_start_test.robot
@@ -23,26 +24,6 @@
 ./../../../tests/functional/test_suites/cold_start_tests/cold_start_test.robot
 
 ## PLDM Tests
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
 ./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
 ./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
 ./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot

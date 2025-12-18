@@ -9,9 +9,13 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
+#include <arm_intrinsic.h>
 #include <atu_lib.h>
 #include <bdat_schema.h>
+#include <cmsis_m7.h>
 #include <ddrss_reserved_regions.h>
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <kng_atu_mappings.h>
 #include <kng_soc_constants.h>
 #include <oi_pcie.h>
@@ -63,9 +67,36 @@
 
 /*-- Declarations (Statics and globals) --*/
 static bool bdat_published[NUM_RPSS * PCIESS_NUM_PORTS] = {false};
+static bool bdat_data_cleared = false;
 static BDAT_PCIE_PER_RP_DATA_MSFT_1 temp_bdat_entry = {0};
 
 /*------------- Functions ----------------*/
+silibs_status_t clear_out_combined_bdat_rsvd_region(void)
+{
+    atu_map_entry_t pcie_bdat_atu_map_struct = COMBINED_BDAT_ATU_MAPPING;
+    silibs_status_t sts = SILIBS_SUCCESS;
+
+    /* Only clear the buffer once per boot */
+    if ((idsw_get_die_id() == DIE_1) || (bdat_data_cleared == true))
+    {
+        return SILIBS_SUCCESS;
+    }
+
+    sts = atu_map(ATU_ID_MSCP, &pcie_bdat_atu_map_struct);
+    if (sts != SILIBS_SUCCESS)
+    {
+        FPFW_DBGPRINT_ERROR("PCIE BDAT: ATU map failed with status: %d\n", (int8_t)sts);
+        return sts;
+    }
+
+    memset((void*)(uintptr_t)pcie_bdat_atu_map_struct.mscp_start_address, 0, COMBINED_BDAT_RSVD_REGION_SIZE);
+    bdat_data_cleared = true;
+
+    atu_unmap(ATU_ID_MSCP, &pcie_bdat_atu_map_struct);
+
+    return SILIBS_SUCCESS;
+}
+
 silibs_status_t publish_pcie_bdat_info_for_this_rp(pcie_ss_entity_t* rpss, uint8_t rp_index)
 {
     atu_map_entry_t pcie_bdat_atu_map_struct = COMBINED_BDAT_ATU_MAPPING;
@@ -97,7 +128,22 @@ silibs_status_t publish_pcie_bdat_info_for_this_rp(pcie_ss_entity_t* rpss, uint8
      * which can help diagnose link quality issues. Hence, we are ignoring the return status here
      */
     sts = oi_pcie_ss_populate_rp_bdat(rpss, rp_index, &temp_bdat_entry, sizeof(BDAT_PCIE_PER_RP_DATA_MSFT_1));
-    memcpy(GET_BDAT_ADDRESS_FOR_RP(rp_index_offset), &temp_bdat_entry, sizeof(BDAT_PCIE_PER_RP_DATA_MSFT_1));
+
+    /*
+     * Do a byte by byte copy to avoid unaligned access hard faults.
+     * These DDR offsets may not be word aligned. So do not let the compiler
+     * generate any store-word accesses.
+     */
+    uint8_t* dest = (uint8_t*)GET_BDAT_ADDRESS_FOR_RP(rp_index_offset);
+    const uint8_t* src = (const uint8_t*)&temp_bdat_entry;
+    for (uint32_t i = 0; i < sizeof(BDAT_PCIE_PER_RP_DATA_MSFT_1); ++i)
+    {
+        dest[i] = src[i];
+    }
+
+    /* Flush all stores to ensure data consistency */
+    __DSB();
+
     atu_unmap(ATU_ID_MSCP, &pcie_bdat_atu_map_struct);
 
     return sts;

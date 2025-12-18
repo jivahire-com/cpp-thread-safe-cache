@@ -35,6 +35,7 @@ target_link_libraries(${TARGET}
         silibs::pcr_rpss
         silibs::tower_rpss
         ms::driver::vab
+        ms::lib::arm_intrinsic
         ms::lib::crash_dump
         ms::lib::event_trace::trace
         ms::lib::ift

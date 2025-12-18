@@ -100,6 +100,10 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
 
         if (!ift_is_enabled())
         {
+            /* Zero out BDAT data region */
+            sts = clear_out_combined_bdat_rsvd_region();
+            BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+
             sts = pciess_config_ss_for_bifur(rpss);
             BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 

@@ -76,6 +76,7 @@ static pcie_async_request_t r;
 static jmp_buf mock_jump_buf;
 static bool should_return;
 uint8_t mock_buf[2048];
+uint8_t mock_bdat_buf[0x10000];
 static bool ift_enabled = false;
 
 /* mock entity*/
@@ -179,6 +180,36 @@ TEST_FUNCTION(interface_init, test_setup, test_teardown)
     assert_ptr_equal(iface.dev, &dev);
 }
 
+TEST_FUNCTION(test_pcie_bdat_zeromem, test_setup, test_teardown)
+{
+    silibs_status_t sts;
+
+    /* On DIE_1 the buffer will never be zeroed out, only DIE_0 handles it */
+    will_return(__wrap_idsw_get_die_id, DIE_1);
+    sts = clear_out_combined_bdat_rsvd_region();
+    assert_int_equal(sts, SILIBS_SUCCESS);
+
+    /* Expectations for BDAT zeroing need to be setup only once for DIE_0 */
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, &mock_bdat_buf[0]);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    /* This will zero out the buffer as it is the first invocation on DIE_0 */
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    sts = clear_out_combined_bdat_rsvd_region();
+    assert_int_equal(sts, SILIBS_SUCCESS);
+
+    /* Now, ensure this directly returns without zeroing anything again on both dies */
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    sts = clear_out_combined_bdat_rsvd_region();
+    assert_int_equal(sts, SILIBS_SUCCESS);
+    will_return(__wrap_idsw_get_die_id, DIE_1);
+    sts = clear_out_combined_bdat_rsvd_region();
+    assert_int_equal(sts, SILIBS_SUCCESS);
+}
+
 /* Test case for initial pciess init sync. request for non-mirrored configurations successful path */
 TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
 {
@@ -193,6 +224,8 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
     /* Setup silibs expectations */
     /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+
     for (uint8_t i = 0; i < NUM_RPSS; i++)
     {
         /* Setup the request for an rpss */
@@ -203,7 +236,7 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
         r.rp_index = 0;
         r.p_sent_data = &cold_boot;
 
-        /* Set the owning interface*/
+        /* Set the owning interface */
         auto req = (PDFWK_SYNC_REQUEST_HEADER)&r;
         req->OwningInterface = (PDFWK_INTERFACE_HEADER)&iface;
 
@@ -218,7 +251,6 @@ TEST_FUNCTION(test_pcie_rpss_init_soc1_success, test_setup, test_teardown)
         will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
         will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
         will_return(__wrap_pciess_phys_toggle_clocks, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_0);
 
         cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
         will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
@@ -291,6 +323,8 @@ TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
     /* Setup silibs expectations */
     /* Will always is used because IS_PLATFORM_FPGA() uses 3 calls to idsw_get_platform_sdv */
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+
     for (uint8_t i = 0; i < NUM_RPSS; i++)
     {
         /* Setup the request for an rpss */
@@ -319,7 +353,6 @@ TEST_FUNCTION(test_pcie_rpss_init_soc2_success, test_setup, test_teardown)
         will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
         will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
         will_return(__wrap_pciess_phys_toggle_clocks, SILIBS_SUCCESS);
-        will_return(__wrap_idsw_get_die_id, DIE_0);
 
         cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
         will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
@@ -361,6 +394,7 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
 
     /* Setup silibs expectations */
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_get_rpss_resolved_base, 0xDEADBEEF);
     expect_value(__wrap_pciess_get_entity, rpss_idx, RPSS2);
     will_return(__wrap_pciess_get_entity, &mock_pcie_ent);
@@ -371,7 +405,6 @@ TEST_FUNCTION(test_populate_rb_configs_from_rpss_entity, test_setup, test_teardo
     will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
     will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
     will_return(__wrap_pciess_phys_toggle_clocks, SILIBS_SUCCESS);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
 
     cxl_region_params_t cxl_region_params_die0 = __real_config_get_cxl_params_die0();
     will_return(__wrap_config_get_cxl_params_die0, &cxl_region_params_die0);
@@ -1444,6 +1477,7 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
 
     /* Setup silibs expectations */
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
     will_return(__wrap_get_rpss_resolved_base, 0xDEADBEEF);
     will_return_always(__wrap_system_info_get_soc_position, 0x1);
     bool is_mirroring = __real_config_get_pcie_configuration_mirroring();
@@ -1457,7 +1491,6 @@ TEST_FUNCTION(test_rpss_init_cxl, test_setup, test_teardown)
     will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
     will_return(__wrap_pciess_deassert_por_reset, SILIBS_SUCCESS);
     will_return(__wrap_pciess_phys_toggle_clocks, SILIBS_SUCCESS);
-    will_return(__wrap_idsw_get_die_id, DIE_1);
 
     cxl_region_params_t cxl_region_params_die1 = __real_config_get_cxl_params_die1();
     cxl_region_params_die1.valid = true;

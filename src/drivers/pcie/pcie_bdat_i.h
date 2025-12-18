@@ -38,3 +38,11 @@
  * @return SILIBS_SUCCESS on success, error code otherwise.
  */
 silibs_status_t publish_pcie_bdat_info_for_this_rp(pcie_ss_entity_t* rpss, uint8_t rp_index);
+
+/*
+ * Clear out the combined BDAT reserved region in DDR. This function is expected
+ * to be called only once per boot cycle.
+ *
+ * @return SILIBS_SUCCESS on success, error code otherwise.
+ */
+silibs_status_t clear_out_combined_bdat_rsvd_region(void);

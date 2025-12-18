@@ -7,66 +7,53 @@
 *.o
 *.obj
 *.profraw
-
 # Precompiled Headers
 *.gch
 *.pch
-
 # Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
-
 # Fortran module files
 *.mod
 *.smod
-
 # Compiled Static libraries
 *.lai
 *.la
 *.a
 *.lib
-
 # Executables
 *.exe
 *.out
 *.app
-
 # Build output
 /.build
 /.externs
 /.testlogs
 /.svp_simulator
 tools/robot-secure-txt.yml
-
 # Pythia payloads
 .payload*/
-
 # VS Code
 /.vscode/settings.json
-
 # Generated files
 /libs/build_data/build_data.h
 /libs/build_data/build_data.c
-
 # Generated DDRSS version header (auto-generated, ignore)
 src/libs/ddrss/ddrss_library/inc/ddrss_reserved_regions_version.h
 */ddrss_reserved_regions_version.h
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
 # Merge files
 *.orig
-
 # Build size files
 *.sizes
-
 # flash files
 *.flash
 *.toml.lock
-
 # Image files
 *.png
+# Boot poll script logs
+tools/python_scripts/logs/

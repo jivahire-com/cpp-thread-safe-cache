@@ -159,6 +159,14 @@ void power_remote_die_exchange_inputs(power_runconfig_t* p_runconfig);
 void power_remote_die_exchange_complete(power_runconfig_t* p_runconfig);
 
 /**
+ * @brief Function to perform a synchronization barrier between dies
+ * Both dies must arrive at this point before proceeding with the control loop
+ * 
+ * @param[in] p_runconfig - Pointer to runtime configuration structure
+ */
+void power_remote_die_sync_barrier(power_runconfig_t* p_runconfig);
+
+/**
  * @brief Function to reset the remote die exchange state
  * 
  */

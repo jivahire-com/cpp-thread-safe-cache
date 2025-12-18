@@ -117,6 +117,7 @@ mock_target(${TARGET}
     cortex_m7_atomic_call_data_synchronization_barrier
     power_control_loop_change_state
     power_pldm_service_init
+    power_remote_die_sync_barrier
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

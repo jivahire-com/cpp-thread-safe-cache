@@ -269,6 +269,11 @@ void __wrap_power_remote_die_exchange_complete(power_runconfig_t* p_runconfig)
     check_expected_ptr(p_runconfig);
 }
 
+void __wrap_power_remote_die_sync_barrier(power_runconfig_t* p_runconfig)
+{
+    check_expected_ptr(p_runconfig);
+}
+
 void __wrap_power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
 {
     s_update_cb = p_update_cb;
@@ -312,6 +317,11 @@ int __wrap_power_cap_update(power_cap_completed_callback_t callback, uint16_t ne
 }
 
 static bool mock_die_id_1_flag = false;
+
+void set_mock_die_id_flag(bool value)
+{
+    mock_die_id_1_flag = value;
+}
 
 idsw_die_id_t __wrap_idsw_get_die_id(void)
 {
@@ -474,7 +484,7 @@ void setup_expectations_for_retry_fail(power_loop_retries_t type, bool fail)
 // test for idle_handler
 POWER_TEST(control_idle_handler__signal_interval, NULL, NULL)
 {
-    setup_expectations_for_state_change(POWER_CONTROL_STATE_COLLECT_INPUTS);
+    setup_expectations_for_state_change(POWER_CONTROL_STATE_SYNC_DIES);
     will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_IDLE, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
@@ -486,6 +496,50 @@ POWER_TEST(control_idle_handler__signal_default, NULL, NULL)
     // will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
     // call state handler
     call_handler(POWER_CONTROL_STATE_IDLE, POWER_CTRL_LOOP_SIGNAL_MAX, NULL);
+}
+
+// tests for sync_dies_handler
+POWER_TEST(control_sync_dies_handler__signal_entry, NULL, NULL)
+{
+    power_runconfig_t test_runconfig = {.p_sconfig = NULL};
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    expect_value(__wrap_power_remote_die_sync_barrier, p_runconfig, &test_runconfig);
+    // call state handler
+    call_handler(POWER_CONTROL_STATE_SYNC_DIES, POWER_CTRL_LOOP_SIGNAL_ENTRY, NULL);
+}
+
+POWER_TEST(control_sync_dies_handler__signal_sync_complete, NULL, NULL)
+{
+    setup_expectations_for_state_change(POWER_CONTROL_STATE_COLLECT_INPUTS);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
+    // call state handler
+    call_handler(POWER_CONTROL_STATE_SYNC_DIES, POWER_CTRL_LOOP_SIGNAL_SYNC_COMPLETE, NULL);
+}
+
+POWER_TEST(control_sync_dies_handler__signal_interval_retry, NULL, NULL)
+{
+    power_runconfig_t test_runconfig = {.p_sconfig = NULL};
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    expect_value(__wrap_power_remote_die_sync_barrier, p_runconfig, &test_runconfig);
+    setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, false);
+    // call state handler
+    call_handler(POWER_CONTROL_STATE_SYNC_DIES, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
+}
+
+POWER_TEST(control_sync_dies_handler__signal_interval_error, NULL, NULL)
+{
+    setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, true);
+    setup_expectations_for_state_change(POWER_CONTROL_STATE_ERROR);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
+    // call state handler
+    call_handler(POWER_CONTROL_STATE_SYNC_DIES, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
+}
+
+POWER_TEST(control_sync_dies_handler__signal_default, NULL, NULL)
+{
+    // nothing should happen, no expectations to setup
+    // call state handler
+    call_handler(POWER_CONTROL_STATE_SYNC_DIES, POWER_CTRL_LOOP_SIGNAL_MAX, NULL);
 }
 
 POWER_TEST(control_idle_error_handler__enter_exit_error, NULL, NULL)
@@ -1052,8 +1106,6 @@ POWER_TEST(control_exchange_inputs_handler__signal_exchange_inputs_done, NULL, N
     will_return(__wrap_power_cap_update, MP_POWER_CAP_PENDING);                      //! update for die 1
 
     will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
-    // expect remote_die_idle_reset
-    expect_function_call(__wrap_power_remote_die_idle_reset);
     // call state handler
     call_handler(POWER_CONTROL_STATE_EXCHANGE_INPUTS, POWER_CTRL_LOOP_SIGNAL_EXCHANGE_INPUTS, &input_data);
 }
@@ -1072,9 +1124,6 @@ POWER_TEST(control_exchange_inputs_handler__signal_interval_retry, NULL, NULL)
 {
     // expectations on entry
     setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, false);
-    // should retry
-    will_return(__wrap_power_runconfig_get, TEST_RUNCONFIG_FOR_EXCHANGE);
-    expect_value(__wrap_power_remote_die_exchange_inputs, p_runconfig, TEST_RUNCONFIG_FOR_EXCHANGE);
     // call state handler
     call_handler(POWER_CONTROL_STATE_EXCHANGE_INPUTS, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }
@@ -1124,9 +1173,6 @@ POWER_TEST(control_exchange_completion_handler__signal_interval_retry, NULL, NUL
 {
     // expectations on entry
     setup_expectations_for_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL, false);
-    // should retry
-    will_return(__wrap_power_runconfig_get, TEST_RUNCONFIG_FOR_EXCHANGE);
-    expect_value(__wrap_power_remote_die_exchange_complete, p_runconfig, TEST_RUNCONFIG_FOR_EXCHANGE);
     // call state handler
     call_handler(POWER_CONTROL_STATE_EXCHANGE_COMPLETION, POWER_CTRL_LOOP_SIGNAL_INTERVAL, NULL);
 }

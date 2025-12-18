@@ -433,3 +433,65 @@ void power_remote_die_exchange_complete(power_runconfig_t* p_runconfig)
     // common function, pass exchange context and expected completion signal
     power_remote_die_exchange(p_runconfig, &s_power_remote_die_ctx.ex_complete, ICC_COMMAND_PWR_D2D_EX_COMPLETE_MSG);
 }
+
+// Synchronization barrier between dies
+// Uses a pair of ARSM slots to implement a barrier where both dies wait for each other
+// before proceeding with the control loop iteration
+void power_remote_die_sync_barrier(power_runconfig_t* p_runconfig)
+{
+    FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
+
+    // Single die case - no synchronization needed, immediately signal completion
+    if (p_runconfig->p_sconfig->icc_d2d_ctx == NULL)
+    {
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_SYNC_COMPLETE, NULL);
+        return;
+    }
+
+    // Get the sync barrier ARSM memory locations
+    // Each die writes to its own slot and reads the peer's slot
+    uintptr_t my_slot_addr;
+    uintptr_t peer_slot_addr;
+    uintptr_t sync_base =
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_D2D_POWER_SYNC_BASE);
+
+    if (idsw_get_die_id() == DIE_0)
+    {
+        my_slot_addr = sync_base;
+        peer_slot_addr = sync_base + sizeof(uint64_t);
+    }
+    else
+    {
+        my_slot_addr = sync_base + sizeof(uint64_t);
+        peer_slot_addr = sync_base;
+    }
+
+    // Get the control loop context to track sync iteration
+    power_loop_context_t* p_loop_ctx = get_s_loop_context();
+
+    // Use a monotonically increasing value based on loop iteration count
+    // This ensures we're synchronizing on the same iteration
+    const uint64_t sync_value = p_loop_ctx->status.iteration + 1;
+
+    // Publish our sync value to indicate we've arrived at the barrier
+    cortex_m7_atomic_call_data_synchronization_barrier();
+    *(volatile uint64_t*)my_slot_addr = sync_value;
+    cortex_m7_atomic_call_data_synchronization_barrier();
+
+    // Check if peer has arrived at the barrier (at least at our sync value)
+    uint64_t peer_val = *(volatile uint64_t*)peer_slot_addr;
+    cortex_m7_atomic_call_data_synchronization_barrier();
+
+    if (peer_val >= sync_value)
+    {
+        // Both dies are synchronized, signal completion
+        POWER_LOG_TRACE("[POWER D2D SYNC] Barrier complete: local=%u peer=%u\n", sync_value, peer_val);
+        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_SYNC_COMPLETE, NULL);
+    }
+    else
+    {
+        // Peer hasn't arrived yet - the control loop will retry via INTERVAL signal
+        POWER_LOG_TRACE("[POWER D2D SYNC] Waiting for peer: local=%u peer=%u\n", sync_value, peer_val);
+        POWER_ET_LOG_TRACE_PARAM(POWER_ET_D2D_SYNC_WAITING, peer_val);
+    }
+}

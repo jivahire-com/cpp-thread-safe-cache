@@ -190,7 +190,9 @@ stateDiagram-v2
         state "Clear error-induced force PMIN if previous state not Error" as idle1
     }
 
-    Idle --> Collect_Inputs: Timer Interval expired
+    Idle --> Sync_Dies: Timer Interval expired
+    
+    Sync_Dies --> Collect_Inputs: Both Dies Synchronized
     
     Collect_Inputs --> Remote_Die: VR currents final result event
     
@@ -268,6 +270,13 @@ stateDiagram-v2
         state "Read core state from last-pstate regs" as Read
     }
 
+    state Sync_Dies
+    {
+        state "Initiate D2D Sync Barrier" as initiate_sync
+        state "Wait for Both Dies to Synchronize" as wait_sync
+        initiate_sync --> wait_sync
+    }
+
     state Distribute_Available_Power
     {
         state "Calculate SOC Power" as calc
@@ -322,6 +331,16 @@ stateDiagram-v2
 #### **Idle**
 
 This is the default state of the control loop at boot and at the completion of all control loop iterations.  If the power management is in a degraded condition due to a previous error completing the complete control loop iteration, entry into this state from a non-error state will exit that degraded condition.
+
+#### **Sync Dies**
+
+This is a synchronization state that ensures both dies (in a multi-die system) coordinate before proceeding with the power control loop iteration. The state initiates a die-to-die synchronization barrier and waits for both dies to reach this point before proceeding. This ensures that:
+
+- Both dies start their power control loop iterations at the same time
+- Input collection and power distribution decisions are made with proper inter-die coordination
+- System-wide power management remains coherent across all dies
+
+The state handles synchronization completion signals and will retry if the remote die doesn't respond within the expected timeframe, transitioning to error state if synchronization repeatedly fails.
 
 #### **Collect Inputs**
 

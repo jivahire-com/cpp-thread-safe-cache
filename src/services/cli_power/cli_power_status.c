@@ -46,7 +46,7 @@
 
 // state names for control loop
 static const char* ctrl_loop_names[POWER_CONTROL_STATE_MAX] =
-    {"Idle   ", "WsEntry", "CollInp", "ExchInp", "DistAvl", "PlmtBef", "VrAfter", "VrWtAft", "VrBefor", "VrWtBef", "PlmtAft", "ExchCmp", "Error  "};
+    {"Idle   ", "SyncDie", "WsEntry", "CollInp", "ExchInp", "DistAvl", "PlmtBef", "VrAfter", "VrWtAft", "VrBefor", "VrWtBef", "PlmtAft", "ExchCmp", "Error  "};
 
 // state names for vr telemetry
 static const char* vrtelem_loop_names[POWER_VR_TELEM_STATE_MAX] = {"Idle   ", "CurrTel", "TempTel", "Error  "};

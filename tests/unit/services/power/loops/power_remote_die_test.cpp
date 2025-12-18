@@ -21,8 +21,10 @@ extern "C" {
 #include <cstddef>         // for NULL, size_t
 #include <fpfw_icc_base.h>
 #include <fpfw_status.h>    // for FPFW_STATUS_NULL_POINTER, FPFW_STATUS...
+#include <idsw_kng.h>       // for DIE_0, DIE_1
 #include <mock_bug_check.h> // for __wrap_crash_dump_bug_check
 #include <power_i.h>        // for power_fuses_get_dts_coeff, power_fuse...
+#include <power_loops_i.h>  // for power_ctrl_loop_signal_t, power_loop_context_t
 #include <power_remote_die_i.h>
 #include <power_runconfig.h>   // for power_fuse_data_t, dts_coeff_t, power...
 #include <power_runconfig_i.h> // for power_fuses_read, power_fuses_get_cur...
@@ -38,7 +40,11 @@ void __real_power_remote_die_idle_reset();
 void __real_power_remote_die_init(power_runconfig_t* p_runconfig);
 void __real_power_remote_die_exchange_inputs(power_runconfig_t* p_runconfig);
 void __real_power_remote_die_exchange_complete(power_runconfig_t* p_runconfig);
+void __real_power_remote_die_sync_barrier(power_runconfig_t* p_runconfig);
 power_remote_die_context_t* power_remote_die_get_context(void);
+
+// Helper function to control die ID mock in power_loops_control_test.cpp
+void set_mock_die_id_flag(bool value);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -109,17 +115,32 @@ void __wrap_cortex_m7_atomic_call_data_synchronization_barrier(void)
     // nothing to do here; this is a no-op in the test environment
     function_called();
 }
+
 // end mocks
 } // extern "C"
 
+// Global mock context - declared after type definition for accessibility
+static power_loop_context_t s_mock_loop_context = {0};
+
+// Mock function to return our mock context - outside extern "C" to access global variable
+extern "C" {
+power_loop_context_t* __wrap_get_s_loop_context(void)
+{
+    return &s_mock_loop_context;
+}
+}
+
 static int setup(void** state)
 {
-    UNUSED(state);
+    FPFW_UNUSED(state);
     /* some tests will modify the module context */
 
     s_test_power_runconfig.p_sconfig = &s_test_power_service_config;
     s_test_power_service_config.platform_is_multi_die = false;
     s_test_power_service_config.icc_d2d_ctx = NULL;
+
+    // Clear mock context
+    memset(&s_mock_loop_context, 0, sizeof(s_mock_loop_context));
 
     // use power idle reset to clear internal state
     __real_power_remote_die_idle_reset();
@@ -129,7 +150,7 @@ static int setup(void** state)
 
 static int teardown(void** state)
 {
-    UNUSED(state);
+    FPFW_UNUSED(state);
 
     return 0;
 }
@@ -359,4 +380,15 @@ POWER_TEST(remote_die_exchange_inputs__clears_ex_complete_recv_complete, setup, 
 
     // verify RECV_COMPLETE cleared
     assert_int_equal(ctx->ex_complete.send_recv_status, 0);
+}
+
+POWER_TEST(remote_die_sync_barrier__single_die, setup, teardown)
+{
+    // Single die case should immediately signal completion
+    s_test_power_service_config.icc_d2d_ctx = NULL;
+    s_test_power_runconfig.p_sconfig = &s_test_power_service_config;
+
+    expect_value(__wrap_FpFwAssert, expression, true);
+    set_expectations_for_send_complete_signal(POWER_CTRL_LOOP_SIGNAL_SYNC_COMPLETE);
+    __real_power_remote_die_sync_barrier(&s_test_power_runconfig);
 }

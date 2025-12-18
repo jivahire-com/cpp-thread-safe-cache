@@ -38,6 +38,7 @@
 /*-------- Function Prototypes -----------*/
 // Following are function prototypes for state handlers (control loop)
 static void idle_handler(int event, const void* event_data);
+static void sync_dies_handler(int event, const void* event_data);
 static void warmstart_entry_handler(int event, const void* event_data);
 static void collect_inputs_handler(int event, const void* event_data);
 static void exchange_inputs_handler(int event, const void* event_data);
@@ -71,6 +72,7 @@ static uint8_t boost_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t pr
 // Table of state handler functions for control loop
 static const power_state_handler_t control_loop_handler_table[POWER_CONTROL_STATE_MAX] = {
     [POWER_CONTROL_STATE_IDLE] = idle_handler,
+    [POWER_CONTROL_STATE_SYNC_DIES] = sync_dies_handler,
     [POWER_CONTROL_STATE_WARMSTART_ENTRY] = warmstart_entry_handler,
     [POWER_CONTROL_STATE_COLLECT_INPUTS] = collect_inputs_handler,
     [POWER_CONTROL_STATE_EXCHANGE_INPUTS] = exchange_inputs_handler,
@@ -136,15 +138,54 @@ static void idle_handler(int event, const void* event_data)
             // clear HW signal
             power_hw_clear_force_pmin(PM_FW_PMIN_CONTROL);
         }
+
         // clear remote die status
         power_remote_die_idle_reset();
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
         // Leaving idle state
         POWER_LOG_TRACE("[POWER CTRL LOOP] [idle_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
-        power_control_loop_change_state(POWER_CONTROL_STATE_COLLECT_INPUTS);
+        power_control_loop_change_state(POWER_CONTROL_STATE_SYNC_DIES);
         break;
     default:
+        break;
+    }
+}
+
+static void sync_dies_handler(int event, const void* event_data)
+{
+    UNUSED(event_data);
+
+    switch (event)
+    {
+    case POWER_LOOP_STATE_SIGNAL_ENTRY:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [sync_dies_handler] POWER_LOOP_STATE_SIGNAL_ENTRY\n");
+        // Initiate the d2d sync barrier; this will signal SYNC_COMPLETE when both dies arrive
+        power_remote_die_sync_barrier(power_runconfig_get());
+
+        break;
+    case POWER_CTRL_LOOP_SIGNAL_SYNC_COMPLETE:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [sync_dies_handler] POWER_CTRL_LOOP_SIGNAL_SYNC_COMPLETE\n");
+        // Increment iteration count
+        s_control_loop_context.status.iteration++;
+
+        // Both dies have synchronized, proceed to collect inputs
+        power_control_loop_change_state(POWER_CONTROL_STATE_COLLECT_INPUTS);
+
+        break;
+    case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
+        POWER_LOG_TRACE("[POWER CTRL LOOP] [sync_dies_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
+        // Retry on interval signal - remote die hasn't responded yet
+        if (power_control_loop_retry_fail(POWER_LOOP_RETRY_TYPE_INTERVAL))
+        {
+            power_control_loop_change_state(POWER_CONTROL_STATE_ERROR);
+            break;
+        }
+        // Otherwise, try the sync barrier again
+        power_remote_die_sync_barrier(power_runconfig_get());
+        break;
+    default:
+        // ignore anything else
         break;
     }
 }
@@ -674,7 +715,6 @@ static void exchange_inputs_handler(int event, const void* event_data)
         }
         //! Move on to the next event to distribute the available power
         power_control_loop_change_state(POWER_CONTROL_STATE_DISTRIBUTE_AVAILABLE);
-        power_remote_die_idle_reset();
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:
         POWER_LOG_TRACE("[POWER CTRL LOOP] [exchange_inputs_handler] POWER_CTRL_LOOP_SIGNAL_INTERVAL\n");
@@ -684,8 +724,6 @@ static void exchange_inputs_handler(int event, const void* event_data)
             power_control_loop_change_state(POWER_CONTROL_STATE_ERROR);
             break;
         }
-        // otherwise, try again
-        power_remote_die_exchange_inputs(power_runconfig_get());
         break;
     default:
         // ignore anything else
@@ -779,8 +817,6 @@ static void exchange_completion_handler(int event, const void* event_data)
             power_control_loop_change_state(POWER_CONTROL_STATE_ERROR);
             break;
         }
-        // otherwise, try again
-        power_remote_die_exchange_complete(power_runconfig_get());
         break;
     default:
         // ignore anything else

@@ -419,6 +419,7 @@ typedef void (*power_state_handler_t)(int, const void *);  // state handler func
 typedef enum _power_ctrl_loop_state_t
 {
     POWER_CONTROL_STATE_IDLE = POWER_LOOP_IDLE_STATE_ID,
+    POWER_CONTROL_STATE_SYNC_DIES,        // synchronization point between dies before collecting inputs
     POWER_CONTROL_STATE_WARMSTART_ENTRY,
     POWER_CONTROL_STATE_COLLECT_INPUTS,
     POWER_CONTROL_STATE_EXCHANGE_INPUTS,
@@ -478,6 +479,7 @@ typedef struct _power_loop_state_t {
     int last_event;
     bool interval_in_flight;
     uint16_t retries[POWER_LOOP_RETRY_TYPE_COUNT];
+    uint64_t iteration; // loop iteration count
 } power_loop_state_t;
 
 /**

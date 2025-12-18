@@ -301,12 +301,12 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     // tx queue fails
-    expect_any_always(__wrap__txe_queue_create, queue_ptr);
-    expect_any_always(__wrap__txe_queue_create, name_ptr);
-    expect_any_always(__wrap__txe_queue_create, message_size);
-    expect_any_always(__wrap__txe_queue_create, queue_start);
-    expect_any_always(__wrap__txe_queue_create, queue_size);
-    expect_any_always(__wrap__txe_queue_create, queue_control_block_size);
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_NO_MEMORY);
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_NO_MEMORY);
 
@@ -315,13 +315,48 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
 
+    // tx queue create passes but tx sem create fails
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+
+    expect_any(__wrap__txe_semaphore_create, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_create, name_ptr);
+    expect_any(__wrap__txe_semaphore_create, initial_count);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_NO_MEMORY);
+    expect_value(FPFwErrorRaise, error, (uint32_t)TX_NO_MEMORY);
+
+    will_return(__wrap_system_info_is_warm_start, false);
+
+    if (!set_error_handler_return())
+    {
+        ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
+    }
+
+    // tx queue & sem create passes but tx queue send fails
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
+    will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    expect_any(__wrap__txe_semaphore_create, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_create, name_ptr);
+    expect_any(__wrap__txe_semaphore_create, initial_count);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
 
     // tx queue send DDR CREATE BDAT EVENT fails
-    expect_any_always(__wrap__txe_queue_send, queue_ptr);
-    expect_any_always(__wrap__txe_queue_send, source_ptr);
-    expect_any_always(__wrap__txe_queue_send, wait_option);
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_QUEUE_ERROR);
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_ERROR);
 
@@ -331,11 +366,28 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     }
 
     // tx queue send DDR BDAT CREATE EVENT passes
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    expect_any(__wrap__txe_semaphore_create, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_create, name_ptr);
+    expect_any(__wrap__txe_semaphore_create, initial_count);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
     // tx queue send DDR BDAT EVENT fails
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_QUEUE_ERROR);
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_ERROR);
 
@@ -344,11 +396,28 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
 
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    expect_any(__wrap__txe_semaphore_create, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_create, name_ptr);
+    expect_any(__wrap__txe_semaphore_create, initial_count);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
 
     // tx queue send DDR SMBIOS EVENT fails
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_QUEUE_ERROR);
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_ERROR);
 
@@ -357,13 +426,36 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
 
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    expect_any(__wrap__txe_semaphore_create, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_create, name_ptr);
+    expect_any(__wrap__txe_semaphore_create, initial_count);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_SMBIOS_TABLES_EVENT
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
 
     // tx queue send DDR_START_POLLING_TIMER_EVENT fails
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_QUEUE_ERROR); // DDR_START_POLLING_TIMER_EVENT
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_QUEUE_ERROR);
 
@@ -372,25 +464,48 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
 
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    expect_any(__wrap__txe_semaphore_create, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_create, name_ptr);
+    expect_any(__wrap__txe_semaphore_create, initial_count);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_SMBIOS_TABLES_EVENT
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_START_POLLING_TIMER_EVENT
 
     // tx thread create fails
-    expect_any_always(__wrap__txe_thread_create, thread_ptr);
-    expect_any_always(__wrap__txe_thread_create, name_ptr);
-    expect_any_always(__wrap__txe_thread_create, entry_function);
-    expect_any_always(__wrap__txe_thread_create, entry_input);
-    expect_any_always(__wrap__txe_thread_create, stack_start);
-    expect_any_always(__wrap__txe_thread_create, stack_size);
-    expect_any_always(__wrap__txe_thread_create, priority);
-    expect_any_always(__wrap__txe_thread_create, preempt_threshold);
-    expect_any_always(__wrap__txe_thread_create, time_slice);
-    expect_any_always(__wrap__txe_thread_create, auto_start);
-    expect_any_always(__wrap__txe_thread_create, thread_control_block_size);
+    expect_any(__wrap__txe_thread_create, thread_ptr);
+    expect_any(__wrap__txe_thread_create, name_ptr);
+    expect_any(__wrap__txe_thread_create, entry_function);
+    expect_any(__wrap__txe_thread_create, entry_input);
+    expect_any(__wrap__txe_thread_create, stack_start);
+    expect_any(__wrap__txe_thread_create, stack_size);
+    expect_any(__wrap__txe_thread_create, priority);
+    expect_any(__wrap__txe_thread_create, preempt_threshold);
+    expect_any(__wrap__txe_thread_create, time_slice);
+    expect_any(__wrap__txe_thread_create, auto_start);
+    expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_NOT_DONE);
     expect_value(FPFwErrorRaise, error, (uint32_t)TX_NOT_DONE);
 
@@ -399,12 +514,46 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
 
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+    expect_any(__wrap__txe_semaphore_create, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_create, name_ptr);
+    expect_any(__wrap__txe_semaphore_create, initial_count);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_SUCCESS);
     will_return(__wrap_system_info_is_warm_start, false);
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_BDAT_EVENT
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_CREATE_SMBIOS_TABLES_EVENT
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_COPY_PRM_ADDR_TRANS_CONFIG_EVENT
+    expect_any(__wrap__txe_queue_send, queue_ptr);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_any(__wrap__txe_queue_send, wait_option);
     will_return(__wrap__txe_queue_send, TX_SUCCESS); // DDR_START_POLLING_TIMER_EVENT
+    expect_any(__wrap__txe_thread_create, thread_ptr);
+    expect_any(__wrap__txe_thread_create, name_ptr);
+    expect_any(__wrap__txe_thread_create, entry_function);
+    expect_any(__wrap__txe_thread_create, entry_input);
+    expect_any(__wrap__txe_thread_create, stack_start);
+    expect_any(__wrap__txe_thread_create, stack_size);
+    expect_any(__wrap__txe_thread_create, priority);
+    expect_any(__wrap__txe_thread_create, preempt_threshold);
+    expect_any(__wrap__txe_thread_create, time_slice);
+    expect_any(__wrap__txe_thread_create, auto_start);
+    expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
     // Inside ddr_manager_i3c_init()
@@ -422,7 +571,12 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     expect_function_call(__wrap_ddr_create_memory_map);
 
     // hsp_send_ddr_init_notify()
-    will_return(__wrap_system_info_is_warm_start, true); // Skip fpfw_icc_base_send_recv_sync
+    // will_return(__wrap_system_info_is_warm_start, false);
+    kng_hsp_mailbox_msg expected_msg = {};
+    expected_msg.header.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY;
+    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &expected_msg, sizeof(expected_msg));
+    expect_any(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, SILIBS_SUCCESS);
 
     // Telemetry init
     expect_function_calls(__wrap__txe_mutex_create, 2);
@@ -465,6 +619,12 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     expect_value(__wrap__txe_queue_create, queue_size, config.queue_config.queue_num_words * sizeof(uint32_t));
     expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+
+    expect_value(__wrap__txe_semaphore_create, semaphore_ptr, &ddr_service_ctx.quiesce_sem);
+    expect_string(__wrap__txe_semaphore_create, name_ptr, DDR_QUIESCE_SEM_NAME);
+    expect_value(__wrap__txe_semaphore_create, initial_count, 0);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_SUCCESS);
 
     will_return(__wrap_system_info_is_warm_start, false);
 
@@ -566,6 +726,12 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
     expect_value(__wrap__txe_queue_create, queue_size, config.queue_config.queue_num_words * sizeof(uint32_t));
     expect_any(__wrap__txe_queue_create, queue_control_block_size);
     will_return(__wrap__txe_queue_create, TX_SUCCESS);
+
+    expect_value(__wrap__txe_semaphore_create, semaphore_ptr, &ddr_service_ctx.quiesce_sem);
+    expect_string(__wrap__txe_semaphore_create, name_ptr, DDR_QUIESCE_SEM_NAME);
+    expect_value(__wrap__txe_semaphore_create, initial_count, 0);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_SUCCESS);
 
     will_return(__wrap_system_info_is_warm_start, true);
 
@@ -691,7 +857,10 @@ TEST_FUNCTION(ddr_worker_thread_func_ift_enabled, NULL, NULL)
 
     will_return(__wrap_ift_is_enabled, true);
 
-    ddr_worker_thread_func((ULONG)&ddr_service_ctx);
+    if (!set_error_handler_return())
+    {
+        ddr_worker_thread_func((ULONG)&ddr_service_ctx);
+    }
 }
 
 TEST_FUNCTION(ddr_create_bdat_test_single_die, NULL, NULL)
@@ -1115,18 +1284,19 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_0, NULL, NULL)
 
 TEST_FUNCTION(ddr_create_smbios_tables_test_die_1, NULL, NULL)
 {
-    int callback_param = DDR_CREATE_SMBIOS_TABLES_EVENT;
-    will_return(tx_queue_copy_parameter, callback_param);
-    set_txe_queue_receive_callback_func(tx_queue_copy_parameter);
-
     ddr_service_context_t ddr_service_ctx = {};
     ddr_service_ctx.work_queue.tx_queue_start = (ULONG*)0x1234;
 
     will_return(__wrap_ift_is_enabled, false);
+
     expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
     expect_any(__wrap__txe_queue_receive, destination_ptr);
     expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_WAIT_FOREVER);
     will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    int callback_param = DDR_CREATE_SMBIOS_TABLES_EVENT;
+    will_return(tx_queue_copy_parameter, callback_param);
+    set_txe_queue_receive_callback_func(tx_queue_copy_parameter);
 
     // ddr_create_smbios_tables()
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
@@ -1255,6 +1425,34 @@ TEST_FUNCTION(ddr_start_i3c_and_ecc_ce_timer, NULL, NULL)
     {
         ddr_worker_thread_func((ULONG)&ddr_service_ctx);
     }
+}
+
+TEST_FUNCTION(ddr_worker_quiesce_exits_thread, NULL, NULL)
+{
+    ddr_service_context_t ddr_service_ctx = {};
+    ddr_service_ctx.work_queue.tx_queue_start = (ULONG*)0x1234;
+
+    will_return(__wrap_ift_is_enabled, false);
+
+    int callback_param = DDR_QUIESCE_EVENT;
+    will_return(tx_queue_copy_parameter, callback_param);
+    set_txe_queue_receive_callback_func(tx_queue_copy_parameter);
+
+    callback_param = 0xFF;
+    will_return(tx_queue_copy_parameter, callback_param);
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
+    expect_any(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    // Drain loop uses TX_NO_WAIT; return empty once
+    expect_value(__wrap__txe_queue_receive, queue_ptr, &(ddr_service_ctx.work_queue));
+    expect_any(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, (ULONG)TX_NO_WAIT);
+    will_return(__wrap__txe_queue_receive, TX_QUEUE_EMPTY);
+
+    // After handling the quiesce event the worker should exit the loop and return.
+    ddr_worker_thread_func((ULONG)&ddr_service_ctx);
 }
 
 TEST_FUNCTION(test_rhtlm_cfg_scan_no_telemetry, NULL, NULL)
@@ -1504,9 +1702,20 @@ TEST_FUNCTION(ddr_ddr_manager_dfwk_init_test, NULL, NULL)
 
 TEST_FUNCTION(ddr_manager_dfwk_dispatch_test, NULL, NULL)
 {
+    ddr_service_context_t* ddr_service_ctx = ddr_get_service_context();
+
     ssi_shutdown_notification_request_t mock_request = {};
     mock_request.header.RequestType = SSI_QUIESCE_ASYNC;
     mock_request.shutdown_type = SHUTDOWN_SCP_INITIATED;
+
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+
+    expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx->work_queue);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_value(__wrap__txe_queue_send, wait_option, (ULONG)TX_NO_WAIT);
+    will_return(__wrap__txe_queue_send, TX_SUCCESS);
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);
     expect_function_call(__wrap_DfwkAsyncRequestComplete);

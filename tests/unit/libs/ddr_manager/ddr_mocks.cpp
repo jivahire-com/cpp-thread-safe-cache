@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <tx_api.h>
 #include <variable_services.h>
 
 /*-- Symbolic Constant Macros (defines) --*/

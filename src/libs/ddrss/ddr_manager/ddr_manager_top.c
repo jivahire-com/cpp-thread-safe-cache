@@ -63,13 +63,14 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
     ddr_service_context_t* service_ctx = (ddr_service_context_t*)pddr_service_ctx;
     uint32_t received_message;
     UINT status;
+    volatile int keep_running = 1;
 
     if (ift_is_enabled())
     {
         return;
     }
 
-    while (1)
+    while (keep_running)
     {
         status = tx_queue_receive(&service_ctx->work_queue, &received_message, TX_WAIT_FOREVER);
         if (status != TX_SUCCESS)
@@ -137,6 +138,15 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
 
             case DDR_RH_CFG_TLM_SERVICE_EVENT:
                 rhtlm_cfg_scan();
+                break;
+
+            case DDR_QUIESCE_EVENT:
+                while (tx_queue_receive(&service_ctx->work_queue, &received_message, TX_NO_WAIT) == TX_SUCCESS)
+                {
+                    // drain pending messages
+                }
+                keep_running = 0; // Kill the thread after releasing the semaphore
+                tx_semaphore_put(&service_ctx->quiesce_sem);
                 break;
 
             default:
@@ -331,6 +341,13 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
                                  pconfig->queue_config.p_queue,  /* VOID *queue_start */
                                  sizeof(uint32_t) * pconfig->queue_config.queue_num_words); /* ULONG queue_size in bytes */
 
+    if (status != TX_SUCCESS)
+    {
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_CREATE_ERROR, status);
+        FPFwErrorRaise(status, 0, 0, 0, 0);
+    }
+
+    status = tx_semaphore_create(&pddr_service_ctx->quiesce_sem, (char*)DDR_QUIESCE_SEM_NAME, 0);
     if (status != TX_SUCCESS)
     {
         DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_CREATE_ERROR, status);

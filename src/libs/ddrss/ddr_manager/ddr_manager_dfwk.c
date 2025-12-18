@@ -10,11 +10,13 @@
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <bug_check.h>
 #include <crash_dump_dfwk.h>
+#include <ddr_manager.h>
 #include <ddr_manager_dfwk.h>
 #include <ddr_manager_events.h>
 #include <fpfw_init.h>        // for fpfw_init_get_handle
 #include <startup_shutdown.h> // for sos_register_ssi
 #include <stdint.h>
+#include <tx_api.h>
 
 static ddr_device_t ddr_device;
 static ddr_interface_t ddr_interface;
@@ -28,6 +30,7 @@ void ddr_manager_dfwk_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context
     (void)(context);
 
     DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DFWK_DISPATCH_REQUEST, (int)request->RequestType);
+    ddr_service_context_t* ddr_service_ctx = ddr_get_service_context();
 
     switch (request->RequestType)
     {
@@ -36,11 +39,38 @@ void ddr_manager_dfwk_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context
         if (ssi_request->shutdown_type != AP_WARM_RESET)
         {
             printf("Goodbye world, DDR Manager received SSI_QUIESCE_ASYNC request\n");
+            // Copy SDL from memory to flash (TODO)
+
+            // Quiesce DDR timers so no new polling is enqueued
+            tx_timer_deactivate(&ddr_service_ctx->ddr_i3c_polling_timer);
+            tx_timer_deactivate(&ddr_service_ctx->ecc_ce_polling_timer);
+            tx_timer_deactivate(&ddr_service_ctx->rh_tlm_polling_timer);
+
+            // Ask the DDR worker thread to drain pending polling and acknowledge quiesce
+            uint32_t msg = DDR_QUIESCE_EVENT;
+            if (tx_queue_send(&ddr_service_ctx->work_queue, &msg, TX_NO_WAIT) != TX_SUCCESS)
+            {
+                DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_START_POLLING_TIMER, 0);
+            }
+            else
+            {
+                // Wait briefly for the worker to finish any in-flight I3C and drain its queue
+                ULONG wait_ticks = TX_TIMER_TICKS_PER_SECOND / 10; // ~100ms assuming 1kHz tick
+                UINT sem_status = tx_semaphore_get(&ddr_service_ctx->quiesce_sem, wait_ticks);
+                if (sem_status != TX_SUCCESS)
+                {
+                    DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, sem_status);
+                }
+            }
         }
         DfwkAsyncRequestComplete(request);
         break;
     // TODO: Address other request types here as needed
     // https://dev.azure.com/AzureCSI/Dev/_workitems/edit/3160323
+    case SSI_SHUTDOWN_ASYNC:
+        printf("Goodbye world, DDR Manager received ??? SSI_SHUTDOWN_ASYNC ??? request\n");
+        DfwkAsyncRequestComplete(request);
+        break;
     default:
         DfwkAsyncRequestComplete(request);
         break;

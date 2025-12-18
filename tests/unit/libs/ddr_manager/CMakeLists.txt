@@ -58,10 +58,12 @@ mock_target(${TARGET}
     _tx_thread_sleep
     _txe_mutex_create
     _txe_queue_create
-    _txe_thread_create
-    _txe_queue_send
     _txe_queue_receive
+    _txe_queue_send
+    _txe_semaphore_create
+    _txe_thread_create
     _txe_timer_create
+    _txe_timer_deactivate
     atu_map
     atu_translate_address
     atu_unmap

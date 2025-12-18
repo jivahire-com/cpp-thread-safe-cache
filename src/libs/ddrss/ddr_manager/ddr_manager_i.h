@@ -22,6 +22,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define DDR_WORK_QUEUE_NAME ("ddr-work-queue")
+#define DDR_QUIESCE_SEM_NAME ("ddr-quiesce-semaphore")
 #define DDR_WORK_THREAD_NAME ("ddr-work_thread")
 #define DDR_I3C_TIMER_NAME ("ddr-i3c-timer")
 #define DDR_ECC_CE_TIMER_NAME ("ddr-ecc-ce-timer")

@@ -66,7 +66,7 @@
     <Knob name="a1_block_pre_conf_cmd_in_be" type="uint8_t" default="0" help="Block FECQ from issuing PRCHG to BE. 0 - Allow issuing PRCHG,  1 - Block issuing PRCHG" />
     <Knob name="auto_ecs_in_self_refresh_en" type="uint8_t" default="1" help="Automatic ECS during DRAM self-refresh. 0 - Disable, 1 - Enable" />
     <Knob name="ca_parity_check_en" type="uint8_t" default="1" help="Enable DRAM command/address bus parity check. 0 - Disable, 1 - Enable" />
-    <Knob name="ca_parity_err_recovery_en" type="uint8_t" default="1" help="CA Parity Error Recovery Procedure upon ALERT_n assertion. 0 - No action, report transient error if CRC or MBIST is disabled; 1 - No recovery, report persistent error; 2 - Attemp to recover. If error re-occurs, report persistent error;  3 - Attemp to recover. If error re-occurs, retry recovery." />
+    <Knob name="ca_parity_err_recovery_en" type="uint8_t" default="2" help="CA Parity Error Recovery Procedure upon ALERT_n assertion. 0 - No action, report transient error if CRC or MBIST is disabled; 1 - No recovery, report persistent error; 2 - Attemp to recover. If error re-occurs, report persistent error;  3 - Attemp to recover. If error re-occurs, retry recovery." />
     <Knob name="manual_ecs_en" type="uint8_t" default="1" help="Specify the mode that the MC perform DRAM ECS operation. 0 - Use auto-ECS with refresh 1 - Use manual ECS command" />
     <Knob name="address_hashing_mode" type="DDRSS_ADDR_HASHING_MODE" default="DDRSS_ADDR_HASHING_MODE_ROW_COL_BASED_BANK_HASHING" help="Enable Physical Bank hashing on bus/semi address." />
     <Knob name="a1_address_hashing_mode" type="DDRSS_ADDR_HASHING_MODE" default="DDRSS_ADDR_HASHING_MODE_ROW_COL_BASED_BANK_HASHING" help="Enable Physical Bank hashing on bus/semi address." />
@@ -178,7 +178,7 @@
     <Knob name="self_refresh_with_ck_stop" type="uint8_t" default="1" help="Specify whether DRAM clock can be stopped during self-refresh mode 0 - DRAM clock continues to run during self-refresh 1 - DRAM clock can be stopped during self-refresh. (0 ~ 1)" />
     <Knob name="fecq_bandwidth_limiter_config" type="uint32_t" default="4" help="FECQ Bandwidth Limiter for Thermal Throttling. (0x0 ~ 0xffffffff)" />
     <Knob name="fecq_becq_pri_map_config" type="uint32_t" default="0x0" help="FECQ BECQ Command Priority Mapping 2'b00: BECQ Priority 0 2'b01: BECQ Priority 1 2'b10: BECQ Priority 2. (0x0 ~ 0xffffffff)" />
-    <Knob name="fecq_cmd_dispatch_limit_config" type="uint32_t" default="0x8082010" help="FECQ Command Dispatch Limit Threshold. (0x0 ~ 0xffffffff)" />
+    <Knob name="fecq_cmd_dispatch_limit_config" type="uint32_t" default="0x808200A" help="FECQ Command Dispatch Limit Threshold. (0x0 ~ 0xffffffff)" />
     <Knob name="fecq_congest_lvl_0" type="uint32_t" default="0x604020" help="The thresholds to determine the FECQ occupancy congestion level for command priority 0. (0x0 ~ 0xffffffff)" />
     <Knob name="a1_fecq_congest_lvl_0" type="uint32_t" default="0x604020" help="The thresholds to determine the FECQ occupancy congestion level for command priority 0. (0x0 ~ 0xffffffff)" />
     <Knob name="fecq_congest_lvl_1" type="uint32_t" default="0x604020" help="The thresholds to determine the FECQ occupancy congestion level for command priority 1. (0x0 ~ 0xffffffff)" />
@@ -278,7 +278,8 @@
     <Knob name="ddr_debug_level" type="uint8_t" default="2" help="Control DDR debug print level. 0: None; 1: Critical; 2: Info; 3: Debug; 4:Trace. (0 ~ 4)" />
     <Knob name="parallel_phy_train_en" type="uint8_t" default="1" help="Run DDR PHY training FW in parallel. 0 - Disable, 1 - Enable" />
     <Knob name="media_scrambling_en" type="uint8_t" default="1" help="DDR media scrambling eanble. 0 - Disable, 1 - Enable without Data Bus Inversion, 2 - Enable with Data Bus Inversion" />
-    <Knob name="alert_delay" type="uint8_t" default="0x30" help="DDR alert_n signal propagation delay in the unit of DRAM clock cycles. 0 - Use measured value from CA parity error injection, 1 - Use calculation per HPG, 2 ~ 0x3f, Use fixed overriding value. (0x0 ~ 0x3f)" />
+    <Knob name="alert_delay" type="uint8_t" default="0x24" help="DDR alert_n signal propagation delay in the unit of DRAM clock cycles. 0 - Use measured value from CA parity error injection, 1 - Use calculation per HPG, 2 ~ 0x3f, Use fixed overriding value. (0x0 ~ 0x3f)" />
+    <Knob name="hw_assertion_en" type="uint8_t" default="0" help="DDRSS hardware assertions enable. 0 - Disable, 1 - Enable" />
     <!-- Validation ONLY knobs -->
     <Knob name="borgens_1gb_ddr_reserve_enable" type="bool" default="false" />
   </Knobs>

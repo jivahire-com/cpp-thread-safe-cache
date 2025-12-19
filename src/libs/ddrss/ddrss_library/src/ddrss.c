@@ -356,6 +356,7 @@ void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.zq_cal_interval = config_get_zq_cal_interval();
     ddrss_cfgs.ext_knobs.zq_cal_interval_unit = config_get_zq_cal_interval_unit();
     ddrss_cfgs.ext_knobs.alert_delay = config_get_alert_delay();
+    ddrss_cfgs.ext_knobs.hw_assertion_en = config_get_hw_assertion_en();
 
     // Override with A1 stepping specific knobs if A1 stepping is detected
     bool soc_stepping_id_a1 = idhw_is_stepping_a1();

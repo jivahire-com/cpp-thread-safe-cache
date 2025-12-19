@@ -148,6 +148,13 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
             bool cd_available = false;
 
             wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+
+            if (ctx->die_index == DIE_0 && ctx->core_index == CRASH_DUMP_CORE_SCP)
+            {
+                // Reset crashdump status.
+                type_context->header->status = CRASH_DUMP_IN_USE;
+            }
+
             for (uint16_t i = 0; i < CRASH_DUMP_CORE_NUM * 2; i++)
             {
                 if (type_context->header->cores[i] == CRASH_DUMP_STATE_COMPLETED)

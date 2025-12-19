@@ -341,6 +341,25 @@ uint64_t __wrap_gtimer_get_timestamp_us()
     return mock_type(uint64_t);
 }
 
+void __wrap_accel_boot_status_wait_boot_complete(ACCEL_ID accel_type, PDFWK_ASYNC_REQUEST_HEADER p_request)
+{
+    check_expected(accel_type);
+    assert_non_null(p_request);
+}
+
+UINT __wrap__txe_semaphore_get(TX_SEMAPHORE* semaphore_ptr, ULONG wait_option)
+{
+    assert_non_null(semaphore_ptr);
+    assert_true(wait_option == TX_NO_WAIT);
+
+    return mock_type(UINT);
+}
+
+uint32_t __wrap_config_get_accel_boot_timeout_sec()
+{
+    return mock_type(uint32_t);
+}
+
 } // extern "C"
 
 static int setup(void** state)
@@ -542,6 +561,71 @@ AP_CORE_TEST(dispatch_die_config_remote_received, setup, NULL)
     // Should NOT register callback when remote config already received
     // Expect direct completion instead
     will_return(__wrap_write_fuse_info_to_ap, 0);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_sync_sdm_boot_complete, setup, NULL)
+{
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_SYNC_SDM_BOOT_COMPLETE;
+    test_request.boot_type = COLD_BOOT;
+
+    will_return(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_die_id, 0x0);
+
+    expect_value(__wrap_accel_boot_status_wait_boot_complete, accel_type, ACCEL_ID_SDM);
+
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_sync_sdm_boot_complete_not_hsp, setup, NULL)
+{
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_SYNC_SDM_BOOT_COMPLETE;
+    test_request.boot_type = COLD_BOOT;
+
+    will_return(__wrap_system_info_is_hsp_present, false);
+
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
+
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_sync_cded_boot_complete, setup, NULL)
+{
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_SYNC_CDED_BOOT_COMPLETE;
+    test_request.boot_type = COLD_BOOT;
+
+    will_return(__wrap_system_info_is_hsp_present, true);
+    will_return_always(__wrap_idsw_get_die_id, 0x0);
+
+    expect_value(__wrap_accel_boot_status_wait_boot_complete, accel_type, ACCEL_ID_CDED);
+
+    assert_non_null(s_dispatch_routine);
+    s_dispatch_routine(&test_request.header, &test_device.header);
+}
+
+AP_CORE_TEST(dispatch_sync_cded_boot_complete_not_hsp, setup, NULL)
+{
+    ssi_startup_notification_request_t test_request;
+    ap_core_service_t test_device;
+    test_request.header.RequestType = SSI_STARTUP_STAGE_START_ASYNC;
+    test_request.stage = STARTUP_SYNC_CDED_BOOT_COMPLETE;
+    test_request.boot_type = COLD_BOOT;
+
+    will_return(__wrap_system_info_is_hsp_present, false);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
 
     assert_non_null(s_dispatch_routine);
@@ -892,6 +976,7 @@ AP_CORE_TEST(dispatch_sdm_dtcm_load, setup, NULL)
     expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_SDM);
     expect_function_call(__wrap_accel_disable_cpu_wait);
     will_return(__wrap_gtimer_get_timestamp_us, 0xF25F5419D);
+    will_return(__wrap_config_get_accel_boot_timeout_sec, 20);
     will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
 
@@ -1000,6 +1085,7 @@ AP_CORE_TEST(dispatch_cded_dtcm_load, setup, NULL)
     expect_value(__wrap_accel_disable_cpu_wait, accel_type, ACCEL_ID_CDED);
     expect_function_call(__wrap_accel_disable_cpu_wait);
     will_return(__wrap_gtimer_get_timestamp_us, 0xF25F5419D);
+    will_return(__wrap_config_get_accel_boot_timeout_sec, 20);
     will_return(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &test_request.header);
     expect_function_call(__wrap_accel_intr_scp_err_intr_enable);

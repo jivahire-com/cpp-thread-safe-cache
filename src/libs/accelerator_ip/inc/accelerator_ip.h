@@ -238,3 +238,14 @@ int32_t notify_accelerators_uefi_boot(void);
  * @return none
  */
 void notify_accelerators_uefi_boot_cb(void* context, fpfw_status_t status);
+
+/**
+ * @brief Non-block call Completes the request passed if given accel is up and running.
+ * If the given accel is not booted then it stores the given SOS DFWK request and
+ * complete is later on when it gets boot complete notification from the given accelerator
+ * 
+ * @param[in] accel_type Accel instance
+ * @param[in] p_request Pointer to the SOS DFWK async request header
+ * @return none
+ */
+void accel_boot_status_wait_boot_complete(ACCEL_ID accel_type, PDFWK_ASYNC_REQUEST_HEADER p_request);

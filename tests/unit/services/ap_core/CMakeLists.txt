@@ -69,6 +69,8 @@ mock_target(${TARGET}
     ap_core_util_set_all_rvbaraddr
     ap_core_util_set_rvbaraddr
 
+    config_get_accel_boot_timeout_sec
+
     fpfw_icc_base_send
     fpfw_icc_base_recv
     fpfw_timer_enable
@@ -93,6 +95,7 @@ mock_target(${TARGET}
 
     system_info_is_hsp_present
 
+    accel_boot_status_wait_boot_complete
     accel_disable_cpu_wait
     accel_intr_scp_err_intr_enable
     accel_get_itcm_addr
@@ -104,6 +107,7 @@ mock_target(${TARGET}
     idhw_get_soc_id
 
     _txe_event_flags_set
+    _txe_semaphore_get
 
     config_get_kmp_safe_state
 )

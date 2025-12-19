@@ -498,6 +498,16 @@
           "Name": "KNG_HM_CLI_CPER_UE",
           "Value": 34,
           "Description": "CLI Submitted Uncorrectable Error CPER to Error Domain"
+        },
+        {
+          "Name": "KNG_HM_SDM_BOOT_FAILED",
+          "Value": 35,
+          "Description": "SDM CORE failed to boot properly"
+        },
+        {
+          "Name": "KNG_HM_CDED_BOOT_FAILED",
+          "Value": 36,
+          "Description": "CDED CORE failed to boot properly"
         }
       ]
     },

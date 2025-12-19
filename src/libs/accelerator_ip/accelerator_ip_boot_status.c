@@ -13,11 +13,13 @@
 #include "accelerator_ip_priv.h"
 
 #include <DbgPrint.h>          // for FPFW_DBGPRINT_INFO, FPFW_DBGPRINT_ERROR
+#include <DfwkDriver.h>        // for DfwkAsyncRequestComplete
 #include <FpFwUtils.h>         // for FPFW_DUR_S
 #include <accelip_id.h>        // for NUM_VALID_ACCEL_ID, ACCEL_ID_SDM
 #include <boot_status.h>       // for boot_status_notify_extd
 #include <boot_status_codes.h> // for BOOT_STATUS_CODE_SDM0_BOOT_COMPLETE, BOOT_STATUS_CODE_CDED0_BOOT_COMPLETE
 #include <bug_check.h>         // for BUG_ASSERT_PARAM
+#include <fpfw_cfg_mgr.h>      // for config_get_accel_boot_timeout_sec
 #include <fpfw_icc_base.h>     // for fpfw_icc_base_recv_req_t
 #include <fpfw_icc_base_i.h>   // for fpfw_icc_base_ctx_t
 #include <fpfw_init.h>         // for fpfw_init_get_handle
@@ -30,14 +32,16 @@
 #include <idsw_kng.h>             // for KNG_DIE_ID, idsw_get_die_id
 #include <kng_soc_constants.h>    // for NUM_DIE
 #include <stdio.h>                // for accel_boot_status_msg
+#include <tx_api.h>               // for tx_semaphore_create, tx_semaphore_put, tx_semaphore_get
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
 /**
- * 5 seconds is good enough time for accel cores to boot
- * TODO: Profile the boot time of accel cores during bring up
+ * Given that SCP FW is busy handling other tasks, 20 seconds is good enough
+ * time for SCP FW to record that accel cores have booted
+ * After profiling it turns out accel cores take less then a second to boot
  */
-#define ACCEL_BOOT_TIMEOUT_S  5
+#define ACCEL_BOOT_TIMEOUT_S  (config_get_accel_boot_timeout_sec())
 #define ACCEL_BOOT_TIMEOUT_MS FPFW_DUR_S_TO_MS(ACCEL_BOOT_TIMEOUT_S)
 #define ACCEL_BOOT_TIMEOUT_US FPFW_DUR_S_TO_US(ACCEL_BOOT_TIMEOUT_S)
 
@@ -56,10 +60,27 @@ static accel_cd_params recv_params[NUM_VALID_ACCEL_ID];
 static fpfw_icc_base_send_rsp_t send_params[NUM_VALID_ACCEL_ID];
 static boot_status_req_t boot_status_req[NUM_VALID_ACCEL_ID] = {0};
 static uint64_t boot_start_ts_us[NUM_VALID_ACCEL_ID] = {0};
+static TX_SEMAPHORE s_accel_boot_sem[NUM_VALID_ACCEL_ID] = {0};
+static char* s_accel_boot_sem_name[NUM_VALID_ACCEL_ID] = {"sdm_boot_sem", "cded_boot_sem"};
+static PDFWK_ASYNC_REQUEST_HEADER s_sos_dfwk_boot_sync_req[NUM_VALID_ACCEL_ID] = {NULL};
 
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
+
+static void accel_boot_status_put_sem(ACCEL_ID accel_type)
+{
+    unsigned int status = tx_semaphore_put(&s_accel_boot_sem[accel_type]);
+    BUG_ASSERT_PARAM(status == TX_SUCCESS, status, accel_type);
+}
+
+static unsigned int accel_boot_status_get_sem(ACCEL_ID accel_type)
+{
+    unsigned int status = tx_semaphore_get(&s_accel_boot_sem[accel_type], TX_NO_WAIT);
+    BUG_ASSERT_PARAM(status == TX_SUCCESS || status == TX_NO_INSTANCE, status, accel_type);
+
+    return status;
+}
 
 static void accel_log_boot_time(ACCEL_ID accel_type)
 {
@@ -151,6 +172,14 @@ static void accel_boot_status_send_complete_cb(void* ctx)
     accel_send_ack(accel_type);
 }
 
+static void accel_boot_failed_complete_cb(void* ctx)
+{
+    ACCEL_ID accel_type = (ACCEL_ID)ctx;
+    uint32_t error_code = accel_type == ACCEL_ID_SDM ? KNG_HM_SDM_BOOT_FAILED : KNG_HM_CDED_BOOT_FAILED;
+
+    BUG_CHECK(error_code, accel_type, 0);
+}
+
 static void accel_send_boot_status(ACCEL_ID accel_type, uint8_t boot_status)
 {
     uint8_t group;
@@ -172,6 +201,22 @@ static void accel_recv_boot_status_msg_icc_cb(void* context, size_t output_size_
 
     fpfw_timer_reset(&accel_boot_status_timers[accel_type]);
     BUG_ASSERT_PARAM(status == FPFW_STATUS_SUCCESS, status, accel_type);
+
+    /* Complete any outstanding SOS DFWK request hanging for this accel core */
+    if (s_sos_dfwk_boot_sync_req[accel_type])
+    {
+        DfwkAsyncRequestComplete(s_sos_dfwk_boot_sync_req[accel_type]);
+        s_sos_dfwk_boot_sync_req[accel_type] = NULL;
+    }
+    else
+    {
+        /**
+         * Availability of accel boot status semaphore indicates that it has been booted.
+         * So once you get a boot status notification from accel core put this semaphore.
+         * This semaphore will be later read by SOS service to sync for accel boot complete.
+         */
+        accel_boot_status_put_sem(accel_type);
+    }
 
     accel_boot_status_msg* msg = (accel_boot_status_msg*)recv_params->params.payload_buffer;
 
@@ -203,9 +248,9 @@ static void accel_boot_status_timeout_cb(void* ctx, fpfw_dur_t latency)
 
     FPFW_UNUSED(latency);
 
-    /* Clear any previous stale data */
-    boot_status_req[accel_type].cb = NULL;
-    boot_status_req[accel_type].cb_ctx = NULL;
+    /* BUG_CHECK() after sending boot status code to HSP */
+    boot_status_req[accel_type].cb = accel_boot_failed_complete_cb;
+    boot_status_req[accel_type].cb_ctx = (void*)accel_type;
     // Send failure boot status code to HSP
     post_led_status(&boot_status_req[accel_type], LED_STATUS_CODE_SCP_ACCEL_FAILED);
 }
@@ -263,5 +308,39 @@ fpfw_status_t accel_start_boot_status_timer(ACCEL_ID accel_type)
 {
     boot_start_ts_us[accel_type] = gtimer_get_timestamp_us();
 
+    s_sos_dfwk_boot_sync_req[accel_type] = NULL;
+
     return fpfw_timer_enable(&accel_boot_status_timers[accel_type], FPFW_DUR_MS(ACCEL_BOOT_TIMEOUT_MS));
+}
+
+void accel_boot_status_init_sem()
+{
+    for (ACCEL_ID accel_type = ACCEL_ID_SDM; accel_type < NUM_VALID_ACCEL_ID; accel_type++)
+    {
+        unsigned int status = tx_semaphore_create(&s_accel_boot_sem[accel_type], s_accel_boot_sem_name[accel_type], 0);
+        BUG_ASSERT_PARAM(status == TX_SUCCESS, status, accel_type);
+    }
+}
+
+void accel_boot_status_wait_boot_complete(ACCEL_ID accel_type, PDFWK_ASYNC_REQUEST_HEADER p_request)
+{
+    BUG_ASSERT(p_request != NULL)
+    BUG_ASSERT_PARAM(accel_type < NUM_VALID_ACCEL_ID, accel_type, 0);
+
+    /**
+     * Check for accel boot status semaphore is availability if it is available that mean that
+     * accel core has been booted. In case it is not available store the SOS DFWK request and
+     * complete it later when the accel core boot status is received.
+     */
+    unsigned int status = accel_boot_status_get_sem(accel_type);
+    if (status == TX_SUCCESS)
+    {
+        /* Complete the SOS DFWK request as this accel boot is complete */
+        DfwkAsyncRequestComplete(p_request);
+    }
+    else
+    {
+        /* Store the request and complete it later when the accel core boot status is received */
+        s_sos_dfwk_boot_sync_req[accel_type] = p_request;
+    }
 }

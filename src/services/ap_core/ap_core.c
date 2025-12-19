@@ -324,6 +324,26 @@ void ap_core_dispatch(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
                 DfwkAsyncRequestComplete(p_request);
             }
             break;
+        case STARTUP_SYNC_SDM_BOOT_COMPLETE:
+            if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_SDM))
+            {
+                accel_boot_status_wait_boot_complete(ACCEL_ID_SDM, p_request);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+            break;
+        case STARTUP_SYNC_CDED_BOOT_COMPLETE:
+            if (system_info_is_hsp_present() && !accel_is_isolation_enabled(ACCEL_ID_CDED))
+            {
+                accel_boot_status_wait_boot_complete(ACCEL_ID_CDED, p_request);
+            }
+            else
+            {
+                DfwkAsyncRequestComplete(p_request);
+            }
+            break;
         case STARTUP_PRIMARY_AP_CORE_BOOT:
             if (s_ap_core_ctx.p_config->primary_boot_die && system_info_is_hsp_present())
             {

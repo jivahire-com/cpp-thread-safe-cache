@@ -212,6 +212,8 @@ int32_t scp_accelerators_init(void)
         accel_send_led_boot_status(LED_STATUS_CODE_SCP_ACCEL_INIT_START);
     }
 
+    accel_boot_status_init_sem();
+
     subsystem_ctxt_t* p_ss_ctxt = get_accelerator_ctxt(&accel_ctxt_size);
     if (p_ss_ctxt == NULL)
     {

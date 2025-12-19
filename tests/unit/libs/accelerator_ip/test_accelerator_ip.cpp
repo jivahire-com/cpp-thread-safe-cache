@@ -68,6 +68,9 @@ static bool should_return;
 static boot_status_send_complete_notify s_boot_status_send_cb = NULL;
 static void* s_boot_status_send_ctx = NULL;
 
+static boot_status_send_complete_notify s_boot_status_failed_cb = NULL;
+static void* s_boot_status_failed_ctx = NULL;
+
 static fpfw_timer_callback s_timer_cb = NULL;
 
 static LargestIntegralType expected_led_status[] = {
@@ -378,6 +381,12 @@ void __wrap_post_led_status(boot_status_req_t* p_req_mem, led_status_codes_t sta
 {
     assert_non_null(p_req_mem);
     check_expected(status);
+
+    if (status == LED_STATUS_CODE_SCP_ACCEL_FAILED)
+    {
+        s_boot_status_failed_cb = p_req_mem->cb;
+        s_boot_status_failed_ctx = p_req_mem->cb_ctx;
+    }
 }
 
 fpfw_status_t __wrap_fpfw_timer_create(fpfw_timer_t* timer,
@@ -462,6 +471,41 @@ uint64_t __wrap_gtimer_get_timestamp_us()
     return mock_type(uint64_t);
 }
 
+UINT __wrap__txe_semaphore_put(TX_SEMAPHORE* semaphore_ptr)
+{
+    assert_non_null(semaphore_ptr);
+
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_semaphore_get(TX_SEMAPHORE* semaphore_ptr, ULONG wait_option)
+{
+    assert_non_null(semaphore_ptr);
+    assert_true(wait_option == TX_NO_WAIT);
+
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_semaphore_create(TX_SEMAPHORE* semaphore_ptr, CHAR* name_ptr, ULONG initial_count, UINT semaphore_control_block_size)
+{
+    assert_non_null(semaphore_ptr);
+    assert_non_null(name_ptr);
+    assert_true(initial_count == 0);
+    FPFW_UNUSED(semaphore_control_block_size);
+
+    return mock_type(UINT);
+}
+
+void __wrap_DfwkAsyncRequestComplete(PDFWK_ASYNC_REQUEST_HEADER Request)
+{
+    check_expected_ptr(Request);
+}
+
+uint32_t __wrap_config_get_accel_boot_timeout_sec()
+{
+    return mock_type(uint32_t);
+}
+
 } // end of extern "C"
 
 /*----------------------------- Start of Unit test cases -----------------------------*/
@@ -480,6 +524,7 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test, nullptr, nullptr)
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
 
     // In init_accelerator()
+    will_return_count(__wrap__txe_semaphore_create, TX_SUCCESS, NUM_VALID_ACCEL_ID);
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_system_info_is_warm_start, false);
@@ -503,6 +548,7 @@ TEST_FUNCTION(scp_accelerators_init_warm_reset_pass, nullptr, nullptr)
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
 
     // In init_accelerator()
+    will_return_count(__wrap__txe_semaphore_create, TX_SUCCESS, NUM_VALID_ACCEL_ID);
     will_return(__wrap_sdm_init_enable_cpuwait, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_enable_fence, SILIBS_SUCCESS);
     will_return(__wrap_sdm_init_assert_nsysreset, SILIBS_SUCCESS);
@@ -546,6 +592,7 @@ TEST_FUNCTION(accelip_pre_boot_config_pass_test_no_hsp, nullptr, nullptr)
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
 
     // In init_accelerator()
+    will_return_count(__wrap__txe_semaphore_create, TX_SUCCESS, NUM_VALID_ACCEL_ID);
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, false);
     will_return_always(__wrap_system_info_is_warm_start, false);
@@ -562,8 +609,27 @@ TEST_FUNCTION(accelip_pre_boot_config_isolation, nullptr, nullptr)
     accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {true, true}};
     will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
     will_return_always(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
+    will_return_count(__wrap__txe_semaphore_create, TX_SUCCESS, NUM_VALID_ACCEL_ID);
 
     assert_int_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+}
+
+TEST_FUNCTION(accelip_pre_boot_sem_create_failed, nullptr, nullptr)
+{
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+    should_return = false;
+
+    will_return_always(__wrap_idsw_get_die_id, SOC_D0);
+
+    accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {true, true}};
+    will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return_always(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
+    will_return(__wrap__txe_semaphore_create, TX_SEMAPHORE_ERROR);
+
+    if (!bugcheck_mock_return())
+    {
+        assert_int_not_equal(scp_accelerators_init(), ACCEL_RET_SUCCESS);
+    }
 }
 
 TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_test, nullptr, nullptr)
@@ -578,6 +644,7 @@ TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_test, nullptr, nullpt
     // Check boot status code ACCEL INIT START
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
 
+    will_return_count(__wrap__txe_semaphore_create, TX_SUCCESS, NUM_VALID_ACCEL_ID);
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_system_info_is_warm_start, false);
@@ -606,6 +673,7 @@ TEST_FUNCTION(accelip_pre_boot_config_accelip_ss_init_fail_die1_test, nullptr, n
     // Check boot status code ACCEL INIT START
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
 
+    will_return_count(__wrap__txe_semaphore_create, TX_SUCCESS, NUM_VALID_ACCEL_ID);
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0xDEADDEED);
     will_return_always(__wrap_system_info_is_hsp_present, true);
     will_return_always(__wrap_system_info_is_warm_start, false);
@@ -632,6 +700,7 @@ TEST_FUNCTION(test_scp_accelerators_init_invalid_accel, nullptr, nullptr)
     accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
     will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
     will_return_always(__wrap_config_get_cded_isolation_enable, &accel_isolation_enable);
+    will_return_always(__wrap__txe_semaphore_create, TX_SUCCESS);
 
     // Check boot status code ACCEL INIT START
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
@@ -666,6 +735,7 @@ TEST_FUNCTION(test_scp_accelerators_init_intr_init_failed, nullptr, nullptr)
 
     accel_isolation_enable_t accel_isolation_enable = {.isolation_enable = {false, false}};
     will_return_always(__wrap_config_get_sdm_isolation_enable, &accel_isolation_enable);
+    will_return_always(__wrap__txe_semaphore_create, TX_SUCCESS);
 
     // Check boot status code ACCEL INIT START
     expect_in_set(__wrap_post_led_status, status, expected_led_status);
@@ -1014,6 +1084,7 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_sdm, nullptr, nullptr)
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for SDM DIE0
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
@@ -1024,6 +1095,7 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_sdm, nullptr, nullptr)
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for SDM DIE1
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D1);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
@@ -1053,6 +1125,7 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_cded, nullptr, nullptr)
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE0
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
@@ -1063,6 +1136,7 @@ TEST_FUNCTION(test_accel_setup_boot_status_code_cded, nullptr, nullptr)
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE1
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     will_return(__wrap_idsw_get_die_id, SOC_D1);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
@@ -1092,8 +1166,10 @@ TEST_FUNCTION(test_accel_boot_status_code_ok, nullptr, nullptr)
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for SDM DIE0
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     will_return_count(__wrap_idsw_get_die_id, SOC_D0, 2);
     will_return(__wrap_gtimer_get_timestamp_us, 0xFFFFEFF1000);
+    will_return(__wrap_config_get_accel_boot_timeout_sec, 20);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
     // Expectations for accel_boot_status_send_complete_cb()
@@ -1104,8 +1180,10 @@ TEST_FUNCTION(test_accel_boot_status_code_ok, nullptr, nullptr)
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for SDM DIE1
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     will_return_count(__wrap_idsw_get_die_id, SOC_D1, 2);
     will_return(__wrap_gtimer_get_timestamp_us, 0xFFFFEFF1000);
+    will_return(__wrap_config_get_accel_boot_timeout_sec, 20);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
     // Expectations for accel_boot_status_send_complete_cb()
@@ -1116,8 +1194,10 @@ TEST_FUNCTION(test_accel_boot_status_code_ok, nullptr, nullptr)
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE0
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     will_return_count(__wrap_idsw_get_die_id, SOC_D0, 2);
     will_return(__wrap_gtimer_get_timestamp_us, 0xFFFFEFF1000);
+    will_return(__wrap_config_get_accel_boot_timeout_sec, 20);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
     // Expectations for accel_boot_status_send_complete_cb()
@@ -1128,8 +1208,10 @@ TEST_FUNCTION(test_accel_boot_status_code_ok, nullptr, nullptr)
 
     // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE1
     will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     will_return_count(__wrap_idsw_get_die_id, SOC_D1, 2);
     will_return(__wrap_gtimer_get_timestamp_us, 0xFFFFEFF1000);
+    will_return(__wrap_config_get_accel_boot_timeout_sec, 20);
     expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
     s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
 
@@ -1139,6 +1221,91 @@ TEST_FUNCTION(test_accel_boot_status_code_ok, nullptr, nullptr)
 
     // Unit test accel_empty_icc_cb()
     s_icc_send_resp_cb(s_icc_send_resp_ctx, FPFW_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_accel_boot_status_wait_boot_complete, nullptr, nullptr)
+{
+    ACCEL_ID accel_id = ACCEL_ID_SDM;
+    PDFWK_ASYNC_REQUEST_HEADER req_ptr = (PDFWK_ASYNC_REQUEST_HEADER)0xDEADDEED;
+
+    will_return(__wrap__txe_semaphore_get, TX_SUCCESS);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, req_ptr);
+
+    accel_boot_status_wait_boot_complete(accel_id, req_ptr);
+}
+
+TEST_FUNCTION(test_accel_boot_status_wait_boot_complete_invalid_args, nullptr, nullptr)
+{
+    should_return = false;
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+
+    if (!bugcheck_mock_return())
+    {
+        will_return(__wrap__txe_semaphore_get, TX_PTR_ERROR);
+        accel_boot_status_wait_boot_complete(ACCEL_ID_SDM, PDFWK_ASYNC_REQUEST_HEADER(0xDEADCAFE));
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        accel_boot_status_wait_boot_complete(NUM_VALID_ACCEL_ID, PDFWK_ASYNC_REQUEST_HEADER(0xDEADCAFE));
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        accel_boot_status_wait_boot_complete(ACCEL_ID_SDM, PDFWK_ASYNC_REQUEST_HEADER(NULL));
+    }
+}
+
+TEST_FUNCTION(test_accel_boot_status_delayed_accel_boot, nullptr, nullptr)
+{
+    ACCEL_ID accel_id = ACCEL_ID_SDM;
+    PDFWK_ASYNC_REQUEST_HEADER req_ptr = (PDFWK_ASYNC_REQUEST_HEADER)0xDEADDEED;
+
+    should_return = false;
+    expect_any_always(__wrap_crash_dump_bug_check, errorCode);
+
+    // Unit test for accel_setup_boot_status_code API for SDM
+    will_return_always(__wrap_fpfw_init_get_handle, 0xDEADDEED);
+    will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_SDM0_OK);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_timer_create, FPFW_STATUS_SUCCESS);
+    assert_true(accel_setup_boot_status_code(accel_id) == FPFW_STATUS_SUCCESS);
+
+    // Populate s_sos_dfwk_boot_sync_req[]
+    will_return(__wrap__txe_semaphore_get, TX_NO_INSTANCE);
+    accel_boot_status_wait_boot_complete(accel_id, req_ptr);
+
+    // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE1
+    will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, req_ptr);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D1, 2);
+    will_return(__wrap_gtimer_get_timestamp_us, 0xFFFFEFF1000);
+    will_return(__wrap_config_get_accel_boot_timeout_sec, 20);
+    expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+
+    // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE1
+    will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
+    will_return_count(__wrap_idsw_get_die_id, SOC_D1, 2);
+    will_return(__wrap_gtimer_get_timestamp_us, 0x0);
+    will_return(__wrap_config_get_accel_boot_timeout_sec, 20);
+    expect_any(__wrap_boot_status_notify_extd, boot_status_ex);
+    s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+
+    if (!bugcheck_mock_return())
+    {
+        // Unit test accel_recv_boot_status_msg_icc_cb() for CDED DIE1
+        will_return(__wrap_fpfw_timer_reset, FPFW_STATUS_SUCCESS);
+        will_return(__wrap__txe_semaphore_put, TX_SEMAPHORE_ERROR);
+        s_icc_recv_cb(s_icc_recv_ctx, 0, FPFW_STATUS_SUCCESS);
+    }
+
+    if (!bugcheck_mock_return())
+    {
+        // Unit test accel_boot_failed_complete_cb() for SDM
+        s_boot_status_failed_cb(s_boot_status_failed_ctx);
+    }
 }
 
 TEST_FUNCTION(test_accel_setup_boot_status_code_invalid_args, nullptr, nullptr)

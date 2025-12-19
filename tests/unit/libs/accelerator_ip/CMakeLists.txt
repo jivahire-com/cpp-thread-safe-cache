@@ -53,6 +53,7 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
+    DfwkAsyncRequestComplete
     DfwkAsyncRequestInitialize
     FPFwCoreInterruptEnableVector
     accel_intr_get_atu_mapped_cfg_address
@@ -68,6 +69,7 @@ mock_target(${TARGET}
     configure_cdedss_vab_system_addr_map
     config_get_cded_isolation_enable
     config_get_sdm_isolation_enable
+    config_get_accel_boot_timeout_sec
     crash_dump_bug_check
     critical_print
     debug_print
@@ -99,4 +101,8 @@ mock_target(${TARGET}
     sos_start_phase
     system_info_is_hsp_present
     system_info_is_warm_start 
+
+    _txe_semaphore_get
+    _txe_semaphore_put
+    _txe_semaphore_create
 )

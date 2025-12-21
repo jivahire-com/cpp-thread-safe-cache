@@ -80,7 +80,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_UTC_SYNC_MANAGER,
 
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_UTC_SYNC_MANAGER,
                     50,
-                    UtcSyncManagerMctpSendMsgComplete,
+                    UtcSyncManagerMctpSendTimestampRequestComplete,
                     FPFW_ET_LEVEL_VERBOSE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_INT32, status),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, msg_ptr),
@@ -91,7 +91,7 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_UTC_SYNC_MANAGER,
     
 FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_UTC_SYNC_MANAGER,
                     51,
-                    UtcSyncManagerMctpRequestTimestampComplete,
+                    UtcSyncManagerMctpTimestampRequestQueued,
                     FPFW_ET_LEVEL_VERBOSE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_INT32, status))
 
@@ -99,5 +99,10 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_UTC_SYNC_MANAGER,
                     52,
                     UtcSyncManagerMctpRecvMsgAlreadyPending,
                     FPFW_ET_LEVEL_VERBOSE)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_UTC_SYNC_MANAGER,
+                    53,
+                    UtcSyncManagerMctpSendMsgAlreadyPending,
+                    FPFW_ET_LEVEL_WARNING)
 
 /*--------- Function Prototypes ----------*/

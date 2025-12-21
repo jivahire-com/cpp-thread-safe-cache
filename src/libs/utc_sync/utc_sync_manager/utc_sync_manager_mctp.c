@@ -15,6 +15,8 @@
 #include <gtimer_prodfw.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <tx_api.h>
 #include <utc_common.h>
 #include <utc_sync_manager_lib.h>
 #include <utc_sync_manager_mctp_events_i.h>
@@ -56,6 +58,9 @@ static uint32_t s_system_counter_frequency_hz = 0;
 
 // We only want one MCTP read pending at a time, keep track of it here
 static bool s_is_read_pending = false;
+
+// Semaphore to protect against concurrent sends
+static TX_SEMAPHORE s_send_semaphore;
 
 // The only thing that will change in the NTP Request to the BMC will be T0
 static utc_sync_manager_mctp_message_send_t s_send_message_buffer = {
@@ -185,6 +190,10 @@ void utc_sync_manager_mctp_init(fpfw_mctp* mctp_ctx)
     s_mctp_ctx = mctp_ctx;
 
     s_system_counter_frequency_hz = gtimer_prodfw_get_frequency();
+
+    // Initialize semaphore with initial count of 1 (available)
+    UINT tx_status = tx_semaphore_create(&s_send_semaphore, "UTC Send Sem", 1);
+    FPFW_RUNTIME_ASSERT(TX_SUCCESS == tx_status);
 }
 
 fpfw_status_t utc_sync_manager_mctp_send(fpfw_mctp_send_msg_info* p_send_msg_info)
@@ -296,7 +305,6 @@ void on_mctp_msg_receive(fpfw_mctp_recv_msg_info* p_recv_msg_info, fpfw_status_t
 
 void on_mctp_send_msg_complete(fpfw_mctp_send_msg_info* p_send_msg_info, fpfw_status_t status)
 {
-
     //
     // We don't kick off a new send if this one failed. The UTC Manager will trigger
     // that path based on it's synchronization cadence with the BMC.
@@ -304,22 +312,34 @@ void on_mctp_send_msg_complete(fpfw_mctp_send_msg_info* p_send_msg_info, fpfw_st
 
     FPFW_RUNTIME_ASSERT(NULL != p_send_msg_info);
 
-    FPFW_ET_LOG(UtcSyncManagerMctpSendMsgComplete,
+    FPFW_ET_LOG(UtcSyncManagerMctpSendTimestampRequestComplete,
                 status,
                 (uintptr_t)p_send_msg_info->msg,
                 p_send_msg_info->msg_size,
                 p_send_msg_info->dest_eid,
                 p_send_msg_info->msg_tag,
                 p_send_msg_info->tag_owner);
+
+    // Release semaphore to allow next send
+    UINT tx_status = tx_semaphore_put(&s_send_semaphore);
+    FPFW_RUNTIME_ASSERT(TX_SUCCESS == tx_status);
 }
 
 fpfw_status_t utc_sync_manager_request_utc_timestamp()
 {
-
     //
     // This is kick off by the UTC Manager Service based on it's synchronization
     // cadence with the BMC.
     //
+
+    // Try to acquire semaphore (non-blocking) to ensure no concurrent sends
+    UINT tx_status = tx_semaphore_get(&s_send_semaphore, TX_NO_WAIT);
+    if (tx_status != TX_SUCCESS)
+    {
+        // Send already in progress
+        FPFW_ET_LOG(UtcSyncManagerMctpSendMsgAlreadyPending);
+        return FPFW_STATUS_PENDING;
+    }
 
     // Pend a receive request to be ready for the next send
     fpfw_status_t sc = utc_sync_manager_mctp_read(&s_local_receive_msg_info);
@@ -328,13 +348,23 @@ fpfw_status_t utc_sync_manager_request_utc_timestamp()
     if (sc != FPFW_STATUS_SUCCESS && sc != FPFW_STATUS_PENDING)
     {
         FPFW_ET_LOG(UtcSyncManagerRequestMtsUtcStampFailed, sc);
+        // Release semaphore on error
+        tx_status = tx_semaphore_put(&s_send_semaphore);
+        FPFW_RUNTIME_ASSERT(TX_SUCCESS == tx_status);
         return sc;
     }
 
     // Only setup the send if the read setup was successful
     sc = utc_sync_manager_mctp_send(&s_local_send_msg_info);
 
-    FPFW_ET_LOG(UtcSyncManagerMctpRequestTimestampComplete, sc);
+    // If send failed, release semaphore
+    if (FPFW_STATUS_FAILED(sc))
+    {
+        tx_status = tx_semaphore_put(&s_send_semaphore);
+        FPFW_RUNTIME_ASSERT(TX_SUCCESS == tx_status);
+    }
+
+    FPFW_ET_LOG(UtcSyncManagerMctpTimestampRequestQueued, sc);
 
     return sc;
 }

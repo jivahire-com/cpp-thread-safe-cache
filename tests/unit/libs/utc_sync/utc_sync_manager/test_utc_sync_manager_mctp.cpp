@@ -40,6 +40,31 @@ static fpfw_mctp_recv_msg_info test_recv_msg_info = {};
 
 /*------------- Functions ----------------*/
 
+UINT __wrap__txe_semaphore_put(TX_SEMAPHORE* semaphore_ptr)
+{
+    assert_non_null(semaphore_ptr);
+
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_semaphore_get(TX_SEMAPHORE* semaphore_ptr, ULONG wait_option)
+{
+    assert_non_null(semaphore_ptr);
+    assert_true(wait_option == TX_NO_WAIT);
+
+    return mock_type(UINT);
+}
+
+UINT __wrap__txe_semaphore_create(TX_SEMAPHORE* semaphore_ptr, CHAR* name_ptr, ULONG initial_count, UINT semaphore_control_block_size)
+{
+    assert_non_null(semaphore_ptr);
+    assert_non_null(name_ptr);
+    assert_true(initial_count == 1);
+    FPFW_UNUSED(semaphore_control_block_size);
+
+    return mock_type(UINT);
+}
+
 fpfw_status_t __wrap_fpfw_mctp_send_msg(fpfw_mctp* mctp_ctx, fpfw_mctp_send_msg_info* send_msg_info)
 {
     check_expected_ptr(mctp_ctx);
@@ -77,6 +102,7 @@ static int test_setup(void** pContext)
 
     // Init any common dependencies test cases will need
     will_return(__wrap_gtimer_prodfw_get_frequency, TEST_SYS_COUNT_FREQ_HZ);
+    will_return_always(__wrap__txe_semaphore_create, TX_SUCCESS);
     utc_sync_manager_mctp_init(&test_mctp_ctx);
 
     return 0;
@@ -99,6 +125,7 @@ static int test_teardown(void** pContext)
 TEST_FUNCTION(test_utc_sync_manager_mctp_init, NULL, NULL)
 {
     will_return(__wrap_gtimer_prodfw_get_frequency, TEST_SYS_COUNT_FREQ_HZ);
+    will_return_always(__wrap__txe_semaphore_create, TX_SUCCESS);
     utc_sync_manager_mctp_init(&test_mctp_ctx);
 }
 
@@ -117,6 +144,7 @@ TEST_FUNCTION(test_utc_sync_manager_request_utc_timestamp, test_setup, test_tear
     // Test that a request is successful when we need to queue a new mctp receive
 
     // Setup expectations for queueing a new mctp receive
+    will_return(__wrap__txe_semaphore_get, TX_SUCCESS);
     expect_value(__wrap_fpfw_mctp_recv_msg, mctp_ctx, &test_mctp_ctx);
     expect_any(__wrap_fpfw_mctp_recv_msg, recv_msg_info);
     will_return(__wrap_fpfw_mctp_recv_msg, FPFW_STATUS_SUCCESS);
@@ -134,6 +162,7 @@ TEST_FUNCTION(test_utc_sync_manager_request_utc_timestamp, test_setup, test_tear
     // and we successfully send a new request
 
     // Setup expectations for sending a new mctp send
+    will_return(__wrap__txe_semaphore_get, TX_SUCCESS);
     expect_value(__wrap_fpfw_mctp_send_msg, mctp_ctx, &test_mctp_ctx);
     expect_any(__wrap_fpfw_mctp_send_msg, send_msg_info);
     will_return(__wrap_fpfw_mctp_send_msg, FPFW_STATUS_SUCCESS);
@@ -148,6 +177,8 @@ TEST_FUNCTION(test_utc_sync_manager_request_utc_timestamp_fail, test_setup, test
     // Test that a request is failed to setup a mctp receive
 
     // Setup expectations for queueing a new mctp receive
+    will_return(__wrap__txe_semaphore_get, TX_SUCCESS);
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     expect_value(__wrap_fpfw_mctp_recv_msg, mctp_ctx, &test_mctp_ctx);
     expect_any(__wrap_fpfw_mctp_recv_msg, recv_msg_info);
     will_return(__wrap_fpfw_mctp_recv_msg, FPFW_STATUS_FAIL);
@@ -159,11 +190,13 @@ TEST_FUNCTION(test_utc_sync_manager_request_utc_timestamp_fail, test_setup, test
     // Test that a request is setup a recv successfully but failed to send
 
     // Setup expectations for queueing a new mctp receive
+    will_return(__wrap__txe_semaphore_get, TX_SUCCESS);
     expect_value(__wrap_fpfw_mctp_recv_msg, mctp_ctx, &test_mctp_ctx);
     expect_any(__wrap_fpfw_mctp_recv_msg, recv_msg_info);
     will_return(__wrap_fpfw_mctp_recv_msg, FPFW_STATUS_SUCCESS);
 
     // Setup expectations for sending a new mctp send
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     expect_value(__wrap_fpfw_mctp_send_msg, mctp_ctx, &test_mctp_ctx);
     expect_any(__wrap_fpfw_mctp_send_msg, send_msg_info);
     will_return(__wrap_fpfw_mctp_send_msg, FPFW_STATUS_FAIL);
@@ -336,6 +369,8 @@ TEST_FUNCTION(test_utc_sync_manager_on_mctp_send_msg_complete_success, test_setu
         .cb_ctx = NULL,
     };
 
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
+
     // Function primarily logs completion - ensure it doesn't crash
     on_mctp_send_msg_complete(&send_info, FPFW_STATUS_SUCCESS);
 
@@ -364,6 +399,8 @@ TEST_FUNCTION(test_utc_sync_manager_on_mctp_send_msg_complete_failure, test_setu
         .cb = on_mctp_send_msg_complete,
         .cb_ctx = NULL,
     };
+
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
 
     // Function primarily logs completion - ensure it doesn't crash
     on_mctp_send_msg_complete(&send_info, FPFW_STATUS_FAIL);

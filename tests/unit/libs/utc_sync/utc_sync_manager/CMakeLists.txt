@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::error_handler
         ms::lib::gtimer
+        ms::lib::threadx
         ms::lib::utc_sync_manager
         silibs::idsw
         silibs::idsw_kng
@@ -47,4 +48,7 @@ mock_target(${TARGET}
     gtimer_prodfw_get_counter
     gtimer_prodfw_get_frequency
     utc_sync_manager_notify_timestamp_ready
+    _txe_semaphore_create
+    _txe_semaphore_get
+    _txe_semaphore_put
 )

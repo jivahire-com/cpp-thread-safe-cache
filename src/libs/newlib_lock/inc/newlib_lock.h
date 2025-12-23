@@ -10,22 +10,28 @@
 #pragma once
 
 /*----------- includes ------------*/
+#include <FpFwLock.h>
 #include <stdint.h>
 #include <tx_api.h>
 #ifndef _WIN32
     #include <sys/lock.h>
 #else
-typedef void* _LOCK_T;
+struct __lock;
+typedef struct __lock * _LOCK_T;
+#define _LOCK_RECURSIVE_T _LOCK_T
 #endif
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
-typedef struct {
+struct __lock
+{
+    // Use FPFW_LOCK for non-recursive lock.
+    FPFW_LOCK lock;
+    FPFW_LOCK_STATE lock_state;
+    // Use TX_MUTEX for recursive lock.
     TX_MUTEX mutex;
-    uint32_t owner;
-    uint32_t recursion;
     volatile uint32_t in_use;
-} threadx_lock_t;
+};
 
 /*-- Declarations (Statics and globals) --*/
 

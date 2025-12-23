@@ -19,6 +19,9 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    FpFwLockInitialize
+    FpFwLockAcquire
+    FpFwLockRelease
     _txe_mutex_create
     _txe_mutex_delete
     _txe_mutex_get

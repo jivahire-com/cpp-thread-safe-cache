@@ -229,6 +229,21 @@ fpfw_status_t __wrap_FPFwETControllerRecycleBuffer(void* pTraceController, uint3
     return mock_type(fpfw_status_t);
 }
 
+uint64_t __wrap_config_get_hsp_buffers_drop_rpt_thresh(void)
+{
+    return 100;
+}
+
+uint64_t __wrap_config_get_asic_buffers_reused_rpt_thresh(void)
+{
+    return 100;
+}
+
+uint64_t __wrap_config_get_delayed_host_reads_rpt_thresh(void)
+{
+    return 100;
+}
+
 _Noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
 {
     FPFW_UNUSED(errorCode);

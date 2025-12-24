@@ -1,3 +1,7 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
 set(TARGET service.event_trace.relay.test)
 
 set(SOURCES
@@ -43,6 +47,10 @@ mock_target(${TARGET}
     fpfw_icc_base_send_sync
     
     atu_svc_accel_atu_addr
+
+    config_get_hsp_buffers_drop_rpt_thresh
+    config_get_asic_buffers_reused_rpt_thresh
+    config_get_delayed_host_reads_rpt_thresh
     
     mts_client_register
     mts_client_send_trp_response

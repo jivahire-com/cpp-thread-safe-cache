@@ -128,6 +128,7 @@ typedef struct
     struct {
         uint64_t asic_buffers_reused;
         uint64_t delayed_host_reads;
+        uint64_t hsp_buffers_dropped;
     } health_stats;
 } etr_service_context_t, *p_etr_service_context_t;
 
@@ -172,3 +173,15 @@ typedef struct
  *  @retval     None. This will attempt to create the threadx resources, the module will raise an error if any of these fail.
 */
 void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t* p_config);
+
+
+/**
+ * @brief Get the etr service context object    
+ * @details This function returns a pointer to the etr service context. This is used to access the internal state of the module.
+ * 
+ * @param[in] None
+ * @param[out] None
+ * 
+ * @return etr_service_context_t* The service context handle for the Event Trace Relay
+ */
+etr_service_context_t* get_etr_service_context(void);

@@ -5,6 +5,7 @@
 
 /*------------- Includes -----------------*/
 #include <FpFwUtils.h>
+#include <cli_et_telemetry.h>
 #include <event_trace_relay.h>
 #include <fpfw_init.h>
 #include <idsw.h>
@@ -98,6 +99,9 @@ FPFW_INIT_COMPONENT(etr, FPFW_INIT_DEPENDENCIES("etc", "icc_hspmbx", "atu_svc", 
     memcpy(&config.soc_info.soc_id[3], ecid.wafer_lot_num, ECID_WAFER_LOT_NUMBER_CHAR_SIZE); // bits 24-95
 
     etr_initialize(&s_etr_service_ctx, &config);
+
+    // Initialize the CLI for Event Trace Telemetry
+    evt_telemetry_cli_init();
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_etr_service_ctx};
 }

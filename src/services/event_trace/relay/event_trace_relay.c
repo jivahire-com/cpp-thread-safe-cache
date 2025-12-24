@@ -37,6 +37,7 @@
 #include <data_collection_protocol.h>
 #include <event_trace_collector.h>
 #include <event_trace_relay_events.h>
+#include <fpfw_cfg_mgr.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
 #include <inttypes.h>
@@ -84,6 +85,8 @@ static mts_platform_core_id_t this_core = 0;
  * https://azurecsi.visualstudio.com/Dev/_workitems/edit/3229579
  */
 static dcp_client_state_t evt_dcp_clnt_state = DCP_CLIENT_STATE_RUNNING;
+
+static etr_service_context_t* p_etr_service_context = NULL;
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -205,7 +208,10 @@ static void etr_get_new_asic_buffer(etr_service_context_t* p_context)
                 p_context->ddr_buffers[i].type == DIAG_PAYLOAD_PARSER_TRACE_DEVICE)
             {
                 p_context->p_active_asic_buffer = &p_context->ddr_buffers[i];
-                p_context->health_stats.asic_buffers_reused++;
+                if ((p_context->health_stats.asic_buffers_reused++ % config_get_asic_buffers_reused_rpt_thresh()) == 0)
+                {
+                    FPFW_ET_LOG(AsicBufReused, p_context->health_stats.asic_buffers_reused)
+                }
                 break;
             }
         }
@@ -601,8 +607,11 @@ static bool etr_handle_read_complete_response(etr_service_context_t* p_context, 
             else
             {
                 /* If it isn't, it's been re-used at some point, so we don't need to do anything */
-                p_context->health_stats.delayed_host_reads++;
-                payload_status = "Re-Used";
+                if ((p_context->health_stats.delayed_host_reads++ % config_get_delayed_host_reads_rpt_thresh()) == 0)
+                {
+                    FPFW_ET_LOG(DelHostReads, p_context->health_stats.delayed_host_reads);
+                }
+                payload_status = "Skipped";
             }
             break;
         }
@@ -876,6 +885,8 @@ void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t
     BUG_ASSERT(p_context != NULL);
     BUG_ASSERT(p_config != NULL);
 
+    p_etr_service_context = p_context;
+
     FPFW_ET_LOG_ETR_ASCII_INFO("Init ETR Svc");
 
     /* Initialize the ddr buffer management */
@@ -991,4 +1002,9 @@ void etr_worker_thread_func(ULONG thread_input)
         break;
 #endif
     }
+}
+
+etr_service_context_t* get_etr_service_context(void)
+{
+    return p_etr_service_context;
 }

@@ -14,6 +14,7 @@
 #include <bug_check.h>
 #include <cmsis_m7.h>
 #include <event_trace_relay_events.h>
+#include <fpfw_cfg_mgr.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
 #include <in_band_telemetry_ddr.h>
@@ -117,8 +118,10 @@ static fpfw_status_t etr_copy_hsp_telemetry(etr_service_context_t* p_service_con
 
     if (!found_free_buffer)
     {
-        /* TODO (ADO3102046) This should be a warning. Leaving it at Verbose since this is filling up the MCP Trace (no AP read of telemetry)*/
-        FPFW_ET_LOG_ETR_ASCII_VERBOSE("HSP buff full, dumping payload");
+        if (((p_service_context->health_stats.hsp_buffers_dropped++) % config_get_hsp_buffers_drop_rpt_thresh()) == 0)
+        {
+            FPFW_ET_LOG(HSPBufDropped, p_service_context->health_stats.hsp_buffers_dropped);
+        };
         return FPFW_STATUS_FAIL;
     }
 

@@ -1,3 +1,7 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
 set(TARGET etr_init.test)
 
 set(SOURCES
@@ -14,12 +18,13 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::li
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
-        fwlib.service.mts
         fwlib.lib.utils
+        fwlib.service.mts
         ms::cmocka::testrunner
         ms::lib::telemetry::fuses
         ms::lib::threadx
         ms::service::event_trace::relay
+        ms::service::event_trace::relay::cli
         silibs::idsw
         silibs::idsw_kng
 )

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.service.event_trace.relay)
 
 add_library(${TARGET}
@@ -11,6 +13,7 @@ target_link_libraries(
     ${TARGET}
     PRIVATE
         IFPFW.EventTracing
+        fwlib.lib.cfg_mgr
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.platform.errorhandler
         fwlib.lib.interface.platform.specialization.mts
@@ -20,14 +23,14 @@ target_link_libraries(
         ms::lib::event_trace::trace
         ms::lib::hsp_firmware_headers
         ms::lib::register_headers
-        ms::lib::telemetry::fuses
         ms::service::atu_service
         ms::service::event_trace::collector
-        ms::service::mts
         silibs::idsw_kng
     PUBLIC
         fwlib.lib.interface.platform.threadx
         ms::lib::interface::in_band_telemetry_ddr
+        ms::lib::telemetry::fuses
+        ms::service::mts
 )
 
 target_include_directories(${TARGET}

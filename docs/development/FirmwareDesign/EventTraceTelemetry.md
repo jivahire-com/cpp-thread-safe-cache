@@ -78,7 +78,7 @@ For HSP Event Trace, we will interface with ICC messages instead of using MTS.
 flowchart LR
     %% Core Components
     fw_comp(Firmware Component)
-    base_et(Base Event Trace)
+    UART
     ETC
     ETD
     ETC-MTS-Client(ETC MTS Client)
@@ -86,9 +86,9 @@ flowchart LR
     subgraph SoC
         subgraph Die
             subgraph Per Core
-                fw_comp --> base_et
-                base_et --> ETC
-                base_et --> ETD
+                fw_comp --> ETC
+                ETC --> ETD
+                ETD --> UART
                 ETC --> ETC-MTS-Client
             end
             subgraph Per MCP

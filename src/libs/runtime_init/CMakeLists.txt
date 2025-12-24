@@ -11,39 +11,39 @@ set(TARGET kng.lib.runtime_init.scp)
 
 add_library(${TARGET}
     OBJECT
-        accelerator_ip_scp_init.c
+        accel_boot_notify_init.c
         accel_intr_client_init.c
         accel_intr_service_init.c
+        accelerator_ip_scp_init.c
         ap_core_init.c
-        shared_mem_init.c
         atu_init.c
-        avs_scp_init.c
         avs_scp_cli_init.c
-        build_info_cli_init.c
+        avs_scp_init.c
         boot_status_init.c
+        build_info_cli_init.c
         cfg_mgr_init.c
-        core_info_init.c
         cli_crash_dump_init.c
         cli_ddr_init.c
         cli_init.c
         cli_power_init.c
+        core_info_init.c
         css_init.c
+        d2d_cntr_sync_init.c
         ddrss_init.c
         debug_init.c
         dfwk_init.c
-        d2d_cntr_sync_init.c
         err_domain_scp_init.c
-        etc_etd_init.c
         et_mts_clnt_init.c
+        etc_etd_init.c
         fuse_init.c
         gpio_init.c
         gtimer_init.c
         health_monitor_scp_init.c
         hw_semaphore_init.c
         hw_version_scp_init.c
-        ib_telm_hsp_init.c
         i3c_controller_init.c
         i3c_controller_scp_cli_init.c
+        ib_telm_hsp_init.c
         icc_accel_mbx_init.c
         icc_cli_init.c
         icc_d2dmbx_init.c
@@ -57,35 +57,35 @@ add_library(${TARGET}
         nvic_init.c
         pcie_init.c
         pex_rng_init.c
-        tlm_fuses_init.c
-        pwr_tlm_svc_scp_init.c
         power_init.c
         pwr_tlm_core_ex_init.c
+        pwr_tlm_svc_scp_init.c
         rhtlm_service_init.c
-        scmi_init.c
+        rtosmon_init.c
         scmi_cli_init.c
+        scmi_init.c
         scp_crash_dump_init.c
         scp_mpu_init.c
-        rtosmon_init.c
         sds_init.c
         sel_init.c
         sensor_fifo_init.c
+        shared_mem_init.c
         spi_bridge_init.c
         startup_shutdown_init.c
         system_info_cli_init.c
         system_info_init.c
+        systick_update_init.c
         textio_init.c
+        tlm_fuses_init.c
         tower_init.c
         utc_sync_client_init.c
         vab_init.c
-        variable_services_init.c
         variable_services_cli_init.c
+        variable_services_init.c
         virt_irq_init.c
         warm_start_cli_init.c
         warm_start_init.c
         watchdog_init.c
-        systick_update_init.c
-        accel_boot_notify_init.c
 )
 
 target_link_libraries(
@@ -96,8 +96,8 @@ target_link_libraries(
         fwlib.driver.mboxIccTransport
         fwlib.lib.crashDump
         fwlib.lib.init
-        fwlib.lib.mboxPrimitives
         fwlib.lib.interface.platform.dbgprint
+        fwlib.lib.mboxPrimitives
         fwlib.lib.platform.impl.timers.threadx
         fwlib.lib.tmr_queue
         fwlib.lib.utils
@@ -111,28 +111,27 @@ target_link_libraries(
         ms::driver::gpio
         ms::driver::icc_mhu_trans
         ms::driver::pcie
-        ms::driver::sensor_fifo
         ms::driver::scmi_drv
+        ms::driver::sensor_fifo
         ms::driver::textio::pl011
         ms::driver::vab
-        ms::lib::interface::in_band_telemetry_ddr
         ms::lib::accelerator_ip
         ms::lib::boot_status
         ms::lib::build_info_cli
         ms::lib::config_manager
-        ms::lib::core_info
         ms::lib::config_manager::cli
+        ms::lib::core_info
         ms::lib::cortex_m7::mpu
         ms::lib::cortex_m7::nvic
         ms::lib::cortex_m7::virt_irq
         ms::lib::crash_dump
         ms::lib::css
         ms::lib::cxl
+        ms::lib::d2d_cntr_sync
         ms::lib::ddr::cli
         ms::lib::ddr_manager
         ms::lib::ddrss_init
         ms::lib::debug
-        ms::lib::d2d_cntr_sync
         ms::lib::error_domain::scp
         ms::lib::exception_handler::scp
         ms::lib::gtimer
@@ -143,12 +142,12 @@ target_link_libraries(
         ms::lib::icc::cli
         ms::lib::icc_platform_defines
         ms::lib::ift
+        ms::lib::interface::in_band_telemetry_ddr
         ms::lib::interface::mhu_icc_payloads
         ms::lib::ioss_ini
         ms::lib::mesh
         ms::lib::mesh::cli
         ms::lib::pex_rng
-        ms::lib::telemetry::fuses
         ms::lib::power::cli
         ms::lib::pwr_tlm_core_ex
         ms::lib::register_headers
@@ -156,28 +155,31 @@ target_link_libraries(
         ms::lib::scp_avs
         ms::lib::scp_avs::cli
         ms::lib::scp_interrupts
+        ms::lib::spi
         ms::lib::stdio_textio
         ms::lib::system_info
+        ms::lib::systick_update
+        ms::lib::telemetry::fuses
         ms::lib::threadx
         ms::lib::tower
         ms::lib::variable_services
         ms::lib::variable_services::cli
         ms::lib::warm_start
         ms::lib::warm_start::cli
-        ms::lib::systick_update
-        ms::lib::spi
+        ms::service::accel_boot_notify
         ms::service::accel_intr_client
         ms::service::accel_intr_service
         ms::service::ap_core
         ms::service::atu_service
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
-        ms::service::event_trace::etc_etd
         ms::service::event_trace::et_mts_clnt
+        ms::service::event_trace::etc_etd
         ms::service::fuse
         ms::service::gpio::cli
         ms::service::health_monitor
         ms::service::health_monitor::cli
+        ms::service::m7_rtosmon
         ms::service::mem::cli
         ms::service::mts
         ms::service::pcie_manager
@@ -185,7 +187,6 @@ target_link_libraries(
         ms::service::power
         ms::service::pwr_tlm_scp
         ms::service::rhtlm_service::cli
-        ms::service::m7_rtosmon
         ms::service::scp_startup_shutdown
         ms::service::sds_service
         ms::service::sel_mgr
@@ -193,7 +194,6 @@ target_link_libraries(
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli
         ms::service::wdog
-        ms::service::accel_boot_notify
         silibs::avs
         silibs::common::lib_uart_pl011
         silibs::crypto::rng
@@ -216,26 +216,26 @@ target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.icc
 target_compile_definitions(
     ${TARGET}
     PRIVATE
-       MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
-       HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2SCP_MB_SW_INT
-       HW_INT_SDM_COMB_INT=HW_INT_SDM_INTR2_SCP_COMB_INT
-       HW_INT_CDED_COMB_INT=HW_INT_CDED_SDM_INTR2_SCP_COMB_INT
-       HW_INT_MSCP2MSCP_MHU_INT=HW_INT_MCP2SCP_MHU_INT
-       HW_INT_MSCP2AP_NS_MHU_INT=HW_INT_AP2SCP_MHU_NS_INT
-       HW_INT_AP2MSCP_MHU_S_INT=HW_INT_AP2SCP_MHU_S_INT
-       HW_INT_AP2MSCP_MHU_RT_INT=HW_INT_AP2SCP_MHU_RT_INT
-       HW_INT_D2D_NS_INT=HW_INT_SCPB_LOCAL_SCP_MHU_INT
-       MSCP_TOP_MSCP_EXP_ADDRESS=SCP_TOP_SCP_EXP_ADDRESS
-       MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=SCP_EXP_TOP_MSCP_MBOX_ADDRESS
-       MSCP_EXP_TOP_SPI_CTRL_ADDRESS=SCP_EXP_TOP_SPI_CTRL_ADDRESS
-       MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=SCP_EXP_TOP_SPI_BRIDGE_ADDRESS
-       RMSS_D2D_SCP_MB_HW_INT=HW_INT_MSCP_PEER_SCP_MB_INT
-       SCP_RUNTIME_INIT
        ACCEL_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX2_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS
+       CDED_SDM_DOMAIN=SCP_CDED_SDM_DOMAIN
+       HW_INT_AP2MSCP_MHU_RT_INT=HW_INT_AP2SCP_MHU_RT_INT
+       HW_INT_AP2MSCP_MHU_S_INT=HW_INT_AP2SCP_MHU_S_INT
+       HW_INT_CDED_COMB_INT=HW_INT_CDED_SDM_INTR2_SCP_COMB_INT
+       HW_INT_D2D_NS_INT=HW_INT_SCPB_LOCAL_SCP_MHU_INT
+       HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2SCP_MB_SW_INT
+       HW_INT_MSCP2AP_NS_MHU_INT=HW_INT_AP2SCP_MHU_NS_INT
+       HW_INT_MSCP2MSCP_MHU_INT=HW_INT_MCP2SCP_MHU_INT
+       HW_INT_SDM_COMB_INT=HW_INT_SDM_INTR2_SCP_COMB_INT
+       MSCP2HSP_MAILBOX_BASE_ADDRESS=SCP_TOP_SCP2HSP_MAILBOX_ADDRESS
        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE=SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE
        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE=SCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE
+       MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=SCP_EXP_TOP_MSCP_MBOX_ADDRESS
+       MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=SCP_EXP_TOP_SPI_BRIDGE_ADDRESS
+       MSCP_EXP_TOP_SPI_CTRL_ADDRESS=SCP_EXP_TOP_SPI_CTRL_ADDRESS
+       MSCP_TOP_MSCP_EXP_ADDRESS=SCP_TOP_SCP_EXP_ADDRESS
+       RMSS_D2D_SCP_MB_HW_INT=HW_INT_MSCP_PEER_SCP_MB_INT
+       SCP_RUNTIME_INIT
        SDM_DOMAIN=SCP_SDM_DOMAIN
-       CDED_SDM_DOMAIN=SCP_CDED_SDM_DOMAIN
 )
 
 # Define base addresses during compile time for respective core fw
@@ -260,18 +260,20 @@ set(TARGET kng.lib.runtime_init.mcp)
 
 add_library(${TARGET}
     OBJECT
-        accelerator_ip_mcp_init.c
         accel_intr_client_init.c
         accel_intr_service_init.c
+        accelerator_ip_mcp_init.c
+        ap_advlog_pldm_mcp_cli_init.c
+        ap_advlog_pldm_mcp_init.c
         atu_init.c
         bitrot_service_init.c
         boot_status_init.c
         build_info_cli_init.c
         cfg_mgr_init.c
-        core_info_init.c
         cli_crash_dump_init.c
         cli_init.c
         cli_tlm_fuses_init.c
+        core_info_init.c
         debug_init.c
         dfwk_init.c
         err_domain_mcp_init.c
@@ -283,8 +285,6 @@ add_library(${TARGET}
         health_monitor_mcp_init.c
         hw_semaphore_init.c
         hw_version_mcp_init.c
-        oob_uart_mcp_init.c
-        oob_uart_mcp_cli_init.c
         icc_accel_mbx_init.c
         icc_cli_init.c
         icc_d2dmbx_init.c
@@ -293,77 +293,77 @@ add_library(${TARGET}
         mcp_clock_init.c
         mcp_crash_dump_init.c
         mcp_mpu_init.c
-        rtosmon_init.c
         mts_init.c
         nvic_init.c
+        oob_uart_mcp_cli_init.c
+        oob_uart_mcp_init.c
         pdr_repo_init.c
-        power_pldm_mcp_init.c
         pldm_drv_init.c
-        tlm_fuses_init.c
+        power_pldm_mcp_init.c
         pwr_tlm_svc_mcp_init.c
+        rtosmon_init.c
         sel_init.c
         sensor_fifo_init.c
         spi_bridge_init.c
         startup_shutdown_init.c
-        system_info_init.c
         systick_update_init.c
+        system_info_init.c
         textio_init.c
+        tlm_fuses_init.c
         utc_sync_client_init.c
         # Removed as a workaround for bug: Bug 3203687: [C4143][FSE][InbandTelemetry] Telemetry Collection Stops Unexpectedly at Runtime
         # utc_sync_manager_init.c
         variable_services_init.c
         virt_irq_init.c
         watchdog_init.c
-        systick_update_init.c
-        ap_advlog_pldm_mcp_init.c
-        ap_advlog_pldm_mcp_cli_init.c
 )
 
 target_link_libraries(
     ${TARGET}
     PRIVATE
+        extern.libpldm
         fwlib.dfwk
         fwlib.driver.dw_i3c
         fwlib.driver.mboxIccTransport
         fwlib.lib.crashDump
         fwlib.lib.init
+        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.interface.utc_sync.common
         fwlib.lib.mboxPrimitives
         fwlib.lib.mctp
         fwlib.lib.mctp_uart_binding
-        fwlib.lib.interface.platform.dbgprint
         fwlib.lib.platform.impl.timers.threadx
-        fwlib.lib.utils
         fwlib.lib.tmr_queue
+        fwlib.lib.utils
         fwlib.platform.dfwkhost.threadx
         fwlib.service.bitrot
         fwlib.service.cli
         fwlib.service.i3c.cli
         fwlib.service.i3c_hw.cli
-        fwlib.service.mctp.cli
-        fwlib.service.pldm.cli
-        fwlib.service.iccBase
         fwlib.service.icc_dispatcher
+        fwlib.service.iccBase
+        fwlib.service.mctp.cli
         fwlib.service.mts.cli
         fwlib.service.pldm
+        fwlib.service.pldm.cli
         fwlib.service.utc.cli
         fwlib.service.utc_sync.client
         fwlib.service.utc_sync.manager
         ms::build_data
         ms::driver::gpio
         ms::driver::icc_mhu_trans
+        ms::driver::pldm
         ms::driver::sensor_fifo
         ms::driver::textio::pl011
-        ms::lib::interface::in_band_telemetry_ddr
         ms::lib::accel_intr
         ms::lib::accelerator_ip
         ms::lib::boot_status
         ms::lib::build_info_cli
         ms::lib::config_manager
-        ms::lib::core_info
         ms::lib::config_manager::cli
-        ms::lib::cortex_m7::nvic
+        ms::lib::core_info
         ms::lib::cortex_m7::mpu
+        ms::lib::cortex_m7::nvic
         ms::lib::cortex_m7::virt_irq
         ms::lib::crash_dump
         ms::lib::debug
@@ -376,44 +376,44 @@ target_link_libraries(
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::interface::mhu_icc_payloads
         ms::lib::mcp_interrupts
-        ms::driver::pldm
-        ms::lib::pldm_pdr
         ms::lib::pldm_common_headers
-        ms::lib::telemetry::fuses
+        ms::lib::pldm_pdr
         ms::lib::register_headers
         ms::lib::sensor_thresholds
-        ms::service::mcp_startup_shutdown
+        ms::lib::spi
         ms::lib::stdio_textio
         ms::lib::system_info
+        ms::lib::systick_update
+        ms::lib::telemetry::fuses
         ms::lib::threadx
         ms::lib::utc_sync_manager
         ms::lib::variable_services
-        ms::lib::systick_update
-        ms::lib::spi
+        ms::service::afm::cli
+        ms::service::ap_advlog_pldm
+        ms::service::ap_advlog_pldm::cli
         ms::service::atu_service
         ms::service::event_trace::collector
         ms::service::event_trace::decoder
-        ms::service::event_trace::relay
-        ms::service::event_trace::etc_etd
         ms::service::event_trace::et_mts_clnt
-        ms::service::afm::cli
+        ms::service::event_trace::etc_etd
+        ms::service::event_trace::relay
+        ms::service::event_trace::relay::cli
         ms::service::gpio::cli
+        ms::service::health_monitor
+        ms::service::health_monitor::cli
+        ms::service::m7_rtosmon
+        ms::service::mcp_startup_shutdown
         ms::service::mem::cli
         ms::service::mts
         ms::service::pwr_pldm_mcp
-        ms::service::m7_rtosmon
+        ms::service::pwr_tlm_mcp
+        ms::service::pwr_tlm_mcp::cli
         ms::service::sel_mgr
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
         ms::service::sys_info::cli
         ms::service::telemetry::fuses::cli
-        ms::service::pwr_tlm_mcp
-        ms::service::pwr_tlm_mcp::cli
         ms::service::wdog
-        ms::service::health_monitor
-        ms::service::health_monitor::cli
-        ms::service::ap_advlog_pldm
-        ms::service::ap_advlog_pldm::cli
         silibs::atu
         silibs::common::lib_uart_pl011
         silibs::fuse
@@ -427,7 +427,6 @@ target_link_libraries(
         silibs::platform
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
-        extern.libpldm
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
@@ -435,28 +434,28 @@ target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.icc
 target_compile_definitions(
     ${TARGET}
     PRIVATE
-       MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
-       HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MB_SW_INT
-       HW_INT_SDM_COMB_INT=HW_INT_SDM_INTR1_MCP_COMB_INT
-       HW_INT_CDED_COMB_INT=HW_INT_CDED_SDM_INTR1_MCP_COMB_INT
-       HW_INT_MSCP2MSCP_MHU_INT=HW_INT_SCP2MCP_MHU_NS_INT
-       HW_INT_MSCP2AP_NS_MHU_INT=HW_INT_AP2MCP_MHU_NS_INT
+       ACCEL_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX1_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS
+       CDED_SDM_DOMAIN=MCP_CDED_SDM_DOMAIN
        HW_INT_AP2MSCP_MHU_RT_INT=HW_INT_AP2MCP_MHU_RT_INT
        HW_INT_AP2MSCP_MHU_S_INT=HW_INT_AP2MCP_MHU_S_INT
+       HW_INT_CDED_COMB_INT=HW_INT_CDED_SDM_INTR1_MCP_COMB_INT
        HW_INT_D2D_NS_INT=HW_INT_MCPB_LOCAL_MCP_MHU_INT
-       MSCP_TOP_MSCP_EXP_ADDRESS=MCP_TOP_MCP_EXP_ADDRESS
-       MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=MCP_EXP_TOP_MSCP_MBOX_ADDRESS
-       MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
-       MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=0
-       MSCP_EXP_TOP_I3C_2_ADDRESS=MCP_EXP_TOP_I3C_2_ADDRESS
-       RMSS_D2D_SCP_MB_HW_INT=4294967295 #Unused on MCP
+       HW_INT_HSP2MSCP_MBOX_INT=HW_INT_HSP2MCP_MB_SW_INT
+       HW_INT_MSCP2AP_NS_MHU_INT=HW_INT_AP2MCP_MHU_NS_INT
+       HW_INT_MSCP2MSCP_MHU_INT=HW_INT_SCP2MCP_MHU_NS_INT
+       HW_INT_SDM_COMB_INT=HW_INT_SDM_INTR1_MCP_COMB_INT
        MCP_RUNTIME_INIT
-       ACCEL_MBOX_OFFSET_AFTER_0X100000=_ADDRESSBLOCK_0X100000_MISC_SYS_EXT_MBX1_EXT_MBX_REGS_E2I_MBX_CTRL_ADDRESS
+       MSCP2HSP_MAILBOX_BASE_ADDRESS=MCP_TOP_MCP2HSP_MAILBOX_ADDRESS
        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_BASE=MSCP_ATU_AP_WINDOW_VAR_SVC_BASE_ADDR
        MSCP_EXP_SCP_CFGMGR_VARIABLE_SERVICE_PAYLOAD_SIZE=MSCP_ATU_AP_WINDOW_VAR_SVC_DIE_SIZE
-       SDM_DOMAIN=MCP_SDM_DOMAIN
-       CDED_SDM_DOMAIN=MCP_CDED_SDM_DOMAIN
+       MSCP_EXP_TOP_I3C_2_ADDRESS=MCP_EXP_TOP_I3C_2_ADDRESS
+       MSCP_EXP_TOP_MSCP_MBOX_ADDRESS=MCP_EXP_TOP_MSCP_MBOX_ADDRESS
+       MSCP_EXP_TOP_SPI_BRIDGE_ADDRESS=0
+       MSCP_EXP_TOP_SPI_CTRL_ADDRESS=0
+       MSCP_TOP_MSCP_EXP_ADDRESS=MCP_TOP_MCP_EXP_ADDRESS
        PLDM_DRV_WORKAROUND
+       RMSS_D2D_SCP_MB_HW_INT=4294967295 #Unused on MCP
+       SDM_DOMAIN=MCP_SDM_DOMAIN
 )
 
 # Define base addresses during compile time for respective core fw

@@ -294,6 +294,7 @@ static void power_init_update_dvfs_cfg_common(const power_runconfig_t* p_runconf
     p_dvfs_cfg->init_cfg.cppc.nominal_perf = dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal);
     p_dvfs_cfg->init_cfg.cppc.nominal_freq = dvfs_get_freq_from_plimit(p_runconfig->derived.pnominal);
     p_dvfs_cfg->init_cfg.cppc.gtd_perf = dvfs_get_cppc_from_pstate(p_runconfig->derived.pnominal);
+    p_dvfs_cfg->init_cfg.cppc.lowest_freq = dvfs_get_freq_from_plimit(MAX_PLIMIT);
 
     // config static pll
     p_dvfs_cfg->static_pll_cfg.dco1_lckcntsel = p_knobs->plllock_cfg.lckcntsel;
@@ -384,13 +385,16 @@ static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig
 
     // update highest perf based on curve
     p_dvfs_cfg->init_cfg.cppc.highest_perf = dvfs_get_cppc_from_pstate(p_runconfig->derived.vfts[assigned_vft].min_plimit);
-    p_dvfs_cfg->init_cfg.cppc.lowest_nonlin_perf = dvfs_get_cppc_from_pstate(
-        find_lowest_nonlin_pstate_idx(p_runconfig, &p_runconfig->derived.vfts[assigned_vft]));
+
+    p_dvfs_cfg->init_cfg.cppc.lowest_nonlin_perf =
+        (p_runconfig->knobs.cppc_lowest_nonlin_perf < NUM_PSTATES)
+            ? dvfs_get_cppc_from_pstate(p_runconfig->knobs.cppc_lowest_nonlin_perf)
+            : dvfs_get_cppc_from_pstate(find_lowest_nonlin_pstate_idx(p_runconfig, &p_runconfig->derived.vfts[assigned_vft]));
+
     // update initial plimit based on min_plimit
     const uint8_t pnominal = p_runconfig->derived.pnominal;
     p_dvfs_cfg->init_cfg.plimit_index =
         p_runconfig->knobs.allowed_plimit_minimum > pnominal ? p_runconfig->knobs.allowed_plimit_minimum : pnominal;
-
     // set max freq in table (mainly for calibration) to the minimum perf level of either the knob or the
     // selected curve (MAX as plimit decreases with higher perf)
     p_dvfs_cfg->init_cfg.freq_table_cap_pstate =

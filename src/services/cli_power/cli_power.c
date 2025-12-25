@@ -157,6 +157,7 @@ static PLACED_CODE FPFW_CLI_STATUS cli_power_config_command(int argc, const char
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg vcpuinterp", "VCPU interpolation fuse config\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg vsys_override", "VSYS override config knobs\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr cfg vsys_vid", "VSYS VID fuse value\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr cfg cppc_lowest_nonlin", "CPPC lowest non-linear perf config\n");
         FpFwCliPrint("\n");
 
         return CLI_SUCCESS;
@@ -182,6 +183,8 @@ static PLACED_CODE uint8_t cli_power_cmd_arg_count(int subcommand_id)
         case POWER_IF_CMD_SET_SOC_HOT:
         case POWER_IF_CMD_SET_MEM_HOT:
         case POWER_IF_CMD_SET_THERM_TRIP:
+        case POWER_IF_CMD_STATUS_DROOPCOUNT:
+        case POWER_IF_CMD_STATUS_DVFS_THROT_SR:
             expected_argc = 3;
             break;
 

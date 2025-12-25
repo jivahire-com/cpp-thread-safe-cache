@@ -64,6 +64,7 @@ static void print_power_force_vrs(power_knobs_t* knobs);
 static void print_power_adclk_offset_cfg(power_knobs_t* knobs);
 static void print_power_config_vsys_override(power_knobs_t* knobs);
 static void print_power_config_vsys_vid(power_fuse_data_t* fuses);
+static void print_power_config_cppc_lowest_nonlin_perf(power_knobs_t* knobs);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -99,6 +100,7 @@ const power_cli_sub_command_dictionary_element_t power_cli_config_sub_command_di
     {"vcpucalc",            (print_function)print_power_config_vcpucalc,            POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"vsys_override",       (print_function)print_power_config_vsys_override,       POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
     {"vsys_vid",            (print_function)print_power_config_vsys_vid,            POWER_IF_CMD_GET_RUNCONFIG_FUSES},
+    {"cppc_lowest_nonlin",  (print_function)print_power_config_cppc_lowest_nonlin_perf,  POWER_IF_CMD_GET_RUNCONFIG_KNOBS},
 };
 
 //clang-format on
@@ -581,6 +583,21 @@ static PLACED_CODE void print_power_config_vsys_override(power_knobs_t* knobs)
     FpFwCliPrint("\n");
 }
 
+static PLACED_CODE void print_power_config_cppc_lowest_nonlin_perf(power_knobs_t* knobs)
+{
+    FpFwCliPrint("\nCPPC Lowest Non-Linear Performance Config\n");
+    FpFwCliPrint("-----------------------------------------\n");
+    if (knobs->cppc_lowest_nonlin_perf == 32)
+    {
+        FpFwCliPrint("CPPC Lowest Non-Linear Perf : knob not set (32)\n");
+    }
+    else
+    {
+        FpFwCliPrint("CPPC Lowest Non-Linear Perf Pstate : %u\n", knobs->cppc_lowest_nonlin_perf);
+    }
+    FpFwCliPrint("\n");
+}
+
 static PLACED_CODE void print_power_config_knobs(power_knobs_t* knobs)
 {
     FpFwCliPrint("\n---------------------------All Power Knobs---------------------------\n");
@@ -601,6 +618,7 @@ static PLACED_CODE void print_power_config_knobs(power_knobs_t* knobs)
     print_power_force_vrs(knobs);
     print_power_adclk_offset_cfg(knobs);
     print_power_config_vsys_override(knobs);
+    print_power_config_cppc_lowest_nonlin_perf(knobs);
 }
 
 static PLACED_CODE void print_power_config_max_allowed_plimit(power_knobs_t* knobs)

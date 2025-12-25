@@ -198,6 +198,7 @@
       <Member name="es1_fuse_overrides" type="bool" help="Enables Es1 power fuse overrides to match ES2 configurations" />
       <Member name="avs_ds" type="avs_ds_cfg_array_t" help="AVS drive strength" />
       <Member name="enable_vsys_vboot_override" type="bool" help="Enable override for VSYS VBOOT" />
+      <Member name="cppc_lowest_nonlin_perf" type="uint8_t" help="Sets the lowest non-linear performance point for CPPC takes in pstate range 0-31 as input" />
     </Struct>
 
   </Structs>
@@ -296,6 +297,8 @@
     <Knob name="power_soc_static_rails" type="uint16_t" default="0" help="Static power in mW to add to SOC power calculations" />
     <Knob name="power_avs_ds" type="avs_ds_cfg_array_t" default="{{{2,2},{2,2},{2,2},{2,2}}}" help="AVS drive strength" />
     <Knob name="power_enable_vsys_vboot_override" type="bool" default="false" help="If true and power_force_vrs knob for VSYS is zero update VSYS voltage from system Fuse field vsys_vid, else it relies of default setting of VSYS Vreg ie 921 mV" />
+    <Knob name="power_cppc_lowest_nonlin_perf" type="uint8_t" default="32" help="Sets the lowest non-linear performance point for CPPC takes in pstate range 0-31 as input" />
+
  
     <!-- Document Only
     <Knob name="power_itd_cfg" type="" default="" help="Inverse Temperature Dependence enable, configuration" />

@@ -3,62 +3,10 @@
 //
 
 /**
- *  @file ddrss.h
+ *  @file ddrss_sdl.h
  */
 
 #pragma once
-
-
-/*    Outline    Will delete once full feature is implemented
-
-Normal boot:
-1. SCP firmware will read "RUN_PPR" variable and see it is set to NONE
-(done)2. SCP firmware will read SDL variable from HSP/flash and load to DDR at the reserved address in ddrss_reserved_regions.h
-(done)2a.  If SDL not found, SCP will create an empty SDL "Header" and copy that to DDR
-(done)3. SCP firmware will create a UEFI variable with the location of the reserved region that holds the SDL as a hand-off to OS
-4. At shutdown/reboot, SCP will read the latest SDL from DDR and write back to flash via HSP.
-- Register for a reboot/shutdown callback to do this.
-
-HPPR boot:
-1. SCP firmware will read "RUN_PPR" variable and see it is set to HPPR
- a. Clear the RUN_PPR variable to NONE after reading it to avoid repeated HPPR on next boot
-2. SCP firmware will read SDL variable from HSP/flash and load to DDR *** to ARSM0 *** (it is accessible by both dies)
-3. Both dies will parse the SDL in ARSM0 and build defect lists to give to their local SiLibs 
-4. Both dies will call ddr_init as usual, but with the PPR flag set in ddrss_cfgs.ext_knobs.ppr_type and the defect lists populated
-5. After DDR init (and PPR is completed), SCP firmware needs to:
-    a. Update the SDL with the status of the PPR (which defects were applied, which were not, etc)
-    b. Write the updated SDL back to flash via HSP (and copy the updated SDL to DDR for OS hand-off)
-    c. Write the PPR addresses to each DIMM's SPD region over I3C
-    d. Write SEL for each PPR event that goes to BMC
-** If we continue to boot **
-6. Copy latest SDL after PPR updates to DDR (same as normal boot)
-??? Can both SCP dies update SDL in ARSM0 simultaneously since they are updating their own sections of it?  
-? And/Or do we need a sync point?  (Yes) to know when Die 1 is finished so we can write updated SDL back to flash (and to DDR)
-
-MPPR boot:
-1. This is much easier.  We see that the "RUN_PPR" variable is set to MPPR
-2. SCP firmware does not use SDL variable at all
-3. SCP firmware sets the ddrss_cfgs.ext_knobs.ppr_type to MPPR
-4. Calls ddr_init as usual, SiLibs will do MPPR based on its internal logic
-5. After DDR init, SCP firmware does not need to update SDL since not used
-6. Write SEL for each MPPR event that goes to BMC
-7. If available, update each DIMM's SPD region over I3C with repaired addresses
-
-ToDo:
-- Verify that die to die ICC messages are working for PPR type communication
-(done)- Verify that CLI commands to write "RUN_PPR" variable are working
-(done)- Veriif that CLI commands to read "RUN_PPR" variable are working
-- Test SPD writes over I3C updates
-- Test SEL entries for PPR/MPPR events - Make sure that BMC is expecting them and doesn't drop them.
-(done)- Load SDL variable from flash via HSP and copy to DDR for normal boot
-- Implement shutdown/reset hook/callback to copy SDL from DDR back to flash.
-*/
-
-
-
-
-
-
 
 
 /*----------- Nested includes ------------*/
@@ -97,19 +45,31 @@ ToDo:
 // This variable represents the non-volatile storage of SDL across reboots
 #define SDL_VAR_NAME  {'S', 'D', 'L', '\0' }
 #define SDL_VAR_GUID  {0xD369C0CF, 0x8935, 0x44A3, { 0x81, 0xF7, 0xAE, 0x9A, 0x4A, 0xDE, 0x9F, 0x8F }}
+#define SDL_MAX_SIZE (0x20000) // 128KB
 
 #define MEMORY_DEFECT_LIST_VERION_10 0x00000001
 #define MEMORY_DEFECT_VERSION_10 0x0001
 #define MEMORY_DEFECT_VERSION_20 0x0002
 
-#define PSHED_PI_DEFECT_LIST_SIGNATURE "SMDL" // 'SMDL' in ASCII
+#define PSHED_PI_DEFECT_LIST_SIGNATURE 0x4C444D53U // 'SMDL' in ASCII (little-endian)
 
 #define PPR_COMPLETION_STATUS_DETAIL_OVERFLOW 0x00000001
 #define PPR_COMPLETION_STATUS_DETAIL_TEMPERATION 0x00000002
 
-// Todo -- Is this a max entry count?  Or is it 128KB total?
-#define SHARED_DEFECT_LIST_MAX_ENTRIES 495  // this is not right for 128KB size  TODO...
 #define SDL_VAR_SIZE_BYTES 0x20000 // 128KB
+
+// SDL Schema related
+#define KNG_NUM_SOCKETS          (1)
+#define KNG_MAX_CHANNELS         (12)
+#define KNG_MAX_SUBCHANNELS_PER_CHANNEL  (2)
+#define KNG_MAX_RANK (2)
+#define KNG_MAX_BG (7)
+#define KNG_MAX_BANK (2)
+#define KNG_MAX_ROW (0x3FFFF)
+#define KNG_MAX_COL (0x7FF)
+#define KNG_MAX_DEVICES (64) //? 64 Devices/Electrical rank???
+
+#define KNG_MAX_SUBCHANNELS      (2)
 
 
 /*-------------- Typedefs ----------------*/
@@ -187,19 +147,19 @@ typedef union _DIMM_ADDRESS
     //
     struct
     {
-        uint64_t SocketId: 5;            // Up to 32 Sockets
-        uint64_t MemoryControllerId: 5;  // Up to 32 Memory Controllers/Socket
-        uint64_t ChannelId: 3;           // Up to 8 Channels/Memory Controller
-        uint64_t SubChannelId: 2;        // 4 Subchannels/Channel
-        uint64_t DimmSlot: 2;            // Up to 4 DIMMs/(Subchannel/Channel)
-        uint64_t DimmRank: 4;            // Up to 16 Electrical ranks/DIMM
-        uint64_t Device: 6;              // Up to 64 Devices/Electrical rank
+        uint64_t SocketId: 5;            // Up to 32 Sockets   Prod boares some have 2 sockets - may able to read from fuse bits?  can keep 0
+        uint64_t MemoryControllerId: 5;  // Up to 32 Memory Controllers/Socket: 0-23:  ddrss_index = This ID/2
+        uint64_t ChannelId: 3;           // Up to 8 Channels/Memory Controller.  Redundant
+        uint64_t SubChannelId: 2;        // 4 Subchannels/Channel.  Redundant
+        uint64_t DimmSlot: 2;            // Up to 4 DIMMs/(Subchannel/Channel)  Always 0.  Not used for ddrss
+        uint64_t DimmRank: 4;            // Up to 16 Electrical ranks/DIMM:  equivalent to 49 (.rank)
+        uint64_t Device: 6;              // Up to 64 Devices/Electrical rank: 
         uint64_t ChipId: 4;              // Up to 16 Chip IDs/DRAM Device
-        uint64_t Bank: 16;               // 256 Banks-includes BankGroup and Bank
-        uint64_t Dq: 10;                 // DQ = Lane
+        uint64_t Bank: 16;               // 256 Banks-includes BankGroup and Bank:  .bg = (Bank >> 8) & 7  .bank = (Bank & 0xFF) & 3
+        uint64_t Dq: 10;                 // DQ = Lane:  This is 53 (ppr_device_mask)
         uint64_t Reserved: 7;
-        uint32_t Row;                     // Up to 18 Row Bits
-        uint32_t Column;                  // Up to 11 Column Bits
+        uint32_t Row;                     // Up to 18 Row Bits:  This is 45 - .row
+        uint32_t Column;                  // Up to 11 Column Bits: 46
         uint64_t Info;
     } Ddr5;
 } DIMM_ADDRESS, *PDIMM_ADDRESS;
@@ -292,10 +252,33 @@ typedef enum _SDL_ADDRESS_PARAM
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
-int32_t get_sdl_var(uintptr_t load_addr);
-void sdl_get_mem_ctx(var_service_shared_mem_t* mem_ctx);
-void copy_empty_sdl_header_to_reserved_ddr(uintptr_t dest_addr_ddr);
 
-int32_t get_num_valid_sdl_entries(uintptr_t sdl_base);
-int32_t validate_sdl_addr_param(uint32_t param_value, SDL_ADDRESS_PARAM param_type);
+/* SDL Flash/Variable Storage */
+int32_t load_sdl_from_flash(uintptr_t load_addr);
+void sdl_get_mem_ctx(var_service_shared_mem_t* mem_ctx);
+void store_sdl_var_async(void *ssi_request);
+
+/* SDL Initialization and Setup */
+void copy_empty_sdl_header_to_reserved_ddr(uintptr_t dest_addr_ddr);
+uintptr_t sdl_get_atu_start_addr(void); // Change
+uintptr_t get_sdl_arsm0_addr(void);
+void load_shared_defect_list_to_DDR(void);
+void ddr_publish_sdl_addr(void);
+void cleanup_after_sdl_load(void);
+
+/* SDL Parsing and Validation */
 void parse_sdl_var(uintptr_t sdl_base, uintptr_t defect_list_addr);
+int32_t sdl_has_valid_entries(uintptr_t sdl_base);
+size_t sdl_get_size_from_header(uintptr_t sdl_base);
+
+/* SDL Update and Maintenance */
+void sdl_update_checksum(uintptr_t sdl_base);
+int32_t update_single_sdl_entry(ddrss_addr_t* ddrss_defect, uint32_t* sdl_matching_idx);
+void store_sdl_var_sync_from_arsm0(void);
+
+/* PPR Defect List Operations */
+int build_ppr_defect_list(ddrss_cfg_knobs_t* ddrss_cfgs, uintptr_t sdl_base);
+
+/* SDL Address Translation */
+void sdl_map_atu(uint64_t base_addr);
+void sdl_unmap_atu(void);

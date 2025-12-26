@@ -75,6 +75,7 @@ mock_target(${TARGET}
     config_get_ras_init_en
     config_get_rh_tlm_service_period_ms
     config_get_ddrmanager_sdl_en
+    config_get_skip_sdl_address_publishing
     ddr_create_memory_map
     ddr_i3c_interface_read_spd_nvm_data
     ddr_i3c_interface_read_temp_sensor_mr_reg

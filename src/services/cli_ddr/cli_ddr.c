@@ -38,14 +38,11 @@
 #endif
 
 // Uncomment to add test features that should not be released
-#define SDL_DEV_MODE (true)
+// #define SDL_DEV_MODE (true)
 
-#ifdef SDL_DEV_MODE
-static var_service_shared_mem_t mem_ctx = {0};
-static var_service_req_ctx_t sdl_set_var_ctx = {0};
-static var_service_req_params_t req_params = {0};
-static uint16_t sdl_var_name[] = SDL_VAR_NAME;
-static const guid_t sdl_var_guid[] = {SDL_VAR_GUID};
+#if SDL_DEV_MODE
+static uint8_t sdl_buffer_10[sizeof(MEMORY_DEFECT_LIST_HEADER) + (10 * sizeof(MEMORY_DEFECT_V2))] = {0};
+
 #endif
 
 /*-------------- Typedefs ----------------*/
@@ -54,7 +51,7 @@ static const guid_t sdl_var_guid[] = {SDL_VAR_GUID};
 static bool check_params(int Argc, const char** Argv, uint32_t* mc);
 static bool is_mc_are_belong_to_die(uint32_t mc);
 
-/* Added 3 placeholder commands to set the structure - Functions to be plugged when Silibs apis are available */
+// Error Injection
 STATIC FPFW_CLI_STATUS ecc_ce_error_injection(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS ecc_ue_error_injection(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS cmd_addr_parity_error_injection(int Argc, const char** Argv);
@@ -84,8 +81,8 @@ STATIC FPFW_CLI_STATUS xts_aes_keystore_ce_error_injection(int Argc, const char*
 STATIC FPFW_CLI_STATUS xts_aes_keystore_ue_error_injection(int Argc, const char** Argv);
 
 #ifdef SDL_DEV_MODE
-// Dont release this -- test only
-STATIC FPFW_CLI_STATUS write_sdl(int Argc, const char** Argv);
+// SDL Development Commands (Don't release these to production)
+STATIC FPFW_CLI_STATUS write_sample_sdl_to_ddr(int Argc, const char** Argv);
 void vs_sdl_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
 STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv);
 #endif
@@ -120,8 +117,8 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr", "bwl_force", ddr_manager_bwl_force, "Control BWL forced throttling state", "bwl_force <0|1>"},
 
 #ifdef SDL_DEV_MODE
-    {NULL_LIST_ENTRY, "ddr_ppr", "write_sdl", write_sdl, "(Over-)Writes an empty SDL variable to flash", "write_sdl >"},
-    {NULL_LIST_ENTRY, "ddr", "ppr", ddr_manager_ppr_status_update, "Invoke PPR status update", "ppr <dimm_num>"},
+    {NULL_LIST_ENTRY, "ddr_ppr", "status_update", ddr_manager_ppr_status_update, "Invoke PPR status update", "Usage: status_update <dimm_num>"},
+    {NULL_LIST_ENTRY, "ddr_ppr", "write_sample_sdl", write_sample_sdl_to_ddr, "Writes SDL to DDR with 3 known good entries addresses (D0:2, D1:1)", "Usage: write_sample_sdl"},
 #endif
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 };
@@ -581,70 +578,82 @@ static bool is_mc_are_belong_to_die(uint32_t mc)
 }
 
 #ifdef SDL_DEV_MODE
-void vs_sdl_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
+// This writes a sample SDL with 3 known good addresses to DDR SDL reserved region.
+// Note that there is nothing that will write it back to flash yet. (Next PR)
+STATIC PLACED_CODE FPFW_CLI_STATUS write_sample_sdl_to_ddr(int Argc, const char** Argv)
 {
-    //! cb is raised when recieve is complete
-    //! check status & do work
-    FPFW_UNUSED(context);
-    FPFW_UNUSED(data_start_ptr);
-    FPFW_UNUSED(data_size);
-
-    const char* operation_str = (var_serv_ctx->operation_type == ASYNC_GET_VARIABLE) ? "Get" : "Set";
-    printf("SDL %s variable completion status = %x\n", operation_str, (int)var_serv_ctx->async_req_result);
-
-    // variable_service_unlock_get_var_ctx(var_serv_ctx);
-
-    FpFwCliPrint("SDL cb - read data = %d\n", (int)*data_start_ptr);
-    FpFwCliPrint("SDL cb - data size = %d\n", (int)data_size);
-
-    // Unlock the get variable context
-    variable_service_unlock_get_var_ctx(var_serv_ctx);
-}
-
-STATIC FPFW_CLI_STATUS write_sdl(int Argc, const char** Argv)
-{
-    FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
+    FPFW_UNUSED(Argc);
 
-    KNG_DIE_ID die_id = idsw_get_die_id();
-    if (die_id == DIE_1)
-    {
-        return CLI_ERROR;
-    }
+    // Known good PPR addresses from ddrss_ppr_list[3] in ddrss_main.c
+    // Entry 0: row=0x100, col=0, bank=2, bg=1, rank=0, ddrss_index=0, subchannel=0, device_mask=0x0061
+    // Entry 1: row=0x12345, col=0, bank=1, bg=4, rank=0, ddrss_index=0, subchannel=0, device_mask=0x0001
+    // Entry 2: row=0, col=0, bank=1, bg=1, rank=0, ddrss_index=0, subchannel=1, device_mask=0x0001
 
-    // var_service_shared_mem_t local_mem_ctx = {0};
-    mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_BASE;
-    mem_ctx.max_payload_size = SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_SIZE;
+    // Build SDL payload in static buffer with 3 known good addresses
+    const size_t sdl_buffer_size = sizeof(MEMORY_DEFECT_LIST_HEADER) + (4 * sizeof(MEMORY_DEFECT_V2));
+    memset(sdl_buffer_10, 0, sdl_buffer_size);
 
-    variable_service_initialize_ctx(&sdl_set_var_ctx, &mem_ctx);
+    PMEMORY_DEFECT_LIST_HEADER sdl_header = (PMEMORY_DEFECT_LIST_HEADER)sdl_buffer_10;
+    PMEMORY_DEFECT_V2 sdl_defect = (PMEMORY_DEFECT_V2)(sdl_buffer_10 + sizeof(MEMORY_DEFECT_LIST_HEADER));
 
-    MEMORY_DEFECT_LIST_HEADER empty_sdl_header = {0};
-    empty_sdl_header.Signature = (uint32_t)PSHED_PI_DEFECT_LIST_SIGNATURE;
-    empty_sdl_header.Version = MEMORY_DEFECT_VERSION_20;
-    empty_sdl_header.Length = sizeof(MEMORY_DEFECT_LIST_HEADER);
-    empty_sdl_header.DefectCount = 0;
-    empty_sdl_header.Changed = 0;
-    empty_sdl_header.Checksum = 0;
+    // Initialize SDL header
+    sdl_header->Signature = PSHED_PI_DEFECT_LIST_SIGNATURE;
+    sdl_header->Version = MEMORY_DEFECT_VERSION_20;
+    sdl_header->Length = (uint32_t)sdl_buffer_size;
+    sdl_header->DefectCount = 4;
+    sdl_header->Checksum = 0;
 
-    empty_sdl_header.Checksum =
-        (uint32_t)CalculateRemoteCheckSum16((uint32_t)&empty_sdl_header, sizeof(MEMORY_DEFECT_LIST_HEADER));
+    // Entry 0: Translate from ddrss_ppr_list[0]
+    sdl_defect[0].DimmInfo.DimmAddress.Ddr5.Row = 0x100;
+    sdl_defect[0].DimmInfo.DimmAddress.Ddr5.Column = 0;
+    sdl_defect[0].DimmInfo.DimmAddress.Ddr5.Bank = (1 << 8) | 2; // bg=1, bank=2
+    sdl_defect[0].DimmInfo.DimmAddress.Ddr5.DimmRank = 0;
+    sdl_defect[0].DimmInfo.DimmAddress.Ddr5.MemoryControllerId = (0 * 2) + 0; // ddrss_index=0, subchannel=0
+    sdl_defect[0].DimmInfo.DimmAddress.Ddr5.Dq = 0x0061;
+    sdl_defect[0].Flags.DefectRepairRequested = 1;
+    sdl_defect[0].Flags.DefectRepairAttempted = 0;
 
-    req_params.variable_name_ptr = (uint16_t*)sdl_var_name;
-    req_params.variable_name_size = sizeof(sdl_var_name);
-    memcpy(&req_params.vendor_namespace_guid, sdl_var_guid, sizeof(req_params.vendor_namespace_guid));
-    req_params.data = (uint8_t*)&empty_sdl_header;
-    req_params.data_size = sizeof(empty_sdl_header);
-    req_params.attributes.as_uint32 = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
+    // Entry 1: Translate from ddrss_ppr_list[1]
+    sdl_defect[1].DimmInfo.DimmAddress.Ddr5.Row = 0x1234;
+    sdl_defect[1].DimmInfo.DimmAddress.Ddr5.Column = 0;
+    sdl_defect[1].DimmInfo.DimmAddress.Ddr5.Bank = (4 << 8) | 1; // bg=4, bank=1
+    sdl_defect[1].DimmInfo.DimmAddress.Ddr5.DimmRank = 0;
+    sdl_defect[1].DimmInfo.DimmAddress.Ddr5.MemoryControllerId = 2 + 0; // ddrss_index=2, subchannel=0
+    sdl_defect[1].DimmInfo.DimmAddress.Ddr5.Dq = 0x0001;
+    sdl_defect[1].Flags.DefectRepairRequested = 1;
+    sdl_defect[1].Flags.DefectRepairAttempted = 0;
 
-    FpFwCliPrint("Calling variable_service_async_set_variable to write empty SDL variable\n");
-    int status = variable_service_async_set_variable(&sdl_set_var_ctx, &req_params, vs_sdl_cb, NULL);
-    if (status != SILIBS_SUCCESS)
-    {
-        FpFwCliPrint("Failed to start async variable set: 0x%x\n", status);
-        return CLI_ERROR;
-    }
-    FpFwCliPrint("status = 0x%lx\n", status);
+    // Entry 2: Translate from ddrss_ppr_list[2]
+    sdl_defect[2].DimmInfo.DimmAddress.Ddr5.Row = 0;
+    sdl_defect[2].DimmInfo.DimmAddress.Ddr5.Column = 0;
+    sdl_defect[2].DimmInfo.DimmAddress.Ddr5.Bank = (1 << 8) | 1; // bg=1, bank=1
+    sdl_defect[2].DimmInfo.DimmAddress.Ddr5.DimmRank = 0;
+    sdl_defect[2].DimmInfo.DimmAddress.Ddr5.MemoryControllerId = 2 + 1; // ddrss_index=2, subchannel=1
+    sdl_defect[2].DimmInfo.DimmAddress.Ddr5.Dq = 0x0001;
+    sdl_defect[2].Flags.DefectRepairRequested = 1;
+    sdl_defect[2].Flags.DefectRepairAttempted = 0;
 
+    // Entry 2: Translate from ddrss_ppr_list[3] Die 1 DIMM
+    sdl_defect[3].DimmInfo.DimmAddress.Ddr5.Row = 0;
+    sdl_defect[3].DimmInfo.DimmAddress.Ddr5.Column = 0;
+    sdl_defect[3].DimmInfo.DimmAddress.Ddr5.Bank = (1 << 8) | 1; // bg=1, bank=1
+    sdl_defect[3].DimmInfo.DimmAddress.Ddr5.DimmRank = 0;
+    sdl_defect[3].DimmInfo.DimmAddress.Ddr5.MemoryControllerId = 20 + 0; // ddrss_index=20, subchannel=0
+    sdl_defect[3].DimmInfo.DimmAddress.Ddr5.Dq = 0x0001;
+    sdl_defect[3].Flags.DefectRepairRequested = 1;
+    sdl_defect[3].Flags.DefectRepairAttempted = 0;
+
+    // Calculate checksum on the local buffer
+    uint32_t checksum = (uint32_t)CalculateRemoteCheckSum16((uint32_t)sdl_buffer_10, (uint32_t)sdl_buffer_size);
+    sdl_header->Checksum = checksum;
+
+    // Map ATU and copy the completed SDL to DDR
+    sdl_map_atu(SDL_RESERVATION_BASE);
+    uintptr_t sdl_base = sdl_get_atu_start_addr();
+    memcpy((void*)sdl_base, sdl_buffer_10, sdl_buffer_size);
+
+    sdl_unmap_atu();
     return CLI_SUCCESS;
 }
 

@@ -291,14 +291,7 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     ddr_service_context_t ddr_service_context = {};
     ddr_service_config_t ddr_service_config = {};
 
-    will_return_always(__wrap_config_get_ddrmanager_sdl_en, true);
-
-    will_return_always(__wrap_variable_service_sync_get_variable, SILIBS_SUCCESS);
-    will_return_always(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
-    will_return(__wrap_atu_map, 0x012345678);
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
-    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, 0);
 
     // tx queue fails
     expect_any(__wrap__txe_queue_create, queue_ptr);
@@ -559,13 +552,12 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     // Inside ddr_manager_i3c_init()
     will_return(__wrap_idhw_get_die_id, 0);
 
-    // SDL load
-    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
-    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+    will_return(__wrap_gtimer_prodfw_get_counter, 1000000);     // start timestamp
+    will_return(__wrap_gtimer_prodfw_get_counter, 4000000);     // ddr training timestamp
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
 
     // SDL pointer variable write
-    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
-    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+    will_return(__wrap_config_get_ddrmanager_sdl_en, false);
 
     g_should_wrap_ddr_create_memory_map = true;
     expect_function_call(__wrap_ddr_create_memory_map);
@@ -586,9 +578,6 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
     crash_dump_init(&context);
 
     // Mock gtimer for duration calculation
-    will_return(__wrap_gtimer_prodfw_get_counter, 1000000);     // start timestamp
-    will_return(__wrap_gtimer_prodfw_get_counter, 4000000);     // ddr training timestamp
-    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
     will_return(__wrap_gtimer_prodfw_get_counter, 5000000);     // ddr init timestamp
     will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
 
@@ -672,9 +661,17 @@ TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
     will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
     will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
 
+    // Don't skip publishing SDL address variable
+    will_return(__wrap_config_get_skip_sdl_address_publishing, false);
+
     // SDL pointer variable write
     will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
     will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
+    // Invalidate Cache for SDL region
+    expect_any(SCB_CleanInvalidateDCache_by_Addr, addr);
+    expect_any(SCB_CleanInvalidateDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanInvalidateDCache_by_Addr);
 
     g_should_wrap_ddr_create_memory_map = true;
     expect_function_call(__wrap_ddr_create_memory_map);
@@ -767,9 +764,17 @@ TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
     will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
     will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
 
+    // Dont't skip publishing SDL address variable
+    will_return(__wrap_config_get_skip_sdl_address_publishing, false);
+
     // SDL pointer variable write
     will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
     will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
+    // Invalidate Cache for SDL region
+    expect_any(SCB_CleanInvalidateDCache_by_Addr, addr);
+    expect_any(SCB_CleanInvalidateDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanInvalidateDCache_by_Addr);
 
     g_should_wrap_ddr_create_memory_map = true;
     expect_function_call(__wrap_ddr_create_memory_map);
@@ -1650,7 +1655,7 @@ TEST_FUNCTION(ddr_sdl_load_success, NULL, NULL)
     will_return(__wrap_variable_service_sync_get_variable, SILIBS_SUCCESS);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
-    ddr_load_shared_defect_list();
+    load_shared_defect_list_to_DDR();
 }
 
 TEST_FUNCTION(ddr_sdl_load_not_found, NULL, NULL)
@@ -1672,7 +1677,7 @@ TEST_FUNCTION(ddr_sdl_load_not_found, NULL, NULL)
 
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
-    ddr_load_shared_defect_list();
+    load_shared_defect_list_to_DDR();
 }
 
 TEST_FUNCTION(ddr_sdl_load_alternate_path_1, NULL, NULL)
@@ -1680,7 +1685,7 @@ TEST_FUNCTION(ddr_sdl_load_alternate_path_1, NULL, NULL)
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
 
     // Nothing happens for DIE_1 (noop)
-    ddr_load_shared_defect_list();
+    load_shared_defect_list_to_DDR();
 }
 
 TEST_FUNCTION(ddr_ddr_manager_dfwk_init_test, NULL, NULL)

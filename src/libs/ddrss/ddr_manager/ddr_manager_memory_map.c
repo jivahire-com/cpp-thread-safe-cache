@@ -47,6 +47,13 @@ static uint32_t MemoryMapPassToTFA(ddrss_memory_region_t mmap_tfa[]);
 ddrss_memory_region_t outgoing_memory_map[MAX_MEMORY_REGIONS] = {0};
 
 /*------------- Functions ----------------*/
+
+// Accessor function
+ddrss_memory_region_t* ddr_manager_get_outgoing_memory_map()
+{
+    return &outgoing_memory_map[0];
+}
+
 /**
  *  Create DDR Address map with appended M/SCP reservations and pass to TF-A through SDS structure.
  *    If supported, SCP will get a DDR address regions map from ddrss si. lib

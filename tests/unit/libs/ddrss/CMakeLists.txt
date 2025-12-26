@@ -2,9 +2,11 @@ set(TARGET ddrss.test)
 
 set(SOURCES
     ddrss_mocks.c
+    test_ddr_sdl.cpp
     test_ddrss.cpp
     test_ddr_err_inj.cpp
     test_ddr_atu_map.cpp
+    
 )
 
 # Compile test
@@ -116,4 +118,8 @@ mock_target(${TARGET}
     ddr_i3c_interface_write_spd_nvm_data
     log_sel_event
     get_dimm_vendor_id
+    sdl_get_mem_ctx
+    variable_service_initialize_ctx
+    variable_service_sync_get_variable
+    variable_service_unlock_get_var_ctx
 )

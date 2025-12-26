@@ -870,3 +870,34 @@ uint8_t __wrap_get_dimm_vendor_id(uint16_t dimm_local_idx)
     FPFW_UNUSED(dimm_local_idx);
     return mock_type(uint8_t);
 }
+
+void __wrap_sdl_get_mem_ctx(var_service_shared_mem_t* mem_ctx)
+{
+    mem_ctx->payload_base = mock_type(uintptr_t);
+    mem_ctx->max_payload_size = mock_type(size_t);
+
+    return;
+}
+
+int32_t __wrap_variable_service_initialize_ctx(var_service_req_ctx_t* var_serv_ctx, var_service_shared_mem_t* mem_ctx)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(mem_ctx);
+
+    var_serv_ctx->is_initialized = true;
+
+    return mock_type(int32_t);
+}
+
+int32_t __wrap_variable_service_sync_get_variable(var_service_req_ctx_t* var_serv_ctx, var_service_req_params_t* req_params)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(req_params);
+
+    return mock_type(int32_t);
+}
+
+void __wrap_variable_service_unlock_get_var_ctx(var_service_req_ctx_t* var_serv_ctx)
+{
+    FPFW_UNUSED(var_serv_ctx);
+}

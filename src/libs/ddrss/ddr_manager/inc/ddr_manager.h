@@ -69,10 +69,6 @@ ddr_service_context_t* ddr_get_service_context(void);
  * Load PHY binary from flash to intermediate SRAM.
  */
 void hsp_send_recv_load_fw_ddr_phy_req(fpfw_icc_base_ctx_t* icc_ctx);
-
-// PPR & SDL related functions
-void ddr_load_shared_defect_list(void);
-void ddr_publish_sdl_addr(void);
 uint16_t CalculateRemoteCheckSum16(uint32_t BufferAddr, uint32_t Length);
 
 

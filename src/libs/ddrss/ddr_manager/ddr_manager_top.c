@@ -17,6 +17,7 @@
 #include <ddr_manager_dfwk.h>
 #include <ddr_manager_events.h> // for DDR_MANAGER_ET_FATAL, DDR_MANAGER_ET_TYPE_CURVE_H...
 #include <ddrss.h>              // for ddr_manager_init
+#include <ddrss_sdl.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>        // for fpfw_icc_base_ctx_t
 #include <gtimer_prodfw.h>        // for gtimer_prodfw_get_counter
@@ -425,19 +426,16 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     DDR_LOG_CRIT("DDR training time: %llu ms\n", ddr_training_time_ms);
     DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DDR_TRAINING_TIME_MS, (int)ddr_training_time_ms);
 
-    // PPR will write updated SDL back to flash if it has run during prod_ddrss_lib_init
-    // load the SDL from flash to DDR reserved region
+    // Load the SDL from flash to DDR reserved region
     if (config_get_ddrmanager_sdl_en() == true)
     {
-        DDR_LOG_INFO("Loading SDL from flash to DDR\n");
-        ddr_load_shared_defect_list();
-
-        DDR_LOG_INFO("Publishing SDL DDR location to UEFI variable\n");
+        load_shared_defect_list_to_DDR();
         ddr_publish_sdl_addr();
+        cleanup_after_sdl_load();
     }
     else
     {
-        DDR_LOG_INFO("SDL support disabled by config knob\n");
+        DDR_LOG_WARN("SDL support disabled by config knob\n");
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_SDL_SKIPPED_CFG_KNOB_DISABLED);
     }
 

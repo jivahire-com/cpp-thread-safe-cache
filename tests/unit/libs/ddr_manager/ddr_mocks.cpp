@@ -141,6 +141,11 @@ bool __wrap_config_get_ddrmanager_sdl_en()
     return mock_type(bool);
 }
 
+bool __wrap_config_get_skip_sdl_address_publishing()
+{
+    return mock_type(bool);
+}
+
 ddrss_phy_training_dq_margin_t* __wrap_ddrss_get_training_margin_base()
 {
     return mock_type(ddrss_phy_training_dq_margin_t*);

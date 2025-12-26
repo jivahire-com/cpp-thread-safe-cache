@@ -15,9 +15,9 @@ add_library(${TARGET}
         ddr_manager_gpio.c
         ddr_manager_i3c.c
         ddr_manager_memory_map.c
-        ddr_manager_platform.c
         ddr_manager_polling.c
         ddr_manager_rhtlm_service.c
+        ddr_manager_sdl.c
         ddr_manager_telemetry.c
         ddr_manager_top.c
 )
@@ -47,6 +47,8 @@ target_link_libraries(${TARGET}
         silibs::spi_bridge
         fwlib.dfwk
         fwlib.lib.init
+        ms::cmsis::interface
+        ms::lib::arm_intrinsic
         ms::lib::atomics
         ms::lib::crash_dump
         ms::lib::ddrss_init

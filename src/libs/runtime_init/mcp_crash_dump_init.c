@@ -245,6 +245,7 @@ static void pldm_platform_event_ready_callback(PDFWK_ASYNC_REQUEST_HEADER Reques
     BUG_ASSERT_PARAM(Request->RequestType == PLDM_GET_READY_ASYNC, Request->RequestType, 0);
     BUG_ASSERT_PARAM(pldm_request->status == FPFW_STATUS_SUCCESS, pldm_request->status, 0);
 
+    CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_PLDM_READY);
     crash_dump_start_oob_transfer_agent();
 }
 

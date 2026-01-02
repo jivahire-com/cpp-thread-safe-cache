@@ -182,21 +182,32 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
     }
     else
     {
+        // Cold boot
+        uint16_t my_core_id = ctx->die_index * CRASH_DUMP_CORE_NUM + ctx->core_index;
+
         if ((type_context->type == CRASH_DUMP_TYPE_MINI || ctx->die_index == DIE_0) && ctx->core_index == CRASH_DUMP_CORE_SCP)
         {
             // Initialize core status to CRASH_DUMP_STATE_NOT_AVAILABLE
             if (type_context->header != NULL)
             {
                 wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
-                for (uint16_t i = 0; i < CRASH_DUMP_CORE_NUM * 2; i++)
+
+                if (type_context->header->status == CRASH_DUMP_NOT_IN_USE)
                 {
-                    type_context->header->cores[i] = CRASH_DUMP_STATE_NOT_AVAILABLE;
+                    // Only update core states if CD status is not in use.
+                    for (uint16_t i = 0; i < CRASH_DUMP_CORE_NUM * 2; i++)
+                    {
+                        type_context->header->cores[i] = CRASH_DUMP_STATE_NOT_AVAILABLE;
+                    }
+
+                    // Set this core state to ready.
+                    type_context->header->cores[my_core_id] = CRASH_DUMP_STATE_READY;
+
+                    // Set this region is ready for crash dump.
+                    type_context->header->status = CRASH_DUMP_IN_USE;
                 }
                 release_semaphore(type_context->semaphore.id);
             }
-
-            // Set this region is ready for crash dump.
-            crash_dump_update_state(type_context, CRASH_DUMP_IN_USE);
         }
         else
         {
@@ -208,12 +219,14 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
             {
                 wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
                 is_ready = type_context->header->status == CRASH_DUMP_IN_USE;
+                if (is_ready && type_context->header->cores[my_core_id] != CRASH_DUMP_STATE_COMPLETED)
+                {
+                    // Update my core state to ready if there is no dump in memory
+                    type_context->header->cores[my_core_id] = CRASH_DUMP_STATE_READY;
+                }
                 release_semaphore(type_context->semaphore.id);
             }
         }
-
-        // Set this core state to ready.
-        crash_dump_update_core_state(type_context, CRASH_DUMP_STATE_READY);
     }
 }
 
@@ -350,7 +363,12 @@ void crash_dump_update_accel_state(ACCEL_ID accel_type, crash_dump_core_state_t 
     if (type_context != NULL && type_context->header != NULL)
     {
         wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
-        type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + accel_index] = (uint8_t)state;
+        // Do not transit accel cd state if it's going to ready from completed
+        if (state != CRASH_DUMP_STATE_READY ||
+            type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + accel_index] != CRASH_DUMP_STATE_COMPLETED)
+        {
+            type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + accel_index] = (uint8_t)state;
+        }
         release_semaphore(type_context->semaphore.id);
     }
 }

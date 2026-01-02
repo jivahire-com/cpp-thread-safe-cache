@@ -126,36 +126,9 @@ fpfw_status_t __wrap_tlm_fuses_get_ecid(ecid_t* ecid)
 //
 // Expectations
 //
-void set_expectations_initialize_crash_dump_header(bool wait, SEMAPHORE_ID sem_id, uint32_t sem_key)
+void set_expectations_initialize_crash_dump_header(SEMAPHORE_ID sem_id, uint32_t sem_key)
 {
-    if (!wait)
-    {
-        expect_value(__wrap_wait_for_semaphore, id, sem_id);
-        expect_value(__wrap_wait_for_semaphore, key, sem_key);
-        expect_function_call(__wrap_wait_for_semaphore);
-
-        expect_value(__wrap_release_semaphore, id, sem_id);
-        expect_function_call(__wrap_release_semaphore);
-
-        // crash_dump_update_state
-        expect_value(__wrap_wait_for_semaphore, id, sem_id);
-        expect_value(__wrap_wait_for_semaphore, key, sem_key);
-        expect_function_call(__wrap_wait_for_semaphore);
-
-        expect_value(__wrap_release_semaphore, id, sem_id);
-        expect_function_call(__wrap_release_semaphore);
-    }
-    else
-    {
-        expect_value(__wrap_wait_for_semaphore, id, sem_id);
-        expect_value(__wrap_wait_for_semaphore, key, sem_key);
-        expect_function_call(__wrap_wait_for_semaphore);
-
-        expect_value(__wrap_release_semaphore, id, sem_id);
-        expect_function_call(__wrap_release_semaphore);
-    }
-
-    // crash_dump_update_core_state
+    // Update status or wait until initialized
     expect_value(__wrap_wait_for_semaphore, id, sem_id);
     expect_value(__wrap_wait_for_semaphore, key, sem_key);
     expect_function_call(__wrap_wait_for_semaphore);
@@ -419,7 +392,7 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp, nullptr, nullptr)
     will_return_always(__wrap_crash_dump_context, &context);
     will_return_always(__wrap_system_info_is_warm_start, false);
 
-    set_expectations_initialize_crash_dump_header(true, SEM_ID_DIE0_IOSS_0, 1);
+    set_expectations_initialize_crash_dump_header(SEM_ID_DIE0_IOSS_0, 1);
 
     // init_dump_desc()
     set_expectations_init_dump_desc(true);
@@ -545,7 +518,7 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
     will_return_always(__wrap_crash_dump_context, &context);
     will_return_always(__wrap_system_info_is_warm_start, false);
 
-    set_expectations_initialize_crash_dump_header(false, SEM_ID_DIE0_IOSS_0, 2);
+    set_expectations_initialize_crash_dump_header(SEM_ID_DIE0_IOSS_0, 2);
 
     // init_dump_desc()
     set_expectations_init_dump_desc(true);
@@ -608,7 +581,7 @@ TEST_FUNCTION(test_crash_dump_register_mini_dump, nullptr, nullptr)
     will_return_always(__wrap_crash_dump_context, &context);
     will_return_always(__wrap_system_info_is_warm_start, false);
 
-    set_expectations_initialize_crash_dump_header(false, SEM_ID_MSCP_EXP_0, 2);
+    set_expectations_initialize_crash_dump_header(SEM_ID_MSCP_EXP_0, 2);
 
     // init_dump_desc()
     set_expectations_init_dump_desc(false);

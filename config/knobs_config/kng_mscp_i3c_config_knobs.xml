@@ -23,6 +23,7 @@
     <Knob name="reg_scl_ext_lcnt_timing" type="uint32_t" default="0x20202020" help="Set value for REG_SCL_EXT_LCNT_TIMING" />
     <Knob name="vdd" type="uint16_t" default="0x0" help="Set PMIC value for VDD to the DIMM (Rails SWA, SWB), PMIC Internal default if knob is 0, Range 1000 to 1200" />
     <Knob name="vddq" type="uint16_t" default="0x0" help="Set PMIC value for VDDQ to the DIMM (Rails SWC), PMIC Internal default if knob is 0, Range 1000 to 1200" />
+    <Knob name="disable_dimm_param_check" type="bool" default="0x0" help="Disable checking the DIMM params. Default: 0x0(DIMM Check is Enabled)" />
   </Knobs>
 
 </ConfigSchema>

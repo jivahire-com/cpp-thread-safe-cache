@@ -350,6 +350,7 @@ void __wrap_i3c_master_set_cfg_knobs(lib_i3c_cfg_t* p_lib_i3c_cfg)
     check_expected(p_lib_i3c_cfg->reg_scl_ext_lcnt_timing);
     check_expected(p_lib_i3c_cfg->vdd);
     check_expected(p_lib_i3c_cfg->vddq);
+    check_expected(p_lib_i3c_cfg->disable_dimm_param_check);
     function_called();
 }
 
@@ -366,6 +367,7 @@ void i3c_master_set_cfg_knobs_default_expect(void)
     expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->reg_scl_ext_lcnt_timing, 0x20202020);
     expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->vdd, 0x0);
     expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->vddq, 0x0);
+    expect_value(__wrap_i3c_master_set_cfg_knobs, p_lib_i3c_cfg->disable_dimm_param_check, false);
 }
 
 void expect_i3c_send_error_boot_status(void)

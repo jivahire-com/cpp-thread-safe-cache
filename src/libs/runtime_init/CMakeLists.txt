@@ -311,8 +311,7 @@ add_library(${TARGET}
         textio_init.c
         tlm_fuses_init.c
         utc_sync_client_init.c
-        # Removed as a workaround for bug: Bug 3203687: [C4143][FSE][InbandTelemetry] Telemetry Collection Stops Unexpectedly at Runtime
-        # utc_sync_manager_init.c
+        utc_sync_manager_init.c
         variable_services_init.c
         virt_irq_init.c
         watchdog_init.c

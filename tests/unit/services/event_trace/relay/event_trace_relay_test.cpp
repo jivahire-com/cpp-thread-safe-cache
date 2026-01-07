@@ -431,6 +431,148 @@ FPFW_ET_CORE_BUFFER_HEADER fake_core_buffer = {
     .LostEvents = 0,
 };
 
+trp_msg_t trp_msg_host = {.hdr = {
+
+                              .src_node =
+                                  {
+                                      .core_id = CPU_AP,
+                                      .die_id = 0,
+                                  },
+                              .dest_node =
+                                  {
+                                      .core_id = CPU_MCP,
+                                      .die_id = 0,
+                                  },
+                              .trp_msg_id = TRP_MSG_ID_DCP_FORWARD,
+                              .payload_size = sizeof(fake_core_buffer),
+                          }};
+
+TEST_FUNCTION(test_etr_process_request_host_request_capabilities, test_setup_die0, test_teardown)
+{
+    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_CAPABILITIES;
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg_host);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to success
+    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_etr_process_request_host_set_state_stopped, test_setup_die0, test_teardown)
+{
+    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_START_STOP;
+
+    trp_msg_host.payload.dcp_msg.payload.start_stop.state = DCP_START_STOP_STATE_STOP;
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg_host);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
+    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_etr_process_request_host_request_state_stopped, test_setup_die0, test_teardown)
+{
+    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg_host);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
+    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg_host.payload.dcp_msg.payload.get_state.state, DCP_CLIENT_STATE_STOPPED);
+}
+
+TEST_FUNCTION(test_etr_process_request_host_set_state_started, test_setup_die0, test_teardown)
+{
+    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_START_STOP;
+
+    trp_msg_host.payload.dcp_msg.payload.start_stop.state = DCP_START_STOP_STATE_START;
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg_host);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    /* Override number of pending buffers to 1 */
+    set_num_buffers_pending(1);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
+    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_etr_process_request_host_request_state_running, test_setup_die0, test_teardown)
+{
+    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg_host);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
+    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+    assert_int_equal(trp_msg_host.payload.dcp_msg.payload.get_state.state, DCP_CLIENT_STATE_RUNNING);
+}
+
 trp_msg_t trp_msg = {
     .hdr =
         {
@@ -572,7 +714,6 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
-    expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -673,8 +814,6 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
-    expect_function_call(__wrap_mts_client_send_dcp_notification);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // validate that the old buffer is now pending and that first pending buffer is now active
@@ -707,8 +846,8 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup_di
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
-    // Expect that the status of DCP Message status is set to DATA_COLLECTION_RD_DATA_NONE
-    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_NONE);
+    // Expect that the status of DCP Message status is set to DATA_COLLECTION_RD_DATA_VALID_MORE
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_MORE);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
@@ -865,8 +1004,6 @@ TEST_FUNCTION(test_etr_process_request_read_package_notification, test_setup_die
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    expect_function_call(__wrap_mts_client_send_dcp_notification);
-
     etr_worker_thread_func((ULONG)&s_test_context);
 }
 
@@ -898,6 +1035,9 @@ TEST_FUNCTION(test_etr_process_request_read_package_no_pending_buffer, test_setu
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    /* Override number of pending buffers to 0 */
+    set_num_buffers_pending(0);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -935,10 +1075,13 @@ TEST_FUNCTION(test_etr_process_request_read_package_buffer_pending, test_setup_d
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    /* Override number of pending buffers to 2 */
+    set_num_buffers_pending(2);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
-    // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_VALID_LAST
-    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_VALID_LAST);
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_response, test_setup_die0, test_teardown)
@@ -970,68 +1113,6 @@ TEST_FUNCTION(test_etr_process_request_read_package_response, test_setup_die0, t
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
     etr_worker_thread_func((ULONG)&s_test_context);
-}
-
-trp_msg_t trp_msg_host = {.hdr = {
-
-                              .src_node =
-                                  {
-                                      .core_id = CPU_AP,
-                                      .die_id = 0,
-                                  },
-                              .dest_node =
-                                  {
-                                      .core_id = CPU_MCP,
-                                      .die_id = 0,
-                                  },
-                              .trp_msg_id = TRP_MSG_ID_DCP_FORWARD,
-                              .payload_size = sizeof(fake_core_buffer),
-                          }};
-
-TEST_FUNCTION(test_etr_process_request_host_request_capabilities, test_setup_die0, test_teardown)
-{
-    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_CAPABILITIES;
-
-    // Set up expectations for a successful tx_queue_receive
-    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
-    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
-    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
-
-    will_return(set_tx_queue_receive_value, &trp_msg_host);
-    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
-
-    // Set up expectations for a successful tx_block_release
-    expect_any_always(__wrap__txe_block_release, block_ptr);
-    will_return(__wrap__txe_block_release, TX_SUCCESS);
-
-    etr_worker_thread_func((ULONG)&s_test_context);
-
-    // Expect that the status of TRP Message status is set to success
-    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
-}
-
-TEST_FUNCTION(test_etr_process_request_host_request_state, test_setup_die0, test_teardown)
-{
-    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
-
-    // Set up expectations for a successful tx_queue_receive
-    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
-    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
-    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
-    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
-
-    will_return(set_tx_queue_receive_value, &trp_msg_host);
-    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
-
-    // Set up expectations for a successful tx_block_release
-    expect_any_always(__wrap__txe_block_release, block_ptr);
-    will_return(__wrap__txe_block_release, TX_SUCCESS);
-
-    etr_worker_thread_func((ULONG)&s_test_context);
-
-    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
-    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_request_invalid, test_setup_die0, test_teardown)
@@ -1133,13 +1214,17 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    /* Override number of pending buffers to 2. After completing this buffer, there will be only one pending buffer */
+    set_num_buffers_pending(2);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the active buffer is set to free
     assert_int_equal(s_test_context.p_active_asic_buffer->state, ETR_DDR_BUFFER_STATE_FREE);
 
-    // Expect that the status of the dcp read data request is set to DATA_COLLECTION_RD_DATA_VALID_MORE
-    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_MORE);
+    // Expect that the status of the dcp read data request is set to DATA_COLLECTION_RD_DATA_VALID_LAST
+    // since we only have 1 buffer pending after processing DCP_MSG_ID_READ_DATA_COMPLETE
+    assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_LAST);
 
     // Expect that the status of TRP Message status is set to success
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
@@ -1188,7 +1273,13 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup_die0, test_teardow
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     etr_set_override_atu_test_address(&test_payload);
 
+    /* Override number of pending buffers to 0 */
+    set_num_buffers_pending(0);
+
+    expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
+
+    /* Expect a SCP Notification since there are no pending buffers */
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -1200,6 +1291,7 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_secondary_die, test_setup_die1, test_teard
     will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
 
+    expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
     static hsp_log_payload_header_t test_payload = {

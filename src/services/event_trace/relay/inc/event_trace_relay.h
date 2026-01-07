@@ -174,14 +174,30 @@ typedef struct
 */
 void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t* p_config);
 
+/**
+ * @brief Sets the DCP client state for the Event Trace telemetry client.
+ *
+ * @param state The new state to set for the Event Trace telemetry client.
+ * @return None
+ */
+void set_evt_dcp_client_state(dcp_client_state_t state);
 
 /**
- * @brief Get the etr service context object    
- * @details This function returns a pointer to the etr service context. This is used to access the internal state of the module.
- * 
- * @param[in] None
- * @param[out] None
- * 
- * @return etr_service_context_t* The service context handle for the Event Trace Relay
+ * @brief Gets the DCP client state for the Event Trace telemetry client.
+ *
+ * @param None
+ * @return The current state of the Event Trace telemetry client.
  */
-etr_service_context_t* get_etr_service_context(void);
+dcp_client_state_t get_evt_dcp_client_state(void);
+
+/************************************************************************
+ * Functions to override internal variables for unit tests
+ ************************************************************************/
+#ifdef _WIN32
+/**
+ * @brief Set the num buffers pending object - used for unit tests
+ * 
+ * @param num_buffers 
+ */
+void set_num_buffers_pending(uint32_t num_buffers);
+#endif

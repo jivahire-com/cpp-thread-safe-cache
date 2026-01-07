@@ -8,14 +8,13 @@
  */
 
 /*-------------------------------- Includes ---------------------------------*/
-#include <FpFwCli.h>           // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
-#include <FpFwUtils.h>         // for FPFW_ARRAY_SIZE, FPFW_UNUSED
-#include <bug_check.h>         // for BUG_CHECK
-#include <cli_et_telemetry.h>  // for evt_telemetry_cli_init
-#include <event_trace_relay.h> // for etr_service_get_context, etr_service_context_t
-#include <inttypes.h>          // for PRIu64
-#include <stdlib.h>            // for atoi
-#include <string.h>            // for memset
+#include <FpFwCli.h>          // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
+#include <FpFwUtils.h>        // for FPFW_ARRAY_SIZE, FPFW_UNUSED
+#include <bug_check.h>        // for BUG_CHECK
+#include <cli_et_telemetry.h> // for evt_telemetry_cli_init
+#include <inttypes.h>         // for PRIu64
+#include <stdlib.h>           // for atoi
+#include <string.h>           // for memset
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -25,12 +24,16 @@
 static FPFW_CLI_STATUS evt_tel_cli_get_ddr_buff_info(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS evt_tel_cli_set_all_buf_freef(int argc, const char** pp_argv);
 static FPFW_CLI_STATUS evt_tel_cli_get_evt_health(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS evt_tel_cli_set_client_state(int argc, const char** pp_argv);
+static FPFW_CLI_STATUS evt_tel_cli_get_client_state(int argc, const char** pp_argv);
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 static FPFW_CLI_COMMAND s_evt_tel_cli_cmd[] = {
     {NULL_LIST_ENTRY, "evt_tel", "get_buf_info", evt_tel_cli_get_ddr_buff_info, "Get DDR Buffer Info", "Usage: get_buf_info"},
     {NULL_LIST_ENTRY, "evt_tel", "set_buf_free", evt_tel_cli_set_all_buf_freef, "Free all DDR buffers", "Usage: set_buf_free"},
     {NULL_LIST_ENTRY, "evt_tel", "get_health", evt_tel_cli_get_evt_health, "Get Event Telemetry Health Stats", "Usage: get_health"},
+    {NULL_LIST_ENTRY, "evt_tel", "set_state", evt_tel_cli_set_client_state, "Set Event Telemetry Client State", "Usage: set_state <state>"},
+    {NULL_LIST_ENTRY, "evt_tel", "get_state", evt_tel_cli_get_client_state, "Get Event Telemetry Client State", "Usage: get_state"},
 };
 
 static etr_service_context_t* p_etr_service_context = NULL;
@@ -65,10 +68,10 @@ static FPFW_CLI_STATUS evt_tel_cli_get_ddr_buff_info(int argc, const char** pp_a
             state = 'F';
             break;
         case ETR_DDR_BUFFER_STATE_ACTIVE:
-            num_pending_asic_buffers++;
             state = 'A';
             break;
         case ETR_DDR_BUFFER_STATE_PENDING:
+            num_pending_asic_buffers++;
             state = 'P';
             break;
         default:
@@ -130,12 +133,48 @@ static FPFW_CLI_STATUS evt_tel_cli_get_evt_health(int argc, const char** pp_argv
 
     return CLI_SUCCESS;
 }
+static FPFW_CLI_STATUS evt_tel_cli_set_client_state(int argc, const char** pp_argv)
+{
+    if (argc != 2)
+    {
+        FpFwCliPrint("Invalid Command. Usage: set_client_state <state>\n");
+        return CLI_ERROR;
+    }
+
+    dcp_client_state_t set_state = (dcp_client_state_t)atoi(pp_argv[1]);
+
+    if ((dcp_start_stop_state_t)set_state == DCP_START_STOP_STATE_STOP)
+    {
+        FpFwCliPrint("Stopping DCP Client\n");
+    }
+    else if ((dcp_start_stop_state_t)set_state == DCP_START_STOP_STATE_START)
+    {
+        FpFwCliPrint("Starting DCP Client\n");
+    }
+    else
+    {
+        FpFwCliPrint("Invalid State\n");
+        return CLI_ERROR;
+    }
+
+    set_evt_dcp_client_state(set_state);
+    return CLI_SUCCESS;
+}
+
+static FPFW_CLI_STATUS evt_tel_cli_get_client_state(int argc, const char** pp_argv)
+{
+    FPFW_UNUSED(argc);
+    FPFW_UNUSED(pp_argv);
+
+    FpFwCliPrint("Client State: %s\n", (get_evt_dcp_client_state() == DCP_CLIENT_STATE_STOPPED ? "Stopped" : "Running"));
+    return CLI_SUCCESS;
+}
 
 /*----------------------------- Global Functions ----------------------------*/
 
-void evt_telemetry_cli_init(void)
+void evt_telemetry_cli_init(p_etr_service_context_t p_context)
 {
-    p_etr_service_context = get_etr_service_context();
+    p_etr_service_context = p_context;
 
     //! register the EVT Telemetry CLI commands
     FpFwCliRegisterTable(s_evt_tel_cli_cmd, FPFW_ARRAY_SIZE(s_evt_tel_cli_cmd));

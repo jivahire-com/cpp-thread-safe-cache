@@ -97,6 +97,10 @@ static fpfw_status_t etr_copy_hsp_telemetry(etr_service_context_t* p_service_con
             void* src = (void*)p_payload_header;
             void* dst = (void*)p_active_hsp_buffer->payload_management.base_addr;
             size_t size = p_active_hsp_buffer->payload_management.size_bytes;
+
+            /* Data is written by HSP to DDR, so invalidate cache before memcpy */
+            SCB_InvalidateDCache_by_Addr((uint32_t*)FPFW_ALIGN_BY(32, (uint32_t)src), (int32_t)FPFW_ALIGN_BY(32, size));
+
             memcpy(dst, src, size);
 
             /* Flush Cache so that the data is written to DDR - Address and size aligned to 32 Byte boundaries */

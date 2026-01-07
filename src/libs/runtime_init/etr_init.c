@@ -101,7 +101,7 @@ FPFW_INIT_COMPONENT(etr, FPFW_INIT_DEPENDENCIES("etc", "icc_hspmbx", "atu_svc", 
     etr_initialize(&s_etr_service_ctx, &config);
 
     // Initialize the CLI for Event Trace Telemetry
-    evt_telemetry_cli_init();
+    evt_telemetry_cli_init(&s_etr_service_ctx);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_etr_service_ctx};
 }

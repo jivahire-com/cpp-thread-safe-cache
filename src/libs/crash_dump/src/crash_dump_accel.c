@@ -14,21 +14,23 @@
 #include "crash_dump_memory.h"
 #include "crash_dump_status.h" // for crash_dump_update_accel_state
 
-#include <CrashDump.h>          // for FPFwCDPrintf
-#include <DbgPrint.h>           // for FPFW_DBGPRINT_INFO
-#include <FpFwUtils.h>          // for FPFW_MIN
-#include <accel_intr.h>         // for accel_intr_has_accel_crashed
-#include <atu_init.h>           // for atu_svc_accel_atu_addr
-#include <cded_regs_regs.h>     // for CDED_REGS_CCMP_CFG_ADDRESS
-#include <cdedss_config_regs.h> // for CDEDSS_CONFIG_CDED_REGS_REGS_ADDRESS
-#include <crash_dump.h>         // for crash_dump_register_address32
-#include <crash_dump_events.h>  // for CRASH_DUMP_ET
-#include <health_monitor.h>     // for hm_send_accel_error_cper
-#include <sdm_ext_cfg_regs.h>   // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
-#include <silibs_common.h>      // for BYTES_IN_WORD32
-#include <silibs_platform.h>    // for MMIO_READ32
-#include <stdint.h>             // for uint32_t
-#include <string.h>             // for memcpy
+#include <CrashDump.h>               // for FPFwCDPrintf
+#include <DbgPrint.h>                // for FPFW_DBGPRINT_INFO
+#include <FpFwUtils.h>               // for FPFW_MIN
+#include <accel_intr.h>              // for accel_intr_has_accel_crashed
+#include <atu_init.h>                // for atu_svc_accel_atu_addr
+#include <cded_regs_regs.h>          // for CDED_REGS_CCMP_CFG_ADDRESS
+#include <cdedss_config_regs.h>      // for CDEDSS_CONFIG_CDED_REGS_REGS_ADDRESS
+#include <crash_dump.h>              // for crash_dump_register_address32
+#include <crash_dump_events.h>       // for CRASH_DUMP_ET
+#include <gtimer_prodfw.h>           // for gtimer_get_timestamp_ms
+#include <health_monitor.h>          // for hm_send_accel_error_cper
+#include <sdm_ext_cfg_regs.h>        // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
+#include <silibs_common.h>           // for BYTES_IN_WORD32
+#include <silibs_platform.h>         // for MMIO_READ32
+#include <stdint.h>                  // for uint32_t
+#include <string.h>                  // for memcpy
+#include <utc_sync_client_service.h> // for utc_sync_client_get_current_time_epoch_ms
 
 /**
  * All SDM external config registers are offset by 0x100000
@@ -443,6 +445,113 @@ static bool crash_dump_wait_for_accel_cd_complete(ACCEL_ID accel_type)
     return true;
 }
 
+static void convert_soc_time_in_accel_cd_to_utc(void* cd_base_addr)
+{
+    /**
+     * The CrashDump library generates a binary file with a hierarchical structure consisting of three main
+     * sections: Header, Metadata, and Payload. The bCD Binary from the accelerator has the following layout:
+     *
+     * ┌─────────────────────────────────────────────────────────────────┐
+     * │                        CRASH DUMP FILE                          │
+     * ├─────────────────────────────────────────────────────────────────┤
+     * │  OFFSET 0                                                       │
+     * │  ┌───────────────────────────────────────────────────────────┐  │
+     * │  │                     DUMP_HEADER                           │  │
+     * │  │  • Magic: DUMP_HEADER_MAGIC_COMPLETE (when finalized)     │  │
+     * │  │  • Version: DUMP_HEADER_VERSION                           │  │
+     * │  │  • FileSize: Total size of dump file                      │  │
+     * │  │  • MetadataExtent: { Offset, Size }                       │  │
+     * │  │  • PayloadExtent: { Offset, Size }                        │  │
+     * │  └───────────────────────────────────────────────────────────┘  │
+     * ├─────────────────────────────────────────────────────────────────┤
+     * │  METADATA OFFSET (dump_header_size)                             │
+     * │  ┌───────────────────────────────────────────────────────────┐  │
+     * │  │                  DUMP_METADATA_HEADER                     │  │
+     * │  │  • Magic: DUMP_METADATA_MAGIC                             │  │
+     * │  │  • Version: DUMP_METADATA_VERSION                         │  │
+     * │  │  • Product: Product ID (e.g., Athena, Braga, Pioneer)     │  │
+     * │  │  • Type: DumpType (Mini, Full, etc.)                      │  │
+     * │  │  • Root: DUMP_CHUNK_DESCRIPTOR (Type=Aggregate)           │  │
+     * │  │      └─ ChunkCount: Number of metadata chunks             │  │
+     * │  └───────────────────────────────────────────────────────────┘  │
+     * ├─────────────────────────────────────────────────────────────────┤
+     * │  PAYLOAD OFFSET (dump_header_size + metadata_size)              │
+     * │  ┌───────────────────────────────────────────────────────────┐  │
+     * │  │                  DUMP_PAYLOAD_HEADER                      │  │
+     * │  │  • Magic: DUMP_PAYLOAD_MAGIC                              │  │
+     * │  │  • Version: DUMP_PAYLOAD_VERSION                          │  │
+     * │  │  • Configuration: Configuration ID                        │  │
+     * │  │  • Type: DumpType                                         │  │
+     * │  │  • Root: DUMP_CHUNK_DESCRIPTOR (Type=Aggregate)           │  │
+     * │  │      └─ ChunkCount: Number of payload chunks              │  │
+     * │  └───────────────────────────────────────────────────────────┘  │
+     * │                                                                 │
+     * │  ┌───────────────────────────────────────────────────────────┐  │
+     * │  │              DUMP_AGGREGATE_GENERIC (Root)                │  │
+     * │  │  • AggregateDescriptor                                    │  │
+     * │  │      └─ ChunkDescriptor (Type=Aggregate)                  │  │
+     * │  │      └─ ProcessorId (PRID)                                │  │
+     * │  │                                                           │  │
+     * │  │  ┌─────────────────────────────────────────────────────┐  │  │
+     * │  │  │            DUMP_AGGREGATE_GENERIC (Core)            │  │  │
+     * │  │  │  Contains all chunks for one processor core         |  |  |
+     * |  |  |  • AggregateDescriptor                              │  │  |
+     * │  │  |   └─ ChunkDescriptor (Type=Aggregate)               │  │  |
+     * │  │  |   └─ ProcessorId (PRID)                             │  │  │
+     * │  │  │                                                     │  │  │
+     * │  │  │  ┌───────────────────────────────────────────────┐  │  │  │
+     * │  │  │  │     DUMP_CHUNK_CRASH_INFORMATION              │  │  │  │
+     * │  │  │  │  • ChunkDescriptor (Type=CrashInformation)    │  │  │  │
+     * │  │  │  │  • Tcon[2]: Crash timestamp (64-bit split)    │  │  │  │
+     * │  │  │  │  • Bugcheck:                                  │  │  │  │
+     * │  │  │  │      └─ Code: Bug check error code            │  │  │  │
+     * │  │  │  │      └─ Parameter[4]: 4 parameters            │  │  │  │
+     * │  │  │  └───────────────────────────────────────────────┘  │  │  │
+     * │  │  │                                                     │  │  │
+     * │  │  │                                                     │  │  │
+     * │  │  │  ... (Memory chunks based on registered descriptors)│  │  │
+     * │  │  └─────────────────────────────────────────────────────┘  │  │
+     * │  │                                                           │  │
+     * │  │  ... (Additional core aggregates for multi-core dumps)    │  │
+     * │  └───────────────────────────────────────────────────────────┘  │
+     * └─────────────────────────────────────────────────────────────────┘
+     *
+     *  Hence, the offset of the timestamp (Tcon) from the base address is:
+     *  Tcon_offset = sizeof(DUMP_HEADER)
+     *              + sizeof(DUMP_METADATA_HEADER)
+     *              + sizeof(DUMP_PAYLOAD_HEADER)
+     *              + sizeof(DUMP_AGGREGATE_GENERIC)      // Root aggregate
+     *              + sizeof(DUMP_AGGREGATE_GENERIC)      // Core aggregate
+     *              + sizeof(DUMP_CHUNK_DESCRIPTOR)       // CrashInformation header
+     *
+     * where
+     * offsetof(DUMP_CHUNK_CRASH_INFORMATION, Tcon) = sizeof(DUMP_CHUNK_DESCRIPTOR)
+     */
+
+    uint32_t crash_info_offset = sizeof(DUMP_HEADER) + sizeof(DUMP_METADATA_HEADER) +
+                                 sizeof(DUMP_PAYLOAD_HEADER) + sizeof(DUMP_AGGREGATE_GENERIC) // Root aggregate
+                                 + sizeof(DUMP_AGGREGATE_GENERIC); // Core aggregate
+
+    DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info = (DUMP_CHUNK_CRASH_INFORMATION*)(cd_base_addr + crash_info_offset);
+
+    uint64_t crash_time_ms = get_timestamp_from_cd(p_dump_crash_info);
+
+    if (crash_time_ms != 0)
+    {
+        /* Fetch Current UTC Timestamp and current SoC timestamp in ms */
+        uint64_t current_utc_time = utc_sync_client_get_current_time_epoch_ms();
+        uint64_t current_system_time_ms = gtimer_get_timestamp_ms();
+
+        /* Gate against UTC timestamp not available */
+        if (current_utc_time != 0)
+        {
+            /* Compute and Update UTC Time at Crash */
+            uint64_t utc_crash_time_ms = current_utc_time - (current_system_time_ms - crash_time_ms);
+            update_timestamp_in_cd(p_dump_crash_info, utc_crash_time_ms);
+        }
+    }
+}
+
 static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_type)
 {
     uint32_t cd_ddr_addr;
@@ -497,6 +606,10 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
 
     crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_COMPLETED);
     FPFW_DBGPRINT_INFO("%s:CD_DDR_ADDR:0x%x SZ:%d\r\n", accel_name, (int)cd_ddr_addr, (int)cd_file_size);
+
+    /* Update timestamp to UTC from SoC timestamp*/
+    convert_soc_time_in_accel_cd_to_utc((void*)cd_ddr_addr);
+
     return;
 
 cd_transfer_failed:
@@ -590,4 +703,15 @@ bool crash_dump_is_accel_cd_complete(ACCEL_ID accel_type)
     }
 
     return true;
+}
+
+uint64_t get_timestamp_from_cd(DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info)
+{
+    return ((uint64_t)p_dump_crash_info->Tcon[1] << 32) + (uint64_t)p_dump_crash_info->Tcon[0];
+}
+
+void update_timestamp_in_cd(DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info, uint64_t utc_crash_time_ms)
+{
+    p_dump_crash_info->Tcon[0] = (uint32_t)((utc_crash_time_ms) & 0xFFFFFFFFUL);       // NOLINT
+    p_dump_crash_info->Tcon[1] = (uint32_t)((utc_crash_time_ms >> 32) & 0xFFFFFFFFUL); // NOLINT
 }

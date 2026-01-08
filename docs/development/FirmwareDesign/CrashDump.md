@@ -74,6 +74,7 @@ This will allow dumps to proceed even if a "primary" core is unavailable to perf
 BUG_CHECK will populate FpFwCrashDumpInfo and call into the framework's entrypoint.
 
 ### Default data capture
+
 The library registers built-in Cortex M7 registers, core stacks, ThreadX thread infos (Thread control blocks, internal ThreadX state), exception status registers, and registers outlined in this document:
 TBD
 
@@ -111,7 +112,6 @@ TBD
 | LR | Link Register |
 | PC | Program Counter |
 
-
 #### Exception Status Registers
 
 | Registers |  Description |
@@ -133,6 +133,7 @@ TBD
 | _tx_thread_system_state     | The current state of thread    |
 
 For each created thread
+
 | Variable     | Description              |
 | ------------ | ------------------------ |
 | TX_THREAD    | ThreadX thread structure |
@@ -140,9 +141,11 @@ For each created thread
 | thread_name  | Name of this thread      |
 
 #### SCP Specific Registers
+
 T.B.D
 
 #### MCP Specific Registers
+
 T.B.D
 
 #### Watchdog Registers
@@ -151,7 +154,6 @@ T.B.D
 | --------- | ----------------------------------------- |
 | WDOGRIS   | Watchdog Raw Interrupt Status Register    |
 | WDOGMIS   | Watchdog Masked Interrupt Status Register |
-
 
 ### Exceptions
 
@@ -165,6 +167,7 @@ The library handles the following Cortex M7 built-in exceptions:
 * Debug Monitor (used for BUG_CHECKs)
 
 #### Common Fault Exception Handler
+
 All error handlers use a common handler, which does the following:
 
 1. Initially store the processor state at crash time (r0-r15)
@@ -173,6 +176,7 @@ All error handlers use a common handler, which does the following:
 Since the Cortex M7 stacks certain register at exception time, these are recovered from the stack and the rest of the registers are recovered from the raw register value.
 
 **Exception Stack Frame**
+
 ```c
 // Registers pushed to the stack on exception entry
 // https://developer.arm.com/documentation/ddi0403/d/System-Level-Architecture/System-Level-Programmers--Model/ARMv7-M-exception-model/Exception-entry-behavior?lang=en
@@ -189,6 +193,7 @@ typedef struct __attribute__((pack)) {
 ```
 
 **Main Exception Entry**
+
 ```c
 {
     exception_stack_frame_t *stack_frame;
@@ -210,6 +215,7 @@ It will distinguish the crash reason (Bug Check vs built-in exception). The acti
 It will then fill out the Crash Dump Info struct as appropriate and then call the crash dump entrypoint API from the Crash Dump framework.
 
 ### Bug Check
+
 This library provides BUG_CHECK/BUG_ASSERT functionality, allowing consumers to programmatically invoke crash dump.
 
 See [Bug Check / Assert](https://woodinvillewiki.com/pages/viewpage.action?pageId=21398290) for details and guidelines.
@@ -220,6 +226,7 @@ Without a debugger attached, the DebugMonitor exception occurs after executing a
 As a result, BUG_CHECK parameters are copied to r0-r4 prior to executing bkpt, so that they can be picked up by the exception handler.
 
 An example snippet of invoking the Debug Monitor exception is shown:
+
 ```c
 // Assuming code, p1, p2, p3, p4 are arguments
 // This will store them in r0-r4 respectively
@@ -242,21 +249,26 @@ __asm__ volatile("bkpt\n");
 ```
 
 ### Remote Signaling
+
 When a core crashes, it will signal remote cores to begin dump collection. In this way, the state of the system can be captured when a fault occurs.
 
 
 #### MHU
+
 In order to trigger crash dump collection on remote ARM cores (SCP, MCP), a dedicated MHU channel in each MHU instance will be reserved.
 Crashing cores will trigger the MHU interrupt on all remote cores for which MHU signaling exists (including cross-die).
 
 Single Die:
+
    1. SCP to MCP and vice versa
 
 Dual Die:
+
    1. SCP primary to SCP remote and vice versa
    1. MCP primary to MCP remote and vice versa
 
 #### HSP Mailbox
+
 To trigger crash dump collection on HSP, HSP mailbox will be used - the crashing core will notify HSP using the Crash Dump mailbox message.
 HSP will notify SDM to begin crash dump collection via HSP-style mailbox.
 
@@ -265,13 +277,14 @@ As a matter of course, each die's HSP will notify all local cores via Crash Dump
 In order to avoid race conditions coming from separate MHU/HSP signaling, interrupts should be disabled on crash dump entry.
 Similarly, the incoming HSP mailbox should be flushed.
 
-
 #### Pre-mesh crashes
+
 Before the mesh is initialized, only the D2D SPI link can be used for cross-die communication.
 Thus for any pre-mesh crashes, the HSP mailbox will be used, and the local die's HSP will forward the request to the remote die's HSP.
 The mailbox message should indicate a pre-mesh crash to allow HSP to distinguish the boot phase when it receives the crash request, since it will be responsible for transferring the dump to BMC.
 
 ### Full vs Mini Dump
+
 Certain crash scenarios may occur prior to DDR being initialized, as a consequence it will be necessary to store a size-constrained dump in SRAM in pre-DDR crash cases and DDR failed cases.
 Thus cores will store a mini-dump in MSCP_EXP scratch RAM[TBD].
 SCP will store mini dump as well as full dump to cover the case of crash after DDR initialization but failed in runtime.
@@ -330,6 +343,7 @@ Crash Dump Base                                                                 
 Where each core equally divides the (reserved size - sizeof(core state)) for core-specific crash dump.
 
 #### Crash dump header access
+
 Core states (16 byte header) located in first part of crash dump regions to indicate dump progress.
 Mini dump header is located in MSCP EXP RAM for each die.
 Full dump header is located in DDR.
@@ -377,7 +391,9 @@ typedef struct {
 ```
 
 ### Dump Flows
+
 #### Post-boot crash
+
 In the case of a post-boot crash (post-MCP boot), the crashing core (if not HSP) sends a Crash Dump mailbox message to HSP, which in turns sends Crash Dump mailbox messages to each of its local cores.
 HSP also sends a mailbox message to the remote die's HSP, which in turns notifies its local cores via mailbox.
 
@@ -425,6 +441,7 @@ end
 ```
 
 #### Pre-mesh/pre-boot crash
+
 Before the mesh is initialized, only the D2D SPI link can be used for cross-die communication.
 Thus for any pre-mesh crashes, the HSP mailbox will be used, and the local die's HSP will forward the request to the remote die's HSP.
 Upon dump collection, HSP will transfer to BMC via I2C [TBD]
@@ -459,6 +476,7 @@ end
 ```
 
 #### Fatal HW error / Unrecoverable error
+
 Upon a Fatal HW Error, the OS is notified via a CPER (see Health Monitor design [TBD]).
 
 It will perform an OS BugCheck and then request a cold reset.
@@ -514,6 +532,7 @@ end
 ```
 
 #### HSP warm reset logic
+
 ```mermaid
 graph TD
 A[Crash Dump Request]
@@ -527,6 +546,7 @@ E-- Yes --> F
 ```
 
 #### HSP Read other core dump states
+
 ```mermaid
 graph TD
 A[Check mini dump header cd_state under SEM_ID_MSCP_EXP_0]
@@ -537,6 +557,10 @@ D --> E{Is in use?}
 E-- Yes --> F(Check core full dump states under SEM_ID_DIE0_IOSS_0)
 E-- No --> G(No dumps available)
 ```
+
+#### Special Consideration for Accelerator Crash Dump Collection
+
+The accelerators do not have context of UTC Time. Hence, accelerators update the system/SoC timestamp in the crash time (instead of UTC time). While collecting accelerator crash dump, SCP will update the timestamp in the accel crash dump to UTC time. In this process, there is a possibility that the crash time is off by 1ms (translation jitter), but that is acceptable error.
 
 ## Public APIs
 
@@ -626,7 +650,9 @@ void crash_dump_register_address64(uint64_t address, uint32_t size, FPFwCdDumpPr
 ```
 
 ## CLI
+
 The Crash Dump CLI will expose a few commands to allow test interaction:
+
 | CLI Command                                 | Description                                              |
 | -----------                                 | -------------------------------------------------------- |
 | reg_beef                                    | Registers filler hex as data to be stored in Crash dump  |
@@ -644,9 +670,11 @@ NORETURN will be defined such that in tests the functions are allowed to return,
 Similarly, a BUG_CHECK mock will be provided that will utilize setjmp in order to allow control to return to the test, when other libraries need to test BUG_CHECK cases.
 
 ## Functional Testing
+
 Functional tests will utilize the CLI and BMC entrypoints for invoking Crash Dump behaviour.
 They will validate each crash scenario against the requirements (eg: toggling required GPIOs, transferring crash dump to BMC, etc.)
 They will be run using SVP and Big FPGA, and when available, silicon.
 
 ## SVP crashdump
+
 SVP crash dump probe will dump into file under %REPO_APP_ROOT%.svp_simulator/crashdump folder if there is a crash.

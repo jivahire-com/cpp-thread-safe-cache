@@ -25,3 +25,19 @@
  * @param ctx Accel device ID such as SDM or CDED
  */
 void crash_dump_copy_accel_cd_file(void *ctx);
+
+/**
+ * @brief Extracts the crash timestamp from the crash information chunk in the Accel CD
+ * 
+ * @param p_dump_crash_info Pointer to the crash information chunk
+ * @return Extracted crash timestamp
+ */
+uint64_t get_timestamp_from_cd(DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info);
+
+/**
+ * @brief Updates the crash timestamp in the crash information chunk in the accel CD
+ * 
+ * @param p_dump_crash_info Pointer to the crash information chunk
+ * @param utc_crash_time_ms Timestamp to be updated
+ */
+void update_timestamp_in_cd(DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info, uint64_t utc_crash_time_ms);

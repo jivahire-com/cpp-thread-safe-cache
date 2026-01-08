@@ -127,4 +127,8 @@ mock_target(${TARGET}
     # fpfw_pldm_service_raise_platform_event    # !PLDM_DRV_WORKAROUND
     system_info_is_warm_start
     tlm_fuses_get_ecid
+    get_timestamp_from_cd
+    update_timestamp_in_cd
+    utc_sync_client_get_current_time_epoch_ms
+    gtimer_get_timestamp_ms
 )

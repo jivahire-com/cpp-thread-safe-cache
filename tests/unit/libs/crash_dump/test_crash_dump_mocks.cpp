@@ -664,4 +664,26 @@ bool __wrap_system_info_is_warm_start()
     return mock_type(bool);
 }
 
+uint64_t __wrap_get_timestamp_from_cd(DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info)
+{
+    FPFW_UNUSED(p_dump_crash_info);
+    return 0x123456789ABCDEF;
+}
+
+void __wrap_update_timestamp_in_cd(DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info, uint64_t utc_crash_time_ms)
+{
+    FPFW_UNUSED(p_dump_crash_info);
+    FPFW_UNUSED(utc_crash_time_ms);
+}
+
+uint64_t __wrap_utc_sync_client_get_current_time_epoch_ms()
+{
+    return 0xFEDCBA987654321;
+}
+
+uint64_t __wrap_gtimer_get_timestamp_ms()
+{
+    return 0x123456789ABCDEF;
+}
+
 } // extern "C"

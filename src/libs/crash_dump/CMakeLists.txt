@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # SCP Crash dump
 set(TARGET kng.lib.crash_dump)
 
@@ -7,6 +9,7 @@ set (SOURCES
         src/crash_dump_cli.c
         src/crash_dump_context.c
         src/crash_dump_dfwk.c
+        src/crash_dump_events.c
         src/crash_dump_gpio.c
         src/crash_dump_icc.c
         src/crash_dump_init.c
@@ -18,7 +21,6 @@ set (SOURCES
         src/crash_dump_pldm.c
         src/crash_dump_status.c
         src/crash_dump_stream.c
-        src/crash_dump_events.c
 )
 
 if("$ENV{REPO_APP_TOOLCHAIN}" STREQUAL "i386-pc-windows-msvc")
@@ -51,12 +53,13 @@ target_link_libraries(${TARGET}
         fwlib.service.pldm
         fwlib.service.utc_sync.client
         kng.lib.hsp_firmware_headers
-        ms::lib::accel_intr
         ms::build_data
         ms::client_interface::startup_shutdown
         ms::cmsis::interface
         ms::driver::pldm    # PLDM_DRV_WORKAROUND
+        ms::lib::accel_intr
         ms::lib::cortex_m7::nvic
+        ms::lib::gtimer
         ms::lib::icc_platform_defines
         ms::lib::register_headers
         ms::lib::system_info

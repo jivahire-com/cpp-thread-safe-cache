@@ -49,12 +49,22 @@ typedef struct
 
 /*--------- Function Prototypes ----------*/
 /**
- * @brief Get Shared ATU entry for Shared SRAM ECC Registers.
+ * @brief Get Shared ATU entry for Shared SRAM, ARSM, ECC Registers.
  */
-void get_shared_sram_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
+void get_arsm_ecc_atu_entry_die(mscp_arsm_ram_type_t type, uint8_t die_id, atu_map_entry_t* atu_entry);
+
+/**
+ * @brief Get Shared ATU entry for Shared SRAM, ARSM, ECC Registers in this die.
+ */
+void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
 
 /**
  * @brief Get Shared ATU entry for Shared SRAM, RSM, ECC Registers.
+ */
+void get_rsm_ecc_atu_entry_die(mscp_rsm_ram_type_t type, uint8_t die_id, atu_map_entry_t* atu_entry);
+
+/**
+ * @brief Get Shared ATU entry for Shared SRAM, RSM, ECC Registers in this die.
  */
 void get_rsm_ecc_atu_entry(mscp_rsm_ram_type_t type, atu_map_entry_t* atu_entry);
 
@@ -79,11 +89,6 @@ fpfw_icc_base_ctx_t* get_mhu_handle(void);
  *  
  */
 void set_mhu_handle(fpfw_icc_base_ctx_t* icc_ctx);
-
-/**
- * @brief Get Shared ATU entry for Shared SRAM, ARSM, ECC Registers.
- */
-void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry);
 
 #if defined (SCP_RUNTIME_INIT)
 /**

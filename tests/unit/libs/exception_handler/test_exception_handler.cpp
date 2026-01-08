@@ -18,6 +18,9 @@ extern "C" {
 #include <kng_error.h>           // for KNG_CD_HARDFAULT_EXCEPTION
 #include <mscp_error_domain.h>
 #include <nvic.h> // for nvic_status_t, nvic_set_isr_fault
+#include <scp_exp_csr_regs.h>
+#include <scp_exp_top_regs.h>
+#include <scp_top_regs.h>
 #include <shared_sram_ecc_ras_registers_regs.h>
 #include <stdint.h> // for uint32_t, uintptr_t
 #include <tx_api.h> // for TX_SUCCESS, TX_THREAD
@@ -134,9 +137,20 @@ int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
     return 0;
 }
 
-void __wrap_get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
+int __wrap_atu_find_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    assert_true(atu_id == ATU_ID_MSCP);
+    assert_non_null(atu_map_entry);
+
+    atu_map_entry->ap_base_address = mock_type(uint64_t);
+
+    return mock_type(int);
+}
+
+void __wrap_get_arsm_ecc_atu_entry_die(mscp_arsm_ram_type_t type, uint8_t die_id, atu_map_entry_t* atu_entry)
 {
     FPFW_UNUSED(type);
+    check_expected(die_id);
     static atu_map_entry_t dummy_entry = {};
     assert_non_null(atu_entry);
     *atu_entry = dummy_entry; // Return a dummy entry for testing purposes
@@ -144,9 +158,10 @@ void __wrap_get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* a
     function_called();
 }
 
-void __wrap_get_rsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
+void __wrap_get_rsm_ecc_atu_entry_die(mscp_arsm_ram_type_t type, uint8_t die_id, atu_map_entry_t* atu_entry)
 {
     FPFW_UNUSED(type);
+    check_expected(die_id);
     static atu_map_entry_t dummy_entry = {};
     assert_non_null(atu_entry);
     *atu_entry = dummy_entry; // Return a dummy entry for testing purposes
@@ -168,39 +183,19 @@ void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
     function_called();
 }
 
+void __wrap_mmio_update32(volatile uint32_t* addr, uint32_t data, uint32_t mask)
+{
+    check_expected(addr);
+    check_expected(data);
+    check_expected(mask);
+    function_called();
+}
 //
 // Tests
 //
 void test_exception_handler_params(int exception, uint32_t error_code)
 {
     exception_stack_frame_t stack_frame = {1, 2, 3, 4, 5, 6, 7, 8};
-
-    // Set up expectations for check_shared_sram_ecc_ras_fault()
-    for (int i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
-    {
-        expect_function_call(__wrap_get_arsm_ecc_atu_entry);
-        expect_function_call(__wrap_atu_map);
-        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
-        will_return(__wrap_mmio_read32, 0); // Simulate no error status
-        expect_function_call(__wrap_mmio_read32);
-        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
-        will_return(__wrap_mmio_read32, 0); // Simulate no error address
-        expect_function_call(__wrap_mmio_read32);
-        expect_function_call(__wrap_atu_unmap);
-    }
-
-    for (int i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
-    {
-        expect_function_call(__wrap_get_rsm_ecc_atu_entry);
-        expect_function_call(__wrap_atu_map);
-        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
-        will_return(__wrap_mmio_read32, 0); // Simulate no error status
-        expect_function_call(__wrap_mmio_read32);
-        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
-        will_return(__wrap_mmio_read32, 0); // Simulate no error address
-        expect_function_call(__wrap_mmio_read32);
-        expect_function_call(__wrap_atu_unmap);
-    }
 
     // Set up expectations
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
@@ -272,25 +267,6 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     stack_frame.PSR = 16;
     g_core_crash_context.r4 = 4; // p4
 
-    // Set up expectations for shared ram UE
-    expect_function_call(__wrap_get_arsm_ecc_atu_entry);
-    expect_function_call(__wrap_atu_map);
-    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
-    will_return(__wrap_mmio_read32,
-                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
-    expect_function_call(__wrap_mmio_read32);
-    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
-    will_return(__wrap_mmio_read32, 0x12345678);
-    expect_function_call(__wrap_mmio_read32);
-    expect_function_call(__wrap_atu_unmap);
-
-    expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
-    expect_value(__wrap_mmio_write32,
-                 data,
-                 (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK |
-                  SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK));
-    expect_function_call(__wrap_mmio_write32);
-
     // Set up expectations
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
     expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
@@ -302,7 +278,7 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_function_call(__wrap_crash_dump_bug_check_initiated_dump);
     will_return(__wrap_crash_dump_bug_check_initiated_dump, true);
 
-    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
     expect_function_call(__wrap_hm_submit_cper_cd_state);
 
     expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_E_NOTIMPL);
@@ -316,33 +292,6 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
 
     // Call API
     exception_handler(&stack_frame);
-
-    // Set up expectations for non shared ram ECC
-    for (int i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
-    {
-        expect_function_call(__wrap_get_arsm_ecc_atu_entry);
-        expect_function_call(__wrap_atu_map);
-        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
-        will_return(__wrap_mmio_read32, 0);
-        expect_function_call(__wrap_mmio_read32);
-        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
-        will_return(__wrap_mmio_read32, 0);
-        expect_function_call(__wrap_mmio_read32);
-        expect_function_call(__wrap_atu_unmap);
-    }
-
-    for (int i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
-    {
-        expect_function_call(__wrap_get_rsm_ecc_atu_entry);
-        expect_function_call(__wrap_atu_map);
-        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
-        will_return(__wrap_mmio_read32, 0);
-        expect_function_call(__wrap_mmio_read32);
-        expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
-        will_return(__wrap_mmio_read32, 0);
-        expect_function_call(__wrap_mmio_read32);
-        expect_function_call(__wrap_atu_unmap);
-    }
 
     // Set up expectations
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
@@ -360,6 +309,318 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_value(__wrap_crash_dump_handler, p2, 0);
     expect_value(__wrap_crash_dump_handler, p3, 0);
     expect_value(__wrap_crash_dump_handler, p4, 0);
+    expect_function_call(__wrap_crash_dump_handler);
+
+    expect_function_call(crash_dump_wait_forever);
+
+    // Call API
+    exception_handler(&stack_frame);
+}
+
+TEST_FUNCTION(test_bus_fault_handler_d0_arsm_UE, nullptr, nullptr)
+{
+    exception_stack_frame_t stack_frame;
+
+    stack_frame.R0 = KNG_E_NOTIMPL; // error_code
+    stack_frame.R1 = 1;             // p1
+    stack_frame.R2 = 2;             // p2
+    stack_frame.R3 = 3;             // p3
+    stack_frame.R12 = 12;
+    stack_frame.LR = 14;
+    stack_frame.PC = 15;
+    stack_frame.PSR = 16;
+    g_core_crash_context.r4 = 4; // p4
+
+    // Set up expectations
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
+    expect_function_call(get_active_exception);
+    will_return(get_active_exception, -11); // BusFault_IRQn
+
+    // Set up expectations for shared ram UE
+    SCB->CFSR = SCB_CFSR_MMARVALID_Msk;
+    SCB->MMFAR = 0x12345678;
+    will_return(__wrap_atu_find_map, 0); // AP address (AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS)
+    will_return(__wrap_atu_find_map, 0);
+
+    expect_value(__wrap_get_arsm_ecc_atu_entry_die, die_id, 0);
+    expect_function_call(__wrap_get_arsm_ecc_atu_entry_die);
+    expect_function_call(__wrap_atu_map);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    will_return(__wrap_mmio_read32,
+                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_read32);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    expect_value(__wrap_mmio_write32,
+                 data,
+                 (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK |
+                  SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK));
+    expect_function_call(__wrap_mmio_write32);
+    expect_function_call(__wrap_atu_unmap);
+
+    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper_cd_state);
+
+    expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_HM_ARSM_UE);
+    expect_any(__wrap_crash_dump_handler, p1);
+    expect_any(__wrap_crash_dump_handler, p2);
+    expect_any(__wrap_crash_dump_handler, p3);
+    expect_any(__wrap_crash_dump_handler, p4);
+    expect_function_call(__wrap_crash_dump_handler);
+
+    expect_function_call(crash_dump_wait_forever);
+
+    // Call API
+    exception_handler(&stack_frame);
+}
+
+TEST_FUNCTION(test_bus_fault_handler_d1_arsm_UE, nullptr, nullptr)
+{
+    exception_stack_frame_t stack_frame;
+
+    stack_frame.R0 = KNG_E_NOTIMPL; // error_code
+    stack_frame.R1 = 1;             // p1
+    stack_frame.R2 = 2;             // p2
+    stack_frame.R3 = 3;             // p3
+    stack_frame.R12 = 12;
+    stack_frame.LR = 14;
+    stack_frame.PC = 15;
+    stack_frame.PSR = 16;
+    g_core_crash_context.r4 = 4; // p4
+
+    // Set up expectations
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
+    expect_function_call(get_active_exception);
+    will_return(get_active_exception, -11); // BusFault_IRQn
+
+    // Set up expectations for shared ram UE
+    SCB->CFSR = SCB_CFSR_MMARVALID_Msk;
+    SCB->MMFAR = 0x12345678;
+    will_return(__wrap_atu_find_map, AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS); // AP address
+    will_return(__wrap_atu_find_map, 0);
+
+    expect_value(__wrap_get_arsm_ecc_atu_entry_die, die_id, 1);
+    expect_function_call(__wrap_get_arsm_ecc_atu_entry_die);
+    expect_function_call(__wrap_atu_map);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    will_return(__wrap_mmio_read32,
+                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_read32);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    expect_value(__wrap_mmio_write32,
+                 data,
+                 (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK |
+                  SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK));
+    expect_function_call(__wrap_mmio_write32);
+    expect_function_call(__wrap_atu_unmap);
+
+    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper_cd_state);
+
+    expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_HM_ARSM_UE);
+    expect_any(__wrap_crash_dump_handler, p1);
+    expect_any(__wrap_crash_dump_handler, p2);
+    expect_any(__wrap_crash_dump_handler, p3);
+    expect_any(__wrap_crash_dump_handler, p4);
+    expect_function_call(__wrap_crash_dump_handler);
+
+    expect_function_call(crash_dump_wait_forever);
+
+    // Call API
+    exception_handler(&stack_frame);
+}
+
+TEST_FUNCTION(test_bus_fault_handler_d0_rsm_UE, nullptr, nullptr)
+{
+    exception_stack_frame_t stack_frame;
+
+    stack_frame.R0 = KNG_E_NOTIMPL; // error_code
+    stack_frame.R1 = 1;             // p1
+    stack_frame.R2 = 2;             // p2
+    stack_frame.R3 = 3;             // p3
+    stack_frame.R12 = 12;
+    stack_frame.LR = 14;
+    stack_frame.PC = 15;
+    stack_frame.PSR = 16;
+    g_core_crash_context.r4 = 4; // p4
+
+    // Set up expectations
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
+    expect_function_call(get_active_exception);
+    will_return(get_active_exception, -11); // BusFault_IRQn
+
+    // Set up expectations for shared ram UE
+    SCB->CFSR = SCB_CFSR_MMARVALID_Msk;
+    SCB->MMFAR = 0x12345678;
+    will_return(__wrap_atu_find_map, 0x2F000000UL); // AP address
+    will_return(__wrap_atu_find_map, 0);
+
+    expect_value(__wrap_get_rsm_ecc_atu_entry_die, die_id, 0);
+    expect_function_call(__wrap_get_rsm_ecc_atu_entry_die);
+    expect_function_call(__wrap_atu_map);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    will_return(__wrap_mmio_read32,
+                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_read32);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    expect_value(__wrap_mmio_write32,
+                 data,
+                 (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK |
+                  SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK));
+    expect_function_call(__wrap_mmio_write32);
+    expect_function_call(__wrap_atu_unmap);
+
+    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper_cd_state);
+
+    expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_HM_RSM_UE);
+    expect_any(__wrap_crash_dump_handler, p1);
+    expect_any(__wrap_crash_dump_handler, p2);
+    expect_any(__wrap_crash_dump_handler, p3);
+    expect_any(__wrap_crash_dump_handler, p4);
+    expect_function_call(__wrap_crash_dump_handler);
+
+    expect_function_call(crash_dump_wait_forever);
+
+    // Call API
+    exception_handler(&stack_frame);
+}
+
+TEST_FUNCTION(test_bus_fault_handler_d1_rsm_UE, nullptr, nullptr)
+{
+    exception_stack_frame_t stack_frame;
+
+    stack_frame.R0 = KNG_E_NOTIMPL; // error_code
+    stack_frame.R1 = 1;             // p1
+    stack_frame.R2 = 2;             // p2
+    stack_frame.R3 = 3;             // p3
+    stack_frame.R12 = 12;
+    stack_frame.LR = 14;
+    stack_frame.PC = 15;
+    stack_frame.PSR = 16;
+    g_core_crash_context.r4 = 4; // p4
+
+    // Set up expectations
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
+    expect_function_call(get_active_exception);
+    will_return(get_active_exception, -11); // BusFault_IRQn
+
+    // Set up expectations for shared ram UE
+    SCB->CFSR = SCB_CFSR_MMARVALID_Msk;
+    SCB->MMFAR = 0x12345678;
+    will_return(__wrap_atu_find_map, 0x102F000000UL); // AP address
+    will_return(__wrap_atu_find_map, 0);
+
+    expect_value(__wrap_get_rsm_ecc_atu_entry_die, die_id, 1);
+    expect_function_call(__wrap_get_rsm_ecc_atu_entry_die);
+    expect_function_call(__wrap_atu_map);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    will_return(__wrap_mmio_read32,
+                SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+    expect_function_call(__wrap_mmio_read32);
+    expect_value(__wrap_mmio_read32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRADDR_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678);
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_write32, addr, (uint32_t)mapped_region + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
+    expect_value(__wrap_mmio_write32,
+                 data,
+                 (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK |
+                  SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK));
+    expect_function_call(__wrap_mmio_write32);
+    expect_function_call(__wrap_atu_unmap);
+
+    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper_cd_state);
+
+    expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_HM_RSM_UE);
+    expect_any(__wrap_crash_dump_handler, p1);
+    expect_any(__wrap_crash_dump_handler, p2);
+    expect_any(__wrap_crash_dump_handler, p3);
+    expect_any(__wrap_crash_dump_handler, p4);
+    expect_function_call(__wrap_crash_dump_handler);
+
+    expect_function_call(crash_dump_wait_forever);
+
+    // Call API
+    exception_handler(&stack_frame);
+}
+
+TEST_FUNCTION(test_hard_fault_handler_scf_ram_UE, nullptr, nullptr)
+{
+    exception_stack_frame_t stack_frame;
+
+    stack_frame.R0 = KNG_E_NOTIMPL; // error_code
+    stack_frame.R1 = 1;             // p1
+    stack_frame.R2 = 2;             // p2
+    stack_frame.R3 = 3;             // p3
+    stack_frame.R12 = 12;
+    stack_frame.LR = 14;
+    stack_frame.PC = 15;
+    stack_frame.PSR = 16;
+    g_core_crash_context.r4 = 4; // p4
+
+    // Set up expectations
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
+    expect_function_call(get_active_exception);
+    will_return(get_active_exception, -13); // HardFault_IRQn
+
+    // Set up expectations for scf ram UE
+    SCB->CFSR = SCB_CFSR_BFARVALID_Msk;
+    SCB->BFAR = SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS;
+    will_return(__wrap_atu_find_map, 0);  // AP address
+    will_return(__wrap_atu_find_map, -1); // Not found for SCF
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_ADDRESS);
+    will_return(__wrap_mmio_read32, SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_UE_MASK); // Simulate SCF UE
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_SCFRAM_SCP_ERRADDR_REG_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678); // Mock Address
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear UE (Update)
+    expect_value(__wrap_mmio_update32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_ADDRESS);
+    expect_value(__wrap_mmio_update32, data, SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_UE_MASK);
+    expect_value(__wrap_mmio_update32,
+                 mask,
+                 SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_UE_MASK | SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_CE_MASK |
+                     SCP_EXP_CSR_SCFRAM_SCP_ERRSTATUS_REG_OF_MASK);
+    expect_function_call(__wrap_mmio_update32);
+
+    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper_cd_state);
+
+    expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_HM_SCF_UE);
+    expect_any(__wrap_crash_dump_handler, p1);
+    expect_any(__wrap_crash_dump_handler, p2);
+    expect_any(__wrap_crash_dump_handler, p3);
+    expect_any(__wrap_crash_dump_handler, p4);
     expect_function_call(__wrap_crash_dump_handler);
 
     expect_function_call(crash_dump_wait_forever);

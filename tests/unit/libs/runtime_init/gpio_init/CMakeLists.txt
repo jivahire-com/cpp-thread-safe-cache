@@ -38,6 +38,12 @@ target_link_libraries(${TARGET}
         silibs::idsw_kng
 )
 
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+        FPFW_EVENT_TRACING_DISABLED
+)
+
 # Defining platform APIs
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")

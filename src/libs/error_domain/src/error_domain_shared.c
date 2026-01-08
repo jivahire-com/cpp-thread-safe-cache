@@ -95,13 +95,6 @@ static const atu_map_entry_t s_hm_rsm_atu_entries[2][MSCP_RSM_RAM_COUNT] = {
 static fpfw_icc_base_ctx_t* mhu_handle = NULL;
 
 /*-------------- Functions ---------------*/
-
-void get_shared_sram_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
-{
-    BUG_ASSERT(type < MSCP_ARSM_RAM_COUNT);
-    *atu_entry = s_hm_arsm_atu_entries[idsw_get_die_id()][type];
-}
-
 bool is_cached_space(uint32_t addr)
 {
 #if defined(SCP_RUNTIME_INIT)
@@ -127,16 +120,26 @@ void inject_err_by_access(uint32_t addr)
     MMIO_READ32(addr);
 }
 
-void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
+void get_arsm_ecc_atu_entry_die(mscp_arsm_ram_type_t type, uint8_t die_id, atu_map_entry_t* atu_entry)
 {
     BUG_ASSERT(type < MSCP_ARSM_RAM_COUNT);
-    *atu_entry = s_hm_arsm_atu_entries[idsw_get_die_id()][type];
+    *atu_entry = s_hm_arsm_atu_entries[die_id][type];
+}
+
+void get_arsm_ecc_atu_entry(mscp_arsm_ram_type_t type, atu_map_entry_t* atu_entry)
+{
+    get_arsm_ecc_atu_entry_die(type, idsw_get_die_id(), atu_entry);
+}
+
+void get_rsm_ecc_atu_entry_die(mscp_rsm_ram_type_t type, uint8_t die_id, atu_map_entry_t* atu_entry)
+{
+    BUG_ASSERT(type < MSCP_RSM_RAM_COUNT);
+    *atu_entry = s_hm_rsm_atu_entries[die_id][type];
 }
 
 void get_rsm_ecc_atu_entry(mscp_rsm_ram_type_t type, atu_map_entry_t* atu_entry)
 {
-    BUG_ASSERT(type < MSCP_RSM_RAM_COUNT);
-    *atu_entry = s_hm_rsm_atu_entries[idsw_get_die_id()][type];
+    get_rsm_ecc_atu_entry_die(type, idsw_get_die_id(), atu_entry);
 }
 
 void trigger_shared_sram_fault(bool arsm, int type, uint32_t target_addr, uint32_t err_mask)

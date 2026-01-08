@@ -24,7 +24,15 @@
 #include <mscp_error_domain.h>
 #include <nvic.h> // for nvic_set_isr_fault, nvic_irq_set_isr ...
 #define __NO_LARGE_ADDRMAP_TYPEDEFS__
-#include <scp_top_regs.h>
+#if defined(MCP_RUNTIME_INIT)
+    #include <mcp_exp_csr_regs.h>
+    #include <mcp_exp_top_regs.h>
+    #include <mcp_top_regs.h>
+#elif defined(SCP_RUNTIME_INIT)
+    #include <scp_exp_csr_regs.h>
+    #include <scp_exp_top_regs.h>
+    #include <scp_top_regs.h>
+#endif
 #include <shared_sram_ecc_ras_registers_regs.h>
 #include <stddef.h> // for NULL
 #include <stdint.h> // for uint32_t
@@ -36,6 +44,8 @@
 
 /*-- Declarations (Statics and globals) --*/
 #define KNG_CD_CTI_TRIGGER_ERROR_CODE 0
+#define AP_RSM_ADDRESS_DIEn(n)        ((uint64_t)0x2F000000UL + 0x1000000000ULL * (n))
+#define AP_RSM_SIZE                   (0x10000)
 
 /*------------- Functions ----------------*/
 static void print_context_info(core_crash_context_t* crash_context)
@@ -131,8 +141,12 @@ __attribute__((__weak__)) int get_active_exception(void)
 }
 
 // #define DUMP_ARSM_ECC_STATUS_VERBOSE 1
-static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm, atu_map_entry_t* atu_entry, acpi_err_sec_firmware_t* sec_fw_cper_section)
+static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm,
+                                                     atu_map_entry_t* atu_entry,
+                                                     int32_t* errorCode,
+                                                     acpi_err_sec_firmware_t* sec_fw_cper_section)
 {
+    bool ret = false;
     atu_map(ATU_ID_MSCP, atu_entry);
     uint32_t err_status =
         MMIO_READ32(atu_entry->mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS);
@@ -186,21 +200,16 @@ static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm, atu_map_entry
                          SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_LSB);
     }
 #endif
-    atu_unmap(ATU_ID_MSCP, atu_entry);
-
     if ((err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) &&
         (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK))
     {
+        *errorCode = (is_arsm) ? KNG_HM_ARSM_UE : KNG_HM_RSM_UE;
         sec_fw_cper_section->severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
 
-#if defined(SCP_RUNTIME_INIT)
-        sec_fw_cper_section->record_id = (is_arsm) ? RECORD_ID_SCP_ARSM_RAM : RECORD_ID_SCP_RSM_RAM;
-#else
-        sec_fw_cper_section->record_id = (is_arsm) ? RECORD_ID_MCP_ARSM_RAM : RECORD_ID_MCP_RSM_RAM;
-#endif
+        sec_fw_cper_section->record_id = (is_arsm) ? RECORD_ID_MSCP_ARSM_RAM : RECORD_ID_MSCP_RSM_RAM;
         sec_fw_cper_section->param[0] = err_status;
         sec_fw_cper_section->param[1] = err_addr;
-        sec_fw_cper_section->param[2] = (is_arsm) ? KNG_HM_ARSM_UE : KNG_HM_RSM_UE;
+        sec_fw_cper_section->param[2] = *errorCode;
         sec_fw_cper_section->param[3] = 0;
 
         // clear UE
@@ -209,37 +218,141 @@ static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm, atu_map_entry
 
         MMIO_WRITE32(atu_entry->mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS, err_clr_mask);
 
-        return true;
+        ret = true;
     }
+    atu_unmap(ATU_ID_MSCP, atu_entry);
 
-    return false;
+    return ret;
 }
 
-static bool check_shared_sram_ecc_ras_fault(acpi_err_sec_firmware_t* sec_fw_cper_section)
+static bool check_ecc_fault(int32_t* errorCode, acpi_err_sec_firmware_t* sec_fw_cper_section)
 {
-    atu_map_entry_t atu_entry;
+    bool ret = false;
+    uint32_t fault_addr = 0;
 
-    // Check ARSM range
-    for (mscp_arsm_ram_type_t i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
+    if (SCB->CFSR & SCB_CFSR_MMARVALID_Msk) // MMFA valid
     {
-        get_arsm_ecc_atu_entry(i, &atu_entry);
-        if (check_shared_sram_ecc_ras_fault_internal(true, &atu_entry, sec_fw_cper_section))
+        // Check with MMFAR
+        fault_addr = SCB->MMFAR;
+    }
+    else if (SCB->CFSR & SCB_CFSR_BFARVALID_Msk)
+    {
+        // Check with BFAR
+        fault_addr = SCB->BFAR;
+    }
+
+    if (fault_addr)
+    {
+        // Look for ATU entry to check if fault address is mapped AP address
+        atu_map_entry_t atu_entry = {.ap_base_address = UINT64_MAX, .mscp_start_address = fault_addr};
+
+        if (atu_find_map(ATU_ID_MSCP, &atu_entry) == SILIBS_SUCCESS)
         {
-            return true;
+            // This is mapped address.
+            if (atu_entry.ap_base_address < (AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS + AP_TOP_D0_ARSM_SHARED_SRAM_SIZE))
+            // && atu_entry.ap_base_address >= (AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS) : Always true on uint
+            {
+                // Check D0 ARSM ECC Status
+                for (mscp_arsm_ram_type_t i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
+                {
+                    get_arsm_ecc_atu_entry_die(i, 0, &atu_entry);
+                    if (check_shared_sram_ecc_ras_fault_internal(true, &atu_entry, errorCode, sec_fw_cper_section))
+                    {
+                        FPFwCDPrintf("ARSM0 ECC RAS UE Fault\n");
+                        ret = true;
+                        break;
+                    }
+                }
+            }
+            else if (atu_entry.ap_base_address >= (AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS) &&
+                     atu_entry.ap_base_address < (AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS + AP_TOP_D1_ARSM_SHARED_SRAM_SIZE))
+            {
+                // Check D1 ARSM ECC Status
+                for (mscp_arsm_ram_type_t i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
+                {
+                    get_arsm_ecc_atu_entry_die(i, 1, &atu_entry);
+                    if (check_shared_sram_ecc_ras_fault_internal(true, &atu_entry, errorCode, sec_fw_cper_section))
+                    {
+                        FPFwCDPrintf("ARSM1 ECC RAS UE Fault\n");
+                        ret = true;
+                        break;
+                    }
+                }
+            }
+            else if (atu_entry.ap_base_address >= (AP_RSM_ADDRESS_DIEn(0)) &&
+                     atu_entry.ap_base_address < (AP_RSM_ADDRESS_DIEn(0) + AP_RSM_SIZE))
+            {
+                // Check D0 RSM ECC Status
+                for (mscp_rsm_ram_type_t i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
+                {
+                    get_rsm_ecc_atu_entry_die(i, 0, &atu_entry);
+                    if (check_shared_sram_ecc_ras_fault_internal(false, &atu_entry, errorCode, sec_fw_cper_section))
+                    {
+                        FPFwCDPrintf("RSM0 ECC RAS UE Fault\n");
+                        ret = true;
+                        break;
+                    }
+                }
+            }
+            else if (atu_entry.ap_base_address >= (AP_RSM_ADDRESS_DIEn(1)) &&
+                     atu_entry.ap_base_address < (AP_RSM_ADDRESS_DIEn(1) + AP_RSM_SIZE))
+            {
+                // Check D1 RSM ECC Status
+                for (mscp_rsm_ram_type_t i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
+                {
+                    get_rsm_ecc_atu_entry_die(i, 1, &atu_entry);
+                    if (check_shared_sram_ecc_ras_fault_internal(false, &atu_entry, errorCode, sec_fw_cper_section))
+                    {
+                        FPFwCDPrintf("RSM1 ECC RAS UE Fault\n");
+                        ret = true;
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Fault address is MSCP local address space
+            if (fault_addr >= (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SCF_RAM_ADDRESS) &&
+                fault_addr < (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SCF_RAM_ADDRESS + MSCP_EXP_TOP_SCF_RAM_SIZE))
+            {
+                // SCF RAM
+                const uint32_t err_msk = MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_UE_MASK |
+                                         MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_CE_MASK |
+                                         MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_OF_MASK;
+                uint32_t scf_status = MMIO_READ32(MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
+                                                  MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_ADDRESS);
+
+                if (scf_status & err_msk)
+                {
+                    if (scf_status & MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_UE_MASK)
+                    {
+                        FPFwCDPrintf("SCF ECC RAS UE Fault\n");
+                        *errorCode = KNG_HM_SCF_UE;
+
+                        // Set CPER section
+                        sec_fw_cper_section->severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+                        sec_fw_cper_section->record_id = RECORD_ID_MSCP_SCF_RAM;
+                        sec_fw_cper_section->param[0] = scf_status;
+                        sec_fw_cper_section->param[1] =
+                            MMIO_READ32(MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
+                                        MSCP_EXP_CSR_SCFRAM_MSCP_ERRADDR_REG_ADDRESS);
+                        sec_fw_cper_section->param[2] = KNG_HM_SCF_UE;
+                        sec_fw_cper_section->param[3] = 0;
+                    }
+
+                    // clear Error status
+                    MMIO_UPDATE32(MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
+                                      MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_ADDRESS,
+                                  scf_status,
+                                  err_msk);
+                    ret = true;
+                }
+            }
         }
     }
 
-    // Check RSM range
-    for (mscp_rsm_ram_type_t i = MSCP_S_RSM_RAM; i < MSCP_RSM_RAM_COUNT; i++)
-    {
-        get_rsm_ecc_atu_entry(i, &atu_entry);
-        if (check_shared_sram_ecc_ras_fault_internal(false, &atu_entry, sec_fw_cper_section))
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return ret;
 }
 
 /**
@@ -252,8 +365,7 @@ FPFW_NORETURN void exception_handler(exception_stack_frame_t* stack_frame)
     save_crash_context(stack_frame);
 
     acpi_err_sec_firmware_t sec_fw_cper_section = {0};
-    bool is_shared_sram_ecc_ue_fault = check_shared_sram_ecc_ras_fault(&sec_fw_cper_section);
-    FPFwCDPrintf("Shared SRAM ECC RAS UE Fault: %s\n", is_shared_sram_ecc_ue_fault ? "Detected" : "Not Detected");
+    bool sec_fw_cper_section_valid = false;
 
     // Disable Watchdog
     wdog_cmsdk_apb_disable();         // Disable watchdog
@@ -263,19 +375,12 @@ FPFW_NORETURN void exception_handler(exception_stack_frame_t* stack_frame)
     uint32_t bugCheckParams[4] = {};
     const int exceptionIdx = get_active_exception();
 
-#if defined(MCP_RUNTIME_INIT)
-    acpi_error_domain_t err_domain = ACPI_ERROR_DOMAIN_MCP_PROC;
-    const uint32_t record_id = exceptionIdx == NonMaskableInt_IRQn ? RECORD_ID_MCP_WD : RECORD_ID_MCP_EXCEPTION;
-#elif defined(SCP_RUNTIME_INIT)
-    acpi_error_domain_t err_domain = ACPI_ERROR_DOMAIN_SCP_PROC;
-    const uint32_t record_id = exceptionIdx == NonMaskableInt_IRQn ? RECORD_ID_SCP_WD : RECORD_ID_SCP_EXCEPTION;
-#endif
-
     switch (exceptionIdx)
     {
     case HardFault_IRQn:
         FPFwCDPrintf("Hard Fault occurred\n");
         errorCode = KNG_CD_HARDFAULT_EXCEPTION;
+        sec_fw_cper_section_valid = check_ecc_fault(&errorCode, &sec_fw_cper_section);
         bugCheckParams[0] = (uint32_t)__FILE__;
         bugCheckParams[1] = __LINE__;
         break;
@@ -288,6 +393,7 @@ FPFW_NORETURN void exception_handler(exception_stack_frame_t* stack_frame)
     case BusFault_IRQn:
         FPFwCDPrintf("Bus Fault occurred\n");
         errorCode = KNG_CD_BUSFAULT_EXCEPTION;
+        sec_fw_cper_section_valid = check_ecc_fault(&errorCode, &sec_fw_cper_section);
         bugCheckParams[0] = (uint32_t)__FILE__;
         bugCheckParams[1] = __LINE__;
         break;
@@ -330,16 +436,17 @@ FPFW_NORETURN void exception_handler(exception_stack_frame_t* stack_frame)
     {
         acpi_cper_section_t cper_section;
 
-        if (!is_shared_sram_ecc_ue_fault)
+        if (!sec_fw_cper_section_valid)
         {
             sec_fw_cper_section = (acpi_err_sec_firmware_t){
                 .severity = ACPI_ERROR_SEVERITY_CORRECTED,
-                .record_id = record_id,
                 .param = {errorCode, bugCheckParams[0], bugCheckParams[1], bugCheckParams[2]}};
+
+            sec_fw_cper_section.record_id = exceptionIdx == NonMaskableInt_IRQn ? RECORD_ID_MSCP_WD : RECORD_ID_MSCP_EXCEPTION;
         }
 
         cper_section.sec_fw = sec_fw_cper_section;
-        hm_submit_cper_cd_state(err_domain, sec_fw_cper_section.severity, &cper_section, sizeof(cper_section));
+        hm_submit_cper_cd_state(ACPI_ERROR_DOMAIN_MSCP_PROC, sec_fw_cper_section.severity, &cper_section, sizeof(cper_section));
     }
 
     // Call the crash dump handler

@@ -479,15 +479,6 @@ uint32_t ift_get_current_fw_size(void)
     return s_ift_current_fw_size;
 }
 
-void sleep_ns(uint64_t data)
-{
-    uint64_t microseconds = data / 1000;
-
-    microseconds += 1;
-
-    SLEEP_US(microseconds);
-}
-
 void ift_notify_scp_die0()
 {
     /* Notify SCP Die 0 that the IFT test has completed */

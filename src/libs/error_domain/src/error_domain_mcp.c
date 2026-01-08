@@ -383,7 +383,7 @@ static void enable_mcp_ecc_error()
     for (mscp_arsm_ram_type_t i = MSCP_S_ARSM_RAM; i < MSCP_ARSM_RAM_COUNT; i++)
     {
         atu_map_entry_t atu_entry;
-        get_shared_sram_ecc_atu_entry(i, &atu_entry);
+        get_arsm_ecc_atu_entry(i, &atu_entry);
         int status = atu_map(ATU_ID_MSCP, &atu_entry);
         BUG_ASSERT(status == SILIBS_SUCCESS);
 

@@ -49,10 +49,12 @@ mock_target(${TARGET}
     wdog_cmsdk_apb_lock_unlock
     _tx_thread_stack_error_notify
     hm_submit_cper_cd_state
-    get_arsm_ecc_atu_entry
-    get_rsm_ecc_atu_entry
+    get_arsm_ecc_atu_entry_die
+    get_rsm_ecc_atu_entry_die
     atu_map
     atu_unmap
+    atu_find_map
     mmio_read32
     mmio_write32
+    mmio_update32
 )

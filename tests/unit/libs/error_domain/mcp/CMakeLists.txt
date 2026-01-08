@@ -53,6 +53,7 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
        MCP_RUNTIME_INIT
+       FPFW_EVENT_TRACING_DISABLED
 )
 
 lint_target(${TARGET})

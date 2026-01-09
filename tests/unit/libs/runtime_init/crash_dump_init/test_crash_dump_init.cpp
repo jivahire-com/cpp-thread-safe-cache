@@ -331,38 +331,26 @@ TEST_FUNCTION(test_crash_dump_init_in_memory, nullptr, nullptr)
     assert_false(in_memory(start_addr, end_addr));
 }
 
-TEST_FUNCTION(test_crash_dump_init, nullptr, nullptr)
+#if defined(SCP_RUNTIME_INIT)
+TEST_FUNCTION(test_crash_dump_init_scp, nullptr, nullptr)
 {
     // Set up expectations
     will_return(__wrap_idsw_get_die_id, DIE_0);
-#if defined(MCP_RUNTIME_INIT)
-    will_return_always(__wrap_idsw_get_platform_sdv, 0x30); // PLATFORM_FPGA
-#endif
 
     expect_any(__wrap_crash_dump_init, context);
     expect_value(__wrap_crash_dump_init, context->die_index, DIE_0);
-#if defined(SCP_RUNTIME_INIT)
     expect_value(__wrap_crash_dump_init, context->core_index, CRASH_DUMP_CORE_SCP);
     expect_value(__wrap_crash_dump_init, context->is_primary, false);
-#elif defined(MCP_RUNTIME_INIT)
-    expect_value(__wrap_crash_dump_init, context->core_index, CRASH_DUMP_CORE_MCP);
-    expect_value(__wrap_crash_dump_init, context->is_primary, true);
-#endif
     expect_function_call(__wrap_crash_dump_init);
 
     expect_any(__wrap_crash_dump_register_dump, type_context);
-#if defined(SCP_RUNTIME_INIT)
     expect_value(__wrap_crash_dump_register_dump, type_context->type, CRASH_DUMP_TYPE_MINI);
-#elif defined(MCP_RUNTIME_INIT)
-    expect_value(__wrap_crash_dump_register_dump, type_context->type, CRASH_DUMP_TYPE_FULL);
-#endif
     will_return(__wrap_crash_dump_register_dump, KNG_SUCCESS);
     expect_function_call(__wrap_crash_dump_register_dump);
 
     will_return(__wrap_exception_handler_init, KNG_SUCCESS);
     expect_function_call(__wrap_exception_handler_init);
 
-#if defined(SCP_RUNTIME_INIT)
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call(__wrap_idhw_is_single_die_boot_en);
 
@@ -377,24 +365,54 @@ TEST_FUNCTION(test_crash_dump_init, nullptr, nullptr)
 
     expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_MHU_LOCAL);
     expect_function_call(__wrap_crash_dump_config_icc);
-#elif defined(MCP_RUNTIME_INIT)
-    expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_MHU_LOCAL);
-    expect_function_call(__wrap_crash_dump_config_icc);
-#endif
 
     // Check dependencies
-#if defined(SCP_RUNTIME_INIT)
     assert_string_equal("hw_ver", _fpfw_component_cd_init.children[0]);
     assert_string_equal("gpio_lib", _fpfw_component_cd_init.children[1]);
-#elif defined(MCP_RUNTIME_INIT)
-    assert_string_equal("hw_ver", _fpfw_component_cd_init.children[0]);
-    assert_string_equal("gpio_lib", _fpfw_component_cd_init.children[1]);
-    assert_string_equal("hw_sem", _fpfw_component_cd_init.children[2]);
-#endif
 
     // Call API under test
     _fpfw_component_cd_init.init_fn();
 }
+#endif
+
+#if defined(MCP_RUNTIME_INIT)
+TEST_FUNCTION(test_crash_dump_init_mcp, nullptr, nullptr)
+{
+    // Set up expectations
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_platform_sdv, 0x30); // PLATFORM_FPGA
+
+    expect_any(__wrap_crash_dump_init, context);
+    expect_value(__wrap_crash_dump_init, context->die_index, DIE_0);
+    expect_value(__wrap_crash_dump_init, context->core_index, CRASH_DUMP_CORE_MCP);
+    expect_value(__wrap_crash_dump_init, context->is_primary, true);
+    expect_function_call(__wrap_crash_dump_init);
+
+    expect_any(__wrap_crash_dump_register_dump, type_context);
+    expect_value(__wrap_crash_dump_register_dump, type_context->type, CRASH_DUMP_TYPE_MINI);
+    will_return(__wrap_crash_dump_register_dump, KNG_SUCCESS);
+    expect_function_call(__wrap_crash_dump_register_dump);
+
+    expect_any(__wrap_crash_dump_register_dump, type_context);
+    expect_value(__wrap_crash_dump_register_dump, type_context->type, CRASH_DUMP_TYPE_FULL);
+    will_return(__wrap_crash_dump_register_dump, KNG_SUCCESS);
+    expect_function_call(__wrap_crash_dump_register_dump);
+
+    will_return(__wrap_exception_handler_init, KNG_SUCCESS);
+    expect_function_call(__wrap_exception_handler_init);
+
+    expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_MHU_LOCAL);
+    expect_function_call(__wrap_crash_dump_config_icc);
+
+    // Check dependencies
+    assert_string_equal("hw_ver", _fpfw_component_cd_init.children[0]);
+    assert_string_equal("gpio_lib", _fpfw_component_cd_init.children[1]);
+    assert_string_equal("hw_sem", _fpfw_component_cd_init.children[2]);
+
+    // Call API under test
+    _fpfw_component_cd_init.init_fn();
+}
+#endif
 
 TEST_FUNCTION(test_cd_mhu_loc, nullptr, nullptr)
 {

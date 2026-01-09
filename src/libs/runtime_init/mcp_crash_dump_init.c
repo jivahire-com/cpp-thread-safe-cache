@@ -135,6 +135,11 @@ bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
 
 FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib", "hw_sem"))
 {
+    static crash_dump_type_context_t mini_dump_ctx = {.type = CRASH_DUMP_TYPE_MINI,
+                                                      .mem_pool_addr = CRASH_DUMP_MINI_MCP_ADDR,
+                                                      .mem_pool_size = CRASH_DUMP_MINI_MCP_SIZE,
+                                                      .header = (crash_dump_header_t*)CRASH_DUMP_MINI_HEADER_ADDR};
+
     static crash_dump_type_context_t full_dump_ctx = {.type = CRASH_DUMP_TYPE_FULL,
                                                       .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
                                                       .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
@@ -156,14 +161,20 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib", "hw_se
     // If initializing a crash dump on SVP use a local semaphore within the MSCP EXP Block.
     //   - See SVP Bug SVP bug https://azurecsi.visualstudio.com/1P-SoC-Modeling/_workitems/edit/2327121
     // If initializing a full crash dump use a semaphore within the IOSS block.
+    mini_dump_ctx.semaphore.id = SEM_ID_MSCP_EXP_0;
+    mini_dump_ctx.semaphore.key = CRASH_DUMP_PROCESSOR_ID(crash_dump_ctx.die_index, crash_dump_ctx.core_index) + 1;
     full_dump_ctx.semaphore.id = IS_PLATFORM_SVP() ? SEM_ID_MSCP_EXP_0 : SEM_ID_DIE0_IOSS_0;
     full_dump_ctx.semaphore.key = CRASH_DUMP_PROCESSOR_ID(crash_dump_ctx.die_index, crash_dump_ctx.core_index) + 1;
 
     // Initialize the crash dump
     crash_dump_init(&crash_dump_ctx);
 
+    // Enable mini dump
+    KNG_STATUS status = crash_dump_register_dump(&mini_dump_ctx);
+    BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, 0);
+
     // Enable full dump
-    KNG_STATUS status = crash_dump_register_dump(&full_dump_ctx);
+    status = crash_dump_register_dump(&full_dump_ctx);
     BUG_ASSERT_PARAM(status == KNG_SUCCESS, status, 0);
 
     // Initialize the exception handler

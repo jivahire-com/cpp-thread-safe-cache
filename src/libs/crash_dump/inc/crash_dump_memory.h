@@ -29,8 +29,8 @@
 // |  Crash Dump Header      |  |  Crash Dump Header      |
 // +-------------------------+  +-------------------------+ CRASH_DUMP_MINI_SCP_ADDR (CRASH_DUMP_MINI_SCP_SIZE)
 // |  DIE0 SCP Crash Dump    |  |  DIE1 SCP Crash Dump    |
-// +-------------------------+  +-------------------------+ CRASH_DUMP_MINI_HSP_ADDR (CRASH_DUMP_MINI_HSP_SIZE)
-// |  DIE0 HSP Crash Dump    |  |  DIE1 HSP Crash Dump    |
+// +-------------------------+  +-------------------------+ CRASH_DUMP_MINI_MCP_ADDR (CRASH_DUMP_MINI_MCP_SIZE)
+// |  DIE0 MCP Crash Dump    |  |  DIE1 MCP Crash Dump    |
 // +-------------------------+  +-------------------------+
 #define CRASH_DUMP_MINI_SIZE_PER_CORE   CD_ALIGN_DOWN(SCP_EXP_CRASHDUMP_MINI_MAX_SIZE / 2, DUMP_ALIGNMENT)
 
@@ -41,9 +41,9 @@ static_assert(sizeof(crash_dump_header_t) <= CRASH_DUMP_MINI_HEADER_SIZE, "crash
 #define CRASH_DUMP_MINI_SCP_ADDR    CD_ALIGN_BY(SCP_EXP_CRASHDUMP_MINI_BASE, DUMP_ALIGNMENT)
 #define CRASH_DUMP_MINI_SCP_SIZE    CD_ALIGN_DOWN(CRASH_DUMP_MINI_SIZE_PER_CORE, DUMP_ALIGNMENT)
 
-#define CRASH_DUMP_MINI_HSP_ADDR    CD_ALIGN_BY(CRASH_DUMP_MINI_SCP_ADDR + CRASH_DUMP_MINI_SCP_SIZE, DUMP_ALIGNMENT)
-#define CRASH_DUMP_MINI_HSP_SIZE    CD_ALIGN_DOWN(CRASH_DUMP_MINI_SIZE_PER_CORE, DUMP_ALIGNMENT)
-static_assert(CRASH_DUMP_MINI_HSP_ADDR + CRASH_DUMP_MINI_HSP_SIZE - 1 <= SCP_EXP_CRASHDUMP_MINI_END, "Mini crash dump memory region exceeds SCP_EXP_CRASHDUMP_MINI_END");
+#define CRASH_DUMP_MINI_MCP_ADDR    CD_ALIGN_BY(CRASH_DUMP_MINI_SCP_ADDR + CRASH_DUMP_MINI_SCP_SIZE, DUMP_ALIGNMENT)
+#define CRASH_DUMP_MINI_MCP_SIZE    CD_ALIGN_DOWN(CRASH_DUMP_MINI_SIZE_PER_CORE, DUMP_ALIGNMENT)
+static_assert(CRASH_DUMP_MINI_MCP_ADDR + CRASH_DUMP_MINI_MCP_SIZE - 1 <= SCP_EXP_CRASHDUMP_MINI_END, "Mini crash dump memory region exceeds SCP_EXP_CRASHDUMP_MINI_END");
 
 // +-------------------------+                              CRASH_DUMP_FULL_STATUS_ADDR (CRASH_DUMP_STATUS_SIZE)
 // |  Crash Dump Header      |

@@ -9,8 +9,8 @@
     </universal_packages>
 
     <nuget_packages>
-        <package name="kingsgate.ap.baremetal" version="1.90.0.8" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
-        <package name="kingsgate.sdm.cded" version="1.95.0.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
+        <package name="kingsgate.ap.baremetal" version="2.0.0.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
+        <package name="kingsgate.sdm.cded" version="2.0.0.7" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
         <package name="echofalls.atf.build" version="1.90.1.45" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.rmm.build" version="1.90.1.12" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.hafnium.build" version="1.90.1.22" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
@@ -24,7 +24,7 @@
         <package name="echofalls.rp_exe.build" version="1.90.1.45" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="echofalls.rp_data.build" version="1.90.1.45" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="pcie.phy.bin" version="1.95.1.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
-        <package name="IFTVectors" version="1.0.0.3" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
+        <package name="IFTVectors" version="1.0.0.7" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
         <package name="1psfw.diagnosticdecoder.windows" version="1.1.256" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.Dependency/nuget/v3/index.json"/>
     </nuget_packages>
 

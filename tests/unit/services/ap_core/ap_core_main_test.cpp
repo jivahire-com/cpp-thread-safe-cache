@@ -27,7 +27,6 @@ extern "C" {
 #include <fpfw_timer_port.h>      // for _fpfw_timer_t
 #include <fuse_init.h>            // for write_fuse_info_to_ap
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
-#include <idsw_kng.h>
 #include <ift_fw.h>
 #define __NO_CSR_TYPEDEFS__
 #include <mcp_top_regs.h>
@@ -645,7 +644,6 @@ AP_CORE_TEST(dispatch_ap_core_boot, setup, NULL)
     expect_value(__wrap_ap_core_util_boot_core, p_context, s_ap_core_ctx);
     will_return(__wrap_ap_core_util_boot_core, TEST_BOOT_CORE);
     will_return(__wrap_system_info_is_hsp_present, true);
-    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     // expect a call to set_rvbaraddr
     expect_value(__wrap_ap_core_util_set_rvbaraddr, p_context, s_ap_core_ctx);

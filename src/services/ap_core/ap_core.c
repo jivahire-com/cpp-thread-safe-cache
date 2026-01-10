@@ -26,7 +26,6 @@
 #include <fpfw_icc_base.h> // for fpfw_icc_base_send, fpfw_icc_base...
 #include <fuse_init.h>
 #include <hsp_firmware_headers.h> // for HSP_FIRMWARE_ID
-#include <idhw.h>
 #include <inttypes.h>
 #include <kng_error.h>
 #define __NO_CSR_TYPEDEFS__
@@ -173,14 +172,6 @@ static void ap_core_ssi_start_cluster_init(pssi_startup_notification_request_t p
 // dispatcher function to handle boot stage for primary AP core boot
 static void ap_core_ssi_start_primary_ap_core_boot(pssi_startup_notification_request_t p_request, ssi_startup_type_t boot_type)
 {
-    // If on dual die SVP, skip powering on primary core as TFA does not support dual die SVP
-    if (IS_PLATFORM_SVP() && !idhw_is_single_die_boot_en())
-    {
-        APCORE_LOG_INFO("Skipping primary AP core power on for dual die SVP");
-        DfwkAsyncRequestComplete(&p_request->header);
-        return;
-    }
-
     unsigned int boot_core = ap_core_util_boot_core(&s_ap_core_ctx);
     APCORE_LOG_INFO("Primary AP core power on (%d)", boot_core);
 

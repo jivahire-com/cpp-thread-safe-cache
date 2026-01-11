@@ -192,7 +192,7 @@ FPFW_NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_
 /**
  * @brief Initiates a crash dump creation signalled by external core.
  */
-FPFW_NORETURN void crash_dump_bug_check_external();
+FPFW_NORETURN void crash_dump_bug_check_external(uint32_t origin_id);
 
 /**
  * @brief Check if a bug check has been initiated

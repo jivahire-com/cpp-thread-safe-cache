@@ -451,7 +451,7 @@ void mhu_icc_transport_isr(void* context)
         {
             // Crash dump collect signal received from the other core.
             // Trigger an external bug check
-            BUG_CHECK_EXTERNAL();
+            BUG_CHECK_EXTERNAL(p_mhu_req->payload[0]);
         }
 
         p_req->Output.ReceivedBytes = p_mhu_req->header.msg_header.payload_size + sizeof(icc_mhu_header_t);

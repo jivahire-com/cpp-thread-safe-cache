@@ -27,6 +27,7 @@
 #include <fpfw_timer.h>        // for fpfw_timer_create, fpfw_timer_enable...
 #include <fpfw_timer_port.h>   // for fpfw_timer_create, fpfw_timer_enable...
 #include <health_monitor.h>    // for hm_fetch_accel_fatal_cper
+#include <idsw.h>              // for #include idsw_get_die_id
 #include <sdm_ext_cfg_regs.h>  // for _addressblock_0x100000_misc_sys_ext_intr2_msg_send_intr
 #include <stdbool.h>           // for true, false
 #include <virt_irq.h>
@@ -179,7 +180,7 @@ static void accel_intr_delay_cb(void* ctx, fpfw_dur_t latency)
     }
 
     timer_data->has_crashed = true;
-    BUG_CHECK_EXTERNAL();
+    BUG_CHECK_EXTERNAL(CRASH_DUMP_PROCESSOR_ID(idsw_get_die_id(), accel_type + CRASH_DUMP_CORE_SDM));
     /**
      * NOTE:
      * TODO ADO 3041451:

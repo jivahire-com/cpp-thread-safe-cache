@@ -60,25 +60,37 @@ static fpfw_status_t icc_mhu_send_cd_async(fpfw_icc_base_ctx_t* icc_ctx, uint32_
     return fpfw_icc_base_send(icc_ctx, &icc_msg_ready_msg_req);
 }
 
-static fpfw_status_t icc_mhu_send_cd_sync(fpfw_icc_base_ctx_t* icc_ctx, uint32_t command)
+static fpfw_status_t icc_mhu_send_cd_sync(fpfw_icc_base_ctx_t* icc_ctx, uint32_t command, uint32_t payload)
 {
-    static uint8_t s_icc_mhu_send_payload[sizeof(icc_mhu_header_t) + 1] = {0};
+    static uint8_t s_icc_mhu_send_payload[sizeof(icc_mhu_header_t) + sizeof(uint32_t)] = {0};
     icc_mhu_packet_t* p_send_req = (icc_mhu_packet_t*)s_icc_mhu_send_payload;
 
     p_send_req->header.msg_header.command = command;
-    p_send_req->header.msg_header.payload_size = 1;
+    p_send_req->header.msg_header.payload_size = sizeof(uint32_t);
+    p_send_req->payload[0] = payload;
 
     return fpfw_icc_base_send_sync(icc_ctx, &s_icc_mhu_send_payload, sizeof(s_icc_mhu_send_payload));
 }
 
 /*----------------------------------------*/
-static void icc_recv_crashdump_collection_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+static void icc_recv_crashdump_collection_mhu_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
-    FPFW_UNUSED(context);
     FPFW_UNUSED(output_size_bytes);
     FPFW_UNUSED(status);
 
-    BUG_CHECK_EXTERNAL();
+    icc_mhu_packet_t* msg = (icc_mhu_packet_t*)context;
+
+    BUG_CHECK_EXTERNAL(msg->payload[0]);
+}
+
+static void icc_recv_crashdump_collection_mb_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+{
+    FPFW_UNUSED(output_size_bytes);
+    FPFW_UNUSED(status);
+
+    rmss_d2d_mailbox_msg* msg = (rmss_d2d_mailbox_msg*)context;
+
+    BUG_CHECK_EXTERNAL(msg->as_uint32[1]);
 }
 
 static void icc_recv_transfer_dump_req_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -204,8 +216,8 @@ static bool icc_register_mhu_remote_cd_collection_callback(fpfw_icc_base_ctx_t* 
         .payload_buffer = rem_byte_payload,
         .buffer_size = FPFW_ARRAY_SIZE(rem_byte_payload),
         .recv_cmd_code = ICC_SIGNAL_CRASH_DUMP_COLLECT,
-        .cb = icc_recv_crashdump_collection_cb,
-        .cb_ctx = NULL,
+        .cb = icc_recv_crashdump_collection_mhu_cb,
+        .cb_ctx = rem_byte_payload,
     };
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &crashdump_rem_mhu_recv_req);
@@ -220,8 +232,8 @@ static bool icc_register_mhu_local_cd_collection_callback(fpfw_icc_base_ctx_t* i
         .payload_buffer = loc_byte_payload,
         .buffer_size = FPFW_ARRAY_SIZE(loc_byte_payload),
         .recv_cmd_code = ICC_SIGNAL_CRASH_DUMP_COLLECT,
-        .cb = icc_recv_crashdump_collection_cb,
-        .cb_ctx = NULL,
+        .cb = icc_recv_crashdump_collection_mhu_cb,
+        .cb_ctx = loc_byte_payload,
     };
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &crashdump_loc_mhu_recv_req);
@@ -236,8 +248,8 @@ static bool icc_register_spi_cd_collection_callback(fpfw_icc_base_ctx_t* icc_ctx
         .payload_buffer = &d2d_msg,
         .buffer_size = sizeof(rmss_d2d_mailbox_msg),
         .recv_cmd_code = RMSS_D2D_MAILBOX_MSG_CRASHDUMP_SIGNAL_REQ,
-        .cb = icc_recv_crashdump_collection_cb,
-        .cb_ctx = NULL,
+        .cb = icc_recv_crashdump_collection_mb_cb,
+        .cb_ctx = &d2d_msg,
     };
 
     fpfw_status_t status = fpfw_icc_base_recv(icc_ctx, &crashdump_remote_noti_recv_req);
@@ -420,7 +432,7 @@ fpfw_status_t crash_dump_notify_hsp_transfer_complete(uint32_t flags)
 /**
  * Notify Accel devices that this core has crashed by using Largefifo mailbox sync send.
  */
-void crash_dump_notify_accelerators(bool is_ue)
+void crash_dump_notify_accelerators(bool is_ue, uint32_t origin_core)
 {
     crash_dump_context_t* ctx = crash_dump_context();
 
@@ -457,6 +469,7 @@ void crash_dump_notify_accelerators(bool is_ue)
 
         largefifo_crash_dump_msg.as_uint32[0] =
             SET_LARGE_FIFO_MAILBOX_HEADER_ASUNIT32(LARGE_FIFO_MAILBOX_MSG_CRASHDUMP_REQ, is_ue ? CRASH_DUMP_UE_FLAG : 0, 0);
+        largefifo_crash_dump_msg.data[0] = origin_core;
 
         fpfw_status_t status =
             fpfw_icc_base_send_sync(icc_ctx, &largefifo_crash_dump_msg, sizeof(largefifo_crash_dump_msg));
@@ -480,7 +493,7 @@ void crash_dump_notify_accelerators(bool is_ue)
 /**
  * Notify local peer core that this core has crashed
  */
-void crash_dump_notify_cores()
+void crash_dump_notify_cores(uint32_t origin_core)
 {
     fpfw_status_t status;
     bool remote_notified = false;
@@ -495,7 +508,7 @@ void crash_dump_notify_cores()
 
     if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL] != NULL)
     {
-        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL], ICC_SIGNAL_CRASH_DUMP_COLLECT);
+        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_LOCAL], ICC_SIGNAL_CRASH_DUMP_COLLECT, origin_core);
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to local core : status = 0x%08lx\n", status);
@@ -505,7 +518,7 @@ void crash_dump_notify_cores()
 
     if (ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE] != NULL)
     {
-        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE], ICC_SIGNAL_CRASH_DUMP_COLLECT);
+        status = icc_mhu_send_cd_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_MHU_REMOTE], ICC_SIGNAL_CRASH_DUMP_COLLECT, origin_core);
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to remote core : status = 0x%08lx\n", status);
@@ -521,6 +534,7 @@ void crash_dump_notify_cores()
     {
         // Try with SPI transport ICC if MHU transport fore remote is not available.
         static rmss_d2d_mailbox_msg remote_core_cd_msg = {.header.cmd = RMSS_D2D_MAILBOX_MSG_CRASHDUMP_SIGNAL_REQ};
+        remote_core_cd_msg.as_uint32[1] = origin_core;
 
         status = fpfw_icc_base_send_sync(ctx->icc_ctx[CRASH_DUMP_ICC_CONFIG_SPI_REMOTE],
                                          &remote_core_cd_msg,
@@ -534,15 +548,16 @@ void crash_dump_notify_cores()
     }
 }
 
-void crash_dump_remote_trigger(bool is_ue)
+void crash_dump_remote_trigger(bool is_ue, uint32_t origin_core)
 {
+    FPFwCDPrintf("Notify crash from %lx\n", origin_core);
     if (!crash_dump_context()->single_core_mode)
     {
         // Notify to local and remote cores
-        crash_dump_notify_cores();
+        crash_dump_notify_cores(origin_core);
 
         // Notify Accel devices SDM and CDED
-        crash_dump_notify_accelerators(is_ue);
+        crash_dump_notify_accelerators(is_ue, origin_core);
     }
 
     // Notify to HSP

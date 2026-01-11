@@ -22,8 +22,9 @@
  * @brief Requests other cores and die to perform a crash dump.
  * 
  * @param is_ue If true, indicates that this is a UE (Uncorrected Error) crash dump trigger.
+ * @param origin_core The core id of first crash core
  */
-void crash_dump_remote_trigger(bool is_ue);
+void crash_dump_remote_trigger(bool is_ue, uint32_t origin_core);
 
 /**
  * @brief Notifies the HSP about crash dump events.

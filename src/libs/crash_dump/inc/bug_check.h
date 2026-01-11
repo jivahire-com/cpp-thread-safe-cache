@@ -40,7 +40,7 @@
  * generate a crash dump by external core signal.
  * 
  */
-#define BUG_CHECK_EXTERNAL()    crash_dump_bug_check_external();
+#define BUG_CHECK_EXTERNAL(origin_id)    crash_dump_bug_check_external(origin_id);
 
 /**
  * The BUG_ASSERT() macro will generate a bug check if the condition parameter

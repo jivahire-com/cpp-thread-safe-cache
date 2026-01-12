@@ -82,7 +82,7 @@ d2d_cfg_t unit_test_default_d2d_cfg = {
 ccg_cfg_t unit_test_default_ccg_cfg = {.por_ccg_ha_aux_ctl = 0x3C0008ULL,
                                        .por_ccg_ha_cfg_ctl = 0x40040ULL,
                                        .por_ccg_ha_cxprtcl_link0_ctl = 0x1C0000ULL,
-                                       .por_ccg_ra_cfg_ctl = 0x7C4007ULL,
+                                       .por_ccg_ra_cfg_ctl = 0x7C4407ULL,
                                        .por_ccg_ra_aux_ctl = 0x1B1F343CC3846ULL,
                                        .por_ccg_ra_ccprtcl_link0_ctl = 0x2C00000ULL,
                                        .por_ccg_ra_cbusy_limit_ctl = 0x181008ULL,
@@ -613,7 +613,7 @@ uint64_t __wrap_config_get_a1_mesh_hnf_cfg_ctl(void)
 
 uint64_t __wrap_config_get_a1_mesh_hnf_lbt_cfg_ctl(void)
 {
-    return 0x7F7F00ULL; // XML default value
+    return 0x7F7F09ULL; // XML default value
 }
 
 uint64_t __wrap_config_get_a1_mesh_hnf_lbt_aux_ctl(void)
@@ -664,7 +664,7 @@ uint64_t __wrap_config_get_a1_por_ccg_ha_cfg_ctl(void)
 
 uint64_t __wrap_config_get_a1_por_ccg_ra_cfg_ctl(void)
 {
-    return 0x7C4007ULL; // XML default value
+    return 0x7C4407ULL; // XML default value
 }
 
 uint64_t __wrap_config_get_a1_por_ccg_ra_aux_ctl(void)
@@ -741,7 +741,7 @@ uint64_t __wrap_config_get_mesh_hnf_cfg_ctl(void)
 }
 uint64_t __wrap_config_get_mesh_hnf_lbt_cfg_ctl(void)
 {
-    return 0x7F7F00ULL;
+    return 0x7F7F09ULL;
 }
 uint64_t __wrap_config_get_mesh_hnf_lbt_aux_ctl(void)
 {
@@ -896,7 +896,7 @@ uint64_t __wrap_config_get_por_ccg_ha_cxprtcl_link0_ctl(void)
 }
 uint64_t __wrap_config_get_por_ccg_ra_cfg_ctl(void)
 {
-    return 0x7C4007ULL;
+    return 0x7C4407ULL;
 }
 uint64_t __wrap_config_get_por_ccg_ra_aux_ctl(void)
 {
@@ -1907,7 +1907,7 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl, 0x2000001000200002);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl_1, 0x3001005A900);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738921000);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F00);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F09);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x0);
 
@@ -2033,14 +2033,14 @@ void verify_mesh_ras_config_knobs(void)
 void verify_ccg_config_knobs(void)
 {
     // Mesh CCG Config Knobs
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_aux_ctl, 0x3C0008);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cfg_ctl, 0x40040);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cxprtcl_link0_ctl, 0x1C0000);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C4007);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_aux_ctl, 0x1B1F343CC3846);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_ccprtcl_link0_ctl, 0x2C00000);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0x181008);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccla_aux_ctl, 0x1220000000004);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_aux_ctl, 0x3C0008ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cfg_ctl, 0x40040ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cxprtcl_link0_ctl, 0x1C0000ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C4407ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_aux_ctl, 0x1B1F343CC3846ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_ccprtcl_link0_ctl, 0x2C00000ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0x181008ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccla_aux_ctl, 0x1220000000004ULL);
 }
 
 void verify_d2d_config_knobs(void)
@@ -2068,7 +2068,7 @@ void verify_mesh_config_knobs_a1_stepping(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl, 0x2000001000200002ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl_1, 0x3001005A900ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738921000ULL);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F00ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F09ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x0ULL);
 
@@ -2089,7 +2089,7 @@ void verify_ccg_config_knobs_a1_stepping(void)
     // Verify A1-specific CCG knobs are applied (XML default values)
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_aux_ctl, 0x3C0008ULL);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cfg_ctl, 0x40040ULL);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C4007ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C4407ULL);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_aux_ctl, 0x1B1F343CC3846ULL);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_ccprtcl_link0_ctl, 0x2C00000ULL);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0x181008ULL);

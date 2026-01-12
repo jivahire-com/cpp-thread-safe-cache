@@ -115,8 +115,8 @@
     <Knob name="a1_mesh_hnf_aux_ctl_1" type="uint64_t" default="0x3001005A900" help="Set value for por_hnf_aux_ctl_1"/>
     <Knob name="mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C01738921000" help="Set value for por_hnf_cfg_ctl"/>
     <Knob name="a1_mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C01738921000" help="Set value for por_hnf_cfg_ctl"/>
-    <Knob name="mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F00" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
-    <Knob name="a1_mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F00" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
+    <Knob name="mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F09" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
+    <Knob name="a1_mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F09" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
     <Knob name="mesh_hnf_lbt_aux_ctl" type="uint64_t" default="0x440000000000006" help="Functions as the auxiliary control register for HN-F. Only applicable to LBT transactions"/>
     <Knob name="a1_mesh_hnf_lbt_aux_ctl" type="uint64_t" default="0x440000000000006" help="Functions as the auxiliary control register for HN-F. Only applicable to LBT transactions"/>
     <Knob name="mesh_hnf_lbt_cbusy_ctl" type="uint64_t" default="0x0" help="Controls the CBusy response for LCN Bound Transactions"/>
@@ -162,8 +162,8 @@
     <Knob name="por_ccg_ha_cfg_ctl" type="uint64_t" default="0x40040" help="CCG HA config control"/>
     <Knob name="a1_por_ccg_ha_cfg_ctl" type="uint64_t" default="0x40040" help="CCG HA config control"/>
     <Knob name="por_ccg_ha_cxprtcl_link0_ctl" type="uint64_t" default="0x1C0000" help="CCG HA config control 1"/>
-    <Knob name="por_ccg_ra_cfg_ctl" type="uint64_t" default="0x7C4007" help="CCG RA config control"/>
-    <Knob name="a1_por_ccg_ra_cfg_ctl" type="uint64_t" default="0x7C4007" help="CCG RA config control"/>
+    <Knob name="por_ccg_ra_cfg_ctl" type="uint64_t" default="0x7C4407" help="CCG RA config control"/>
+    <Knob name="a1_por_ccg_ra_cfg_ctl" type="uint64_t" default="0x7C4407" help="CCG RA config control"/>
     <Knob name="por_ccg_ra_aux_ctl" type="uint64_t" default="0x1B1F343CC3846" help="CCG RA aux control"/>
     <Knob name="a1_por_ccg_ra_aux_ctl" type="uint64_t" default="0x1B1F343CC3846" help="CCG RA aux control"/>
     <Knob name="por_ccg_ra_ccprtcl_link0_ctl" type="uint64_t" default="0x2C00000" help="CCG RA config control 1"/>

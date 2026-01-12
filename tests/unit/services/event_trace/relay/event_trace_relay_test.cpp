@@ -12,11 +12,17 @@
 
 extern "C" {
 
+#include <DfwkClient.h>
+#include <DfwkHost.h>
+#include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
+#include <accelip_id.h>
 #include <etr_init_config_i.h>
 #include <event_trace_relay.h>
 #include <event_trace_relay_i.h>
+#include <event_trace_relay_quiesce_i.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
+#include <startup_shutdown.h>
 #include <stdnoreturn.h>
 #include <thread_x_mocks.h>
 
@@ -41,14 +47,11 @@ int test_teardown(void** ppContext);
 
 extern "C" {
 
-uint8_t _ProviderMetadata_et_msdata_start; // Pointer to the start of the .ProviderMetadata section
-uint8_t _ProviderMetadata_et_msdata_end;   // Pointer to the end   of the .ProviderMetadata section
-uint8_t _EventMetadata_et_msdata_start;    // Pointer to the start of the .EventMetadata section
-uint8_t _EventMetadata_et_msdata_end;      // Pointer to the end   of the .EventMetadata memory section
-
 uint8_t s_asic_ddr_memory[ASIC_BUFFER_PAYLOAD_SIZE * TEST_ASIC_COUNT] = {0};
 uint8_t s_hsp_ddr_memory[HSP_BUFFER_PAYLOAD_SIZE * TEST_HSP_COUNT] = {0};
 uint8_t s_test_stack[1024] = {0};
+// Global variable used to set __wrap_accel_is_isolation_enabled return value
+bool accel_isolation = false;
 
 static jmp_buf mock_jump_buf;
 
@@ -84,6 +87,9 @@ static etr_service_config_t s_test_config = {
             .p_hsp_icc_ctx = (fpfw_icc_base_ctx_t*)&test_icc_base_ctx_hsp,
         },
 };
+
+extern DFWK_ASYNC_REQUEST_DISPATCH dfwk_cb;
+extern void* dfwk_cb_ctx;
 
 /*------------- Functions ----------------*/
 
@@ -221,14 +227,6 @@ void __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t client)
     // Do Nothing - just an empty mock
 }
 
-fpfw_status_t __wrap_FPFwETControllerRecycleBuffer(void* pTraceController, uint32_t buffer_id)
-{
-    FPFW_UNUSED(pTraceController);
-    FPFW_UNUSED(buffer_id);
-
-    return mock_type(fpfw_status_t);
-}
-
 uint64_t __wrap_config_get_hsp_buffers_drop_rpt_thresh(void)
 {
     return 100;
@@ -253,6 +251,12 @@ _Noreturn void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint
     FPFW_UNUSED(p4);
 
     longjmp(mock_jump_buf, 1);
+}
+
+bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
+{
+    FPFW_UNUSED(accel_type);
+    return mock_type(bool);
 }
 
 } // extern "C"
@@ -292,8 +296,32 @@ static inline void test_setup_common()
     expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
+    // Expectations for driver framework and sos interface
+    expect_any(__wrap_DfwkDeviceInitialize, Device);
+    expect_any(__wrap_DfwkDeviceInitialize, Schedule);
+
+    expect_any(__wrap_DfwkQueueInitialize, Queue);
+    expect_any(__wrap_DfwkQueueInitialize, Device);
+    expect_any(__wrap_DfwkQueueInitialize, DispatchRoutine);
+    expect_any(__wrap_DfwkQueueInitialize, DispatchContext);
+    expect_any(__wrap_DfwkQueueInitialize, QueueType);
+
+    expect_any(__wrap_DfwkInterfaceInitialize, Interface);
+    expect_any(__wrap_DfwkInterfaceInitialize, Device);
+    expect_any(__wrap_DfwkInterfaceInitialize, DispatchQueue);
+    expect_any(__wrap_DfwkInterfaceInitialize, DispatchSync);
+
+    expect_any(__wrap_sos_register_ssi, p_interface);
+    expect_any(__wrap_sos_register_ssi, p_registration);
+    expect_any(__wrap_sos_register_ssi, p_ssi_interface);
+
+    will_return(__wrap_sos_register_ssi, FPFW_STATUS_SUCCESS);
+
     // Setup ICC expectations
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    // accel_isolation can be modified by the tests without needing code changes
+    will_return_always(__wrap_accel_is_isolation_enabled, accel_isolation);
 
     etr_initialize(&s_test_context, &s_test_config);
 }
@@ -327,6 +355,13 @@ int test_teardown(void** ppContext)
     FPFW_UNUSED(ppContext);
 
     return TX_SUCCESS;
+}
+
+void setup_quiesce_acks()
+{
+    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SDM);
+    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_CDED_SDM);
+    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SCP);
 }
 
 // TEST PUBLIC ETR FUNCTIONS
@@ -911,6 +946,8 @@ TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete, test_setup
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_any(__wrap_FPFwETControllerRecycleBuffer, pTraceController);
+    expect_any(__wrap_FPFwETControllerRecycleBuffer, bufIndex);
     will_return(__wrap_FPFwETControllerRecycleBuffer, FPFW_STATUS_SUCCESS);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1003,6 +1040,9 @@ TEST_FUNCTION(test_etr_process_request_read_package_notification, test_setup_die
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    // Set both accelerators to be isolated for branch coverage
+    accel_isolation = true;
 
     etr_worker_thread_func((ULONG)&s_test_context);
 }
@@ -1307,4 +1347,23 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_secondary_die, test_setup_die1, test_teard
     expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
     etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_etr_dfwk_cb, NULL, NULL)
+{
+    DFWK_ASYNC_REQUEST_HEADER request;
+
+    request.RequestType = SSI_QUIESCE_ASYNC;
+
+    dfwk_cb(&request, dfwk_cb_ctx);
+}
+
+TEST_FUNCTION(test_etr_dfwk_completion, NULL, NULL)
+{
+    DFWK_ASYNC_REQUEST_HEADER request;
+
+    request.RequestType = SSI_QUIESCE_ASYNC;
+
+    setup_quiesce_acks();
+    dfwk_cb(&request, dfwk_cb_ctx);
 }

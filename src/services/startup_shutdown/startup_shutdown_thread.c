@@ -18,6 +18,7 @@
 #include <FpFwUtils.h>
 #include <bug_check.h>
 #include <debug.h>
+#include <et_mts_client.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -38,6 +39,10 @@
 
 #define PHASE_INDEX_NOT_FOUND (-1)
 #define MS_TO_TX_TICKS(ms)    (((ms) * TX_TIMER_TICKS_PER_SECOND) / 1000)
+
+// 200 ms delay for EVT flush to proceed
+#define EVT_TX_DELAY 200
+
 /*------------- Typedefs -----------------*/
 typedef struct
 {
@@ -336,20 +341,14 @@ void sos_worker_thread_function(ULONG service_ctx)
             current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
             wait_ssi_complete(current_stage);
 
-            // Add a delay for mcp quiesce to see if helps stop the
-            // reboot crashes
-            if (idsw_get_cpu_type() == CPU_MCP)
+            // This will flush the event trace buffer and send evt quiesce
+            // notification to MCP for SCP
+            if (idsw_get_cpu_type() == CPU_SCP)
             {
-                if (idsw_get_die_id() == DIE_0)
-                {
-                    tx_thread_sleep(MS_TO_TX_TICKS(20000));
-                }
-                else
-                {
-                    tx_thread_sleep(MS_TO_TX_TICKS(10000));
-                }
+                event_trace_mts_send_final_message();
+                // Allow the event trace buffers to flush
+                tx_thread_sleep(MS_TO_TX_TICKS(EVT_TX_DELAY));
             }
-
             break;
         }
 

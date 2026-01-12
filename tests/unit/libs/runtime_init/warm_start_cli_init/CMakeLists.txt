@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         ms::lib::warm_start::cli
         ms::cmocka::testrunner
+        ms::mocks::event_trace
         ms::service::scp_startup_shutdown
         ms::lib::icc_platform_defines
         fwlib.dfwk

@@ -30,7 +30,6 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::idsw_kng
         silibs::platform
-    PUBLIC
 )
 
 lint_target(${TARGET})

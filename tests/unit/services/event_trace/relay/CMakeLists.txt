@@ -6,16 +6,20 @@ set(TARGET service.event_trace.relay.test)
 
 set(SOURCES
     event_trace_relay_test.cpp
+    dfwk_and_sos_mocks.cpp
 )
 
 add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
+    fwlib.dfwk
     ms::cmocka::testrunner
+    ms::lib::accelerator_ip
     ms::lib::telemetry::fuses
     ms::lib::threadx
     ms::mocks::threadx
+    ms::mocks::event_trace
     ms::service::event_trace::relay
     silibs::idsw_kng
 )
@@ -46,6 +50,7 @@ mock_target(${TARGET}
     fpfw_icc_base_recv
     fpfw_icc_base_send_sync
     
+    accel_is_isolation_enabled
     atu_svc_accel_atu_addr
 
     config_get_hsp_buffers_drop_rpt_thresh
@@ -70,4 +75,11 @@ mock_target(${TARGET}
     SCB_CleanDCache_by_Addr
 
     FPFwETControllerRecycleBuffer
+
+    DfwkDeviceInitialize
+    DfwkQueueInitialize
+    DfwkInterfaceInitialize
+    DfwkAsyncRequestComplete
+
+    sos_register_ssi
 )

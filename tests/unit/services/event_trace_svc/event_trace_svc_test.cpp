@@ -232,3 +232,13 @@ TEST_FUNCTION(test_mts_notify_buffer_complete, NULL, NULL)
         et_mts_notify_buffer_complete(nullptr, &completion_request);
     }
 }
+
+TEST_FUNCTION(test_mts_send_final_message, NULL, NULL)
+{
+    // expect_any(__wrap_FPFwETControllerFlushBuffer, die_id);
+    // expect_any(__wrap_FPFwETControllerFlushBuffer, core_id);
+    // expect_any(__wrap_FPFwETControllerFlushBuffer, addr);
+    // expect_any(__wrap_FPFwETControllerFlushBuffer, dsize);
+    expect_function_call(__wrap_FPFwETControllerFlushBuffer);
+    event_trace_mts_send_final_message();
+}

@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::telemetry::fuses
         ms::lib::threadx
+        ms::mocks::event_trace
         ms::service::event_trace::relay
         ms::service::event_trace::relay::cli
         silibs::idsw

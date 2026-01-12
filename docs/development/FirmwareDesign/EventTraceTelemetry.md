@@ -379,3 +379,32 @@ Some noticeable changes between Event Trace Telemetry and HSP Telemetry are:
 1. HSP telemetry packets are significantly bigger than the event trace buffers of the cortex m7 cores. Hence, the number of HSP ASIC buffers are much smaller than the number of ET ASIC Buffers.
 1. Due to the higher size of the HSP Telemetry buffers, there is no combining of multiple HSP telemetry buffers into a single HSP ASIC Buffer. There's only one HSP telemetry buffer in each HSP ASIC Buffer.
 1. MCP does not append a separate header for the HSP ASIC Buffer.
+
+## Quiesce Flow
+
+1. The event trace relay on the MCP needs to wait for all the local event trace clients to acknowledge
+that they have quiesced before it itself quiesces.
+1. In Kingsgate this means that each MCP must wait for the local die SCP as well as local die accelerators (non-isolated).
+1. The event trace clients must also be updated to transmit a TRP message indicating they're quiescing by setting message status to TRP_STATUS_RD_DATA_NONE.
+1. When MCP event trace relay sees a TRP message with the above status, it can assume the corresponding event trace client has quiesced and will not be sending any more messages.
+
+```mermaid
+sequenceDiagram
+    participant HSP
+    participant MCP
+    participant SCP
+    participant SDM
+    participant CDED
+    
+    HSP->>SCP: quiesce_request
+    HSP->>MCP: quiesce_request
+    SCP->>SDM: quiesce_request (only if not isolated)
+    SCP->>CDED: quiesce_request (only if not isolated)
+    SDM->>MCP: TRP_STATUS_RD_DATA_NONE
+    CDED->>MCP: TRP_STATUS_RD_DATA_NONE
+    SDM->>SCP: quiesce_ack
+    CDED->>SCP: quiesce_ack
+    SCP->>MCP: TRP_STATUS_RD_DATA_NONE
+    SCP->>HSP: quiesce_ack
+    MCP->>HSP: quiesce_ack
+```

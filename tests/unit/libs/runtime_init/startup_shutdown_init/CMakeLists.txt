@@ -24,6 +24,7 @@ function(create_sos_init_test TARGET_NAME RUNTIME_INIT_DEFINE)
             ms::service::scp_startup_shutdown
             ms::lib::hsp_firmware_headers
             ms::driver::icc_mhu_trans
+            ms::mocks::event_trace
             kng.lib.hsp_firmware_headers
             silibs::atu
             silibs::idsw_kng

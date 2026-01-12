@@ -50,3 +50,10 @@ fpfw_status_t et_mts_notify_buffer_complete (void* p_buffer, etc_service_complet
  * @retval void
  */
 void et_mts_worker_thread_func(ULONG thread_input);
+
+/**
+ * @brief This function updates the TRP status to RD_NONE and flushes the event trace buffer
+ * 
+ * @retval void
+ */
+void event_trace_mts_send_final_message();

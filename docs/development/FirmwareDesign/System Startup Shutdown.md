@@ -172,6 +172,13 @@ The default timeout for each stage in the Startup and Shutdown sequence is set t
     sos_reset_timeout((void*)p_sos_interface, override_stage);
 ```
 
+### Quiesce Considerations:
+
+1. Local die SCP needs to wait for the accelerators to acknowledge that they have quiesced.
+2. This is because accelerators are controlled by SCP and not HSP.
+3. Local die MCP needs to wait for all event trace clients to quiesce before quiescing.
+4. If MCP quiesces before all event trace clients quiesce, it can cause the client core to hang and crash due to watchdog timeout.
+
 ### Synchronization
 
 It is [TBD](https://dev.azure.com/AzureCSI/Dev/_workitems/edit/1821528/) which boot phases or stages need to be synchronized with secondary cores and how this will be done.  It's entirely possible for a registered SSI to force the synchronization before completing a request as well as possible that the service could implement the synchronization with a remote copy of the service.

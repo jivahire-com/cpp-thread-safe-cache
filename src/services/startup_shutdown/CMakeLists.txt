@@ -61,6 +61,8 @@ set(STARTUP_COMMON_LIBS
     ms::lib::hsp_firmware_headers
     ms::driver::icc_mhu_trans
     ms::client_interface::startup_shutdown
+    ms::service::event_trace::collector
+    ms::service::event_trace::et_mts_clnt
     silibs::idhw
     silibs::idsw
     silibs::idsw_kng

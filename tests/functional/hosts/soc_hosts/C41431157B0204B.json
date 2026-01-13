@@ -2,7 +2,7 @@
     "id": "C41431157B0204A",
     "ip": "C41431157B0204A.redmond.corp.microsoft.com",
     "type": "rvp",
-    "node_id": 30,
+    "node_id": 26,
     "rack_scm": {
         "host": "172.29.131.24",
         "credential": {

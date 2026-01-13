@@ -1971,7 +1971,6 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_class_retry_weight_ctl, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_misc_retry_weight_ctl, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_sbsx_cbusy_limit_ctl, 0x483018);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_r2_aux_ctl, 0x0ULL);
 
     assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_control, 0x1);
     assert_int_equal(default_sam_cfg_knb.mesh_rni_qos_cfg[0].qos_lat_tagt, 0x2);

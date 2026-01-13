@@ -146,7 +146,6 @@
     <Knob name="mesh_rni_qos_cfg_knob" type="mesh_rni_qos_cfg_t" help="Set RN-I QoS Cfg"/>
     <Knob name="mesh_rnd_qos_cfg_knob" type="mesh_rnd_qos_cfg_t" help="Set RN-D QoS Cfg"/>
     <Knob name="mesh_mxp_qos_cfg_knob" type="mesh_mxp_qos_cfg_t" help="Set MXP QoS Cfg"/>
-    <Knob name="mesh_hnf_r2_aux_ctl" type="uint64_t" default="0x3001005A900"/>
 
     <!-- Mesh RAS -->
     <Knob name="mesh_RAS_Error_Detection_Disable" type="bool" default="0" help="If true, disable Mesh RAS Error Detection in the Mesh RAS Control registers. Default: false."/>

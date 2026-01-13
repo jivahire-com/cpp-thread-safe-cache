@@ -517,6 +517,10 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
     {
         printf("Failed to get INTU enable status.  Retval = %d\n", sts);
     }
+    else
+    {
+        printf("DDR PHY int sts = 0x%08x\n", (unsigned int)phy_int_sts);
+    }
 
     if (phy_int_sts & csr_PhyTrngFailEn_MASK)
     {
@@ -567,9 +571,7 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
 
     if (phy_int_sts & csr_PhyPIEProgErrEn_MASK)
     {
-        uint32_t arc_ecc = MMIO_READ32(tDRTUB | csr_ArcEccIndications_ADDR);
         phy_int_clr |= csr_PhyPIEProgErrEn_MASK;
-        (void)arc_ecc;
         ddr_cper.vendor_err_info.phy_fatal.phypieprogerr = 1;
         ddr_cper.vendor_err_info.phy_fatal.valid_phypieprogerr = 1;
         ddr_cper.valid_vendor_err_info = 1;

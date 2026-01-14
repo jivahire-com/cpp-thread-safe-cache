@@ -206,6 +206,12 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
                     // Set this region is ready for crash dump.
                     type_context->header->status = CRASH_DUMP_IN_USE;
                 }
+                else if (type_context->header->status == CRASH_DUMP_IN_TRANSFER)
+                {
+                    // If header status is IN_TRANSFER, it means crash dump transfer was interrupted.
+                    // Reset status to IN_USE to allow new crash dump.
+                    type_context->header->status = CRASH_DUMP_IN_USE;
+                }
                 release_semaphore(type_context->semaphore.id);
             }
         }

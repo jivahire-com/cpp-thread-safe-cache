@@ -165,7 +165,23 @@ static int test_teardown(void** ctx)
 TEST_FUNCTION(test_crash_dump_pldm_transfer_dump_no_dump, nullptr, test_teardown)
 {
     // Set expectations
+    crash_dump_header_t full_header = {.status = CRASH_DUMP_IN_USE};
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
+    crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .core_index = CRASH_DUMP_CORE_MCP};
+    will_return_always(__wrap_crash_dump_context, &context);
+
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
+
+    for (int i = 0; i < 12; i++)
+    {
+        expect_any(__wrap_wait_for_semaphore, id);
+        expect_any(__wrap_wait_for_semaphore, key);
+        expect_function_call(__wrap_wait_for_semaphore);
+        expect_any(__wrap_release_semaphore, id);
+        expect_function_call(__wrap_release_semaphore);
+    }
+
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     // Act
     crash_dump_pldm_transfer_dump();
@@ -177,7 +193,20 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump_no_dump, nullptr, test_teardown
 TEST_FUNCTION(test_crash_dump_pldm_transfer_dump_error, test_setup, test_teardown)
 {
     // Set expectations
+    crash_dump_header_t full_header = {.status = CRASH_DUMP_IN_USE};
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
+    crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .core_index = CRASH_DUMP_CORE_MCP};
+    will_return_always(__wrap_crash_dump_context, &context);
+
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    for (int i = 0; i < 9; i++)
+    {
+        expect_any(__wrap_wait_for_semaphore, id);
+        expect_any(__wrap_wait_for_semaphore, key);
+        expect_function_call(__wrap_wait_for_semaphore);
+        expect_any(__wrap_release_semaphore, id);
+        expect_function_call(__wrap_release_semaphore);
+    }
 
 #ifdef PLDM_DRV_WORKAROUND
     will_return(__wrap_pldm_drv_raise_platform_event, FPFW_STATUS_FAIL);
@@ -205,6 +234,14 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump, test_setup, test_teardown)
 
     // Set expectations
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    for (int i = 0; i < 9; i++)
+    {
+        expect_any(__wrap_wait_for_semaphore, id);
+        expect_any(__wrap_wait_for_semaphore, key);
+        expect_function_call(__wrap_wait_for_semaphore);
+        expect_any(__wrap_release_semaphore, id);
+        expect_function_call(__wrap_release_semaphore);
+    }
 
 #ifdef PLDM_DRV_WORKAROUND
     will_return(__wrap_pldm_drv_raise_platform_event, FPFW_STATUS_SUCCESS);
@@ -244,6 +281,15 @@ TEST_FUNCTION(test_crash_dump_transfer_dump_platform_event_cb, test_setup, test_
 
     // Open the stream
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    for (int i = 0; i < 9; i++)
+    {
+        expect_any(__wrap_wait_for_semaphore, id);
+        expect_any(__wrap_wait_for_semaphore, key);
+        expect_function_call(__wrap_wait_for_semaphore);
+        expect_any(__wrap_release_semaphore, id);
+        expect_function_call(__wrap_release_semaphore);
+    }
+
     crash_dump_stream_open(&crash_dump_stream);
 
     uint64_t expected_header_size = sizeof(DUMP_HEADER) + sizeof(DUMP_METADATA_HEADER) +
@@ -308,6 +354,15 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete, test_setup, test_teardown)
     // Open the crash dump stream
     crash_dump_stream_t crash_dump_stream = {};
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    for (int i = 0; i < 9; i++)
+    {
+        expect_any(__wrap_wait_for_semaphore, id);
+        expect_any(__wrap_wait_for_semaphore, key);
+        expect_function_call(__wrap_wait_for_semaphore);
+        expect_any(__wrap_release_semaphore, id);
+        expect_function_call(__wrap_release_semaphore);
+    }
+
     crash_dump_stream_open(&crash_dump_stream);
 
     // Set expectations
@@ -346,6 +401,15 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete_with_fail, test_setup, test_t
     // Open the crash dump stream
     crash_dump_stream_t crash_dump_stream = {};
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    for (int i = 0; i < 9; i++)
+    {
+        expect_any(__wrap_wait_for_semaphore, id);
+        expect_any(__wrap_wait_for_semaphore, key);
+        expect_function_call(__wrap_wait_for_semaphore);
+        expect_any(__wrap_release_semaphore, id);
+        expect_function_call(__wrap_release_semaphore);
+    }
+
     crash_dump_stream_open(&crash_dump_stream);
 
     // Set expectations

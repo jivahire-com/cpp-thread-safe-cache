@@ -236,6 +236,9 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream)
         return false;
     }
 
+    crash_dump_context_t* ctx = crash_dump_context();
+    crash_dump_type_context_t* type_context = ctx->type_ctx[CRASH_DUMP_TYPE_FULL];
+
     // Iterate through each die and core to aggregate crash dump data
     for (KNG_DIE_ID die = DIE_0; die <= DIE_1; die++)
     {
@@ -329,6 +332,16 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream)
 
                 ret = true; // Found a valid crash dump header
             }
+            else
+            {
+                // Double check and reset the core state to READY if CD hader indicates COMPLETED
+                wait_for_semaphore(type_context->semaphore.id, type_context->semaphore.key);
+                if (type_context->header->cores[die * CRASH_DUMP_CORE_NUM + core] == CRASH_DUMP_STATE_COMPLETED)
+                {
+                    type_context->header->cores[die * CRASH_DUMP_CORE_NUM + core] = CRASH_DUMP_STATE_READY;
+                }
+                release_semaphore(type_context->semaphore.id);
+            }
         }
     }
 
@@ -353,6 +366,7 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream)
     }
     else
     {
+        unmap_die1_crash_dump_region(&stream->die1_map_entry);
         CRASH_DUMP_ET_WARNING(CRASH_DUMP_ET_TYPE_STREAM_OPEN_EMPTY);
     }
 

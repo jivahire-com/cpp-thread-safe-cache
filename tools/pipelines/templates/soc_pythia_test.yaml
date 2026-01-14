@@ -40,7 +40,7 @@ parameters:
 - name: nuget_service_connections
   type: string
 - name: keyvault_name
-  type: string
+  type: string  
 
 
 jobs:

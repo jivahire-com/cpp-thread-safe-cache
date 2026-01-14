@@ -1,6 +1,6 @@
 {
-    "id": "C41431157B0204A",
-    "ip": "C41431157B0204A.redmond.corp.microsoft.com",
+    "id": "C41431157B0204B",
+    "ip": "C41431157B0204B.redmond.corp.microsoft.com",
     "type": "rvp",
     "node_id": 26,
     "rack_scm": {
@@ -59,7 +59,7 @@
                     "is_present": true,
                     "bmc": {
                         "ssh": {
-                            "host": "172.17.0.117",
+                            "host": "172.17.0.101",
                             "port": 8392,
                             "credential": {
                                 "service": "account",

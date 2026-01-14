@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 enabled_on(arm-eabi-aarch)
 
 set(TARGET debug)

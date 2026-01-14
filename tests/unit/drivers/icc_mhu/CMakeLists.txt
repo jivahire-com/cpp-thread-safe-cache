@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.driver.icc_mhu_trans.test)
 
 set(SOURCES

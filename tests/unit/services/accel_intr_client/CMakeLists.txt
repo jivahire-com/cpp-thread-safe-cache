@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET accel_intr_client.test)
 
 # Compile test

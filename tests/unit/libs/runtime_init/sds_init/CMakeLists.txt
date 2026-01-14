@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET sds_init.test)
 
 set(SOURCES

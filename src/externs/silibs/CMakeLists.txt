@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/silibs)
 set(LIB_OUTS_DIR ${CMAKE_BINARY_DIR}/externs/silibs)
 

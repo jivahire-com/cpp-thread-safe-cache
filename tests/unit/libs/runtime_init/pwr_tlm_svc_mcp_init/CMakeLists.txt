@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET pwr_tlm_svc_mcp_init.test)
 
 set(SOURCES

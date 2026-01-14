@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET cfg_mgr_init.test)
 
 set(SOURCES

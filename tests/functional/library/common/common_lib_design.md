@@ -1,3 +1,5 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
+
 # Serial Communication Library Design Document
 
 This document describes the serial communication libraries (`serial_utils.py` and `uefi_shell.py`) that provide utilities for managing serial communication with SCP, MCP, and UEFI channels in the functional test environment.

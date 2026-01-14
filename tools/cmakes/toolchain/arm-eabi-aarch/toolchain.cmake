@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 include($ENV{REPO_APP_ROOT}/tools/cmakes/scripts/enabled_on.cmake)
 set_valid_enable_flags(arm-eabi-aarch)
 

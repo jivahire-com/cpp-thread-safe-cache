@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET accel_virt_intr.test)
 
 set(SOURCES

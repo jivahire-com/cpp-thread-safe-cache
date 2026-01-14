@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file icc_d2dmbx_init.c
  * Instantiates icc base ctx for d2d mailbox transport interface for the platform

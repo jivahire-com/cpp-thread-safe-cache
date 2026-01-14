@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/silibs)
 set(TARGET_DIR_SILIBS_COMMON ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/common)
 set(TARGET_DIR_SILIBS_SDM_LIBS ${REPO_ROOT_DIR}/.externs/repo/silibs/libraries/sdm/libraries/)

@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file ib_telm_hsp_init.c
  * Sends the HSP a notification that the AP window is ready for in-band telemetry.

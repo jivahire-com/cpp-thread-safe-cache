@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET warm_start_init.test)
 
 set(WARM_START_SOURCE_DIR

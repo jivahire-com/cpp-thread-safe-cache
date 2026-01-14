@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # define target for atu service
 set(TARGET kng.service.atu_service)
 

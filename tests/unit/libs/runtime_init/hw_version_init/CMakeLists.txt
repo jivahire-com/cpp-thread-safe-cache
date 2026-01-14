@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET hw_version_init_scp.test)
 
 set(SOURCES

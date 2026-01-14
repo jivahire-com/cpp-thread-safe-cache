@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 import time
 import paramiko
 from robot.api.deco import keyword

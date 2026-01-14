@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.mock.event_trace)
 
 add_library(${TARGET} 

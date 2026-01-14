@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET d2d_cntr_sync.test)
 
 set(SOURCES

@@ -1,3 +1,5 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
+
 # ICC MHU Library Design Document
 
 This document describes the Inter-Core Communication Message Handling Unit (ICC MHU) library design, public API, and architectural patterns for enabling efficient message passing between processor cores on Kingsgate silicon.

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 
 set(TARGET kng.service.platform.m7.rtosmon)
 

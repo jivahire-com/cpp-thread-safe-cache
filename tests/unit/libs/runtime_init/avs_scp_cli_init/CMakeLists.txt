@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET avs_scp_cli_init.test)
 
 set(SOURCES

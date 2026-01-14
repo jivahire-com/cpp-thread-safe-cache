@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET ddr_manager_library)
 set(LIBS PUBLIC fwlib.dfwk fwlib.lib.assert)
 

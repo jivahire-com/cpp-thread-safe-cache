@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 add_library(pwr_tlm_mcp.service.cmpnt.interfaces INTERFACE)
 
 target_include_directories(pwr_tlm_mcp.service.cmpnt.interfaces

@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file fuse_init.c
  * Instantiates fuse service

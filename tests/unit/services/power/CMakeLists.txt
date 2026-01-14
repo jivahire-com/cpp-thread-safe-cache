@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 add_subdirectory(cli)
 add_subdirectory(hw_int)
 add_subdirectory(interrupt)

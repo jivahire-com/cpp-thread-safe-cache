@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file crash_dump_dfwk.c
  * Implement driver framework interface for crash dump

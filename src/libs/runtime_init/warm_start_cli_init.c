@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file warn_start_cli_init.c
  * Instantiates Warm Start CLIs for the SCP

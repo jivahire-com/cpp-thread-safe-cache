@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET 1pfw_fwlibs)
 set(TARGET_DIR ${REPO_ROOT_DIR}/.externs/repo/1pfw_fwlibs)
 

@@ -1,3 +1,5 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
+
 # SCP Firmware
 
 This directory contains all of the projects that are linked for the SCP firmware.

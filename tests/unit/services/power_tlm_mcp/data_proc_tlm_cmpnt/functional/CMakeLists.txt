@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.svc.pwr_tlm_mcp.dp.func.test)
 
 set(SOURCES

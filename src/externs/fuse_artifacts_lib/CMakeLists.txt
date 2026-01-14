@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 
 set(TARGET fuse_artifacts_lib)
 

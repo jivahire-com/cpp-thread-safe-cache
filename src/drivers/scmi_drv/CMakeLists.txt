@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.driver.scmi_drv)
 
 add_library(${TARGET}

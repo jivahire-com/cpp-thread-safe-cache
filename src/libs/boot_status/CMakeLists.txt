@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.lib.boot_status)
 
 add_library(${TARGET}

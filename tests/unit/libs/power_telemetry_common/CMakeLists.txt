@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET power_telemetry_common_test.test)
 
 add_executable(${TARGET}

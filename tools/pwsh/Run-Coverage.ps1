@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 param($TestExecutable, $CoverageFile, $ExecutableArgs, $LogPath)
 
 # Create temporal files for subproducts

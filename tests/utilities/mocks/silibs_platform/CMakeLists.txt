@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.mock.silibs_platform)
 
 add_library(${TARGET} 

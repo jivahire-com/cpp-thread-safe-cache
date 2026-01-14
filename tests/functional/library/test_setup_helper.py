@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 """
 Python-based Pythia 2.0 Test Setup Utilities
 

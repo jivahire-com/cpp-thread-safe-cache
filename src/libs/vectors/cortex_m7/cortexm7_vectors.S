@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
   .global reset_handler
 
   .global __tx_NMIHandler

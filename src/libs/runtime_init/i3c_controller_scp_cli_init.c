@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file i3c_controller_scp_cli_init.c
  * Instantiates i3c_controller CLI for the SCP

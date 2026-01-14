@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # define target for fuse service
 set(TARGET kng.service.fuse_service)
 

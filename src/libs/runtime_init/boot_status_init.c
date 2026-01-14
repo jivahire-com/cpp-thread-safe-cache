@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file boot_status_init.c
  * Instantiates sending boot status mesg to HSP for the MCP & SCP

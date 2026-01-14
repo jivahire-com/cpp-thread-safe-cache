@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.service.cli.mem)
 
 # Add the cli_mem source files to the build

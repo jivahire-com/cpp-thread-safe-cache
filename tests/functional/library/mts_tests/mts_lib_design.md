@@ -1,3 +1,5 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
+
 # MTS Library Design Document
 
 This document describes the Message Transfer Service (MTS) library design, public API, and architectural patterns for enabling telemetry data collection and inter-core communication through the Data Collection Protocol (DCP) and Transfer Relay Protocol (TRP) on Kingsgate silicon.

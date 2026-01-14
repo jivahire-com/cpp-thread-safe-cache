@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set (TARGET kng.lib.corebits)
 
 # Add target for the service

@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file i3c_controller_init.c
  * Instantiates I3C 0 and 1 Master drivers.

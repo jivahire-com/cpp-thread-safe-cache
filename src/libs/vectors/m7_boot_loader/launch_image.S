@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /*
  * Arm SCP/MCP Software
  * Copyright (c) 2020-2021, Arm Limited and Contributors. All rights reserved.

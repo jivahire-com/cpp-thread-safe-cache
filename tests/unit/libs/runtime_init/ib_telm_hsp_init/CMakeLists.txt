@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET ib_telm_hsp_init.test)
 
 set(SOURCES

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.lib.hsp_firmware_headers)
 
 add_library(${TARGET} INTERFACE)

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET hw_semaphore_init.test)
 
 set(SOURCES

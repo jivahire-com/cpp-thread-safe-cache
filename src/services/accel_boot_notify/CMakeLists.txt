@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.service.accel_boot_notify_service)
 
 set (SOURCES 

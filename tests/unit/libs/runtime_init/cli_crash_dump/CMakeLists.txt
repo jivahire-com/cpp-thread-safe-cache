@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET cli_crash_dump_init.test)
 
 set(SOURCES

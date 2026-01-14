@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # Set target
 set(CLANG_TARGET_TRIPLE i386-pc-windows-msvc)
 

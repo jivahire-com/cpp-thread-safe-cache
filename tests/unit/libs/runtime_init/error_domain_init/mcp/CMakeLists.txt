@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET mcp_error_domain_init.test)
 
 set(SOURCES

@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 #include <atu_lib.h>
 #include <ddrss_runtime_api.h>
 #include <cper.h>

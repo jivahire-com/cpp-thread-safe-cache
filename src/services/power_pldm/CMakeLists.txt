@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # MCP 
 set(TARGET kng.service.power_pldm_mcp)
 

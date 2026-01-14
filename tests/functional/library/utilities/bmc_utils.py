@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 """BMC utility helpers.
 Provides reusable functions for executing BMC CLI commands.
 """

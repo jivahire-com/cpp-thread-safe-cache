@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 function(unit_test_target TARGET)
     configure_file(
         ${CMAKE_SOURCE_DIR}/tests/unit/TestConfig.xml

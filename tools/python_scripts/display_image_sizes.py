@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 #!/bin/env python3
 """
 This script generates a summary of firmware image sizes and section sizes for different cores

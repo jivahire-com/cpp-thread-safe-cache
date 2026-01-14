@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # client interface
 set(TARGET kng.client_interface.ap_core)
 

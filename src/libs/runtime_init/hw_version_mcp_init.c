@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file hw_version_mcp_init.c
  * Setups up System ID components for the MCP

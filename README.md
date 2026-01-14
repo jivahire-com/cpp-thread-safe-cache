@@ -1,3 +1,4 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
 # Welcome to the MSCP Repo
 
 Checkout our documentation [here](./docs/)

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # define target for power service
 set(TARGET kng.service.health_monitor)
 

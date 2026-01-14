@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file mesh_scp_cli_init.c
  * Instantiates Mesh CLI for the SCP

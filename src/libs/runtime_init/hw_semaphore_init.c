@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file hw_semaphore_init.c
  * Instantiates HW semaphores.

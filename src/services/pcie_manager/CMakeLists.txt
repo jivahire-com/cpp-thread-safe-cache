@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.service.scp_pcie_manager)
 
 # Needed to ensure that silibs enums > 32-bit are compatible with MSCP

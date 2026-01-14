@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 
 set(TARGET in_band_telemetry_ddr)
 

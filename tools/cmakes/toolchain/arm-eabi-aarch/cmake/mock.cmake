@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 function(mock_target TARGET)
     # For each function argument
     math(EXPR INDICES "${ARGC} - 2")

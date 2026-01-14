@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET handler_scp_exception_reset.test)
 
 set(SOURCES

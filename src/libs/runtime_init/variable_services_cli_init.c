@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file variable_services_cli_init.c
  * Instantiates variable services cli commands

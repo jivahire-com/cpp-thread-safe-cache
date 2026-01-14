@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 #!/usr/bin/env python3
 """
 Boot Polling Script - D2D Stress Test

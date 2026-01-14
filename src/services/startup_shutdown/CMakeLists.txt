@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # client interface code
 set(TARGET kng.client_interface.startup_shutdown)
 

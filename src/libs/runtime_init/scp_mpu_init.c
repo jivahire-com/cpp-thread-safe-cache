@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file scp_mpu_init.c
  * Instantiates MPU for the SCP

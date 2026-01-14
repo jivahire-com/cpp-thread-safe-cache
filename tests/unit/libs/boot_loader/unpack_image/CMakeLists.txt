@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng_mscp_unpack_image.test)
 
 set(SOURCES

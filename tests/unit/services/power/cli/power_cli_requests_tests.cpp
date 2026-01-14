@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 #include "power_test.h" // for POWER_TEST
 
 #include <cstddef> // for NULL

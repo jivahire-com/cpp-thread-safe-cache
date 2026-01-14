@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # Function to create SOS init test targets
 function(create_sos_init_test TARGET_NAME RUNTIME_INIT_DEFINE)
     set(SOURCES

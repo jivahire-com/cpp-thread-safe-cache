@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # Exception handler
 set(TARGET kng.lib.d2d_cntr_sync)
 

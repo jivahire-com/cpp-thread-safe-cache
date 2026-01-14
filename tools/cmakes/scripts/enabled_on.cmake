@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 include_guard()
 
 macro(set_valid_enable_flags)

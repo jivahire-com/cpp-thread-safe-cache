@@ -1,3 +1,5 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
+
 # Power Telemetry Library Design Document
 
 This document describes the Power Telemetry Library (`pwr_tlm_lib.py`) that provides utilities for collecting and managing power telemetry data from Kingsgate silicon through the Data Collection Protocol (DCP).

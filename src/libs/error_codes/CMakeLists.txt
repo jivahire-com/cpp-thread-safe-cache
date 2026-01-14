@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.lib.error_codes)
 set(ERR_GEN_SRC ${CMAKE_CURRENT_SOURCE_DIR}/kingsgate_error_codes/KNGError.json)
 set(ERR_GEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)

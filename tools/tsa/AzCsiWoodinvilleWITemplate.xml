@@ -1,3 +1,5 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
+
 <TFSTemplate Name="AzCsiWoodinvilleWITemplate" AccountType="AAD">
     <OnboardingDescription>
         <![CDATA[ <p style="FONT-FAMILY: '[[Style-Font-Family]]'; COLOR: [[Style-Color-Info]]; FONT-SIZE: 11pt;"> Help can be found at the <a href="https://aka.ms/tsa/">TSA Wiki</a> for general TSA questions and details of how to change template settings. </p> ]]>

@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file icc_hspmbx_init.c
  * Instantiates icc base ctx for hsp mailbox transport interface for the platform

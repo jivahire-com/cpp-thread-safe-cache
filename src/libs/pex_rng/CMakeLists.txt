@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.lib.pex_rng)
 
 add_library(${TARGET}

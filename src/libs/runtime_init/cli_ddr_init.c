@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file cli_ddr_init.c
  * Instantiates CLI for DDR in the SCP

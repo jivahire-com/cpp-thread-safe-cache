@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # Exception handler for SCP
 set(TARGET kng.lib.exception_handler.scp)
 

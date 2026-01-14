@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 message("----------------------------------")
 message("-- Adding Silibs KNG Platform ----")
 

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 #!/usr/bin/env python3
 import argparse
 import os

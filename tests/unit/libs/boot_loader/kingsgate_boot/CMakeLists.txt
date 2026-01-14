@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng_mscp_boot_loader.test)
 
 set(SOURCES

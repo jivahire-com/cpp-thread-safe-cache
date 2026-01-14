@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET  kng.service.pwr_tlm_mcp.cmpnt.exec.test)
 
 set(SOURCES

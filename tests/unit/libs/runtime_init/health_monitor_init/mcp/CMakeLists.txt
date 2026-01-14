@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET health_monitor_init_mcp.test)
 
 set(SOURCES

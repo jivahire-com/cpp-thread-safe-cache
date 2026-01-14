@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # This python file has methods to reset the COM ports on the FPGA. 
 # It kills all putty sessions and then resets the FTDI adapters.
 

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 add_subdirectory(data_proc_tlm_cmpnt)
 add_subdirectory(exec_tlm_cmpnt)
 add_subdirectory(in_band_tlm_cmpnt)

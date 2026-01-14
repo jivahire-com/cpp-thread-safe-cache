@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file ap_advlog_pldm_mcp_init.c
  * Instantiates AP Adv Logger PLDM for MCP core

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.service.sensor_fifo)
 
 add_library(${TARGET}

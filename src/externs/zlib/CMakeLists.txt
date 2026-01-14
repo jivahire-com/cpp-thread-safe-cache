@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # This make is to clone the zlib library based on input provided in packages.xml file
 # Post cloning the library, the make file also describes the files needed to build the library 
 # and exports zlib as library to be used

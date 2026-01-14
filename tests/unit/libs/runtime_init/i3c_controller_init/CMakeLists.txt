@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET i3c_controller_init.test)
 
 set(SOURCES

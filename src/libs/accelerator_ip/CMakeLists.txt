@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET ms_accelerator_ip_lib)
 
 # Add target for the service

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 """
 - Python based Pythia 2.0 Test.
 - This module contains interface and parsing related utility functions for pythia functional tests.

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.service.event_trace_relay.cli)
 
 add_library(${TARGET}

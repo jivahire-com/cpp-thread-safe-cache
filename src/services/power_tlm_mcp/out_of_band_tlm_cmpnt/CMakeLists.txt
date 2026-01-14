@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.service.pwr_tlm_mcp.cmpnt.out_of_band_tlm)
 
 add_library(${TARGET}

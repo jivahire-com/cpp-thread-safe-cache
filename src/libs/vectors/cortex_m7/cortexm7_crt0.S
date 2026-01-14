@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
   .syntax	unified
   .section .init, "ax"
   .code 16

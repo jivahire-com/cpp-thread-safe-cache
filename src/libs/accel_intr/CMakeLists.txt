@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # define target for Accel Interrupt Lib
 set(TARGET ms_accel_intr_lib)
 

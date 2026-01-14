@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET accel_intr_service_init.test)
 
 set(SOURCES

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # The purpose of this make file is to build the boot loader vector and crt0 files
 # They provide the reset vector and _start implementations
 

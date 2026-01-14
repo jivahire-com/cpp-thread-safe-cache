@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file accelerator_ip_scp_init.c
  * Initialize the Accelerators on SCP core

@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET scp_error_domain_init.test)
 
 set(SOURCES

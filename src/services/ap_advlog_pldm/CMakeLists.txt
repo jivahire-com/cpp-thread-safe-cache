@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # MCP
 set(TARGET kng.service.ap_advlog_pldm_mcp)
 

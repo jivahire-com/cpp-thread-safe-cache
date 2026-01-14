@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.lib.pwr_tlm_core_ex)
 
 add_library(${TARGET}

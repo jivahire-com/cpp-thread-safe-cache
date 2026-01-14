@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file ddr_manager_dfwk.c
  * Implement driver framework interface for DDR

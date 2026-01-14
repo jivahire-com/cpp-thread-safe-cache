@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 add_subdirectory(gpio)
 add_subdirectory(icc_mhu)
 add_subdirectory(pcie)

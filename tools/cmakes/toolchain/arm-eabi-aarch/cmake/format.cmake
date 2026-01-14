@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 function(format_target TARGET)
     if (DEFINED REPO_CLANG_FORMAT)
         get_target_property(TARGET_SOURCES ${TARGET} SOURCES)

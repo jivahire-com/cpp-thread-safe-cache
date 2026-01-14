@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # SCP 
 set(TARGET kng.lib.warm_start)
 

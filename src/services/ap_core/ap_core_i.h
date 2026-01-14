@@ -1,4 +1,6 @@
-// Copyright Microsoft. All rights reserved.
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 
 /**
  * @file ap_core_i.h

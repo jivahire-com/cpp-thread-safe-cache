@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 
 add_subdirectory(1pfw_fwlibs)
 add_subdirectory(cortex_m7)

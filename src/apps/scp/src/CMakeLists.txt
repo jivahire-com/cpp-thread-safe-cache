@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # This target links the SCP application firmware
 #
 # The actual entrypoint to the program will be defined in the vectors library

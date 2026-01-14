@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 function(lint_target TARGET)
     # Clang-Tidy linter
     if (DEFINED REPO_CLANG_TIDY)

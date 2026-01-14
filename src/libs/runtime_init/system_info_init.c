@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file system_info_init.c
  * Instantiates system info for the MCP & SCP

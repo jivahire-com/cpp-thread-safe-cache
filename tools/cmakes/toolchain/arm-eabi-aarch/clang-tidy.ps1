@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # Extract the input file and clang-tidy args from the arguments and pass it to clang-tidy (omit the compiler invocation)
 $compilerOptionsIndex = $args.IndexOf('--') - 1
 $inputArgs = $args[0..$compilerOptionsIndex]

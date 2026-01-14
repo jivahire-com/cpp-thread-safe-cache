@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET boot.loader.interface)
 
 add_library(${TARGET} INTERFACE)

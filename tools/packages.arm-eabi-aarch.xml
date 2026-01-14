@@ -1,3 +1,5 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. -->
+
 <packages>
     <universal_packages>
         <package org="https://azurecsi.visualstudio.com/" project="Woodinville" scope="project" feed="echofalls.fw.deps" name="gcc.arm.eabi.aarch-win64" version="13.2.20201009"/>

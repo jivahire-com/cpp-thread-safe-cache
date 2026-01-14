@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # HW semaphore
 set(TARGET kng.lib.hw_semaphore)
 

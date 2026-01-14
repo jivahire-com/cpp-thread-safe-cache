@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 # define target for Accel Interrupt Service
 set(TARGET kng.service.accel_intr_service)
 

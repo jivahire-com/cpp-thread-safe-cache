@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET kng.lib.event_trace.trace)
 
 add_library(${TARGET} INTERFACE)

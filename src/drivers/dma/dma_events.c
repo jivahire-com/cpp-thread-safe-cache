@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file dma_events.c
  * Instantiates the actual event trace functions for DMA driver.

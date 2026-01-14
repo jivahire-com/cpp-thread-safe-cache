@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file etr_init.c
  * Instantiates Event Tracing Relay for the MCP

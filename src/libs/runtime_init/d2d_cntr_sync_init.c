@@ -1,3 +1,6 @@
+//
+// Copyright (c) Microsoft Corporation. All rights reserved.
+//
 /**
  * @file d2d_cntr_sync_init.c
  * Synchronizes counter of d1 with d0 for uniform timestamp across dies

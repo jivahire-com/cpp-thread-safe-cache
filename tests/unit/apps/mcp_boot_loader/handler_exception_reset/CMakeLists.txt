@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
 set(TARGET handler_mcp_exception_reset.test)
 
 set(SOURCES

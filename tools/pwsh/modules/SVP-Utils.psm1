@@ -4,6 +4,86 @@
 
 <#
 .SYNOPSIS
+Tests connectivity to the SVP license servers.
+
+.DESCRIPTION
+Checks if the license servers required for SVP simulation are reachable.
+These servers require VPN or direct corporate network access.
+
+.EXAMPLE
+Test-LicenseServerConnectivity
+#>
+Function Test-LicenseServerConnectivity()
+{
+    $licenseServers = @(
+        @{ Host = "wanlic.svceng.com"; Port = 40002; Description = "ARM License Server" },
+        @{ Host = "wanlic.svceng.com"; Port = 40003; Description = "Synopsys License Server" },
+        @{ Host = "gem-lic-01.svceng.com"; Port = 40003; Description = "Synopsys License Server (backup)" }
+    )
+
+    $anyReachable = $false
+    $failedServers = @()
+
+    Write-Host ""
+    Write-Host "Checking license server connectivity..." -ForegroundColor Cyan
+
+    foreach ($server in $licenseServers)
+    {
+        $hostName = $server.Host
+        $port = $server.Port
+        $description = $server.Description
+
+        try
+        {
+            $tcpClient = New-Object System.Net.Sockets.TcpClient
+            $asyncResult = $tcpClient.BeginConnect($hostName, $port, $null, $null)
+            $wait = $asyncResult.AsyncWaitHandle.WaitOne(3000, $false)
+
+            if ($wait -and $tcpClient.Connected)
+            {
+                $tcpClient.EndConnect($asyncResult)
+                Write-Host "`t[OK] $description ($hostName`:$port)" -ForegroundColor Green
+                $anyReachable = $true
+            }
+            else
+            {
+                Write-Host "`t[FAIL] $description ($hostName`:$port)" -ForegroundColor Red
+                $failedServers += "$hostName`:$port"
+            }
+
+            $tcpClient.Close()
+        }
+        catch
+        {
+            Write-Host "`t[FAIL] $description ($hostName`:$port)" -ForegroundColor Red
+            $failedServers += "$hostName`:$port"
+        }
+    }
+
+    Write-Host ""
+
+    if (-not $anyReachable)
+    {
+        Write-Host "====================================================================================" -ForegroundColor Red
+        Write-Host "ERROR: Unable to reach any license servers!" -ForegroundColor Red
+        Write-Host "====================================================================================" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "SVP simulation requires access to Synopsys license servers on the corporate network." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Please ensure you are:" -ForegroundColor Yellow
+        Write-Host "  1. Connected to the Microsoft VPN, OR" -ForegroundColor Yellow
+        Write-Host "  2. On a direct corporate network connection" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "After connecting to VPN, try running the command again." -ForegroundColor Yellow
+        Write-Host ""
+        Throw "License server connectivity check failed. Please connect to VPN and try again."
+    }
+
+    return $true
+}
+
+<#
+.SYNOPSIS
 Stops a SVP Virtualizer Simulation if one exists.
 
 .EXAMPLE
@@ -66,6 +146,9 @@ Function Invoke-Virtualizer(
     [Parameter(Mandatory=$false)] [ValidateSet('sideloaded_chie_bins', 'chie_bins_single_die_dat', 'chie_bins_dual_die_dat', 'ap_baremetal_dual_die_dat', 'ap_baremetal_single_die_dat')] [string] $SimConfig = "chie_bins_dual_die_dat"
 )
 {
+    # Check license server connectivity before proceeding
+    Test-LicenseServerConnectivity
+
     # Setup the workspace for the virtualizer
     $workspace_dir = "$env:REPO_APP_ROOT.svp_simulator\workspace"
     $workspace_dir = "$workspace_dir".replace("/", "\")

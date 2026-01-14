@@ -239,6 +239,9 @@ Function Start-SimGui(
     [Parameter(Mandatory=$false)] [ValidateSet('sideloaded_chie_bins', 'chie_bins_single_die_dat', 'chie_bins_dual_die_dat', 'ap_baremetal_dual_die_dat', 'ap_baremetal_single_die_dat')] [string] $SimConfig = "chie_bins_dual_die_dat"
 )
 {
+    # Check license server connectivity before proceeding
+    Test-LicenseServerConnectivity
+
     Write-Host "== Stop Running Simulations =="
     Stop-Sims
 

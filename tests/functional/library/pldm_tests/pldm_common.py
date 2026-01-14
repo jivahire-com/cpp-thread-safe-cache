@@ -62,24 +62,19 @@ class pldm_common(EchoFallsBaseTest):
         self.core_scp_channel = None
         self.core_mcp_channel = None
         self.pldm_spec = None
+        self.delay_3_mins_20_secs = 200
         self.delay_5_minutes = 300
-        self.delay_15_minutes = 900
+        self.pldmd_stopped = False
 
     def setup(self):
         # Step 1: DUT setup
         self.dut.setup()
 
-        # Step 2: Open MCP channel and BMC client channel
-        self.core_mcp_channel = (
-            self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
-        )
-        self.core_mcp_channel.open()
-        assert self.core_mcp_channel.is_open()
-
+        # Step 2: Open BMC client channel
         self.bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
         self.bmc_cli.open()
         assert self.bmc_cli.is_open()
-        
+
         # Step 3: Set BMC UART MUX to MCP for RVP
         if self.dut.get_dut_type() == DeviceType.RVP:
             cred_path = os.environ.get("SECURE_FILE_PATH")
@@ -95,7 +90,14 @@ class pldm_common(EchoFallsBaseTest):
             )
             self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
 
-        # Step 4: Perform reset based on DUT type
+        # Step 4: Open MCP channel
+        self.core_mcp_channel = (
+            self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
+        )
+        self.core_mcp_channel.open()
+        assert self.core_mcp_channel.is_open()
+
+        # Step 5: Perform reset based on DUT type
         if self.dut.get_dut_type() == DeviceType.BIGFPGA:
             self.log.warning(
                 "Device type is bigFPGA. Performing an additional OOB reset ..."
@@ -105,13 +107,15 @@ class pldm_common(EchoFallsBaseTest):
             self.log.warning("Device type is RVP. Performing SoC Reset ...")
             self.rscm_helper.rscm_soc_reset()
 
-        # Step 5: wait for MCP boot complete
-        mcp_boot_status = self._check_mcp_boot_complete(timeout=self.delay_15_minutes)
+        # Step 6: wait for MCP boot complete
+        mcp_boot_status = self._check_mcp_boot_complete(
+            timeout=self.delay_3_mins_20_secs
+        )
         if mcp_boot_status is False:
             self.log.info("MCP boot check failed during setup")
             return False
-        
-        # Step 6: Wait for PLDM and MCTPD services to be active
+
+        # Step 7: Wait for PLDM and MCTPD services to be active
         pldm_status = self._wait_for_service_status(
             service_str="xyz.openbmc_project.pldmd.service",
             expect_active=True,
@@ -137,10 +141,11 @@ class pldm_common(EchoFallsBaseTest):
         if result != 0:
             self.log.info("Failed to stop pldmd service on BMC")
             return False
+        self.pldmd_stopped = True
 
         time.sleep(30)
 
-        # Step 7: Load PLDM specification data and get MCP EID
+        # Step 8: Load PLDM specification data and get MCP EID
         self.pldm_spec = pldm_spec_parser()
         self.pldm_spec.load_spec_data("pldm_spec_data.json")
         mctp_id_status = self._pldm_get_mctp_id()
@@ -150,13 +155,14 @@ class pldm_common(EchoFallsBaseTest):
         return True
 
     def teardown(self):
-        result, _, _ = self._bmc_execute_command(
-            command="systemctl start xyz.openbmc_project.pldmd.service",
-            sudo_mode=True,
-        )
-        if result != 0:
-            self.log.info("Failed to start pldmd service on BMC")
-            return False
+        if self.pldmd_stopped is True:
+            result, _, _ = self._bmc_execute_command(
+                command="systemctl start xyz.openbmc_project.pldmd.service",
+                sudo_mode=True,
+            )
+            if result != 0:
+                self.log.info("Failed to start pldmd service on BMC")
+                return False
 
         if not self.bmc_cli.is_open():
             self.bmc_cli.open()
@@ -164,6 +170,7 @@ class pldm_common(EchoFallsBaseTest):
         if self.dut.get_dut_type() == DeviceType.RVP:
             self.rscm_helper.set_bmc_uart_mux_scp(self.bmc_cli)
         self.bmc_cli.close()
+        self.core_mcp_channel.close()
         self.dut.teardown()
         time.sleep(10)
         return True
@@ -265,10 +272,19 @@ class pldm_common(EchoFallsBaseTest):
             self.log.info(
                 f"Boot message 'StartupShutdownSvc::LocalCoreSyncStageRemoteEnd' acknowledged from MCP"
             )
+            return True
         except TimeoutError as e:
-            print(f"A TimeoutError occurred while reading a boot message from MCP: {e}")
-            return False
-        return True
+            self.log.warning(
+                f"Boot banner not seen within {timeout}s: {e}. Trying heartbeat fallback..."
+            )
+
+        # Fallback: MCP main loop heartbeat (short window)
+        if self._check_mcp_health(waiting_time_seconds=20) is True:
+            self.log.info(
+                "Heartbeat 'MCP_MAIN::McpHeartBeat' acknowledged from MCP (fallback)."
+            )
+            return True
+        return False
 
     def _check_mcp_health(self, waiting_time_seconds=20):
         try:

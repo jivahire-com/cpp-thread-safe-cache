@@ -496,7 +496,15 @@ static void power_init_update_tilepvt_tile_cfg(const power_runconfig_t* p_runcon
 
 uint16_t power_hw_dts_pvt_raw_to_temp_dC(uint16_t raw, dts_coeff_t fused_coeff)
 {
-    return (uint16_t)FLOAT_TO_UNSIGNED((DOUT2TEMP_FUSED(raw, fused_coeff.k_val, fused_coeff.y_val)) * 10);
+    // Result in deci-Celsius: multiply by 10 after integer conversion
+    int32_t temp = DOUT2TEMP_FUSED(raw, fused_coeff.k_val, fused_coeff.y_val) * 10;
+    if (temp < 0)
+    {
+        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/3271995, handle -ve temperature.
+        POWER_LOG_TRACE("PVT temperature sensor returned negative temperature");
+        return 0;
+    }
+    return (uint16_t)temp;
 }
 
 /**

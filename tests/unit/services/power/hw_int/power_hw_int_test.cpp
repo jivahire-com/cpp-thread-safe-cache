@@ -204,6 +204,13 @@ void base_config()
             640; //  different here to ensure code is using the right coefficients for specific calculations
     }
 
+    // Initialize curve_max_temp with valid temperature values (in Celsius)
+    // These values must result in positive temperatures when converted via DOUT2TEMP_FUSED
+    for (unsigned idx = 0; idx < ARRAY_SIZE(f->curve_max_temp); ++idx)
+    {
+        f->curve_max_temp[idx] = 50 + (int8_t)(idx * 10); // 50C, 60C, 70C temperatures
+    }
+
     power_knobs_t* knobs = &s_runconfig.knobs;
 
     knobs->current_threshold.iref_to_max_percent = 80;

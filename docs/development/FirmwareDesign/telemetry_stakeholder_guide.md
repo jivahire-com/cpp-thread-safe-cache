@@ -131,3 +131,80 @@ Details:
 NOTE: To prepare for another run, empty the sensor fifo's first:
    via Die 0 MCP CLI - 'pwrtlm mode collect'
    Wait briefly and then repeat the steps listed above.
+
+## All Zero Power Telemetry Event Filter
+
+This feature filters out all-zero power telemetry events to reduce the size of telemetry uploaded to database.
+Events been filtered:
+1. Pstate Entries with each core having 32 Pstates
+2. Cstate Entries with each core can have 5 Cstates (C0, C1, C2, C3, C4)
+8. Histogram (Voltage vs Temperature)
+
+For production mode, the filter is **enabled by default**.
+
+### How to Disable the Filter
+
+For debug purposes, if you want to disable the all-zero filter:
+
+#### Disable in the Kingsgate firmware:
+
+1. Locate the configuration file: `config\knobs_config\kng_mscp_power_tlm_knobs.xml`
+
+2. Find the `all_zero_filtering_enable` knob and set it to `false`:
+
+   ```xml
+   <Knob name="all_zero_filtering_enable" type="bool" default="true" description="Enable filtering of all-zero power telemetry records">
+       <Value>false</Value>
+   </Knob>
+   ```
+
+Alternatively, you can disable the filter via CLI at runtime using the configuration manager:
+
+1. Connect to the MCP core CLI
+
+2. Navigate to the configuration manager:
+   ```
+   ConfigMgr
+   ```
+
+3. Set the power telemetry knobs struct to disable the filter:
+   ```
+   set power_tlm_knobs_t 02 03 0A 00 01 00
+   ```
+   
+   Where the bytes represent:
+   - `02`: inst_sample_period (PWR_TLM_INST_SAMPLE_PERIOD_10_MS = 2)
+   - `03`: prod_pkg_period (PWR_TLM_PROD_PKG_PERIOD_2_MIN = 3)
+   - `0A 00`: inst_samples_per_pkg (10 = 0x000A, little-endian)
+   - `01`: _24hr_sample_period (PWR_TLM_24HR_PKG_PERIOD_24_HR = 1)
+   - `00`: all_zero_filtering_enable (false = 0)
+
+4. To re-enable the filter, change the last byte to `01`:
+   ```
+   set power_tlm_knobs_t 02 03 0A 00 01 01
+   ``` 
+
+#### Disable in Dianostic Decoder
+
+After collecting the manifest and payload .bin files, if you run DiagDecoder.exe, it will by default filter out the all-zero events. If you want to disable the decoder-level filter, you can pass a '0' or 'false' to the FilterFlag parameter:
+
+```
+DiagDecoder.exe <Manifest path> <Payload path> [OutputFile] [FilterFlag]
+```
+
+Where `OutputFile` and `FilterFlag` are both optional parameters.
+
+Alternatively, you can control filtering through the library API:
+
+```cpp
+// Enable or disable zero-element filtering
+void IDiagnosticDecoder::SetZeroFilteringEnabled(bool enabled);
+```
+
+**Example:**
+```cpp
+auto decoder = DiagnosticDecoderFactory::CreateInstance();
+decoder->SetZeroFilteringEnabled(false);  // Disable filtering to see all events including zeros
+decoder->LoadManifestSet(manifest, manifestSize);
+decoder->ProcessPayload(payload, payloadSize);
+```

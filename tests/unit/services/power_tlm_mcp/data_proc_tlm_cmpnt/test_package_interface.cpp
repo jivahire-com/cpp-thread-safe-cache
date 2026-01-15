@@ -1380,3 +1380,196 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_get_pwr_core_aging_counters_data, test_se
     core_id = NUMBER_OF_CORES_PER_DIE;
     data_proc_tlm_cmpnt_get_pwr_core_aging_data(core_id, &aging_data);
 }
+
+// Tests for filtering logic - verify zero-filtering behavior
+TEST_FUNCTION(test_get_pwr_core_pstate_data_zero_filtering_enabled, test_setup, test_teardown)
+{
+    pwr_core_element_pstate_t pstate_array[NUMBER_OF_PSTATES] = {{0}};
+
+    // Enable filtering (default is true)
+    package_inf_init(0, true);
+
+    // Set all pstate data to zero except pstate 3
+    for (uint16_t pstate_id = 0; pstate_id < NUMBER_OF_PSTATES; pstate_id++)
+    {
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg.summation = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg.num_samples = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.min = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.max = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].entry_count = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].residency_uS = 0;
+    }
+
+    // Set pstate 3 to non-zero
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[3].power_mW.running_avg.summation = 1000 * 1;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[3].power_mW.running_avg.num_samples = 1;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[3].power_mW.max = 100;
+
+    data_proc_tlm_cmpnt_get_pwr_core_pstate_data(TEST_CORE_ID_5, &pstate_array);
+
+    // Only pstate 3 should have non-zero pstate_id (filtering is enabled)
+    for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
+    {
+        if (pstate_index == 3)
+        {
+            assert_int_equal(pstate_array[pstate_index].pstate_id, 3);
+        }
+        else
+        {
+            assert_int_equal(pstate_array[pstate_index].pstate_id, 0);
+        }
+    }
+}
+
+TEST_FUNCTION(test_get_pwr_core_pstate_data_zero_filtering_disabled, test_setup, test_teardown)
+{
+    pwr_core_element_pstate_t pstate_array[NUMBER_OF_PSTATES] = {{0}};
+
+    // Disable filtering
+    package_inf_init(0, false);
+
+    // Set all pstate data to zero
+    for (uint16_t pstate_id = 0; pstate_id < NUMBER_OF_PSTATES; pstate_id++)
+    {
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg.summation = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.running_avg.num_samples = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.min = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].power_mW.max = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].entry_count = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].pstate[pstate_id].residency_uS = 0;
+    }
+
+    data_proc_tlm_cmpnt_get_pwr_core_pstate_data(TEST_CORE_ID_5, &pstate_array);
+
+    // All pstate_id values should be set (filtering is disabled)
+    for (uint16_t pstate_index = 0; pstate_index < NUMBER_OF_PSTATES; pstate_index++)
+    {
+        assert_int_equal(pstate_array[pstate_index].pstate_id, pstate_index);
+    }
+}
+
+TEST_FUNCTION(test_get_pwr_core_cstate_data_zero_filtering_enabled, test_setup, test_teardown)
+{
+    pwr_core_element_cstate_t cstate_array[NUMBER_OF_CSTATES] = {{0}};
+
+    // Enable filtering
+    package_inf_init(0, true);
+
+    // Set all cstate data to zero except cstate 2
+    for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
+    {
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].cstate[cstate_index].entry_count = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].cstate[cstate_index].residency_uS = 0;
+    }
+
+    // Set cstate 2 to non-zero
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].cstate[2].entry_count = 5;
+    computed_metrics_2_mins.cores[TEST_CORE_ID_5].cstate[2].residency_uS = 1000;
+
+    data_proc_tlm_cmpnt_get_pwr_core_cstate_data(TEST_CORE_ID_5, &cstate_array);
+
+    // Only cstate 2 should have non-zero cstate_id (filtering is enabled)
+    for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
+    {
+        if (cstate_index == 2)
+        {
+            assert_int_equal(cstate_array[cstate_index].cstate_id, 2);
+        }
+        else
+        {
+            assert_int_equal(cstate_array[cstate_index].cstate_id, 0);
+        }
+    }
+}
+
+TEST_FUNCTION(test_get_pwr_core_cstate_data_zero_filtering_disabled, test_setup, test_teardown)
+{
+    pwr_core_element_cstate_t cstate_array[NUMBER_OF_CSTATES] = {{0}};
+
+    // Disable filtering
+    package_inf_init(0, false);
+
+    // Set all cstate data to zero
+    for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
+    {
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].cstate[cstate_index].entry_count = 0;
+        computed_metrics_2_mins.cores[TEST_CORE_ID_5].cstate[cstate_index].residency_uS = 0;
+    }
+
+    data_proc_tlm_cmpnt_get_pwr_core_cstate_data(TEST_CORE_ID_5, &cstate_array);
+
+    // All cstate_id values should be set (filtering is disabled)
+    for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
+    {
+        assert_int_equal(cstate_array[cstate_index].cstate_id, cstate_index);
+    }
+}
+
+TEST_FUNCTION(test_get_pwr_core_histogram_data_zero_filtering_enabled, test_setup, test_teardown)
+{
+    pwr_core_element_histogram_t histogram_array[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES] = {{{0}}};
+
+    // Enable filtering
+    package_inf_init(0, true);
+
+    // Set all histogram bins to zero except [1][2]
+    for (uint8_t voltage_idx = 0; voltage_idx < NUMBER_OF_HS_VOLTAGE_SCALES; voltage_idx++)
+    {
+        for (uint8_t temp_idx = 0; temp_idx < NUMBER_OF_HS_TEMP_SCALES; temp_idx++)
+        {
+            computed_metrics_24_hrs.cores[TEST_CORE_ID_5].histogram.bin_count[voltage_idx][temp_idx] = 0;
+        }
+    }
+
+    // Set bin [1][2] to non-zero
+    computed_metrics_24_hrs.cores[TEST_CORE_ID_5].histogram.bin_count[1][2] = 100;
+
+    data_proc_tlm_cmpnt_get_pwr_core_histogram_data(TEST_CORE_ID_5, &histogram_array);
+
+    // Only [1][2] should have non-zero voltage_band and temperature_band
+    for (uint8_t voltage_idx = 0; voltage_idx < NUMBER_OF_HS_VOLTAGE_SCALES; voltage_idx++)
+    {
+        for (uint8_t temp_idx = 0; temp_idx < NUMBER_OF_HS_TEMP_SCALES; temp_idx++)
+        {
+            if (voltage_idx == 1 && temp_idx == 2)
+            {
+                assert_int_equal(histogram_array[voltage_idx][temp_idx].voltage_band, 1);
+                assert_int_equal(histogram_array[voltage_idx][temp_idx].temperature_band, 2);
+            }
+            else
+            {
+                assert_int_equal(histogram_array[voltage_idx][temp_idx].voltage_band, 0);
+                assert_int_equal(histogram_array[voltage_idx][temp_idx].temperature_band, 0);
+            }
+        }
+    }
+}
+
+TEST_FUNCTION(test_get_pwr_core_histogram_data_zero_filtering_disabled, test_setup, test_teardown)
+{
+    pwr_core_element_histogram_t histogram_array[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES] = {{{0}}};
+
+    // Disable filtering
+    package_inf_init(0, false);
+
+    // Set all histogram bins to zero
+    for (uint8_t voltage_idx = 0; voltage_idx < NUMBER_OF_HS_VOLTAGE_SCALES; voltage_idx++)
+    {
+        for (uint8_t temp_idx = 0; temp_idx < NUMBER_OF_HS_TEMP_SCALES; temp_idx++)
+        {
+            computed_metrics_24_hrs.cores[TEST_CORE_ID_5].histogram.bin_count[voltage_idx][temp_idx] = 0;
+        }
+    }
+
+    data_proc_tlm_cmpnt_get_pwr_core_histogram_data(TEST_CORE_ID_5, &histogram_array);
+
+    // All bands should be set with their indices (filtering is disabled)
+    for (uint8_t voltage_idx = 0; voltage_idx < NUMBER_OF_HS_VOLTAGE_SCALES; voltage_idx++)
+    {
+        for (uint8_t temp_idx = 0; temp_idx < NUMBER_OF_HS_TEMP_SCALES; temp_idx++)
+        {
+            assert_int_equal(histogram_array[voltage_idx][temp_idx].voltage_band, voltage_idx);
+            assert_int_equal(histogram_array[voltage_idx][temp_idx].temperature_band, temp_idx);
+        }
+    }
+}

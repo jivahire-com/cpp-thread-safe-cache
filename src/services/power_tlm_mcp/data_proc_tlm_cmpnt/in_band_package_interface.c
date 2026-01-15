@@ -21,6 +21,7 @@
 #include <stdbool.h> // for false, true
 #include <stddef.h>  // for size_t
 #include <stdint.h>  // for uint8_t, uint16_t
+#include <stdlib.h>  // for malloc, free
 #include <string.h>  // for memset
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -98,11 +99,24 @@ void data_proc_tlm_cmpnt_get_pwr_core_cstate_data(uint16_t core_id, pwr_core_ele
     {
         for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
         {
-            (*cstate_array)[cstate_index].cstate_id = cstate_index;
             (*cstate_array)[cstate_index].residency_mS =
                 ROUND_USEC_TO_MSEC(computed_metrics_2_mins.cores[core_id].cstate[cstate_index].residency_uS);
             (*cstate_array)[cstate_index].entry_count =
                 computed_metrics_2_mins.cores[core_id].cstate[cstate_index].entry_count;
+
+            // Initialize to zero for filtering check
+            (*cstate_array)[cstate_index].cstate_id = 0;
+
+            // Compare fields after cstate_id (remaining fields in the struct)
+            size_t compare_size = sizeof(pwr_core_element_cstate_t) - offsetof(pwr_core_element_cstate_t, residency_mS);
+            uint8_t zero_buffer[sizeof(pwr_core_element_cstate_t) - offsetof(pwr_core_element_cstate_t, residency_mS)] = {0};
+
+            // If filtering is disabled or any parameter is non-zero, set cstate_id to its actual value
+            if (!local_all_zero_filtering_enable ||
+                memcmp(&(*cstate_array)[cstate_index].residency_mS, zero_buffer, compare_size) != 0)
+            {
+                (*cstate_array)[cstate_index].cstate_id = cstate_index;
+            }
         }
     }
 }
@@ -243,10 +257,20 @@ void data_proc_tlm_cmpnt_get_pwr_core_histogram_data(
         {
             for (uint8_t temp_idx = 0; temp_idx < NUMBER_OF_HS_TEMP_SCALES; temp_idx++)
             {
-                (*histogram_array)[voltage_idx][temp_idx].voltage_band = voltage_idx;
-                (*histogram_array)[voltage_idx][temp_idx].temperature_band = temp_idx;
                 (*histogram_array)[voltage_idx][temp_idx].bin_count =
                     computed_metrics_24_hrs.cores[core_id].histogram.bin_count[voltage_idx][temp_idx];
+
+                // If filtering is enabled and bin_count is 0, set voltage_band and temperature_band to 0
+                if (local_all_zero_filtering_enable && (*histogram_array)[voltage_idx][temp_idx].bin_count == 0)
+                {
+                    (*histogram_array)[voltage_idx][temp_idx].voltage_band = 0;
+                    (*histogram_array)[voltage_idx][temp_idx].temperature_band = 0;
+                }
+                else
+                {
+                    (*histogram_array)[voltage_idx][temp_idx].voltage_band = voltage_idx;
+                    (*histogram_array)[voltage_idx][temp_idx].temperature_band = temp_idx;
+                }
             }
         }
     }

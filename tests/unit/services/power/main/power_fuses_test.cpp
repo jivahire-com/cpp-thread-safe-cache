@@ -935,7 +935,7 @@ POWER_TEST(apply_es1_overrides_additional_pair, set_fuse_data_to_one, set_fuse_d
     power_fuse_vf_curveset_t vf = {};
     int8_t ldo_offset = 0x0;
     bool apply_fuse_override = true;
-    static const uint32_t expected_es1_ldo_dac_in_overrides[] = {478, 488, 490, 495};
+    static const uint32_t expected_es1_ldo_dac_in_overrides[] = {473, 475, 480, 495};
 
     expect_any_always(__wrap_platform_read_fuse, target_addr);
     expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);

@@ -163,7 +163,7 @@ static const uint32_t core_cdyn_cdyn_widths[] = {CC_WIDTHS(CDYN)};
 static const uint32_t core_cdyn_ldo_widths[] = {CC_WIDTHS(LDO)};
 
 // helpers for ES1 fuse override
-static const uint32_t es1_ldo_dac_in_overrides[] = {478, 488, 490, 495};
+static const uint32_t es1_ldo_dac_in_overrides[] = {473, 475, 480, 495};
 
 /*------------- Functions ----------------*/
 

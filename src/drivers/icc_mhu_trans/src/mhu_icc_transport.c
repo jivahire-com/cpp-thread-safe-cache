@@ -403,6 +403,7 @@ void mhu_icc_transport_dispatch_async_send(PDFWK_ASYNC_REQUEST_HEADER Request, v
 
     mhu_icc_transport_device_t* device = (mhu_icc_transport_device_t*)Context;
     device->async_send_ctx.req = Request;
+    device->async_send_ctx.timer_retry_count = 0;
     FPFW_ET_LOG(AsyncDispatchSend, (uint32_t)device->async_send_ctx.req, (uint32_t)device);
     async_send_attempt(device, 0);
 }

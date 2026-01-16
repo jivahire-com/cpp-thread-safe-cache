@@ -1650,7 +1650,7 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_isr_crash, setup_svp_platfor
     expect_function_call(__wrap_ras_arm_agent_set_base);
     expect_value(__wrap_ras_arm_agent_probe, agent, &d2dss2_agent[2]);
     will_return(__wrap_ras_arm_agent_probe, ras_wrap_handler); // handler
-    will_return(__wrap_ras_arm_agent_probe, 0x80000001);       // error code
+    will_return(__wrap_ras_arm_agent_probe, 0);                // error code
     will_return(__wrap_ras_arm_agent_probe, true);             // error code valid
     will_return(__wrap_ras_arm_agent_probe, true);             // return
     expect_function_call(__wrap_ras_arm_agent_probe);
@@ -1660,7 +1660,7 @@ TEST_FUNCTION(test_mesh_error_handler_d2d_ras_error_isr_crash, setup_svp_platfor
     expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
     expect_function_call(__wrap_hm_submit_cper);
 
-    expect_value(__wrap_crash_dump_bug_check, errorCode, 0x80000001);
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_E_RAS_MESH_D2D_UE);
     expect_any(__wrap_crash_dump_bug_check, p1);
     expect_any(__wrap_crash_dump_bug_check, p2);
     expect_any(__wrap_crash_dump_bug_check, p3);

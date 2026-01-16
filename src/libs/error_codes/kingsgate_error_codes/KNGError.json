@@ -534,6 +534,18 @@
           "Description": "UEFI Boot Complete is not notified to accelerator."
         }
       ]
+    },
+    {
+      "Facility_Name": "MESH",
+      "Facility_Value": 62,
+      "Facility_Description": "This is for Mesh errors.",
+      "Errors": [
+        {
+          "Name": "KNG_E_RAS_MESH_D2D_UE",
+          "Value": 1,
+          "Description": "Uncorrectable error in Mesh D2D."
+        }
+      ]
     }
   ]
 }

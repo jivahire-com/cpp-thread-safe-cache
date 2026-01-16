@@ -22,6 +22,7 @@
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
+#include <startup_shutdown_events_i.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <tx_api.h>
@@ -286,6 +287,8 @@ void sos_worker_thread_function(ULONG service_ctx)
             {
                 SOS_LOG_WARN("SOS unknown phase %d\n", message.data.boot_phase.phase);
             }
+
+            SOS_ET_BOOT_PROFILE_INFO(BOOT_STAGE, message.data.boot_phase.boot_type, SOS_ET_TYPE_BOOT_OPERATION_COMPLETE);
             break;
 
         case SOS_QUEUE_ENTRY_TYPE_SHUTDOWN:
@@ -313,6 +316,7 @@ void sos_worker_thread_function(ULONG service_ctx)
             {
                 pstartup_shutdown_request_t req = (pstartup_shutdown_request_t)message.p_request;
                 req->result = sos_core_shutdown_handler(message.data.shutdown_type);
+                SOS_ET_BOOT_PROFILE_INFO(SHUTDOWN_STAGE, message.data.shutdown_type, SOS_ET_TYPE_BOOT_OPERATION_COMPLETE);
             }
             else
             {
@@ -349,6 +353,9 @@ void sos_worker_thread_function(ULONG service_ctx)
                 // Allow the event trace buffers to flush
                 tx_thread_sleep(MS_TO_TX_TICKS(EVT_TX_DELAY));
             }
+
+            SOS_ET_BOOT_PROFILE_INFO(QUIESCE_STAGE, message.data.shutdown_type, SOS_ET_TYPE_BOOT_OPERATION_COMPLETE);
+
             break;
         }
 

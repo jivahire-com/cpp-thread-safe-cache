@@ -90,10 +90,9 @@ void tx_application_define(void* firstUnusedMemory)
 // The main initialization routine executes on a thread to allow the use of synchronization objects
 void main_thread(ULONG thread_input)
 {
-    FPFW_UNUSED(thread_input);
-
     printf("\nHello World - SCP!\n");
     system_info_set_init_complete();
+    FPFW_ET_LOG(InitCompleteEvent, thread_input);
 
     uint32_t rtos_ticks = 0;
     while (true)

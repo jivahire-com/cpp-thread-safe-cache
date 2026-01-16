@@ -6,6 +6,7 @@ set(TARGET kng.client_interface.startup_shutdown)
 add_library(${TARGET}
     STATIC
     startup_shutdown_client_interface.c
+    startup_shutdown_events.c
 )
 
 target_link_libraries(${TARGET}
@@ -13,6 +14,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::system_info
         fwlib.lib.interface.platform.dbgprint
+        ms::lib::event_trace::trace
     PRIVATE
         fwlib.dfwk
         fwlib.lib.interface.platform.errorhandler
@@ -58,7 +60,6 @@ set(STARTUP_COMMON_LIBS
     ms::lib::debug
     ms::lib::utils
     ms::lib::crash_dump
-    ms::lib::event_trace::trace
     ms::lib::icc_platform_defines
     ms::lib::hsp_firmware_headers
     ms::driver::icc_mhu_trans
@@ -93,6 +94,7 @@ target_compile_definitions(
 target_link_libraries(${TARGET}
     PUBLIC
         ms::lib::error_codes
+        ms::lib::event_trace::trace
     PRIVATE
         ${STARTUP_COMMON_LIBS}
 )
@@ -127,6 +129,9 @@ target_compile_definitions(
 )
 
 target_link_libraries(${TARGET}
+PUBLIC
+        ms::lib::error_codes
+        ms::lib::event_trace::trace
     PRIVATE
         ${STARTUP_COMMON_LIBS}
 )

@@ -29,7 +29,9 @@ FPFW_ET_DEFINE_PROVIDER_EX(
 */
 typedef enum {
     MCP_MAIN_EVENT_ID_HEARTBEAT = 0,
+    MCP_MAIN_EVENT_ID_RT_INIT_COMPLETE,
 } MCP_MAIN_EVENT_ID;
+
 
 // This event has no fields
 FPFW_ET_DEFINE_EVENT(
@@ -38,6 +40,14 @@ FPFW_ET_DEFINE_EVENT(
     McpHeartBeat,
     FPFW_ET_LEVEL_INFO,
     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, rtos_ticks)
+)
+
+FPFW_ET_DEFINE_EVENT(
+    EVENT_TRACE_PROVIDER_ID_MCP_MAIN,
+    MCP_MAIN_EVENT_ID_RT_INIT_COMPLETE,
+    InitCompleteEvent,
+    FPFW_ET_LEVEL_INFO,
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, thread_input)
 )
 
 /*-------------- Typedefs ----------------*/

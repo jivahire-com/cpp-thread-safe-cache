@@ -38,6 +38,7 @@ add_library(${TARGET}
         ap_core_fw_load.c
         ap_core_ppu.c
         ap_core_util.c
+        ap_core_events.c
 )
 
 target_link_libraries(${TARGET}
@@ -78,6 +79,7 @@ target_link_libraries(${TARGET}
         silibs::pik_clock
         silibs::platform
         silibs::ppu_v1
+        ms::lib::event_trace::trace
 )
 
 target_include_directories(${TARGET}

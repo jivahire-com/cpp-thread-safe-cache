@@ -17,6 +17,7 @@
 #include <accelerator_ip.h>
 #include <accelerator_knobs.h>
 #include <accelip_id.h>
+#include <ap_core_events.h>
 #include <ap_fw_info.h>
 #include <assert.h>
 #include <bug_check.h>
@@ -88,6 +89,7 @@ static void request_ap_load_recv_complete_notify(void* context, size_t output_si
     {
         ap_fw_id_t fw_id = *(ap_fw_id_t*)context;
         APCORE_LOG_INFO("AP FW load response received: id (%d)", fw_id);
+        APCORE_ET_FW_LOAD_INFO(fw_id, 0);
     }
 }
 
@@ -105,6 +107,7 @@ static void request_pcie_phy_load_complete_notify(void* context, size_t output_s
     // Set Pcie Phy FW Load Event Flag
     pcie_phyfw_set_load_event(&pcie_phyfw_load_event);
     APCORE_LOG_INFO("PCIE PHY FW load [0x%x] completed.", SCP_EXP_PCIE_PHY_FW_BASE);
+    APCORE_ET_FW_LOAD_INFO(AP_FW_PCIE_PHY, SCP_EXP_PCIE_PHY_FW_BASE);
 }
 
 static void request_mcp_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -137,6 +140,7 @@ static void request_mcp_load_complete_notify(void* context, size_t output_size_b
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("MCP FW load completed - Requesting load core now");
+    APCORE_ET_FW_LOAD_INFO(AP_FW_ID_MCP, 0);
 }
 
 static void request_mscp_manifest_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -151,6 +155,7 @@ static void request_mscp_manifest_load_complete_notify(void* context, size_t out
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("MSCP Manifest load completed");
+    APCORE_ET_FW_LOAD_INFO(AP_FW_ID_MSCP_MANIFEST, 0);
 }
 
 static void request_accel_manifest_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -165,6 +170,7 @@ static void request_accel_manifest_load_complete_notify(void* context, size_t ou
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("Accel Manifest load completed");
+    APCORE_ET_FW_LOAD_INFO(AP_FW_ID_ACCEL_MANIFEST, 0);
 }
 
 static void request_kmp_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -198,6 +204,7 @@ static void request_kmp_load_complete_notify(void* context, size_t output_size_b
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("KMP FW load completed - Requesting load core now");
+    APCORE_ET_FW_LOAD_INFO(AP_FW_ID_KMP, 0);
 }
 
 static void request_accel_itcm_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -214,6 +221,7 @@ static void request_accel_itcm_load_complete_notify(void* context, size_t output
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("Accel[%d] ITCM FW load completed", accel_type);
+    APCORE_ET_FW_LOAD_INFO((accel_type == ACCEL_ID_SDM) ? AP_FW_ID_SDM_ITCM : AP_FW_ID_CDED_ITCM, 0);
 }
 
 static void request_rmm_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -228,6 +236,7 @@ static void request_rmm_load_complete_notify(void* context, size_t output_size_b
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("RMM FW load completed");
+    APCORE_ET_FW_LOAD_INFO(AP_FW_ID_RMM, 0);
 }
 
 static void request_accel_dtcm_load_complete_notify(void* context, size_t output_size_bytes, fpfw_status_t status)
@@ -254,6 +263,7 @@ static void request_accel_dtcm_load_complete_notify(void* context, size_t output
     DfwkAsyncRequestComplete((PDFWK_ASYNC_REQUEST_HEADER)ap_core_get_outstanding_request());
 
     APCORE_LOG_INFO("Accel[%d] DTCM FW load completed", accel_type);
+    APCORE_ET_FW_LOAD_INFO((accel_type == ACCEL_ID_SDM) ? AP_FW_ID_SDM_DTCM : AP_FW_ID_CDED_DTCM, 0);
 }
 
 void ap_core_request_load_ap_fw(fpfw_icc_base_ctx_t* icc_hspmbx_ctx, ap_fw_id_t fw_id)

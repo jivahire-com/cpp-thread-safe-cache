@@ -11,8 +11,9 @@
 
 #include <DfwkCommon.h> // for DfwkInterfaceSendSync, DfwkAsyncRe...
 #include <DfwkStatus.h>
-#include <FpFwAssert.h>           // for FPFW_RUNTIME_ASSERT
-#include <startup_shutdown.h>     // for startup_start_phase_request_t, _st...
+#include <FpFwAssert.h>       // for FPFW_RUNTIME_ASSERT
+#include <startup_shutdown.h> // for startup_start_phase_request_t, _st...
+#include <startup_shutdown_events_i.h>
 #include <startup_shutdown_ssi.h> // for ssi_shutdown_type_t, ssi_startup_s...
 #include <stddef.h>               // for NULL
 #include <stdint.h>               // for int32_t
@@ -58,6 +59,9 @@ void sos_start_phase(PDFWK_INTERFACE_HEADER p_interface,
                      void* p_completion_context)
 {
     FPFW_RUNTIME_ASSERT(p_interface != NULL);
+
+    SOS_ET_BOOT_PROFILE_INFO(BOOT_STAGE, boot_type, SOS_ET_TYPE_BOOT_OPERATION_START);
+
     // synchronous version
     if (p_request == NULL)
     {
@@ -90,9 +94,12 @@ void sos_shutdown(PDFWK_INTERFACE_HEADER p_interface,
     FPFW_RUNTIME_ASSERT(p_request != NULL);
     FPFW_RUNTIME_ASSERT(p_request->header.AllocatedSize >= sizeof(startup_shutdown_request_t));
 
+    SOS_ET_BOOT_PROFILE_INFO(SHUTDOWN_STAGE, shutdown_type, SOS_ET_TYPE_BOOT_OPERATION_START);
+
     p_request->header.RequestType = STARTUP_REQUEST_SHUTDOWN_ASYNC;
     p_request->shutdown_type = shutdown_type;
     DfwkAsyncRequestSetCompletionRoutine(&p_request->header, completion_routine, p_completion_context);
+
     // send the async request
     DfwkInterfaceSendAsync(p_interface, (void*)p_request);
 }
@@ -106,6 +113,8 @@ void sos_quiesce(PDFWK_INTERFACE_HEADER p_interface,
     FPFW_RUNTIME_ASSERT(p_request != NULL);
     FPFW_RUNTIME_ASSERT(p_request->header.AllocatedSize >= sizeof(startup_shutdown_request_t));
     FPFW_RUNTIME_ASSERT(p_request->header.RequestType == STARTUP_REQUEST_QUIESCE_ASYNC);
+
+    SOS_ET_BOOT_PROFILE_INFO(QUIESCE_STAGE, p_request->shutdown_type, SOS_ET_TYPE_BOOT_OPERATION_START);
 
     DfwkAsyncRequestSetCompletionRoutine(&p_request->header, completion_routine, p_completion_context);
     // send the async request

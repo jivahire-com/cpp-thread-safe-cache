@@ -21,6 +21,7 @@
 #define LOCAL_CORE_ET_START_INFO_PARAM(local_stage)   EventWriteLocalCoreSyncStageStart((local_stage))
 #define REMOTE_CORE_ET_END_INFO_PARAM(local_stage, iteration)   EventWriteLocalCoreSyncStageRemoteEnd((local_stage), (iteration))
 #define REMOTE_CORE_ET_READ_INFO_PARAM(local_stage, remote_stage, iteration)   EventWriteLocalCoreSyncStageRemoteRead((local_stage), (remote_stage), (iteration))
+#define SOS_ET_BOOT_PROFILE_INFO(sos_phase, type, operation) EventWriteSoSBootProfileInfo((sos_phase), (type), (operation))
 
 // clang-format off
 
@@ -32,8 +33,9 @@ typedef enum {
     SSI_ET_ID_TYPE_INFO_PARAMS,
     LOCAL_CORE_SYNC_STAGE_PARAM,
     LOCAL_CORE_SYNC_STAGE_REMOTE_PARAM,
+    SOS_ET_ID_TYPE_BOOT_PROFILE_INFO,
     LOCAL_CORE_SYNC_STAGE_PARAM_VERBOSE = 0x0A,
-
+    
     SOS_ET_ID_TYPE_COUNT
 } SOS_EVENT_ID;
 typedef enum
@@ -45,6 +47,8 @@ typedef enum
     SOS_ET_TYPE_SSI_STARTUP_STAGE_COMPLETE_ASYNC,
     SOS_ET_TYPE_SSI_SHUTDOWN_ASYNC,
     SOS_ET_TYPE_SSI_SHUTDOWN_QUIESCE_ASYNC,
+    SOS_ET_TYPE_BOOT_OPERATION_START,
+    SOS_ET_TYPE_BOOT_OPERATION_COMPLETE,
     
     SOS_ET_TYPE_COUNT
 } SOS_ET_TYPE_T;
@@ -89,6 +93,13 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_STARTUP_SHUTDOWN,
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, local_stage),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, iterations))
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_COMMON_STARTUP_SHUTDOWN,
+                     SOS_ET_ID_TYPE_BOOT_PROFILE_INFO, 
+                     SoSBootProfileInfo,
+                     FPFW_ET_LEVEL_INFO,
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, sos_phase), 
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, type), 
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, operation))
 
 //
 // Verbose Events - Offset by 10

@@ -556,6 +556,8 @@ void validate_dvfs_cfg(unsigned int core)
         dvfs_cfg.fuse_cfg.adclk_offset = knobs->adclk_offset.offset_value[core];
     }
 
+    dvfs_cfg.fuse_cfg.memasst_entries = &(s_runconfig.fuses.memasst);
+
     assert_memory_equal(mock_dvfs_last_config(), &dvfs_cfg, sizeof(dvfs_cfg));
 }
 

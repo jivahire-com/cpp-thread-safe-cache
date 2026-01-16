@@ -409,6 +409,9 @@ static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig
         p_dvfs_cfg->adclk_fuse_init = true;
         p_dvfs_cfg->fuse_cfg.adclk_offset = p_knobs->adclk_offset.offset_value[core];
     }
+
+    // Pass the fuses.memasst pointer to dvfs_cfg
+    p_dvfs_cfg->fuse_cfg.memasst_entries = &(p_runconfig->fuses.memasst);
 }
 
 /**

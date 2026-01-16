@@ -392,6 +392,7 @@ static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, vo
                     p_cli_request->fetch_data.pwrset_response_val.forcedparams.ldodacin;
             }
             dvfs_cfg.fuse_cfg.vft = &forced_pstate_vft;
+            dvfs_cfg.fuse_cfg.memasst_entries = &(p_runconfig->fuses.memasst);
 
             // Force the Pstate
             for (unsigned int core = 0; core < core_count; ++core)

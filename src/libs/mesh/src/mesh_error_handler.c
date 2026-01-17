@@ -481,7 +481,9 @@ void d2d_error_isr(void* context)
             {
                 // If the severity is fatal, we need to bug check
                 MESH_CRIT("Fatal Error in D2D Subsystem %d, Bug Check\n", d2d_subsystem);
-                BUG_CHECK(KNG_E_RAS_MESH_D2D_UE, 0, 0);
+                BUG_CHECK(((record.err_code_valid && record.err_code != 0) ? (KNG_STATUS)record.err_code : KNG_E_RAS_MESH_D2D_UE),
+                          0,
+                          0);
             }
             break; // Break out of the loop
         }

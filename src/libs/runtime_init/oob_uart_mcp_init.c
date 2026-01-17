@@ -194,7 +194,7 @@ FPFW_INIT_COMPONENT(pldm, FPFW_INIT_DEPENDENCIES("mctp", "pdr_repo"))
     static pldm_service_config_t pldmConfig = {.thread_config = {.p_stack = (void*)pldm_service_stack,
                                                                  .stack_size = SYS_THREAD_STACK_SIZE_PLDM_SERVICE,
                                                                  .priority = MCP_THREAD_PRIORITY_PLDM_SERVICE,
-                                                                 .should_yield = true,
+                                                                 .should_yield = false,
                                                                  .time_slice_option = SYS_THREAD_TIME_SLICE_PLDM_SERVICE},
 
                                                .incoming_messages = (void*)pldm_rx_msgs,

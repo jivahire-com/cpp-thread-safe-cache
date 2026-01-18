@@ -187,9 +187,11 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
     math(EXPR DTCM_SIZE "491520")
 
     # The RMSS ram region is separate for the SCP and MCP
+    # SCP RMSS: 348KB (region shifted down 32KB from reclaimed WARM_START space)
+    # MCP RMSS: 4KB (follows SCP RMSS)
     if(FW_BLOCK STREQUAL "scp")
-        set(RMSS_BASE "0x0134D000")
-        math(EXPR RMSS_SIZE "323584")
+        set(RMSS_BASE "0x01345000")
+        math(EXPR RMSS_SIZE "356352")
     else()
         set(RMSS_BASE "0x0139C000")
         math(EXPR RMSS_SIZE "4096")

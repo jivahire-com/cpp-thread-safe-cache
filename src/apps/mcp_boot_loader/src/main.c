@@ -106,6 +106,21 @@ static void arch_init_ccr(void)
 #if defined(__FPU_USED) && (__FPU_USED == 1U)
     SCB->CPACR |= ((3U << 10U * 2U) | /* set CP10 Full Access */
                    (3U << 11U * 2U)); /* set CP11 Full Access */
+
+    /*
+     * Configure the Floating-Point Context Control Register (FPCCR)
+     * to enable automatic and lazy FPU state preservation:
+     *
+     * ASPEN [31]: Automatic State Preservation ENable - When set, the processor
+     *             automatically preserves floating-point context on exception entry.
+     * LSPEN [30]: Lazy State Preservation ENable - When set, the processor defers
+     *             the actual stacking of FPU registers until the FPU is accessed
+     *             in the exception handler, reducing interrupt latency.
+     *
+     * This is critical for ThreadX to properly handle FPU context when threads
+     * or ISRs use floating-point operations.
+     */
+    FPU->FPCCR |= (FPU_FPCCR_ASPEN_Msk | FPU_FPCCR_LSPEN_Msk);
 #endif
 }
 

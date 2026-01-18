@@ -24,7 +24,7 @@ endif()
 # Set C flags
 set(CMAKE_C_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} ${CMAKE_C_FLAGS_INIT} -mthumb -nostartfiles -Wall -Wextra -Werror -ftest-coverage -ffunction-sections -fdata-sections")
 set(CMAKE_CXX_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} ${CMAKE_C_FLAGS_INIT} -mthumb -nostartfiles -Wall -Wextra -Werror -ftest-coverage -ffunction-sections -fdata-sections")
-set(CMAKE_ASM_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -nostartfiles")
+set(CMAKE_ASM_FLAGS "-mcpu=${CMAKE_SYSTEM_PROCESSOR} ${CMAKE_C_FLAGS_INIT} -mthumb -nostartfiles")
 set(CMAKE_EXE_LINKER_FLAGS_INIT "-mcpu=${CMAKE_SYSTEM_PROCESSOR} -mthumb -Wl,--gc-sections")
 
 # Add Cortex m7 clock speed, ticks per second

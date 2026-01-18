@@ -33,7 +33,8 @@
 #include <pvt.h>          // for PVT_SUCCESS, reset_tile_pvt_dts_vm
 #include <pvt_struct.h>   // for pvt_alarm_setting_config_t, pvt_thres...
 #include <scp_exp_csr_regs.h>
-#include <silibs_common.h> // for ARRAY_SIZE, MAX
+#include <sensor_thresholds.h> // for SOC_TMP_MAX_HIGH_CRITICAL_DC
+#include <silibs_common.h>     // for ARRAY_SIZE, MAX
 #include <silibs_scp_exp_top_regs.h>
 #include <silibs_scp_top_regs.h>
 #include <stdbool.h>     // for bool, true, false
@@ -499,15 +500,16 @@ static void power_init_update_tilepvt_tile_cfg(const power_runconfig_t* p_runcon
 
 uint16_t power_hw_dts_pvt_raw_to_temp_dC(uint16_t raw, dts_coeff_t fused_coeff)
 {
-    // Result in deci-Celsius: multiply by 10 after integer conversion
-    int32_t temp = DOUT2TEMP_FUSED(raw, fused_coeff.k_val, fused_coeff.y_val) * 10;
-    if (temp < 0)
+    // Convert raw DTS output to deci-degrees Celsius with rounding
+    uint16_t result = (uint16_t)FLOAT_TO_UNSIGNED(DOUT2TEMP_FUSED(raw, fused_coeff.k_val, fused_coeff.y_val) * 10);
+
+    // Check if temperature is outside normal operating range, skip for SVP as the DTS raw & coefficients may not be populated
+    if ((!IS_PLATFORM_SVP()) && ((result == 0) || (result >= SOC_TMP_MAX_HIGH_CRITICAL_DC)))
     {
-        // TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/3271995, handle -ve temperature.
-        POWER_LOG_TRACE("PVT temperature sensor returned negative temperature");
-        return 0;
+        POWER_ET_WARN(POWER_ET_TYPE_DTS_TEMP_OUT_OF_RANGE, result);
     }
-    return (uint16_t)temp;
+
+    return result;
 }
 
 /**

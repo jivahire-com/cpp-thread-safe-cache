@@ -48,8 +48,10 @@
     #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
-/* other helper macros */
-#define FLOAT_TO_UNSIGNED(x) ((unsigned)(x + 0.5f))
+/* Helper macro to convert float to unsigned with rounding.
+ * Clamps negative values to 0 to avoid undefined behavior when casting
+ * negative floats to unsigned. */
+#define FLOAT_TO_UNSIGNED(x) ((x) < 0 ? 0U : (unsigned)((x) + 0.5f))
 
 /* Macros to convert AVS uint16_t to float */
 #define AVS_TEMPERATURE_FLOAT(x) (((float)x) / 10)

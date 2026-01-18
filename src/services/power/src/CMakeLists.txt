@@ -79,6 +79,7 @@ target_link_libraries(${TARGET}
         ms::lib::icc_platform_defines
         ms::lib::warm_start
         ms::lib::pldm_common_headers
+        ms::lib::sensor_thresholds
         ms::service::sensor_fifo
         register_headers
 )

@@ -204,13 +204,6 @@ void base_config()
             640; //  different here to ensure code is using the right coefficients for specific calculations
     }
 
-    // Initialize curve_max_temp with valid temperature values (in Celsius)
-    // These values must result in positive temperatures when converted via DOUT2TEMP_FUSED
-    for (unsigned idx = 0; idx < ARRAY_SIZE(f->curve_max_temp); ++idx)
-    {
-        f->curve_max_temp[idx] = 50 + (int8_t)(idx * 10); // 50C, 60C, 70C temperatures
-    }
-
     power_knobs_t* knobs = &s_runconfig.knobs;
 
     knobs->current_threshold.iref_to_max_percent = 80;
@@ -792,16 +785,16 @@ PVTTILE_TEST_TEL(volt_telem_entry_size, 0x3);
     {                                                           \
         s_runconfig.knobs.soc_vm.thresholds[idx].c1.c2 = value; \
     }
-#define PVTSOC_TEST_FULL(type, cfgname1, cfgname2, cfgvalue)                     \
-    POWER_TEST(hwi_socpvt_cfg_##type##_##cfgname1##_##cfgname2, setup, teardown) \
-    {                                                                            \
-                                                                                 \
-        PVTSOC_##type##_CFG_SET(cfgname1, cfgname2, cfgvalue);                   \
-        will_return(__wrap_soc_pvt_init, PVT_SUCCESS);                           \
-        will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);     \
-        power_init_soc(&s_runconfig);                                            \
-        validate_soc_pvt_dts();                                                  \
-        validate_soc_pvt_vm();                                                   \
+#define PVTSOC_TEST_FULL(type, cfgname1, cfgname2, cfgvalue)                        \
+    POWER_TEST(hwi_socpvt_cfg_##type##_##cfgname1##_##cfgname2, setup, teardown)    \
+    {                                                                               \
+                                                                                    \
+        PVTSOC_##type##_CFG_SET(cfgname1, cfgname2, cfgvalue);                      \
+        will_return(__wrap_soc_pvt_init, PVT_SUCCESS);                              \
+        will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON); \
+        power_init_soc(&s_runconfig);                                               \
+        validate_soc_pvt_dts();                                                     \
+        validate_soc_pvt_vm();                                                      \
     }
 #define PVTSOC_TEST_DTS(area, threshold, cfgvalue) PVTSOC_TEST_FULL(dts, area, threshold, cfgvalue)
 #define PVTSOC_TEST_VM(area, threshold, cfgvalue)  PVTSOC_TEST_FULL(vm, area, threshold, cfgvalue)
@@ -1310,7 +1303,7 @@ POWER_TEST(hwi_init_soc, setup, teardown)
 {
 
     will_return(__wrap_soc_pvt_init, PVT_SUCCESS);
-    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     // run soc init
     power_init_soc(&s_runconfig);

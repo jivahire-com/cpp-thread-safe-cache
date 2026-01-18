@@ -426,8 +426,13 @@ void setup_expectations_for_read_pvt(bool max_temp)
                                                              test_runconfig.fuses.dts_coeff_soctop[0].k_val,
                                                              test_runconfig.fuses.dts_coeff_soctop[0].y_val); // div by 10, since PVT only expect temp in degrees C
 
-        s_pvt_teamp[pvt_idx] = power_hw_dts_pvt_raw_to_temp_dC(s_dts_samples.sample_data[pvt_idx],
-                                                               test_runconfig.fuses.dts_coeff_soctop[pvt_idx]);
+        // Convert raw to temperature to check against telemetry
+        // If conversion logic (in power_hw_dts_pvt_raw_to_temp_dC) changed, this will need to be updated
+        s_pvt_teamp[pvt_idx] =
+            (uint16_t)FLOAT_TO_UNSIGNED((DOUT2TEMP_FUSED(s_dts_samples.sample_data[pvt_idx],
+                                                         test_runconfig.fuses.dts_coeff_soctop[pvt_idx].k_val,
+                                                         test_runconfig.fuses.dts_coeff_soctop[pvt_idx].y_val)) *
+                                        10);
     }
 
     s_vm_samples.valid_bits = 0;

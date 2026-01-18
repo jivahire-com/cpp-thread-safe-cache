@@ -78,20 +78,9 @@
     #define TEMP2DOUT_FUSED(t, fused_k, fused_y) \
         (uint32_t)(16384.0F * (t - DTS_K_COEFF_FUSED_TEMP(fused_k)) / DTS_Y_COEFF_FUSED_TEMP(fused_y))
 #endif
-
-/**  
-Adding an integer‑only implementation to replaces the floating‑point temperature conversion inside the ISR.
-On ARM Cortex‑M7 with ThreadX, using floating‑point operations in an ISR is not fully supported and can lead
-to FPU state corruption, occasionally producing unrealistically high temperature readings (e.g., >300 °C).
-
-Using integer arithmetic, this transforms into
-temp = ((raw * fused_y + 8192) / 16384) - (fused_k);
-
-The +8192 term provides allows for proper rounding to nearest integer instead of the floor during the integer division.
-*/
 #ifndef DOUT2TEMP_FUSED
     #define DOUT2TEMP_FUSED(dout, fused_k, fused_y) \
-         (((((int32_t)(dout)) * ((int32_t)(fused_y)) + 8192) / 16384) - ((int32_t)(fused_k)))   
+        (dout / 16384.0F * DTS_Y_COEFF_FUSED_TEMP(fused_y) + DTS_K_COEFF_FUSED_TEMP(fused_k))
 #endif
 
 #define MAX_VR_PER_DIE 8

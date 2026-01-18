@@ -67,6 +67,9 @@
 #define NO_POWER_CAP (UINT16_MAX)
 #define POWER_CAP_MIN (50)  //! In Watts, soc idle power is around 50W
 
+/* Telemetry Sampling count*/
+#define SAMPLING_CONFIG_VM_ITER_CNT  3  //! Transmit every 4th sample to sensor ram
+#define SAMPLING_CONFIG_DTS_ITER_CNT 3  //! Transmit every 4th sample to sensor ram
 // Callback function pointer type for power cap
 typedef void (*power_cap_completed_callback_t)(int result, uint16_t current_cap, uint16_t previous_cap_watts);
 

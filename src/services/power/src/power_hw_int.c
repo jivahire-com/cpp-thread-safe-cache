@@ -763,6 +763,11 @@ void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg
             const uint32_t tile_num = core / CORES_PER_TILE;
             tile_pvt_telem_setting_config_t tile_pvt_telem_settings = PVT_TILE_TELEM_DEFAULT_CONFIG;
 
+            //! Update the sample itr cnt for both voltage and temperature for DMA to write every 4th sample
+            //! to sensor ram Must be set for both cold start and warm start paths
+            tile_pvt_telem_settings.temp_dma_settings.sampling_iteration_count = SAMPLING_CONFIG_DTS_ITER_CNT;
+            tile_pvt_telem_settings.volt_dma_settings.sampling_iteration_count = SAMPLING_CONFIG_VM_ITER_CNT;
+
             // update tile pvt telemetry addreses
             power_init_update_tilepvt_telemetry_cfg(&tile_pvt_telem_settings, p_telemetry_config, tile_num);
             tile_pvt_dma_config(cluster_pex_base_addr, &tile_pvt_telem_settings);
@@ -823,6 +828,14 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
         tile_pvt_settings.target_vm_clk_freq_khz = TILE_PVT_TARGET_VM_FREQ_KHZ_POR;
     }
     tile_pvt_telem_setting_config_t tile_pvt_telem_settings = PVT_TILE_TELEM_DEFAULT_CONFIG;
+
+    //! Update the sample itr cnt for both voltage and temperature for DMA to write every 4th sample to sensor ram
+    //! Figures based on the por dts/vm clk freq khz settings, limits unnecessary telemetry traffic
+    //! DTS_ITER_CNT = 3, transmit every 4th sample (or every ~918uS)
+    //! VM_ITER_CNT = 3, transmit every 4th sample (or every ~9.17mS, should be less than pvt loop interval or 10ms)
+    tile_pvt_telem_settings.temp_dma_settings.sampling_iteration_count = SAMPLING_CONFIG_DTS_ITER_CNT;
+    tile_pvt_telem_settings.volt_dma_settings.sampling_iteration_count = SAMPLING_CONFIG_VM_ITER_CNT;
+
     power_init_update_tilepvt_cfg(p_runconfig, &tile_pvt_settings);
 
     POWER_ET_STATUS(POWER_ET_TYPE_DVFS_INIT);

@@ -561,6 +561,13 @@ void validate_dvfs_cfg(unsigned int core)
     assert_memory_equal(mock_dvfs_last_config(), &dvfs_cfg, sizeof(dvfs_cfg));
 }
 
+/**
+ * @brief Validates tile PVT telemetry configuration
+ *
+ * Both cold start (power_init_core) and warm start (power_init_ws_core) set
+ * sampling_iteration_count values for DTS and VM sensors to control DMA write
+ * frequency to sensor RAM.
+ */
 void validate_tile_pvt_telemetry(unsigned int core)
 {
     tile_pvt_telem_setting_config_t tile_pvt_telem_cfg = PVT_TILE_TELEM_DEFAULT_CONFIG;
@@ -575,7 +582,30 @@ void validate_tile_pvt_telemetry(unsigned int core)
     tile_pvt_telem_cfg.temp_dma_settings.buffer_size = s_telcfg.temp_telem_buffer_size;
     tile_pvt_telem_cfg.temp_dma_settings.buffer_stride = s_telcfg.temp_telem_stride_size;
 
+    // DMA sampling iteration counts for DTS and VM sensors (set in both cold and warm start)
+    tile_pvt_telem_cfg.temp_dma_settings.sampling_iteration_count = SAMPLING_CONFIG_DTS_ITER_CNT;
+    tile_pvt_telem_cfg.volt_dma_settings.sampling_iteration_count = SAMPLING_CONFIG_VM_ITER_CNT;
+
     assert_memory_equal(mock_pvt_last_tile_telem_config(), &tile_pvt_telem_cfg, sizeof(tile_pvt_telem_cfg));
+}
+
+/**
+ * @brief Validates that the PVT DMA sampling iteration counts are configured correctly
+ *
+ * Verifies that DTS (temperature) and VM (voltage) sensors have their sampling_iteration_count
+ * set to transmit every Nth sample to sensor RAM:
+ * - DTS: SAMPLING_CONFIG_DTS_ITER_CNT (3) -> transmit every 4th sample (~918µs at POR freq)
+ * - VM: SAMPLING_CONFIG_VM_ITER_CNT (3) -> transmit every 4th sample (~9.17ms at POR freq)
+ */
+void validate_pvt_sampling_iteration_counts()
+{
+    const tile_pvt_telem_setting_config_t* telem_cfg = mock_pvt_last_tile_telem_config();
+
+    // Verify DTS (temperature) sampling iteration count
+    assert_int_equal(telem_cfg->temp_dma_settings.sampling_iteration_count, SAMPLING_CONFIG_DTS_ITER_CNT);
+
+    // Verify VM (voltage) sampling iteration count
+    assert_int_equal(telem_cfg->volt_dma_settings.sampling_iteration_count, SAMPLING_CONFIG_VM_ITER_CNT);
 }
 
 static int setup(void** state)
@@ -862,7 +892,7 @@ POWER_TEST(hwi_init_core, setup, teardown)
     power_init_core(&s_runconfig, &s_telcfg);
     // verify odcm config
     validate_odcm_cfg(TEST_CORE_COUNT - 1, false);
-    // verify tile pvt config
+    // verify tile pvt config (both cold and warm start set sampling iteration counts)
     validate_tile_pvt_telemetry(TEST_CORE_COUNT - 1);
     validate_tile_pvt_dts((TEST_CORE_COUNT - 1) / 2);
     validate_tile_pvt_vm();
@@ -884,7 +914,7 @@ POWER_TEST(hwi_init_core__alternate_dts_coeff, setup, teardown)
     power_init_core(&s_runconfig, &s_telcfg);
     // verify odcm config
     validate_odcm_cfg(TEST_CORE_COUNT - 1, false);
-    // verify tile pvt config
+    // verify tile pvt config (both cold and warm start set sampling iteration counts)
     validate_tile_pvt_telemetry(TEST_CORE_COUNT - 1);
     validate_tile_pvt_dts((TEST_CORE_COUNT - 1) / 2); // <- can only validate last
     validate_tile_pvt_vm();
@@ -1132,6 +1162,22 @@ POWER_TEST(hwi_init_core__core_disabled, setup, teardown)
     init_core_base_fused_expect();
     // run core init
     power_init_core(&s_runconfig, &s_telcfg);
+}
+
+POWER_TEST(hwi_init_core__pvt_sampling_iteration_counts, setup, teardown)
+{
+    // Setup default expectations for init_core
+    init_core_base_expect();
+
+    // Run core init
+    power_init_core(&s_runconfig, &s_telcfg);
+
+    // Verify the PVT DMA sampling iteration counts are configured correctly
+    validate_pvt_sampling_iteration_counts();
+
+    // Also verify that the constants are set to the expected values (sanity check)
+    assert_int_equal(SAMPLING_CONFIG_DTS_ITER_CNT, 3);
+    assert_int_equal(SAMPLING_CONFIG_VM_ITER_CNT, 3);
 }
 
 /* init core test, provide invalid vft curve for second core */

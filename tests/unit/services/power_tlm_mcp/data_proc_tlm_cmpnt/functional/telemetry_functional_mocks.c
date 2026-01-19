@@ -381,3 +381,22 @@ void __wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg(void)
 {
     function_called();
 }
+
+int __wrap_d2dss_pmu_read(uint8_t d2dss_index, uint8_t event_number, uintptr_t counter_low, uintptr_t counter_high)
+{
+    FPFW_UNUSED(d2dss_index);
+    FPFW_UNUSED(event_number);
+
+    // Cast uintptr_t to uint32_t* and check they are valid pointers
+    uint32_t* counter_low_ptr = (uint32_t*)counter_low;
+    uint32_t* counter_high_ptr = (uint32_t*)counter_high;
+
+    assert_non_null(counter_low_ptr);
+    assert_non_null(counter_high_ptr);
+
+    // Set the counter values from mock data
+    *counter_low_ptr = mock_type(uint32_t);
+    *counter_high_ptr = mock_type(uint32_t);
+
+    return mock_type(int);
+}

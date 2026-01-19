@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.service.mts
         ms::cmocka::testrunner
+        ms::lib::crash_dump
         ms::lib::threadx
         ms::mocks::event_trace
         ms::service::event_trace::collector
@@ -44,7 +45,11 @@ mock_target(${TARGET}
     _txe_block_pool_create
     _txe_thread_create
 
+    crash_dump_register_address32
     crash_dump_bug_check
+    crash_dump_register_pre_dump_callback
 
     idsw_get_cpu_type
+
+    FPFwETControllerFlushBuffer
 )

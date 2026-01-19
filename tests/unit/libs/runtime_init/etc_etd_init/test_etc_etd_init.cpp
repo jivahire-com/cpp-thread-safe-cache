@@ -15,6 +15,8 @@
 #include <CMockaWrapper.h>
 
 extern "C" {
+#include <IFpFwEventTracing.h>        // for FPFwETGetController, FPFwETControllerFlushBuffer
+#include <crash_dump.h>               // for crash_dump_register_address32
 #include <event_trace_collector.h>    // for etc_service_config_t, etc_service...
 #include <event_trace_decoder.h>      // for etd_service_config_t, etd_service...
 #include <fpfw_init.h>                // for fpfw_init_component_t
@@ -121,6 +123,32 @@ void __wrap_mts_client_register(mts_client_id_t id, p_mts_client_t client)
     FPFW_UNUSED(client);
 }
 
+void __wrap_FPFwETControllerFlushBuffer(PFPFW_ET_CONTROLLER pTraceController, const uint64_t bufferTimeThreshold)
+{
+    FPFW_UNUSED(pTraceController);
+    FPFW_UNUSED(bufferTimeThreshold);
+
+    function_called();
+}
+
+void __wrap_crash_dump_register_address32(void* p_address, size_t byte_count, uint32_t priority)
+{
+    FPFW_UNUSED(p_address);
+    FPFW_UNUSED(byte_count);
+    FPFW_UNUSED(priority);
+
+    function_called();
+}
+
+void __wrap_crash_dump_register_pre_dump_callback(void cb(void*), void* ctx, uint32_t dump_type)
+{
+    FPFW_UNUSED(cb);
+    FPFW_UNUSED(ctx);
+    FPFW_UNUSED(dump_type);
+
+    cb(ctx);
+}
+
 uint8_t __wrap_idsw_get_cpu_type(void)
 {
     return mock_type(uint8_t);
@@ -136,6 +164,9 @@ TEST_FUNCTION(test_etc_init_mcp, nullptr, nullptr)
     expect_not_value(__wrap_etc_initialize, p_service, NULL);
     expect_not_value(__wrap_etc_initialize, p_config, NULL);
 
+    expect_function_calls(__wrap_crash_dump_register_address32, ETC_SERVICE_CORE_BUFFER_COUNT);
+    expect_function_call(__wrap_FPFwETControllerFlushBuffer);
+
     will_return_always(__wrap_idsw_get_cpu_type, CPU_MCP);
 
     // Call API under test
@@ -147,6 +178,9 @@ TEST_FUNCTION(test_etc_init_scp, nullptr, nullptr)
     // Set up expectations
     expect_not_value(__wrap_etc_initialize, p_service, NULL);
     expect_not_value(__wrap_etc_initialize, p_config, NULL);
+
+    expect_function_calls(__wrap_crash_dump_register_address32, ETC_SERVICE_CORE_BUFFER_COUNT);
+    expect_function_call(__wrap_FPFwETControllerFlushBuffer);
 
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
 

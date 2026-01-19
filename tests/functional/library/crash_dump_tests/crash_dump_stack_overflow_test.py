@@ -97,10 +97,11 @@ class crash_dump_stack_overflow_test(EchoFallsBaseTest):
 
 
         command = "crashdump st_over"
+        bug_check_msg = ""
         self.log.info(f"Submitting {command}\n")
         scp_channel.write_line(write_string=command)
         try:
-            scp_channel.read_until(key="BugCheck: 0x80380008", timeout_seconds=100)
+            bug_check_msg = scp_channel.read_until(key="BugCheck: ", timeout_seconds=300)
         except Exception as e:
             self.log.error(f"Error Crash Dump stack overflow. Die0: {e}")
             self.test_notify(step="Crash Dump stack overflow.", msg="Test Fail", _is_error=True)
@@ -108,6 +109,19 @@ class crash_dump_stack_overflow_test(EchoFallsBaseTest):
             self.dut.teardown()
             time.sleep(30)
             return False 
+
+        # Looking for BugCheck code 0x80380008 or 0X80380003 in the output
+        m = re.search(r'BugCheck:\s*(0x80380008|0x80380003)', bug_check_msg) 
+        if m:
+            self.log.info(f"Found BugCheck code: {m.group(1)}")
+            self.log.info("Crash Dump stack overflow Die0 Test Passed.")
+        else:
+            self.log.error("Crash Dump stack overflow Die0 Test Failed. BugCheck code not found.")
+            self.test_notify(step="Crash Dump stack overflow.", msg="Test Fail", _is_error=True)
+            scp_channel.close()
+            self.dut.teardown()
+            time.sleep(30)
+            return False
 
         # Close connection to SCP
         self.test_notify(step="Crash Dump stack overflow Die0", msg="Test Done", _is_error=False)

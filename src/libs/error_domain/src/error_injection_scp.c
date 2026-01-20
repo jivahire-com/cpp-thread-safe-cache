@@ -59,9 +59,10 @@ static vptr_fuses_csr_reg scp_exp_fuses_regs =
     (vptr_fuses_csr_reg)(SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_FUSE_ADDRESS + FUSES_TOP_FUSES_CSR_ADDRESS);
 
 /*-------------- Functions ---------------*/
-static PLACED_CODE uint32_t get_error_injection_address(ras_einj_info_t* einj_payload,
-                                                        atu_map_entry_t* atu_entry,
-                                                        atu_map_entry_t* atu_recover_entry)
+// static PLACED_CODE uint32_t get_error_injection_address(ras_einj_info_t* einj_payload,
+//                                                         atu_map_entry_t* atu_entry,
+//                                                         atu_map_entry_t* atu_recover_entry)
+static uint32_t get_error_injection_address(ras_einj_info_t* einj_payload, atu_map_entry_t* atu_entry, atu_map_entry_t* atu_recover_entry)
 {
     uint32_t err_addr = 0;
 

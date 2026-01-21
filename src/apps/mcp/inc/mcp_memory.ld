@@ -18,8 +18,8 @@ __ITCMSTART__        = 0x00000080;
 __ITCMEND__          = 0x0007FFFF;
 __DTCMSTART__        = 0x20000000;
 __DTCMEND__          = 0x20077FFF;
-__RMSSDATASTART__    = 0x0139C000;
-__RMSSDATAEND__      = 0x0139CFFF;
+__RMSSDATASTART__    = 0x013B4000;
+__RMSSDATAEND__      = 0x013B5000;
 
 /*
  * ADO 2809728 - Rollback original reserved space 

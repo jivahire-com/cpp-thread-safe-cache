@@ -11,7 +11,7 @@
  * See the address map: https://microsoft.sharepoint.com/:x:/r/teams/EchoFalls/Shared%20Documents/Kingsgate%20SOC/Architecture/SOC%20Top/Kingsgate%20SOC%20Address%20Map%20r1p04.xlsx?d=w1dbe548890594d609964d4ae084eee3a&csf=1&web=1&e=MXoeEK
  * The __ITCMSTART__ has been moved to 0x80 as the M7 VTOR register only accepts addresses with 128 byte offset (https://developer.arm.com/documentation/dui0646/b/Cortex-M7-Peripherals/System-control-block/Vector-Table-Offset-Register?lang=en)
  * The __DTCMEND__ is reduced to 0x20077FFF, this is because the last 32KB is used by the boot loader for decompression and hence the firmware image needs to leave the region untouched.
- * RMSS Data size for SCP is 348kb (316kb + 32kb reclaimed from WARM_START)
+ * RMSS Data size for SCP is 444kb 
  * The __RESERVED_CODE_SIZE is used to create a 32KB region to reserve ITCM for future use.
 */
 __ITCMSTART__        = 0x00000080;
@@ -19,7 +19,7 @@ __ITCMEND__          = 0x0007FFFF;
 __DTCMSTART__        = 0x20000000;
 __DTCMEND__          = 0x20077FFF;
 __RMSSDATASTART__    = 0x01345000;
-__RMSSDATAEND__      = 0x0139BFFF;
+__RMSSDATAEND__      = 0x013B3FFF;
 
 /*
  * ADO 2809728 - Rollback original reserved space

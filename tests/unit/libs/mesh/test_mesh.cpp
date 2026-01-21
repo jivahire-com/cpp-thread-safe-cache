@@ -393,6 +393,7 @@ void __wrap_cmn800_pseudo_fault_error_injection(uint8_t node_type,
 void __wrap_interrupt_handler_mesh_ras_error(acpi_err_sec_generic_t* mesh_cper, bool fault, bool non_secure, uint8_t die_num)
 {
     assert_non_null(mesh_cper);
+    mesh_cper->err_status = mock_type(uint32_t);
     check_expected(fault);
     check_expected(non_secure);
     check_expected(die_num);
@@ -1398,6 +1399,7 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_error_isr_Die_0_SVP, setup_svp_platfo
     const auto test_die = (KNG_DIE_ID)0;
     g_test_die = test_die;
 
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
@@ -1411,12 +1413,40 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_error_isr_Die_0_SVP, setup_svp_platfo
     mesh_error_isr(NULL);
 }
 
+TEST_FUNCTION(test_mesh_error_handler_mesh_error_isr_Die_0_SVP_UE, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0x20000000UL); // UE bit set
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, false);
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, false);
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
+    expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_E_RAS_MESH_ERROR_UE);
+    expect_any(__wrap_crash_dump_bug_check, p1);
+    expect_any(__wrap_crash_dump_bug_check, p2);
+    expect_any(__wrap_crash_dump_bug_check, p3);
+    expect_any(__wrap_crash_dump_bug_check, p4);
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    // Call API under test
+    mesh_error_isr(NULL);
+}
+
 // Mesh Error ISR Die 1
 TEST_FUNCTION(test_mesh_error_handler_mesh_error_isr_Die_1_SVP, setup_svp_platform, setup_undefined_platform)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
     g_test_die = test_die;
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
@@ -1437,6 +1467,7 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_fault_isr_Die_0_SVP, setup_svp_platfo
     const auto test_die = (KNG_DIE_ID)0;
     g_test_die = test_die;
 
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
@@ -1450,12 +1481,40 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_fault_isr_Die_0_SVP, setup_svp_platfo
     mesh_fault_isr(NULL);
 }
 
+TEST_FUNCTION(test_mesh_error_handler_mesh_fault_isr_Die_0_SVP_UE, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0x20000000UL); // UE bit set
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, true);
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, false);
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
+    expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_E_RAS_MESH_FAULT_UE);
+    expect_any(__wrap_crash_dump_bug_check, p1);
+    expect_any(__wrap_crash_dump_bug_check, p2);
+    expect_any(__wrap_crash_dump_bug_check, p3);
+    expect_any(__wrap_crash_dump_bug_check, p4);
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    // Call API under test
+    mesh_fault_isr(NULL);
+}
+
 // Mesh Fault ISR Die 1
 TEST_FUNCTION(test_mesh_error_handler_mesh_fault_isr_Die_1_SVP, setup_svp_platform, setup_undefined_platform)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
     g_test_die = test_die;
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
@@ -1476,6 +1535,7 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_ns_error_isr_Die_0_SVP, setup_svp_pla
     const auto test_die = (KNG_DIE_ID)0;
     g_test_die = test_die;
 
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
@@ -1489,12 +1549,40 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_ns_error_isr_Die_0_SVP, setup_svp_pla
     mesh_ns_error_isr(NULL);
 }
 
+TEST_FUNCTION(test_mesh_error_handler_mesh_ns_error_isr_Die_0_SVP_UE, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0x20000000UL); // UE bit set
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, false);
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, true);
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
+    expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_E_RAS_MESH_NON_SECURE_ERROR_UE);
+    expect_any(__wrap_crash_dump_bug_check, p1);
+    expect_any(__wrap_crash_dump_bug_check, p2);
+    expect_any(__wrap_crash_dump_bug_check, p3);
+    expect_any(__wrap_crash_dump_bug_check, p4);
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    // Call API under test
+    mesh_ns_error_isr(NULL);
+}
+
 // Mesh NS Error ISR Die 1
 TEST_FUNCTION(test_mesh_error_handler_mesh_ns_error_isr_Die_1_SVP, setup_svp_platform, setup_undefined_platform)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
     g_test_die = test_die;
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, false);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
@@ -1515,6 +1603,7 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_ns_fault_isr_Die_0_SVP, setup_svp_pla
     const auto test_die = (KNG_DIE_ID)0;
     g_test_die = test_die;
 
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
@@ -1528,12 +1617,40 @@ TEST_FUNCTION(test_mesh_error_handler_mesh_ns_fault_isr_Die_0_SVP, setup_svp_pla
     mesh_ns_fault_isr(NULL);
 }
 
+TEST_FUNCTION(test_mesh_error_handler_mesh_ns_fault_isr_Die_0_SVP_UE, setup_svp_platform, setup_undefined_platform)
+{
+    // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
+    g_test_die = test_die;
+
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0x20000000UL); // UE bit set
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, true);
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, true);
+    expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);
+    expect_function_call(__wrap_interrupt_handler_mesh_ras_error);
+
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
+    expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_E_RAS_MESH_NON_SECURE_FAULT_UE);
+    expect_any(__wrap_crash_dump_bug_check, p1);
+    expect_any(__wrap_crash_dump_bug_check, p2);
+    expect_any(__wrap_crash_dump_bug_check, p3);
+    expect_any(__wrap_crash_dump_bug_check, p4);
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    // Call API under test
+    mesh_ns_fault_isr(NULL);
+}
+
 // Mesh NS Fault ISR Die 1
 TEST_FUNCTION(test_mesh_error_handler_mesh_ns_fault_isr_Die_1_SVP, setup_svp_platform, setup_undefined_platform)
 {
     // Set up expectations
     const auto test_die = (KNG_DIE_ID)1;
     g_test_die = test_die;
+    will_return(__wrap_interrupt_handler_mesh_ras_error, 0);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, fault, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, non_secure, true);
     expect_value(__wrap_interrupt_handler_mesh_ras_error, die_num, test_die);

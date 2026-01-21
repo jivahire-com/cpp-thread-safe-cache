@@ -228,6 +228,13 @@ void mesh_fault_isr(void* context)
     cper_section.sec_mesh = mesh_cper;
     fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
     hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
+
+    if (acpi_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
+    {
+        // If the severity is fatal, we need to bug check
+        MESH_CRIT("Fatal Fault in Mesh, Bug Check\n");
+        BUG_CHECK(KNG_E_RAS_MESH_FAULT_UE, 0, 0);
+    }
 }
 
 /**
@@ -258,6 +265,13 @@ void mesh_error_isr(void* context)
     cper_section.sec_mesh = mesh_cper;
     fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
     hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
+
+    if (acpi_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
+    {
+        // If the severity is fatal, we need to bug check
+        MESH_CRIT("Fatal Error in Mesh, Bug Check\n");
+        BUG_CHECK(KNG_E_RAS_MESH_ERROR_UE, 0, 0);
+    }
 }
 
 /**
@@ -288,6 +302,13 @@ void mesh_ns_fault_isr(void* context)
     cper_section.sec_mesh = mesh_cper;
     fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
     hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
+
+    if (acpi_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
+    {
+        // If the severity is fatal, we need to bug check
+        MESH_CRIT("Fatal Non-Secure Fault in Mesh, Bug Check\n");
+        BUG_CHECK(KNG_E_RAS_MESH_NON_SECURE_FAULT_UE, 0, 0);
+    }
 }
 
 /**
@@ -318,6 +339,13 @@ void mesh_ns_error_isr(void* context)
     cper_section.sec_mesh = mesh_cper;
     fnc_decode_mesh_cper_status(&mesh_cper, &acpi_severity);
     hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, acpi_severity, &cper_section, sizeof(cper_section));
+
+    if (acpi_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
+    {
+        // If the severity is fatal, we need to bug check
+        MESH_CRIT("Fatal Non-Secure Error in Mesh, Bug Check\n");
+        BUG_CHECK(KNG_E_RAS_MESH_NON_SECURE_ERROR_UE, 0, 0);
+    }
 }
 
 uint32_t d2d_set_atu_map(uint8_t d2d_subsystem, bool* d2d_atu_unmap_required)

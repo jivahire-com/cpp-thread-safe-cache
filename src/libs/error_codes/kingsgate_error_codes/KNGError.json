@@ -544,6 +544,26 @@
           "Name": "KNG_E_RAS_MESH_D2D_UE",
           "Value": 1,
           "Description": "Uncorrectable error in Mesh D2D."
+        },
+        {
+          "Name": "KNG_E_RAS_MESH_FAULT_UE",
+          "Value": 2,
+          "Description": "Uncorrectable fault in Mesh."
+        },
+        {
+          "Name": "KNG_E_RAS_MESH_ERROR_UE",
+          "Value": 3,
+          "Description": "Uncorrectable error in Mesh."
+        },
+        {
+          "Name": "KNG_E_RAS_MESH_NON_SECURE_FAULT_UE",
+          "Value": 4,
+          "Description": "Uncorrectable fault in Mesh (Non-secure)."
+        },
+        {
+          "Name": "KNG_E_RAS_MESH_NON_SECURE_ERROR_UE",
+          "Value": 5,
+          "Description": "Uncorrectable error in Mesh (Non-secure)."
         }
       ]
     }

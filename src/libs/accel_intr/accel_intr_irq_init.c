@@ -13,6 +13,7 @@
 
 /*-------------------------------- Includes ---------------------------------*/
 #include "accel_intr.h"
+#include "accel_intr_events.h"
 #include "accel_intr_priv.h"
 #include "accel_intr_virt_irq.h"
 #include "bug_check.h"
@@ -32,7 +33,6 @@
 #include <nvic.h>
 #include <sdm_ext_cfg_regs.h> // for _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BPE_SB_TEL_ECC_CNTR_ADDRESS
 #include <stdbool.h>          // for false
-#include <stdio.h>            // for printf
 #include <string.h>           // for memset
 #include <system_info.h>      // for system_info_is_warm_start
 
@@ -212,7 +212,7 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type)
 {
     if (accel_type >= NUM_VALID_ACCEL_ID)
     {
-        critical_print("Accelerator type out of bounds : %d\n", accel_type);
+        FPFW_ET_LOG(AccelIntrIrqInitError, accel_type, 0, __LINE__);
         return ACCEL_INTR_RET_FAIL_INTR_INIT;
     }
 
@@ -226,7 +226,7 @@ int32_t accel_scp_intr_init(ACCEL_ID accel_type)
 
     if (ret != ACCEL_INTR_RET_SUCCESS)
     {
-        critical_print("AccelIp Interrupt Timer create failed: 0x%x\n", ret);
+        FPFW_ET_LOG(AccelIntrIrqInitError, accel_type, ret, __LINE__);
         return ret;
     }
 
@@ -275,7 +275,7 @@ int32_t accel_mcp_intr_init(ACCEL_ID accel_type)
 {
     if (accel_type >= NUM_VALID_ACCEL_ID)
     {
-        critical_print("Invalid Accelerator type %d\n", accel_type);
+        FPFW_ET_LOG(AccelIntrIrqInitError, accel_type, 0, __LINE__);
         return ACCEL_INTR_RET_FAIL_INTR_INIT;
     }
 

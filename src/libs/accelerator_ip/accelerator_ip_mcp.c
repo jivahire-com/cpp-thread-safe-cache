@@ -14,6 +14,7 @@
 /*-------------------------------- Includes ---------------------------------*/
 
 #include "accelerator_ip.h"
+#include "accelerator_ip_events.h"
 #include "accelerator_ip_priv.h"
 
 #include <DbgPrint.h>      // for FPFW_DBGPRINT_INFO
@@ -54,7 +55,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     ret = accel_mcp_intr_init(accel_type);
     if (ret != ACCEL_INTR_RET_SUCCESS)
     {
-        critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
+        FPFW_ET_LOG(AccelIPMCPError, accel_type, ret, __LINE__);
         return ACCEL_RET_FAIL_INTR_INIT;
     }
 

@@ -205,7 +205,7 @@ uint32_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type)
 
     if (status != FPFW_STATUS_SUCCESS)
     {
-        critical_print("fpfw_timer_create failed(0x%x)\n", status);
+        FPFW_ET_LOG(AccelIntrDfwkHandlerError, accel_type, status, __LINE__);
         return ACCEL_INTR_RET_FAIL_TIMER_CREATE;
     }
 

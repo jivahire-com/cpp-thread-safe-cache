@@ -12,6 +12,7 @@
 
 /*-------------------------------- Includes ---------------------------------*/
 #include "accelerator_ip.h" // for get_accelip_type, scp_accelerators_init
+#include "accelerator_ip_events.h"
 
 #include <DbgPrint.h>            // for FPFW_DBGPRINT_INFO
 #include <accel_intr.h>          // for accel_scp_intr_init
@@ -26,7 +27,6 @@
 #include <idsw.h>                // for idsw_get_die_id
 #include <kng_icc_shared.h>
 #include <kng_soc_constants.h> // for DIE_INSTANCE
-#include <silibs_platform.h>   // for critical_print
 #include <silibs_status.h>     // for SILIBS_SUCCESS
 #include <stdbool.h>           // for false
 #include <stdint.h>            // for int32_t, uint32_t
@@ -72,7 +72,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
                               p_ss_ctxt->p_init_params);
         if (ret != SILIBS_SUCCESS)
         {
-            critical_print("Accel IP: init_accelerator: accelip_ss_init failed.\n");
+            FPFW_ET_LOG(AccelIPInitError, accel_type, ret, __LINE__);
             return ACCEL_RET_FAIL_SS_INIT;
         }
     }
@@ -90,7 +90,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     ret = accel_scp_intr_init(accel_type);
     if (ret != ACCEL_INTR_RET_SUCCESS)
     {
-        critical_print("Accel IP: init_accelerator: Accel Interrupt init failed.\n");
+        FPFW_ET_LOG(AccelIPInitError, accel_type, ret, __LINE__);
         return ACCEL_RET_FAIL_INTR_INIT;
     }
 
@@ -261,9 +261,7 @@ void notify_accelerators_uefi_boot_cb(void* context, fpfw_status_t status)
     ACCEL_ID accel_type = (ACCEL_ID)context;
     if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
-        FPFW_DBGPRINT_ERROR("Error in accel (%s) UEFI boot notif. callback, status = (%x)\n",
-                            (accel_type == ACCEL_ID_SDM ? "SDM" : "CDED"),
-                            status);
+        FPFW_ET_LOG(AccelIPInitError, accel_type, status, __LINE__);
     }
     else
     {
@@ -317,9 +315,7 @@ int32_t notify_accelerators_uefi_boot(void)
 
         if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
-            FPFW_DBGPRINT_ERROR("Error accel (%s) UEFI boot notif. (%0x)\n",
-                                (accel_type == ACCEL_ID_SDM ? "SDM" : "CDED"),
-                                icc_status);
+            FPFW_ET_LOG(AccelIPInitError, accel_type, icc_status, __LINE__);
             return (ACCEL_RET_FAIL_GENERAL);
         }
     }

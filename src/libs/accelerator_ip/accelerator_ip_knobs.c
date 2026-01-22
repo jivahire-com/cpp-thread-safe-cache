@@ -10,6 +10,8 @@
 /*-------------------------------- Features ---------------------------------*/
 
 /*-------------------------------- Includes ---------------------------------*/
+#include "accelerator_ip_events.h"
+
 #include <DbgPrint.h>          // for FPFW_DBGPRINT_INFO, FPFW_DBGPRINT_ERROR
 #include <FpFwUtils.h>         // for FPFW_ARRAY_SIZE
 #include <accelerator_ip.h>    // for scp_download_accel_knobs
@@ -148,7 +150,7 @@ static knob_transfer_status_t write_knob_to_buffer(uint8_t* p_addr,
     return STATUS_KNOB_TRANSFER_SUCCESS;
 }
 
-static knob_transfer_status_t transfer_accel_sys_info(uint8_t* p_addr, uint8_t* p_buff_end_addr, uint16_t* p_bytes_written)
+static knob_transfer_status_t transfer_accel_sys_info(uint8_t* p_addr, uint8_t* p_buff_end_addr, uint16_t* p_bytes_written, ACCEL_ID accel_type)
 {
     uint32_t accel_runtime_metadata_struct_size = 0;
     knob_transfer_status_t status;
@@ -181,7 +183,7 @@ static knob_transfer_status_t transfer_accel_sys_info(uint8_t* p_addr, uint8_t* 
     // Run an error check against available size
     if (p_addr + accel_runtime_metadata_struct_size > p_buff_end_addr)
     {
-        FPFW_DBGPRINT_ERROR("Buffer too small for sys info data\n");
+        FPFW_ET_LOG(AccelIPKnobsError, accel_type, accel_runtime_metadata_struct_size, __LINE__);
         return STATUS_KNOB_TRANSFER_FAIL_MEMORY_OVERFLOW;
     }
 
@@ -196,6 +198,7 @@ static knob_transfer_status_t transfer_accel_sys_info(uint8_t* p_addr, uint8_t* 
         if (status != STATUS_KNOB_TRANSFER_SUCCESS)
         {
             FPFW_DBGPRINT_INFO("No override for %s. Skip\n", accel_sys_info[index].p_name);
+            FPFW_ET_LOG(AccelIPKnobsError, accel_type, status, __LINE__);
             continue;
         }
         bytes_written_temp +=
@@ -207,7 +210,11 @@ static knob_transfer_status_t transfer_accel_sys_info(uint8_t* p_addr, uint8_t* 
     return STATUS_KNOB_TRANSFER_SUCCESS;
 }
 
-static knob_transfer_status_t transfer_knob_to_accel(uint8_t* p_addr, uint8_t* p_buff_end_addr, const char* p_knob_name, uint16_t* p_bytes_written)
+static knob_transfer_status_t transfer_knob_to_accel(uint8_t* p_addr,
+                                                     uint8_t* p_buff_end_addr,
+                                                     const char* p_knob_name,
+                                                     uint16_t* p_bytes_written,
+                                                     ACCEL_ID accel_type)
 {
     knob_transfer_status_t status;
 
@@ -227,7 +234,7 @@ static knob_transfer_status_t transfer_knob_to_accel(uint8_t* p_addr, uint8_t* p
                                           (uint8_t*)cached_knob->data);
             if (status != STATUS_KNOB_TRANSFER_SUCCESS)
             {
-                FPFW_DBGPRINT_ERROR("Failed to write knob %s\n", cached_knob->name);
+                FPFW_ET_LOG(AccelIPKnobsTXError, accel_type, status, knob_index, __LINE__);
                 return status;
             }
 
@@ -257,10 +264,10 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
 
     FPFW_DBGPRINT_INFO("Accel: Transfer config data for Accel %d, Die %d\n", accel_type, idsw_get_die_id());
 
-    status = transfer_accel_sys_info(p_config_data_write_address, p_config_data_end_address, &bytes_written);
+    status = transfer_accel_sys_info(p_config_data_write_address, p_config_data_end_address, &bytes_written, accel_type);
     if (status != STATUS_KNOB_TRANSFER_SUCCESS)
     {
-        FPFW_DBGPRINT_ERROR("Failed to write sys info\n");
+        FPFW_ET_LOG(AccelIPKnobsError, accel_type, status, __LINE__);
         return status;
     }
     p_config_data_write_address += bytes_written;
@@ -270,10 +277,11 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
         status = transfer_knob_to_accel(p_config_data_write_address,
                                         p_config_data_end_address,
                                         knob_transfer_list[knob_num],
-                                        &bytes_written);
+                                        &bytes_written,
+                                        accel_type);
         if (status != STATUS_KNOB_TRANSFER_SUCCESS)
         {
-            FPFW_DBGPRINT_ERROR("Failed to write knob data. Continuing . . .\n");
+            FPFW_ET_LOG(AccelIPKnobsTXError, accel_type, status, knob_num, __LINE__);
             continue;
         }
 
@@ -283,14 +291,14 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
     status = write_string_to_buff(p_config_data_write_address, p_config_data_end_address, scp_end_magic_string);
     if (status != STATUS_KNOB_TRANSFER_SUCCESS)
     {
-        FPFW_DBGPRINT_ERROR("Failed to write %s\n", scp_end_magic_string);
+        FPFW_ET_LOG(AccelIPKnobsError, accel_type, status, __LINE__);
         return status;
     }
 
     status = write_string_to_buff(p_config_data_start_address, p_config_data_end_address, scp_start_magic_string);
     if (status != STATUS_KNOB_TRANSFER_SUCCESS)
     {
-        FPFW_DBGPRINT_ERROR("Failed to write %s\n", scp_start_magic_string);
+        FPFW_ET_LOG(AccelIPKnobsError, accel_type, status, __LINE__);
         return status;
     }
 

@@ -42,7 +42,9 @@ typedef enum {
     SCP_ACCEL_EVENT_ID_CD_COMPLETION_FAILED,                    // Printed when Crash Dump Collection of accel core failed
     SCP_ACCEL_EVENT_ID_INTERRUPT_INVALID,                       // Printed when accel device receives an invalid interrupt
     SCP_ACCEL_EVENT_ID_CPER_COMPLETION_RETRY,                   // Printed when giving more time for CPER submission from accel core
-    SCP_ACCEL_EVENT_ID_CPER_COMPLETION_FAILED                   // Printed when CPER submission from accel core failed
+    SCP_ACCEL_EVENT_ID_CPER_COMPLETION_FAILED,                  // Printed when CPER submission from accel core failed
+    SCP_ACCEL_EVENT_ID_DFWK_HANDLER_ERROR,                      // Printed when an error occurs in file accel_intr_dfwk_handlers.c
+    SCP_ACCEL_EVENT_ID_IRQ_INIT_ERROR,                          // Printed when an error occurs in file accel_intr_irq_init.c
 } SCP_ACCEL_EVENT_ID;
 
 
@@ -147,6 +149,39 @@ FPFW_ET_DEFINE_EVENT(
     AccelIntrCPERCollectFailed,
     FPFW_ET_LEVEL_ERROR,
     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id)
+)
+
+/**
+ * Event indicating an error in the DFWK handler file
+ * accel_id - Accel type (SDM / CDED)
+ * status - error code
+ * line - Line number where the error occurred in this file
+ */
+FPFW_ET_DEFINE_EVENT(
+    EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR,
+    SCP_ACCEL_EVENT_ID_DFWK_HANDLER_ERROR,
+    AccelIntrDfwkHandlerError,
+    FPFW_ET_LEVEL_ERROR,
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id),
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status),
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, line)
+)
+
+
+/**
+ * Event indicating an error in the IRQ init file
+ * accel_id - Accel type (SDM / CDED)
+ * status - error code
+ * line - Line number where the error occurred in this file
+ */
+FPFW_ET_DEFINE_EVENT(
+    EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR,
+    SCP_ACCEL_EVENT_ID_IRQ_INIT_ERROR,
+    AccelIntrIrqInitError,
+    FPFW_ET_LEVEL_ERROR,
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id),
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status),
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, line)
 )
 
 /*-------------------------------- Typedefs ---------------------------------*/

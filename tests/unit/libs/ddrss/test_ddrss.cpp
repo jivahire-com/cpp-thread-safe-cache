@@ -1212,7 +1212,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     // Vendor CPER #1 - not set by ddrss_convert_ras_rec_to_cper
     ddr_vendor_cper.module = 6;
     ddr_vendor_cper.valid_module = 1;
-    ddr_vendor_cper.device = 1;
+    ddr_vendor_cper.device = 0;
     ddr_vendor_cper.valid_device = 1;
     ddr_vendor_cper.error_type = DDRSS_CPER_ERROR_UNKNOWN;
     ddr_vendor_cper.valid_error_type = 1;
@@ -1231,7 +1231,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     ddr_vendor_cper.error_type = DDRSS_CPER_INTU_PLL_INTERRUPT;
     ddr_vendor_cper.module = 6;
     ddr_vendor_cper.valid_module = 1;
-    ddr_vendor_cper.device = 1;
+    ddr_vendor_cper.device = 0;
     ddr_vendor_cper.valid_device = 1;
     ddr_vendor_cper.valid_error_type = 1;
     ddr_vendor_cper.error_status.error_type = ddr_vendor_cper.error_type;
@@ -1250,7 +1250,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     ddr_vendor_cper.error_type = DDRSS_CPER_INTU_PCR_PAR_ERR;
     ddr_vendor_cper.module = 6;
     ddr_vendor_cper.valid_module = 1;
-    ddr_vendor_cper.device = 1;
+    ddr_vendor_cper.device = 0;
     ddr_vendor_cper.valid_device = 1;
     ddr_vendor_cper.valid_error_type = 1;
     ddr_vendor_cper.error_status.error_type = ddr_vendor_cper.error_type;
@@ -1269,7 +1269,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_others, setup, teardown)
     ddr_vendor_cper.error_type = DDRSS_CPER_INTU_PAR_ERR;
     ddr_vendor_cper.module = 6;
     ddr_vendor_cper.valid_module = 1;
-    ddr_vendor_cper.device = 1;
+    ddr_vendor_cper.device = 0;
     ddr_vendor_cper.valid_device = 1;
     ddr_vendor_cper.valid_error_type = 1;
     ddr_vendor_cper.error_status.error_type = ddr_vendor_cper.error_type;

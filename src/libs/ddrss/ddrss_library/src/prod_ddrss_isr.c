@@ -303,7 +303,7 @@ void prod_ddrss_interrupt_handler(void* context)
 
         ddr_cper.module = DDRSS_MC_TO_DDRSS(mc);
         ddr_cper.valid_module = 1;
-        ddr_cper.device = DDRSS_IS_SUB_CHANEL0(mc);
+        ddr_cper.device = DDRSS_IS_SUB_CHANEL0(mc) ? 0 : 1;
         ddr_cper.valid_device = 1;
         ddr_cper.error_type = DDRSS_CPER_ERROR_UNKNOWN;
         ddr_cper.valid_error_type = 1;
@@ -598,7 +598,7 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
     {
         ddr_cper.module = DDRSS_MC_TO_DDRSS(mc);
         ddr_cper.valid_module = 1;
-        ddr_cper.device = DDRSS_IS_SUB_CHANEL0(mc);
+        ddr_cper.device = DDRSS_IS_SUB_CHANEL0(mc) ? 0 : 1;
         ddr_cper.valid_device = 1;
         ddr_cper.error_type = DDRSS_CPER_PHY_FATAL;
         ddr_cper.valid_error_type = 1;
@@ -828,7 +828,7 @@ int prod_ddrss_get_intr_event_cper(uint32_t mc, uint32_t intr_event, acpi_err_se
 
     ddr_cper->module = DDRSS_MC_TO_DDRSS(mc);
     ddr_cper->valid_module = 1;
-    ddr_cper->device = DDRSS_IS_SUB_CHANEL0(mc);
+    ddr_cper->device = DDRSS_IS_SUB_CHANEL0(mc) ? 0 : 1;
     ddr_cper->valid_device = 1;
     ddr_cper->valid_error_type = 1;
     ddr_cper->error_status.error_type = ddr_cper->error_type;

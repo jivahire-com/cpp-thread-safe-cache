@@ -22,6 +22,7 @@
 #include <silibs_platform.h>      // for MMIO_WRITE32, MMIO_READ32
 #include <stdint.h>               // for uint32_t, uint8_t
 #include <stdlib.h>               // for errno, strtol
+#include <utils.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 // Word length in bytes
@@ -176,7 +177,7 @@ static int cli_accel_int_get_register_idx(uint32_t address)
  *  On success, 0x0
  *  On failure, -1, error is set in errno
  * */
-static int cli_accel_int_read_write_reg(uint32_t reg_offset, uint32_t* reg_value, uint8_t operation)
+static PLACED_CODE int cli_accel_int_read_write_reg(uint32_t reg_offset, uint32_t* reg_value, uint8_t operation)
 {
     int index = cli_accel_int_get_register_idx(reg_offset);
 

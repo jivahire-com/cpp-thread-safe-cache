@@ -25,6 +25,7 @@
 #include <power_dfwk.h> // for (anonymous), ppower_service_cli_re...
 #include <stdbool.h>    // for false
 #include <stddef.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CORE_CLUSTER_PEX_TOP_ALARM_CFG_OFFSET(alarm_num, ab_sel) \
@@ -156,7 +157,7 @@ static fpfw_status_t power_cli_remote_die_send(power_runconfig_t* p_runconfig, p
     return fpfw_icc_base_send((fpfw_icc_base_ctx_t*)(p_runconfig->p_sconfig->icc_d2d_cli_ctx), &d2d_send_params);
 }
 
-static void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
+static PLACED_CODE void power_cli_requests_callback(PDFWK_ASYNC_REQUEST_HEADER p_request, void* p_context)
 {
 
     FPFW_RUNTIME_ASSERT(p_request != NULL);

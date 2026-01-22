@@ -47,6 +47,7 @@ target_link_libraries(${TARGET}
         ms::lib::core_info
         ms::lib::scp_avs
         ms::lib::scp_avs::cli
+        ms::lib::utils
         silibs::atu
         silibs::avs
         silibs::dvfs

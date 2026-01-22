@@ -24,8 +24,8 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-// Currently enabling only 6 threads and keeping stack to 10 KB
-#define RTOSMON_STACK_SIZE      (10 * 1024U)
+// Currently enabling only 6 threads and keeping stack to 24 KB
+#define RTOSMON_STACK_SIZE      (24 * 1024U)
 #define RTOSMON_THREAD_PRIORITY (10U)
 
 /*------------- Typedefs -----------------*/

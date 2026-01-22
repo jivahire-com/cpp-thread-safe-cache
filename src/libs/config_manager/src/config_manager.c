@@ -170,7 +170,11 @@ fpfw_status_t read_knob_from_default_db_cb(const fpfw_cfg_mgr_guid_t* knob_names
     return FPFW_STATUS_SUCCESS;
 }
 
-bool update_knob_data(cached_knob_data_t* current_entry, const uint8_t* data, size_t data_size, update_knob_completion_routine cb, bool permanent)
+PLACED_CODE bool update_knob_data(cached_knob_data_t* current_entry,
+                                  const uint8_t* data,
+                                  size_t data_size,
+                                  update_knob_completion_routine cb,
+                                  bool permanent)
 {
     // Check we are in mission mode or not
     if ((idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON) && system_info_get_mission_mode())

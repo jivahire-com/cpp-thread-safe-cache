@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <system_info.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 // #define SPD_UPDATE_TESTING           // Defined to prevent SPD readback from being updated for testing
@@ -94,7 +95,7 @@ static void prod_ddrss_register_isr_handler(void)
 }
 
 /*------------- Functions ----------------*/
-void prod_ddrss_lib_init(KNG_DIE_ID die_num)
+PLACED_CODE void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 {
     int sts = SILIBS_SUCCESS;
     ddrss_cfg_knobs_t ddrss_cfgs;
@@ -622,7 +623,7 @@ ddrss_phy_training_dq_margin_t* ddrss_get_training_margin_base(void)
     return &ddrss_phy_training_dq_margin[0];
 }
 
-int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
+PLACED_CODE int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
 {
     // 'mc' is currently unused but reserved for future use.
     (void)mc;
@@ -727,7 +728,7 @@ int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeout_us)
     return sts;
 }
 
-int32_t ddrss_update_ppr_completion(ddrs_spd_addr_info_t* addr_info, ddrss_res_info_t* res_info)
+PLACED_CODE int32_t ddrss_update_ppr_completion(ddrs_spd_addr_info_t* addr_info, ddrss_res_info_t* res_info)
 {
     /**
      * @brief

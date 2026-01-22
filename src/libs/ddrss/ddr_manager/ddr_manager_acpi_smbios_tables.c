@@ -29,6 +29,7 @@
 #include <mscp_exp_spi_synchronize_dies.h>
 #include <smbios_structs.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define BDAT_SUPPORTED_MSFT_SCHEMAS     0x1
@@ -126,7 +127,7 @@ static const char dimm_vendor_str[NUM_DIMM_VENDORS][MAX_NUM_DIMM_VENDOR_CHARS] =
                                                                                   {"Unknown\0"}};
 
 /*------------- Functions ----------------*/
-void ddr_create_bdat(void)
+PLACED_CODE void ddr_create_bdat(void)
 {
     // Get DDR training data from ddrss silicon libs
     // Create ACPI BDAT
@@ -642,7 +643,7 @@ static void ddr_wait_for_smbios_sync_point(void)
     }
 }
 
-static uint32_t ddr_create_smbios_type_16(uint32_t smbios_next_addr)
+static PLACED_CODE uint32_t ddr_create_smbios_type_16(uint32_t smbios_next_addr)
 {
     uint32_t dimm_capacity_gb = get_i3c_dimm_cap_in_gb();
     uint32_t dimm_capacity_mb = dimm_capacity_gb * 1024;
@@ -705,7 +706,7 @@ static uint32_t ddr_create_smbios_type_16(uint32_t smbios_next_addr)
     return smbios_next_addr;
 }
 
-static uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
+static PLACED_CODE uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
 {
     char tempString[STRING_SIZE] = {0};
     SMBIOS_MEM_DEVICE_17 smb_table17 = {0};

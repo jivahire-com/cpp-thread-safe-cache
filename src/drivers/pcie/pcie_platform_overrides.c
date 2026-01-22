@@ -18,6 +18,7 @@
 #include <rpss_p1_regs.h>    // for rpss_p1_reg, rpss_p1_rp_fuse
 #include <silibs_platform.h> // for MMIO_WRITE32
 #include <stdint.h>          // for uint8_t
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -65,7 +66,7 @@ bool plat_get_phy_programming_support()
     return ((idsw_get_platform_sdv() >= PLATFORM_RVP_EVT_SILICON) ? true : false);
 }
 
-void plat_overrides_pre_pciess_config_ss_for_bifur(pcie_ss_entity_t* rpss)
+PLACED_CODE void plat_overrides_pre_pciess_config_ss_for_bifur(pcie_ss_entity_t* rpss)
 {
     KNG_PLAT_ID plat = (KNG_PLAT_ID)idsw_get_platform_sdv();
 

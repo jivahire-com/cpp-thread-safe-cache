@@ -27,6 +27,7 @@
 #include <stdbool.h> // for true
 #include <stdint.h>  // for uint8_t
 #include <tx_api.h>  // for TX_WAIT_FOREVER, ULONG, tx_queue_receive
+#include <utils.h>
 #include <variable_services.h>
 #include <variable_services_mem.h>
 
@@ -156,7 +157,7 @@ void set_var_complete_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uin
     }
 }
 
-void config_variable_service_thread_fn(ULONG thread_input)
+PLACED_CODE void config_variable_service_thread_fn(ULONG thread_input)
 {
     pcie_config_manager_context_t* ctx = (pcie_config_manager_context_t*)(thread_input);
     ULONG event;

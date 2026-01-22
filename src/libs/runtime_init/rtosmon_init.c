@@ -12,6 +12,7 @@
 
 /*------------- Includes -----------------*/
 #include <fpfw_init.h>
+#include <idsw_kng.h>
 #include <rtosmon_config.h> /* rtosmon_plugin_init */
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -26,8 +27,13 @@
 
 FPFW_INIT_COMPONENT(rtosmon, FPFW_INIT_DEPENDENCIES("etc", "systick_upd"))
 {
-    // Disable RTOS Mon initialization for SCP/MCP until logging frequency is resolved
-    rtosmon_disabled_init();
+    // Init rtosmon plugin if platform is not SVP
+    if(IS_PLATFORM_SVP())
+    {
+        rtosmon_disabled_init();
+        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+    }
 
+    rtosmon_plugin_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

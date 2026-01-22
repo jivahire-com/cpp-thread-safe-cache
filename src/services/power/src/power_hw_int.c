@@ -42,6 +42,7 @@
 #include <stdint.h>      // for UINT16_MAX, uint16_t, uint8_t, uintptr_t
 #include <string.h>      // for memcpy
 #include <system_info.h> // for system_info_is_warm_start
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -793,7 +794,7 @@ void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg
     }
 }
 
-void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t* p_telemetry_config)
+PLACED_CODE void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t* p_telemetry_config)
 {
     FPFW_RUNTIME_ASSERT(p_telemetry_config != NULL);
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
@@ -1001,7 +1002,7 @@ void power_init_core(const power_runconfig_t* p_runconfig, const power_telcfg_t*
     }
 }
 
-void power_init_soc(const power_runconfig_t* p_runconfig)
+PLACED_CODE void power_init_soc(const power_runconfig_t* p_runconfig)
 {
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
 

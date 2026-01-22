@@ -32,6 +32,7 @@
 #include <stdint.h>            // for int32_t, uint32_t
 #include <stdio.h>             // for NULL
 #include <system_info.h>       // for system_info_is_hsp_present, system_info_is_warm_start
+#include <utils.h>
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 
@@ -97,7 +98,7 @@ static int32_t init_accelerator(subsystem_ctxt_t* p_ss_ctxt)
     return ACCEL_RET_SUCCESS;
 }
 
-static void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
+static PLACED_CODE void update_accel_ctxt_from_knobs(subsystem_ctxt_t* p_ss_ctxt)
 {
     DIE_INSTANCE die_id = p_ss_ctxt->accelip_metadata.die_instance;
     sdm_pre_pcie_cfg_t* pre_pcie_cfg = p_ss_ctxt->p_init_params->pre_pcie_cfg;

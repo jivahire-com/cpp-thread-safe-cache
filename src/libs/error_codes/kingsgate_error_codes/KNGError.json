@@ -189,6 +189,11 @@
           "Name": "KNG_AP_WDT_TIMEOUT",
           "Value": 7,
           "Description": "Application Processor watchdog timeout detected"
+        },
+        {
+          "Name": "KNG_BGCHK_ZERO_ERROR",
+          "Value": 8,
+          "Description": "Bug check with success error code"
         }
       ]
     },

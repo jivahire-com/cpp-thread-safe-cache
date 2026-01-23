@@ -77,6 +77,12 @@ FPFW_NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_
         // This is to ensure DebugMonitor_IRQn interrupt, otherwise HardFault will occur.
         NVIC_SetPriority(nvic_irq_num, 1);
     }
+
+    if (errorCode == 0)
+    {
+        // Specify a non-zero error code for bug check initiated dump with success code.
+        errorCode = KNG_BGCHK_ZERO_ERROR;
+    }
 #ifndef _WIN32
     // Ensure args are put into specific registers, so they can later be recovered by the debug handler
     __asm__ volatile("mov r0, %[code]\n"

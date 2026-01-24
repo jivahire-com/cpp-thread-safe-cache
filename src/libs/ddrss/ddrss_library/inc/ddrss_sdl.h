@@ -260,6 +260,8 @@ void store_sdl_var_async(void *ssi_request);
 
 /* SDL Initialization and Setup */
 void copy_empty_sdl_header_to_reserved_ddr(uintptr_t dest_addr_ddr);
+void sdl_map_atu(uint64_t base_addr);
+void sdl_unmap_atu(void);
 uintptr_t sdl_get_atu_start_addr(void); // Change
 uintptr_t get_sdl_arsm0_addr(void);
 void load_shared_defect_list_to_DDR(void);

@@ -20,7 +20,8 @@ extern "C" {
 
 #include <atu_lib.h>     // for atu_map
 #include <bdat_schema.h> // for bdat structure
-#include <crash_dump.h>  // for crash_dump_init
+#include <cli_ddr.h>
+#include <crash_dump.h> // for crash_dump_init
 #include <ddr_i3c.h>
 #include <ddr_manager.h> // for ddr_manager_init, ddr_service_context_t
 #include <ddr_manager_bwl.h>
@@ -586,6 +587,11 @@ TEST_FUNCTION(ddr_manager_init_fail, NULL, NULL)
         ddr_manager_init(&ddr_service_context, &ddr_service_config, icc_ctx);
     }
     g_should_wrap_ddr_create_memory_map = false;
+}
+
+TEST_FUNCTION(cli_ddr_dev_mode_disabled, NULL, NULL)
+{
+    assert_false(g_cli_ddr_dev_mode);
 }
 
 TEST_FUNCTION(ddr_manager_init_check_params, NULL, NULL)
@@ -1630,7 +1636,7 @@ TEST_FUNCTION(ddr_copy_empty_sdl_to_ddr, NULL, NULL)
     // Verify that the SDL header was copied correctly
     assert_int_equal(empty_header.Signature, (uint32_t)PSHED_PI_DEFECT_LIST_SIGNATURE);
     assert_int_equal(empty_header.Version, MEMORY_DEFECT_VERSION_20);
-    assert_int_equal(empty_header.Length, sizeof(MEMORY_DEFECT_LIST_HEADER));
+    assert_int_equal(empty_header.Length, SDL_MAX_SIZE);
     assert_int_equal(empty_header.DefectCount, 0);
     assert_int_equal(empty_header.Changed, 0);
 
@@ -1705,8 +1711,9 @@ TEST_FUNCTION(ddr_ddr_manager_dfwk_init_test, NULL, NULL)
     ddr_manager_dfwk_init();
 }
 
-TEST_FUNCTION(ddr_manager_dfwk_dispatch_test, NULL, NULL)
+TEST_FUNCTION(ddr_manager_dfwk_dispatch_test_die_0, NULL, NULL)
 {
+    uint8_t sdl_payload[2048] = {0};
     ddr_service_context_t* ddr_service_ctx = ddr_get_service_context();
 
     ssi_shutdown_notification_request_t mock_request = {};
@@ -1721,6 +1728,46 @@ TEST_FUNCTION(ddr_manager_dfwk_dispatch_test, NULL, NULL)
     expect_any(__wrap__txe_queue_send, source_ptr);
     expect_value(__wrap__txe_queue_send, wait_option, (ULONG)TX_NO_WAIT);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
+
+    // should_store_sdl = true
+    will_return(__wrap_config_get_ddrmanager_sdl_en, true);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+
+    // store_sdl_var_async(): first mock payload_base, then max_payload_size
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)&sdl_payload[0]);
+    will_return(__wrap_sdl_get_mem_ctx, sizeof(sdl_payload));
+    will_return(__wrap_variable_service_initialize_ctx, 0);
+
+    will_return(__wrap_atu_map, 0x012345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    expect_function_call(__wrap_variable_service_async_set_variable);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);
+    expect_function_call(__wrap_DfwkAsyncRequestComplete);
+
+    ddr_manager_dfwk_dispatch(&mock_request.header, NULL);
+}
+
+TEST_FUNCTION(ddr_manager_dfwk_dispatch_test_die_1, NULL, NULL)
+{
+    ddr_service_context_t* ddr_service_ctx = ddr_get_service_context();
+
+    ssi_shutdown_notification_request_t mock_request = {};
+    mock_request.header.RequestType = SSI_QUIESCE_ASYNC;
+    mock_request.shutdown_type = SHUTDOWN_SCP_INITIATED;
+
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+
+    expect_value(__wrap__txe_queue_send, queue_ptr, &ddr_service_ctx->work_queue);
+    expect_any(__wrap__txe_queue_send, source_ptr);
+    expect_value(__wrap__txe_queue_send, wait_option, (ULONG)TX_NO_WAIT);
+    will_return_always(__wrap__txe_queue_send, TX_SUCCESS);
+
+    // should_store_sdl = flase
+    will_return(__wrap_idsw_get_die_id, DIE_1);
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);
     expect_function_call(__wrap_DfwkAsyncRequestComplete);

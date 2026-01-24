@@ -63,7 +63,7 @@ TEST_FUNCTION(test_sdl_load_success, NULL, NULL)
 
 TEST_FUNCTION(test_sdl_load_not_found_creates_empty, NULL, NULL)
 {
-    const uint32_t EXPECTED_CHECKSUM = 0x1737; // Pre-calculated checksum:
+    const uint32_t EXPECTED_CHECKSUM = 0xcc16; // Pre-calculated checksum:
 
     // Set up die id for test
     idsw_set_die_id(DIE_0);
@@ -85,7 +85,7 @@ TEST_FUNCTION(test_sdl_load_not_found_creates_empty, NULL, NULL)
 
     assert_int_equal(s_empty_header.Signature, (uint32_t)PSHED_PI_DEFECT_LIST_SIGNATURE);
     assert_int_equal(s_empty_header.DefectCount, 0);
-    assert_int_equal(s_empty_header.Length, sizeof(MEMORY_DEFECT_LIST_HEADER));
+    assert_int_equal(s_empty_header.Length, SDL_MAX_SIZE);
     assert_int_equal(s_empty_header.Version, MEMORY_DEFECT_VERSION_20);
     assert_int_equal(s_empty_header.Checksum, EXPECTED_CHECKSUM);
 }

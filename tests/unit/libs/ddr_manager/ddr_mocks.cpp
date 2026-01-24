@@ -431,4 +431,21 @@ void __wrap_sdl_get_mem_ctx(var_service_shared_mem_t* mem_ctx)
     return;
 }
 
+int32_t __wrap_variable_service_async_set_variable(var_service_req_ctx_t* var_serv_ctx,
+                                                   var_service_req_params_t* req_params,
+                                                   variable_service_req_complete_notify callback,
+                                                   void* context)
+{
+    FPFW_UNUSED(var_serv_ctx);
+    FPFW_UNUSED(req_params);
+    FPFW_UNUSED(callback);
+    FPFW_UNUSED(context);
+    function_called();
+
+    var_serv_ctx->async_req_result = 0;
+
+    callback(context, var_serv_ctx, NULL, 0);
+    return 0;
+}
+
 } // extern "C"

@@ -21,6 +21,7 @@ set(LIBS
         ms::lib::threadx
         ms::mocks::threadx
         ms::lib::config_manager
+        ms::lib::ddr::cli
         ms::lib::stdio_textio
         ms::lib::variable_services
         ms::driver::textio::pl011
@@ -126,6 +127,7 @@ mock_target(${TARGET}
     ddrss_get_telemetry_record
     prod_ddrss_convert_rh_cfg_rec_to_rh_cper
     variable_service_initialize_ctx
+    variable_service_async_set_variable
     variable_service_sync_get_variable
     variable_service_sync_set_variable
     variable_service_unlock_get_var_ctx

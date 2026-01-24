@@ -30,6 +30,7 @@ typedef enum
     DDR_POLL_ECC_CE_EVENT,
     DDR_RH_CFG_TLM_SERVICE_EVENT,
     DDR_QUIESCE_EVENT,
+    DDR_SDL_WRITE_COMPLETE_EVENT,
 } DDR_MANAGER_MESSAGE_TYPE;
 
 typedef struct
@@ -70,5 +71,6 @@ ddr_service_context_t* ddr_get_service_context(void);
  */
 void hsp_send_recv_load_fw_ddr_phy_req(fpfw_icc_base_ctx_t* icc_ctx);
 uint16_t CalculateRemoteCheckSum16(uint32_t BufferAddr, uint32_t Length);
+void store_sdl_var_async(void* ssi_request);
 
 

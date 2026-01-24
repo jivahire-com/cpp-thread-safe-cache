@@ -37,8 +37,11 @@
     #define STATIC static
 #endif
 
-// Uncomment to add test features that should not be released
-// #define SDL_DEV_MODE (true)
+// Make true to add test features that should not be released
+#define SDL_DEV_MODE (false)
+
+// Expose current dev-mode state for tests/build-time validation
+const bool g_cli_ddr_dev_mode = SDL_DEV_MODE ? true : false;
 
 #if SDL_DEV_MODE
 static uint8_t sdl_buffer_10[sizeof(MEMORY_DEFECT_LIST_HEADER) + (10 * sizeof(MEMORY_DEFECT_V2))] = {0};
@@ -80,11 +83,12 @@ STATIC FPFW_CLI_STATUS ddr_manager_bwl_force(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS xts_aes_keystore_ce_error_injection(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS xts_aes_keystore_ue_error_injection(int Argc, const char** Argv);
 
-#ifdef SDL_DEV_MODE
 // SDL Development Commands (Don't release these to production)
+#if SDL_DEV_MODE
+STATIC FPFW_CLI_STATUS check_sdl_writeback(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS write_sample_sdl_to_ddr(int Argc, const char** Argv);
-void vs_sdl_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
 STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv);
+void vs_sdl_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
 #endif
 
 /*-- Declarations (Statics and globals) --*/
@@ -116,9 +120,10 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     {NULL_LIST_ENTRY, "ddr", "bwl_force", ddr_manager_bwl_force, "Control BWL forced throttling state", "bwl_force <0|1>"},
 
-#ifdef SDL_DEV_MODE
+#if SDL_DEV_MODE
     {NULL_LIST_ENTRY, "ddr_ppr", "status_update", ddr_manager_ppr_status_update, "Invoke PPR status update", "Usage: status_update <dimm_num>"},
     {NULL_LIST_ENTRY, "ddr_ppr", "write_sample_sdl", write_sample_sdl_to_ddr, "Writes SDL to DDR with 3 known good entries addresses (D0:2, D1:1)", "Usage: write_sample_sdl"},
+    {NULL_LIST_ENTRY, "ddr_ppr", "test_sdl_writeback", check_sdl_writeback, "Test SDL writeback to flash", "Usage: test_sdl_writeback"},
 #endif
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 };
@@ -577,9 +582,23 @@ static bool is_mc_are_belong_to_die(uint32_t mc)
     return true;
 }
 
-#ifdef SDL_DEV_MODE
-// This writes a sample SDL with 3 known good addresses to DDR SDL reserved region.
-// Note that there is nothing that will write it back to flash yet. (Next PR)
+#if SDL_DEV_MODE
+STATIC PLACED_CODE FPFW_CLI_STATUS check_sdl_writeback(int Argc, const char** Argv)
+{
+    FPFW_UNUSED(Argc);
+    FPFW_UNUSED(Argv);
+
+    // Store SDL var async
+    printf("Calling store_sdl_var_async...\n");
+    store_sdl_var_async(NULL);
+
+    printf("Async SDL store initiated. Callback will execute when complete.\n");
+    FpFwCliPrint("DDR: check_sdl_writeback - Async operation started!\n");
+
+    // Don't wait - return immediately, the callback will notify when done
+    return CLI_SUCCESS;
+}
+
 STATIC PLACED_CODE FPFW_CLI_STATUS write_sample_sdl_to_ddr(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argv);

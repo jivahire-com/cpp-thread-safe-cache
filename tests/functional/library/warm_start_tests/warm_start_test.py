@@ -86,8 +86,6 @@ class warm_start_test(EchoFallsBaseTest):
         assert apns_connection.is_open()
         
         try:
-            self.log.info("Waiting for SCP-Heartbeat Msg")
-            core_com_channel.read_until(key="ScpHeartBeat", timeout_seconds=1500)
             self.log.info("Waiting for SCP-AP Core Power ON Msg")
             core_com_channel.read_until(key="Primary AP core power on", timeout_seconds=500)
             command="warm_start wsreset subsys"

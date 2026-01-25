@@ -16,6 +16,8 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         idhw
         ms::cmocka::testrunner
+        ms::lib::boot_status
+        ms::lib::boot_status
         ms::lib::d2d_cntr_sync
         silibs_platform
 )
@@ -34,4 +36,5 @@ mock_target(${TARGET}
     idsw_get_die_id
     idsw_get_platform_sdv
     idsw_get_cpu_type
+    boot_status_notify_extd
 )

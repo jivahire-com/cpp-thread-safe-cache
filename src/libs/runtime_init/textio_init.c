@@ -9,8 +9,9 @@
 
 /*------------- Includes -----------------*/
 
-#include <DfwkThreadXHost.h>     // for PDFWK_THREADX_HOST
-#include <atu_api.h>             // for MSCP_ATU_AP_WINDOW_UART_X_BASE_ADDR
+#include <DfwkThreadXHost.h> // for PDFWK_THREADX_HOST
+#include <atu_api.h>         // for MSCP_ATU_AP_WINDOW_UART_X_BASE_ADDR
+#include <boot_status.h>
 #include <build_data.h>          // for BUILD_PC, BUILD_TIMESTAMP, GIT_BRANCH
 #include <fpfw_cfg_mgr.h>        // for knobs
 #include <fpfw_init.h>           // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_get...
@@ -100,7 +101,7 @@ static void print_build_info()
 
 // TODO: The UART initialization component is now dependent on the configuration manager. To resolve
 //       early boot stage debugging via UART see ado: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2856417
-FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd", "atu_svc", "cfg_mgr"))
+FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd", "atu_svc", "cfg_mgr", "boot_stat"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
     static textio_pl011_config_t pl011_config = {
@@ -152,10 +153,20 @@ FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd", 
     // Initialize the pl011 uart device.
     textio_pl011_device_initialize(&pl011_device, &pl011_config, &drvfwk->Schedule);
 
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_UART_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_UART_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &pl011_device};
 }
 
-FPFW_INIT_COMPONENT(std_io, FPFW_INIT_DEPENDENCIES("uart"))
+FPFW_INIT_COMPONENT(std_io, FPFW_INIT_DEPENDENCIES("uart", "boot_stat"))
 {
 
     // Pl011 TextIo Interfaces
@@ -171,6 +182,16 @@ FPFW_INIT_COMPONENT(std_io, FPFW_INIT_DEPENDENCIES("uart"))
 
     /* SCP Build Info */
     print_build_info();
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_STDIO_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_STDIO_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

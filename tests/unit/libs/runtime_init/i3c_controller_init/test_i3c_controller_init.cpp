@@ -61,20 +61,18 @@ TEST_FUNCTION(test_i3c_controller_init, nullptr, nullptr)
     const auto test_die = (KNG_DIE_ID)0;
     will_return(__wrap_idsw_get_die_id, test_die);
 
-    uint32_t expected_boot_status_ex = GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP,
-                                                                   MSCP_GENERIC,
-                                                                   (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY,
-                                                                   MSCP_BOOT_STATUS_CODE_UNUSED);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
     expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_START);
     expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
     expect_function_call(__wrap_boot_status_notify_extd);
 
     expect_value(__wrap_i3c_controller, die_num, test_die);
 
-    expected_boot_status_ex = GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP,
-                                                          MSCP_GENERIC,
-                                                          (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY,
-                                                          MSCP_BOOT_STATUS_CODE_UNUSED);
+    expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
     expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_END);
     expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
     expect_function_call(__wrap_boot_status_notify_extd);

@@ -15,6 +15,7 @@
     #include <afm_cli.h>
 #endif
 
+#include <boot_status.h>
 #include <bug_check.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h> // for FPFW_INIT_COMPONENT
@@ -72,7 +73,7 @@ static const gpio_afm_entry_t fpga_config_gpio_table_afm[] = {
  * @brief Initialize and configure GPIO registers.
  *
  */
-FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_print"))
+FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_print", "boot_stat"))
 {
     int status = SILIBS_SUCCESS;
     static gpio_init_config_t gpio_init_config;
@@ -137,6 +138,17 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
     }
 
     BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_GPIO_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_GPIO_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &gpio_init_config};
 }
 

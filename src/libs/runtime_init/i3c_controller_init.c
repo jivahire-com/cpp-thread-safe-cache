@@ -29,12 +29,10 @@ FPFW_INIT_COMPONENT(i3c_controller,
     DEBUG_PRINT("I3C Controller init, die_num: [%u]\n", die_num);
     boot_status_req_t boot_status_req = {0};
 
-    boot_status_notify_extd(&boot_status_req,
-                            MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_START,
-                            GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP,
-                                                        MSCP_GENERIC,
-                                                        (die_num == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY,
-                                                        MSCP_BOOT_STATUS_CODE_UNUSED));
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_START,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (die_num == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
     int status = i3c_controller(die_num);
     if (status != 0)
     {
@@ -45,11 +43,9 @@ FPFW_INIT_COMPONENT(i3c_controller,
         }
     }
 
-    boot_status_notify_extd(&boot_status_req,
-                            MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_END,
-                            GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP,
-                                                        MSCP_GENERIC,
-                                                        (die_num == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY,
-                                                        MSCP_BOOT_STATUS_CODE_UNUSED));
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (die_num == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

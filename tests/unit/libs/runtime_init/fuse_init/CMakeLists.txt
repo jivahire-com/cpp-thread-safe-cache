@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         ms::cmocka::mocks
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::hsp_firmware_headers
         ms::lib::scp_interrupts
         ms::lib::threadx
@@ -63,4 +64,7 @@ mock_target(${TARGET}
    system_info_get_platform_disable_cores 
    fuse_post_mesh_init
    idhw_is_single_die_boot_en
+   boot_status_notify_extd
+   idsw_get_cpu_type
+   idsw_get_die_id
 )

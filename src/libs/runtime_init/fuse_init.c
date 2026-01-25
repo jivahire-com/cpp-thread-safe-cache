@@ -10,6 +10,7 @@
 #include <DbgPrint.h>
 #include <atu_api.h>
 #include <atu_lib.h>
+#include <boot_status.h>
 #include <bug_check.h> // for BUG_ASSERT_PARAM, BUG_ASSERT
 #include <fpfw_init.h>
 #if defined(SCP_RUNTIME_INIT)
@@ -39,7 +40,7 @@
 //
 
 #if defined(SCP_RUNTIME_INIT)
-FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx"))
+FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "boot_stat"))
 {
     fpfw_icc_base_ctx_t* icc_hspmbx_ctx = fpfw_init_get_handle("icc_hspmbx");
     if (icc_hspmbx_ctx == NULL)
@@ -54,12 +55,22 @@ FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx"))
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP);
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_HSP_MESH_INIT);
 
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_PRE_FUSE_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_PRE_FUSE_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     FPFW_DBGPRINT_INFO(FUSE_NAME "SVC pre-mesh init done\n");
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
 FPFW_INIT_COMPONENT(fuse_post_mesh,
-                    FPFW_INIT_DEPENDENCIES("sds_svc", "fuse_pre_mesh", "css_pome", "ddr_pcr", "mesh_stg_2", "vab", "hw_ver", "icc_die2die"))
+                    FPFW_INIT_DEPENDENCIES("sds_svc", "fuse_pre_mesh", "css_pome", "ddr_pcr", "mesh_stg_2", "vab", "hw_ver", "icc_die2die", "boot_stat"))
 {
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT);
     platform_fuse_distribution(FUSE_DISTRIBUTION_STAGE_POST_MESH_INIT_BRIDGE_INIT);
@@ -72,6 +83,17 @@ FPFW_INIT_COMPONENT(fuse_post_mesh,
     }
 
     fuse_post_mesh_init(icc_die2die_ctx);
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_POST_FUSE_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_POST_FUSE_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 

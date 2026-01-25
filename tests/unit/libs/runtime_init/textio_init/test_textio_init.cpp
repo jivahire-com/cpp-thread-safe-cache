@@ -18,6 +18,7 @@ extern "C" {
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <FpFwUtils.h>       // for FPFW_UNUSED
 #include <atu_api.h>
+#include <boot_status.h> // for boot_status_notify_extd
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
 #include <idsw.h>
@@ -114,6 +115,15 @@ void __wrap_stdio_textio_init(PDFWK_INTERFACE_HEADER textio_interface)
     function_called();
 }
 
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
 //
 // Tests
 //
@@ -123,6 +133,7 @@ TEST_FUNCTION(textio_init_uart, nullptr, nullptr)
     //! Set up expectations
     mock_mcp_reassign = true;
     DFWK_THREADX_HOST test_host = {};
+    const auto test_die = (KNG_DIE_ID)0;
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
@@ -134,6 +145,16 @@ TEST_FUNCTION(textio_init_uart, nullptr, nullptr)
     expect_function_call(__wrap_textio_pl011_device_initialize);
 
     will_return(__wrap_config_get_uart_mcp_reassign, false);
+    will_return(__wrap_idsw_get_die_id, test_die);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_UART_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_uart.init_fn();
@@ -149,6 +170,7 @@ TEST_FUNCTION(textio_init_uart_mcp_0_reassign_silicon, nullptr, nullptr)
     //! Set up expectations
     mock_mcp_reassign = true;
     DFWK_THREADX_HOST test_host = {};
+    const auto test_die = (KNG_DIE_ID)0;
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
@@ -162,6 +184,17 @@ TEST_FUNCTION(textio_init_uart_mcp_0_reassign_silicon, nullptr, nullptr)
     will_return(__wrap_config_get_uart_mcp_reassign, true);
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
     will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    will_return(__wrap_idsw_get_die_id, test_die);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, (test_die == DIE_0) ? MCP_PRIMARY : MCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_UART_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_uart.init_fn();
@@ -178,6 +211,7 @@ TEST_FUNCTION(textio_init_uart_mcp_0_reassign_fpga, nullptr, nullptr)
     //! Set up expectations
     mock_mcp_reassign = true;
     DFWK_THREADX_HOST test_host = {};
+    const auto test_die = (KNG_DIE_ID)0;
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE_RVP);
 
@@ -191,6 +225,17 @@ TEST_FUNCTION(textio_init_uart_mcp_0_reassign_fpga, nullptr, nullptr)
     will_return(__wrap_config_get_uart_mcp_reassign, true);
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
     will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    will_return(__wrap_idsw_get_die_id, test_die);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, (test_die == DIE_0) ? MCP_PRIMARY : MCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_UART_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_uart.init_fn();
@@ -206,10 +251,23 @@ TEST_FUNCTION(textio_init_std_io, nullptr, nullptr)
 {
     // Set up expectations
     textio_pl011_device_t uart_device = {};
+    const auto test_die = (KNG_DIE_ID)0;
+
     will_return(__wrap_fpfw_init_get_handle, &uart_device); //! uart device handle
     expect_value(__wrap_textio_pl011_device_interface_initialize, device, &uart_device);
     expect_function_call(__wrap_textio_pl011_device_interface_initialize);
     expect_function_call(__wrap_stdio_textio_init);
+
+    will_return(__wrap_idsw_get_die_id, test_die);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_STDIO_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_std_io.init_fn();

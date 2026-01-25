@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.linkedlist
         fwlib.lib.utils
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::scp_interrupts
         ms::lib::threadx
         silibs_platform
@@ -31,7 +32,7 @@ target_link_libraries(${TARGET}
         ms::lib::variable_services
         ms::service::atu_service
         fwlib.lib.interface.platform.dbgprint
-         ms::lib::system_info
+        ms::lib::system_info
 )
 
 # Provide compile time definition
@@ -53,4 +54,7 @@ mock_target(${TARGET}
     cfg_mgr_cli_init
     idsw_get_platform_sdv
     system_info_get_bmc_profile
+    boot_status_notify_extd
+    idsw_get_cpu_type
+    idsw_get_die_id
 )

@@ -30,6 +30,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::driver::gpio
+        ms::lib::boot_status
         ms::lib::crash_dump
         ms::lib::interrupts
         ms::lib::scp_interrupts
@@ -69,4 +70,5 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     mmio_read32
     mmio_write32
+    boot_status_notify_extd
 )

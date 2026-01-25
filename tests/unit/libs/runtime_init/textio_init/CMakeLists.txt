@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         ms::build_data
         ms::cmocka::testrunner
         ms::driver::textio::pl011
+        ms::lib::boot_status
         ms::lib::scp_interrupts
         ms::lib::stdio_textio
         ms::lib::systick_update
@@ -59,4 +60,5 @@ mock_target(${TARGET}
     textio_pl011_device_interface_initialize
     idsw_get_platform_sdv
     stdio_textio_init
+    boot_status_notify_extd
 )

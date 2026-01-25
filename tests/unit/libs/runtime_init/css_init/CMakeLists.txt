@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::idsw_kng
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::css
         silibs_platform
         tower_system_control
@@ -40,4 +41,6 @@ mock_target(${TARGET}
     css_pre_mesh_init
     idhw_get_die_id
     idsw_get_platform_sdv
+    boot_status_notify_extd
+    idsw_get_cpu_type
 )

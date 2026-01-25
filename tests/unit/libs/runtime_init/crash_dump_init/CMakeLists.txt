@@ -30,6 +30,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::cmsis::interface
         ms::lib::accelerator_ip
+        ms::lib::boot_status
         ms::lib::crash_dump
         ms::lib::exception_handler::scp
         ms::lib::system_info
@@ -74,6 +75,7 @@ mock_target(${TARGET}
     idsw_get_die_id
     idsw_get_cpu_type
     idsw_get_platform_sdv
+    boot_status_notify_extd
 )
 
 #
@@ -108,6 +110,7 @@ target_link_libraries(${TARGET}
         ms::cmsis::interface
         ms::driver::gpio
         ms::driver::pldm    # PLDM_DRV_WORKAROUND
+        ms::lib::boot_status
         ms::lib::crash_dump
         ms::lib::system_info
         ms::lib::exception_handler::mcp
@@ -157,4 +160,5 @@ mock_target(${TARGET}
     crash_dump_transfer_full_dump_to_bmc
     sos_register_ssi
     _txe_timer_create
+    boot_status_notify_extd
 )

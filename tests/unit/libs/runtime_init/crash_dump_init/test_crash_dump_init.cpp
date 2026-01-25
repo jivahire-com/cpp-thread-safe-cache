@@ -14,6 +14,7 @@
 extern "C" {
 #include <FpFwUtils.h>
 #include <accelip_id.h>
+#include <boot_status.h>
 #include <crash_dump.h>
 #include <crash_dump_dfwk.h>
 #include <fpfw_icc_base.h>
@@ -313,6 +314,15 @@ int32_t __wrap_sos_register_ssi(PDFWK_INTERFACE_HEADER p_interface,
     return 0;
 }
 
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
 //
 // Tests
 //
@@ -370,7 +380,19 @@ TEST_FUNCTION(test_crash_dump_init_scp, nullptr, nullptr)
     assert_string_equal("hw_ver", _fpfw_component_cd_init.children[0]);
     assert_string_equal("gpio_lib", _fpfw_component_cd_init.children[1]);
 
-    // Call API under test
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_CD_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    //  Call API under test
     _fpfw_component_cd_init.init_fn();
 }
 #endif

@@ -44,4 +44,6 @@ mock_target(${TARGET}
     d2d_init
     post_led_status
     boot_status_notify_extd
+    idsw_get_cpu_type
+    idsw_get_die_id
 )

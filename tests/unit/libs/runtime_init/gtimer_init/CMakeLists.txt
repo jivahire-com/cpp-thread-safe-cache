@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.status
         fwlib.lib.tmr_queue
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::gtimer
         ms::lib::interrupts
         ms::lib::register_headers
@@ -44,4 +45,7 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     gtimer_prodfw_init
     systick_get_emcpu_clock
+    idsw_get_cpu_type
+    boot_status_notify_extd
+    idsw_get_die_id
 )

@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <boot_status.h>
 #include <fpfw_init.h>
 #include <gtimer_prodfw.h>
 #include <idsw.h>
@@ -91,16 +92,32 @@ void gtimer_init_internal(bool d2d_sync_point_required)
 
     config.d2d_sync_point_required = (d2d_sync_point_required) ? true : false;
     gtimer_prodfw_init(&config);
+
+    boot_status_req_t boot_status_req = {0};
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        (d2d_sync_point_required
+             ? ((idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_POST_GTIMER_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_POST_GTIMER_INIT_END)
+             : ((idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_PRE_GTIMER_INIT_END
+                                                 : MSCP_BOOT_STATUS_CODE_MCP_PRE_GTIMER_INIT_END)),
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 }
 
-FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("hw_ver", "spi_bridge", "systick_upd"))
+FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("hw_ver", "spi_bridge", "systick_upd", "boot_stat"))
 {
     gtimer_init_internal(false);
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(gtimer_stg_2, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge", "systick_upd"))
+FPFW_INIT_COMPONENT(gtimer_stg_2, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge", "systick_upd", "boot_stat"))
 {
     gtimer_init_internal(true);
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

@@ -373,7 +373,7 @@ void i3c_master_set_cfg_knobs_default_expect(void)
 void expect_i3c_send_error_boot_status(void)
 {
     const uint32_t expected_boot_status_ex =
-        GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, SCP_PRIMARY, MSCP_BOOT_STATUS_CODE_UNUSED);
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, SCP_PRIMARY);
     expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_ERROR);
     expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
     expect_function_call(__wrap_boot_status_notify_extd);

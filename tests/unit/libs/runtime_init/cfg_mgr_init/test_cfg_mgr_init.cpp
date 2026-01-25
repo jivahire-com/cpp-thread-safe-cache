@@ -16,9 +16,11 @@ extern "C" {
 #include <DfwkDriver.h>
 #include <DfwkThreadXHost.h>
 #include <atu_api.h>
+#include <boot_status.h> // for boot_status_notify_extd
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_cfg_mgr_init.h>
 #include <fpfw_init.h>
+#include <idsw.h>
 #include <idsw_kng.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <variable_services.h>
@@ -64,6 +66,25 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 {
     return mock_type(KNG_PLAT_ID);
 }
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
+idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
+{
+    return mock_type(idsw_cpu_type_t);
+}
+
+idsw_die_id_t __wrap_idsw_get_die_id(void)
+{
+    return mock_type(idsw_die_id_t);
+}
 }
 
 //
@@ -72,10 +93,22 @@ KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
 TEST_FUNCTION(test_cfg_mgr_init_platform, nullptr, nullptr)
 {
     // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
     expect_function_call(__wrap_cfg_mgr_init);
     will_return(__wrap_system_info_get_bmc_profile, 0);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_value(__wrap_cfg_mgr_init, cfg_mgr_config->profile_id, 0);
+
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_CFGMGR_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call API under test
     _fpfw_component_cfg_mgr.init_fn();
@@ -84,10 +117,22 @@ TEST_FUNCTION(test_cfg_mgr_init_platform, nullptr, nullptr)
 TEST_FUNCTION(test_cfg_mgr_init_fpga, nullptr, nullptr)
 {
     // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
     expect_function_call(__wrap_cfg_mgr_init);
     will_return(__wrap_system_info_get_bmc_profile, 0);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     expect_value(__wrap_cfg_mgr_init, cfg_mgr_config->profile_id, 1);
+
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_CFGMGR_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call API under test
     _fpfw_component_cfg_mgr.init_fn();
@@ -96,10 +141,22 @@ TEST_FUNCTION(test_cfg_mgr_init_fpga, nullptr, nullptr)
 TEST_FUNCTION(test_cfg_mgr_init_svp, nullptr, nullptr)
 {
     // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
     expect_function_call(__wrap_cfg_mgr_init);
     will_return(__wrap_system_info_get_bmc_profile, 0);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_cfg_mgr_init, cfg_mgr_config->profile_id, 2);
+
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_CFGMGR_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call API under test
     _fpfw_component_cfg_mgr.init_fn();
@@ -121,9 +178,21 @@ TEST_FUNCTION(test_cfg_mgr_cli_init, nullptr, nullptr)
 TEST_FUNCTION(test_cfg_mgr_init_bmc_compute, nullptr, nullptr)
 {
     // Set up expectations
+    const auto test_die = (KNG_DIE_ID)0;
     expect_function_call(__wrap_cfg_mgr_init);
     will_return(__wrap_system_info_get_bmc_profile, 1);
     expect_value(__wrap_cfg_mgr_init, cfg_mgr_config->profile_id, 5);
+
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_CFGMGR_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call API under test
     _fpfw_component_cfg_mgr.init_fn();

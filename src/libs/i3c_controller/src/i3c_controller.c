@@ -52,12 +52,10 @@ static uint8_t g_dimm_sku = 0x0;
 void i3c_send_error_boot_status(void)
 {
     boot_status_req_t boot_status_req = {0};
-    boot_status_notify_extd(&boot_status_req,
-                            MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_ERROR,
-                            GEN_BOOT_STATUS_EX_LED_CODE(COMPONENT_GROUP_SCP,
-                                                        MSCP_GENERIC,
-                                                        (idsw_get_die_id() == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY,
-                                                        MSCP_BOOT_STATUS_CODE_UNUSED));
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_I3C_INIT_ERROR,
+        (GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (idsw_get_die_id() == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY)));
 }
 
 /**

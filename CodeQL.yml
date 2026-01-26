@@ -1,10 +1,12 @@
 # CodeQL.yml
-# Ignore the specific test file
 path_classifiers:
+  tests:
+    - "tests/functional/library/crash_dump_tests/crash_dump_etoe_report_test.py"  # SM04242
+
   library:
     - "tests/functional/library/kng_pythia_libs/BmcHelperLibrary.py"
     - "tests/functional/library/kng_pythia_libs/RscmHelperLibrary.py"
-    - "tools/python_scripts/boot_poll_d2d_stress.py"  #BUG 3295238
+    - "tools/python_scripts/boot_poll_d2d_stress.py"  # BUG 3295238
 
   generated:
     - ".build/"

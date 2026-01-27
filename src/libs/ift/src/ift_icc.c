@@ -84,8 +84,9 @@ static void ift_icc_send_test_status(fpfw_icc_base_ctx_t* hsp_icc_ctx)
 
     ift_run_status_msg->ift_status_req.header.cmd = HSP_MAILBOX_CMD_IFT_RUN_STATUS_REQ;
     ift_run_status_msg->ift_status_req.ift_run_status =
-        g_ift_execute_status == SILIBS_SUCCESS ? IFT_TEST_STATUS_SUCCESS : IFT_TEST_STATUS_FAILURE;
-    ift_run_status_msg->ift_status_req.scp_run_status = 0;
+        g_ift_execute_status == SILIBS_SUCCESS ? HSP_SEL_IFT_RUN_PASSED : HSP_SEL_IFT_RUN_FAILED;
+    ift_run_status_msg->ift_status_req.scp_run_status =
+        g_ift_result_offset == 0 ? HSP_SEL_IFT_RUN_PASSED : HSP_SEL_IFT_RUN_FAILED_MISMATCH;
 
     fpfw_status_t fpfw_status = fpfw_icc_base_send_recv(hsp_icc_ctx, &s_ift_send_recv_param);
 

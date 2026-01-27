@@ -247,7 +247,7 @@ static PLACED_CODE FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, 
             FpFwCliPrint("\n");
             FpFwCliPrint("%-72s%s", "Usage: pwr set ??", "- help menu\n");
             FpFwCliPrint("%-72s%s", "Usage: pwr set cap <value>", pwr_strings[POWER_IF_CMD_SET_CAP]);
-            FpFwCliPrint("%-72s%s", "Usage: pwr set desired <core/all> <desired_0-31> <throttle_pri_0-7>", pwr_strings[POWER_IF_CMD_SET_DESIRED_PSTATE]);
+            FpFwCliPrint("%-72s%s", "Usage: pwr set desired <core/all> <desired_0-31> <throttle_pri_0-15>", pwr_strings[POWER_IF_CMD_SET_DESIRED_PSTATE]);
             FpFwCliPrint("%-72s%s", "Usage: pwr set plimit <core/all> <plimit_0-31>", pwr_strings[POWER_IF_CMD_SET_PLIMIT]);
             FpFwCliPrint("%-72s%s", "Usage: pwr set loopdis <disable bits> <single/dual>", pwr_strings[POWER_IF_CMD_SET_LOOP_DISABLES]);
             FpFwCliPrint("%-72s%s", "Usage: pwr set racklimit <0/1>", pwr_strings[POWER_IF_CMD_SET_RACK_LIMIT]);
@@ -291,7 +291,7 @@ static PLACED_CODE FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, 
         case POWER_IF_CMD_SET_DESIRED_PSTATE: {
             if(argc != cli_power_cmd_arg_count(subcommand_id))
             {
-                FpFwCliPrint("%-72s%s", "Usage: pwr set desired <core/all> <desired_0-31> <throttle_pri_0-7>", pwr_strings[POWER_IF_CMD_SET_DESIRED_PSTATE]);
+                FpFwCliPrint("%-72s%s", "Usage: pwr set desired <core/all> <desired_0-31> <throttle_pri_0-15>", pwr_strings[POWER_IF_CMD_SET_DESIRED_PSTATE]);
                 return CLI_ERROR;
             }
 
@@ -302,8 +302,8 @@ static PLACED_CODE FPFW_CLI_STATUS cli_power_set_cmd_param_conversion(int argc, 
 
             desired = (uint8_t)(strtoul(argv[3], 0, 0) & 0xFF);
 
-            // throttle is the throttle priority 0-7
-            throttle = (uint8_t)(strtoul(argv[4], 0, 0) & 0x7);
+            //! throttle priority range is 0-15
+            throttle = (uint8_t)(strtoul(argv[4], 0, 0) & 0xF);
 
             p_pwrset_sub_command_args->desiredparams.all = all;
             p_pwrset_sub_command_args->desiredparams.core = core;

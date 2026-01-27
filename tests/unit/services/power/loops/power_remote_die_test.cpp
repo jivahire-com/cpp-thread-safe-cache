@@ -194,7 +194,7 @@ void setup_multi_die()
 
 POWER_TEST(remote_die_init__dual_die, setup, teardown)
 {
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
     setup_multi_die();
 
     expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
@@ -311,7 +311,7 @@ POWER_TEST(remote_die_exchange_complete__single_die, setup, teardown)
 
 POWER_TEST(remote_die_error_reset__exchange_inputs, setup, teardown)
 {
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
     setup_multi_die();
     expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
@@ -327,7 +327,7 @@ POWER_TEST(remote_die_error_reset__exchange_inputs, setup, teardown)
 
 POWER_TEST(remote_die_error_reset__exchange_completion, setup, teardown)
 {
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
     setup_multi_die();
     expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
@@ -343,7 +343,7 @@ POWER_TEST(remote_die_error_reset__exchange_completion, setup, teardown)
 
 POWER_TEST(remote_die_error_reset__other_state, setup, teardown)
 {
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
     setup_multi_die();
     expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);
@@ -360,7 +360,7 @@ POWER_TEST(remote_die_error_reset__other_state, setup, teardown)
 POWER_TEST(remote_die_exchange_inputs__clears_ex_complete_recv_complete, setup, teardown)
 {
     // initialize multi-die environment
-    expect_value_count(__wrap_FpFwAssert, expression, true, 4);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 3);
     setup_multi_die();
     expect_function_calls(__wrap_cortex_m7_atomic_call_data_synchronization_barrier, 2);
     set_expectations_for_recv_request((void*)TEST_ICC_D2D_CTX);

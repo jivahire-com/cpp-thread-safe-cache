@@ -329,7 +329,17 @@ void power_remote_die_init(power_runconfig_t* p_runconfig)
     }
 
     //! Verify size checks before assigning the payload addresses
-    FPFW_RUNTIME_ASSERT(D1_ARSM_MSCP_D2D_POWER_DATA_END > D2D_PWR_MESG_COMPLETE_EXCHANGE_END_D1); //! No exceeding the allocation
+    //! Print critical info before potential assert failure
+    if (!(D1_ARSM_MSCP_D2D_POWER_DATA_END > D2D_PWR_MESG_COMPLETE_EXCHANGE_END_D1))
+    {
+        POWER_LOG_CRIT("ARSM size exceeded! D1_ARSM_MSCP_D2D_POWER_DATA_END=0x%" PRIx64
+                       " <= D2D_PWR_MESG_COMPLETE_EXCHANGE_END_D1=0x%" PRIx64 " (need %zu more bytes)",
+                       (uint64_t)D1_ARSM_MSCP_D2D_POWER_DATA_END,
+                       (uint64_t)D2D_PWR_MESG_COMPLETE_EXCHANGE_END_D1,
+                       (size_t)(D2D_PWR_MESG_COMPLETE_EXCHANGE_END_D1 - D1_ARSM_MSCP_D2D_POWER_DATA_END));
+        FPFW_RUNTIME_ASSERT(false);
+    }
+
     //! Check that size of each individual chunck of arsm is = or > than metadata + payload
     FPFW_RUNTIME_ASSERT(sizeof(power_d2d_arsm_data_t) + sizeof(power_d2d_data_ex_input_t) <= D2D_PWR_MESG_INPUT_EXCHANGE_SIZE);
     FPFW_RUNTIME_ASSERT(sizeof(power_d2d_arsm_data_t) + sizeof(power_d2d_data_ex_complete_t) <=

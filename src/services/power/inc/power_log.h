@@ -17,7 +17,7 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define POWER_LOG_INVALID_TYPE UINT8_MAX
-#define VM_THROT_COUNT         8
+#define VM_THROT_COUNT         16
 
 /* DDR memory to use for log to DDR - only enabled by CLI, not for general use */
 #define FW_UPDATE_USED_DIE0                                 (1 * 1024 * 1024)  // 2MB used in DDR (outside of actual update)
@@ -38,8 +38,11 @@
     log(DIST_AVAIL,          1, power_log_dist_avl_t, false, "Total pwr: %1.3fW Vcpu %1.3fW  Cap: %1.3fW Vcpu %1.3fW", /* intentionally left blank */, payload->members.DIST_AVAIL.soc_pwr, payload->members.DIST_AVAIL.vcpu_pwr, payload->members.DIST_AVAIL.soc_cap, payload->members.DIST_AVAIL.vcpu_cap) \
     log(PID,                 2, power_log_pid_t,      false, "PID calculate: error %1.3f p %1.3f i %1.3f d %1.3f avail %" PRId32 " scaled %" PRId32 "", /* intentionally left blank */, payload->members.PID.error, payload->members.PID.p, payload->members.PID.i, payload->members.PID.d, payload->members.PID.available, payload->members.PID.scaled) \
     log(PLIMIT,              3, power_log_plimit_t,   true,  "plimit selected %d rack cap %d", /**/, payload->members.PLIMIT.plimit, (uint8_t)payload->members.PLIMIT.rack_cap) \
-    log(TP_SELECTION,        4, power_log_thrpri_t,   false, "Per priority plimit selections %d %d %d %d %d %d %d %d", /**/, payload->members.TP_SELECTION.selection[0], payload->members.TP_SELECTION.selection[1], payload->members.TP_SELECTION.selection[2], payload->members.TP_SELECTION.selection[3], \
-                                                                                                                             payload->members.TP_SELECTION.selection[4], payload->members.TP_SELECTION.selection[5], payload->members.TP_SELECTION.selection[6], payload->members.TP_SELECTION.selection[7]) \
+    log(TP_SELECTION,        4, power_log_thrpri_t,   false, "Per priority plimit selections %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", /**/, \
+        payload->members.TP_SELECTION.selection[0], payload->members.TP_SELECTION.selection[1], payload->members.TP_SELECTION.selection[2], payload->members.TP_SELECTION.selection[3], \
+        payload->members.TP_SELECTION.selection[4], payload->members.TP_SELECTION.selection[5], payload->members.TP_SELECTION.selection[6], payload->members.TP_SELECTION.selection[7], \
+        payload->members.TP_SELECTION.selection[8], payload->members.TP_SELECTION.selection[9], payload->members.TP_SELECTION.selection[10], payload->members.TP_SELECTION.selection[11], \
+        payload->members.TP_SELECTION.selection[12], payload->members.TP_SELECTION.selection[13], payload->members.TP_SELECTION.selection[14], payload->members.TP_SELECTION.selection[15]) \
     /* keep the below for test code */ \
     log(TEST_ENTRY_NO_CORES, 30, power_log_empty_t, false, "TE1 - %s", /**/, payload->all) \
     log(TEST_ENTRY_CORES, 31, power_log_empty_t, true, "TE2", /**/) \

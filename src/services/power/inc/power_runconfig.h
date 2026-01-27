@@ -53,11 +53,11 @@
 #define SOC_POWER_AVG_COUNT 5
 
 
-#define VM_PRI_COUNT 8
-// number of throttling priorities 
-#define VM_THROT_COUNT 8
-// number of throttling priorities 
-#define VM_BOOST_COUNT 8
+#define VM_PRI_COUNT 16
+// number of throttling priorities (expanded to support 0-15 range per Kingsgate HAS)
+#define VM_THROT_COUNT 16
+// number of boost priorities (expanded to support 0-15 range per Kingsgate HAS)
+#define VM_BOOST_COUNT 16
 
 
 /* number of plimit update options */

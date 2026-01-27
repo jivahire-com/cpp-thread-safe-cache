@@ -440,7 +440,7 @@ flowchart TD
     Init2 -->|No| Throttle1[Throttle]
     Init2 -->|Yes| Turbo1[Turbo/Velocity Boost]
     
-    Throttle1 -->|Start at Throttle Priority 7| Throttle2{Last Throttle Priority?}
+    Throttle1 -->|Start at Throttle Priority 15| Throttle2{Last Throttle Priority?}
     Throttle2 --->|No, Start at 1 Plimit level of throttle| Throttle3{Max plimit throttle at priority?}
     Throttle2 ------>|Yes| End
     Throttle3 -->|Yes, Next Lower Throttle Priority| Throttle2
@@ -448,7 +448,7 @@ flowchart TD
     Throttle4 -->|Yes, Decrease one Plimit Level| Throttle3
     Throttle4 -->|No| End
     
-    Turbo1 -->|Start at Boost Priority 0| Turbo2{Last Boost Priority?}
+    Turbo1 -->|Start at Boost Priority 15| Turbo2{Last Boost Priority?}
     Turbo2 --->|No, Start at 1 Plimit level of boost| Turbo3{Max plimit boost at priority?}
     Turbo2 ------>|Yes| End
     Turbo3 -->|Yes, Next Boost Priority| Turbo2

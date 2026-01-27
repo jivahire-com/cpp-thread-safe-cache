@@ -195,10 +195,11 @@ static uint16_t power_distribution_distribute_nominal(power_ctrl_loop_detail_t* 
     *distributed_plimit = nominal_plimit; //! Initialize to nominal at 1st
 
     // loop through all throttling priorities attempting to distribute nominal performance
-    for (unsigned throttle_pri_idx = 0; throttle_pri_idx < VM_THROT_COUNT; ++throttle_pri_idx)
+    // higher priority number = higher priority (processed first), per HAS/OSPM specification
+    for (int throttle_pri_idx = VM_THROT_COUNT - 1; throttle_pri_idx >= 0; --throttle_pri_idx)
     {
-        //! we track the last distributed plimit for each priority, a lower priority (higher number) can not
-        //! be given a higher performance than previous priority 0 is the highest priority & 7 is the lowest
+        //! we track the last distributed plimit for each priority, a lower priority (lower number) can not
+        //! be given a higher performance than previous priority. Priority 15 is highest & 0 is lowest.
         const unsigned last_distributed = *distributed_plimit;
         // find the number of cores at this priority level on local and remote core
         const unsigned total_cores_at_pri = (p_ctrlloop->local.pri_counts.throt_pri_count[throttle_pri_idx] +
@@ -274,7 +275,9 @@ static void power_distribution_distribute_turbo(power_ctrl_loop_detail_t* p_ctrl
     uint16_t total_required_resources = nominal_required_resources;
     bool exhausted = false;
 
-    for (unsigned boost_pri_idx = 0; boost_pri_idx < VM_BOOST_COUNT && (!exhausted); ++boost_pri_idx)
+    // loop through boost priorities from highest (VM_BOOST_COUNT-1) to lowest (0)
+    // higher priority number = higher priority (processed first), per HAS/OSPM specification
+    for (int boost_pri_idx = VM_BOOST_COUNT - 1; boost_pri_idx >= 0 && (!exhausted); --boost_pri_idx)
     {
         // initialize found count of cores that have their base perf at a lower performance level
         unsigned found_count_in_pri = 0;
@@ -360,7 +363,9 @@ static void power_distribution_push_selections(power_runconfig_t* p_runconfig,
         return;
     }
 
-    for (unsigned pri_idx = 0; pri_idx < VM_PRI_COUNT; ++pri_idx)
+    // loop through priorities from highest (VM_PRI_COUNT-1) to lowest (0)
+    // higher priority number = higher priority (processed first), per HAS/OSPM specification
+    for (int pri_idx = VM_PRI_COUNT - 1; pri_idx >= 0; --pri_idx)
     {
         const uint8_t selection = p_per_pri_selections[pri_idx];
         const uint8_t max_base = p_max_base[pri_idx];
@@ -404,7 +409,11 @@ void power_distribution_distribute_resources(power_runconfig_t* p_runconfig, pow
     // level that are currently selected to assign
     unsigned selected[VM_PRI_COUNT] = {0};
 
-    unsigned max_base[VM_BOOST_COUNT] = {NUM_PSTATES, NUM_PSTATES, NUM_PSTATES, NUM_PSTATES, NUM_PSTATES, NUM_PSTATES, NUM_PSTATES, NUM_PSTATES};
+    unsigned max_base[VM_BOOST_COUNT];
+    for (unsigned i = 0; i < VM_BOOST_COUNT; i++)
+    {
+        max_base[i] = NUM_PSTATES;
+    }
     uint16_t nominal_required_resources = 0;
 
     // this will be the plimit we're throttling to; expect to be NOMINAL,

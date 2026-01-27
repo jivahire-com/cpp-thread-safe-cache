@@ -257,8 +257,8 @@ static uint8_t boost_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t pr
     uint8_t boost_pri_index = 0;
     if (p_runconfig->knobs.power_enable_velocity_boost)
     {
-        // as long as OS-requested priority is less than number of
-        // priorities we support, use OS priority
+        // Use OS-requested priority directly; priority range is 0-15 per Kingsgate HAS
+        // VM_BOOST_COUNT is 16, so all valid priorities (0-15) are supported
         boost_pri_index = (priority < VM_BOOST_COUNT) ? priority : (VM_BOOST_COUNT - 1);
     }
     return boost_pri_index;
@@ -269,8 +269,8 @@ static uint8_t throt_pri_for_tracking(power_runconfig_t* p_runconfig, uint8_t pr
     unsigned throt_pri_index = 0; // default index for all-core mode
     if (p_runconfig->knobs.capping_mode != power_capping_mode_t_ALL)
     {
-        // as long as OS-requested priority is less than number of
-        // priorities we support, use OS priority
+        // Use OS-requested priority directly; priority range is 0-15 per Kingsgate HAS
+        // VM_THROT_COUNT is 16, so all valid priorities (0-15) are supported
         throt_pri_index = (priority < VM_THROT_COUNT) ? priority : (VM_THROT_COUNT - 1);
     }
     return throt_pri_index;

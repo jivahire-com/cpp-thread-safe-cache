@@ -23,7 +23,7 @@
 #include <idsw.h>           // for idsw_get_platform_sdv, idsw...
 #include <stdint.h>         // for uint32_t
 #include <string.h>         // for memcpy, strlen
-#include <system_info.h>    // for system_info_get_security_state
+#include <system_info.h>    // for system_info_get_security_state, system_info_is_warm_start
 
 /*-------------------- Symbolic Constant Macros (defines) -------------------*/
 #define BYTES_IN_32B_WORD 4
@@ -42,6 +42,8 @@ typedef struct
     uint32_t soc_id;
     uint8_t die_id;
     uint8_t security_state;
+    uint32_t boot_type;
+    uint32_t reboot_reason;
 } accel_sys_info_t;
 
 /*--------------------------- Function Prototypes ---------------------------*/
@@ -60,12 +62,10 @@ const char* knob_transfer_list[] = {
     "kmp_safe_state",
 };
 
-static uint32_t reboot_reason = E_REBOOT_COLD_BOOT;
-static uint32_t boot_type = E_COLD_BOOT;
-
 /*--------------------------------- Externs ---------------------------------*/
 
 /*----------------------------- Static Functions ----------------------------*/
+
 static void intercore_aligned_memcpy(uint8_t* p_dest, uint8_t* p_src, uint16_t num_bytes, uint8_t align)
 {
 #ifdef _WIN32
@@ -116,6 +116,12 @@ static void init_accel_sys_info(accel_sys_info_t* accel_sys_info)
 
     // Get the security state from system info
     accel_sys_info->security_state = system_info_get_security_state();
+
+    // Get the boot type from system info
+    accel_sys_info->boot_type = (uint32_t)(system_info_is_warm_start() ? E_WARM_BOOT : E_COLD_BOOT);
+
+    // Get the reboot reason from system info
+    accel_sys_info->reboot_reason = system_info_get_reset_reason();
 }
 
 static knob_transfer_status_t write_knob_to_buffer(uint8_t* p_addr,
@@ -163,9 +169,9 @@ static knob_transfer_status_t transfer_accel_sys_info(uint8_t* p_addr, uint8_t* 
         {"m7_soc_id", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&accel_sys_info_data.soc_id},
         {"m7_die_id", (uint8_t)(sizeof(uint8_t)), (uint8_t*)&accel_sys_info_data.die_id},
         {"m7_plat_id", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&accel_sys_info_data.platform_id},
-        {"reboot_reason", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&reboot_reason},
+        {"reboot_reason", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&accel_sys_info_data.reboot_reason},
         {"et_log_lvl", (uint8_t)(sizeof(uint32_t)), NULL},
-        {"boot_type", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&boot_type},
+        {"boot_type", (uint8_t)(sizeof(uint32_t)), (uint8_t*)&accel_sys_info_data.boot_type},
         {"soc_sec_state", (uint8_t)(sizeof(uint8_t)), &accel_sys_info_data.security_state},
         {"sdm_emcpu_wdt_enable", (uint8_t)(sizeof(uint16_t)), NULL},
         {"cded_emcpu_wdt_enable", (uint8_t)(sizeof(uint16_t)), NULL},
@@ -303,16 +309,4 @@ knob_transfer_status_t scp_download_accel_knobs(ACCEL_ID accel_type)
     }
 
     return STATUS_KNOB_TRANSFER_SUCCESS;
-}
-
-void set_reboot_reason(E_REBOOT_REASON reason)
-{
-    // At SCP level, there are these reboot reasons defined:
-    // 1. case HSP_FIRMWARE_RESET_REASON_CRASH
-    // 2. HSP_FIRMWARE_RESET_REASON_UPDATE
-    // 3. HSP_FIRMWARE_RESET_REASON_WARM_RESET
-    // Leaving an ADO here to map these reasons as needed:
-    // https://azurecsi.visualstudio.com/Dev/_workitems/edit/3207538 Refer system_info.c for more details
-    reboot_reason = reason;
-    boot_type = reason == E_REBOOT_COLD_BOOT ? E_COLD_BOOT : E_WARM_BOOT;
 }

@@ -66,7 +66,7 @@ class pldm_common(EchoFallsBaseTest):
         self.delay_5_minutes = 300
         self.pldmd_stopped = False
 
-    def setup(self):
+    def setup(self, keep_pldm_service_active = False):
         # Step 1: DUT setup
         self.dut.setup()
 
@@ -134,14 +134,15 @@ class pldm_common(EchoFallsBaseTest):
             self.log.info("MCTPD service is not active after waiting period")
             return False
 
-        result, _, _ = self._bmc_execute_command(
-            command="systemctl stop xyz.openbmc_project.pldmd.service",
-            sudo_mode=True,
-        )
-        if result != 0:
-            self.log.info("Failed to stop pldmd service on BMC")
-            return False
-        self.pldmd_stopped = True
+        if keep_pldm_service_active is False:
+            result, _, _ = self._bmc_execute_command(
+                command="systemctl stop xyz.openbmc_project.pldmd.service",
+                sudo_mode=True,
+            )
+            if result != 0:
+                self.log.info("Failed to stop pldmd service on BMC")
+                return False
+            self.pldmd_stopped = True
 
         time.sleep(30)
 
@@ -300,11 +301,11 @@ class pldm_common(EchoFallsBaseTest):
             return False
         return True
 
-    def _mcp_execute_command_until(self, command, key):
+    def _mcp_execute_command_until(self, command, key, timeout=60):
         cmd_str = command
         try:
             result, stdout, stderr = self.core_mcp_channel.execute_command_until(
-                command=cmd_str, command_args=[], key=key, timeout_secs=60
+                command=cmd_str, command_args=[], key=key, timeout_secs=timeout
             )
             if result != 0:
                 self.log.info(f"~$ MCP failed to execute command: {cmd_str}")

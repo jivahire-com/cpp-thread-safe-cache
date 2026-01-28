@@ -3,6 +3,7 @@
 
 ## PLDM Tests
 ./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
+./../../../tests/functional/test_suites/pldm_tests/pldm_platform.robot
 ./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
 
 ## Power Tests

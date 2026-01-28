@@ -23,14 +23,11 @@
 #define ETR_MTS_CLIENT_MAX_MESSAGES (13)
 #define ETR_MTS_CLIENT_BLOCK_POOL_SIZE (MAX_TRP_MSG_BLOCK_SIZE * ETR_MTS_CLIENT_MAX_MESSAGES)
 
-/* Event Flags for the ETR from the MTS Client */
-#define ETR_EVENT_FLAG_NEW_MTS_MSG    (0x1)
-#define ETR_EVENT_FLAG_ANY_VALID      (ETR_EVENT_FLAG_NEW_MTS_MSG)
-
 /* ETR Worker Thread and Queue Names and Configuration */
 #define ETR_WORKER_THREAD_NAME          ("etr-worker_thread")
 #define ETR_BLOCK_POOL_NAME             ("etr-mts-block_pool")
 #define ETR_WORK_QUEUE_NAME             ("etr-mts-work_queue")
+#define ETR_FLAGS_NAME                  ("etr-mts-flags")
 
 /*-------------------------------- Typedefs ---------------------------------*/
 

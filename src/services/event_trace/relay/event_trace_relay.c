@@ -63,11 +63,12 @@
 /*-------------------------------- Typedefs ---------------------------------*/
 
 /*--------------------------- Function Prototypes ---------------------------*/
+static void etr_mts_rx_msg_handler(void);
 
 /*------------------- Declarations (Statics and globals) --------------------*/
 
 /* MTS Client Definition for Event Trace */
-static mts_client_t s_etr_mts_client = {0};
+static mts_client_t s_etr_mts_client = {.notify_from_drv_frmwk = etr_mts_rx_msg_handler}; // Callback for receiving MTS messages
 
 /* Message Queue Memory for the ET MTS Client */
 static p_trp_msg_t g_etr_mts_client_queue_mem[ETR_MTS_CLIENT_MAX_MESSAGES];
@@ -84,6 +85,8 @@ static dcp_client_state_t evt_dcp_clnt_state = DCP_CLIENT_STATE_STOPPED;
 static etr_service_context_t* p_etr_service_context = NULL;
 
 static uint32_t num_buffers_pending = 0;
+
+TX_EVENT_FLAGS_GROUP s_etr_mts_flags; // Event flags for synchronization
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -676,9 +679,10 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
         get_caps->caps.as_uint32 = 0;
         get_caps->caps.DCP_MSG_ID_GET_CAPABILITIES = 1;
         get_caps->caps.DCP_MSG_ID_GET_STATE = 1;
-        get_caps->caps.DCP_MSG_ID_READ_DATA = 1;
         get_caps->caps.DCP_MSG_ID_START_STOP = 1;
+        get_caps->caps.DCP_MSG_ID_READ_DATA = 1;
         get_caps->caps.DCP_MSG_ID_READ_DATA_COMPLETE = 1;
+        get_caps->caps.DCP_MSG_ID_RESET = 1;
 
         p_trp_msg->payload.dcp_msg.hdr.payload_size = sizeof(dcp_msg_get_caps_t);
         p_trp_msg->payload.dcp_msg.hdr.msg_status = DCP_STATUS_SUCCESS;
@@ -701,6 +705,14 @@ static void etr_handle_dcp_msg(p_etr_service_context_t p_context, p_etr_service_
 
     case DCP_MSG_ID_READ_DATA_COMPLETE:
         send_trp_response = etr_handle_read_complete_response(p_context, p_request);
+        break;
+
+    case DCP_MSG_ID_RESET:
+        /* Stop the Client */
+        set_evt_dcp_client_state(DCP_CLIENT_STATE_STOPPED);
+
+        /* Start the Client */
+        set_evt_dcp_client_state(DCP_CLIENT_STATE_RUNNING);
         break;
 
     default:
@@ -860,6 +872,10 @@ static void etr_mts_client_init(void)
 
     BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_etr_mts_client.rx_queue);
 
+    /* Create a flag group for synchronization between MTS and the ETR worker thread */
+    tx_status = tx_event_flags_create(&s_etr_mts_flags, ETR_FLAGS_NAME);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, (uintptr_t)&s_etr_mts_flags);
+
     /* Register the MTS client */
     mts_client_register(MTS_CLIENT_ID_EVENT_TRACE, &s_etr_mts_client);
 }
@@ -920,6 +936,19 @@ void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t
     FPFW_ET_LOG_ETR_ASCII_INFO("ETR Svc Init Done");
 }
 
+/**
+ * @brief Driver Framework Callback to handle incoming MTS messages.
+ *
+ * @param None
+ * @return None
+ */
+static void etr_mts_rx_msg_handler(void)
+{
+    /* Set the event flag to indicate a new MTS message is available */
+    UINT tx_status = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_NEW_MTS_MSG, TX_OR);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
+}
+
 void etr_worker_thread_func(ULONG thread_input)
 {
     etr_service_context_t* p_context = (etr_service_context_t*)thread_input;
@@ -929,36 +958,92 @@ void etr_worker_thread_func(ULONG thread_input)
     /* Infinite loop that will decode and recycle buffers marked as completed */
     while (true)
     {
-        UINT queue_status = tx_queue_receive(&s_etr_mts_client.rx_queue, &etr_request.p_trp_msg, TX_WAIT_FOREVER);
-        // etr_handle_copy_buffer_request will modify the core_id hence caching it
-        src_core_id = etr_request.p_trp_msg->hdr.src_node.core_id;
+        ULONG event_flags = 0;
 
-        // Assert if the queue status is not TX_SUCCESS or TX_QUEUE_EMPTY
-        BUG_ASSERT_PARAM((queue_status == TX_SUCCESS), queue_status, 0);
+        /* Wait for a new message to be available. This will block until a new message is available from MTS */
+        UINT tx_status =
+            tx_event_flags_get(&s_etr_mts_flags, ETR_EVENT_FLAG_ANY_VALID, TX_OR_CLEAR, &event_flags, TX_WAIT_FOREVER);
+        BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
 
-        switch (etr_request.p_trp_msg->hdr.trp_msg_id)
+        /* If new MTS message event flag is set */
+        if ((event_flags & ETR_EVENT_FLAG_NEW_MTS_MSG) == ETR_EVENT_FLAG_NEW_MTS_MSG)
         {
-        /* Handle DCP Messages from the Host */
-        /* The ETR telemetry service runs on all MCPs. The architecture is such that the Host only interacts
-         * with Die 0 MCP (Primary ETR). DCP transactions from AP are only handled by the primary ETR instance. */
-        case TRP_MSG_ID_DCP_FORWARD:
-            etr_handle_dcp_msg(p_context, &etr_request);
-            break;
+            tx_status = tx_queue_receive(&s_etr_mts_client.rx_queue, &etr_request.p_trp_msg, TX_WAIT_FOREVER);
+            // etr_handle_copy_buffer_request will modify the core_id hence caching it
+            src_core_id = etr_request.p_trp_msg->hdr.src_node.core_id;
 
-        /* Handle intercore block complete the ETR. This is primarily an ETC functionality */
-        case TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE:
-            etr_handle_read_block_complete(&etr_request);
-            break;
+            // Assert if the queue status is not TX_SUCCESS or TX_QUEUE_EMPTY
+            BUG_ASSERT_PARAM((tx_status == TX_SUCCESS), tx_status, 0);
 
-        /* Handle intercore block notifications from individual cores indicating ET buffers are available */
-        case TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION:
-            // Read trp_msg_status in trp_msg_hdr_t for local core notifications
-            /* Update p_trp_msg and respond with a TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE request */
-            etr_request.p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
-
-            if (decode_and_validate_buffer_metadata(&etr_request) != FPFW_STATUS_SUCCESS)
+            switch (etr_request.p_trp_msg->hdr.trp_msg_id)
             {
-                FPFW_ET_LOG(Error, this_die, this_core, ETR_ERR_INVALID_ETC_BUFFER_METADATA, 0);
+            /* Handle DCP Messages from the Host */
+            /* The ETR telemetry service runs on all MCPs. The architecture is such that the Host only interacts
+             * with Die 0 MCP (Primary ETR). DCP transactions from AP are only handled by the primary ETR instance. */
+            case TRP_MSG_ID_DCP_FORWARD:
+                etr_handle_dcp_msg(p_context, &etr_request);
+                break;
+
+            /* Handle intercore block complete the ETR. This is primarily an ETC functionality */
+            case TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE:
+                etr_handle_read_block_complete(&etr_request);
+                break;
+
+            /* Handle intercore block notifications from individual cores indicating ET buffers are available */
+            case TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION:
+                // Read trp_msg_status in trp_msg_hdr_t for local core notifications
+                /* Update p_trp_msg and respond with a TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE request */
+                etr_request.p_trp_msg->hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
+
+                if (decode_and_validate_buffer_metadata(&etr_request) != FPFW_STATUS_SUCCESS)
+                {
+                    FPFW_ET_LOG(Error, this_die, this_core, ETR_ERR_INVALID_ETC_BUFFER_METADATA, 0);
+
+                    /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
+                    etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
+                    etr_notify_etc(&etr_request);
+                    break;
+                }
+
+                /* Handle the copy buffer request */
+                etr_handle_copy_buffer_request(p_context, &etr_request);
+
+                if (etr_request.p_trp_msg->hdr.trp_msg_status == TRP_STATUS_RD_DATA_NONE)
+                {
+                    // This is the indication that the message source core has quiesced
+                    // Need to update the quiesce status here
+                    event_trace_relay_external_core_quiesce_update(src_core_id);
+                }
+                break;
+
+            case TRP_MSG_ID_PACKAGE_NOTIFICATION:
+                notify_ddr_buffer_available();
+                break;
+
+            case TRP_MSG_ID_READ_PACKAGE:
+                etr_handle_host_read_request(p_context, &etr_request);
+                mts_client_send_trp_response(etr_request.p_trp_msg);
+                break;
+
+            case TRP_MSG_ID_READ_PACKAGE_COMPLETE:
+                /* If primary die, then forward to host via DCP, if secondary, respond via TRP */
+                if (primary_instance)
+                {
+                    translate_trp_response_to_dcp(etr_request.p_trp_msg, DCP_MSG_ID_READ_DATA_COMPLETE);
+                }
+                else
+                {
+                    etr_handle_read_complete_response(p_context, &etr_request);
+                    mts_client_send_trp_response(etr_request.p_trp_msg);
+                }
+                break;
+
+            case TRP_MSG_ID_READ_PACKAGE_RESPONSE:
+                translate_trp_response_to_dcp(etr_request.p_trp_msg, DCP_MSG_ID_READ_DATA);
+                break;
+
+            default:
+                FPFW_ET_LOG(Error, this_die, this_core, ETR_ERR_INVALID_TRP_MSG, etr_request.p_trp_msg->hdr.trp_msg_id);
 
                 /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
                 etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
@@ -966,55 +1051,20 @@ void etr_worker_thread_func(ULONG thread_input)
                 break;
             }
 
-            /* Handle the copy buffer request */
-            etr_handle_copy_buffer_request(p_context, &etr_request);
-
-            if (etr_request.p_trp_msg->hdr.trp_msg_status == TRP_STATUS_RD_DATA_NONE)
-            {
-                // This is the indication that the message source core has quiesced
-                // Need to update the quiesce status here
-                event_trace_relay_external_core_quiesce_update(src_core_id);
-            }
-            break;
-
-        case TRP_MSG_ID_PACKAGE_NOTIFICATION:
-            notify_ddr_buffer_available();
-            break;
-
-        case TRP_MSG_ID_READ_PACKAGE:
-            etr_handle_host_read_request(p_context, &etr_request);
-            mts_client_send_trp_response(etr_request.p_trp_msg);
-            break;
-
-        case TRP_MSG_ID_READ_PACKAGE_COMPLETE:
-            /* If primary die, then forward to host via DCP, if secondary, respond via TRP */
-            if (primary_instance)
-            {
-                translate_trp_response_to_dcp(etr_request.p_trp_msg, DCP_MSG_ID_READ_DATA_COMPLETE);
-            }
-            else
-            {
-                etr_handle_read_complete_response(p_context, &etr_request);
-                mts_client_send_trp_response(etr_request.p_trp_msg);
-            }
-            break;
-
-        case TRP_MSG_ID_READ_PACKAGE_RESPONSE:
-            translate_trp_response_to_dcp(etr_request.p_trp_msg, DCP_MSG_ID_READ_DATA);
-            break;
-
-        default:
-            FPFW_ET_LOG(Error, this_die, this_core, ETR_ERR_INVALID_TRP_MSG, etr_request.p_trp_msg->hdr.trp_msg_id);
-
-            /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
-            etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
-            etr_notify_etc(&etr_request);
-            break;
+            /* Release the block back to the pool */
+            tx_status = tx_block_release(etr_request.p_trp_msg);
+            BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
         }
 
-        /* Release the block back to the pool */
-        UINT status = tx_block_release(etr_request.p_trp_msg);
-        BUG_ASSERT_PARAM(status == TX_SUCCESS, status, 0);
+        /* If send DCP notification event flag is set */
+        if ((event_flags & ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION) == ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION)
+        {
+            /* TODO: The Agent seems to need an additional delay in notification to catch it.
+             * Leaving this printf to unblock telemetry Agent development. Will clean as part of ADO3314039
+             */
+            FPFW_DBGPRINT_INFO("Sending out DCP Notification from ETR Worker Thread\n");
+            mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+        }
 
 /* For unit tests - break out of the loop */
 #ifdef _WIN32
@@ -1026,12 +1076,13 @@ void etr_worker_thread_func(ULONG thread_input)
 void set_evt_dcp_client_state(dcp_client_state_t state)
 {
     /* Update DCP Client State */
-    evt_dcp_clnt_state = (dcp_client_state_t)state;
+    evt_dcp_clnt_state = state;
 
     /* If the Client is running and there are pending buffers, send out a DCP notification */
     if ((num_buffers_pending > 0) && (evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING))
     {
-        mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+        UINT txStatus = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION, TX_OR);
+        BUG_ASSERT_PARAM(txStatus == TX_SUCCESS, txStatus, 0);
     }
 }
 

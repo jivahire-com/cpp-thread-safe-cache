@@ -14,6 +14,9 @@
 #include <hsp_firmware_headers.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
+#define ETR_EVENT_FLAG_NEW_MTS_MSG                  (1U << 1)
+#define ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION        (1U << 2)
+#define ETR_EVENT_FLAG_ANY_VALID                    (ETR_EVENT_FLAG_NEW_MTS_MSG | ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 

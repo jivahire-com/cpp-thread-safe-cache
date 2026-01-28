@@ -296,6 +296,11 @@ static inline void test_setup_common()
     expect_any(__wrap__txe_thread_create, thread_control_block_size);
     will_return(__wrap__txe_thread_create, TX_SUCCESS);
 
+    expect_any(__wrap__txe_event_flags_create, group_ptr);
+    expect_any(__wrap__txe_event_flags_create, name_ptr);
+    expect_any(__wrap__txe_event_flags_create, event_control_block_size);
+    will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
+
     // Expectations for driver framework and sos interface
     expect_any(__wrap_DfwkDeviceInitialize, Device);
     expect_any(__wrap_DfwkDeviceInitialize, Schedule);
@@ -486,6 +491,14 @@ TEST_FUNCTION(test_etr_process_request_host_request_capabilities, test_setup_die
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_CAPABILITIES;
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -499,10 +512,17 @@ TEST_FUNCTION(test_etr_process_request_host_request_capabilities, test_setup_die
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to success
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_set_state_stopped, test_setup_die0, test_teardown)
@@ -511,6 +531,14 @@ TEST_FUNCTION(test_etr_process_request_host_set_state_stopped, test_setup_die0, 
 
     trp_msg_host.payload.dcp_msg.payload.start_stop.state = DCP_START_STOP_STATE_STOP;
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -524,16 +552,31 @@ TEST_FUNCTION(test_etr_process_request_host_set_state_stopped, test_setup_die0, 
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_request_state_stopped, test_setup_die0, test_teardown)
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -547,11 +590,18 @@ TEST_FUNCTION(test_etr_process_request_host_request_state_stopped, test_setup_di
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
     assert_int_equal(trp_msg_host.payload.dcp_msg.payload.get_state.state, DCP_CLIENT_STATE_STOPPED);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_set_state_started, test_setup_die0, test_teardown)
@@ -559,6 +609,19 @@ TEST_FUNCTION(test_etr_process_request_host_set_state_started, test_setup_die0, 
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_START_STOP;
 
     trp_msg_host.payload.dcp_msg.payload.start_stop.state = DCP_START_STOP_STATE_START;
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -582,11 +645,24 @@ TEST_FUNCTION(test_etr_process_request_host_set_state_started, test_setup_die0, 
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_request_state_running, test_setup_die0, test_teardown)
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_GET_STATE;
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -601,11 +677,61 @@ TEST_FUNCTION(test_etr_process_request_host_request_state_running, test_setup_di
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
     assert_int_equal(trp_msg_host.payload.dcp_msg.payload.get_state.state, DCP_CLIENT_STATE_RUNNING);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
+}
+
+TEST_FUNCTION(test_etr_process_request_host_reset, test_setup_die0, test_teardown)
+{
+    trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_RESET;
+
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg_host);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
+    assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 trp_msg_t trp_msg = {
@@ -636,6 +762,14 @@ TEST_FUNCTION(test_etr_process_request_unsupported_id, test_setup_die0, test_tea
     // Reset the message type to an unsupported ID
     trp_msg.hdr.trp_msg_id = 0xFF;
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -649,10 +783,17 @@ TEST_FUNCTION(test_etr_process_request_unsupported_id, test_setup_die0, test_tea
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_E_PARAM
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_copy_buffer_invalid_core, test_setup_die0, test_teardown)
@@ -664,6 +805,14 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_invalid_core, test_setup_die0
     // Reset the message type to intercore block notification
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -677,10 +826,17 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_invalid_core, test_setup_die0
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_E_PARAM
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup_die0, test_teardown)
@@ -695,6 +851,14 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup_d
     etr_ddr_buffer_state_t pre_request_state = s_test_context.p_active_asic_buffer->state;
     uint64_t pre_request_size = s_test_context.p_active_asic_buffer->payload_management.size_bytes;
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -708,6 +872,8 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup_d
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     etr_ddr_buffer_state_t post_request_state = s_test_context.p_active_asic_buffer->state;
@@ -718,6 +884,11 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup_d
     void* asic_buffer_addr =
         (void*)(s_test_context.p_active_asic_buffer->payload_management.base_addr + sizeof(asic_buffer_info_t));
     assert_memory_equal(&fake_core_buffer, asic_buffer_addr, sizeof(fake_core_buffer));
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_die0, test_teardown)
@@ -735,6 +906,14 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_
 
     fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -750,6 +929,8 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_
 
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     ddr_buffer_info_t* p_new_asic_buffer = s_test_context.p_active_asic_buffer;
@@ -760,6 +941,11 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_
     assert_int_equal(p_old_asic_buffer->state, ETR_DDR_BUFFER_STATE_PENDING);
     assert_int_equal(p_new_asic_buffer->state, ETR_DDR_BUFFER_STATE_ACTIVE);
     assert_memory_equal(&p_old_asic_buffer->buffer.asic, p_old_asic_buffer->payload_management.base_addr, sizeof(asic_buffer_info_t));
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup_die1, test_teardown)
@@ -776,6 +962,14 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup_
     p_old_asic_buffer->buffer.asic.asic_header.UsedBytes = p_old_asic_buffer->buffer.asic.asic_header.BufferSize;
 
     fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -794,6 +988,8 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup_
 
     expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     ddr_buffer_info_t* p_new_asic_buffer = s_test_context.p_active_asic_buffer;
@@ -804,6 +1000,11 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup_
     assert_int_equal(p_old_asic_buffer->state, ETR_DDR_BUFFER_STATE_PENDING);
     assert_int_equal(p_new_asic_buffer->state, ETR_DDR_BUFFER_STATE_ACTIVE);
     assert_memory_equal(&p_old_asic_buffer->buffer.asic, p_old_asic_buffer->payload_management.base_addr, sizeof(asic_buffer_info_t));
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die0, test_teardown)
@@ -832,6 +1033,14 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die
 
     fake_core_buffer.UsedBytes = sizeof(fake_core_buffer);
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -849,12 +1058,19 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // validate that the old buffer is now pending and that first pending buffer is now active
     assert_int_equal(s_test_context.ddr_buffers[1].state, ETR_DDR_BUFFER_STATE_PENDING);
     assert_int_equal(s_test_context.ddr_buffers[0].state, ETR_DDR_BUFFER_STATE_ACTIVE);
     assert_int_equal(s_test_context.health_stats.asic_buffers_reused, 1);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup_die0, test_teardown)
@@ -865,6 +1081,14 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup_di
 
     // Reset the message type to read package complete
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_PACKAGE_COMPLETE;
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -879,6 +1103,8 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup_di
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of DCP Message status is set to DATA_COLLECTION_RD_DATA_VALID_MORE
@@ -886,6 +1112,11 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_die0, test_setup_di
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending_die1, test_setup_die1, test_teardown)
@@ -904,6 +1135,14 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending_die1
     trp_msg.payload.read_package_complete.phy_addr_offset =
         s_test_context.p_active_asic_buffer->payload_management.base_addr;
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -917,10 +1156,17 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending_die1
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete, test_setup_die0, test_teardown)
@@ -932,6 +1178,14 @@ TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete, test_setup
 
     // Reset the message type to read intercore block complete
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -950,10 +1204,17 @@ TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete, test_setup
     expect_any(__wrap_FPFwETControllerRecycleBuffer, bufIndex);
     will_return(__wrap_FPFwETControllerRecycleBuffer, FPFW_STATUS_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete_invalid_block, test_setup_die1, test_teardown)
@@ -965,6 +1226,14 @@ TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete_invalid_blo
 
     // Reset the message type to read intercore block complete
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_READ_INTERCORE_BLOCK_COMPLETE;
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -979,10 +1248,17 @@ TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete_invalid_blo
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address_die1, test_setup_die1, test_teardown)
@@ -1000,6 +1276,14 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address_die
     // Set a good address for the host read request
     trp_msg.payload.read_package_complete.phy_addr_offset = 0xDEADBEEF; // Invalid address
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -1013,10 +1297,17 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address_die
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_notification, test_setup_die0, test_teardown)
@@ -1027,6 +1318,14 @@ TEST_FUNCTION(test_etr_process_request_read_package_notification, test_setup_die
 
     // Reset the message type to package notification
     trp_msg.hdr.trp_msg_id = TRP_MSG_ID_PACKAGE_NOTIFICATION;
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -1044,6 +1343,13 @@ TEST_FUNCTION(test_etr_process_request_read_package_notification, test_setup_die
     // Set both accelerators to be isolated for branch coverage
     accel_isolation = true;
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
     etr_worker_thread_func((ULONG)&s_test_context);
 }
 
@@ -1063,6 +1369,14 @@ TEST_FUNCTION(test_etr_process_request_read_package_no_pending_buffer, test_setu
     // Set an invalid address for the host read request
     trp_msg.payload.read_package_complete.phy_addr_offset = 0xDEADBEEF; // Invalid address
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -1079,10 +1393,17 @@ TEST_FUNCTION(test_etr_process_request_read_package_no_pending_buffer, test_setu
     /* Override number of pending buffers to 0 */
     set_num_buffers_pending(0);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_RD_DATA_NONE
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_RD_DATA_NONE);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_buffer_pending, test_setup_die1, test_teardown)
@@ -1102,6 +1423,14 @@ TEST_FUNCTION(test_etr_process_request_read_package_buffer_pending, test_setup_d
     trp_msg.payload.read_package_complete.phy_addr_offset =
         s_test_context.p_active_asic_buffer->payload_management.base_addr;
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -1118,10 +1447,17 @@ TEST_FUNCTION(test_etr_process_request_read_package_buffer_pending, test_setup_d
     /* Override number of pending buffers to 2 */
     set_num_buffers_pending(2);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_SUCCESS
     assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_read_package_response, test_setup_die0, test_teardown)
@@ -1139,6 +1475,14 @@ TEST_FUNCTION(test_etr_process_request_read_package_response, test_setup_die0, t
     // Set a good address for the host read request
     trp_msg.payload.read_package_complete.phy_addr_offset = 0xDEADBEEF; // Invalid address
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -1152,12 +1496,27 @@ TEST_FUNCTION(test_etr_process_request_read_package_response, test_setup_die0, t
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
     etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_request_invalid, test_setup_die0, test_teardown)
 {
     trp_msg_host.payload.dcp_msg.hdr.msg_id = DCP_MSG_ID_UTC_SYNC;
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -1172,10 +1531,17 @@ TEST_FUNCTION(test_etr_process_request_host_request_invalid, test_setup_die0, te
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of TRP Message status is set to TRP_STATUS_E_DCP_ERROR
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_E_DCP_ERROR);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup_die0, test_teardown)
@@ -1187,6 +1553,14 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup
     trp_msg_host.payload.intercore_block_notification.addr_offset =
         s_test_context.p_active_asic_buffer->payload_management.base_addr;
 
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -1200,15 +1574,30 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_buffer_pending, test_setup
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the status of the dcp read data request is set to success, and TRP Message status is set to success
     assert_int_equal(trp_msg_host.payload.dcp_msg.hdr.msg_status, DATA_COLLECTION_RD_DATA_VALID_MORE);
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending_primary_etr, test_setup_die0, test_teardown)
 {
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
     expect_any_always(__wrap__txe_queue_receive, destination_ptr);
@@ -1228,6 +1617,13 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_no_buffer_pending_primary_
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
     etr_worker_thread_func((ULONG)&s_test_context);
 }
 
@@ -1240,6 +1636,14 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     // Set a good address for the host read request
     trp_msg_host.payload.dcp_msg.payload.read_data_complete.rd_data_addr_offset =
         s_test_context.p_active_asic_buffer->payload_management.base_addr - MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_BASE_ADDR;
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -1257,6 +1661,8 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     /* Override number of pending buffers to 2. After completing this buffer, there will be only one pending buffer */
     set_num_buffers_pending(2);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the active buffer is set to free
@@ -1268,6 +1674,11 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
 
     // Expect that the status of TRP Message status is set to success
     assert_int_equal(trp_msg_host.hdr.trp_msg_status, TRP_STATUS_SUCCESS);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, test_setup_die0, test_teardown)
@@ -1277,6 +1688,14 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, 
 
     // Set a bad address for the host read request
     trp_msg_host.payload.dcp_msg.payload.read_data_complete.rd_data_addr_offset = 0xDEADBEEF;
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
     // Set up expectations for a successful tx_queue_receive
     expect_any_always(__wrap__txe_queue_receive, queue_ptr);
@@ -1291,10 +1710,17 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_invalid_address, 
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     etr_worker_thread_func((ULONG)&s_test_context);
 
     // Expect that the active buffer is still pending since the address was invalid
     assert_int_equal(s_test_context.p_active_asic_buffer->state, ETR_DDR_BUFFER_STATE_PENDING);
+
+    // Run the function again to cover the path where txe_flags_get returns an invalid flag.
+    // This functionality is built into the mock here:
+    // https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.CortexM7?path=/tests/utilities/mocks/threadx/thread_x_mocks.c&version=GBmain&line=154&lineEnd=154&lineStartColumn=6&lineEndColumn=33&lineStyle=plain&_a=contents
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
 TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup_die0, test_teardown)

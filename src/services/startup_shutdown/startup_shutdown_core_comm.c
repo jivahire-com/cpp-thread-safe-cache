@@ -525,11 +525,11 @@ void sos_core_override_timeout(pstartup_reset_timeout_request_t request)
 {
     if (request->timeout.stage_category == BOOT_STAGE)
     {
-        sos_boot_timeout_override(request->timeout);
+        sos_boot_timeout_override(&request->timeout);
     }
     else if (request->timeout.stage_category == SHUTDOWN_STAGE)
     {
-        sos_shutdown_timeout_override(request->timeout);
+        sos_shutdown_timeout_override(&request->timeout);
     }
     else
     {

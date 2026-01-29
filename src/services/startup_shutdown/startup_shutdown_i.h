@@ -102,10 +102,10 @@ const startup_shutdown_boot_stage_t* sos_core_boot_stages();
 const startup_shutdown_shutdown_stage_t* sos_core_shutdown_stages();
 KNG_STATUS sos_core_shutdown_handler(ssi_shutdown_type_t shutdown_type);
 void sos_core_override_timeout(pstartup_reset_timeout_request_t request);
-void sos_boot_timeout_override(sos_stage_timeout_t timeout);
-void sos_shutdown_timeout_override(sos_stage_timeout_t timeout);
-uint32_t sos_boot_timeout(sos_stage_timeout_t current_stage);
-uint32_t sos_shutdown_timeout(sos_stage_timeout_t current_stage);
+void sos_boot_timeout_override(sos_stage_timeout_t *timeout);
+void sos_shutdown_timeout_override(sos_stage_timeout_t *timeout);
+uint32_t sos_boot_timeout(sos_stage_timeout_t *current_stage);
+uint32_t sos_shutdown_timeout(sos_stage_timeout_t *current_stage);
 
 // interface to start a phase
 void sos_queue_start_phase(ssi_startup_type_t boot_type, ssi_startup_stage_t phase, PDFWK_ASYNC_REQUEST_HEADER p_request);
@@ -119,7 +119,7 @@ void sos_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_conte
 void sos_notify_ssi_boot_stage(psos_service_context_t p_context, ssi_startup_stage_t stage, ssi_startup_type_t startup_type, bool start);
 void sos_notify_ssi_shutdown(psos_service_context_t p_context, ssi_shutdown_type_t shutdown_type);
 void sos_notify_ssi_quiesce(psos_service_context_t p_context, ssi_shutdown_type_t shutdown_type);
-void wait_ssi_complete(sos_stage_timeout_t current_stage);
+void wait_ssi_complete(sos_stage_timeout_t *current_stage);
 void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
                                         ssi_startup_stage_t stage,
                                         ssi_startup_type_t startup_type,

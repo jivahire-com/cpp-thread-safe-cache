@@ -48,23 +48,23 @@ KNG_STATUS sos_core_shutdown_handler(ssi_shutdown_type_t shutdown_type)
     return sos_request_shutdown(shutdown_type);
 }
 
-void sos_boot_timeout_override(sos_stage_timeout_t timeout)
+void sos_boot_timeout_override(sos_stage_timeout_t* timeout)
 {
     for (unsigned int idx = 0; idx < sos_core_boot_stage_count(); idx++)
     {
-        if (mcp_boot_stages[idx].stage == timeout.operation_stage.boot)
+        if (mcp_boot_stages[idx].stage == timeout->operation_stage.boot)
         {
-            mcp_boot_stages[idx].timeout_ms = timeout.timeout_ms;
+            mcp_boot_stages[idx].timeout_ms = timeout->timeout_ms;
             break;
         }
     }
 }
 
-uint32_t sos_boot_timeout(sos_stage_timeout_t current_stage)
+uint32_t sos_boot_timeout(sos_stage_timeout_t* current_stage)
 {
     for (unsigned int idx = 0; idx < sos_core_boot_stage_count(); idx++)
     {
-        if (mcp_boot_stages[idx].stage == current_stage.operation_stage.boot)
+        if (mcp_boot_stages[idx].stage == current_stage->operation_stage.boot)
         {
             return mcp_boot_stages[idx].timeout_ms;
         }
@@ -73,14 +73,14 @@ uint32_t sos_boot_timeout(sos_stage_timeout_t current_stage)
     return DEFAULT_SOS_TIMEOUT_MS;
 }
 
-void sos_shutdown_timeout_override(sos_stage_timeout_t timeout)
+void sos_shutdown_timeout_override(sos_stage_timeout_t* timeout)
 {
     // No shutdown stages defined for MCP. Leaving in if shutdown stages
     // are required in the future and to support common override path.
     FPFW_UNUSED(timeout);
 }
 
-uint32_t sos_shutdown_timeout(sos_stage_timeout_t current_stage)
+uint32_t sos_shutdown_timeout(sos_stage_timeout_t* current_stage)
 {
     // No shutdown stages defined for MCP. Leaving in if shutdown stages
     // are required in the future and to support common override path.

@@ -344,9 +344,10 @@ void setup_wait_ssi_complete_expectations(ssi_startup_stage_t test_stage)
 {
 #define MS_TO_TX_TICKS(ms) (((ms) * TX_TIMER_TICKS_PER_SECOND) / 1000)
 
+    sos_stage_timeout_t boot_timeout = {.stage_category = BOOT_STAGE, .operation_stage.boot = test_stage};
     unsigned timeout = 0;
 
-    timeout = sos_boot_timeout(sos_stage_timeout_t{.stage_category = BOOT_STAGE, .operation_stage.boot = test_stage});
+    timeout = sos_boot_timeout(&boot_timeout);
 
     // expectations for ThreadX APIs
     expect_not_value(__wrap__txe_event_flags_get, group_ptr, NULL);
@@ -366,7 +367,7 @@ SOS_TEST(sos_notify_ssi_boot_stage_and_wait, NULL, NULL)
     will_return_always(__wrap_sos_core_boot_stage_count, __real_sos_core_boot_stage_count());
 
     sos_stage_timeout_t timeout = {.stage_category = BOOT_STAGE, .operation_stage.boot = test_stage, .timeout_ms = 4321};
-    sos_boot_timeout_override(timeout);
+    sos_boot_timeout_override(&timeout);
 
     // setup expectations for complete notification
     setup_expectations_for_boot_stage_complete(test_stage, test_boot_type);

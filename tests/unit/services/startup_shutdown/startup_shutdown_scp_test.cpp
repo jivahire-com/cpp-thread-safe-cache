@@ -212,8 +212,8 @@ SOS_TEST(sos_boot_timeout, NULL, NULL)
     will_return_always(__wrap_sos_core_boot_stage_count, __real_sos_core_boot_stage_count());
 
     // call the function
-    sos_boot_timeout_override(current_stage);
-    unsigned int return_timeout = sos_boot_timeout(current_stage);
+    sos_boot_timeout_override(&current_stage);
+    unsigned int return_timeout = sos_boot_timeout(&current_stage);
 
     // check timeout get updated.
     assert_int_equal(return_timeout, test_time_out);
@@ -229,8 +229,8 @@ SOS_TEST(sos_shutdown_timeout, NULL, NULL)
     current_stage.timeout_ms = test_time_out;
 
     // call the function
-    sos_shutdown_timeout_override(current_stage);
-    unsigned int return_timeout = sos_shutdown_timeout(current_stage);
+    sos_shutdown_timeout_override(&current_stage);
+    unsigned int return_timeout = sos_shutdown_timeout(&current_stage);
 
     // check timeout get updated.
     assert_int_equal(return_timeout, test_time_out);

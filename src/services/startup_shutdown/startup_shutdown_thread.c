@@ -87,7 +87,7 @@ void sos_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_conte
 {
     FPFW_UNUSED(request);
     uint32_t interface_unique_flag = (uint32_t)p_completion_context;
-    SOS_LOG_TRACE("Request to an SSI %08lx completed (%x)", (unsigned long)interface_unique_flag, (uintptr_t)request);
+    SOS_LOG_TRACE("Request to an SSI %08lx completed (%x)\n", (unsigned long)interface_unique_flag, (uintptr_t)request);
     int status = tx_event_flags_set(&s_sos_thread_ctx.ssi_flags, interface_unique_flag, TX_OR);
     FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
 }
@@ -169,35 +169,36 @@ void sos_notify_ssi_quiesce(psos_service_context_t p_context, ssi_shutdown_type_
     }
 }
 
-void wait_ssi_complete(sos_stage_timeout_t current_stage)
+void wait_ssi_complete(sos_stage_timeout_t* current_stage)
 {
     ULONG flags = 0;
 
-    if (current_stage.stage_category == BOOT_STAGE)
+    if (current_stage->stage_category == BOOT_STAGE)
     {
-        current_stage.timeout_ms = sos_boot_timeout(current_stage);
+        current_stage->timeout_ms = sos_boot_timeout(current_stage);
     }
-    else if (current_stage.stage_category == SHUTDOWN_STAGE)
+    else if (current_stage->stage_category == SHUTDOWN_STAGE)
     {
-        current_stage.timeout_ms = sos_shutdown_timeout(current_stage);
+        current_stage->timeout_ms = sos_shutdown_timeout(current_stage);
     }
     else
     {
-        current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
+        current_stage->timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
     }
 
-    SOS_LOG_TRACE("SSI completion - Expected flags: %lx", (unsigned long)s_sos_thread_ctx.expected_complete_flags);
+    SOS_LOG_TRACE("SSI completion - Expected flags: %lx\n", (unsigned long)s_sos_thread_ctx.expected_complete_flags);
     int status = tx_event_flags_get(&s_sos_thread_ctx.ssi_flags,
                                     s_sos_thread_ctx.expected_complete_flags,
                                     TX_AND_CLEAR,
                                     &flags,
-                                    MS_TO_TX_TICKS(current_stage.timeout_ms));
-    SOS_LOG_TRACE("Received flags: %lx", flags);
+                                    MS_TO_TX_TICKS(current_stage->timeout_ms));
+    SOS_LOG_TRACE("Received flags: %lx\n", flags);
 
     BUG_ASSERT_PARAM((status == TX_SUCCESS),
                      status,
-                     (current_stage.stage_category == BOOT_STAGE) ? current_stage.operation_stage.boot
-                                                                  : current_stage.operation_stage.shutdown);
+                     (current_stage->stage_category == BOOT_STAGE)
+                         ? ((current_stage->stage_category << 16) | (current_stage->operation_stage.boot & 0xFFFF))
+                         : ((current_stage->stage_category << 16) | (current_stage->operation_stage.shutdown & 0xFFFF)));
 }
 
 void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
@@ -210,7 +211,7 @@ void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
     sos_notify_ssi_boot_stage(p_context, stage, startup_type, start);
 
     sos_stage_timeout_t current_stage = {.stage_category = BOOT_STAGE, .operation_stage.boot = stage};
-    wait_ssi_complete(current_stage);
+    wait_ssi_complete(&current_stage);
 }
 
 void sos_worker_thread_function(ULONG service_ctx)
@@ -220,7 +221,7 @@ void sos_worker_thread_function(ULONG service_ctx)
 
     sos_stage_timeout_t current_stage;
 
-    SOS_LOG_INFO("Worker thread begin");
+    SOS_LOG_INFO("Worker thread begin\n");
 
     while (1)
     {
@@ -233,7 +234,7 @@ void sos_worker_thread_function(ULONG service_ctx)
         switch (message.type)
         {
         case SOS_QUEUE_ENTRY_TYPE_BOOT_PHASE:
-            SOS_LOG_INFO("Worker handling boot phase %d", message.data.boot_phase.phase);
+            SOS_LOG_INFO("Worker handling boot phase %d\n", message.data.boot_phase.phase);
             int phase = sos_queue_find_phase(message.data.boot_phase.phase);
             if (phase != PHASE_INDEX_NOT_FOUND)
             {
@@ -299,7 +300,7 @@ void sos_worker_thread_function(ULONG service_ctx)
             // Send D2D shutdown request to initiate shutdown sequence on remote die
             if (message.data.shutdown_type != REMOTE_SCP_SHUTDOWN && message.data.shutdown_type != MSCP_SUBSYS_RESET)
             {
-                SOS_LOG_INFO("Sending D2D shutdown request for type %d", message.data.shutdown_type);
+                SOS_LOG_INFO("Sending D2D shutdown request for type %d\n", message.data.shutdown_type);
                 sos_send_d2d_shutdown_request();
             }
 
@@ -310,7 +311,7 @@ void sos_worker_thread_function(ULONG service_ctx)
             current_stage.stage_category = SHUTDOWN_STAGE;
             current_stage.operation_stage.shutdown = message.data.shutdown_type;
 
-            wait_ssi_complete(current_stage);
+            wait_ssi_complete(&current_stage);
 
             if (message.data.shutdown_type != AP_WARM_RESET)
             {
@@ -343,7 +344,7 @@ void sos_worker_thread_function(ULONG service_ctx)
 
             current_stage.stage_category = QUIESCE_STAGE;
             current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
-            wait_ssi_complete(current_stage);
+            wait_ssi_complete(&current_stage);
 
             // This will flush the event trace buffer and send evt quiesce
             // notification to MCP for SCP
@@ -374,7 +375,7 @@ void sos_queue_start_phase(ssi_startup_type_t boot_type, ssi_startup_stage_t pha
     message.data.boot_phase.phase = phase;
     message.p_request = p_request;
 
-    SOS_LOG_TRACE("Queue start phase %d boot type %d (request %x)", phase, boot_type, (uintptr_t)p_request);
+    SOS_LOG_TRACE("Queue start phase %d boot type %d (request %x)\n", phase, boot_type, (uintptr_t)p_request);
 
     // int status =
     tx_queue_send(&s_sos_thread_ctx.work_queue, &message, TX_NO_WAIT);
@@ -388,7 +389,7 @@ void sos_queue_shutdown(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_H
     message.data.shutdown_type = shutdown_type;
     message.p_request = p_request;
 
-    SOS_LOG_INFO("Queue shutdown type %d", shutdown_type);
+    SOS_LOG_INFO("Queue shutdown type %d\n", shutdown_type);
 
     int status = tx_queue_send(&s_sos_thread_ctx.work_queue, &message, TX_NO_WAIT);
     FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
@@ -401,7 +402,7 @@ void sos_queue_quiesce(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HE
     message.data.shutdown_type = shutdown_type;
     message.p_request = p_request;
 
-    SOS_LOG_INFO("Queue shutdown type %d", shutdown_type);
+    SOS_LOG_INFO("Queue shutdown type %d\n", shutdown_type);
 
     int status = tx_queue_send(&s_sos_thread_ctx.work_queue, &message, TX_NO_WAIT);
     FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
@@ -411,7 +412,7 @@ void sos_thread_init(psos_service_context_t p_context)
 {
 
     FPFW_RUNTIME_ASSERT(p_context != NULL);
-    SOS_LOG_INFO("Worker thread init");
+    SOS_LOG_INFO("Worker thread init\n");
 
     // create thread, queue, and event flags for handling requests
     int status = tx_queue_create(&s_sos_thread_ctx.work_queue,                 /* TX_QUEUE *queue_ptr */

@@ -629,6 +629,126 @@ TEST_FUNCTION(test_hard_fault_handler_scf_ram_UE, nullptr, nullptr)
     exception_handler(&stack_frame);
 }
 
+TEST_FUNCTION(test_bus_fault_handler_rmss_ram0_UE, nullptr, nullptr)
+{
+    exception_stack_frame_t stack_frame;
+
+    stack_frame.R0 = KNG_E_NOTIMPL; // error_code
+    stack_frame.R1 = 1;             // p1
+    stack_frame.R2 = 2;             // p2
+    stack_frame.R3 = 3;             // p3
+    stack_frame.R12 = 12;
+    stack_frame.LR = 14;
+    stack_frame.PC = 15;
+    stack_frame.PSR = 16;
+    g_core_crash_context.r4 = 4; // p4
+
+    // Set up expectations
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
+    expect_function_call(get_active_exception);
+    will_return(get_active_exception, -11); // BusFault_IRQn
+
+    // Set up expectations for rmss ram0 UE
+    SCB->CFSR = SCB_CFSR_BFARVALID_Msk;
+    SCB->BFAR = SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS;
+    will_return(__wrap_atu_find_map, 0);  // AP address
+    will_return(__wrap_atu_find_map, -1); // Not found for RMSS RAM0
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_ADDRESS);
+    will_return(__wrap_mmio_read32, SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_UE_MASK); // Simulate RMSS RAM0 UE
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM0_SCP_ERRADDR_REG_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678); // Mock Address
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear UE (Update)
+    expect_value(__wrap_mmio_update32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_ADDRESS);
+    expect_value(__wrap_mmio_update32, data, SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_UE_MASK);
+    expect_value(__wrap_mmio_update32,
+                 mask,
+                 SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_CE_MASK | SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_UE_MASK |
+                     SCP_EXP_CSR_RMSS_RAM0_SCP_ERRSTATUS_REG_OF_MASK);
+    expect_function_call(__wrap_mmio_update32);
+
+    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper_cd_state);
+
+    expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_HM_RMSS_RAM0_UE);
+    expect_any(__wrap_crash_dump_handler, p1);
+    expect_any(__wrap_crash_dump_handler, p2);
+    expect_any(__wrap_crash_dump_handler, p3);
+    expect_any(__wrap_crash_dump_handler, p4);
+    expect_function_call(__wrap_crash_dump_handler);
+
+    expect_function_call(crash_dump_wait_forever);
+
+    // Call API
+    exception_handler(&stack_frame);
+}
+
+TEST_FUNCTION(test_bus_fault_handler_rmss_ram1_UE, nullptr, nullptr)
+{
+    exception_stack_frame_t stack_frame;
+
+    stack_frame.R0 = KNG_E_NOTIMPL; // error_code
+    stack_frame.R1 = 1;             // p1
+    stack_frame.R2 = 2;             // p2
+    stack_frame.R3 = 3;             // p3
+    stack_frame.R12 = 12;
+    stack_frame.LR = 14;
+    stack_frame.PC = 15;
+    stack_frame.PSR = 16;
+    g_core_crash_context.r4 = 4; // p4
+
+    // Set up expectations
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
+    expect_function_call(get_active_exception);
+    will_return(get_active_exception, -11); // BusFault_IRQn
+
+    // Set up expectations for rmss ram1 UE
+    SCB->CFSR = SCB_CFSR_BFARVALID_Msk;
+    SCB->BFAR = SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS;
+    will_return(__wrap_atu_find_map, 0);  // AP address
+    will_return(__wrap_atu_find_map, -1); // Not found for RMSS RAM1
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_ADDRESS);
+    will_return(__wrap_mmio_read32, SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_UE_MASK); // Simulate RMSS RAM1 UE
+    expect_function_call(__wrap_mmio_read32);
+
+    expect_value(__wrap_mmio_read32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM1_SCP_ERRADDR_REG_ADDRESS);
+    will_return(__wrap_mmio_read32, 0x12345678); // Mock Address
+    expect_function_call(__wrap_mmio_read32);
+
+    // Clear UE (Update)
+    expect_value(__wrap_mmio_update32, addr, SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCP_EXP_CSR_ADDRESS + SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_ADDRESS);
+    expect_value(__wrap_mmio_update32, data, SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_UE_MASK);
+    expect_value(__wrap_mmio_update32,
+                 mask,
+                 SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_CE_MASK | SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_UE_MASK |
+                     SCP_EXP_CSR_RMSS_RAM1_SCP_ERRSTATUS_REG_OF_MASK);
+    expect_function_call(__wrap_mmio_update32);
+
+    expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper_cd_state);
+
+    expect_value(__wrap_crash_dump_handler, errorCode, (uint32_t)KNG_HM_RMSS_RAM1_UE);
+    expect_any(__wrap_crash_dump_handler, p1);
+    expect_any(__wrap_crash_dump_handler, p2);
+    expect_any(__wrap_crash_dump_handler, p3);
+    expect_any(__wrap_crash_dump_handler, p4);
+    expect_function_call(__wrap_crash_dump_handler);
+
+    expect_function_call(crash_dump_wait_forever);
+
+    // Call API
+    exception_handler(&stack_frame);
+}
+
 TEST_FUNCTION(test_threadx_stack_error_handler, nullptr, nullptr)
 {
     TX_THREAD tx_thread;

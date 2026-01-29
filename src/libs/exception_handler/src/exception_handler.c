@@ -225,6 +225,45 @@ static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm,
     return ret;
 }
 
+static bool check_rmss_ram_ecc_ue(int32_t* errorCode,
+                                  acpi_err_sec_firmware_t* sec_fw_cper_section,
+                                  uint32_t err_msk,
+                                  uint32_t ue_msk,
+                                  uint32_t status_reg_addr,
+                                  uint32_t address_reg_addr,
+                                  uint32_t err_code,
+                                  uint16_t record_id,
+                                  const char* fault_log)
+{
+    bool ret = false;
+
+    uint32_t status = MMIO_READ32(status_reg_addr);
+
+    if (status & err_msk)
+    {
+        if (status & ue_msk)
+        {
+            FPFwCDPrintf("%s ECC RAS UE Fault\n", fault_log);
+            *errorCode = err_code;
+
+            // Set CPER section
+            sec_fw_cper_section->severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+            sec_fw_cper_section->record_id = record_id;
+            sec_fw_cper_section->param[0] = status;
+            sec_fw_cper_section->param[1] = MMIO_READ32(address_reg_addr);
+            sec_fw_cper_section->param[2] = err_code;
+            sec_fw_cper_section->param[3] = 0;
+
+            ret = true;
+        }
+
+        // clear Error status
+        MMIO_UPDATE32(status_reg_addr, status, err_msk);
+    }
+
+    return ret;
+}
+
 static bool check_ecc_fault(int32_t* errorCode, acpi_err_sec_firmware_t* sec_fw_cper_section)
 {
     bool ret = false;
@@ -317,37 +356,53 @@ static bool check_ecc_fault(int32_t* errorCode, acpi_err_sec_firmware_t* sec_fw_
                 fault_addr < (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SCF_RAM_ADDRESS + MSCP_EXP_TOP_SCF_RAM_SIZE))
             {
                 // SCF RAM
-                const uint32_t err_msk = MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_UE_MASK |
-                                         MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_CE_MASK |
-                                         MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_OF_MASK;
-                uint32_t scf_status = MMIO_READ32(MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
-                                                  MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_ADDRESS);
-
-                if (scf_status & err_msk)
-                {
-                    if (scf_status & MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_UE_MASK)
-                    {
-                        FPFwCDPrintf("SCF ECC RAS UE Fault\n");
-                        *errorCode = KNG_HM_SCF_UE;
-
-                        // Set CPER section
-                        sec_fw_cper_section->severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
-                        sec_fw_cper_section->record_id = RECORD_ID_MSCP_SCF_RAM;
-                        sec_fw_cper_section->param[0] = scf_status;
-                        sec_fw_cper_section->param[1] =
-                            MMIO_READ32(MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
-                                        MSCP_EXP_CSR_SCFRAM_MSCP_ERRADDR_REG_ADDRESS);
-                        sec_fw_cper_section->param[2] = KNG_HM_SCF_UE;
-                        sec_fw_cper_section->param[3] = 0;
-                    }
-
-                    // clear Error status
-                    MMIO_UPDATE32(MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
-                                      MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_ADDRESS,
-                                  scf_status,
-                                  err_msk);
-                    ret = true;
-                }
+                ret = check_rmss_ram_ecc_ue(
+                    errorCode,
+                    sec_fw_cper_section,
+                    MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_UE_MASK | MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_CE_MASK |
+                        MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_OF_MASK,
+                    MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_UE_MASK,
+                    MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS + MSCP_EXP_CSR_SCFRAM_MSCP_ERRSTATUS_REG_ADDRESS,
+                    MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS + MSCP_EXP_CSR_SCFRAM_MSCP_ERRADDR_REG_ADDRESS,
+                    KNG_HM_SCF_UE,
+                    RECORD_ID_MSCP_SCF_RAM,
+                    "SCF");
+            }
+            else if (fault_addr >= (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_RAM0_ADDRESS) &&
+                     fault_addr < (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_RAM0_ADDRESS + MSCP_EXP_TOP_RAM0_SIZE))
+            {
+                // RAM0
+                ret = check_rmss_ram_ecc_ue(errorCode,
+                                            sec_fw_cper_section,
+                                            MSCP_EXP_CSR_RMSS_RAM0_MSCP_ERRSTATUS_REG_CE_MASK |
+                                                MSCP_EXP_CSR_RMSS_RAM0_MSCP_ERRSTATUS_REG_UE_MASK |
+                                                MSCP_EXP_CSR_RMSS_RAM0_MSCP_ERRSTATUS_REG_OF_MASK,
+                                            MSCP_EXP_CSR_RMSS_RAM0_MSCP_ERRSTATUS_REG_UE_MASK,
+                                            MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
+                                                MSCP_EXP_CSR_RMSS_RAM0_MSCP_ERRSTATUS_REG_ADDRESS,
+                                            MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
+                                                MSCP_EXP_CSR_RMSS_RAM0_MSCP_ERRADDR_REG_ADDRESS,
+                                            KNG_HM_RMSS_RAM0_UE,
+                                            RECORD_ID_MSCP_RMSS_RAM0,
+                                            "RMSS RAM0");
+            }
+            else if (fault_addr >= (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_RAM1_ADDRESS) &&
+                     fault_addr < (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_RAM1_ADDRESS + MSCP_EXP_TOP_RAM1_SIZE))
+            {
+                // RAM1
+                ret = check_rmss_ram_ecc_ue(errorCode,
+                                            sec_fw_cper_section,
+                                            MSCP_EXP_CSR_RMSS_RAM1_MSCP_ERRSTATUS_REG_CE_MASK |
+                                                MSCP_EXP_CSR_RMSS_RAM1_MSCP_ERRSTATUS_REG_UE_MASK |
+                                                MSCP_EXP_CSR_RMSS_RAM1_MSCP_ERRSTATUS_REG_OF_MASK,
+                                            MSCP_EXP_CSR_RMSS_RAM1_MSCP_ERRSTATUS_REG_UE_MASK,
+                                            MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
+                                                MSCP_EXP_CSR_RMSS_RAM1_MSCP_ERRSTATUS_REG_ADDRESS,
+                                            MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS +
+                                                MSCP_EXP_CSR_RMSS_RAM1_MSCP_ERRADDR_REG_ADDRESS,
+                                            KNG_HM_RMSS_RAM1_UE,
+                                            RECORD_ID_MSCP_RMSS_RAM1,
+                                            "RMSS RAM1");
             }
         }
     }

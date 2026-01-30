@@ -594,19 +594,34 @@ TEST_FUNCTION(test_ddr_create_memory_map_SVP_mark_uefi_unavailable, NULL, NULL)
     ddr_create_memory_map();
     show_map(p_outgoing_memory_map, ddrmap_get_last_idx(p_outgoing_memory_map), true);
 
-    assert_int_equal(p_outgoing_memory_map[ddrmap_get_last_idx(p_outgoing_memory_map) - 4].start_address,
-                     SVP_DDRSS_RESERVED_REGION_START);
-    assert_int_equal(p_outgoing_memory_map[ddrmap_get_last_idx(p_outgoing_memory_map) - 4].end_address,
-                     SVP_DDRSS_RESERVED_REGION_END);
-    assert_int_equal(p_outgoing_memory_map[ddrmap_get_last_idx(p_outgoing_memory_map) - 4].attr.as_uint32,
-                     SVP_DDRSS_RESERVED_REGION_ATTRIBUTES);
-    assert_int_equal(p_outgoing_memory_map[ddrmap_get_last_idx(p_outgoing_memory_map) - 3].start_address,
-                     SVP_DDRSS_RESERVED_REGION_END);
-    assert_int_equal(p_outgoing_memory_map[ddrmap_get_last_idx(p_outgoing_memory_map) - 1].end_address,
-                     ddrss_sys_test_map.mem_regions[5].end_address);
-    assert_int_equal(p_outgoing_memory_map[ddrmap_get_last_idx(p_outgoing_memory_map)].start_address, 0);
-    assert_int_equal(p_outgoing_memory_map[ddrmap_get_last_idx(p_outgoing_memory_map)].end_address, 0);
-    assert_int_equal(p_outgoing_memory_map[ddrmap_get_last_idx(p_outgoing_memory_map)].attr.as_uint32 & ATTR_MASK_ALL, 0);
+    // Find and verify the SVP reserved region in the output map
+    int svp_region_idx = -1;
+    int last_idx = ddrmap_get_last_idx(p_outgoing_memory_map);
+    for (int i = 0; i < last_idx; i++)
+    {
+        if (p_outgoing_memory_map[i].start_address == SVP_DDRSS_RESERVED_REGION_START)
+        {
+            svp_region_idx = i;
+            break;
+        }
+    }
+
+    // Verify SVP region was found and has correct attributes
+    assert_true(svp_region_idx >= 0);
+    assert_int_equal(p_outgoing_memory_map[svp_region_idx].start_address, SVP_DDRSS_RESERVED_REGION_START);
+    assert_int_equal(p_outgoing_memory_map[svp_region_idx].end_address, SVP_DDRSS_RESERVED_REGION_END);
+    assert_int_equal(p_outgoing_memory_map[svp_region_idx].attr.as_uint32, SVP_DDRSS_RESERVED_REGION_ATTRIBUTES);
+
+    // Verify region after SVP starts at SVP end address
+    assert_int_equal(p_outgoing_memory_map[svp_region_idx + 1].start_address, SVP_DDRSS_RESERVED_REGION_END);
+
+    // Verify the last valid region ends at the expected address (end of test map region 5)
+    assert_int_equal(p_outgoing_memory_map[last_idx - 1].end_address, ddrss_sys_test_map.mem_regions[5].end_address);
+
+    // Verify terminating entry
+    assert_int_equal(p_outgoing_memory_map[last_idx].start_address, 0);
+    assert_int_equal(p_outgoing_memory_map[last_idx].end_address, 0);
+    assert_int_equal(p_outgoing_memory_map[last_idx].attr.as_uint32 & ATTR_MASK_ALL, 0);
 
     g_should_wrap_idsw_get_platform_sdv = false;
 }

@@ -42,6 +42,7 @@ GENERATE_ARRAY_OF_RSVD_REGIONS
 void insert_range(ddrss_memory_region_t mmap[], int idx, uint64_t start, uint64_t end, uint32_t pas_mask);
 void show_map(const ddrss_memory_region_t this_mmap[], int idx, bool show_all);
 static uint32_t MemoryMapPassToTFA(ddrss_memory_region_t mmap_tfa[]);
+static void remove_regions_within_svp_concealment(ddrss_memory_region_t regions[]);
 
 /*-- Declarations (Statics and globals) --*/
 ddrss_memory_region_t outgoing_memory_map[MAX_MEMORY_REGIONS] = {0};
@@ -135,6 +136,11 @@ void ddr_create_memory_map()
 
     if (add_svp_reserved_region == true)
     {
+        // Remove any regions that fall entirely within the SVP concealment region.
+        // This is necessary because new UEFI reservations made for non-SVP
+        // platforms can overlap with the SVP region for example: DIE_0_DDRSS_REGIONS_RSVD_REGION_ID.
+        remove_regions_within_svp_concealment(sorted_reservations);
+
         // Insert SVP reserved region
         int terminating_array_idx = ddrmap_get_last_idx(sorted_reservations);
         insert_range(sorted_reservations,
@@ -350,6 +356,52 @@ int sort_reserved_regions_inplace(ddrss_memory_region_t regions[], uint32_t num_
     }
 
     return SILIBS_SUCCESS;
+}
+
+/**
+ *  Remove regions that fall entirely within the SVP concealment region.
+ *  This prevents overlap errors when the SVP reserved region is added.
+ *  Regions that are fully contained within SVP_DDRSS_RESERVED_REGION_START to
+ *  SVP_DDRSS_RESERVED_REGION_END are removed and the array is compacted.
+ *
+ *  @param
+ *      IN/OUT - regions array to filter (must be null-terminated)
+ *
+ *  @return
+ *      none
+ */
+static void remove_regions_within_svp_concealment(ddrss_memory_region_t regions[])
+{
+    uint32_t read_idx = 0;
+    uint32_t write_idx = 0;
+
+    while (!(regions[read_idx].start_address == 0 && regions[read_idx].end_address == 0))
+    {
+        uint64_t start = regions[read_idx].start_address;
+        uint64_t end = regions[read_idx].end_address;
+
+        // Check if the region is completely within the SVP concealment region
+        if (start >= SVP_DDRSS_RESERVED_REGION_START && end <= SVP_DDRSS_RESERVED_REGION_END)
+        {
+            // Skip this region - it's contained within SVP concealment
+            DDR_LOG_DEBUG("Removing region 0x%llx-0x%llx (within SVP concealment)", start, end);
+            read_idx++;
+            continue;
+        }
+
+        // Keep this region
+        if (write_idx != read_idx)
+        {
+            regions[write_idx] = regions[read_idx];
+        }
+        write_idx++;
+        read_idx++;
+    }
+
+    // Add terminator
+    regions[write_idx].start_address = 0;
+    regions[write_idx].end_address = 0;
+    regions[write_idx].attr.as_uint32 = 0;
 }
 
 // If reservations are adjacent and have exactly the same attributes, collapse them into one

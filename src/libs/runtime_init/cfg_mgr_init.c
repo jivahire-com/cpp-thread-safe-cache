@@ -20,15 +20,17 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 // Config profile IDs are defined by the order of FPFW_CFG_MGR_PROFILES
-#define MSCP_CONFIG_PROFILE_PLATFORM       0
-#define MSCP_CONFIG_PROFILE_FPGA           1
-#define MSCP_CONFIG_PROFILE_SVP            2
-#define MSCP_CONFIG_PROFILE_SVP_MIN_CONFIG 3
-#define MSCP_CONFIG_PROFILE_EMU            4
-#define MSCP_CONFIG_BMC_PROFILE_COMPUTE    5 // override / compute
+#define MSCP_CONFIG_PROFILE_PLATFORM         0
+#define MSCP_CONFIG_PROFILE_FPGA             1
+#define MSCP_CONFIG_PROFILE_SVP              2
+#define MSCP_CONFIG_PROFILE_SVP_MIN_CONFIG   3
+#define MSCP_CONFIG_PROFILE_EMU              4
+#define MSCP_CONFIG_BMC_PROFILE_COMPUTE_OVL2 5 // override / compute / AE - OVL2 SKU
+#define MSCP_CONFIG_BMC_PROFILE_COMPUTE_OVL3 6 // override / compute / AG - OVL3 SKU
 
 // BMC Profiles
-#define BMC_PROFILE_COMPUTE 0x01 // override / compute
+#define BMC_PROFILE_COMPUTE_OVL2 0x01 // override / compute / AE - OVL2 SKU
+#define BMC_PROFILE_COMPUTE_OVL3 0x02 // override / compute / AG - OVL3 SKU
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -41,8 +43,10 @@ static uint8_t get_profile_id()
 {
     switch (system_info_get_bmc_profile())
     {
-    case BMC_PROFILE_COMPUTE:
-        return MSCP_CONFIG_BMC_PROFILE_COMPUTE;
+    case BMC_PROFILE_COMPUTE_OVL2:
+        return MSCP_CONFIG_BMC_PROFILE_COMPUTE_OVL2;
+    case BMC_PROFILE_COMPUTE_OVL3:
+        return MSCP_CONFIG_BMC_PROFILE_COMPUTE_OVL3;
     default:
         break;
     }

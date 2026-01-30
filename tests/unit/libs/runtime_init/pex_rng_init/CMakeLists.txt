@@ -17,6 +17,7 @@ fwlib.lib.init
 fwlib.lib.utils
 fwlib.lib.interface.platform.dbgprint
 ms::cmocka::testrunner
+ms::lib::boot_status
 ms::lib::pex_rng
 ms::lib::core_info
 ms::lib::corebits
@@ -53,4 +54,7 @@ mock_target(${TARGET}
     _tx_timer_create
     _txe_timer_create
     crash_dump_bug_check
+    boot_status_notify_extd
+    idsw_get_cpu_type
+    idsw_get_die_id
 )

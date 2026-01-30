@@ -11,8 +11,9 @@
 
 #include <DbgPrint.h>
 #include <FpFwUtils.h>
-#include <atu_api.h>               // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
-#include <atu_lib.h>               // for atu_map_entry_t, atu_entry_attr_t
+#include <atu_api.h> // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
+#include <atu_lib.h> // for atu_map_entry_t, atu_entry_attr_t
+#include <boot_status.h>
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <core_info.h>
 #include <corebits.h>
@@ -29,7 +30,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh_stg_2", "atu_svc", "core_info", "ift"))
+FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh_stg_2", "atu_svc", "core_info", "ift", "boot_stat"))
 {
     if (ift_is_enabled())
     {
@@ -57,6 +58,16 @@ FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh_stg
     }
     register_pex_error_domain(&rng_config);
     FPFW_DBGPRINT_INFO("PEX error domain registration done\n");
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_PEX_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_PEX_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &rng_config};
 }

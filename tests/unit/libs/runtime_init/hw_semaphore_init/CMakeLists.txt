@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::crash_dump
         ms::lib::hw_semaphore
         silibs_platform
@@ -45,4 +46,5 @@ mock_target(${TARGET}
     idsw_get_die_id
     idsw_get_cpu_type
     initialize_semaphore
+    boot_status_notify_extd
 )

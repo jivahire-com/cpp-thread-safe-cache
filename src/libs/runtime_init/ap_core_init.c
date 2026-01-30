@@ -13,6 +13,7 @@
 #include <ap_core_init.h>
 #include <atu_api.h> // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
 #include <atu_lib.h> // for atu_map_entry_t, atu_entry_attr_t
+#include <boot_status.h>
 #include <bug_check.h>
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <core_info.h>
@@ -75,7 +76,7 @@ FPFW_INIT_COMPONENT(ap_core_svc,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &ap_core_service};
 }
 
-FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int", "mesh_stg_2"))
+FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int", "mesh_stg_2", "boot_stat"))
 {
     static ap_core_interface_t ap_core_interface;
     ap_core_interface_init(fpfw_init_get_handle("ap_core_svc"), &ap_core_interface);
@@ -90,6 +91,16 @@ FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int"
         sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &ap_core_ssi_interface.header);
     BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
     /*=========== End code for SSI registration ==========*/
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_APCORE_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_APCORE_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &ap_core_interface};
 }

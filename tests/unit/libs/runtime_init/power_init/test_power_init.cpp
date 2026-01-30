@@ -11,9 +11,10 @@
 #include <CMockaWrapper.h> // for assert_int_equal, assert_non_null, expe...
 
 extern "C" {
-#include <DfwkDriver.h>        // for DFWK_SCHEDULE
-#include <DfwkThreadXHost.h>   // for DFWK_THREADX_HOST
-#include <FpFwUtils.h>         // for FPFW_UNUSED
+#include <DfwkDriver.h>      // for DFWK_SCHEDULE
+#include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
+#include <FpFwUtils.h>       // for FPFW_UNUSED
+#include <boot_status.h>
 #include <corebits.h>          // for corebits_is_bit_set, corebits_is_clear
 #include <fpfw_init.h>         // for fpfw_init_result_t, fpfw_init_component_t
 #include <idsw.h>              // for idsw_get_die_id
@@ -100,6 +101,20 @@ KNG_DIE_ID __wrap_idsw_get_die_id(void)
 void __wrap_pwr_avs_initialize(pscp_avs_interface_t avs_array[])
 {
     check_expected_ptr(avs_array);
+}
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
+idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
+{
+    return mock_type(idsw_cpu_type_t);
 }
 
 //
@@ -341,6 +356,18 @@ TEST_FUNCTION(power_init_pwr_int, nullptr, nullptr)
     expect_any(__wrap_sos_register_ssi, p_registration);
     expect_any(__wrap_sos_register_ssi, p_ssi_interface);
     will_return(__wrap_sos_register_ssi, FPFW_INIT_STATUS_SUCCESS);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_POWER_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_int.init_fn();

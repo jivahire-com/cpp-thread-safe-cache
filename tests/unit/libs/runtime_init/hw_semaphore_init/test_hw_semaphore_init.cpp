@@ -13,6 +13,7 @@
 
 extern "C" {
 #include <FpFwUtils.h>
+#include <boot_status.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -60,6 +61,16 @@ void __wrap_initialize_semaphore(SEMAPHORE_ID id)
 
     function_called();
 }
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
 //
 // Tests
 //
@@ -81,6 +92,18 @@ TEST_FUNCTION(test_hw_semaphore_init_dual_die_scp, nullptr, nullptr)
     assert_string_equal("atu_svc", _fpfw_component_hw_sem.children[1]);
     assert_string_equal("mesh_stg_2", _fpfw_component_hw_sem.children[2]);
 
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_HW_SEM_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Call API under test
     _fpfw_component_hw_sem.init_fn();
 }
@@ -99,6 +122,18 @@ TEST_FUNCTION(test_hw_semaphore_init_single_die_scp, nullptr, nullptr)
     assert_string_equal("hw_ver", _fpfw_component_hw_sem.children[0]);
     assert_string_equal("atu_svc", _fpfw_component_hw_sem.children[1]);
     assert_string_equal("mesh_stg_2", _fpfw_component_hw_sem.children[2]);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_HW_SEM_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call API under test
     _fpfw_component_hw_sem.init_fn();
@@ -119,6 +154,18 @@ TEST_FUNCTION(test_hw_semaphore_init_dual_die_mcp, nullptr, nullptr)
     assert_string_equal("hw_ver", _fpfw_component_hw_sem.children[0]);
     assert_string_equal("atu_svc", _fpfw_component_hw_sem.children[1]);
     assert_string_equal("mesh_stg_2", _fpfw_component_hw_sem.children[2]);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, (test_die == DIE_0) ? MCP_PRIMARY : MCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_HW_SEM_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call API under test
     _fpfw_component_hw_sem.init_fn();

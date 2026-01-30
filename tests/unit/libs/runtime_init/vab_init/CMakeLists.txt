@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
     fwlib.lib.interface.platform.dbgprint
     ms::cmocka::testrunner
     ms::driver::vab
+    ms::lib::boot_status
     ms::service::health_monitor
     silibs::idsw
     silibs::idsw_kng
@@ -36,4 +37,6 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     idsw_get_die_id
     vab_common_init
+    boot_status_notify_extd
+    idsw_get_cpu_type
 )

@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
         fwlib.service.iccBase
         ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::crash_dump
         ms::lib::threadx
         ms::lib::core_info
@@ -52,4 +53,6 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     sos_register_ssi
     idsw_get_die_id
+    boot_status_notify_extd
+    idsw_get_cpu_type
 )

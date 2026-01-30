@@ -17,7 +17,6 @@ target_link_libraries(${TARGET}
         idhw
         ms::cmocka::testrunner
         ms::lib::boot_status
-        ms::lib::boot_status
         ms::lib::d2d_cntr_sync
         silibs_platform
 )

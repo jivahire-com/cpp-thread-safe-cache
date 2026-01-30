@@ -17,6 +17,7 @@ extern "C" {
 #include <FpFwUtils.h>
 #include <atu_api.h>
 #include <atu_lib.h>
+#include <boot_status.h>
 #include <fpfw_init.h>
 #include <idsw_kng.h>
 #include <system_info.h>
@@ -108,6 +109,20 @@ static int test_teardown(void** ctx)
 
     return 0;
 }
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
+idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
+{
+    return mock_type(idsw_cpu_type_t);
+}
 }
 
 //
@@ -118,6 +133,18 @@ TEST_FUNCTION(test_shared_mem_init_warm_boot, test_setup, test_teardown)
     // Set up expectations
     will_return(__wrap_system_info_is_warm_start, true);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_SHARED_MEM_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_shared_mem.init_fn();
@@ -150,6 +177,17 @@ TEST_FUNCTION(test_arsm_init_cold_boot_d0, test_setup, test_teardown)
     expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
     expect_function_call(__wrap_atu_unmap);
 
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_SHARED_MEM_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_shared_mem.init_fn();
 
@@ -179,6 +217,17 @@ TEST_FUNCTION(test_arsm_init_cold_boot_d1, test_setup, test_teardown)
     expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
     expect_function_call(__wrap_atu_unmap);
 
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_SHARED_MEM_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_shared_mem.init_fn();
 
@@ -191,6 +240,18 @@ TEST_FUNCTION(test_arsm_init_svp_bypass, test_setup, test_teardown)
 {
     // Set up expectations
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_SHARED_MEM_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_shared_mem.init_fn();

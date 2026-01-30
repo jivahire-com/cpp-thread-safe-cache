@@ -13,6 +13,7 @@
 #include "power_runconfig.h" // for VM_FLAGS_NONE, VM_FLAGS_DIV2, pow...
 
 #include <atu_api.h> // for MSCP_ATU_AP_WINDOW_CORE_CLUSTER_DIE_BASE_ADDR
+#include <boot_status.h>
 #include <bug_check.h>
 #include <core_cluster_top_regs.h> // for CORE_CLUSTER_TOP_CORE_CLUSTER0_AD...
 #include <core_info.h>
@@ -213,7 +214,7 @@ FPFW_INIT_COMPONENT(pwr_svc,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &power_service};
 }
 
-FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc", "sos_int"))
+FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc", "sos_int", "boot_stat"))
 {
     static power_service_interface_t power_interface;
     power_interface_init(fpfw_init_get_handle("pwr_svc"), &power_interface);
@@ -228,6 +229,16 @@ FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc", "sos_int"))
     int32_t status = sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &power_ssi_interface.header);
     BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
     /*=========== End code for SSI registration ==========*/
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_POWER_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_POWER_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &power_interface};
 }

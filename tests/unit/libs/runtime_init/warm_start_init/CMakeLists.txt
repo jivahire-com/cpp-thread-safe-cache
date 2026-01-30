@@ -24,8 +24,14 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
+        ms::lib::boot_status
         ms::lib::warm_start
         ms::cmocka::testrunner
+        silibs::idhw
+        silibs::kng_silibs_platform
+        silibs::idsw
+        silibs::idsw_kng
+
 )
 
 # Generic ports implmented within this project
@@ -40,4 +46,7 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     warm_start_init
+    boot_status_notify_extd
+    idsw_get_cpu_type
+    idsw_get_die_id
 )

@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.dbgprint
         fwlib.lib.utils
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::system_info
         ms::service::atu_service
         silibs_platform
@@ -41,4 +42,6 @@ mock_target(${TARGET}
     memset
     atu_map
     atu_unmap
+    boot_status_notify_extd
+    idsw_get_cpu_type
 )

@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         ms::service::health_monitor
         ms::service::health_monitor::cli
+        ms::lib::boot_status
         ms::lib::error_domain::scp
 )
 
@@ -52,4 +53,7 @@ mock_target(${TARGET}
     register_smmu_error_domain
     register_gic_error_domain
     register_ap_wdt_error_domain
+    boot_status_notify_extd
+    idsw_get_cpu_type
+    idsw_get_die_id
 )

@@ -22,6 +22,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::accel_intr
         ms::lib::accelerator_ip
+        ms::lib::boot_status
         ms::lib::cortex_m7::nvic
         ms::lib::cortex_m7::virt_irq
         ms::lib::register_headers
@@ -77,4 +78,7 @@ mock_target(${TARGET}
     sdm_ext_int_mask_enable
     sdm_ext_int_mask_disable
     sdm_ext_int_mask_status_clear
+    boot_status_notify_extd
+    idsw_get_cpu_type
+    idsw_get_die_id
 )

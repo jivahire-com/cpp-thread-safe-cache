@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
         silibs::idsw
         ms::cmocka::testrunner
         ms::lib::accelerator_ip
+        ms::lib::boot_status
         ms::service::atu_service
         ms::service::health_monitor
         ms::service::health_monitor::cli
@@ -47,4 +48,6 @@ mock_target(${TARGET}
     hm_post_intercore_init
     hm_cli_init
     idhw_is_single_die_boot_en
+    boot_status_notify_extd
+    idsw_get_cpu_type
 )

@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         ms::client_interface::startup_shutdown
         ms::cmocka::testrunner
         ms::lib::threadx
+        ms::lib::boot_status
         ms::lib::core_info
         ms::lib::crash_dump
         ms::lib::utils
@@ -51,6 +52,8 @@ mock_target(${TARGET}
     power_init
     power_interface_init
     sos_register_ssi
+    boot_status_notify_extd
+    idsw_get_cpu_type
     idsw_get_die_id
     pwr_avs_initialize
 )

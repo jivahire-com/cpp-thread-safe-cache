@@ -23,6 +23,7 @@ set(LIBRARIES
     fwlib.service.iccBase
     ms::cmocka::testrunner
     ms::driver::icc_mhu_trans
+    ms::lib::boot_status
     ms::lib::crash_dump
     ms::lib::threadx
     ms::lib::scp_interrupts
@@ -102,4 +103,5 @@ mock_target(${TARGET}
     idsw_get_cpu_type
     mhu_icc_transport_device_init
     mhu_icc_transport_interface_init
+    boot_status_notify_extd
 )

@@ -11,6 +11,7 @@
 #include <accelerator_ip.h>
 #include <accelip_id.h>
 #include <atu_api.h>
+#include <boot_status.h>
 #include <einj.h>
 #include <fpfw_init.h>
 #include <health_monitor.h>
@@ -58,9 +59,21 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc"
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &hm_config};
 }
 
-FPFW_INIT_COMPONENT(hm_post_init, FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "mesh_stg_2", "ddr", "gpio_dev", "hw_sem"))
+FPFW_INIT_COMPONENT(hm_post_init,
+                    FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "mesh_stg_2", "ddr", "gpio_dev", "hw_sem", "boot_stat"))
 {
     hm_post_ddr_init();
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_HM_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_HM_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 

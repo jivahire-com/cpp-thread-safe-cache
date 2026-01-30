@@ -12,6 +12,7 @@
 #include <DbgPrint.h>
 #include <atu_api.h>
 #include <atu_lib.h>
+#include <boot_status.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -31,7 +32,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(shared_mem, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo", "debug_print"))
+FPFW_INIT_COMPONENT(shared_mem, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo", "debug_print", "boot_stat"))
 {
     int32_t result = FPFW_INIT_STATUS_SUCCESS;
 
@@ -79,5 +80,16 @@ FPFW_INIT_COMPONENT(shared_mem, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sys
         result = atu_unmap(ATU_ID_MSCP, &rsm_atu_entry);
     }
 done:
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_SHARED_MEM_INIT_END
+                                                             : MSCP_BOOT_STATUS_CODE_MCP_SHARED_MEM_INIT_END,
+                            GEN_BOOT_STATUS_EX_GENERIC_CODE(
+                                (idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                MSCP_GENERIC,
+                                (idsw_get_die_id() == DIE_0)
+                                    ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                    : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     return (fpfw_init_result_t){result, NULL};
 }

@@ -11,20 +11,20 @@
     </universal_packages>
 
     <nuget_packages>
-        <package name="kingsgate.ap.baremetal" version="2.0.0.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
+        <package name="kingsgate.ap.baremetal" version="2.0.0.2" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
         <package name="kingsgate.sdm.cded" version="2.0.4.20" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/Kingsgate.SoCFW/nuget/v3/index.json"/>
-        <package name="echofalls.atf.build" version="1.90.1.45" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="echofalls.rmm.build" version="1.90.1.12" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="echofalls.hafnium.build" version="1.90.1.22" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="echofalls.svp.uefi.build" version="1.90.1.65" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="echofalls.svp.stmm.build" version="1.90.1.65" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="echofalls.soc.uefi.build" version="1.90.1.65" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="echofalls.soc.stmm.build" version="1.90.1.65" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
+        <package name="echofalls.atf.build" version="2.0.0.20" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
+        <package name="echofalls.rmm.build" version="2.0.0.2" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
+        <package name="echofalls.hafnium.build" version="2.0.0.2" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
+        <package name="echofalls.svp.uefi.build" version="2.0.0.27" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
+        <package name="echofalls.svp.stmm.build" version="2.0.0.27" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
+        <package name="echofalls.soc.uefi.build" version="2.0.0.27" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
+        <package name="echofalls.soc.stmm.build" version="2.0.0.27" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="1pfw.datwizard-preview-x86_64-pc-windows-msvc" version="0.2.1-62" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.Dependency/nuget/v3/index.json"/>
-        <package name="kng_mesh_binary_images" version="1.0.0.14" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins/nuget/v3/index.json"/>
+        <package name="kng_mesh_binary_images" version="2.0.0.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins/nuget/v3/index.json"/>
         <package name="kng_ddrss_phy_fw_image" version="2.0.0.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins/nuget/v3/index.json"/>
-        <package name="echofalls.rp_exe.build" version="1.90.1.45" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
-        <package name="echofalls.rp_data.build" version="1.90.1.45" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
+        <package name="echofalls.rp_exe.build" version="2.0.0.20" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
+        <package name="echofalls.rp_data.build" version="2.0.0.20" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="pcie.phy.bin" version="1.95.1.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
         <package name="IFTVectors" version="1.0.0.7" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
         <package name="1psfw.diagnosticdecoder.windows" version="1.1.269" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.Dependency/nuget/v3/index.json"/>

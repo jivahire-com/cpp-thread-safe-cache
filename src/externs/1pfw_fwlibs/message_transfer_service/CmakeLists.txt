@@ -36,6 +36,11 @@ target_include_directories(${TARGET}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+target_compile_definitions(
+    ${TARGET} PRIVATE
+        TX_TIMER_TICKS_PER_SECOND=${TX_CORE_TICKS_PER_SECOND}
+)
+
 # Give Platform specialization access to private includes
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.mts,INCLUDE_DIRECTORIES>)
 

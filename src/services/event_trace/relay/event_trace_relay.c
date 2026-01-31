@@ -1059,10 +1059,6 @@ void etr_worker_thread_func(ULONG thread_input)
         /* If send DCP notification event flag is set */
         if ((event_flags & ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION) == ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION)
         {
-            /* TODO: The Agent seems to need an additional delay in notification to catch it.
-             * Leaving this printf to unblock telemetry Agent development. Will clean as part of ADO3314039
-             */
-            FPFW_DBGPRINT_INFO("Sending out DCP Notification from ETR Worker Thread\n");
             mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
         }
 

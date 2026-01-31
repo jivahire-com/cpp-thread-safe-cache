@@ -83,3 +83,10 @@ void __wrap_FpFwAssertWithArgs(int expression, uintptr_t arg0, uintptr_t arg1, u
 
     function_called();
 }
+
+UINT __wrap__tx_thread_sleep(ULONG timer_ticks)
+{
+    FPFW_UNUSED(timer_ticks);
+
+    return mock_type(UINT);
+}

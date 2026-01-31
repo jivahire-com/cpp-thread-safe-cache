@@ -319,3 +319,138 @@ TEST_FUNCTION(test_mts_platform_send_msg_via_transport_error, nullptr, nullptr)
 
     mts_platform_send_msg_via_transport(&trp_msg, (p_trp_endpoint_t)&trp_icc_endpoint);
 }
+
+/**
+ * @brief Test ICC send retry on timeout - verifies retry logic triggers on timeout error
+ *
+ * This test verifies that when fpfw_icc_base_send_sync returns a timeout error,
+ * the function retries up to MTS_ICC_SEND_MAX_RETRIES times with delays between attempts.
+ */
+TEST_FUNCTION(test_mts_platform_send_msg_via_transport_retry_on_timeout, nullptr, nullptr)
+{
+    trp_msg_t trp_msg;
+    trp_icc_endpoint_t trp_icc_endpoint;
+    uint8_t outgoing_icc_buffer[MAX_ICC_BUFFER_SIZE];
+
+    trp_icc_endpoint.base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_ARM_MHU;
+    trp_icc_endpoint.base_endpt.seq_number.as_uint16 = TRP_SEQ_NUM_NOT_INIT;
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.hdr.dest_node.die_id = 0;
+    trp_msg.hdr.dest_node.core_id = MTS_PLATFORM_CORE_AP;
+    trp_msg.hdr.payload_size = FAKE_PAYLOAD_SIZE + sizeof(dcp_msg_hdr_t);
+
+    trp_msg.payload.dcp_msg.hdr.client_id = FAKE_CLIENT_ID;
+    trp_msg.payload.dcp_msg.hdr.seq_num = TRP_SEQ_NUM_NOT_INIT;
+    trp_msg.payload.dcp_msg.hdr.payload_size = FAKE_PAYLOAD_SIZE;
+    trp_msg.hdr.incoming_endpt = nullptr;
+
+    will_return(__wrap_transfer_rly_get_this_die_id, 0);
+    will_return(__wrap_transfer_rly_should_send_dcp_msg, true);
+
+    // First attempt: timeout error - should trigger retry
+    will_return(__wrap_fpfw_icc_base_send_sync, outgoing_icc_buffer);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR);
+    will_return(__wrap__tx_thread_sleep, TX_SUCCESS); // delay before retry
+
+    // Second attempt: timeout error - should trigger another retry
+    will_return(__wrap_fpfw_icc_base_send_sync, outgoing_icc_buffer);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR);
+    will_return(__wrap__tx_thread_sleep, TX_SUCCESS); // delay before retry
+
+    // Third attempt: success - should exit loop
+    will_return(__wrap_fpfw_icc_base_send_sync, outgoing_icc_buffer);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_STATUS_SUCCESS);
+
+    memset(outgoing_icc_buffer, 0, MAX_ICC_BUFFER_SIZE);
+    mts_platform_send_msg_via_transport(&trp_msg, (p_trp_endpoint_t)&trp_icc_endpoint);
+
+    // Verify message was sent correctly
+    icc_mhu_header_t* icc_mhu_hdr = (icc_mhu_header_t*)outgoing_icc_buffer;
+    assert_int_equal(icc_mhu_hdr->msg_header.command, ICC_COMMAND_DCP_MSG);
+}
+
+/**
+ * @brief Test ICC send exhausts all retries on persistent timeout
+ *
+ * This test verifies that when all retry attempts result in timeout errors,
+ * the function logs failures and exits after MTS_ICC_SEND_MAX_RETRIES attempts.
+ */
+TEST_FUNCTION(test_mts_platform_send_msg_via_transport_retry_exhausted, nullptr, nullptr)
+{
+    trp_msg_t trp_msg;
+    trp_icc_endpoint_t trp_icc_endpoint;
+    uint8_t outgoing_icc_buffer[MAX_ICC_BUFFER_SIZE];
+
+    trp_icc_endpoint.base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_ARM_MHU;
+    trp_icc_endpoint.base_endpt.seq_number.as_uint16 = TRP_SEQ_NUM_NOT_INIT;
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.hdr.dest_node.die_id = 0;
+    trp_msg.hdr.dest_node.core_id = MTS_PLATFORM_CORE_AP;
+    trp_msg.hdr.payload_size = FAKE_PAYLOAD_SIZE + sizeof(dcp_msg_hdr_t);
+
+    trp_msg.payload.dcp_msg.hdr.client_id = FAKE_CLIENT_ID;
+    trp_msg.payload.dcp_msg.hdr.seq_num = TRP_SEQ_NUM_NOT_INIT;
+    trp_msg.payload.dcp_msg.hdr.payload_size = FAKE_PAYLOAD_SIZE;
+    trp_msg.hdr.incoming_endpt = nullptr;
+
+    will_return(__wrap_transfer_rly_get_this_die_id, 0);
+    will_return(__wrap_transfer_rly_should_send_dcp_msg, true);
+
+    // All 3 attempts timeout (MTS_ICC_SEND_MAX_RETRIES = 3)
+    // First attempt: timeout
+    will_return(__wrap_fpfw_icc_base_send_sync, outgoing_icc_buffer);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR);
+    will_return(__wrap__tx_thread_sleep, TX_SUCCESS);
+
+    // Second attempt: timeout
+    will_return(__wrap_fpfw_icc_base_send_sync, outgoing_icc_buffer);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR);
+    will_return(__wrap__tx_thread_sleep, TX_SUCCESS);
+
+    // Third attempt: timeout (last attempt, no sleep after)
+    will_return(__wrap_fpfw_icc_base_send_sync, outgoing_icc_buffer);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR);
+    // No sleep expected after last attempt
+
+    memset(outgoing_icc_buffer, 0, MAX_ICC_BUFFER_SIZE);
+    mts_platform_send_msg_via_transport(&trp_msg, (p_trp_endpoint_t)&trp_icc_endpoint);
+}
+
+/**
+ * @brief Test ICC send does not retry on non-timeout errors
+ *
+ * This test verifies that non-timeout errors (e.g., FPFW_STATUS_FAIL) do not
+ * trigger retry logic - the function should exit immediately after logging.
+ */
+TEST_FUNCTION(test_mts_platform_send_msg_via_transport_no_retry_on_other_errors, nullptr, nullptr)
+{
+    trp_msg_t trp_msg;
+    trp_icc_endpoint_t trp_icc_endpoint;
+    uint8_t outgoing_icc_buffer[MAX_ICC_BUFFER_SIZE];
+
+    trp_icc_endpoint.base_endpt.transport_type = TRP_TRANSPORT_TYPE_ICC_ARM_MHU;
+    trp_icc_endpoint.base_endpt.seq_number.as_uint16 = TRP_SEQ_NUM_NOT_INIT;
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_DCP_FORWARD;
+    trp_msg.hdr.dest_node.die_id = 0;
+    trp_msg.hdr.dest_node.core_id = MTS_PLATFORM_CORE_AP;
+    trp_msg.hdr.payload_size = FAKE_PAYLOAD_SIZE + sizeof(dcp_msg_hdr_t);
+
+    trp_msg.payload.dcp_msg.hdr.client_id = FAKE_CLIENT_ID;
+    trp_msg.payload.dcp_msg.hdr.seq_num = TRP_SEQ_NUM_NOT_INIT;
+    trp_msg.payload.dcp_msg.hdr.payload_size = FAKE_PAYLOAD_SIZE;
+    trp_msg.hdr.incoming_endpt = nullptr;
+
+    will_return(__wrap_transfer_rly_get_this_die_id, 0);
+    will_return(__wrap_transfer_rly_should_send_dcp_msg, true);
+
+    // Only one send attempt expected - non-timeout error should not retry
+    will_return(__wrap_fpfw_icc_base_send_sync, outgoing_icc_buffer);
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_STATUS_FAIL);
+    // No tx_thread_sleep expected - no retry on non-timeout errors
+
+    memset(outgoing_icc_buffer, 0, MAX_ICC_BUFFER_SIZE);
+    mts_platform_send_msg_via_transport(&trp_msg, (p_trp_endpoint_t)&trp_icc_endpoint);
+}

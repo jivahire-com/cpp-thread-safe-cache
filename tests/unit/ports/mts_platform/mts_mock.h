@@ -11,6 +11,7 @@
 
  /*----------- Nested includes ------------*/
 #include <stdint.h>
+#include <tx_api.h>
 
  /*-- Symbolic Constant Macros (defines) --*/
 #define MAX_ICC_BUFFER_SIZE (512)
@@ -20,3 +21,4 @@
 
 
  /*--------- Function Prototypes ----------*/
+UINT __wrap__tx_thread_sleep(ULONG timer_ticks);

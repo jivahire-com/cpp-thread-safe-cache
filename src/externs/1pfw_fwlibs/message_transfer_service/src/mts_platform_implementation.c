@@ -35,17 +35,33 @@
 #include <idsw_kng.h>
 #include <kng_icc_shared.h>
 #include <mscp_uefi_shared_ddrss.h>
-#include <stdio.h>
+#include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-/*------------- Typedefs -----------------*/
+/**
+ * Maximum number of retries for ICC send operations.
+ * Retries help recover from transient timeout errors (e.g., FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR)
+ * when the receiving endpoint is temporarily busy or unresponsive.
+ */
+#ifndef MTS_ICC_SEND_MAX_RETRIES
+    #define MTS_ICC_SEND_MAX_RETRIES (3)
+#endif
 
-/*-------- Function Prototypes -----------*/
+/**
+ * Delay in milliseconds between ICC send retries.
+ * This non-blocking delay allows other threads to run and gives the
+ * receiving endpoint time to recover before the next retry attempt.
+ */
+#ifndef MTS_ICC_SEND_RETRY_DELAY_MS
+    #define MTS_ICC_SEND_RETRY_DELAY_MS (10)
+#endif
 
-/*-- Declarations (Statics and globals) --*/
+/* Convert milliseconds to ThreadX ticks (assuming TX_TIMER_TICKS_PER_SECOND is defined) */
+#define MTS_MS_TO_TX_TICKS(ms) (((ms) * TX_TIMER_TICKS_PER_SECOND) / 1000)
 
-/*------------- Functions ----------------*/
+/* Ensure the retry delay converts to at least 1 ThreadX tick */
+static_assert(MTS_MS_TO_TX_TICKS(MTS_ICC_SEND_RETRY_DELAY_MS) > 0, "Retry delay must convert to at least 1 tick");
 
 static_assert(CPU_AP == MTS_PLATFORM_CORE_AP, "CPU core mismatch");
 static_assert(CPU_SCP == MTS_PLATFORM_CORE_SCP, "CPU core mismatch");
@@ -55,6 +71,14 @@ static_assert(CPU_TBP == MTS_PLATFORM_CORE_TBP, "CPU core mismatch");
 static_assert(CPU_SDM == MTS_PLATFORM_CORE_SDM, "CPU core mismatch");
 static_assert(CPU_CDED_SDM == MTS_PLATFORM_CORE_CDED_SDM, "CPU core mismatch");
 static_assert(CPU_CDED_KMP == MTS_PLATFORM_CORE_CDED_KMP, "CPU core mismatch");
+
+/*------------- Typedefs -----------------*/
+
+/*-------- Function Prototypes -----------*/
+
+/*-- Declarations (Statics and globals) --*/
+
+/*------------- Functions ----------------*/
 
 void mts_platform_get_transport_info(uint32_t transport_type, p_mts_platform_transport_info_t info)
 {
@@ -166,9 +190,31 @@ void mts_platform_send_msg_via_transport(p_trp_msg_t trp_msg, p_trp_endpoint_t t
         break;
     }
     }
-    fpfw_status_t status = fpfw_icc_base_send_sync(trp_icc_endpoint->icc_base_ctx, &outgoing_full_msg, transfer_size);
-    if (FPFW_STATUS_FAILED(status))
+
+    /*
+     * ICC send with retry logic for transient timeout errors (when AP is busy).
+     * Initialize status to timeout to enter the loop on first attempt.
+     * Only timeout errors (FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR) trigger retries;
+     * other errors exit immediately as they are not recoverable via retry.
+     */
+    fpfw_status_t status = FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR;
+    uint32_t attempts_remaining = MTS_ICC_SEND_MAX_RETRIES;
+
+    while ((status == FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR) && (attempts_remaining-- > 0))
     {
-        FPFW_ET_LOG(TrpIccSendFail, status, (uint32_t)trp_icc_endpoint);
+        /* TODO(ADO3329299): Move to fpfw_icc_base_send */
+        status = fpfw_icc_base_send_sync(trp_icc_endpoint->icc_base_ctx, &outgoing_full_msg, transfer_size);
+
+        if (FPFW_STATUS_FAILED(status))
+        {
+            /* Log every failed attempt for diagnostics */
+            FPFW_ET_LOG(TrpIccSendFail, status, (uint32_t)trp_icc_endpoint);
+
+            /* Delay before retry to allow the receiver time to recover */
+            if ((status == FPFW_ICC_BASE_STATUS_SYNC_TIMEOUT_ERR) && (attempts_remaining > 0))
+            {
+                tx_thread_sleep((ULONG)MTS_MS_TO_TX_TICKS(MTS_ICC_SEND_RETRY_DELAY_MS));
+            }
+        }
     }
 }

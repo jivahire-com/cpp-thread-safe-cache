@@ -42,4 +42,5 @@ mock_target(${TARGET}
     fpfw_icc_base_send_sync
     FpFwAssert
     FpFwAssertWithArgs
+    _tx_thread_sleep
 )

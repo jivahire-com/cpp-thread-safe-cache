@@ -652,14 +652,14 @@ POWER_TEST(distribution_distribute_resources__one_too_few_resources_for_nominal_
     s_ctrl_loop_detail.curr_resources -= 1;
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
-    // With new priority polarity: higher priority number = higher priority, processed first
-    // Priority 3 (highest) gets nominal, priority 0 (lowest) gets throttled
+    // Throttle priority: Priority 0 is protected (throttled last), Priority 15 is throttled first
+    // Priority 0 gets nominal (protected), priority 3 gets throttled first
     for (int i = 0; i < NUM_D_CORES; ++i)
     {
         uint8_t expected_limit;
-        if (i == 0)
+        if (i == NUM_D_CORES - 1)
         {
-            // lowest priority (index 0) gets throttled
+            // priority 3 (highest index) gets throttled first
             expected_limit = TEST_NOMINAL_PERF + 1;
         }
         else
@@ -686,19 +686,19 @@ POWER_TEST(distribution_distribute_resources__min_perf_for_one_resources_for_nom
     s_ctrl_loop_detail.curr_resources -= (PLIMIT_TO_RESOURCES(TEST_NOMINAL_PERF) + 1);
     distribute_assert_expectations();
     power_distribution_distribute_resources(&s_runconfig, &s_ctrl_loop_detail);
-    // With new priority polarity: higher priority number = higher priority, processed first
-    // Priority 3, 2 (highest) get nominal; priority 1 gets nominal+1; priority 0 (lowest) gets max plimit
+    // Throttle priority: Priority 0 is protected (throttled last), Priority 15 is throttled first
+    // Priority 0, 1 get nominal (protected); priority 2 gets nominal+1; priority 3 gets max plimit (throttled first)
     for (int i = 0; i < NUM_D_CORES; ++i)
     {
         uint8_t expected_limit;
-        if (i == 0)
+        if (i == NUM_D_CORES - 1)
         {
-            // lowest throttling priority gets max plimit (most throttled)
+            // priority 3 gets max plimit (throttled first)
             expected_limit = MAX_PLIMIT;
         }
-        else if (i == 1)
+        else if (i == NUM_D_CORES - 2)
         {
-            // next lowest throttling priority gets nominal + 1
+            // priority 2 gets nominal + 1
             expected_limit = TEST_NOMINAL_PERF + 1;
         }
         else
@@ -709,9 +709,9 @@ POWER_TEST(distribution_distribute_resources__min_perf_for_one_resources_for_nom
         assert_true(corebits_is_bit_set(&s_ctrl_loop_detail.plimits_pending, core_numbers[i]));
     }
     // expect pstate selections differently in different pri levels (1 selection each)
-    assert_int_equal(s_ctrl_loop_detail.plimit.selections[0].acc[MAX_PLIMIT], 1);
-    assert_int_equal(s_ctrl_loop_detail.plimit.selections[1].acc[TEST_NOMINAL_PERF + 1], 1);
-    assert_int_equal(s_ctrl_loop_detail.plimit.selections[NUM_D_CORES - 1].acc[TEST_NOMINAL_PERF], 1);
+    assert_int_equal(s_ctrl_loop_detail.plimit.selections[NUM_D_CORES - 1].acc[MAX_PLIMIT], 1);
+    assert_int_equal(s_ctrl_loop_detail.plimit.selections[NUM_D_CORES - 2].acc[TEST_NOMINAL_PERF + 1], 1);
+    assert_int_equal(s_ctrl_loop_detail.plimit.selections[0].acc[TEST_NOMINAL_PERF], 1);
     assert_true(s_ctrl_loop_detail.throttling);
 }
 

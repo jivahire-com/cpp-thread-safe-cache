@@ -432,6 +432,18 @@ PID_error_input = P_cpu_cap - P_cpu
 
 It is here that the determination will be made of which cores PLIMITs are lowered below nominal and if/how available resources will be alotted to allow cores to achieve turbo frequencies.  The performance distribution policy will take into account the amount of performance resources available to be distributed (output of PID), the desired perf requests from the OS (fail requests, last PLIMIT register), throttling priority (dependent on current policy), and boost priority to determine PLIMITs for each CPU core.  Additionally, reported HW throttling events may impact PLIMIT selection for a CPU core.
 
+**Priority Order Summary**
+
+The table below summarizes how OSPM-provided priorities (0-15) are handled for throttling and boosting:
+
+| Priority | Throttle Behavior | Boost Behavior |
+|----------|-------------------|----------------|
+| 0 | Protected (throttled last) | Boosted last |
+| 15 | Throttled first | Boosted first |
+
+- **Throttle Priority**: When power resources are insufficient, cores at priority 15 are throttled first, while cores at priority 0 are protected and throttled last.
+- **Boost Priority**: When excess power resources are available, cores at priority 15 receive boost first, while cores at priority 0 receive boost last.
+
 In the below diagram, consider that the output of the PID is treated as a count of resources.  Each increase of a pstate on a single core will cost some number of resources.  In the existing design there is a 1:1 cost of resource to pstate increase.
 
 ```mermaid
@@ -440,21 +452,21 @@ flowchart TD
     Init2 -->|No| Throttle1[Throttle]
     Init2 -->|Yes| Turbo1[Turbo/Velocity Boost]
     
-    Throttle1 -->|Start at Throttle Priority 15| Throttle2{Last Throttle Priority?}
-    Throttle2 --->|No, Start at 1 Plimit level of throttle| Throttle3{Max plimit throttle at priority?}
-    Throttle2 ------>|Yes| End
-    Throttle3 -->|Yes, Next Lower Throttle Priority| Throttle2
-    Throttle3 -->|No| Throttle4{Required Resources >= Available?}
-    Throttle4 -->|Yes, Decrease one Plimit Level| Throttle3
-    Throttle4 -->|No| End
+    Throttle1 -->|Start at Throttle Priority 0 - protected| Throttle2{Last Throttle Priority? - reached 15?}
+    Throttle2 --->|No| Throttle3{Max plimit throttle at priority? - at max throttle?}
+    Throttle2 ------>|Yes, all priorities processed| End
+    Throttle3 -->|Yes, Next Higher Throttle Priority - 0 to 15| Throttle2
+    Throttle3 -->|No| Throttle4{Required Resources >= Available? - need more savings?}
+    Throttle4 -->|Yes, Decrease one Plimit Level - throttle more| Throttle3
+    Throttle4 -->|No - sufficient resources| End
     
-    Turbo1 -->|Start at Boost Priority 15| Turbo2{Last Boost Priority?}
-    Turbo2 --->|No, Start at 1 Plimit level of boost| Turbo3{Max plimit boost at priority?}
-    Turbo2 ------>|Yes| End
-    Turbo3 -->|Yes, Next Boost Priority| Turbo2
-    Turbo3 -->|No| Turbo4{Required Resources < Available?}
-    Turbo4 -->|Yes, Increase one Plimit Level| Turbo3
-    Turbo4 -->|No| End
+    Turbo1 -->|Start at Boost Priority 15 - boosted first| Turbo2{Last Boost Priority? - reached 0?}
+    Turbo2 --->|No| Turbo3{Max plimit boost at priority? - at max boost?}
+    Turbo2 ------>|Yes, all priorities processed| End
+    Turbo3 -->|Yes, Next Lower Boost Priority - 15 to 0| Turbo2
+    Turbo3 -->|No| Turbo4{Required Resources < Available? - excess available?}
+    Turbo4 -->|Yes, Increase one Plimit Level - boost more| Turbo3
+    Turbo4 -->|No - resources exhausted| End
     End[Enforce Plimit Change Maximums]
     End --> End2(End)
 ```

@@ -195,11 +195,11 @@ static uint16_t power_distribution_distribute_nominal(power_ctrl_loop_detail_t* 
     *distributed_plimit = nominal_plimit; //! Initialize to nominal at 1st
 
     // loop through all throttling priorities attempting to distribute nominal performance
-    // higher priority number = higher priority (processed first), per HAS/OSPM specification
-    for (int throttle_pri_idx = VM_THROT_COUNT - 1; throttle_pri_idx >= 0; --throttle_pri_idx)
+    // Priority 0 is protected (throttled last), Priority 15 is throttled first
+    for (int throttle_pri_idx = 0; throttle_pri_idx < VM_THROT_COUNT; ++throttle_pri_idx)
     {
-        //! we track the last distributed plimit for each priority, a lower priority (lower number) can not
-        //! be given a higher performance than previous priority. Priority 15 is highest & 0 is lowest.
+        //! we track the last distributed plimit for each priority, a higher priority number can not
+        //! be given a higher performance than previous priority. Priority 0 is protected & 15 is throttled first.
         const unsigned last_distributed = *distributed_plimit;
         // find the number of cores at this priority level on local and remote core
         const unsigned total_cores_at_pri = (p_ctrlloop->local.pri_counts.throt_pri_count[throttle_pri_idx] +

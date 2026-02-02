@@ -751,7 +751,7 @@ void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg
     for (unsigned int core = 0; core < core_count; ++core)
     {
         const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
-        const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
+        const bool core_enabled = ift_is_enabled() || corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
 
         if (!corebits_is_bit_set(&platform_cores, core))
         {
@@ -878,7 +878,7 @@ PLACED_CODE void power_init_core(const power_runconfig_t* p_runconfig, const pow
     for (unsigned int core = 0; core < core_count; ++core)
     {
         const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
-        const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
+        const bool core_enabled = ift_is_enabled() || corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
 
         if (!corebits_is_bit_set(&platform_cores, core))
         {
@@ -973,7 +973,7 @@ PLACED_CODE void power_init_core(const power_runconfig_t* p_runconfig, const pow
     for (unsigned int core = 0; core < core_count; ++core)
     {
         const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
-        const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
+        const bool core_enabled = ift_is_enabled() || corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
 
         if (!corebits_is_bit_set(p_config->platform_cores_in_die, core))
         {
@@ -1052,7 +1052,7 @@ uint32_t power_hw_get_adclk_count(const power_runconfig_t* p_runconfig, unsigned
     FPFW_RUNTIME_ASSERT(p_config != NULL);
 
     const uintptr_t cluster_pex_base_addr = (p_config->cluster_pex_base + (p_config->cluster_stride * core));
-    const bool core_enabled = corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
+    const bool core_enabled = ift_is_enabled() || corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core);
 
     uint32_t droop_count = 0;
 
@@ -1195,7 +1195,7 @@ void power_hw_capture_cppc_state(power_hw_update_cb_t p_update_cb)
     for (unsigned int core = 0; core < NUM_AP_CORES_PER_DIE; ++core)
     {
         // skip cores not present or disabled
-        if (!corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core))
+        if (!ift_is_enabled() && !corebits_is_bit_set(&p_runconfig->fuses.valid_cores, core))
         {
             continue;
         }

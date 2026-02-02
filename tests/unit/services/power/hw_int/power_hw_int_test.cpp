@@ -73,6 +73,8 @@ static power_runconfig_t s_runconfig = {
     .p_sconfig = &s_config,
 };
 
+static bool s_ift_enable_status = false;
+
 extern avs_pwr_request_context_t pwr_avs_request[MAX_AVS_INST];
 
 /*------------- Functions ----------------*/
@@ -164,6 +166,11 @@ void __wrap_power_loops_control_handle_event(power_ctrl_loop_signal_t event, con
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 {
     return mock_type(KNG_PLAT_ID);
+}
+
+bool __wrap_ift_is_enabled(void)
+{
+    return s_ift_enable_status;
 }
 
 /*-------- Function Prototypes -----------*/
@@ -626,6 +633,8 @@ static int teardown(void** state)
     UNUSED(state);
     // ensure config pointer is restored
     s_runconfig.p_sconfig = &s_config;
+    s_ift_enable_status = false;
+
     return 0;
 }
 
@@ -894,6 +903,23 @@ POWER_TEST(hwi_init_core, setup, teardown)
 }
 
 /* main init core test; expect calls to all init APIs based on core count, return of success */
+POWER_TEST(hwi_ift_enabled, setup, teardown)
+{
+    s_ift_enable_status = true;
+
+    // this is the default expectation setup for running init_core
+    init_core_base_expect();
+    // run core init
+    power_init_core(&s_runconfig, &s_telcfg);
+    // verify odcm config
+    validate_odcm_cfg(TEST_CORE_COUNT - 1, false);
+    // verify tile pvt config (both cold and warm start set sampling iteration counts)
+    validate_tile_pvt_telemetry(TEST_CORE_COUNT - 1);
+    validate_tile_pvt_dts((TEST_CORE_COUNT - 1) / 2);
+    validate_tile_pvt_vm();
+}
+
+/* main init core test; expect calls to all init APIs based on core count, return of success */
 POWER_TEST(hwi_init_core__alternate_dts_coeff, setup, teardown)
 {
 
@@ -917,6 +943,20 @@ POWER_TEST(hwi_init_core__alternate_dts_coeff, setup, teardown)
 
 /* init ws core test; expect calls to all telemetry init APIs based on core count */
 POWER_TEST(hwi_init_ws_core, setup, teardown)
+{
+    s_ift_enable_status = true;
+
+    // this is the default expectation setup for running init_core
+    init_ws_core_base_expect(TEST_CORE_COUNT, MAX_PLIMIT);
+    // run core init
+    power_init_ws_core(&s_runconfig, &s_telcfg);
+    // verify odcm config
+    validate_odcm_cfg(TEST_CORE_COUNT - 1, true);
+    // verify tile pvt config
+    validate_tile_pvt_telemetry(TEST_CORE_COUNT - 1);
+}
+
+POWER_TEST(hwi_init_ws_core_ift_enabled, setup, teardown)
 {
 
     // this is the default expectation setup for running init_core
@@ -1374,6 +1414,18 @@ POWER_TEST(power_hw_pstate_from_freq__no_match, setup, teardown)
 POWER_TEST(power_hw_get_adclk_count, setup, teardown)
 {
 #define TEST_DROOP_COUNT 12345
+
+    expect_value(__wrap_dvfs_get_adclk_droop_count, cluster_pex_base_addr, s_runconfig.p_sconfig->cluster_pex_base);
+    will_return(__wrap_dvfs_get_adclk_droop_count, TEST_DROOP_COUNT);
+    will_return(__wrap_dvfs_get_adclk_droop_count,
+                DVFS_SUCCESS); // doesn't matter what we put here, since return from this function is ignored
+
+    assert_int_equal(power_hw_get_adclk_count(&s_runconfig, 0), TEST_DROOP_COUNT);
+}
+
+POWER_TEST(power_hw_get_adclk_count_ift_enabled, setup, teardown)
+{
+    s_ift_enable_status = true;
 
     expect_value(__wrap_dvfs_get_adclk_droop_count, cluster_pex_base_addr, s_runconfig.p_sconfig->cluster_pex_base);
     will_return(__wrap_dvfs_get_adclk_droop_count, TEST_DROOP_COUNT);

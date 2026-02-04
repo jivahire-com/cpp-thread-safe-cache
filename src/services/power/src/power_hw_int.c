@@ -303,6 +303,8 @@ static void power_init_update_dvfs_cfg_common(const power_runconfig_t* p_runconf
     // enable c1 telemetry based on knob
     p_dvfs_cfg->init_cfg.c1_telem_en = p_knobs->c1_tel_enable;
     p_dvfs_cfg->init_cfg.pex_features.itd_en = p_knobs->itd_cfg;
+    p_dvfs_cfg->init_cfg.vmat_log_en = p_knobs->vmat_log_en;
+    p_dvfs_cfg->init_cfg.fcal_log_en = p_knobs->fcal_log_en;
 }
 
 static unsigned find_lowest_nonlin_pstate_idx(const power_runconfig_t* p_runconfig, const power_core_vft_t* p_vft)

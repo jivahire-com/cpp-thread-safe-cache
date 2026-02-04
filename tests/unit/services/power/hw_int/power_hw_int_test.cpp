@@ -534,6 +534,9 @@ void validate_dvfs_cfg(unsigned int core)
     // (fix force_pstate vmat copy, full VFT generation before enabling)
     dvfs_cfg.init_cfg.pex_features.itd_en = knobs->itd_cfg;
 
+    dvfs_cfg.init_cfg.vmat_log_en = knobs->vmat_log_en;
+    dvfs_cfg.init_cfg.fcal_log_en = knobs->fcal_log_en;
+
     uint16_t temp_itd_temp_boundaries[NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1] = {0};
 
     const uint32_t tile_num = core / CORES_PER_TILE;

@@ -199,6 +199,8 @@
       <Member name="avs_ds" type="avs_ds_cfg_array_t" help="AVS drive strength" />
       <Member name="enable_vsys_vboot_override" type="bool" help="Enable override for VSYS VBOOT" />
       <Member name="cppc_lowest_nonlin_perf" type="uint8_t" help="Sets the lowest non-linear performance point for CPPC takes in pstate range 0-31 as input" />
+      <Member name="vmat_log_en" type="bool" help="Enable or disable DVFS VMAT debug log." />
+      <Member name="fcal_log_en" type="bool" help="Enable or disable DVFS FCAL debug log." />
     </Struct>
 
   </Structs>
@@ -234,6 +236,8 @@
     <Knob name="power_force_pstate" type="uint8_t" default="32" help="Limits plimit to forced pstate and rewrites pll/vma tables for lower performance states to prevent HW throttle" />
     <Knob name="power_itd_cfg" type="bool" default="true" help="Controls whether ITD is enabled or disabled" />
     <Knob name="power_es1_fuse_overrides" type="bool" default="false" help="Enables Es1 power fuse overrides to match ES2 configurations" />
+    <Knob name="vmat_log_en" type="bool" default="false" help="Enable or disable DVFS VMAT debug log." />
+    <Knob name="fcal_log_en" type="bool" default="false" help="Enable or disable DVFS FCAL debug log." />
 
     <!-- Document only
     <Knob name="power_current_throttling_cfg" type="" default="" help="Current threshold percentages per P-state" />

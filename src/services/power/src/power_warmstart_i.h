@@ -59,6 +59,14 @@ typedef struct
  */
 } power_ws_fuse_t, *ppower_ws_fuse_t;
 
+/**
+ * @brief Struct for storing generic non-fuse related data that changes during runtime & needs to be preserved for warmstart
+ */
+typedef struct {
+    uint16_t soc_power_cap_watts; // power cap in watts (NO_POWER_CAP if not set), updated by power_ws_save_pwr_cap()
+    uint16_t reserved;            // padding for alignment
+} power_ws_data_t, *ppower_ws_data_t;
+
 /*--------- Function Prototypes ----------*/
 /**
  * @brief Recover the runconfig from the stored warm start data structure
@@ -73,3 +81,25 @@ void power_ws_recover_fuse_init(power_runconfig_t *runconfig);
  * @param runconfig[in] Power runconfig structure to save
  */
 void power_ws_save_fuse_init(const power_runconfig_t *runconfig);
+
+/**
+ * @brief Recover the power cap from warm start data
+ * 
+ * This function restores the power cap that was saved before the reset.
+ * Called on all boot types (cold and warm) - safe no-op if no valid data exists.
+ * 
+ * The restored power cap will take effect after the control loop runs and
+ * power_cap_finalize() is called.
+ */
+void power_ws_recover_pwr_cap(void);
+
+/**
+ * @brief Save the power cap to warm start data
+ * 
+ * This function saves the current power cap to warm start data so that it
+ * persists across any reset type. Called from power_cap_finalize() whenever
+ * the cap changes, ensuring the warm start data is always up-to-date.
+ * 
+ * ISR-safe: Uses cached pointer when called from interrupt context (e.g., crash dump).
+ */
+void power_ws_save_pwr_cap(void);

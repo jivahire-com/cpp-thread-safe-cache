@@ -263,7 +263,8 @@ POWER_TEST(power_cap_update__finalize_callback, setup, teardown)
     // query cpu cap to update internal state
     expect_value_count(__wrap_FpFwAssert, expression, true, 2);
     power_cap_get_vrcpu_cap(NULL, &test_calcs, &test_calcs);
-    // indicate cap is finalized
+    // indicate cap is finalized - should also save to warm start since cap changed
+    expect_function_call(__wrap_power_ws_save_pwr_cap);
     power_cap_finalize();
 }
 

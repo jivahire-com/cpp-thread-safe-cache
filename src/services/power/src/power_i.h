@@ -396,6 +396,9 @@ float power_cap_get_vrcpu_cap(bool* p_new_cap, power_latest_calcs_t* p_local_pow
  * changes have been made.  The primary function of this API is to notify the
  * cap requestor that the cap is now in place.
  *
+ * If the power cap changed, this function also saves the new cap to warm start
+ * data via power_ws_save_pwr_cap(), ensuring the cap persists across any reset.
+ *
  * @return none
  *
  */

@@ -758,11 +758,16 @@ The power_tile_temp_throt and power_tile_vms knobs are used to generate configur
 
 In general, the power service cannot reinitialize most of the power HW, so the cold boot initialization data must be preserved to ensure that the control loop can run after a warm start using detail from the initial cold initialization of the HW.  Any configuration based on calculations which may have changed due to firmware, fuse override, or knob update will need to be saved.
 
-The following are examples of what must be preserved for warm start.
-* Disabled cores
-* MPMM enabled/gear
-* VF curve points and curve assignments
-* ITD temperature ranges
+The following data is preserved across warm start in the `power_ws_fuse_t` structure:
+* Valid/disabled cores bitmap (`valid_cores`)
+* VF curve data per curveset (`vfts[7]`):
+  * Core assignments per curve
+  * LDO DAC input values per pstate and ITD column
+  * Frequency and voltage per pstate
+  * Minimum plimit per curve
+* SOC power cap in watts (`soc_power_cap_watts`)
+
+> Note: ITD temperature boundaries are part of the VMAT table but are not currently preserved in warm start data. See work item 1491054.
 
 #### **Warmstart Init Signal to Control Loop**
 

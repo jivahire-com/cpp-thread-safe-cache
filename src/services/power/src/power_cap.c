@@ -5,12 +5,17 @@
 /**
  * @file power_cap.c
  * Implements the power cap functionality.
+ *
+ * Power cap is persisted to warm start data via power_ws_save_pwr_cap() which
+ * is called from power_cap_finalize() whenever the cap changes. On warm boot,
+ * the cap is restored via power_cap_update() called from power_ws_recover_pwr_cap().
  */
 
 /*------------- Includes -----------------*/
 #include "power_i.h"           // for power_latest_calcs_t, NO_POWER_CAP
 #include "power_runconfig.h"   // for power_knobs_t, power_derived_config_t
 #include "power_runconfig_i.h" // for power_runconfig_t, power_runconfig_get
+#include "power_warmstart_i.h" // for power_ws_save_pwr_cap
 
 #include <FpFwAssert.h> // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>  // for FPFW_MIN, FPFW_MAX
@@ -113,6 +118,12 @@ void power_cap_finalize()
     {
         s_power_cap_callback(MP_POWER_CAP_SUCCESS, s_local_soc_power_cap_watts, s_previous_power_cap_watts);
         s_power_cap_callback = NULL;
+
+        // Save to warm start if cap changed (keeps warm start data always up-to-date)
+        if (s_previous_power_cap_watts != s_local_soc_power_cap_watts)
+        {
+            power_ws_save_pwr_cap();
+        }
     }
 }
 

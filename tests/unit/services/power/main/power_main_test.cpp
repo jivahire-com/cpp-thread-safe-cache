@@ -293,6 +293,16 @@ void __wrap_power_loops_warmstart_entry()
     function_called();
 }
 
+void __wrap_power_ws_recover_pwr_cap(void)
+{
+    function_called();
+}
+
+void __wrap_power_ws_save_pwr_cap(void)
+{
+    function_called();
+}
+
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 {
     return mock_type(KNG_PLAT_ID);
@@ -321,6 +331,9 @@ POWER_TEST(init, NULL, NULL)
     // add the expected/check values for power internal functions
     will_return(__wrap_power_hw_full_init_allowed, true);
     expect_value(__wrap_power_runconfig_init, p_config, &test_config);
+
+    // power_ws_recover_pwr_cap is called on all boot types (safe no-op if no valid data on cold boot)
+    expect_function_call(__wrap_power_ws_recover_pwr_cap);
 
     expect_function_call(__wrap_power_loops_init);
     expect_function_call(__wrap_power_loops_control_init);
@@ -355,6 +368,45 @@ POWER_TEST(init_ws, NULL, NULL)
     will_return(__wrap_ws_data_get, sizeof(test_ws_stored));
     will_return(__wrap_ws_data_get, &test_ws_stored);
     expect_function_call(__wrap_ws_data_get);
+    // power_ws_recover_pwr_cap is called separately to restore power cap
+    expect_function_call(__wrap_power_ws_recover_pwr_cap);
+    expect_function_call(__wrap_power_loops_init);
+    expect_function_call(__wrap_power_loops_control_init);
+    expect_function_call(__wrap_power_loops_telemetry_init);
+    expect_function_call(__wrap_crash_dump_register_pre_dump_callback);
+
+    power_init(&test_device, &test_schedule, &test_config);
+}
+
+// Test warm start with power cap restoration
+POWER_TEST(init_ws_with_power_cap, NULL, NULL)
+{
+    power_service_t test_device;
+    power_service_config_t test_config;
+    power_runconfig_t test_runconfig = {.fuses = {.ldodac_to_volt = {.slope_uvolt = 2000, .offset_uvolt = 2000}}};
+    power_ws_fuse_t test_ws_stored = {.version = POWER_WARMSTART_VER1};
+
+    DFWK_SCHEDULE test_schedule;
+
+    expect_value(__wrap_DfwkDeviceInitialize, Device, &test_device.header);
+    expect_value(__wrap_DfwkDeviceInitialize, Schedule, &test_schedule);
+    expect_value(__wrap_DfwkQueueInitialize, Queue, &test_device.default_queue);
+    expect_value(__wrap_DfwkQueueInitialize, Device, &test_device.header);
+    expect_any(__wrap_DfwkQueueInitialize, DispatchRoutine);
+    expect_value(__wrap_DfwkQueueInitialize, DispatchContext, &test_device.header);
+    expect_value(__wrap_DfwkQueueInitialize, QueueType, DfwkQueueType_SerializedDispatch);
+
+    // add the expected/check values for power internal functions
+    will_return(__wrap_power_hw_full_init_allowed, false);
+    expect_value(__wrap_power_runconfig_init, p_config, &test_config);
+    will_return(__wrap_power_runconfig_get, &test_runconfig);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 4); // power_ws_recover_fuse_init checks runconfig.
+    expect_value(__wrap_ws_data_get, id, WARM_START_ID_POWER_FUSE);
+    will_return(__wrap_ws_data_get, sizeof(test_ws_stored));
+    will_return(__wrap_ws_data_get, &test_ws_stored);
+    expect_function_call(__wrap_ws_data_get);
+    // power_ws_recover_pwr_cap is called separately to restore power cap
+    expect_function_call(__wrap_power_ws_recover_pwr_cap);
     expect_function_call(__wrap_power_loops_init);
     expect_function_call(__wrap_power_loops_control_init);
     expect_function_call(__wrap_power_loops_telemetry_init);

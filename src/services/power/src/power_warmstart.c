@@ -5,6 +5,14 @@
 /**
  * @file power_warmstart.c
  * Implementation of power warm start.
+ *
+ * This module handles saving and restoring power-related configuration across warm resets.
+ * Key functionality includes:
+ * - Saving VF table data and fuse configuration to warm start memory
+ * - Restoring power cap settings across warm resets
+ * - The power cap is persisted via power_ws_save_pwr_cap() which is called from
+ *   power_cap_finalize() whenever the cap changes. This ensures that any reset type
+ *   (including crash dump) will preserve the power cap setting.
  */
 
 /*------------- Includes -----------------*/
@@ -26,6 +34,16 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+
+/**
+ * @brief Callback for power cap warm start restore completion
+ */
+static void power_cap_ws_restore_callback(int result, uint16_t current_cap, uint16_t previous_cap_watts)
+{
+    FPFW_UNUSED(previous_cap_watts);
+    POWER_LOG_INFO("[POWER CAP UPDATE] Result %d, Restored for Warm Start: %d W\n", result, current_cap);
+}
+
 /**
  * @brief Generate warm start data from the current power run configuration.
  *
@@ -121,6 +139,7 @@ void power_ws_recover_fuse_init(power_runconfig_t* runconfig)
         {
             BUG_CHECK(KNG_SC_WARMSTART_DATA_CORRUPT, ws_fuse_data->version, ws_size);
         }
+        // Restore valid cores
         runconfig->fuses.valid_cores = ws_fuse_data->valid_cores;
 
         // Restore the freq/voltage points configured at boot to use in control loop after a warm reset
@@ -174,5 +193,32 @@ void power_ws_save_fuse_init(const power_runconfig_t* runconfig)
 
     // Store warm start fused-based configuration data.
     void* ws_data = ws_data_put(WARM_START_ID_POWER_FUSE, &ws_fuse_data, sizeof(ws_fuse_data));
+    BUG_ASSERT(ws_data != NULL);
+}
+
+void power_ws_recover_pwr_cap(void)
+{
+    uint32_t ws_size = 0;
+    ppower_ws_data_t ws_generic_data = (ppower_ws_data_t)ws_data_get(WARM_START_ID_POWER_CAP, &ws_size);
+
+    // Only restore if warm start data exists and is valid
+    if ((ws_generic_data != NULL) && (ws_size == sizeof(power_ws_data_t)))
+    {
+        if (ws_generic_data->soc_power_cap_watts == NO_POWER_CAP)
+        {
+            // No power cap was set prior to warm reset, nothing to restore
+            return;
+        }
+        // Restore power cap using normal update flow with callback for logging
+        power_cap_update(power_cap_ws_restore_callback, ws_generic_data->soc_power_cap_watts, false);
+    }
+}
+
+void power_ws_save_pwr_cap(void)
+{
+    power_ws_data_t ws_generic_data = {.soc_power_cap_watts = get_current_soc_power_cap()};
+
+    // Store warm start generic data.
+    void* ws_data = ws_data_put(WARM_START_ID_POWER_CAP, &ws_generic_data, sizeof(ws_generic_data));
     BUG_ASSERT(ws_data != NULL);
 }

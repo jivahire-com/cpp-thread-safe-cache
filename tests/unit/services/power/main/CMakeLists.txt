@@ -103,6 +103,8 @@ mock_target(${TARGET}
     power_loops_warmstart_entry
     idsw_get_platform_sdv
     get_current_soc_power_cap
+    power_ws_recover_pwr_cap
+    power_ws_save_pwr_cap
     power_control_loop_throttled
     power_control_loop_degraded
     fpfw_icc_base_send_resp

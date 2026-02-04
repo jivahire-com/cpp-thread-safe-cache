@@ -29,6 +29,7 @@ extern "C" {
 #include <power_runconfig_i.h> // for power_runconfig_t internals
 #include <stdint.h>            // for int8_t, uint64_t, uint8_t, uintptr_t
 #include <string.h>            // for memcpy
+#include <warm_start_id.h>     // for WARM_START_ID_POWER_FUSE
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define TEST_POWER_CAP_NORMAL 200
@@ -192,6 +193,8 @@ POWER_TEST(handle_power_cap_request__valid_cap_different_from_current__update_pe
     power_cap_get_vrcpu_cap(NULL, &test_calcs, &test_calcs);
     // Mock fpfw_icc_base_send_resp, called inside power_cap_completed_callback
     will_return(__wrap_fpfw_icc_base_send_resp, FPFW_ICC_BASE_STATUS_SUCCESS);
+    // power_cap_finalize should save to warm start since cap changed
+    expect_function_call(__wrap_power_ws_save_pwr_cap);
     power_cap_finalize();
 }
 

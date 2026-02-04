@@ -46,7 +46,11 @@ static CD_THREADX_DATA cdThreadXData;
  */
 void crash_dump_register_threadx(crash_dump_type_context_t* type_context)
 {
-    CdRegisterCallback(&type_context->crash_dump_ctx, crash_dump_capture_threadx, type_context, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    CdRegisterCallback(&type_context->crash_dump_ctx,
+                       crash_dump_capture_threadx,
+                       type_context,
+                       type_context->type == CRASH_DUMP_TYPE_MINI ? FPFW_CD_DUMP_PRIORITY_NORMAL
+                                                                  : FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }
 
 /**
@@ -58,6 +62,8 @@ void crash_dump_capture_threadx(void* context)
 {
     crash_dump_type_context_t* type_context = (crash_dump_type_context_t*)context;
     FPFwCrashDumpCtx* ctx = &type_context->crash_dump_ctx;
+    FPFwCdDumpPriority priority = type_context->type == CRASH_DUMP_TYPE_MINI ? FPFW_CD_DUMP_PRIORITY_NORMAL
+                                                                             : FPFW_CD_DUMP_PRIORITY_CRITICAL;
     /**
      * The following variables are defined in tx_thread_initialize.c.  We need
      * the pointers and the data they point to.
@@ -80,14 +86,14 @@ void crash_dump_capture_threadx(void* context)
     cdThreadXData._tx_thread_created_count = _tx_thread_created_count;
     cdThreadXData._tx_thread_system_state = _tx_thread_system_state;
 
-    CdRegisterAddress32(ctx, &cdThreadXData, sizeof(cdThreadXData), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    CdRegisterAddress32(ctx, &cdThreadXData, sizeof(cdThreadXData), priority);
 
-    CdRegisterAddress32(ctx, &_tx_thread_system_stack_ptr, sizeof(void*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    CdRegisterAddress32(ctx, &_tx_thread_current_ptr, sizeof(void*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    CdRegisterAddress32(ctx, &_tx_thread_execute_ptr, sizeof(void*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    CdRegisterAddress32(ctx, &_tx_thread_created_ptr, sizeof(void*), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    CdRegisterAddress32(ctx, &_tx_thread_created_count, sizeof(_tx_thread_created_count), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    CdRegisterAddress32(ctx, (void*)&_tx_thread_system_state, sizeof(_tx_thread_system_state), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    CdRegisterAddress32(ctx, &_tx_thread_system_stack_ptr, sizeof(void*), priority);
+    CdRegisterAddress32(ctx, &_tx_thread_current_ptr, sizeof(void*), priority);
+    CdRegisterAddress32(ctx, &_tx_thread_execute_ptr, sizeof(void*), priority);
+    CdRegisterAddress32(ctx, &_tx_thread_created_ptr, sizeof(void*), priority);
+    CdRegisterAddress32(ctx, &_tx_thread_created_count, sizeof(_tx_thread_created_count), priority);
+    CdRegisterAddress32(ctx, (void*)&_tx_thread_system_state, sizeof(_tx_thread_system_state), priority);
 
     uint32_t threadCount = 0;
 
@@ -95,14 +101,11 @@ void crash_dump_capture_threadx(void* context)
          pThread = pThread->tx_thread_created_next, threadCount++)
     {
         // Register the thread control block
-        CdRegisterAddress32(ctx, pThread, sizeof(*pThread), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        CdRegisterAddress32(ctx, pThread, sizeof(*pThread), priority);
 
         // Register the stack data
-        CdRegisterAddress32(ctx,
-                            pThread->tx_thread_stack_start,
-                            pThread->tx_thread_stack_end - pThread->tx_thread_stack_start,
-                            FPFW_CD_DUMP_PRIORITY_CRITICAL);
-        CdRegisterAddress32(ctx, pThread->tx_thread_name, strlen(pThread->tx_thread_name) + 1, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        CdRegisterAddress32(ctx, pThread->tx_thread_stack_start, pThread->tx_thread_stack_end - pThread->tx_thread_stack_start, priority);
+        CdRegisterAddress32(ctx, pThread->tx_thread_name, strlen(pThread->tx_thread_name) + 1, priority);
 
         CdRegisterAddress32PointerArray(ctx,
                                         FPFW_CD_DUMP_PRIORITY_OPPORTUNISTIC,

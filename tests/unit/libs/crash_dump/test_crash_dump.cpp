@@ -251,12 +251,14 @@ void set_expectations_crash_dump_register_ecid()
     expect_value(__wrap_CdRegisterCustomChunk, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }
 
-void set_expectations_crash_dump_register_threadx()
+void set_expectations_crash_dump_register_threadx(crash_dump_type_context_t* type_context)
 {
     expect_function_call(__wrap_CdRegisterCallback); // crash_dump_capture_threadx
     expect_not_value(__wrap_CdRegisterCallback, callback, NULL);
     expect_not_value(__wrap_CdRegisterCallback, context, NULL);
-    expect_value(__wrap_CdRegisterCallback, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    expect_value(__wrap_CdRegisterCallback,
+                 priority,
+                 type_context->type == CRASH_DUMP_TYPE_MINI ? FPFW_CD_DUMP_PRIORITY_NORMAL : FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }
 
 void set_expectations_crash_dump_register_mmio_register(volatile void* mmio_reg, uint32_t reg_count, FPFwCdDumpPriority priority)
@@ -422,7 +424,7 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp, nullptr, nullptr)
     set_expectations_crash_dump_register_ecid();
 
     // crash_dump_register_threadx()
-    set_expectations_crash_dump_register_threadx();
+    set_expectations_crash_dump_register_threadx(&type_context);
 
     // Call API under test
     KNG_STATUS result = crash_dump_register_dump(&type_context);
@@ -485,7 +487,7 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp_warmstart, nullptr, nullptr
     set_expectations_crash_dump_register_ecid();
 
     // crash_dump_register_threadx()
-    set_expectations_crash_dump_register_threadx();
+    set_expectations_crash_dump_register_threadx(&type_context);
 
     // Call API under test
     KNG_STATUS result = crash_dump_register_dump(&type_context);
@@ -548,7 +550,7 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
     set_expectations_crash_dump_register_ecid();
 
     // crash_dump_register_threadx()
-    set_expectations_crash_dump_register_threadx();
+    set_expectations_crash_dump_register_threadx(&type_context);
 
     // Call API under test
     KNG_STATUS result = crash_dump_register_dump(&type_context);
@@ -609,6 +611,9 @@ TEST_FUNCTION(test_crash_dump_register_mini_dump, nullptr, nullptr)
 
     // crash_dump_register_ecid()
     set_expectations_crash_dump_register_ecid();
+
+    // crash_dump_register_threadx()
+    set_expectations_crash_dump_register_threadx(&type_context);
 
     // Call API under test
     KNG_STATUS result = crash_dump_register_dump(&type_context);
@@ -863,6 +868,7 @@ TEST_FUNCTION(test_crash_dump_capture_threadx, NULL, NULL)
     // Set up test data
     uint8_t stack[1024] = {};
     TX_THREAD threads[2] = {};
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL};
 
     threads[0].tx_thread_created_next = &threads[1];
     threads[0].tx_thread_stack_start = stack;
@@ -919,7 +925,7 @@ TEST_FUNCTION(test_crash_dump_capture_threadx, NULL, NULL)
     }
 
     // Call the function under test
-    crash_dump_capture_threadx(NULL);
+    crash_dump_capture_threadx(&type_context);
 }
 
 static void preDumpCallback(void* pContext)

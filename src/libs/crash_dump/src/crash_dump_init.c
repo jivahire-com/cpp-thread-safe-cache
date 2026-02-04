@@ -108,11 +108,8 @@ KNG_STATUS crash_dump_register_dump(crash_dump_type_context_t* type_context)
     crash_dump_register_standard_info(type_context);
     crash_dump_register_ECID(type_context);
 
-    if (type_context->type == CRASH_DUMP_TYPE_FULL)
-    {
-        // Register ThreadX data registerer callback
-        crash_dump_register_threadx(type_context);
-    }
+    // Register ThreadX data registerer callback
+    crash_dump_register_threadx(type_context);
 
     return KNG_SUCCESS;
 }

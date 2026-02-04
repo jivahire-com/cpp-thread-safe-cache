@@ -63,8 +63,18 @@ uint64_t AP_GHES_ADDR(uint32_t mscp_addr)
 uint32_t MSCP_GHES_ADDR(uint64_t ap_addr)
 {
 #ifdef GHES_USE_ARSM_DIE_0
+    if (ap_addr >= ((uint64_t)D0_MSCP_ARSM_SRAM_BASE + (uint64_t)D0_MSCP_ARSM_SRAM_SIZE))
+    {
+        BUG_ASSERT_PARAM(false, ap_addr, 0);
+    }
+
     return (uint32_t)MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + (uint32_t)(ap_addr - (uint64_t)D0_MSCP_ARSM_SRAM_BASE);
 #else
+    if (ap_addr >= ((uint64_t)D1_MSCP_ARSM_SRAM_BASE + (uint64_t)D1_MSCP_ARSM_SRAM_SIZE))
+    {
+        BUG_ASSERT_PARAM(false, ap_addr, 0);
+    }
+
     return (uint32_t)MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + (uint32_t)(ap_addr - (uint64_t)D1_MSCP_ARSM_SRAM_BASE);
 #endif
 }

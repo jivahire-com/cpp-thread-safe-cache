@@ -64,6 +64,7 @@ mock_target(${TARGET}
     _txe_queue_receive
     _txe_queue_send
     _txe_semaphore_create
+    _txe_semaphore_get
     _txe_thread_create
     _txe_timer_create
     _txe_timer_deactivate

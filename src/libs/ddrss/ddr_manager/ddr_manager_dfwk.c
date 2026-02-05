@@ -16,9 +16,11 @@
 #include <ddr_manager.h>
 #include <ddr_manager_dfwk.h>
 #include <ddr_manager_events.h>
+#include <ddr_manager_i.h>
 #include <ddrss_sdl.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>        // for fpfw_init_get_handle
+#include <gtimer_prodfw.h>    // for gtimer_prodfw_get_counter
 #include <startup_shutdown.h> // for sos_register_ssi
 #include <stdint.h>
 #include <tx_api.h>
@@ -39,6 +41,7 @@ void ddr_manager_dfwk_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context
     switch (request->RequestType)
     {
     case SSI_QUIESCE_ASYNC:
+        uint64_t ddr_quiesce_start_timestamp = gtimer_prodfw_get_counter();
         pssi_shutdown_notification_request_t ssi_request = (pssi_shutdown_notification_request_t)request;
 
         if (ssi_request->shutdown_type != AP_WARM_RESET)
@@ -54,15 +57,14 @@ void ddr_manager_dfwk_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context
             {
                 DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_QUEUE_SEND_ERROR_START_POLLING_TIMER, 0);
             }
-            else
+
+            // Wait briefly for the worker to finish any in-flight I3C and drain its queue
+            ULONG wait_ticks = TX_TIMER_TICKS_PER_SECOND / 10; // ~100ms assuming 1kHz tick
+            UINT sem_status = tx_semaphore_get(&ddr_service_ctx->quiesce_sem, wait_ticks);
+            if (sem_status != TX_SUCCESS)
             {
-                // Wait briefly for the worker to finish any in-flight I3C and drain its queue
-                ULONG wait_ticks = TX_TIMER_TICKS_PER_SECOND / 10; // ~100ms assuming 1kHz tick
-                UINT sem_status = tx_semaphore_get(&ddr_service_ctx->quiesce_sem, wait_ticks);
-                if (sem_status != TX_SUCCESS)
-                {
-                    DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, sem_status);
-                }
+                DDR_LOG_CRIT("DDR quiesce semaphore wait timed out with status: %d", sem_status);
+                DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_TIMER_CREATE_ERROR, sem_status);
             }
         }
 
@@ -81,6 +83,11 @@ void ddr_manager_dfwk_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context
         {
             DfwkAsyncRequestComplete(request);
         }
+
+        // Calculate DDR quiesce duration in milliseconds
+        uint64_t ddr_quiesce_time =
+            ((gtimer_prodfw_get_counter() - ddr_quiesce_start_timestamp) * 1000) / gtimer_prodfw_get_frequency();
+        DDR_LOG_CRIT("DDR quiesce time: %llu ms\n", ddr_quiesce_time);
         break;
 
     default:

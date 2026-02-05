@@ -1720,6 +1720,9 @@ TEST_FUNCTION(ddr_manager_dfwk_dispatch_test_die_0, NULL, NULL)
     mock_request.header.RequestType = SSI_QUIESCE_ASYNC;
     mock_request.shutdown_type = SHUTDOWN_SCP_INITIATED;
 
+    // Mock gtimer for quiesce timing measurement
+    will_return(__wrap_gtimer_prodfw_get_counter, 1000000); // start timestamp
+
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
@@ -1728,6 +1731,11 @@ TEST_FUNCTION(ddr_manager_dfwk_dispatch_test_die_0, NULL, NULL)
     expect_any(__wrap__txe_queue_send, source_ptr);
     expect_value(__wrap__txe_queue_send, wait_option, (ULONG)TX_NO_WAIT);
     will_return(__wrap__txe_queue_send, TX_SUCCESS);
+
+    // Mock semaphore wait for quiesce
+    expect_any(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_get, wait_option);
+    will_return(__wrap__txe_semaphore_get, TX_SUCCESS);
 
     // should_store_sdl = true
     will_return(__wrap_config_get_ddrmanager_sdl_en, true);
@@ -1743,6 +1751,9 @@ TEST_FUNCTION(ddr_manager_dfwk_dispatch_test_die_0, NULL, NULL)
     expect_function_call(__wrap_variable_service_async_set_variable);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
+    will_return(__wrap_gtimer_prodfw_get_counter, 2000000);     // end timestamp
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
+
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);
     expect_function_call(__wrap_DfwkAsyncRequestComplete);
 
@@ -1757,6 +1768,11 @@ TEST_FUNCTION(ddr_manager_dfwk_dispatch_test_die_1, NULL, NULL)
     mock_request.header.RequestType = SSI_QUIESCE_ASYNC;
     mock_request.shutdown_type = SHUTDOWN_SCP_INITIATED;
 
+    // Mock gtimer for quiesce timing measurement
+    will_return(__wrap_gtimer_prodfw_get_counter, 1000000);     // start timestamp
+    will_return(__wrap_gtimer_prodfw_get_counter, 2000000);     // end timestamp
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000); // 125 MHz
+
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
     will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
@@ -1766,7 +1782,12 @@ TEST_FUNCTION(ddr_manager_dfwk_dispatch_test_die_1, NULL, NULL)
     expect_value(__wrap__txe_queue_send, wait_option, (ULONG)TX_NO_WAIT);
     will_return_always(__wrap__txe_queue_send, TX_SUCCESS);
 
-    // should_store_sdl = flase
+    // Mock semaphore wait for quiesce
+    expect_any(__wrap__txe_semaphore_get, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_get, wait_option);
+    will_return(__wrap__txe_semaphore_get, TX_SUCCESS);
+
+    // should_store_sdl = false
     will_return(__wrap_idsw_get_die_id, DIE_1);
 
     expect_value(__wrap_DfwkAsyncRequestComplete, Request, &mock_request);

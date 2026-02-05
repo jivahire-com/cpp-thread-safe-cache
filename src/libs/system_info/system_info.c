@@ -59,11 +59,29 @@ static void hsp_send_recv_security_state_msg(uint16_t req_msg, uint16_t rsp_msg)
     assert(recv_msg_size_bytes > 0);
     assert(msg.header.cmd == rsp_msg);
 
-    bmc_profile = msg.policy_status_rsp.policy_status.profile;
     security_state = msg.policy_status_rsp.policy_status.security_state;
     mission_mode = (msg.policy_status_rsp.policy_status.mission_mode == 1) ? true : false;
     cli_enable = (msg.policy_status_rsp.policy_status.cli_enable == 1) ? true : false;
     watchdog_enable = (msg.policy_status_rsp.policy_status.watchdog_enable == 1) ? true : false;
+}
+
+static void hsp_query_boot_profile(void)
+{
+    size_t recv_msg_size_bytes = 0;
+    kng_hsp_mailbox_msg msg = {
+        .header.cmd = HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_REQ,
+    };
+
+    //! Send the message to HSP & get response, blocking call
+    fpfw_status_t icc_status =
+        fpfw_icc_base_send_recv_sync(icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
+
+    //! Verify sync return status & response message
+    assert(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+    assert(recv_msg_size_bytes > 0);
+    assert(msg.header.cmd == HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
+
+    bmc_profile = (uint8_t)msg.boot_profile_rsp.boot_profile;
 }
 
 uint8_t system_info_get_board_id()
@@ -164,6 +182,7 @@ void system_info_init(fpfw_icc_base_ctx_t* icc_base_ctx)
     if (is_hsp_present && icc_ctx != NULL)
     {
         hsp_send_recv_security_state_msg(HSP_MAILBOX_CMD_GET_SECURITY_STATE_REQ, HSP_MAILBOX_CMD_GET_SECURITY_STATE_RSP);
+        hsp_query_boot_profile();
     }
     else
     {

@@ -35,12 +35,21 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, 
     assert_true(buffer_size >= sizeof(kng_hsp_mailbox_msg));
 
     kng_hsp_mailbox_msg* output_message = (kng_hsp_mailbox_msg*)payload_buffer;
+    uint16_t request_cmd = output_message->header.cmd;
+
     output_message->header.cmd = mock_type(uint16_t);
-    output_message->policy_status_rsp.policy_status.security_state = mock_type(uint8_t);
-    output_message->policy_status_rsp.policy_status.mission_mode = mock_type(bool);
-    output_message->policy_status_rsp.policy_status.cli_enable = mock_type(bool);
-    output_message->policy_status_rsp.policy_status.watchdog_enable = mock_type(bool);
-    output_message->policy_status_rsp.policy_status.profile = mock_type(uint8_t);
+
+    if (request_cmd == HSP_MAILBOX_CMD_GET_SECURITY_STATE_REQ)
+    {
+        output_message->policy_status_rsp.policy_status.security_state = mock_type(uint8_t);
+        output_message->policy_status_rsp.policy_status.mission_mode = mock_type(bool);
+        output_message->policy_status_rsp.policy_status.cli_enable = mock_type(bool);
+        output_message->policy_status_rsp.policy_status.watchdog_enable = mock_type(bool);
+    }
+    else if (request_cmd == HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_REQ)
+    {
+        output_message->boot_profile_rsp.boot_profile = mock_type(uint8_t);
+    }
 
     *output_recv_bytes = sizeof(kng_hsp_mailbox_msg);
 
@@ -102,7 +111,8 @@ TEST_FUNCTION(system_info_init_hsp_present, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
@@ -131,7 +141,8 @@ TEST_FUNCTION(system_info_init_warm_start, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
@@ -160,7 +171,8 @@ TEST_FUNCTION(system_info_init_secure_mode, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
@@ -189,7 +201,8 @@ TEST_FUNCTION(system_info_init_nonsecure_mode, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
@@ -218,7 +231,8 @@ TEST_FUNCTION(system_info_init_mission_mode, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
@@ -247,7 +261,8 @@ TEST_FUNCTION(system_info_init_cli_enable, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
@@ -273,7 +288,8 @@ TEST_FUNCTION(system_info_init_cli_enable, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     boot_meta_data.MetadataVersion = 1;
@@ -316,7 +332,8 @@ TEST_FUNCTION(system_info_init_watchdog_disable_allowed, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
@@ -342,7 +359,8 @@ TEST_FUNCTION(system_info_init_watchdog_disable_allowed, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     boot_meta_data.MetadataVersion = 1;
@@ -370,7 +388,8 @@ TEST_FUNCTION(system_info_init_reset_reason, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x00);
 
     HSP_BOOT_METADATA boot_meta_data;
@@ -426,7 +445,8 @@ TEST_FUNCTION(system_info_init_bmc_profile, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, true);
     // watchdog_enable
     will_return(__wrap_fpfw_icc_base_send_recv_sync, false);
-    // bmc_profile
+    // boot profile query
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_GET_BOOT_PROFILE_CMD_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, 0x01);
 
     HSP_BOOT_METADATA boot_meta_data;

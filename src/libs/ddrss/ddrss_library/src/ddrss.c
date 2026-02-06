@@ -180,6 +180,7 @@ PLACED_CODE void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     ddrss_cfgs.ext_knobs.dq_margin_extract_pattern_seed = config_get_dq_margin_extract_pattern_seed();
     ddrss_cfgs.ext_knobs.dq_margin_extract_step_size = config_get_dq_margin_extract_step_size();
     ddrss_cfgs.ext_knobs.dq_margin_th = config_get_dq_margin_th();
+    ddrss_cfgs.ext_knobs.dq_margin_rx_verf_th = config_get_dq_margin_rx_verf_th();
     ddrss_cfgs.ext_knobs.dqs_interval_timer_run_time = config_get_dqs_interval_timer_run_time();
     ddrss_cfgs.ext_knobs.dram_active_power_down_en = config_get_dram_active_power_down_en();
     ddrss_cfgs.ext_knobs.dram_init_mode = config_get_dram_init_mode();

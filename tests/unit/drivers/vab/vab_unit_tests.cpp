@@ -25,6 +25,7 @@ extern "C" {
 #include <error_handler.h>
 #include <pcie_ss_common.h>
 #include <pciess_int.h>
+#include <ras_arm_common.h>
 #include <vab.h>
 #include <vab_atu_mappings.h>
 #include <vab_intu.h>
@@ -167,11 +168,15 @@ TEST_FUNCTION(test_vab_ras_node_handler, NULL, NULL)
         SUBSYSTEM_WITH_VAB_ID vab_id = (SUBSYSTEM_WITH_VAB_ID)id;
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, true);
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
         will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+        expect_any(__wrap_hm_submit_cper, error_domain_idx);
+        expect_any(__wrap_hm_submit_cper, err_severity);
         expect_function_call(__wrap_hm_submit_cper);
         expect_function_call(__wrap_crash_dump_bug_check);
         if (!bugcheck_mock_return())
@@ -181,11 +186,15 @@ TEST_FUNCTION(test_vab_ras_node_handler, NULL, NULL)
 
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
         will_return(__wrap_ras_agent_probe, nullptr);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, true);
         will_return(__wrap_ras_agent_probe, nullptr);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
         will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+        expect_any(__wrap_hm_submit_cper, error_domain_idx);
+        expect_any(__wrap_hm_submit_cper, err_severity);
         expect_function_call(__wrap_hm_submit_cper);
         expect_function_call(__wrap_crash_dump_bug_check);
         if (!bugcheck_mock_return())
@@ -202,19 +211,27 @@ TEST_FUNCTION(test_vab_tbu0_handler, NULL, NULL)
         auto vab_id = (SUBSYSTEM_WITH_VAB_ID)id;
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, true);
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_any(__wrap_hm_submit_cper, error_domain_idx);
+        expect_any(__wrap_hm_submit_cper, err_severity);
         expect_function_call(__wrap_hm_submit_cper);
         vab_tbu0_handler(vab_id, 0xDEADBEEF);
 
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
         will_return(__wrap_ras_agent_probe, nullptr);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, true);
         will_return(__wrap_ras_agent_probe, nullptr);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_any(__wrap_hm_submit_cper, error_domain_idx);
+        expect_any(__wrap_hm_submit_cper, err_severity);
         expect_function_call(__wrap_hm_submit_cper);
         vab_tbu0_handler(vab_id, 0xDEADBEEF);
     }
@@ -227,19 +244,27 @@ TEST_FUNCTION(test_vab_tbu1_handler, NULL, NULL)
         auto vab_id = (SUBSYSTEM_WITH_VAB_ID)id;
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, true);
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_any(__wrap_hm_submit_cper, error_domain_idx);
+        expect_any(__wrap_hm_submit_cper, err_severity);
         expect_function_call(__wrap_hm_submit_cper);
         vab_tbu1_handler(vab_id, 0xDEADBEEF);
 
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
         will_return(__wrap_ras_agent_probe, nullptr);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, true);
         will_return(__wrap_ras_agent_probe, nullptr);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_any(__wrap_hm_submit_cper, error_domain_idx);
+        expect_any(__wrap_hm_submit_cper, err_severity);
         expect_function_call(__wrap_hm_submit_cper);
         vab_tbu1_handler(vab_id, 0xDEADBEEF);
     }
@@ -252,19 +277,27 @@ TEST_FUNCTION(test_vab_tcu_handler, NULL, NULL)
         auto vab_id = (SUBSYSTEM_WITH_VAB_ID)id;
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, true);
         will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_any(__wrap_hm_submit_cper, error_domain_idx);
+        expect_any(__wrap_hm_submit_cper, err_severity);
         expect_function_call(__wrap_hm_submit_cper);
         vab_tcu_handler(vab_id, 0xDEADBEEF);
 
         will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
         will_return(__wrap_ras_agent_probe, nullptr);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, true);
         will_return(__wrap_ras_agent_probe, nullptr);
+        will_return(__wrap_ras_agent_probe, (uint64_t)0);
         will_return(__wrap_ras_agent_probe, false);
         expect_function_call(__wrap_ras_print_record);
+        expect_any(__wrap_hm_submit_cper, error_domain_idx);
+        expect_any(__wrap_hm_submit_cper, err_severity);
         expect_function_call(__wrap_hm_submit_cper);
         vab_tcu_handler(vab_id, 0xDEADBEEF);
     }
@@ -274,6 +307,8 @@ TEST_FUNCTION(test_vab_parity_errors, NULL, NULL)
 {
     uint8_t id;
     will_return_always(__wrap_vab_get_1p_parity_status, SILIBS_SUCCESS);
+    expect_any_always(__wrap_hm_submit_cper, error_domain_idx);
+    expect_any_always(__wrap_hm_submit_cper, err_severity);
 
     for (id = D0_VAB0_RPSS0; id < MAX_VAB_INSTANCES; id++)
     {
@@ -373,21 +408,295 @@ TEST_FUNCTION(test_rpss_ras_node_handler, NULL, NULL)
     will_return(__wrap_vabss_intu_probe, true);
     will_return(__wrap_vabss_intu_probe, SILIBS_SUCCESS);
 
-    will_return(__wrap_pciess_get_entity, &mock_pcie_entity);
-    will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
-    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
-    will_return(__wrap_ras_agent_probe, true);
-    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
-    will_return(__wrap_ras_agent_probe, false);
-    expect_function_call(__wrap_ras_print_record);
+    expect_any_always(__wrap_hm_submit_cper, error_domain_idx);
+    expect_any_always(__wrap_hm_submit_cper, err_severity);
 
+    /* First RPSS RAS Node handler invocation (INTU0 RPSS_RAS_CRI) */
     will_return(__wrap_pciess_get_entity, &mock_pcie_entity);
     will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
     will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0);
     will_return(__wrap_ras_agent_probe, true);
     will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0);
     will_return(__wrap_ras_agent_probe, false);
     expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+    expect_function_call(__wrap_hm_submit_cper);
+
+    /* Second RPSS RAS Node handler invocation (INTU1 RPSS_RAS_FHI) */
+    will_return(__wrap_pciess_get_entity, &mock_pcie_entity);
+    will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+    expect_function_call(__wrap_hm_submit_cper);
+
+    expect_value(__wrap_vabss_intu_clear, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_clear, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_clear, SILIBS_SUCCESS);
+
+    vab_isr(&mock_isr_ctx);
+}
+
+/**
+ * @brief Test RPSS RAS node handler with correctable error - no bugcheck expected
+ */
+TEST_FUNCTION(test_rpss_ras_node_handler_correctable_error, NULL, NULL)
+{
+    cdedss_ioss_intu_probe_t mock_probe;
+    vab_isr_ctx_t mock_isr_ctx;
+
+    mock_isr_ctx.vab_irq_num = HW_INT_VAB2_COMBINED_SCP_INT;
+    mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
+    mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
+    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
+    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.process_probe = process_vab_rpss_probe;
+
+    expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_probe, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_probe, VAB_RPSS_INTU0_RPSS_RAS_CRI);
+    will_return(__wrap_vabss_intu_probe, true);
+    will_return(__wrap_vabss_intu_probe, 0);
+    will_return(__wrap_vabss_intu_probe, false);
+    will_return(__wrap_vabss_intu_probe, SILIBS_SUCCESS);
+
+    /* RPSS RAS Node handler with correctable error - no bugcheck */
+    will_return(__wrap_pciess_get_entity, &mock_pcie_entity);
+    will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)RAS_ARM_CORRECTABLE_ERROR);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_function_call(__wrap_hm_submit_cper);
+    /* No bugcheck expected for correctable error */
+
+    expect_value(__wrap_vabss_intu_clear, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_clear, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_clear, SILIBS_SUCCESS);
+
+    vab_isr(&mock_isr_ctx);
+}
+
+/**
+ * @brief Test RPSS RAS node handler with uncorrectable error - bugcheck expected
+ */
+TEST_FUNCTION(test_rpss_ras_node_handler_uncorrectable_error, NULL, NULL)
+{
+    cdedss_ioss_intu_probe_t mock_probe;
+    vab_isr_ctx_t mock_isr_ctx;
+
+    mock_isr_ctx.vab_irq_num = HW_INT_VAB2_COMBINED_SCP_INT;
+    mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
+    mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
+    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
+    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.process_probe = process_vab_rpss_probe;
+
+    expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_probe, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_probe, VAB_RPSS_INTU0_RPSS_RAS_CRI);
+    will_return(__wrap_vabss_intu_probe, true);
+    will_return(__wrap_vabss_intu_probe, 0);
+    will_return(__wrap_vabss_intu_probe, false);
+    will_return(__wrap_vabss_intu_probe, SILIBS_SUCCESS);
+
+    /* RPSS RAS Node handler with uncorrectable error - bugcheck expected */
+    will_return(__wrap_pciess_get_entity, &mock_pcie_entity);
+    will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)RAS_ARM_UNCORRECTABLE_ERROR);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper);
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    /* Note: No intu_clear expectation because bugcheck aborts before reaching it */
+
+    if (!bugcheck_mock_return())
+    {
+        vab_isr(&mock_isr_ctx);
+    }
+}
+
+/**
+ * @brief Test RPSS RAS node handler with multiple records - logs all before bugcheck
+ */
+TEST_FUNCTION(test_rpss_ras_node_handler_multiple_records, NULL, NULL)
+{
+    cdedss_ioss_intu_probe_t mock_probe;
+    vab_isr_ctx_t mock_isr_ctx;
+
+    mock_isr_ctx.vab_irq_num = HW_INT_VAB2_COMBINED_SCP_INT;
+    mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
+    mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
+    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
+    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.process_probe = process_vab_rpss_probe;
+
+    expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_probe, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_probe, VAB_RPSS_INTU0_RPSS_RAS_CRI);
+    will_return(__wrap_vabss_intu_probe, true);
+    will_return(__wrap_vabss_intu_probe, 0);
+    will_return(__wrap_vabss_intu_probe, false);
+    will_return(__wrap_vabss_intu_probe, SILIBS_SUCCESS);
+
+    /* First record: correctable */
+    will_return(__wrap_pciess_get_entity, &mock_pcie_entity);
+    will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)RAS_ARM_CORRECTABLE_ERROR);
+    will_return(__wrap_ras_agent_probe, true);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_function_call(__wrap_hm_submit_cper);
+
+    /* Second record: uncorrectable */
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)RAS_ARM_UNCORRECTABLE_ERROR);
+    will_return(__wrap_ras_agent_probe, true);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_function_call(__wrap_hm_submit_cper);
+
+    /* Third record: correctable again */
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)RAS_ARM_CORRECTABLE_ERROR);
+    will_return(__wrap_ras_agent_probe, true);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_function_call(__wrap_hm_submit_cper);
+
+    /* No more records */
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0);
+    will_return(__wrap_ras_agent_probe, false);
+
+    /* Bugcheck expected due to uncorrectable error in second record */
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    /* Note: No intu_clear expectation because bugcheck aborts before reaching it */
+
+    if (!bugcheck_mock_return())
+    {
+        vab_isr(&mock_isr_ctx);
+    }
+}
+
+/**
+ * @brief Test RPSS RAS node handler with unknown error type - non-fatal severity
+ */
+TEST_FUNCTION(test_rpss_ras_node_handler_unknown_error_type, NULL, NULL)
+{
+    cdedss_ioss_intu_probe_t mock_probe;
+    vab_isr_ctx_t mock_isr_ctx;
+
+    mock_isr_ctx.vab_irq_num = HW_INT_VAB2_COMBINED_SCP_INT;
+    mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
+    mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
+    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
+    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.process_probe = process_vab_rpss_probe;
+
+    expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_probe, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_probe, VAB_RPSS_INTU0_RPSS_RAS_CRI);
+    will_return(__wrap_vabss_intu_probe, true);
+    will_return(__wrap_vabss_intu_probe, 0);
+    will_return(__wrap_vabss_intu_probe, false);
+    will_return(__wrap_vabss_intu_probe, SILIBS_SUCCESS);
+
+    /* RPSS RAS Node handler with unknown error type - non-fatal severity, no bugcheck */
+    will_return(__wrap_pciess_get_entity, &mock_pcie_entity);
+    will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0); /* Unknown/no error type */
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL);
+    expect_function_call(__wrap_hm_submit_cper);
+    /* No bugcheck expected for non-fatal error */
+
+    expect_value(__wrap_vabss_intu_clear, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_clear, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_clear, SILIBS_SUCCESS);
+
+    vab_isr(&mock_isr_ctx);
+}
+
+/**
+ * @brief Test RPSS RAS node handler with invalid record (null handler)
+ */
+TEST_FUNCTION(test_rpss_ras_node_handler_invalid_record, NULL, NULL)
+{
+    cdedss_ioss_intu_probe_t mock_probe;
+    vab_isr_ctx_t mock_isr_ctx;
+
+    mock_isr_ctx.vab_irq_num = HW_INT_VAB2_COMBINED_SCP_INT;
+    mock_isr_ctx.vab_base = VAB_RPSS_TOP_VAB_ADDRESS;
+    mock_isr_ctx.probe.intu0 = (vabss_int_t*)&(mock_probe.intu0);
+    mock_isr_ctx.probe.num_intu0_pins = VAB_RPSS_INTU0_NUM_CFGS;
+    mock_isr_ctx.probe.intu1 = (vabss_int_t*)&(mock_probe.intu1);
+    mock_isr_ctx.probe.num_intu1_pins = VAB_RPSS_INTU1_NUM_CFGS;
+    mock_isr_ctx.process_probe = process_vab_rpss_probe;
+
+    expect_value(__wrap_vabss_intu_probe, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
+    expect_value(__wrap_vabss_intu_probe, dest, INTU_TO_SCP);
+    will_return(__wrap_vabss_intu_probe, VAB_RPSS_INTU0_RPSS_RAS_CRI);
+    will_return(__wrap_vabss_intu_probe, true);
+    will_return(__wrap_vabss_intu_probe, 0);
+    will_return(__wrap_vabss_intu_probe, false);
+    will_return(__wrap_vabss_intu_probe, SILIBS_SUCCESS);
+
+    /* RPSS RAS Node handler with invalid record (null handler) - CPER still logged */
+    will_return(__wrap_pciess_get_entity, &mock_pcie_entity);
+    will_return(__wrap_ras_arm_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, nullptr); /* Invalid record - null handler */
+    will_return(__wrap_ras_agent_probe, (uint64_t)RAS_ARM_CORRECTABLE_ERROR);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, nullptr);
+    will_return(__wrap_ras_agent_probe, (uint64_t)0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_arm_record_to_cper, SILIBS_SUCCESS);
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_CORRECTED);
+    expect_function_call(__wrap_hm_submit_cper);
+    /* No bugcheck - correctable error with invalid record */
 
     expect_value(__wrap_vabss_intu_clear, vab_base, VAB_RPSS_TOP_VAB_ADDRESS);
     expect_value(__wrap_vabss_intu_clear, dest, INTU_TO_SCP);

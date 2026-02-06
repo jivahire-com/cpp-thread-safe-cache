@@ -165,6 +165,7 @@ bool __wrap_ras_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* recor
     assert_non_null(record);
 
     record->handler = mock_ptr_type(ras_generic_handler_t);
+    record->err_type = mock_type(uint64_t);
 
     return mock_type(bool);
 }
@@ -189,9 +190,9 @@ void __wrap_hm_submit_cper(uint16_t error_domain_idx,
                            acpi_cper_section_t* err_record_section,
                            uint32_t err_record_section_size)
 {
-    FPFW_UNUSED(error_domain_idx);
-    FPFW_UNUSED(err_severity);
     FPFW_UNUSED(err_record_section_size);
+    check_expected(error_domain_idx);
+    check_expected(err_severity);
     assert_non_null(err_record_section);
     function_called();
 }

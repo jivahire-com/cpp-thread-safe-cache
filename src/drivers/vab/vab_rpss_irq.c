@@ -11,7 +11,9 @@
 #include <DbgPrint.h>
 #include <FPFwInterrupts.h>
 #include <FpFwAssert.h>
+#include <bug_check.h>
 #include <cper.h>
+#include <health_monitor.h>
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <interrupts.h>
@@ -20,6 +22,8 @@
 #include <kng_soc_constants.h>
 #include <pcie_irq.h>
 #include <pciess.h>
+#include <ras_arm_agent.h>
+#include <ras_arm_common.h>
 #include <silibs_common.h>
 #include <silibs_platform.h>
 #include <silibs_status.h>
@@ -101,9 +105,43 @@ static silibs_status_t rpss_ras_node_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintp
     ras_agent_entity_t* agent = &(pciess_get_entity((RPSS_INSTANCE)vab_id)->ras_node);
     ras_arm_agent_set_base(agent, base + RAS_RPSS_OFFSET);
     ras_error_record_t record = {0};
+    bool bugcheck_required = false;
+    uint32_t bugcheck_vab_id = (uint32_t)vab_id;
+    uint32_t bugcheck_err_type = 0;
+
     while (ras_agent_probe(agent, &record))
     {
         ras_print_record(&record);
+
+        /* Build CPER for RPSS RAS Node error */
+        acpi_cper_section_t cper_section = {0};
+        acpi_err_sec_pcie_vendor_t* pcie_cper = &cper_section.sec_pcie_vendor;
+        pcie_cper->error_type = PCIE_RPSS_RAS_NODE_ERROR;
+
+        /* Convert ARM RAS record to CPER format */
+        ras_arm_record_to_cper(&record, &pcie_cper->rpss_ras_node_info.record, sizeof(arm_ras_record_t));
+
+        /* Determine severity from ARM RAS record error type */
+        uint32_t severity;
+        if (record.err_type & RAS_ARM_UNCORRECTABLE_ERROR)
+        {
+            severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+            bugcheck_required = true;
+            bugcheck_err_type = (uint32_t)record.err_type;
+        }
+        else if (record.err_type & RAS_ARM_CORRECTABLE_ERROR)
+        {
+            severity = ACPI_ERROR_SEVERITY_CORRECTED;
+        }
+        else
+        {
+            /* Default to non-fatal for unknown error types */
+            severity = ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL;
+        }
+
+        /* Submit CPER to health monitor */
+        hm_submit_cper(ACPI_ERROR_DOMAIN_PCIE, severity, &cper_section, sizeof(cper_section));
+
         if (record.handler)
         {
             if (record.handler(&record))
@@ -120,6 +158,13 @@ static silibs_status_t rpss_ras_node_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintp
             continue;
         }
     }
+
+    /* Bugcheck for uncorrectable errors (double-bit ECC) after logging all CPERs */
+    if (bugcheck_required)
+    {
+        BUG_CHECK(KNG_HM_PCIE_GENERIC, bugcheck_vab_id, bugcheck_err_type);
+    }
+
     return SILIBS_SUCCESS;
 }
 

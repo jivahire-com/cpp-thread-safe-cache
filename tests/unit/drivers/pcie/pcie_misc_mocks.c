@@ -63,6 +63,11 @@ uint8_t __wrap_system_info_get_soc_position()
     return mock_type(uint8_t);
 }
 
+uint8_t __wrap_system_info_get_bmc_profile()
+{
+    return mock_type(uint8_t);
+}
+
 void __wrap_hm_submit_cper(uint16_t error_domain_idx,
                            acpi_error_severity_t err_severity,
                            acpi_cper_section_t* err_record_section,

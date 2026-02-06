@@ -63,6 +63,7 @@ mock_target(${TARGET}
     hm_submit_cper
     system_info_get_board_id
     system_info_get_board_rework_id
+    system_info_get_bmc_profile
     system_info_get_soc_position
     # Config manager mocks
     config_get_cxl_params_die0

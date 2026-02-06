@@ -77,13 +77,22 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
 
     override_default_pcie_cfg(rpss_id);
 
+    pcie_cfg_t* pcie_cfg = get_configuration_for_rpss(rpss_id);
+
     sts = pciess_config_entity(rpss,
                                resolved_subsystem_config_addr,
                                ap_subsystem_config_addr,
-                               get_configuration_for_rpss(rpss_id),
+                               pcie_cfg,
                                plat_get_phy_programming_support(),
                                true);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
+
+    /* Skip initialization if RPSS is disabled by knob */
+    if (pcie_cfg->pcie_ss_en == false)
+    {
+        FPFW_DBGPRINT_INFO("[PCIe Init] RPSS%d: Disabled by knob, skipping initialization.\n", rpss_id);
+        return SILIBS_E_SUPPORT;
+    }
 
     // Cold Boot info comes from the Request orginator
     // By default its assumes to be false

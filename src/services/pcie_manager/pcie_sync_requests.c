@@ -83,7 +83,7 @@ pcie_ss_entity_t* send_sync_rpss_get_entity(PDFWK_INTERFACE_HEADER iface, RPSS_I
 
 silibs_status_t send_sync_rpss_initial_config(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx, bool* is_cold_boot)
 {
-    return send_generic_ss_sync_req(iface, rpss_idx, INITIAL_CONFIG_REQUEST, NULL, (void*)(is_cold_boot), false);
+    return send_generic_ss_sync_req(iface, rpss_idx, INITIAL_CONFIG_REQUEST, NULL, (void*)(is_cold_boot), true);
 }
 
 silibs_status_t send_sync_rpss_pre_rp_init_request(PDFWK_INTERFACE_HEADER iface, RPSS_INSTANCE rpss_idx)

@@ -100,6 +100,8 @@ silibs_status_t __wrap_pciess_config_entity(pcie_ss_entity_t* ss,
     check_expected(enable_apu);
 
     ss->knobs = cfg;
+    cfg->pcie_ss_en = mock_type(bool);
+    ss->enabled = cfg->pcie_ss_en;
     ss->bases.general_base_addr = (uintptr_t)(&mock_general_reg_block);
     ss->bases.phy_base_addr = (uintptr_t)(&mock_phy_block);
     ss->bases.phy_bcast_base_addr = (uintptr_t)(&mock_bcast_block);

@@ -890,14 +890,12 @@ TEST_FUNCTION(test_send_sync_rpss_initial_config_silibs_fail, NULL, NULL)
     will_return(__wrap_DfwkInterfaceSendSync, nullptr);
     will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_TIMEOUT);
     will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
-    expect_function_calls(__wrap_crash_dump_bug_check, 1);
 
-    should_return = false;
-
-    if (!bugcheck_mock_return())
-    {
+    /* no_silibs_check is true for INITIAL_CONFIG_REQUEST, so silibs errors
+     * are returned without triggering a bug check. */
+    silibs_status_t sts =
         send_sync_rpss_initial_config((PDFWK_INTERFACE_HEADER)ctx.iface, ctx.rpss_idx, &ctx.is_cold_boot);
-    }
+    assert_int_equal(sts, SILIBS_E_TIMEOUT);
 }
 
 TEST_FUNCTION(test_send_sync_rpss_pre_rp_init_request_pass, NULL, NULL)
@@ -1955,4 +1953,150 @@ TEST_FUNCTION(test_rpss_service_thread_fn_rpss_not_ready_timeout, NULL, NULL)
     {
         rpss_service_thread_fn((ULONG)&test_ctx);
     }
+}
+
+TEST_FUNCTION(test_rpss_service_thread_fn_cold_boot_disabled, NULL, NULL)
+{
+    // Setup test context
+    pcie_manager_context_t test_ctx;
+    memset(&test_ctx, 0, sizeof(test_ctx));
+    pciess_device_t test_dev;
+    memset(&test_dev, 0, sizeof(test_dev));
+    pciess_device_interface_t test_iface;
+    memset(&test_iface, 0, sizeof(test_iface));
+    TX_EVENT_FLAGS_GROUP test_event_group;
+    memset(&test_event_group, 0, sizeof(test_event_group));
+    TX_EVENT_FLAGS_GROUP test_phyfw_event;
+    memset(&test_phyfw_event, 0, sizeof(test_phyfw_event));
+    TX_QUEUE test_work_queue;
+    memset(&test_work_queue, 0, sizeof(test_work_queue));
+
+    test_ctx.rpss_idx = RPSS4;
+    test_ctx.dev = &test_dev;
+    test_ctx.iface = &test_iface;
+    test_ctx.event_ptr = &test_event_group;
+    test_ctx.phyfw_load_event_ptr = &test_phyfw_event;
+    test_ctx.work_queue = test_work_queue;
+    test_ctx.is_cold_boot = true;
+
+    /* Mock DfwkClientInterfaceOpen */
+    expect_value(__wrap_DfwkClientInterfaceOpen, InterfaceHeader, &(test_iface.header));
+    will_return(__wrap_DfwkClientInterfaceOpen, DFWK_SUCCESS);
+
+    /* Mock initial config request — returns SILIBS_E_SUPPORT (RPSS disabled) */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INITIAL_CONFIG_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_SUPPORT);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock tx_event_flags_set — config populated signal */
+    expect_value(__wrap__txe_event_flags_set, group_ptr, &test_event_group);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, (1 << RPSS4));
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    /*
+     * No further mocks — the thread must exit without calling pre/post-RP init,
+     * link training, or the event loop.  CMocka will fail the test if any
+     * unexpected mock calls are made.
+     */
+    rpss_service_thread_fn((ULONG)&test_ctx);
+}
+
+TEST_FUNCTION(test_rpss_service_thread_fn_warm_boot_disabled, NULL, NULL)
+{
+    // Setup test context
+    pcie_manager_context_t test_ctx;
+    memset(&test_ctx, 0, sizeof(test_ctx));
+    pciess_device_t test_dev;
+    memset(&test_dev, 0, sizeof(test_dev));
+    pciess_device_interface_t test_iface;
+    memset(&test_iface, 0, sizeof(test_iface));
+    TX_EVENT_FLAGS_GROUP test_event_group;
+    memset(&test_event_group, 0, sizeof(test_event_group));
+    TX_EVENT_FLAGS_GROUP test_phyfw_event;
+    memset(&test_phyfw_event, 0, sizeof(test_phyfw_event));
+    TX_QUEUE test_work_queue;
+    memset(&test_work_queue, 0, sizeof(test_work_queue));
+
+    test_ctx.rpss_idx = RPSS5;
+    test_ctx.dev = &test_dev;
+    test_ctx.iface = &test_iface;
+    test_ctx.event_ptr = &test_event_group;
+    test_ctx.phyfw_load_event_ptr = &test_phyfw_event;
+    test_ctx.work_queue = test_work_queue;
+    test_ctx.is_cold_boot = false;
+
+    /* Mock DfwkClientInterfaceOpen */
+    expect_value(__wrap_DfwkClientInterfaceOpen, InterfaceHeader, &(test_iface.header));
+    will_return(__wrap_DfwkClientInterfaceOpen, DFWK_SUCCESS);
+
+    /* Mock initial config request — returns SILIBS_E_SUPPORT (RPSS disabled) */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INITIAL_CONFIG_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_SUPPORT);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock tx_event_flags_set — config populated signal */
+    expect_value(__wrap__txe_event_flags_set, group_ptr, &test_event_group);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, (1 << RPSS5));
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    /*
+     * No further mocks — thread exits without post-RP init or event loop.
+     */
+    rpss_service_thread_fn((ULONG)&test_ctx);
+}
+
+TEST_FUNCTION(test_rpss_service_thread_fn_ift_disabled, NULL, NULL)
+{
+    // Setup test context
+    pcie_manager_context_t test_ctx;
+    memset(&test_ctx, 0, sizeof(test_ctx));
+    pciess_device_t test_dev;
+    memset(&test_dev, 0, sizeof(test_dev));
+    pciess_device_interface_t test_iface;
+    memset(&test_iface, 0, sizeof(test_iface));
+    TX_EVENT_FLAGS_GROUP test_event_group;
+    memset(&test_event_group, 0, sizeof(test_event_group));
+    TX_EVENT_FLAGS_GROUP test_phyfw_event;
+    memset(&test_phyfw_event, 0, sizeof(test_phyfw_event));
+    TX_QUEUE test_work_queue;
+    memset(&test_work_queue, 0, sizeof(test_work_queue));
+
+    test_ctx.rpss_idx = RPSS6;
+    test_ctx.dev = &test_dev;
+    test_ctx.iface = &test_iface;
+    test_ctx.event_ptr = &test_event_group;
+    test_ctx.phyfw_load_event_ptr = &test_phyfw_event;
+    test_ctx.work_queue = test_work_queue;
+    test_ctx.is_cold_boot = true;
+
+    /* Enable IFT for this test */
+    ift_enabled = true;
+
+    /* Mock DfwkClientInterfaceOpen */
+    expect_value(__wrap_DfwkClientInterfaceOpen, InterfaceHeader, &(test_iface.header));
+    will_return(__wrap_DfwkClientInterfaceOpen, DFWK_SUCCESS);
+
+    /* Mock initial config request — returns SILIBS_E_SUPPORT (RPSS disabled) */
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INITIAL_CONFIG_REQUEST);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_SUPPORT);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+
+    /* Mock tx_event_flags_set — config populated signal */
+    expect_value(__wrap__txe_event_flags_set, group_ptr, &test_event_group);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, (1 << RPSS6));
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    /*
+     * No further mocks — thread exits without IFT init or event loop.
+     */
+    rpss_service_thread_fn((ULONG)&test_ctx);
+
+    /* Restore IFT state for other tests */
+    ift_enabled = false;
 }

@@ -265,6 +265,7 @@ add_library(${TARGET}
         accelerator_ip_mcp_init.c
         ap_advlog_pldm_mcp_cli_init.c
         ap_advlog_pldm_mcp_init.c
+        ap_smc_telemetry_mcp_init.c
         atu_init.c
         bitrot_service_init.c
         boot_status_init.c
@@ -410,6 +411,7 @@ target_link_libraries(
         ms::service::sel_mgr
         ms::service::sensor_fifo
         ms::service::sensor_fifo::cli
+        ms::service::smc_tlm_mcp
         ms::service::sys_info::cli
         ms::service::telemetry::fuses::cli
         ms::service::wdog

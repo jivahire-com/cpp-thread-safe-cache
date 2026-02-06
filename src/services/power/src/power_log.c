@@ -44,6 +44,7 @@ static_assert(sizeof(power_log_entry_t) <= (sizeof(uint64_t) * POWER_ET_LOG_TRAC
 static char string_buffer[MAX_LOG_CHARS];
 static bool ddr_logging_enabled = false;
 static power_log_data_t log = {};
+static power_log_entry_t s_log_entries[POWER_LOG_LOCAL_SIZE / sizeof(power_log_entry_t)];
 
 /*------------- Functions ----------------*/
 int power_log_ddr_map_unmap(bool map, KNG_DIE_ID die_id)
@@ -197,13 +198,9 @@ void power_log_init()
         return;
     }
     // power_log_data_t *log = &power_context.log;
-    //  allocate memory for log entries
-    log.entries = malloc(POWER_LOG_LOCAL_SIZE);
-    if (log.entries == NULL)
-    {
-        free(log.entries);
-    }
-    BUG_ASSERT(log.entries != NULL);
+    // use static array for log entries
+    log.entries = s_log_entries;
+
     // setup entry count based on size of allocation
     log.max_entries = POWER_LOG_LOCAL_SIZE / sizeof(power_log_entry_t);
     // invalidate first entry

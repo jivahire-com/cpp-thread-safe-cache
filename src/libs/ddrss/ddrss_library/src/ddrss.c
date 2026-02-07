@@ -21,10 +21,13 @@
 #include <ddr_err_inj.h>
 #include <ddr_i3c.h>
 #include <ddr_manager.h>
+#include <ddr_manager_events.h>
 #include <ddr_manager_i3c.h>
+#include <ddr_ppr.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <ddrss_reserved_regions_version.h>
+#include <ddrss_sdl.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h> // for fpfw_init_get_handle
 #include <gtimer_prodfw.h>
@@ -71,6 +74,7 @@ static const guid_t STD_MEMORY_ERROR_DOMAIN_GUID = {0xB7E2A3C9, 0x4F1D, 0x4569, 
 static const guid_t DDR_ERROR_DOMAIN_FRU_GUID = {0x3AC75B2E, 0xC8F1, 0x43E1, {0x88, 0x7C, 0x9A, 0x12, 0x34, 0x56, 0x78, 0x9A}};
 static const guid_t DDR_RHTL_ERROR_DOMAIN_FRU_GUID = ACPI_ERROR_TYPE_VENDOR_RHTLM;
 
+/*------------- Functions ----------------*/
 static void prod_ddrss_register_isr_handler(void)
 {
     // 1 DDRSS contains 2 memory controllers
@@ -94,7 +98,6 @@ static void prod_ddrss_register_isr_handler(void)
     }
 }
 
-/*------------- Functions ----------------*/
 PLACED_CODE void prod_ddrss_lib_init(KNG_DIE_ID die_num)
 {
     int sts = SILIBS_SUCCESS;
@@ -505,6 +508,15 @@ PLACED_CODE void prod_ddrss_lib_init(KNG_DIE_ID die_num)
         wdog_cmsdk_apb_lock_unlock(true); // Lock counter
     }
 
+    if (!is_warm_reset)
+    {
+        ppr_setup(&ddrss_cfgs);
+    }
+    else
+    {
+        printf("DDRSS - Skipping PPR setup on warm reset\n");
+    }
+
     // Set up per-lane margin buffer
     ddrss_cfgs.dq_lane_margin_base = (uint64_t)(uintptr_t)&ddrss_phy_training_dq_margin;
 
@@ -729,7 +741,7 @@ PLACED_CODE int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeou
     return sts;
 }
 
-PLACED_CODE int32_t ddrss_update_ppr_completion(ddrs_spd_addr_info_t* addr_info, ddrss_res_info_t* res_info)
+PLACED_CODE int32_t ddrss_update_ppr_completion(ddrss_spd_addr_info_t* addr_info, ddrss_res_info_t* res_info)
 {
     /**
      * @brief
@@ -819,7 +831,7 @@ PLACED_CODE int32_t ddrss_update_ppr_completion(ddrs_spd_addr_info_t* addr_info,
         spd_data[3] += 1; // Increment number of failed PPR occurrences
     }
     spd_data[4] += 1; // Increment number of PPR executions
-    memcpy(&spd_data[7], addr_info, sizeof(ddrs_spd_addr_info_t));
+    memcpy(&spd_data[7], addr_info, sizeof(ddrss_spd_addr_info_t));
 #endif
 
     // Write data has a max size of 8-bytes, hence executing a hardcoded 2-loop write of 8-bytes each

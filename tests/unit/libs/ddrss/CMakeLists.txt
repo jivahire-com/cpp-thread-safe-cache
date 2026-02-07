@@ -8,7 +8,6 @@ set(SOURCES
     test_ddrss.cpp
     test_ddr_err_inj.cpp
     test_ddr_atu_map.cpp
-    
 )
 
 # Compile test
@@ -124,4 +123,6 @@ mock_target(${TARGET}
     variable_service_initialize_ctx
     variable_service_sync_get_variable
     variable_service_unlock_get_var_ctx
+    # get_sdl_arsm0_addr
+    ppr_setup
 )

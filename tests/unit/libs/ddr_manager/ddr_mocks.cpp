@@ -13,6 +13,8 @@
 #include <CMockaWrapper.h>
 #include <FpFwUtils.h>
 #include <atu_lib.h>
+#include <ddr_ppr.h>
+#include <ddrss_knobs.h>
 #include <ddrss_lib.h>
 #include <ddrss_runtime_api.h>
 #include <fpfw_icc_base.h>
@@ -35,6 +37,7 @@ bool g_should_wrap_idsw_get_platform_sdv = false;
 bool g_should_wrap_ddr_create_memory_map = false;
 bool g_should_wrap_ddrss_get_ddrss_mask = false;
 bool g_check_smb17_params = false;
+bool g_ppr_testing = false;
 
 /*------------- Functions ----------------*/
 
@@ -398,6 +401,13 @@ int32_t __wrap_variable_service_sync_get_variable(var_service_req_ctx_t* var_ser
     FPFW_UNUSED(var_serv_ctx);
     FPFW_UNUSED(req_params);
 
+    if (g_ppr_testing)
+    {
+        // Write the mocked PPR type value into the caller's buffer
+        DDRSS_PPR_TYPE ppr_val = mock_type(DDRSS_PPR_TYPE);
+        memcpy(req_params->data, &ppr_val, sizeof(DDRSS_PPR_TYPE));
+    }
+
     return mock_type(int32_t);
 }
 
@@ -446,6 +456,26 @@ int32_t __wrap_variable_service_async_set_variable(var_service_req_ctx_t* var_se
 
     callback(context, var_serv_ctx, NULL, 0);
     return 0;
+}
+
+uintptr_t __wrap_get_sdl_arsm0_addr(void)
+{
+    return (mock_type(uintptr_t));
+}
+
+void __wrap_send_ppr_type_to_die1(DDRSS_PPR_TYPE ppr_type, volatile ddr_ppr_sync_msg_t* ppr_sync_msg)
+{
+    FPFW_UNUSED(ppr_sync_msg);
+
+    check_expected(ppr_type);
+}
+
+void __wrap_receive_ppr_type_from_die0(DDRSS_PPR_TYPE* ppr_type, volatile ddr_ppr_sync_msg_t* ppr_sync_msg)
+{
+    FPFW_UNUSED(ppr_sync_msg);
+
+    assert_true(ppr_type != NULL);
+    *ppr_type = mock_type(DDRSS_PPR_TYPE);
 }
 
 } // extern "C"

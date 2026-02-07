@@ -27,6 +27,7 @@
     <!-- SDL & PPR Related -->
     <Knob name="ddrmanager_sdl_en" type="bool" default="true" help="Enable/Disable SDL support" />
     <Knob name="skip_sdl_address_publishing" type="bool" default="true" help="Enable this only until OS AzPshedPi.sys driver is fixed - will crash at OS boot otherwise"/>
+    <Knob name="ddrmanager_sdl_has_mc_view" type="bool" default="true" help="OS stores SDL data as MC view (true) or PHY/DIMM view (false)" />
 
     <!-- DDRSS knobs -->
     <Knob name="ddrss_init" type="uint8_t" default="0" help="DDRSS init enable. Used by DV only, ignored by silibs. 0 - Disable, 1 - Enable" />

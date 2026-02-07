@@ -27,6 +27,7 @@ extern "C" {
 #include <ddr_manager_bwl.h>
 #include <ddr_manager_dfwk.h>
 #include <ddr_manager_i.h> // for ddr_poll_dimms, ddr_worker_thread_func
+#include <ddr_ppr.h>
 #include <ddr_rhtlm_service.h>
 #include <ddrss_lib.h>
 #include <ddrss_sdl.h>
@@ -133,6 +134,16 @@ int __wrap_atu_translate_address(atu_id_t atu_id, uint64_t ap_addr, uint32_t* ms
 
 int __wrap_mscp_exp_spi_synchronize_dies(mscp_exp_spi_sync_point_t sync_point, int die_id)
 {
+    d2d_sync_point_test = sync_point;
+    check_expected(die_id);
+
+    return mock_type(int);
+}
+
+int __wrap_mscp_exp_spi_synchronize_dies_timeout(mscp_exp_spi_sync_point_t sync_point, int die_id, uint32_t timeout_ms)
+{
+    FPFW_UNUSED(timeout_ms);
+
     d2d_sync_point_test = sync_point;
     check_expected(die_id);
 
@@ -1636,7 +1647,7 @@ TEST_FUNCTION(ddr_copy_empty_sdl_to_ddr, NULL, NULL)
     // Verify that the SDL header was copied correctly
     assert_int_equal(empty_header.Signature, (uint32_t)PSHED_PI_DEFECT_LIST_SIGNATURE);
     assert_int_equal(empty_header.Version, MEMORY_DEFECT_VERSION_20);
-    assert_int_equal(empty_header.Length, SDL_MAX_SIZE);
+    assert_int_equal(empty_header.Length, sizeof(expected_header_for_checksum));
     assert_int_equal(empty_header.DefectCount, 0);
     assert_int_equal(empty_header.Changed, 0);
 

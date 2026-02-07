@@ -579,6 +579,7 @@ TEST_FUNCTION(test_sort_reserved_regions_inplace, NULL, NULL)
 TEST_FUNCTION(test_ddr_create_memory_map_SVP_mark_uefi_unavailable, NULL, NULL)
 {
     g_should_wrap_idsw_get_platform_sdv = true;
+    ddrss_set_system_memory_map();
 
     show_map(unsort_regions, ddrmap_get_last_idx(unsort_regions), true);
     // Get outgoing memory map

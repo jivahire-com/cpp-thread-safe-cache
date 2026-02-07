@@ -271,11 +271,12 @@ void cleanup_after_sdl_load(void);
 /* SDL Parsing and Validation */
 void parse_sdl_var(uintptr_t sdl_base, uintptr_t defect_list_addr);
 int32_t sdl_has_valid_entries(uintptr_t sdl_base);
+size_t sdl_calculate_size_by_defect_count(uintptr_t sdl_base);
 size_t sdl_get_size_from_header(uintptr_t sdl_base);
+bool sdl_signature_is_valid(uintptr_t sdl_base);
 
 /* SDL Update and Maintenance */
 void sdl_update_checksum(uintptr_t sdl_base);
-int32_t update_single_sdl_entry(ddrss_addr_t* ddrss_defect, uint32_t* sdl_matching_idx);
 void store_sdl_var_sync_from_arsm0(void);
 
 /* PPR Defect List Operations */

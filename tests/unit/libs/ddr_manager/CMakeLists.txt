@@ -9,6 +9,7 @@ set(SOURCES
     ddr_manager_test.cpp
     ddr_memory_map_test.cpp
     ddr_mocks.cpp
+    ddr_ppr_test.cpp
 )
 
 set(LIBS
@@ -111,6 +112,7 @@ mock_target(${TARGET}
     mmio_write16
     mmio_write32
     mscp_exp_spi_synchronize_dies
+    mscp_exp_spi_synchronize_dies_timeout
     prod_ddrss_get_ras_erg_ce_interrupt_enable
     prod_ddrss_set_ras_erg_ce_interrupt_enable
     prod_ddrss_lib_init
@@ -133,9 +135,13 @@ mock_target(${TARGET}
     variable_service_sync_set_variable
     variable_service_unlock_get_var_ctx
     sdl_get_mem_ctx
+    get_sdl_arsm0_addr
     fpfw_init_get_handle
     sos_register_ssi
     DfwkAsyncRequestComplete
+    send_ppr_type_to_die1
+    receive_ppr_type_from_die0
+    copy_ppr_type
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

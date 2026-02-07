@@ -17,6 +17,7 @@ extern "C" {
 #include <cmn_config.h>
 #include <cper.h>
 #include <ddr_manager_i3c.h>
+#include <ddr_ppr.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
@@ -51,6 +52,7 @@ extern uint64_t g_ras_err_sts;
 extern bool g_mmio_read32_mocktype;
 extern bool g_should_check_cper_section;
 extern bool g_should_check_ras_agent_entity_id;
+extern bool g_should_wrap_ppr_setup;
 
 jmp_buf cd_mock_jump_buf;
 
@@ -65,6 +67,7 @@ static int setup(void** state)
     g_mc_intu_dest_enable = 0;
     g_ras_err_sts = 0;
     g_mmio_read32_mocktype = false;
+    g_should_wrap_ppr_setup = true;
 
     return 0;
 }
@@ -118,6 +121,9 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
     will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+
+    // We test PPR setup elsewhere
+    expect_function_call(__wrap_ppr_setup);
 
     if (test_fips_kat_en)
     {
@@ -193,6 +199,9 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // We test PPR setup elsewhere
+    expect_function_call(__wrap_ppr_setup);
 
     if (test_fips_kat_en)
     {
@@ -344,6 +353,9 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
 
+    // We test PPR setup elsewhere
+    expect_function_call(__wrap_ppr_setup);
+
     if (test_fips_kat_en)
     {
         expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
@@ -368,7 +380,7 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
     prod_ddrss_lib_init(test_die);
 }
 
-TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
+TEST_FUNCTION(test_ddrss_lib_init_rvp_warm_start_false, setup, teardown)
 {
     cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
     KNG_DIE_ID test_die = (KNG_DIE_ID)1;
@@ -408,6 +420,76 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // We test PPR setup elsewhere
+    expect_function_call(__wrap_ppr_setup);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_ns_space, 0x12345678);
+
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_map_fips_rt_space, die_num, DIE_1);
+        will_return_always(__wrap_ddrss_atu_map_fips_rt_space, 0x12345678);
+    }
+
+    will_return(__wrap_ddrss_init, SILIBS_SUCCESS);
+
+    if (test_fips_kat_en)
+    {
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_0);
+        expect_value(__wrap_ddrss_atu_unmap_fips_space, die_num, DIE_1);
+    }
+
+    expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+
+    prod_ddrss_lib_init(test_die);
+}
+
+TEST_FUNCTION(test_ddrss_lib_init_rvp_warm_start_true, setup, teardown)
+{
+    cmn800_snf_to_mc_config_t cmn800_snf_to_mc_config;
+    KNG_DIE_ID test_die = (KNG_DIE_ID)1;
+    uint8_t test_fips_kat_en = 0;
+    int i = 0;
+
+    expect_function_call(__wrap_post_led_status);
+
+    // initialize the CFG
+    cmn800_snf_to_mc_config.is_numa_enabled = 1;
+    cmn800_snf_to_mc_config.map_size = 0;
+    memset(cmn800_snf_to_mc_config.ddr_mc_map, 0xff, sizeof(cmn800_snf_to_mc_config.ddr_mc_map));
+    cmn800_snf_to_mc_config.hash_select = 0;
+
+    // set up die id
+    idsw_set_die_id(test_die);
+    idsw_set_platform_sdv(PLATFORM_RVP_EVT_SILICON);
+    for (int this_irq_num = HW_INT_DDRSS0; this_irq_num <= HW_INT_DDRSS5; this_irq_num++)
+    {
+        i = (this_irq_num - HW_INT_DDRSS0);
+
+        // FPFwCoreInterruptRegisterCallback
+        expect_value(__wrap_nvic_irq_set_isr_with_param, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, isr, prod_ddrss_interrupt_handler);
+        expect_value(__wrap_nvic_irq_set_isr_with_param, ddrss_num, ddrss_num[i]);
+
+        // FPFwCoreInterruptEnableVector
+        expect_value(__wrap_nvic_irq_clear_pending, irq_num, this_irq_num);
+        expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
+    }
+
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_fips_kat_en, test_fips_kat_en);
+    will_return(__wrap_idhw_is_stepping_a1, false);
+    will_return(__wrap_system_info_is_warm_start, true);
+    will_return(__wrap_cmn800_generate_ddr_mc_map_from_cached_config, &cmn800_snf_to_mc_config);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
+    will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // Do NOT expext ppr_setup due to warm start = true
 
     if (test_fips_kat_en)
     {
@@ -474,6 +556,9 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp_fips_kat_enable, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
 
+    // We test PPR setup elsewhere
+    expect_function_call(__wrap_ppr_setup);
+
     if (test_fips_kat_en)
     {
         expect_value(__wrap_ddrss_atu_map_fips_ns_space, die_num, DIE_0);
@@ -538,6 +623,9 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // We test PPR setup elsewhere
+    expect_function_call(__wrap_ppr_setup);
 
     // Set expectations for ddrss_init() failure.Simulate a training failure
     if (test_fips_kat_en)
@@ -612,6 +700,9 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure2, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
 
+    // We test PPR setup elsewhere
+    expect_function_call(__wrap_ppr_setup);
+
     // Set expectations for ddrss_init() failure.
 
     if (test_fips_kat_en)
@@ -681,6 +772,9 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure_max_mc, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // We test PPR setup elsewhere
+    expect_function_call(__wrap_ppr_setup);
 
     // Set expectations for ddrss_init() failure.Simulate a training failure
     if (test_fips_kat_en)
@@ -753,6 +847,9 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_0);
     expect_value(__wrap_ddrss_atu_map_cfg_space, die_num, DIE_1);
     will_return_always(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+
+    // We test PPR setup elsewhere
+    expect_function_call(__wrap_ppr_setup);
 
     // Set expectations for ddrss_init() failure.Simulate a training failure
     if (test_fips_kat_en)
@@ -1396,7 +1493,7 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_pending, setup, teardown)
 // Tests for ddrss_update_ppr_completion
 TEST_FUNCTION(test_ddrss_update_ppr_completion_success, setup, teardown)
 {
-    ddrs_spd_addr_info_t addr_info = {0};
+    ddrss_spd_addr_info_t addr_info = {0};
     addr_info.dimm = 0; // DIMM index
     ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_PASSED, 0};
     res_info.spd_ppr_status = E_PPR_STATUS_PASSED;
@@ -1426,7 +1523,7 @@ TEST_FUNCTION(test_ddrss_update_ppr_completion_success, setup, teardown)
 
 TEST_FUNCTION(test_ddrss_update_ppr_completion_write_fail, setup, teardown)
 {
-    ddrs_spd_addr_info_t addr_info = {0};
+    ddrss_spd_addr_info_t addr_info = {0};
     addr_info.dimm = 0;
     ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_FAILED, 0};
     res_info.spd_ppr_status = E_PPR_STATUS_FAILED; // triggers failed occurrence increment path
@@ -1450,7 +1547,7 @@ TEST_FUNCTION(test_ddrss_update_ppr_completion_write_fail, setup, teardown)
 
 TEST_FUNCTION(test_ddrss_update_ppr_completion_sel_log_fail, setup, teardown)
 {
-    ddrs_spd_addr_info_t addr_info = {0};
+    ddrss_spd_addr_info_t addr_info = {0};
     addr_info.dimm = 0;
     ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_PASSED, 0};
     res_info.spd_ppr_status = E_PPR_STATUS_PASSED;
@@ -1477,7 +1574,7 @@ TEST_FUNCTION(test_ddrss_update_ppr_completion_sel_log_fail, setup, teardown)
 
 TEST_FUNCTION(test_ddrss_update_ppr_completion_vendor_unknown, setup, teardown)
 {
-    ddrs_spd_addr_info_t addr_info = {0};
+    ddrss_spd_addr_info_t addr_info = {0};
     addr_info.dimm = 1; // arbitrary
     ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_PASSED, 0};
     res_info.spd_ppr_status = E_PPR_STATUS_PASSED;
@@ -1494,7 +1591,7 @@ TEST_FUNCTION(test_ddrss_update_ppr_completion_vendor_unknown, setup, teardown)
 
 TEST_FUNCTION(test_ddrss_update_ppr_completion_spd_read_fail, setup, teardown)
 {
-    ddrs_spd_addr_info_t addr_info = {0};
+    ddrss_spd_addr_info_t addr_info = {0};
     addr_info.dimm = 0; // bit-field is 1 bit wide; use legal value
     ddrss_res_info_t res_info = {(e_ppr_sel_status_t)E_DTR_STATUS_NO_REPAIR, E_PPR_STATUS_PASSED, 0};
     res_info.spd_ppr_status = E_PPR_STATUS_PASSED;

@@ -20,6 +20,7 @@
 #include <ddr_manager_bwl.h>
 #include <ddr_manager_i3c.h>
 #include <ddr_memory_map.h>
+#include <ddr_ppr.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <ddrss_sdl.h> // for SDL_VAR_NAME, SDL_VAR_GUID, MEMORY_DEFECT_LIST_HEADER
@@ -39,6 +40,7 @@
 
 // Make true to add test features that should not be released
 #define SDL_DEV_MODE (false)
+// #define SDL_DEV_MODE (true)
 
 // Expose current dev-mode state for tests/build-time validation
 const bool g_cli_ddr_dev_mode = SDL_DEV_MODE ? true : false;
@@ -87,11 +89,19 @@ STATIC FPFW_CLI_STATUS xts_aes_keystore_ue_error_injection(int Argc, const char*
 #if SDL_DEV_MODE
 STATIC FPFW_CLI_STATUS check_sdl_writeback(int Argc, const char** Argv);
 STATIC FPFW_CLI_STATUS write_sample_sdl_to_ddr(int Argc, const char** Argv);
-STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv);
 void vs_sdl_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
+
+// PPR Development Commands
+static void ppr_set_variable_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size);
+STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv);
+STATIC FPFW_CLI_STATUS write_ppr_run_var(int Argc, const char** Argv);
 #endif
 
 /*-- Declarations (Statics and globals) --*/
+#if SDL_DEV_MODE
+static var_service_req_ctx_t vs_async_ctx = {};
+static DDRSS_PPR_TYPE g_ppr_run_type = DDRSS_PPR_NONE;
+#endif
 
 // TODO Silibs to provide APIs with arguments list
 // https://dev.azure.com/ms-tsd/Base_IP/_workitems/edit/584974
@@ -124,6 +134,7 @@ STATIC FPFW_CLI_COMMAND cli_ddr_commands[] = {
     {NULL_LIST_ENTRY, "ddr_ppr", "status_update", ddr_manager_ppr_status_update, "Invoke PPR status update", "Usage: status_update <dimm_num>"},
     {NULL_LIST_ENTRY, "ddr_ppr", "write_sample_sdl", write_sample_sdl_to_ddr, "Writes SDL to DDR with 3 known good entries addresses (D0:2, D1:1)", "Usage: write_sample_sdl"},
     {NULL_LIST_ENTRY, "ddr_ppr", "test_sdl_writeback", check_sdl_writeback, "Test SDL writeback to flash", "Usage: test_sdl_writeback"},
+    {NULL_LIST_ENTRY, "ddr_ppr", "write_ppr_run_var", write_ppr_run_var, "Run DDR PPR on next boot\n  PPR Type: 0=NONE, 1=HPPR, 2=SPPR, 3=MPPR", "Usage: write_ppr_run_var <ppr enum value >"},
 #endif
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 };
@@ -599,6 +610,73 @@ STATIC PLACED_CODE FPFW_CLI_STATUS check_sdl_writeback(int Argc, const char** Ar
     return CLI_SUCCESS;
 }
 
+STATIC PLACED_CODE FPFW_CLI_STATUS write_ppr_run_var(int Argc, const char** Argv)
+{
+    if (Argc != 2)
+    {
+        FpFwCliPrint("[DDRPPR] Invalid # of arguments");
+        return CLI_ERROR;
+    }
+
+    uint8_t ppr_type = (uint8_t)(strtoul(Argv[1], NULL, 0));
+    if (ppr_type >= 4)
+    {
+        FpFwCliPrint("[DDRPPR] Invalid write_ppr_run_var type. Must be between 0 and 3.\n");
+        return CLI_ERROR;
+    }
+    if ((ppr_type == 1) || (ppr_type == 3))
+    {
+        // Must set the secret config knob to be able to cause permanent changes to DIMMs via CLI
+        FpFwCliPrint("[DDRPPR] HPPR/MPPR is locked unless a config knob is set.\n");
+        return CLI_ERROR;
+    }
+    g_ppr_run_type = ppr_type;
+    FpFwCliPrint("[DDRPPR] Setting write_ppr_run_var type = %d\n", g_ppr_run_type);
+
+    KNG_DIE_ID die_id = idsw_get_die_id();
+    var_service_shared_mem_t mem_ctx = {0};
+    if (die_id == DIE_0)
+    {
+        mem_ctx.payload_base = (uintptr_t)SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_BASE;
+        mem_ctx.max_payload_size = SCP_EXP_SCP_DDRSS_PPR_VARIABLE_SERVICE_PAYLOAD_SIZE;
+    }
+    else
+    {
+        return CLI_ERROR;
+    }
+    variable_service_initialize_ctx(&vs_async_ctx, &mem_ctx);
+
+    uint16_t ppr_var_name[] = PPR_RUN_CFG_VAR_NAME;
+    static const guid_t ppr_var_guid = PPR_RUN_CFG_VAR_GUID;
+    var_service_req_params_t req_params = {0};
+    req_params.variable_name_ptr = (uint16_t*)ppr_var_name;
+    req_params.variable_name_size = sizeof(ppr_var_name);
+
+    memcpy(&req_params.vendor_namespace_guid, &ppr_var_guid, sizeof(req_params.vendor_namespace_guid));
+    req_params.data = (uint8_t*)&g_ppr_run_type;
+    req_params.data_size = sizeof(g_ppr_run_type);
+    req_params.attributes.as_uint32 = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS;
+
+    int status = variable_service_async_set_variable(&vs_async_ctx, &req_params, ppr_set_variable_cb, NULL);
+    if (status != SILIBS_SUCCESS)
+    {
+        FpFwCliPrint("[DDRPPR] Failed to start async variable set: 0x%x\n", status);
+        return CLI_ERROR;
+    }
+
+    return CLI_SUCCESS;
+}
+
+void ppr_set_variable_cb(void* context, var_service_req_ctx_t* var_serv_ctx, uint8_t* data_start_ptr, size_t data_size)
+{
+    FPFW_UNUSED(context);
+    BUG_ASSERT(var_serv_ctx != NULL);   // NOLINT
+    BUG_ASSERT(data_start_ptr != NULL); // NOLINT
+    BUG_ASSERT(data_size > 0);
+
+    variable_service_unlock_get_var_ctx(&vs_async_ctx);
+    FpFwCliPrint("PPR var set\n");
+}
 STATIC PLACED_CODE FPFW_CLI_STATUS write_sample_sdl_to_ddr(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argv);
@@ -678,7 +756,7 @@ STATIC PLACED_CODE FPFW_CLI_STATUS write_sample_sdl_to_ddr(int Argc, const char*
 
 STATIC FPFW_CLI_STATUS ddr_manager_ppr_status_update(int Argc, const char** Argv)
 {
-    ddrs_spd_addr_info_t addr_info;
+    ddrss_spd_addr_info_t addr_info;
     ddrss_res_info_t res_info;
 
     if (Argc != 2)

@@ -36,6 +36,7 @@
 /*-------- Function Prototypes -----------*/
 int __real_ddrss_get_config(ddrss_cfg_knobs_t* ddrss_cfgs);
 int __real_ddrss_inject_media_ca_err(uint32_t mc, ddrss_media_ca_err_inj_info_t* ca_err_inj);
+void __real_ppr_setup(ddrss_cfg_knobs_t* ddrss_cfgs);
 
 // DDR error injection function prototypes
 void __real_ddr_err_inj_ecc_ce(uint32_t mc);
@@ -64,6 +65,8 @@ void __real_ddr_err_bcp_write_blocked_by_pas(uint32_t mc);
 void __real_ddr_err_bcp_chi_unsupported_opcode(uint32_t mc);
 void __real_ddr_err_inj_mrdp_parity_ue(uint32_t mc);
 
+// PPR
+
 /*-- Declarations (Statics and globals) --*/
 uint32_t g_ddr_intu_sts;
 uint32_t g_intu_enable;
@@ -81,6 +84,7 @@ bool g_should_check_ddrss_err_inj_function_ptrs = false;
 bool g_should_wrap_ras_arm_agent_trigger_by_type = false;
 bool g_should_wrap_ddrss_physical_to_media_addr = false;
 bool g_should_wrap_ddrss_find_next_physical_addr = false;
+bool g_should_wrap_ppr_setup = true;
 
 /*------------- Functions ----------------*/
 
@@ -900,4 +904,23 @@ int32_t __wrap_variable_service_sync_get_variable(var_service_req_ctx_t* var_ser
 void __wrap_variable_service_unlock_get_var_ctx(var_service_req_ctx_t* var_serv_ctx)
 {
     FPFW_UNUSED(var_serv_ctx);
+}
+
+// uintptr_t __wrap_get_sdl_arsm0_addr(void)
+// {
+//     return
+// }
+
+void __wrap_ppr_setup(ddrss_cfg_knobs_t* ddrss_cfgs)
+{
+    FPFW_UNUSED(ddrss_cfgs);
+
+    if (g_should_wrap_ppr_setup)
+    {
+        function_called();
+    }
+    else
+    {
+        __real_ppr_setup(ddrss_cfgs);
+    }
 }

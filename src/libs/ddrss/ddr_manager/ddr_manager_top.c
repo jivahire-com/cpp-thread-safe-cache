@@ -244,23 +244,12 @@ void enable_row_hammer_tlm_cfg_polling_timer(void)
 // Timer CB for DIMM temperature sensors & PMIC power register polling
 void ddr_timer_cb(ULONG pddr_service_ctx)
 {
+    // Poll DIMM power every interval; Poll temperatures every other interval
     static int every_other = 0;
-    uint32_t ddr_msg = DDR_POLL_DIMMS_I3C_POWER_EVENT;
+    uint32_t ddr_msg = every_other ? DDR_POLL_DIMMS_I3C_TEMPERATURE_AND_POWER_EVENT : DDR_POLL_DIMMS_I3C_POWER_EVENT;
 
     ddr_service_context_t* ddr_service_ctx = (ddr_service_context_t*)pddr_service_ctx;
-
-    if (every_other)
-    {
-        // Poll temperatures every other interval
-        ddr_msg = DDR_POLL_DIMMS_I3C_TEMPERATURE_AND_POWER_EVENT;
-        tx_queue_send(&ddr_service_ctx->work_queue, &ddr_msg, TX_NO_WAIT);
-    }
-    else
-    {
-        // Poll DIMM power every interval
-        ddr_msg = DDR_POLL_DIMMS_I3C_POWER_EVENT;
-        tx_queue_send(&ddr_service_ctx->work_queue, &ddr_msg, TX_NO_WAIT);
-    }
+    tx_queue_send(&ddr_service_ctx->work_queue, &ddr_msg, TX_NO_WAIT);
 
     every_other ^= 1;
 }
@@ -299,10 +288,10 @@ static void hsp_send_ddr_init_notify(fpfw_icc_base_ctx_t* icc_ctx)
             fpfw_icc_base_send_recv_sync(icc_ctx, &msg, sizeof(kng_hsp_mailbox_msg), &recv_msg_size_bytes);
 
         //! Verify sync return status & response message
-        BUG_ASSERT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_status, 0);
         BUG_ASSERT(recv_msg_size_bytes > 0);
         BUG_ASSERT(msg.header.cmd == HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY_RSP);
-        BUG_ASSERT(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS);
+        BUG_ASSERT_PARAM(msg.rsp.status == HSP_MAILBOX_RSP_STATUS_SUCCESS, msg.rsp.status, 0);
         DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_DDR_MESSAGE_TO_HSP_SENT);
     }
     else

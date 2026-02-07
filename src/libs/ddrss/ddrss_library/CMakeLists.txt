@@ -8,6 +8,7 @@ add_library(${TARGET}
         src/ddr_atu_map.c
         src/prod_ddrss_isr.c
         src/ddr_err_inj.c
+        src/ddr_ppr.c
 )
 
 # Auto-generate ddrss_reserved_regions_version.h before building this target.

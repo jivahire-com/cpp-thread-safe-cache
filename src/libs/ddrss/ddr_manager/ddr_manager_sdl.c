@@ -122,33 +122,56 @@ void copy_empty_sdl_header_to_reserved_ddr(uintptr_t dest_addr)
     MEMORY_DEFECT_LIST_HEADER empty_sdl_header = {0};
     empty_sdl_header.Signature = (uint32_t)PSHED_PI_DEFECT_LIST_SIGNATURE;
     empty_sdl_header.Version = MEMORY_DEFECT_VERSION_20;
-    empty_sdl_header.Length = SDL_MAX_SIZE;
+    empty_sdl_header.Length = sizeof(MEMORY_DEFECT_LIST_HEADER);
     empty_sdl_header.DefectCount = 0;
     empty_sdl_header.Changed = 0;
     empty_sdl_header.Checksum = 0;
 
     empty_sdl_header.Checksum =
-        (uint32_t)CalculateRemoteCheckSum16((uint32_t)&empty_sdl_header, sizeof(MEMORY_DEFECT_LIST_HEADER));
+        (uint32_t)CalculateRemoteCheckSum16((uint32_t)&empty_sdl_header, sizeof(empty_sdl_header));
 
     memcpy((void*)(uint32_t)dest_addr, (void*)&empty_sdl_header, sizeof(empty_sdl_header));
+}
+
+/**
+ * @brief Retrieves the total size of the SDL from its header.
+ *
+ * Reads the SDL header at the given base address and calculates the total
+ * size by:
+ *     Header length + (DefectCount * sizeof(MEMORY_DEFECT_V2))
+ *
+ * @param sdl_base Base address of the SDL in memory
+ * @return Total size of the SDL in bytes
+ */
+size_t sdl_calculate_size_by_defect_count(uintptr_t sdl_base)
+{
+    volatile PMEMORY_DEFECT_LIST_HEADER sdl_header = (volatile PMEMORY_DEFECT_LIST_HEADER)(uint32_t)sdl_base;
+    return (size_t)(sizeof(MEMORY_DEFECT_LIST_HEADER)) + (size_t)(sdl_header->DefectCount * sizeof(MEMORY_DEFECT_V2));
 }
 
 size_t sdl_get_size_from_header(uintptr_t sdl_base)
 {
     volatile PMEMORY_DEFECT_LIST_HEADER sdl_header = (volatile PMEMORY_DEFECT_LIST_HEADER)(uint32_t)sdl_base;
+    return (size_t)(sdl_header->Length);
+}
+
+bool sdl_signature_is_valid(uintptr_t sdl_base)
+{
+    volatile PMEMORY_DEFECT_LIST_HEADER sdl_header = (volatile PMEMORY_DEFECT_LIST_HEADER)(uint32_t)sdl_base;
     if (sdl_header->Signature != PSHED_PI_DEFECT_LIST_SIGNATURE)
     {
         PPR_DBG("SDL signature invalid: 0x%X\n", (unsigned int)sdl_header->Signature);
-        return 0;
+        return false;
     }
-    return (size_t)sdl_header->Length + (size_t)(sdl_header->DefectCount * sizeof(MEMORY_DEFECT_V2));
+
+    return true;
 }
 
 void sdl_update_checksum(uintptr_t sdl_base)
 {
     volatile PMEMORY_DEFECT_LIST_HEADER sdl_header = (volatile PMEMORY_DEFECT_LIST_HEADER)(uint32_t)sdl_base;
     sdl_header->Checksum = 0;
-    uint16_t checksum = CalculateRemoteCheckSum16((uint32_t)sdl_header, sdl_get_size_from_header(sdl_base));
+    uint16_t checksum = CalculateRemoteCheckSum16((uint32_t)sdl_header, sdl_calculate_size_by_defect_count(sdl_base));
     PPR_DBG("Updated SDL checksum to 0x%X\n", checksum);
     sdl_header->Checksum = (uint32_t)checksum;
     __DSB();

@@ -21,6 +21,7 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -53,6 +54,9 @@ static void power_loops_internal_handle_event(power_loop_context_t* p_context, i
 
 /*-- Declarations (Statics and globals) --*/
 static power_loops_thread_context_t s_power_loops_thread_ctx = {0};
+
+// Global timing stats for all loops (emitted every 10 seconds)
+static power_all_loops_timing_t s_all_loops_timing = {0};
 /*------------- Functions ----------------*/
 
 // function called on state changes to help keep track of whether all loops have gone idle
@@ -214,6 +218,77 @@ static void power_loops_internal_change_state(power_loop_context_t* p_context, i
     FPFW_RUNTIME_ASSERT(handler_table[state] != NULL);
 
     const uint64_t counter = power_timer_get_counter();
+    const power_loop_id_t loop_id = p_context->id;
+    FPFW_RUNTIME_ASSERT(loop_id < LOOP_ID_COUNT);
+    power_loop_timing_stats_t* timing = &s_all_loops_timing.loops[loop_id];
+    const int current_state = loop_state_detail->current_state;
+
+    // Initialize window start on first use
+    if (s_all_loops_timing.window_start == 0)
+    {
+        s_all_loops_timing.window_start = counter;
+    }
+
+    // START: Leaving IDLE (state 0) to begin new iteration
+    if (current_state == POWER_LOOP_IDLE_STATE_ID && state != POWER_LOOP_IDLE_STATE_ID)
+    {
+        timing->counter_start = counter;
+    }
+
+    // STOP: Returning to IDLE from successful completion (not from error state)
+    if (state == POWER_LOOP_IDLE_STATE_ID && current_state != POWER_LOOP_IDLE_STATE_ID &&
+        current_state != p_context->error_state)
+    {
+        // Skip sample if counter_start is 0 (can happen if window was reset mid-iteration)
+        if (timing->counter_start != 0)
+        {
+            const uint32_t current_ticks = (uint32_t)(counter - timing->counter_start);
+
+            // First sample for this loop in this window: initialize min and max
+            if (timing->sample_count == 0)
+            {
+                timing->min_ticks = current_ticks;
+                timing->max_ticks = current_ticks;
+            }
+            else
+            {
+                if (current_ticks > timing->max_ticks)
+                {
+                    timing->max_ticks = current_ticks;
+                }
+                if (current_ticks < timing->min_ticks)
+                {
+                    timing->min_ticks = current_ticks;
+                }
+            }
+            timing->sample_count++;
+        }
+
+        // Control loop checks if 10-second window has elapsed and triggers the combined trace
+        if (loop_id == LOOP_ID_CONTROL)
+        {
+            const uint64_t window_ticks = power_timer_get_counter_ticks_us(POWER_LOOP_TIMING_EMIT_INTERVAL_US);
+
+            if ((counter - s_all_loops_timing.window_start) >= window_ticks &&
+                s_all_loops_timing.loops[LOOP_ID_CONTROL].sample_count > 0 &&
+                s_all_loops_timing.loops[LOOP_ID_VR_TELEM].sample_count > 0 &&
+                s_all_loops_timing.loops[LOOP_ID_PVT_TELEM].sample_count > 0)
+            {
+                // Emit combined trace for all loops (convert ticks to microseconds)
+                POWER_ET_ALL_LOOP_METRICS(
+                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_CONTROL].min_ticks),
+                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_CONTROL].max_ticks),
+                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_VR_TELEM].min_ticks),
+                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_VR_TELEM].max_ticks),
+                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_PVT_TELEM].min_ticks),
+                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_PVT_TELEM].max_ticks));
+
+                // Reset all loop stats and start new window
+                memset(&s_all_loops_timing, 0, sizeof(s_all_loops_timing));
+                s_all_loops_timing.window_start = counter;
+            }
+        }
+    }
 
     // track state residency
     residency[loop_state_detail->current_state].count++;

@@ -96,17 +96,20 @@ static power_loop_residency_t adclk_telemetry_loop_handler_residency[POWER_ADCLK
 static power_loop_context_t s_pvt_telem_loop_context = {.state_count = POWER_PVT_TELEM_STATE_MAX,
                                                         .handlers = pvt_telem_loop_handler_table,
                                                         .residency = pvt_telemetry_loop_handler_residency,
-                                                        .id = LOOP_ID_PVT_TELEM};
+                                                        .id = LOOP_ID_PVT_TELEM,
+                                                        .error_state = -1}; // No error state for PVT loop
 
 static power_loop_context_t s_vr_telem_loop_context = {.state_count = POWER_VR_TELEM_STATE_MAX,
                                                        .handlers = vr_telem_loop_handler_table,
                                                        .residency = vr_telemetry_loop_handler_residency,
-                                                       .id = LOOP_ID_VR_TELEM};
+                                                       .id = LOOP_ID_VR_TELEM,
+                                                       .error_state = POWER_VR_TELEM_STATE_ERROR};
 
 static power_loop_context_t s_adclk_telem_loop_context = {.state_count = POWER_ADCLK_TELEM_STATE_MAX,
                                                           .handlers = adclk_telem_loop_handler_table,
                                                           .residency = adclk_telemetry_loop_handler_residency,
-                                                          .id = LOOP_ID_ADCLK_TELEM};
+                                                          .id = LOOP_ID_ADCLK_TELEM,
+                                                          .error_state = -1}; // No error state for ADCLK loop
 
 static power_telem_loop_detail_t s_telem_loop = {0};
 

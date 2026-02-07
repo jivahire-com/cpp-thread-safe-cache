@@ -189,12 +189,6 @@ void __wrap_power_vrs_read_vcpu_voltage()
     function_called();
 }
 
-uint64_t __wrap_power_timer_get_counter_ticks_us(uint16_t time_in_us)
-{
-    check_expected(time_in_us);
-    return mock_type(uint64_t);
-}
-
 uint64_t __wrap_power_timer_get_us_from_counter(uint32_t ticks)
 {
     check_expected(ticks);

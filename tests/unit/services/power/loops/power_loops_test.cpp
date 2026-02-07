@@ -54,7 +54,8 @@ static power_loop_residency_t mock_handler_residency[TEST_STATES] = {{0}};
 static power_loop_context_t s_mock_loop_context = {.state_count = TEST_STATES,
                                                    .handlers = mock_handler_table,
                                                    .residency = mock_handler_residency,
-                                                   .id = LOOP_ID_CONTROL};
+                                                   .id = LOOP_ID_CONTROL,
+                                                   .error_state = -1};
 
 static jmp_buf mock_jump_buf;
 /*------------- Functions ----------------*/
@@ -165,6 +166,12 @@ void __wrap_FpFwAssert(int expression)
 
 uint64_t __wrap_power_timer_get_counter()
 {
+    return mock_type(uint64_t);
+}
+
+uint64_t __wrap_power_timer_get_counter_ticks_us(uint32_t time_in_us)
+{
+    check_expected(time_in_us);
     return mock_type(uint64_t);
 }
 
@@ -489,7 +496,7 @@ POWER_TEST(power_loops_internal_change_state, NULL, NULL)
     setup_expectation_for_queue_get_info(1); // still have item enqueued
 
     // expectations for power_loops_internal_change_state
-    expect_value_count(__wrap_FpFwAssert, expression, true, 7);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 8);
     will_return(__wrap_power_timer_get_counter, 0);
 
     // expect handler call
@@ -593,8 +600,11 @@ POWER_TEST(power_loops_internal_exec_in_idle__setup, NULL, NULL)
     setup_expectation_for_queue_get_info(0); // no items, enqueued!
 
     // expectations for power_loops_internal_change_state
-    expect_value_count(__wrap_FpFwAssert, expression, true, 7);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 8);
     will_return(__wrap_power_timer_get_counter, 0);
+    // Control loop returning to IDLE triggers window check
+    expect_any(__wrap_power_timer_get_counter_ticks_us, time_in_us);
+    will_return(__wrap_power_timer_get_counter_ticks_us, UINT64_MAX); // large value so window doesn't expire
 
     // expect handler call
     expect_value(mock_handler0, event, POWER_LOOP_STATE_SIGNAL_ENTRY);
@@ -618,7 +628,7 @@ POWER_TEST(power_loops_internal_exec_in_idle__not_idle, NULL, NULL)
     setup_expectation_for_queue_get_info(1); // item enqueued
 
     // expectations for power_loops_internal_change_state
-    expect_value_count(__wrap_FpFwAssert, expression, true, 7);
+    expect_value_count(__wrap_FpFwAssert, expression, true, 8);
     will_return(__wrap_power_timer_get_counter, 0);
 
     // expect handler call

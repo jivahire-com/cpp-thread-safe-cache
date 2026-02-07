@@ -279,7 +279,7 @@ uint64_t power_timer_get_counter();
  * @return counter
  *
  */
-uint64_t power_timer_get_counter_ticks_us(uint16_t time_in_us);
+uint64_t power_timer_get_counter_ticks_us(uint32_t time_in_us);
 
 /**
  * @brief Convert counter ticks into microseconds

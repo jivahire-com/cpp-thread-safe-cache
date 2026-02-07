@@ -492,6 +492,28 @@ typedef struct _power_loop_residency_t {
     uint64_t retries;      // total retries for this state
     uint16_t max_retries;  // max retries any transition
 } power_loop_residency_t;
+
+/**
+ *  @brief Structure for per-loop iteration timing stats
+ */
+typedef struct _power_loop_timing_stats_t {
+    uint64_t counter_start;      // timestamp when current iteration started
+    uint32_t min_ticks;          // minimum iteration duration in ticks
+    uint32_t max_ticks;          // maximum iteration duration in ticks
+    uint32_t sample_count;       // internal: number of samples collected (for validity check)
+} power_loop_timing_stats_t;
+
+// Time-based emission interval (200 seconds in microseconds)
+#define POWER_LOOP_TIMING_EMIT_INTERVAL_US  200000000ULL
+
+/**
+ *  @brief Structure for combined timing stats for all loops
+ */
+typedef struct _power_all_loops_timing_t {
+    power_loop_timing_stats_t loops[LOOP_ID_COUNT];  // stats per loop
+    uint64_t window_start;                            // timestamp when current window started
+} power_all_loops_timing_t;
+
 /**
  * @brief Struct for loop context, passed to common loop functions
  */
@@ -502,6 +524,7 @@ typedef struct _power_loop_context_t {
     const power_state_handler_t *handlers; // state handler function pointer table
     power_loop_residency_t *residency; // state residency tracking
     power_loop_id_t id; // loop ID
+    int error_state;  // loop's error state ID (-1 if no error state)
 } power_loop_context_t;
 
 /**

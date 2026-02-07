@@ -50,11 +50,11 @@ uint64_t power_timer_get_counter()
     return gtimer_prodfw_get_counter();
 }
 
-uint64_t power_timer_get_counter_ticks_us(uint16_t time_in_us)
+uint64_t power_timer_get_counter_ticks_us(uint32_t time_in_us)
 {
-    //! 125MHz timer, 1 tick = 8 ns
-    //! 1 tick = 0.008 us
-    //! 1 us = 125 ticks
+    //! Convert microseconds to timer ticks
+    //! ticks_per_us = frequency / 1,000,000
+    //! Example: If freq = 1GHz, then 1 tick = 1ns, 1us = 1000 ticks
     uint64_t ticks_per_us = (uint64_t)gtimer_prodfw_get_frequency() / 1000000UL;
     uint64_t ticks_in_us = 0;
     if (time_in_us <= UINT64_MAX / ticks_per_us)
@@ -71,10 +71,11 @@ uint64_t power_timer_get_counter_ticks_us(uint16_t time_in_us)
 
 uint64_t power_timer_get_us_from_counter(uint32_t ticks)
 {
-    //! 125MHz timer
-    //! 1 tick = 8 ns = 0.008 us
-    //! 1 us = 125 ticks
-    uint32_t time_per_tick_ns = (1000000000ULL) / (uint64_t)gtimer_prodfw_get_frequency(); //! If freq = 125MHz, this is 8ns
+    //! Convert timer ticks to microseconds
+    //! time_per_tick_ns = 1,000,000,000 / frequency
+    //! Example: If freq = 1GHz, then 1 tick = 1ns, time_in_us = ticks / 1000
+    //! Note: For UINT32_MAX ticks @ 1GHz, result is ~4.29 seconds (fits in uint64_t)
+    uint32_t time_per_tick_ns = (1000000000ULL) / (uint64_t)gtimer_prodfw_get_frequency();
     if (ticks > UINT64_MAX / time_per_tick_ns)
     {
         // Handle overflow case, e.g., log an error or return a safe value

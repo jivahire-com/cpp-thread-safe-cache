@@ -91,7 +91,8 @@ static power_loop_residency_t control_loop_handler_residency[POWER_CONTROL_STATE
 static power_loop_context_t s_control_loop_context = {.state_count = POWER_CONTROL_STATE_MAX,
                                                       .handlers = control_loop_handler_table,
                                                       .residency = control_loop_handler_residency,
-                                                      .id = LOOP_ID_CONTROL};
+                                                      .id = LOOP_ID_CONTROL,
+                                                      .error_state = POWER_CONTROL_STATE_ERROR};
 static power_ctrl_loop_detail_t s_ctrl_loop = {0};
 
 /*------------- Functions ----------------*/

@@ -109,6 +109,7 @@ typedef enum
     POWER_ET_TYPE_PVT_TELEM_TIMER_CB,
     POWER_ET_D2D_SYNC_WAITING,
     POWER_ET_TYPE_DTS_TEMP_OUT_OF_RANGE,
+    POWER_ET_TYPE_ALL_LOOPS_ITERATION_METRICS,
 
     POWER_ET_TYPE_COUNT
 }   E_POWER_ET_TYPE_T;
@@ -127,6 +128,7 @@ typedef enum {
     POWER_ET_ID_TYPE_CHANGE_STATE,
     POWER_ET_ID_TYPE_SIGNAL_EVT,
     POWER_ET_ID_TYPE_PLL_ERROR,
+    POWER_ET_ID_TYPE_ALL_LOOP_METRICS,
 
     POWER_ET_ID_TYPE_COUNT
 } E_POWER_ET_ID_TYPES_T;
@@ -246,5 +248,18 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID f
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, pllrawlockerror),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, fllrawlockerror),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_BOOL, pll_error_mask_cr))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
+                     POWER_ET_ID_TYPE_ALL_LOOP_METRICS,         // Event ID, for this provider
+                     PowerAllLoopMetricsInUs,                       // Event Name
+                     FPFW_ET_LEVEL_INFO,                        // Event Log Level, filterable by provider mask
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, ctrl_loop_min),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, ctrl_loop_max),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, vr_loop_min),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, vr_loop_max),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pvt_loop_min),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pvt_loop_max))
+#define POWER_ET_ALL_LOOP_METRICS(c_min, c_max, vr_min, vr_max, pvt_min, pvt_max) \
+    EventWritePowerAllLoopMetricsInUs(c_min, c_max, vr_min, vr_max, pvt_min, pvt_max)
 
 /*--------- Function Prototypes ----------*/

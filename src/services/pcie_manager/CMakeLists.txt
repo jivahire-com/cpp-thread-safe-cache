@@ -39,6 +39,7 @@ target_link_libraries(
         ms::lib::crash_dump
         ms::lib::system_info
         ms::lib::accelerator_ip
+        ms::lib::utils
         ms::service::health_monitor
         ms::service::scp_startup_shutdown
         silibs::idsw

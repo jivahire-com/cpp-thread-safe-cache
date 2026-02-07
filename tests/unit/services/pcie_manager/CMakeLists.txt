@@ -93,6 +93,7 @@ mock_target(${TARGET}
     crash_dump_bug_check
     memcpy
     memset
+    sleep_ms
     pcie_phyfw_wait_load_event
     system_info_get_board_id
     system_info_get_board_rework_id

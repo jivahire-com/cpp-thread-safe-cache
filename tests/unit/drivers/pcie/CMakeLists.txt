@@ -89,6 +89,7 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     oi_pcie_rp_dbi_hide_dpc_cap
     oi_pcie_ss_set_laattr_rp_overrides
+    oi_pcie_ss_set_rp_dpc_status
     oi_pcie_rp_dbi_set_write_cacheability
     oi_pcie_rp_dbi_set_read_cacheability
     oi_pcie_ss_populate_rp_bdat
@@ -98,6 +99,7 @@ mock_target(${TARGET}
     pciess_config_ss_for_ift
     pciess_deassert_por_reset
     pciess_rp_clear_intus
+    pciess_fallback_rp_to_default_completer
     pcie_rp_ide_disable_all_streams
     pciess_config_ss_for_scp_warm_reset
     pciess_rp_initiate_link_training

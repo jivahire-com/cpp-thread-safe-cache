@@ -550,6 +550,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkdown_rp_ready, NULL, NULL)
         ctx.rpss_idx = (RPSS_INSTANCE)i;
         cmpl_req.rp_index = 0;
         ctx.lt_retry_count[cmpl_req.rp_index] = LT_RETRY_STOP;
+        expect_value(__wrap_sleep_ms, milliseconds, 60);
         expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RP_READY_REQUEST);
         will_return(__wrap_DfwkInterfaceSendSync, nullptr);
         will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
@@ -601,6 +602,7 @@ TEST_FUNCTION(test_process_wait_for_event_linkdown_rp_not_ready, NULL, NULL)
     {
         ctx.rpss_idx = (RPSS_INSTANCE)i;
         cmpl_req.rp_index = 0;
+        expect_value(__wrap_sleep_ms, milliseconds, 60);
         expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, GET_RP_READY_REQUEST);
         will_return(__wrap_DfwkInterfaceSendSync, nullptr);
         will_return(__wrap_DfwkInterfaceSendSync, SILIBS_E_BUSY);

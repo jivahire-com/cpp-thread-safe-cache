@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <system_info.h>
 #include <tx_api.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define SET_RPSS_AND_RP_INDEX_FOR_TIMER_CALLBACK(rp_index, rpss_index) \
@@ -151,6 +152,9 @@ void handle_pcie_link_down_event(pcie_manager_context_t* ctx, pciess_completion_
 {
     RPSS_INSTANCE rpss_idx = ctx->rpss_idx;
     uint8_t rp_index = cmpl->rp_index;
+
+    /* Sleep for 60 ms to allow transactions to flush after a link down */
+    sleep_ms(60);
 
     /*
      * If the rp is not in ready state after link down, we cannot re-enable the

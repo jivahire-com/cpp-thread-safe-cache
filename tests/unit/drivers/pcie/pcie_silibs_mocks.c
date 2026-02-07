@@ -493,3 +493,17 @@ silibs_status_t __wrap_pcie_rp_populate_cper(pcie_rp_entity_t* rp, void* cper, s
 
     return mock_type(silibs_status_t);
 }
+
+silibs_status_t __wrap_pciess_fallback_rp_to_default_completer(pcie_rp_entity_t* rp)
+{
+    assert_non_null(rp);
+    return mock_type(silibs_status_t);
+}
+
+silibs_status_t __wrap_oi_pcie_ss_set_rp_dpc_status(pcie_ss_entity_t* ss, unsigned rp_index, bool busy)
+{
+    assert_non_null(ss);
+    check_expected(rp_index);
+    check_expected(busy);
+    return mock_type(silibs_status_t);
+}

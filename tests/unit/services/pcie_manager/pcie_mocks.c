@@ -34,6 +34,11 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
+void __wrap_sleep_ms(uint32_t milliseconds)
+{
+    check_expected(milliseconds);
+}
+
 void __wrap_pcie_dfwk_init(pciess_device_t* dev, PDFWK_SCHEDULE schedule)
 {
     assert_non_null(dev);

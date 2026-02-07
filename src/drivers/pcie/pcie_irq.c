@@ -17,11 +17,14 @@
 #include <interrupts.h>
 #include <intu_lib.h>
 #include <kng_soc_constants.h>
+#include <oi_pcie.h>
+#include <pcie_common.h>
 #include <pcie_dfwk.h>
 #include <pcie_dfwk_i.h>
 #include <pcie_events.h>
 #include <pcie_irq.h>
 #include <pcie_rp_common.h>
+#include <pcie_rp_sii.h>
 #include <pcie_ss_common.h>
 #include <pciess.h>
 #include <pciess_int.h>
@@ -271,8 +274,37 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
 
         if (info->rp_ints[rp_index].ints[PCIESS_RP_INT_DPC].asserted)
         {
-            /* No action needs to be taken on DPC, an OS handles DPC recovery */
             PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_DPC, (ss->id << 16) | rp_index);
+
+            /*
+             *  Obtain the current LTSSM state, we reroute transactions to
+             *  the default completer only if the link is disabled
+             */
+            PCIE_LTSSM_STATE ltssm_state = pcie_rp_sii_get_link_state(rp);
+            if ((ltssm_state == PCIE_LTSSM_STATE_DISABLED_0x17) ||
+                (ltssm_state == PCIE_LTSSM_STATE_DISABLED_0x18) || (ltssm_state == PCIE_LTSSM_STATE_DISABLED_0x19))
+            {
+                /*
+                 * ERRATUM 1081195 workaround - Re-route to default completer
+                 * Needs to happen only when the link is in disabled state.
+                 */
+                silibs_status_t status = pciess_fallback_rp_to_default_completer(rp);
+                if (status)
+                {
+                    FPFW_DBGPRINT_ALWAYS("RP[%d, %d] Error: Unable to re-route to default completer!\n", ss->id, rp_index);
+                }
+
+                /* Clear RP_BUSY */
+                status = oi_pcie_ss_set_rp_dpc_status(ss, rp_index, false);
+                if (status)
+                {
+                    FPFW_DBGPRINT_ALWAYS("RP[%d, %d] Error: Unable to clear RP_BUSY!\n", ss->id, rp_index);
+                }
+            }
+            else
+            {
+                FPFW_DBGPRINT_ERROR("RP[%d, %d]: Transactions not re-routed to default completer!\n", ss->id, rp_index);
+            }
         }
 
         /*

@@ -32,6 +32,7 @@ typedef struct
     mpam_data_t ib_mpam_data[NUMBER_OF_MPAMS];
     max_die_temps_t ib_max_pwr_pkg_die_temp;
     uint16_t ib_max_inst_die_temperature_dC;
+    uint32_t ib_total_memory_power_mW;
     sliding_window_data_t oob_window_max_die_temp_dC;  // sliding window for max die temperature
     sliding_window_data_t oob_window_soc_pwr_mW;       // sliding window SOC power
     sliding_window_data_t oob_window_max_dimm_temp_dC; // sliding window for max dimm temperature
@@ -204,6 +205,29 @@ uint16_t die_2_die_exch_ib_read_inst_max_die_temp_dC(uint8_t die_id)
         d2d_exch_release_sem();
     }
     return ib_max_inst_die_temperature_dC;
+}
+
+void die_2_die_exch_ib_write_total_memory_power(uint32_t total_memory_power_mW)
+{
+    if (die_id_is_valid(this_die_id))
+    {
+        // only secondary dies can write to the exchange
+        d2d_exch_wait_for_sem();
+        s_die_2_die_exch->sec_mcp_to_die0_mcp[this_die_id - 1].ib_total_memory_power_mW = total_memory_power_mW;
+        d2d_exch_release_sem();
+    }
+}
+
+void die_2_die_exch_ib_read_total_memory_power_mW(uint8_t die_id, uint32_t* total_memory_power_mW)
+{
+    if (die_id_is_valid(die_id) && total_memory_power_mW != NULL)
+    {
+        // only secondary dies values can be read from the exchange
+        uint32_t* power_ptr_mW = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_total_memory_power_mW;
+        d2d_exch_wait_for_sem();
+        *total_memory_power_mW = *power_ptr_mW;
+        d2d_exch_release_sem();
+    }
 }
 
 void die_2_die_exch_ib_write_pwr_pkg_max_die_temp(uint16_t average_max_temp_dC, uint16_t num_samples, uint16_t peak_temp_dC)

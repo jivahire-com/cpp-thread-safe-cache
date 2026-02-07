@@ -213,7 +213,7 @@ TEST_FUNCTION(test_mpam_die0_only_cores, test_setup, test_teardown)
     }
 
     // Mock die ID to return 0 (primary die / die 0) - called multiple times during processing
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 11; i++)
     {
         will_return(__wrap_die_2_die_exch_get_this_die_id, 0);
     }
@@ -462,6 +462,8 @@ TEST_FUNCTION(test_mpam_both_dies_cores, test_setup, test_teardown)
     //   2. And once check for primary/secondary die logic
     // Processing 3 cores: 3 cores × 2 calls/core = 6 total calls
     will_return_count(__wrap_die_2_die_exch_get_this_die_id, 0, 6);
+    // Additional call during finalize
+    will_return_count(__wrap_die_2_die_exch_get_this_die_id, 0, 1);
 
     // Mock droop counts for finalize
     static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
@@ -616,6 +618,8 @@ TEST_FUNCTION(test_mpam_throttle_start_and_end, test_setup, test_teardown)
     // Total: 18 calls
     will_return_count(__wrap_die_2_die_exch_get_this_die_id, 0, 18);
 
+    // Additional call during finalize
+    will_return_count(__wrap_die_2_die_exch_get_this_die_id, 0, 1);
     // Mock droop counts
     static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
@@ -835,7 +839,8 @@ TEST_FUNCTION(test_mpam_throttle_in_progress, test_setup, test_teardown)
     // Phase 2: 3 cores × 2 = 6 calls
     // Total: 12 calls (no Phase 3 - throttling never ends)
     will_return_count(__wrap_die_2_die_exch_get_this_die_id, 0, 12);
-
+    // Additional call during finalize
+    will_return_count(__wrap_die_2_die_exch_get_this_die_id, 0, 1);
     // Mock droop counts
     static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
@@ -1023,6 +1028,8 @@ TEST_FUNCTION(test_mpam_throttle_edge_cases, test_setup, test_teardown)
     // Mock die ID for primary die processing
     // 1 core × 2 calls (entry check + primary/secondary logic) = 2 calls
     will_return_count(__wrap_die_2_die_exch_get_this_die_id, 0, 2);
+    // Additional call during finalize
+    will_return_count(__wrap_die_2_die_exch_get_this_die_id, 0, 1);
 
     // Mock droop counts - needed for finalize call
     static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};

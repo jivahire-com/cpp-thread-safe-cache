@@ -555,6 +555,11 @@ void comp_metrics_for_soc_package_cstate(uint8_t pkg_cstate, uint32_t duration_m
     }
 }
 
+uint32_t comp_metrics_get_memory_avg_pwr_mW(void)
+{
+    return data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.memory_avg_pwr_mW);
+}
+
 void comp_metrics_for_single_d2dss_interface_all_links(uint8_t d2dss_id,
                                                        uint64_t (*tx_res_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
                                                        uint64_t (*rx_res_counter_diff)[NUMBER_OF_D2D_LINKS_STATE],
@@ -626,12 +631,19 @@ void comp_metrics_for_max_dimm_temp(uint16_t latest_max_dimm_temp_dC)
 
 void comp_metrics_for_total_dimm_pwr(uint32_t dimm_total_pwr_mW)
 {
+    if (in_band_publishing_active)
+    {
+        data_util_running_avg_u32_add_sample(&computed_metrics_2_mins.soc.memory_avg_pwr_mW, dimm_total_pwr_mW);
+    }
+
     data_util_mov_avg_u32_add_sample(&computed_metrics_oob.dimm_total_pwr_mov_avg_mW, dimm_total_pwr_mW);
 
     if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
     {
         die_2_die_exch_oob_write_window_dimm_pwr(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.total_sum,
                                                  computed_metrics_oob.dimm_total_pwr_mov_avg_mW.sample_count);
+
+        die_2_die_exch_ib_write_total_memory_power(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.memory_avg_pwr_mW));
     }
 }
 

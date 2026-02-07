@@ -691,3 +691,9 @@ void data_smpl_update_soc_package_cstate(void);
  *
  */
 void data_smpl_get_secondary_die_package_cstate(void);
+
+/**
+ * @brief Update MPAM memory power metrics.
+ *
+ */
+void data_smpl_update_mpam_mem_power(void);

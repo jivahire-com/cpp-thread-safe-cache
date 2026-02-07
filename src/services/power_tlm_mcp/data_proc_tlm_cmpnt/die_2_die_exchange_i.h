@@ -117,6 +117,24 @@ void die_2_die_exch_ib_write_inst_max_die_temp(uint16_t max_die_temperature_dC);
 uint16_t die_2_die_exch_ib_read_inst_max_die_temp_dC(uint8_t die_id);
 
 /**
+ * @brief Write the total memory power to the die to die exchange.
+ * This function writes the total memory power in milliwatts to the exchange. It writes the location for the
+ * die specified by `this_die_id`, which is initialized using `die_2_die_exch_init`.
+ *
+ * @param[in] total_memory_power_mW The total memory power in milliwatts.
+ */
+void die_2_die_exch_ib_write_total_memory_power(uint32_t total_memory_power_mW);
+
+/**
+ * @brief Read the total memory power from the die to die exchange.
+ * This function reads the total memory power in milliwatts for a specific die.
+ *
+ * @param[in] die_id The ID of the die to read the memory power from.
+ * @param[out] total_memory_power_mW Pointer to store the total memory power in milliwatts.
+ */
+void die_2_die_exch_ib_read_total_memory_power_mW(uint8_t die_id, uint32_t* total_memory_power_mW);
+
+/**
  * @brief Write the maximum die temperature for the power package to the die to die exchange.
  * This function writes the average maximum temperature, number of samples, and peak temperature for the power package
  * to the exchange. It writes the location for the die specified by `this_die_id`, which is initialized using

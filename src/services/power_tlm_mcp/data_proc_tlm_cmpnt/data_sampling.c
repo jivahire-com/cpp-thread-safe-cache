@@ -622,6 +622,25 @@ void data_smpl_finalize_pwr_pkg_metrics(void)
     }
     // read and update cores droop counts data
     comp_metrics_for_cores_droop_counts();
+
+    data_smpl_update_mpam_mem_power();
+}
+
+void data_smpl_update_mpam_mem_power(void)
+{
+    // constant/fix  MC power + PHY power for MPAM memory power calculation, should be used from Knobs
+    uint32_t local_mpam_vm_mem_fixed_pwr_mW = 0;
+
+    // update the mpam memory power metrics
+    // TODO: Add memory power calculation when data is available
+
+    if (die_2_die_exch_get_this_die_id() == PRIMARY_DIE_ID)
+    {
+        uint32_t total_memory_power_mW = 0;
+        die_2_die_exch_ib_read_total_memory_power_mW(1, &total_memory_power_mW);
+        total_memory_power_mW += comp_metrics_get_memory_avg_pwr_mW();
+        total_memory_power_mW += local_mpam_vm_mem_fixed_pwr_mW;
+    }
 }
 
 void data_smpl_reset_residency_timestamps(void)

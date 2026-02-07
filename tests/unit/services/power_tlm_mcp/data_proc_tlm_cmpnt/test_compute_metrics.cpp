@@ -907,17 +907,28 @@ TEST_FUNCTION(test_comp_metrics_for_total_dimm_pwr, test_setup, test_teardown)
 {
     die_2_die_exch_init(0);
 
-    uint16_t test_values_mW[DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES] = {190, 210};
+    uint32_t test_values_mW[DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES] = {190, 210};
 
     for (uint8_t i = 0; i < DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES; i++)
     {
         comp_metrics_for_total_dimm_pwr(test_values_mW[i]);
     }
 
-    // Check the results
+    // Check the out-of-band moving average results for die 0
     assert_int_equal(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.total_sum, 400);
     assert_int_equal(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.sample_count, 2);
 
+    // Check the in-band running average results for die 0
+    // Running average of 190 and 210 = (190 + 210) / 2 = 200
+    assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.memory_avg_pwr_mW), 200);
+
+    // Die 0 doesn't write to die-to-die exchange, so verify it's 0
+    uint32_t read_memory_pwr_die0 = 999;
+    die_2_die_exch_ib_read_total_memory_power_mW(0, &read_memory_pwr_die0);
+    assert_int_equal(read_memory_pwr_die0, 999); // Should remain unchanged (invalid die)
+
+    // Reset for die 1 test
+    comp_metrics_reset_local_2_min_metrics();
     die_2_die_exch_init(1);
 
     for (uint8_t i = 0; i < DIMM_TOTAL_PWR_MOVING_AVG_NUM_SAMPLES; i++)
@@ -925,9 +936,54 @@ TEST_FUNCTION(test_comp_metrics_for_total_dimm_pwr, test_setup, test_teardown)
         comp_metrics_for_total_dimm_pwr(test_values_mW[i]);
     }
 
-    // Check the results
+    // Check the out-of-band moving average results for die 1
     assert_int_equal(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.total_sum, 400);
     assert_int_equal(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.sample_count, 2);
+
+    // Check the in-band running average results for die 1
+    assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.memory_avg_pwr_mW), 200);
+
+    // Die 1 writes the running average (200 mW) to the die-to-die exchange
+    uint32_t read_memory_pwr_die1 = 0;
+    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_memory_pwr_die1);
+    assert_int_equal(read_memory_pwr_die1, 200); // Running average: (190 + 210) / 2 = 200
+}
+
+TEST_FUNCTION(test_comp_metrics_get_memory_avg_pwr_mW, test_setup, test_teardown)
+{
+    // Test 1: Verify initial state returns 0
+    uint32_t result = comp_metrics_get_memory_avg_pwr_mW();
+    assert_int_equal(result, 0);
+
+    // Test 2: Add memory power samples and verify the getter returns correct running average
+    uint32_t test_values_mW[] = {100, 200, 300};
+    uint8_t num_samples = sizeof(test_values_mW) / sizeof(test_values_mW[0]);
+
+    for (uint8_t i = 0; i < num_samples; i++)
+    {
+        data_util_running_avg_u32_add_sample(&computed_metrics_2_mins.soc.memory_avg_pwr_mW, test_values_mW[i]);
+    }
+
+    // Running average = (100 + 200 + 300) / 3 = 600 / 3 = 200
+    result = comp_metrics_get_memory_avg_pwr_mW();
+    assert_int_equal(result, 200);
+
+    // Test 3: Verify getter returns correct value after comp_metrics_for_total_dimm_pwr is called
+    comp_metrics_reset_local_2_min_metrics();
+    assert_int_equal(comp_metrics_get_memory_avg_pwr_mW(), 0);
+
+    comp_metrics_for_total_dimm_pwr(150);
+    result = comp_metrics_get_memory_avg_pwr_mW();
+    assert_int_equal(result, 150);
+
+    comp_metrics_for_total_dimm_pwr(250);
+    result = comp_metrics_get_memory_avg_pwr_mW();
+    assert_int_equal(result, 200); // (150 + 250) / 2 = 200
+
+    // Test 4: Add more samples to verify running average continues to update correctly
+    comp_metrics_for_total_dimm_pwr(350);
+    result = comp_metrics_get_memory_avg_pwr_mW();
+    assert_int_equal(result, 250); // (150 + 250 + 350) / 3 = 250
 }
 
 TEST_FUNCTION(test_comp_metrics_init_active_cores, test_setup, test_teardown)

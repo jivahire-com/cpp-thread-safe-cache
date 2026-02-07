@@ -88,6 +88,9 @@ class crash_dump_etoe_report_test(EchoFallsBaseTest):
                 node=self.host_config.node_id,
             )
             self.rscm_helper.rscm_soc_reset()
+            hsp_channel=self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
+            hsp_channel.open()
+            assert hsp_channel.is_open()
             self.bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
             self.bmc_cli.open()
             assert self.bmc_cli.is_open()

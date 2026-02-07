@@ -75,6 +75,10 @@ class pldm_common(EchoFallsBaseTest):
         self.bmc_cli.open()
         assert self.bmc_cli.is_open()
 
+        hsp_channel=self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
+        hsp_channel.open()
+        assert hsp_channel.is_open()
+
         # Step 3: Set BMC UART MUX to MCP for RVP
         if self.dut.get_dut_type() == DeviceType.RVP:
             cred_path = os.environ.get("SECURE_FILE_PATH")

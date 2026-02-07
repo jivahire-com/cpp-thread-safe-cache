@@ -90,6 +90,9 @@ class mod_power_pldm_service(EchoFallsBaseTest):
                 node=self.host_config.node_id,
             )
             self.rscm_helper.rscm_soc_reset()
+            hsp_channel=self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
+            hsp_channel.open()
+            assert hsp_channel.is_open()
 
         # Step 3: Get BMC client object
         self.bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli

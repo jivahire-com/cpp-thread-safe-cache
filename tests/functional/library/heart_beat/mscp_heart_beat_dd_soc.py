@@ -79,7 +79,8 @@ class mscp_heart_beat_dd_soc(EchoFallsBaseTest):
 
         core_scp_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         core_mcp_channel=self.dut.mb.node_0.soc.primary_die.mcp.channel_manager.get_current_channel()
-        for channel in [core_scp_channel, core_mcp_channel]:
+        core_hsp_channel=self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
+        for channel in [core_scp_channel, core_mcp_channel, core_hsp_channel]:
             channel.open()
             assert channel.is_open()
 

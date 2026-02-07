@@ -73,6 +73,9 @@ class crash_dump_stack_overflow_test(EchoFallsBaseTest):
             creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
             rscm_helper = RscmHelperLibrary(rm_host=self.host_config.rack_scm.host, bmc_host=self.dut.mb.node_0.dcscm.bmc.ip, rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'], node=self.host_config.node_id)
             rscm_helper.rscm_soc_reset()
+            hsp_channel=self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
+            hsp_channel.open()
+            assert hsp_channel.is_open()
             
         scp_channel=self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         # Open SCP channel

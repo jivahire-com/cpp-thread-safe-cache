@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
+#include <boot_status.h>     // for boot_status_notify_extd
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <sel_init.h>
@@ -20,10 +21,30 @@
 /**
  * @brief Initialize SEL manager queue to accept SEL events
  */
-FPFW_INIT_COMPONENT(sel_mgr, FPFW_INIT_NULL_NODE)
+FPFW_INIT_COMPONENT(sel_mgr, FPFW_INIT_DEPENDENCIES("boot_stat"))
 {
+    KNG_DIE_ID die_num = idsw_get_die_id();
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_SEL_INIT_START : MSCP_BOOT_STATUS_CODE_MCP_SEL_INIT_START,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (die_num == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     // Initialize SEL event queue
     sel_init();
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_SEL_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_SEL_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (die_num == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

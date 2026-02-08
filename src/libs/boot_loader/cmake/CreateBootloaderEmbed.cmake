@@ -191,9 +191,9 @@ function(create_bootloader_embed FW_BLOCK FW_IMAGE_TARGET BOOT_LOADER_TARGET EMB
     # MCP RMSS: 4KB (follows SCP RMSS)
     if(FW_BLOCK STREQUAL "scp")
         set(RMSS_BASE "0x01345000")
-        math(EXPR RMSS_SIZE "356352")
+        math(EXPR RMSS_SIZE "454655")
     else()
-        set(RMSS_BASE "0x0139C000")
+        set(RMSS_BASE "0x013B4000")
         math(EXPR RMSS_SIZE "4096")
     endif()
 

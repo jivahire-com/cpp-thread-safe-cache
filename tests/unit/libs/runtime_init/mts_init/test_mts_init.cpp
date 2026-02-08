@@ -16,8 +16,9 @@
 
 extern "C" {
 #include <FpFwUtils.h>
-#include <accelip_id.h> // for ACCEL_ID
-#include <build_data.h> // for BUILD_ELF_SECTION_BINARY_METADATA
+#include <accelip_id.h>  // for ACCEL_ID
+#include <boot_status.h> // for boot_status_notify_extd
+#include <build_data.h>  // for BUILD_ELF_SECTION_BINARY_METADATA
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -74,6 +75,15 @@ idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
     return mock_type(idsw_cpu_type_t);
 }
 
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
 bool __wrap_idhw_is_single_die_boot_en(void)
 {
     return mock_type(bool);
@@ -86,6 +96,17 @@ TEST_FUNCTION(test_mts_init, nullptr, nullptr)
 {
     uint32_t handle;
 
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+
+    uint32_t expected_boot_status_ex = GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, MCP_PRIMARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_MTS_INIT_START);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     will_return_always(__wrap_fpfw_init_get_handle, &handle);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
@@ -93,6 +114,14 @@ TEST_FUNCTION(test_mts_init, nullptr, nullptr)
     will_return_always(__wrap_accel_is_isolation_enabled, false);
     expect_function_call(__wrap_mts_init);
     expect_function_call(__wrap_mts_cli_svc_initialize);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_MTS_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_mts_svc.init_fn();
@@ -106,12 +135,31 @@ TEST_FUNCTION(test_mts_init_die1_scp, nullptr, nullptr)
 {
     uint32_t handle;
 
+    will_return(__wrap_idsw_get_die_id, DIE_1);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
+    uint32_t expected_boot_status_ex = GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MTS_INIT_START);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     will_return_always(__wrap_fpfw_init_get_handle, &handle);
     will_return(__wrap_idsw_get_die_id, DIE_1);
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
     will_return(__wrap_idhw_is_single_die_boot_en, true);
     expect_function_call(__wrap_mts_init);
     expect_function_call(__wrap_mts_cli_svc_initialize);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MTS_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_mts_svc.init_fn();
@@ -125,12 +173,31 @@ TEST_FUNCTION(test_mts_init_die0_scp, nullptr, nullptr)
 {
     uint32_t handle;
 
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
+    uint32_t expected_boot_status_ex = GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, SCP_PRIMARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MTS_INIT_START);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     will_return_always(__wrap_fpfw_init_get_handle, &handle);
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
     will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call(__wrap_mts_init);
     expect_function_call(__wrap_mts_cli_svc_initialize);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MTS_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_mts_svc.init_fn();

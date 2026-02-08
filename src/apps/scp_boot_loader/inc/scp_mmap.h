@@ -8,6 +8,7 @@
  */
 
 /*----------- Nested includes ------------*/
+#include <assert.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <scp_exp_top_regs.h>
 #include <scp_top_regs.h>
@@ -27,8 +28,9 @@
 #define SCP_MSCP_EXP_SRAM0_ADDR     (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM0_ADDRESS)
 #define SCP_MSCP_EXP_SRAM1_ADDR     (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_RAM1_ADDRESS)
 #define SCP_BOOT_RAM_BASE            SCP_MSCP_EXP_SRAM0_ADDR
-#define SCP_MAX_IMAGE_SIZE          (512 * KB) // MSCP_EXP RAM each slot is 1MB and with ITCM/DTCM each 512KB, the compressed main image of FW could be this value
+#define SCP_MAX_IMAGE_SIZE          (572 * KB) // MSCP_EXP RAM each slot is 1MB and with ITCM/DTCM each 512KB, the compressed main image of FW could be this value
                                                // in combined elf with bootloader
+static_assert(SCP_MAX_IMAGE_SIZE < (SCP_EXP_MSCP_BOOT_DATA_SIZE - 35 * KB), "SCP_MAX_IMAGE_SIZE should be smaller than SCP_EXP_MSCP_BOOT_DATA_SIZE to fit in the reserved boot data region");
 
 #define SCP_RMSS_RAM_DATA_BASE      SCP_EXP_RODATA_RMSS_REGION_BASE
 #define SCP_RMSS_RAM_DATA_SIZE      SCP_EXP_RODATA_RMSS_REGION_SIZE

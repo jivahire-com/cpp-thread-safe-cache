@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 
 #include <FpFwUtils.h>
+#include <boot_status.h> // for boot_status_notify_extd
 #include <fpfw_init.h>
 #include <gtimer_prodfw.h>
 #include <idsw.h>
@@ -38,7 +39,7 @@ static uint8_t s_utc_sync_manager_stack[UTC_SYNC_MANAGER_STACK_SIZE];
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(utc_mngr_svc_mcp, FPFW_INIT_DEPENDENCIES("mts_svc", "gtimer_stg_2", "mctp"))
+FPFW_INIT_COMPONENT(utc_mngr_svc_mcp, FPFW_INIT_DEPENDENCIES("mts_svc", "gtimer_stg_2", "mctp", "boot_stat"))
 {
 
     fpfw_mctp* p_mctp_ctx = (fpfw_mctp*)fpfw_init_get_handle("mctp");
@@ -52,6 +53,12 @@ FPFW_INIT_COMPONENT(utc_mngr_svc_mcp, FPFW_INIT_DEPENDENCIES("mts_svc", "gtimer_
     // Only Die 0 has the MCTP connection to the BMC
     if (idsw_get_die_id() == DIE_0)
     {
+        boot_status_req_t boot_status_req = {0};
+
+        boot_status_notify_extd(&boot_status_req,
+                                MSCP_BOOT_STATUS_CODE_MCP_MCTP_INIT_START,
+                                GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, MCP_PRIMARY));
+
         uint32_t frequency_hz = gtimer_prodfw_get_frequency();
 
         utc_sync_manager_config_t config = {.thread_config = {.p_stack = s_utc_sync_manager_stack,
@@ -73,6 +80,10 @@ FPFW_INIT_COMPONENT(utc_mngr_svc_mcp, FPFW_INIT_DEPENDENCIES("mts_svc", "gtimer_
         {
             return (fpfw_init_result_t){sc, NULL};
         }
+
+        boot_status_notify_extd(&boot_status_req,
+                                MSCP_BOOT_STATUS_CODE_MCP_MCTP_INIT_END,
+                                GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, MCP_PRIMARY));
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

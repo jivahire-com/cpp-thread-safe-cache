@@ -17,6 +17,7 @@ target_link_libraries(${TARGET}
         ms::service::mts
         fwlib.service.mts.cli
         ms::lib::accelerator_ip
+        ms::lib::boot_status
         ms::lib::crash_dump
         ms::lib::interface::in_band_telemetry_ddr
         ms::lib::icc_platform_defines
@@ -48,4 +49,5 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     mts_init
     mts_cli_svc_initialize
+    boot_status_notify_extd
 )

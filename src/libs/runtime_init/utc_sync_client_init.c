@@ -10,12 +10,14 @@
 /*-------------------------------- Includes ---------------------------------*/
 
 #include <FpFwUtils.h>
+#include <boot_status.h> // for boot_status_notify_extd
 #include <bug_check.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #include <fpfw_status.h>
 #include <gtimer_prodfw.h>
 #include <hsp_firmware_headers.h>
+#include <idhw.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <tx_api.h>
 #include <tx_port.h>
@@ -105,11 +107,23 @@ static void hsp_utc_timestamp_cb(utc_timestamp_bundle_t* p_utc_timestamp, void* 
 //
 
 #ifdef MCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "icc_hspmbx", "mts_svc"))
+FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "icc_hspmbx", "mts_svc", "boot_stat"))
 #else
-FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "mts_svc"))
+FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "mts_svc", "boot_stat"))
 #endif
 {
+    KNG_DIE_ID die_num = idsw_get_die_id();
+    boot_status_req_t boot_status_req = {0};
+
+    boot_status_notify_extd(&boot_status_req,
+                            (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_UTC_SYNC_INIT_START
+                                                             : MSCP_BOOT_STATUS_CODE_MCP_UTC_SYNC_INIT_START,
+                            GEN_BOOT_STATUS_EX_GENERIC_CODE(
+                                (idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                MSCP_GENERIC,
+                                (die_num == DIE_0) ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                                   : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     utc_sync_client_config_t config = {
         .thread_config =
             {
@@ -136,6 +150,15 @@ FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "mts_
     {
         sc = FPFW_INIT_STATUS_E_POINTER;
     }
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_UTC_SYNC_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_UTC_SYNC_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (die_num == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){sc, NULL};
 }

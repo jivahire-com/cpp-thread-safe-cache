@@ -14,6 +14,7 @@
 
 extern "C" {
 #include <FpFwUtils.h>
+#include <boot_status.h> // for boot_status_notify_extd
 #include <fpfw_init.h>
 #include <fpfw_status.h>
 #include <gtimer_prodfw.h>
@@ -82,6 +83,15 @@ fpfw_status_t __wrap_utc_sync_manager_init(utc_sync_manager_config_t* p_config)
     return mock_type(fpfw_status_t);
 }
 
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
 //
 // Tests
 //
@@ -94,29 +104,50 @@ TEST_FUNCTION(test_utc_sync_manager_init, nullptr, nullptr)
     expect_any(__wrap_utc_sync_manager_init, p_config);
     will_return(__wrap_utc_sync_manager_init, FPFW_STATUS_SUCCESS);
 
+    uint32_t expected_boot_status_ex = GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, MCP_PRIMARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_MCTP_INIT_START);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_MCTP_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     fpfw_init_result_t result = _fpfw_component_utc_mngr_svc_mcp.init_fn();
 
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_true(result.associated_handle == NULL);
 }
 
-TEST_FUNCTION(test_utc_sync_manager_init_failed_init, nullptr, nullptr)
+TEST_FUNCTION(test_utc_sync_manager_init_no_mctp_handle, nullptr, nullptr)
 {
-    // When we have no MCTP handle
+    // When we have no MCTP handle - boot status is not sent since we return early
     s_mock_handle_set = false;
+
     fpfw_init_result_t result = _fpfw_component_utc_mngr_svc_mcp.init_fn();
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_true(result.associated_handle == NULL);
+}
 
+TEST_FUNCTION(test_utc_sync_manager_init_failed_init, nullptr, nullptr)
+{
     s_mock_handle_set = true;
 
+    // Test when utc_sync_manager_init fails - boot status START is sent but not END
     will_return(__wrap_idsw_get_die_id, DIE_0);
     will_return(__wrap_gtimer_prodfw_get_frequency, TEST_SYS_COUNT_FREQ_HZ);
 
     expect_any(__wrap_utc_sync_manager_init, p_config);
     will_return(__wrap_utc_sync_manager_init, FPFW_STATUS_FAIL);
 
-    result = _fpfw_component_utc_mngr_svc_mcp.init_fn();
+    uint32_t expected_boot_status_ex = GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, MCP_PRIMARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_MCTP_INIT_START);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    fpfw_init_result_t result = _fpfw_component_utc_mngr_svc_mcp.init_fn();
 
     assert_true(result.status == (uint32_t)FPFW_STATUS_FAIL);
     assert_true(result.associated_handle == NULL);
@@ -124,6 +155,7 @@ TEST_FUNCTION(test_utc_sync_manager_init_failed_init, nullptr, nullptr)
 
 TEST_FUNCTION(test_utc_sync_manager_init_die_1, nullptr, nullptr)
 {
+    // DIE_1 does not send boot status and does not initialize UTC sync manager
     will_return(__wrap_idsw_get_die_id, DIE_1);
 
     fpfw_init_result_t result = _fpfw_component_utc_mngr_svc_mcp.init_fn();

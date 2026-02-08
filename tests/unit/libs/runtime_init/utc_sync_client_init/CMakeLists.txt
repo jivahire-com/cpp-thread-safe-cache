@@ -22,9 +22,11 @@ target_link_libraries(${TARGET}
         fwlib.service.utc.cli
         fwlib.service.utc_sync.client
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::crash_dump
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
+        silibs::idhw
 )
 
 # Setup the MCP Runtime Init Flag as it covers all code paths.
@@ -50,4 +52,7 @@ mock_target(${TARGET}
     gtimer_prodfw_get_frequency
     utc_cli_svc_initialize
     utc_sync_client_init
+    boot_status_notify_extd
+    idsw_get_cpu_type
+    idsw_get_die_id
 )

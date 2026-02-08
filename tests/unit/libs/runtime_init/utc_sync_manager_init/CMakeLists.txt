@@ -21,8 +21,10 @@ target_link_libraries(${TARGET}
         fwlib.service.mts
         fwlib.service.utc_sync.manager
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::gtimer
         ms::lib::utc_sync_manager
+        silibs::idhw
         silibs::idsw
         silibs::idsw_kng
         silibs_platform
@@ -45,4 +47,5 @@ mock_target(${TARGET}
     idsw_get_die_id
     utc_sync_manager_init
     utc_sync_manager_mctp_init
+    boot_status_notify_extd
 )

@@ -1,10 +1,10 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 
-set(TARGET sel_init.scp.test)
+set(TARGET sensor_fifo_init.scp.test)
 
 set(SOURCES
-    test_sel_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/sel_init.c
+    test_sensor_fifo_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/sensor_fifo_init.c
 )
 
 # Compile test
@@ -31,15 +31,20 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::lib::system_info
         ms::lib::threadx
-        ms::service::sel_mgr
-        silibs::icc_mhu
         silibs::idhw
+        ms::driver::sensor_fifo
+        ms::lib::core_info
+        ms::service::sensor_fifo
+        ms::service::sensor_fifo::cli
+        ms::service::scp_startup_shutdown
+        silibs::kng_silibs_platform
+        silibs::sensor_ram_bridge
 )
 
-set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "extern.threadx.win32")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
-set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
+
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -48,27 +53,23 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    fpfw_init_get_handle
     idsw_get_die_id
     idsw_get_cpu_type
-    fpfw_icc_base_recv
-    DfwkDeviceInitialize
-    DfwkQueueInitialize
-    DfwkInterfaceInitialize
-    DfwkInterfaceOpen
-    FpFwCliRegisterTable
-    FpFwLockInitialize
-    FpFwLockAcquire
-    FpFwLockRelease
-    idhw_is_single_die_boot_en
     boot_status_notify_extd
+    sensor_fifo_cli_svc_initialize
+    sensor_fifo_svc_initialize
+    sensor_fifo_driver_inf_init 
+    scf_mhu_device_initialize 
+    fpfw_init_get_handle
+    core_info_get_enable_cores_result
+    idsw_get_platform_sdv
 )
 
-set(TARGET sel_init.mcp.test)
+set(TARGET sensor_fifo_init.mcp.test)
 
 set(SOURCES
-    test_sel_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/sel_init.c
+    test_sensor_fifo_init.cpp
+    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/sensor_fifo_init.c
 )
 
 # Compile test
@@ -78,7 +79,6 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
     MCP_RUNTIME_INIT
-    PLDM_DRV_WORKAROUND
 )
 
 target_link_libraries(${TARGET}
@@ -94,18 +94,22 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::driver::pldm    # PLDM_DRV_WORKAROUND
         ms::lib::boot_status
-        ms::lib::error_codes
-        ms::lib::system_info
         ms::lib::threadx
-        ms::service::sel_mgr
         silibs::icc_mhu
         silibs::idhw
+        ms::driver::sensor_fifo
+        ms::lib::core_info
+        ms::service::sensor_fifo
+        ms::service::sensor_fifo::cli
+        ms::service::mcp_startup_shutdown
+        silibs::kng_silibs_platform
+        silibs::sensor_ram_bridge
 )
 
-set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "extern.threadx.win32")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
-set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
+
 
 lint_target(${TARGET})
 format_target(${TARGET})
@@ -113,22 +117,15 @@ coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
 #mock the functions needed
-mock_target(${TARGET}
-    fpfw_init_get_handle
+mock_target(${TARGET} 
     idsw_get_die_id
     idsw_get_cpu_type
-    fpfw_icc_base_recv
-    pldm_drv_register_platform_event_ready_notification  # PLDM_DRV_WORKAROUND
-    # fpfw_pldm_service_register_platform_event_ready_notification # !PLDM_DRV_WORKAROUND
-    DfwkDeviceInitialize
-    DfwkQueueInitialize
-    DfwkInterfaceInitialize
-    DfwkInterfaceOpen
-    DfwkAsyncRequestSetCompletionRoutine # PLDM_DRV_WORKAROUND
-    FpFwCliRegisterTable
-    FpFwLockInitialize
-    FpFwLockAcquire
-    FpFwLockRelease
-    idhw_is_single_die_boot_en
     boot_status_notify_extd
-)
+    sensor_fifo_cli_svc_initialize
+    sensor_fifo_svc_initialize
+    sensor_fifo_driver_inf_init 
+    scf_mhu_device_initialize 
+    fpfw_init_get_handle
+    core_info_get_enable_cores_result
+    idsw_get_platform_sdv
+    )

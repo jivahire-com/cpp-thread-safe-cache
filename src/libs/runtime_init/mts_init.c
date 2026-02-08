@@ -11,6 +11,7 @@
 #include <DbgPrint.h> // for FPFW_DBGPRINT_INFO
 #include <FpFwUtils.h>
 #include <accelerator_ip.h> // for accel_is_isolation_enabled()
+#include <boot_status.h>    // for boot_status_notify_extd
 #include <bug_check.h>
 #include <fpfw_init.h>
 #include <icc_mhu.h>
@@ -50,8 +51,20 @@ static trp_route_t s_trp_routing_table[TRP_MAX_ROUTES];
 static_assert(sizeof(icc_mhu_packet_t) + sizeof(trp_msg_t) <= ICC_MHU_DDR_PAYLOAD_SIZE, "MHU payload size too small");
 
 FPFW_INIT_COMPONENT(mts_svc,
-                    FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die", "icc_cded_mbx", "icc_sdm_mbx"))
+                    FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die", "icc_cded_mbx", "icc_sdm_mbx", "boot_stat"))
 {
+    KNG_DIE_ID die_num = idsw_get_die_id();
+    boot_status_req_t boot_status_req = {0};
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_MTS_INIT_START : MSCP_BOOT_STATUS_CODE_MCP_MTS_INIT_START,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (die_num == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     static mts_config_t s_config = {
         .thread_config =
             {
@@ -274,6 +287,15 @@ FPFW_INIT_COMPONENT(mts_svc,
     mts_init(&s_config);
 
     mts_cli_svc_initialize();
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_MTS_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_MTS_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (die_num == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

@@ -15,6 +15,7 @@ extern "C" {
 #include <DfwkThreadXHost.h>
 #include <FpFwCli.h>
 #include <FpFwUtils.h>
+#include <boot_status.h> // for boot_status_notify_extd
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #ifndef PLDM_DRV_WORKAROUND
@@ -209,19 +210,48 @@ bool __wrap_idhw_is_single_die_boot_en(void)
 
     return mock_type(bool);
 }
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
 } // extern "C"
 
 //
 // Tests
 //
-TEST_FUNCTION(test_sel_init, nullptr, nullptr)
+TEST_FUNCTION(test_sel_scp_init, nullptr, nullptr)
 {
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
+    uint32_t expected_boot_status_ex = GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, SCP_PRIMARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_SEL_INIT_START);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Set up expectations
     expect_function_call(__wrap_FpFwLockInitialize);
     will_return(__wrap_FpFwLockAcquire, 123);
     expect_function_call(__wrap_FpFwLockAcquire);
     expect_value(__wrap_FpFwLockRelease, OldState, 123);
     expect_function_call(__wrap_FpFwLockRelease);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_SEL_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_sel_mgr.init_fn();
@@ -267,6 +297,40 @@ TEST_FUNCTION(test_sel_d2d_init, nullptr, nullptr)
 }
 
 #ifdef MCP_RUNTIME_INIT
+
+TEST_FUNCTION(test_sel_mcp_init, nullptr, nullptr)
+{
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+
+    uint32_t expected_boot_status_ex = GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, MCP_PRIMARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_SEL_INIT_START);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    // Set up expectations
+    expect_function_call(__wrap_FpFwLockInitialize);
+    will_return(__wrap_FpFwLockAcquire, 123);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_value(__wrap_FpFwLockRelease, OldState, 123);
+    expect_function_call(__wrap_FpFwLockRelease);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_SEL_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_sel_mgr.init_fn();
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
 TEST_FUNCTION(test_sel_m2as_init, nullptr, nullptr)
 {
     fpfw_icc_base_ctx_t* dummy_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;

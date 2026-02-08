@@ -11,9 +11,10 @@
  */
 
 /*------------- Includes -----------------*/
-#include <fpfw_init.h>
-#include <idsw_kng.h>
-#include <rtosmon_config.h> /* rtosmon_plugin_init */
+#include <bug_check.h>          // for BUG_ASSERT
+#include <fpfw_init.h>          // for FPFW_INIT_STATUS_SUCCESS, fpfw_init_result_t
+#include <fpfw_status.h>        // for fpfw_status_t
+#include <rtosmon_service.h>    // rtosmon_service_init
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -27,13 +28,6 @@
 
 FPFW_INIT_COMPONENT(rtosmon, FPFW_INIT_DEPENDENCIES("etc", "systick_upd"))
 {
-    // Init rtosmon plugin if platform is not SVP
-    if(IS_PLATFORM_SVP())
-    {
-        rtosmon_disabled_init();
-        return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
-    }
-
-    rtosmon_plugin_init();
+    BUG_ASSERT(rtosmon_service_init() == FPFW_STATUS_SUCCESS);
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

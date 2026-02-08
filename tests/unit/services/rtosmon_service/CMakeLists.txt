@@ -1,10 +1,9 @@
 # Copyright Microsoft Corporation
 
-set(TARGET rtosmon_init.test)
+set(TARGET rtosmon_service.test)
 
 set(SOURCES
-    test_rtosmon_init.cpp
-    ${CMAKE_SOURCE_DIR}/src/libs/runtime_init/rtosmon_init.c
+    test_rtosmon_service.cpp
 )
 
 # Compile test
@@ -29,9 +28,11 @@ target_link_libraries(${TARGET}
         ms::lib::utils
         ms::lib::systick_update
         ms::lib::threadx
-        ms::service::m7_rtosmon
+        ms::service::m7_rtosmon_service
 )
 
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
+set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "extern.threadx.win32")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 
@@ -42,11 +43,10 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    crash_dump_bug_check
-    get_timestamp_counter_freq
     idsw_get_cpu_type
+    idsw_get_die_id
     rtosmon_init
-    sdm_get_system_timestamp
-    systick_get_emcpu_clock
-    _tx_time_get
+    gtimer_prodfw_get_counter
+    gtimer_prodfw_get_frequency
+    _txe_thread_create
 )

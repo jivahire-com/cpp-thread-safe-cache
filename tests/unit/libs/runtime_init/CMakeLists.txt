@@ -43,8 +43,6 @@ add_subdirectory(power_init)
 add_subdirectory(power_pldm_mcp_init)
 add_subdirectory(pwr_tlm_core_ex_init)
 add_subdirectory(pwr_tlm_svc_mcp_init)
-# Reenable when RTOS Mon logging frequency is resolved
-# add_subdirectory(rtosmon_init)
 add_subdirectory(scmi_init)
 add_subdirectory(scp_mpu_init)
 add_subdirectory(startup_shutdown_init)

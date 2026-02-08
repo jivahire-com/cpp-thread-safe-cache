@@ -104,25 +104,10 @@ add_subdirectory(message_transfer_service)
 
 if (NOT ${TARGET}_POPULATED)
     FetchContent_Populate(${TARGET})
-    # To ensure ThreadX includes the tx_user.h in cm7, we must disable the 1pfwlibs tx_user.h
-    # found in ".externs\repo\1pfw_fwlibs\src\libs\rtosmon\inc\tx_user.h."
-    set(PORT_TX_USER_FILEPATH
-        "${TARGET_DIR}/src/libs/rtosmon/inc/tx_user.h")
 
-    message("Renaming 1PFWLIB tx_user.h: " ${PORT_TX_USER_FILEPATH} " to tx_user.h.disabled")
-    message("This is to prevent tx_api.h structs expanding to incorrect sizes")
-
-    if(EXISTS "${PORT_TX_USER_FILEPATH}")
-        file(RENAME
-            "${PORT_TX_USER_FILEPATH}"
-            "${PORT_TX_USER_FILEPATH}.disabled"
-        )
-    endif()
-
-    set(RTOSMON_PLATFORM_DEFINES
-        RTOSMON_FASTHISTO_MAX_BINS=66
-        RTOSMON_FASTHISTO_MAX_THREADS=6
-    )
+    # RTOSMon Configuration for 1pfw.fwlibs Ingestion
+    set(RTOSMON_FASTHISTO_MAX_THREADS 16)
+    set(TX_USER_DIR ${CMAKE_SOURCE_DIR}/.externs/repo/cortex_m7/src/externs/threadx/threadx_lib/cortex_m7/inc)
 
     add_subdirectory(${TARGET_DIR} ${CMAKE_CURRENT_BINARY_DIR}/src/1pfw.fwlibs EXCLUDE_FROM_ALL)
 endif()

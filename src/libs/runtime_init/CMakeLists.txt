@@ -179,7 +179,6 @@ target_link_libraries(
         ms::service::gpio::cli
         ms::service::health_monitor
         ms::service::health_monitor::cli
-        ms::service::m7_rtosmon
         ms::service::mem::cli
         ms::service::mts
         ms::service::pcie_manager
@@ -187,6 +186,7 @@ target_link_libraries(
         ms::service::power
         ms::service::pwr_tlm_scp
         ms::service::rhtlm_service::cli
+        ms::service::m7_rtosmon_service
         ms::service::scp_startup_shutdown
         ms::service::sds_service
         ms::service::sel_mgr
@@ -401,11 +401,11 @@ target_link_libraries(
         ms::service::gpio::cli
         ms::service::health_monitor
         ms::service::health_monitor::cli
-        ms::service::m7_rtosmon
         ms::service::mcp_startup_shutdown
         ms::service::mem::cli
         ms::service::mts
         ms::service::pwr_pldm_mcp
+        ms::service::m7_rtosmon_service
         ms::service::pwr_tlm_mcp
         ms::service::pwr_tlm_mcp::cli
         ms::service::sel_mgr
@@ -468,6 +468,7 @@ target_compile_definitions(
         VUART_BASE_ADDR=MCP_TOP_DBGR_MCP_UART_ADDRESS
         VUART_IRQ=HW_INT_MCP_VUART_INT
 )
+
 
 lint_target(${TARGET})
 coverage_target(${TARGET})

@@ -110,7 +110,7 @@ silibs_status_t vab_ras_node_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_t bas
      * Note: Since we are fataling on the last record (which could be one of many),
      *       we choose to log the last captured ITS target for simplicity
      */
-    BUG_CHECK(VAB_INVALID_ITS_TARGET, VAB_RAS_NODE, (record.misc_2 & 0x1F));
+    BUG_CHECK(KNG_VAB_ITS_TARGET_ERROR, VAB_RAS_NODE, (record.misc_2 & 0x1F));
 
     /* This return is bogus as we bugcheck-ed above */
     return SILIBS_E_PANIC;
@@ -215,7 +215,7 @@ static silibs_status_t vab_parity_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintptr_
     cper_section.sec_vab = vab_cper;
     hm_submit_cper(ACPI_ERROR_DOMAIN_VAB, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(cper_section));
 
-    BUG_CHECK(VAB_PARITY_FAULT, component, data);
+    BUG_CHECK(KNG_VAB_FABRIC_PARITY_ERROR, component, data);
     return SILIBS_E_PANIC;
 }
 
@@ -260,7 +260,7 @@ silibs_status_t vab_integ_pcr_parity_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintp
     cper_section.sec_vab = vab_cper;
     hm_submit_cper(ACPI_ERROR_DOMAIN_VAB, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(cper_section));
 
-    BUG_CHECK(VAB_INTEG_PARITY_FAULT, VAB_INTEG_PCR, 0x0);
+    BUG_CHECK(KNG_VAB_FABRIC_PARITY_ERROR, VAB_INTEG_PCR, 0x0);
 
     /* We always bugcheck above so this return is bogus */
     return SILIBS_E_PANIC;
@@ -281,7 +281,7 @@ silibs_status_t vab_integ_csr_parity_handler(SUBSYSTEM_WITH_VAB_ID vab_id, uintp
     cper_section.sec_vab = vab_cper;
     hm_submit_cper(ACPI_ERROR_DOMAIN_VAB, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(cper_section));
 
-    BUG_CHECK(VAB_INTEG_PARITY_FAULT, VAB_INTEG_CSR, 0x0);
+    BUG_CHECK(KNG_VAB_FABRIC_PARITY_ERROR, VAB_INTEG_CSR, 0x0);
 
     /* We always bugcheck above so this return is bogus */
     return SILIBS_E_PANIC;

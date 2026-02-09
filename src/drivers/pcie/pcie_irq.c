@@ -53,13 +53,13 @@ typedef struct _pcie_bugcheck_info_t
 } pcie_bugcheck_info_t;
 
 /*-------- Function Prototypes -----------*/
-static bool rpss_record_callback(ras_error_record_t* record);
+static bool rpss_record_callback(ras_error_record_t* record, KNG_STATUS errcode);
 
 /*-- Declarations (Statics and globals) --*/
 static pcie_bugcheck_info_t bugcheck_info = {0};
 
 /*------------- Functions ----------------*/
-static bool rpss_record_callback(ras_error_record_t* record)
+static bool rpss_record_callback(ras_error_record_t* record, KNG_STATUS errcode)
 {
     RPSS_INSTANCE rpss_instance = NUM_RPSS;
     unsigned rp_index = 0;
@@ -93,8 +93,7 @@ static bool rpss_record_callback(ras_error_record_t* record)
         /* Setup bugcheck information if this is the first fatal error */
         if (!bugcheck_info.valid)
         {
-            /* KNG_HM_PCIE_GENERIC can be replaced with more granular error codes */
-            bugcheck_info.error_code = KNG_HM_PCIE_GENERIC;
+            bugcheck_info.error_code = errcode;
             bugcheck_info.rpss_instance = rpss_instance;
             bugcheck_info.rp_index = rp_index;
             bugcheck_info.error_type = pcie_cper->error_type;
@@ -138,7 +137,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
                 /* All sources are errors (none are notifiers) */
                 while (ras_pcie_ide_agent_probe_by_type(ide_agent, RAS_PCIE_IDE_ALL_KEY_SRAM_ERRORS, &record))
                 {
-                    bugcheck_required |= rpss_record_callback(&record);
+                    bugcheck_required |= rpss_record_callback(&record, KNG_PCIE_IDE_SRAM_ECC_ERROR);
                 }
             }
             if (status & PCIE_IDE_DATAPATH_GLOBAL_INT)
@@ -146,7 +145,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
                 /* All sources are errors (none are notifiers) */
                 while (ras_pcie_ide_agent_probe_by_type(ide_agent, RAS_PCIE_IDE_ALL_DATAPATH_ERRORS, &record))
                 {
-                    bugcheck_required |= rpss_record_callback(&record);
+                    bugcheck_required |= rpss_record_callback(&record, KNG_PCIE_IDE_DATAPATH_ERROR);
                 }
             }
 
@@ -155,7 +154,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
                 /* Not all sources are errors (some are notifiers) */
                 while (ras_pcie_ide_agent_probe_by_type(ide_agent, RAS_PCIE_IDE_ALL_MISC_ERRORS, &record))
                 {
-                    bugcheck_required |= rpss_record_callback(&record);
+                    bugcheck_required |= rpss_record_callback(&record, KNG_PCIE_IDE_OPERATIONAL_ERROR);
                 }
 
                 /* PCIE_IDE_KEY_NEEDED_INT is both an error and a notifier */
@@ -172,7 +171,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
                     if (status)
                     {
                         FPFW_DBGPRINT_ALWAYS("RP[%d, %d] Error: Unable to terminate IDE streams!\n", ss->id, rp_index);
-                        BUG_CHECK(KNG_HM_PCIE_GENERIC, status, 0x0);
+                        BUG_CHECK(KNG_PCIE_FW_ERROR, status, 0x0);
                     }
                 }
 
@@ -194,7 +193,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
             /* Not all sources are errors (some are advisory) */
             while (ras_pcie_ide_agent_probe_by_type(ide_agent, RAS_PCIE_IDE_ALL_AES_HCFG_ERRORS, &record))
             {
-                bugcheck_required |= rpss_record_callback(&record);
+                bugcheck_required |= rpss_record_callback(&record, KNG_PCIE_IDE_OPERATIONAL_ERROR);
             }
 
             /* Advisory notifiers are serviced asynchronously */
@@ -226,7 +225,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
             PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_DTIM, (ss->id << 16) | rp_index);
             while (ras_pcie_dtim_agent_probe_by_type(dtim_agent, RAS_PCIE_DTIM_ALL_TYPES, &record))
             {
-                bugcheck_required |= rpss_record_callback(&record);
+                bugcheck_required |= rpss_record_callback(&record, KNG_PCIE_DTI_ERROR);
             }
         }
 
@@ -239,7 +238,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
             PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_LTIM, (ss->id << 16) | rp_index);
             while (ras_pcie_ltim_agent_probe_by_type(ltim_agent, RAS_PCIE_LTIM_ALL_TYPES, &record))
             {
-                bugcheck_required |= rpss_record_callback(&record);
+                bugcheck_required |= rpss_record_callback(&record, KNG_PCIE_LTI_ERROR);
             }
         }
 
@@ -254,11 +253,11 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
              */
             if (ras_pcie_vsecras_agent_probe_by_type(vsecras_agent, RAS_UNCORRECTABLE_ERROR, &record))
             {
-                bugcheck_required |= rpss_record_callback(&record);
+                bugcheck_required |= rpss_record_callback(&record, KNG_PCIE_DATAPATH_ERROR);
             }
             if (ras_pcie_vsecras_agent_probe_by_type(vsecras_agent, RAS_CORRECTABLE_ERROR, &record))
             {
-                bugcheck_required |= rpss_record_callback(&record);
+                bugcheck_required |= rpss_record_callback(&record, KNG_PCIE_DATAPATH_ERROR);
             }
             /*
              * Any other FW action prior to error-mode exit must occur here
@@ -268,7 +267,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
             if (status)
             {
                 FPFW_DBGPRINT_ALWAYS("RP[%d, %d] Error: Unable to exit RASDP_ERR_MODE!\n", ss->id, rp_index);
-                BUG_CHECK(KNG_HM_PCIE_GENERIC, status, 0x0);
+                BUG_CHECK(KNG_PCIE_FW_ERROR, status, 0x0);
             }
         }
 

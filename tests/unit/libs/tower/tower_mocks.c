@@ -171,6 +171,8 @@ bool __wrap_ras_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* recor
     assert_non_null(record);
 
     record->handler = mock_ptr_type(ras_generic_handler_t);
+    record->err_code_valid = mock_type(bool);
+    record->err_code = mock_type(uint32_t);
 
     return mock_type(bool);
 }

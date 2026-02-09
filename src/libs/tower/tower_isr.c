@@ -112,18 +112,19 @@ static uint64_t tower_addresses[TOWER_MAX_TOWERS_PER_DIE * NUM_DIE] = {
  * allocation that we redirect to the requested Tower. Though this technically
  * maps more than just the Tower in some cases, it is benign.
  */
-static atu_map_entry_t map = ATU_MAPPING_D0_VAB0_RPSS0_TOWER();
+static atu_map_entry_t isr_map = ATU_MAPPING_D0_VAB0_RPSS0_TOWER();
+static atu_map_entry_t inj_map = ATU_MAPPING_D0_VAB0_RPSS0_TOWER();
 
 /*------------- Functions ----------------*/
-static bool tower_get_map(TOWER_INSTANCE tower_id, DIE_INSTANCE die)
+static bool tower_get_map(TOWER_INSTANCE tower_id, DIE_INSTANCE die, atu_map_entry_t* map)
 {
-    map.ap_base_address = tower_addresses[TOWER_MAX_TOWERS_PER_DIE * die + tower_id];
-    FPFW_DBGPRINT_ALWAYS("Tower base: %llx\n", map.ap_base_address);
-    if (!map.ap_base_address)
+    map->ap_base_address = tower_addresses[TOWER_MAX_TOWERS_PER_DIE * die + tower_id];
+    FPFW_DBGPRINT_ALWAYS("Tower base: %llx\n", map->ap_base_address);
+    if (!map->ap_base_address)
     {
         return false;
     }
-    BUG_ASSERT(!atu_map(ATU_ID_MSCP, &map));
+    BUG_ASSERT(!atu_map(ATU_ID_MSCP, map));
     return true;
 }
 
@@ -131,25 +132,29 @@ silibs_status_t tower_fmu_handler(TOWER_INSTANCE tower_id, DIE_INSTANCE die, uin
 {
     silibs_status_t status = SILIBS_SUCCESS;
     ras_agent_entity_t* agent = tower_get_ras_agent_entity(tower_id);
+    bool mapped = false;
     if (tower_id >= TOWER_MAX_TOWERS_PER_DIE || die >= NUM_DIE)
     {
         return SILIBS_E_PARAM;
     }
     if (!base)
     {
-        if (!tower_get_map(tower_id, die))
+        if (!tower_get_map(tower_id, die, &isr_map))
         {
             return SILIBS_E_SUPPORT;
         }
-        base = map.mscp_start_address;
+        base = isr_map.mscp_start_address;
+        mapped = true;
     }
     if (ras_arm_fmu_agent_set_base(agent, base, tower_id))
     {
         /*
          * This occurs whenever the agent is not live, or in other words is not
-         * setup for this core.
+         * setup for this core. This shouldn't happen if we mapped successfully,
+         * but is guarded against regardless.
          */
-        return SILIBS_E_SUPPORT;
+        status = SILIBS_E_SUPPORT;
+        goto exit;
     }
 
     ras_error_record_t record = {0};
@@ -159,7 +164,7 @@ silibs_status_t tower_fmu_handler(TOWER_INSTANCE tower_id, DIE_INSTANCE die, uin
 
         acpi_cper_section_t cper_section = {0};
         acpi_err_sec_nitower_t* tower_cper = &cper_section.sec_nitower;
-        uint32_t severity;
+        uint32_t severity = ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL;
         if (ras_agent_record_to_cper(&record, tower_cper, sizeof(acpi_err_sec_nitower_t), &severity))
         {
             FPFW_DBGPRINT_ALWAYS("Unable to convert RAS record to CPER!\n");
@@ -174,8 +179,32 @@ silibs_status_t tower_fmu_handler(TOWER_INSTANCE tower_id, DIE_INSTANCE die, uin
             /* Setup bugcheck information if this is the first fatal error */
             if (!tower_bugcheck_info.valid)
             {
-                /* TODO: This can be replaced with a more granular error code if needed. */
-                tower_bugcheck_info.error_code = KNG_HM_PCIE_GENERIC;
+                if (record.err_code_valid)
+                {
+                    uint8_t serr = (record.err_code >> 8) & 0xFF;
+                    switch (serr)
+                    {
+                    case TOWER_AMBA_INTERFACE_PROTECTION:
+                        tower_bugcheck_info.error_code = KNG_NITOWER_AMBA_PROTECTION_ERROR;
+                        break;
+                    case TOWER_HANG_DETECTION:
+                        tower_bugcheck_info.error_code = KNG_NITOWER_HANG_DETECTION_ERROR;
+                        break;
+                    case TOWER_END_TO_END_NETWORK_PROTECTION:
+                        tower_bugcheck_info.error_code = KNG_NITOWER_E2E_PROTECTION_ERROR;
+                        break;
+                    case TOWER_RAM_SECDED_PROTECTION:
+                        tower_bugcheck_info.error_code = KNG_NITOWER_RAM_SECDED_ERROR;
+                        break;
+                    default:
+                        tower_bugcheck_info.error_code = KNG_NITOWER_UNKNOWN_ERROR;
+                        break;
+                    }
+                }
+                else
+                {
+                    tower_bugcheck_info.error_code = KNG_NITOWER_UNKNOWN_ERROR;
+                }
                 tower_bugcheck_info.instance = tower_id;
                 tower_bugcheck_info.node_type_id = record.misc_0;
                 tower_bugcheck_info.valid = true;
@@ -201,8 +230,12 @@ silibs_status_t tower_fmu_handler(TOWER_INSTANCE tower_id, DIE_INSTANCE die, uin
         BUG_CHECK(tower_bugcheck_info.error_code, tower_bugcheck_info.instance, tower_bugcheck_info.node_type_id);
     }
 
-    map.ap_base_address = UINT64_MAX;
-    atu_unmap(ATU_ID_MSCP, &map);
+exit:
+    if (mapped)
+    {
+        isr_map.ap_base_address = UINT64_MAX;
+        atu_unmap(ATU_ID_MSCP, &isr_map);
+    }
 
     return status;
 }
@@ -259,16 +292,16 @@ PLACED_CODE acpi_einj_cmd_status_t tower_error_injection_cb(ras_einj_info_t* ein
     }
 
     /* All failures after ATU map will goto exit */
-    if (!tower_get_map(tower_id, einj_payload->component_instance))
+    if (!tower_get_map(tower_id, einj_payload->component_instance, &inj_map))
     {
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
-    uintptr_t tower_base = map.mscp_start_address;
+    uintptr_t tower_base = inj_map.mscp_start_address;
     status = ras_arm_fmu_agent_set_base(agent, tower_base, tower_id);
     if (status)
     {
-        return ACPI_EINJ_INVALID_ACCESS;
+        goto exit;
     }
 
     switch ((TOWER_EINJ_OPERATION)op_type.op)
@@ -302,13 +335,13 @@ PLACED_CODE acpi_einj_cmd_status_t tower_error_injection_cb(ras_einj_info_t* ein
         break;
     default:
         FPFW_DBGPRINT_ALWAYS("|Tower| Error: Invalid injection type: (%d)\n", op_type.op);
-        break;
+        goto exit;
     }
 
     ret = ACPI_EINJ_SUCCESS;
 
 exit:
-    map.ap_base_address = UINT64_MAX;
-    BUG_ASSERT_PARAM(!atu_unmap(ATU_ID_MSCP, &map), status, 0);
+    inj_map.ap_base_address = UINT64_MAX;
+    BUG_ASSERT_PARAM(!atu_unmap(ATU_ID_MSCP, &inj_map), status, 0);
     return ret;
 }

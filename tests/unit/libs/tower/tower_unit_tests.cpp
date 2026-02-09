@@ -23,6 +23,7 @@ extern "C" {
 #include <ras_agent.h>
 #include <silibs_status.h>
 #include <tower.h>
+#include <tower_fmu_utility.h>
 #include <tower_isr.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -1367,6 +1368,7 @@ silibs_status_t mock_ras_generic_handler(ras_error_record_t* record)
 
 TEST_FUNCTION(test_tower_fmu_corrected_handler, nullptr, nullptr)
 {
+    // Note: There asre no corrected errors in FMU
     ras_agent_entity_t mock_ras_entity;
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);
@@ -1374,7 +1376,11 @@ TEST_FUNCTION(test_tower_fmu_corrected_handler, nullptr, nullptr)
     will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
     will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
     will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, 0);
+    will_return(__wrap_ras_agent_probe, true);
     will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, 0);
     will_return(__wrap_ras_agent_probe, false);
     expect_function_call(__wrap_ras_print_record);
     will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_CORRECTED);
@@ -1391,7 +1397,161 @@ TEST_FUNCTION(test_tower_fmu_fatal_handler, nullptr, nullptr)
     will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
     will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
     will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, 0x1201);
+    will_return(__wrap_ras_agent_probe, true);
     will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    will_return(__wrap_ras_agent_probe, 0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+    }
+}
+
+TEST_FUNCTION(test_tower_fmu_fatal_unknown_error, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    will_return(__wrap_ras_agent_probe, 0);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    will_return(__wrap_ras_agent_probe, 0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+    }
+}
+
+TEST_FUNCTION(test_tower_fmu_fatal_amba_protection_error, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, TOWER_AMBA_INTERFACE_PROTECTION << 8);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    will_return(__wrap_ras_agent_probe, 0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+    }
+}
+
+TEST_FUNCTION(test_tower_fmu_fatal_hang_detection_error, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, TOWER_HANG_DETECTION << 8);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    will_return(__wrap_ras_agent_probe, 0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+    }
+}
+
+TEST_FUNCTION(test_tower_fmu_fatal_e2e_protection_error, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, TOWER_END_TO_END_NETWORK_PROTECTION << 8);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    will_return(__wrap_ras_agent_probe, 0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+    }
+}
+
+TEST_FUNCTION(test_tower_fmu_fatal_ram_secded_error, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, TOWER_RAM_SECDED_PROTECTION << 8);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    will_return(__wrap_ras_agent_probe, 0);
+    will_return(__wrap_ras_agent_probe, false);
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+    }
+}
+
+TEST_FUNCTION(test_tower_fmu_fatal_unknown_error_invalid_serr, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, 0xFF << 8);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    will_return(__wrap_ras_agent_probe, 0);
     will_return(__wrap_ras_agent_probe, false);
     expect_function_call(__wrap_ras_print_record);
     will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
@@ -1474,7 +1634,7 @@ TEST_FUNCTION(test_tower_error_injections_failures, nullptr, nullptr)
     will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
     will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
     ret = tower_error_injection_cb(&mock_einj_payload, nullptr);
-    assert_int_equal(ret, ACPI_EINJ_SUCCESS);
+    assert_int_equal(ret, ACPI_EINJ_INVALID_ACCESS);
 
     /* Silibs internal errors */
     mock_einj_payload.component_group = ACPI_ERROR_DOMAIN_NITOWER;

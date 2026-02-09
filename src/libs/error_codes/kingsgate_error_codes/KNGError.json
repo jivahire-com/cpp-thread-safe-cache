@@ -472,7 +472,7 @@
         {
           "Name": "KNG_HM_PCIE_GENERIC",
           "Value": 28,
-          "Description": "Generic PCIe Error placeholder"
+          "Description": "DO-NOT-USE. Replaced by the error codes in PCIe facility!"
         },
         {
           "Name": "KNG_HM_SYSFUSE_TAG_CE",
@@ -569,6 +569,132 @@
           "Name": "KNG_E_RAS_MESH_NON_SECURE_ERROR_UE",
           "Value": 5,
           "Description": "Uncorrectable error in Mesh (Non-secure)."
+        }
+      ]
+    },
+    {
+      "Facility_Name": "FACILITY_PCIE",
+      "Facility_Value": 63,
+      "Facility_Description": "This is for error codes related to PCIe",
+      "Errors": [
+        {
+          "Name": "KNG_PCIE_UNUSED_ERROR",
+          "Value": 0,
+          "Description": "Do not use, defined to prevent use of 0 as error code."
+        },
+        {
+          "Name": "KNG_PCIE_FW_ERROR",
+          "Value": 1,
+          "Description": "Unexpected error from FWK/Library received"
+        },
+        {
+          "Name": "KNG_PCIE_AER_ERROR",
+          "Value": 2,
+          "Description": "A fatal AER error was logged on the controller"
+        },
+        {
+          "Name": "KNG_PCIE_IDE_SRAM_ECC_ERROR",
+          "Value": 3,
+          "Description": "A fatal IDE SRAM ECC error was logged on the controller"
+        },
+        {
+          "Name": "KNG_PCIE_IDE_DATAPATH_ERROR",
+          "Value": 4,
+          "Description": "A fatal IDE Datapath error was logged on the controller"
+        },
+        {
+          "Name": "KNG_PCIE_IDE_OPERATIONAL_ERROR",
+          "Value": 5,
+          "Description": "A fatal IDE runtime/operational error was logged on the controller"
+        },
+        {
+          "Name": "KNG_PCIE_LTI_ERROR",
+          "Value": 6,
+          "Description": "A fatal LTI-M error was logged on the controller"
+        },
+        {
+          "Name": "KNG_PCIE_DTI_ERROR",
+          "Value": 7,
+          "Description": "A fatal DTI-M error was logged on the controller"
+        },
+        {
+          "Name": "KNG_PCIE_PHY_SRAM_ERROR",
+          "Value": 8,
+          "Description": "A fatal SRAM ECC error was logged on the PHY controller"
+        },
+        {
+          "Name": "KNG_PCIE_DATAPATH_ERROR",
+          "Value": 9,
+          "Description": "A fatal Datapath error was logged on the controller"
+        }
+      ]
+    },
+    {
+      "Facility_Name": "FACILITY_VAB",
+      "Facility_Value": 64,
+      "Facility_Description": "This is for error codes related to VAB",
+      "Errors": [
+        {
+          "Name": "KNG_VAB_UNUSED_ERROR",
+          "Value": 0,
+          "Description": "Do not use, defined to prevent use of 0 as error code."
+        },
+        {
+          "Name": "KNG_VAB_FW_ERROR",
+          "Value": 1,
+          "Description": "Unexpected error from FWK/Library received"
+        },
+        {
+          "Name": "KNG_VAB_FABRIC_PARITY_ERROR",
+          "Value": 2,
+          "Description": "A fatal parity error was detected in one or more of the VAB fabric interfaces"
+        },
+        {
+          "Name": "KNG_VAB_ITS_TARGET_ERROR",
+          "Value": 3,
+          "Description": "An un-routeable ITS Target ID was received"
+        }
+      ]
+    },
+    {
+      "Facility_Name": "FACILITY_NITOWER",
+      "Facility_Value": 65,
+      "Facility_Description": "This is for error codes related to NiTower",
+      "Errors": [
+        {
+          "Name": "KNG_NITOWER_UNUSED_ERROR",
+          "Value": 0,
+          "Description": "Do not use, defined to prevent use of 0 as error code."
+        },
+        {
+          "Name": "KNG_NITOWER_FW_ERROR",
+          "Value": 1,
+          "Description": "Unexpected error from FWK/Library received"
+        },
+        {
+          "Name": "KNG_NITOWER_AMBA_PROTECTION_ERROR",
+          "Value": 2,
+          "Description": "A fatal (non-deferred) AMBA protection error was logged"
+        },
+        {
+          "Name": "KNG_NITOWER_HANG_DETECTION_ERROR",
+          "Value": 3,
+          "Description": "A fatal (non-deferred) hung transaction error was logged"
+        },
+        {
+          "Name": "KNG_NITOWER_E2E_PROTECTION_ERROR",
+          "Value": 4,
+          "Description": "A fatal (non-deferred) E2E protection error was logged"
+        },
+        {
+          "Name": "KNG_NITOWER_RAM_SECDED_ERROR",
+          "Value": 5,
+          "Description": "A fatal (non-deferred) RAM SECDED protection error was logged"
+        },
+        {
+          "Name": "KNG_NITOWER_UNKNOWN_ERROR",
+          "Value": 6,
+          "Description": "A fatal (non-deferred) unknown error was logged"
         }
       ]
     }

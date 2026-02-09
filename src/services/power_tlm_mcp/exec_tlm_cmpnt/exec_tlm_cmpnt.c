@@ -443,7 +443,10 @@ void exec_tlm_cmpnt_udpdate_timer_periods(uint32_t data_aggr_period_ms,
 void exec_tlm_cmpnt_change_telemetry_mode(tlm_operating_mode_t new_mode)
 {
     tlm_operating_mode_t current_mode = tlm_executive_status.op_mode;
-    if (current_mode == new_mode)
+
+    // Allow RESET (transition to COLLECTING_DATA) to execute even when already in COLLECTING_DATA mode
+    // This ensures exit/enter actions run to clean up resources (e.g., clear buffers, reset state)
+    if (current_mode != TLM_OP_MODE_COLLECTING_DATA && current_mode == new_mode)
     {
         FPFW_ET_LOG(ExecInvalidModeChange, current_mode, new_mode);
         return;

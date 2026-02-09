@@ -23,6 +23,7 @@ extern "C" {
 #include <telemetry_package_defs.h>
 #include <data_sampling_i.h>
 #include <package_creation_i.h>
+#include <corebits.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 // Use a constant for mock timestamp increment
@@ -64,6 +65,13 @@ extern tile_temp_t g_stored_temperatures[];
 
 // Mock function declarations
 uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void);
+
+// Core telemetry mock function declarations  
+corebits_t* __wrap_core_info_get_enable_cores_result(void);
+
+// D2D link state mock function declarations
+int __wrap_d2dss_pmu_init(uint8_t d2dss_index, uint8_t event_number, uint32_t event_count, bool enable);
+int __wrap_d2dss_pmu_read(uint8_t d2dss_index, uint8_t event_number, uint32_t* counter_low, uint32_t* counter_high);
 
 #ifdef __cplusplus
 }

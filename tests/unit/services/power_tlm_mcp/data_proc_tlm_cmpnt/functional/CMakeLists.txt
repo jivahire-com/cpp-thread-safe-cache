@@ -30,6 +30,7 @@ set(SOURCES
     log_memory_throttling_integration_test.cpp
     test_core_histogram_integration.cpp
     test_inst_soc_voltage_rails.cpp
+    test_d2d_link_state_integration.cpp
     )
 
 add_executable(${TARGET} ${SOURCES})
@@ -101,4 +102,15 @@ mock_target(${TARGET}
     die_2_die_exch_ib_write_inst_max_die_temp
     die_2_die_exch_ib_read_inst_max_die_temp_dC
     die_2_die_exch_get_this_die_id
+    # D2D PMU mocks (hardware interface)
+    d2dss_pmu_init
+    d2dss_pmu_read
+    # Mesh telemetry mocks (hardware interface)
+    mesh_get_m0_residency
+    mesh_get_m1_residency
+    mesh_get_m2_residency
+    mesh_get_m1_entry_count
+    mesh_get_m2_entry_count
+    mesh_get_telemetry_delivered_perf_count
+    mesh_clock_telemetry
     )

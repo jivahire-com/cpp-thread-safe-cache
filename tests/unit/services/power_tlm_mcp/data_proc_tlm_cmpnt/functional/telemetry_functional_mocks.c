@@ -32,6 +32,10 @@ int g_enable_mock_die_id = 0; // Enable/disable mocking for die_2_die_exch_get_t
 bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
 cstate_instr_timestamp_t test_cstate_buf[(128 * 1024) / sizeof(cstate_instr_timestamp_t)];
 
+// D2D PMU register mock implementation (following sensor FIFO mock pattern)
+static uint32_t d2d_mock_counter_values[8][8][2]; // [interface][counter][low/high]
+static bool d2d_pmu_initialized = false;
+
 void setup_cstate_tfa_functional_mock_buffer()
 {
 
@@ -256,7 +260,7 @@ void setup_snsr_fifo_is_empty(void)
     }
 }
 
-// Modifing the timestamp function to return larger intervals
+// Modifying the timestamp function to return larger intervals
 uint64_t __wrap_exec_tlm_cmpnt_get_timestamp_microseconds(void)
 {
     time_t0 += MOCK_TIMESTAMP_INCREMENT; // Increment by constant value each time
@@ -285,15 +289,6 @@ void __wrap_release_semaphore(SEMAPHORE_ID id)
     FPFW_UNUSED(id);
 }
 
-corebits_t mock_cores_in_die;
-corebits_t* __wrap_core_info_get_enable_cores_result()
-{
-    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
-    {
-        mock_cores_in_die.bits[i] = mock_type(uint32_t);
-    }
-    return (&mock_cores_in_die);
-}
 void __wrap_dvfs_c2_pcm_enable_aging_sensor_measurement(const uintptr_t cluster_pex_base_addr, uint8_t ro_index, uint8_t timer_cfg)
 {
     FPFW_UNUSED(cluster_pex_base_addr);
@@ -379,5 +374,129 @@ void __wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg(void)
 
 void __wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg(void)
 {
+    function_called();
+}
+
+int __wrap_d2dss_pmu_init(uint8_t d2dss_index, uint8_t event_number, uint32_t event_count, bool enable)
+{
+    FPFW_UNUSED(d2dss_index);
+    FPFW_UNUSED(event_number);
+    FPFW_UNUSED(event_count);
+    FPFW_UNUSED(enable);
+
+    // Mock register write operation for PMU initialization
+    // Following sensor FIFO pattern for register access
+
+    if (d2dss_index < 8 && event_number < 8)
+    {
+        // Initialize mock counter values with test data
+        d2d_mock_counter_values[d2dss_index][event_number][0] = 1000000; // counter_low
+        d2d_mock_counter_values[d2dss_index][event_number][1] = 0;       // counter_high
+        d2d_pmu_initialized = true;
+    }
+
+    return SILIBS_SUCCESS;
+}
+
+int __wrap_d2dss_pmu_read(uint8_t d2dss_index, uint8_t event_number, uint32_t* counter_low, uint32_t* counter_high)
+{
+    assert_non_null(counter_low);
+    assert_non_null(counter_high);
+
+    // Mock register read operation returning realistic counter values
+    // Following sensor FIFO pattern for memory-mapped register reads
+
+    if (d2dss_index < 8 && d2d_pmu_initialized)
+    {
+        // Return mock counter data (simulate link activity)
+        *counter_low = d2d_mock_counter_values[d2dss_index][event_number][0] + (d2dss_index * 100000);
+        *counter_high = d2d_mock_counter_values[d2dss_index][event_number][1];
+    }
+    else
+    {
+        // Return zeros for uninitialized or invalid interface
+        *counter_low = 0;
+        *counter_high = 0;
+    }
+
+    return SILIBS_SUCCESS;
+}
+
+// D2D PMU mock setup helper - provides exact return value count for D2D function calls
+void setup_d2d_pmu_mocks(uint64_t counter_value)
+{
+    // Setup D2D PMU register mocks with realistic counter values
+    // Following sensor FIFO mock pattern for register read/write operations
+
+    // Initialize D2D PMU state
+    d2d_pmu_initialized = true;
+
+    // Configure mock counter values for all D2D interfaces
+    // Each interface has multiple counters (tx_residency, rx_residency, bw_tx, bw_rx)
+    for (uint8_t interface_id = 0; interface_id < NUMBER_OF_D2D_INTERFACES; interface_id++)
+    {
+        // Set unique counter values per interface and event for testing
+        // Base counter_value + offset per interface allows validation of per-interface data
+        for (uint8_t event_number = 0; event_number < 8; event_number++)
+        {
+            d2d_mock_counter_values[interface_id][event_number][0] =
+                (uint32_t)(counter_value + (interface_id * 1000) + (event_number * 100));
+            d2d_mock_counter_values[interface_id][event_number][1] = (uint32_t)((counter_value >> 32) + interface_id);
+        }
+    }
+
+    printf("D2D PMU mocks initialized: d2d_pmu_initialized=true, %u interfaces configured\n", NUMBER_OF_D2D_INTERFACES);
+}
+
+void reset_d2d_pmu_mocks(void)
+{
+    // Reset D2D mock state for clean test isolation
+    d2d_pmu_initialized = false;
+    memset(d2d_mock_counter_values, 0, sizeof(d2d_mock_counter_values));
+}
+
+// Mesh telemetry mock functions (hardware interface)
+// These follow the same pattern as the unit test mesh mocks
+uint32_t __wrap_mesh_get_m0_residency(void)
+{
+    // Mock mesh M0 residency counter read from hardware
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m1_residency(void)
+{
+    // Mock mesh M1 residency counter read from hardware
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m2_residency(void)
+{
+    // Mock mesh M2 residency counter read from hardware
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m1_entry_count(void)
+{
+    // Mock mesh M1 entry counter read from hardware
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m2_entry_count(void)
+{
+    // Mock mesh M2 entry counter read from hardware
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_telemetry_delivered_perf_count(void)
+{
+    // Mock mesh delivered performance counter read from hardware
+    return mock_type(uint32_t);
+}
+
+void __wrap_mesh_clock_telemetry(bool enable, uint32_t interval_count)
+{
+    // Mock mesh telemetry clock configuration (hardware register write)
+    check_expected(enable);
+    check_expected(interval_count);
     function_called();
 }

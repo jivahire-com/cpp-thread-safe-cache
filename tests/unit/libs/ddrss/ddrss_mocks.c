@@ -875,6 +875,20 @@ uint8_t __wrap_get_dimm_vendor_id(uint16_t dimm_local_idx)
     return mock_type(uint8_t);
 }
 
+void __wrap_hm_register_error_domain(uint16_t error_domain_idx,
+                                     void* error_domain_guid,
+                                     void* error_domain_name,
+                                     void* err_inject_cb,
+                                     void* err_inject_ctx)
+{
+    check_expected(error_domain_idx);
+    FPFW_UNUSED(error_domain_guid);
+    FPFW_UNUSED(error_domain_name);
+    FPFW_UNUSED(err_inject_cb);
+    FPFW_UNUSED(err_inject_ctx);
+    function_called();
+}
+
 void __wrap_sdl_get_mem_ctx(var_service_shared_mem_t* mem_ctx)
 {
     mem_ctx->payload_base = mock_type(uintptr_t);

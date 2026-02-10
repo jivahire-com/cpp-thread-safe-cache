@@ -60,9 +60,12 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc"
 }
 
 FPFW_INIT_COMPONENT(hm_post_init,
-                    FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "mesh_stg_2", "ddr", "gpio_dev", "hw_sem", "boot_stat"))
+                    FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "mesh_stg_2", "ddr", "gpio_dev", "hw_sem", "cfg_mgr", "boot_stat"))
 {
-    hm_post_ddr_init();
+    if (hm_allow_ras_reporting())
+    {
+        hm_post_ddr_init();
+    }
 
     boot_status_req_t boot_status_req = {0};
     boot_status_notify_extd(
@@ -129,6 +132,10 @@ FPFW_INIT_COMPONENT(hm_ap, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_mscp2apns
 
 FPFW_INIT_COMPONENT(hm_cli_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "hm_scp"))
 {
-    hm_cli_init();
+    if (hm_allow_ras_reporting())
+    {
+        hm_cli_init();
+    }
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

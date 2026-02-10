@@ -115,6 +115,7 @@ TEST_FUNCTION(hm_sdm_error_domain_register_listener, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(hm_sdm_error_domain_register_cb_all_paths, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     hm_accel_error_domain_register_payload_t* reg_payload;
 
     // Get the payload object and fill it with info
@@ -182,6 +183,7 @@ TEST_FUNCTION(hm_cded_error_domain_register_listener, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(hm_cded_error_domain_register_cb_all_paths, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     hm_accel_error_domain_register_payload_t* reg_payload;
 
     // Get the payload object and fill it with info
@@ -241,7 +243,7 @@ TEST_FUNCTION(hm_cded_error_domain_register_listener_recv_reg_fail, post_ddr_set
 TEST_FUNCTION(hm_sdm_error_injection_cb, post_ddr_setup, nullptr)
 {
     will_return(__wrap_system_info_get_mission_mode, false);
-    will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
@@ -277,7 +279,7 @@ TEST_FUNCTION(hm_sdm_error_injection_cb, post_ddr_setup, nullptr)
 TEST_FUNCTION(hm_sdm_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
 {
     will_return(__wrap_system_info_get_mission_mode, false);
-    will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
@@ -313,7 +315,7 @@ TEST_FUNCTION(hm_sdm_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
 TEST_FUNCTION(hm_cded_error_injection_cb, post_ddr_setup, nullptr)
 {
     will_return(__wrap_system_info_get_mission_mode, false);
-    will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
@@ -349,7 +351,7 @@ TEST_FUNCTION(hm_cded_error_injection_cb, post_ddr_setup, nullptr)
 TEST_FUNCTION(hm_cded_error_injection_cb_icc_send_fail, post_ddr_setup, nullptr)
 {
     will_return(__wrap_system_info_get_mission_mode, false);
-    will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
@@ -403,6 +405,7 @@ TEST_FUNCTION(hm_sdm_err_submission_cb_all_path, post_ddr_setup, nullptr)
     // Subtract 0x80000 - the dtcm offset that gets added in cper cb function
     cper_info->msg_payload.dtcm_mem_offset = ((uint32_t)&cper_mesg) - 0x80000;
 
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
@@ -461,6 +464,7 @@ TEST_FUNCTION(hm_collect_fatal_cper, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(hm_send_fatal_cper, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);

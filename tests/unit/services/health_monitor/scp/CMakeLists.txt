@@ -93,4 +93,5 @@ mock_target(${TARGET}
     _txe_timer_create
     _txe_timer_deactivate
     system_info_get_mission_mode
+    config_get_ras_disable_single_die
 )

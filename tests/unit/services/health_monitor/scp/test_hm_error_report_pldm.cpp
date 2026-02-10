@@ -123,6 +123,7 @@ TEST_FUNCTION(test_pldm_not_ready, post_ddr_setup, nullptr)
     hm_config->is_primary = true;
     hm_config->is_mcp = true;
 
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
 
@@ -152,6 +153,7 @@ TEST_FUNCTION(test_pldm_from_primary_scp, post_ddr_setup, nullptr)
     hm_arsm_cper_backup_t* backup_cper = (hm_arsm_cper_backup_t*)last_cper_base;
     backup_cper->last_cper_record.transfer_status = HM_PLDM_TRANSFER_STATUS_REQUESTED;
 
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
     expect_function_call_any(__wrap_wait_for_semaphore);
@@ -186,6 +188,7 @@ TEST_FUNCTION(test_pldm_from_primary_scp_no_pending, post_ddr_setup, nullptr)
     hm_set_pldm_ready_status();
 
     // dummy CPER record requested state
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
     expect_string(__wrap__txe_timer_create, name_ptr, "hm_flush");
@@ -226,6 +229,7 @@ TEST_FUNCTION(test_pldm_from_primary_mcp, post_ddr_setup, nullptr)
     hm_arsm_cper_backup_t* backup_cper = (hm_arsm_cper_backup_t*)last_cper_base;
     backup_cper->last_cper_record.transfer_status = HM_PLDM_TRANSFER_STATUS_REQUESTED;
 
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
 #ifdef PLDM_DRV_WORKAROUND
@@ -254,6 +258,7 @@ TEST_FUNCTION(test_pldm_from_secondary_mcp, post_ddr_setup, nullptr)
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
 
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     expect_string(__wrap__txe_timer_create, name_ptr, "hm_flush");
     expect_any(__wrap__txe_timer_create, expiration_input);
     expect_any(__wrap__txe_timer_create, initial_ticks);
@@ -279,6 +284,7 @@ TEST_FUNCTION(test_pldm_OS_booted_pending_items, post_ddr_setup, nullptr)
     hm_arsm_cper_backup_t* backup_cper = (hm_arsm_cper_backup_t*)last_cper_base;
     backup_cper->last_cper_record.transfer_status = HM_PLDM_TRANSFER_STATUS_REQUESTED;
 
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
 #ifdef PLDM_DRV_WORKAROUND
@@ -320,6 +326,7 @@ TEST_FUNCTION(test_pldm_OS_booted_no_pending_items, post_ddr_setup, nullptr)
     hm_arsm_cper_backup_t* backup_cper = (hm_arsm_cper_backup_t*)last_cper_base;
     backup_cper->last_cper_record.transfer_status = HM_PLDM_TRANSFER_STATUS_REQUESTED;
 
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
 #ifdef PLDM_DRV_WORKAROUND

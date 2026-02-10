@@ -46,6 +46,7 @@ target_link_libraries(${TARGET}
         silibs::icc_mhu
         silibs::atu
     PRIVATE
+        fwlib.lib.cfg_mgr
         silibs::gpio
         fwlib.lib.status
         fwlib.lib.init

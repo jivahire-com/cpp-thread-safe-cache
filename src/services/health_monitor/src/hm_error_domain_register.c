@@ -29,6 +29,12 @@ void hm_register_error_domain(uint16_t error_domain_idx,
                               hm_error_injection_cb_t err_inject_cb,
                               void* err_inject_ctx)
 {
+    if (hm_allow_ras_reporting() == false)
+    {
+        HM_LOG_CRIT("RAS disabled");
+        return;
+    }
+
     if ((error_domain_idx < ACPI_ERROR_DOMAIN_COUNT) && (err_inject_cb != NULL))
     {
         memset(&error_domain_info[error_domain_idx], 0, sizeof(hm_error_domain_info_t));

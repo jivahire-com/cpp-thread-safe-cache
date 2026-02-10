@@ -121,6 +121,7 @@ mock_target(${TARGET}
     ddr_i3c_interface_write_spd_nvm_data
     log_sel_event
     get_dimm_vendor_id
+    hm_register_error_domain
     sdl_get_mem_ctx
     variable_service_initialize_ctx
     variable_service_sync_get_variable

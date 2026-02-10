@@ -93,6 +93,11 @@ bool __wrap_idhw_is_single_die_boot_en(void)
     return mock_type(bool);
 }
 
+bool __wrap_config_get_ras_disable_single_die()
+{
+    return mock_type(bool);
+}
+
 void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
 {
     check_expected(boot_status);
@@ -126,6 +131,8 @@ TEST_FUNCTION(hm_svc, nullptr, nullptr)
 
 TEST_FUNCTION(hm_post_init, nullptr, nullptr)
 {
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+
     expect_function_call_any(__wrap_hm_post_ddr_init);
 
     const auto test_die = (KNG_DIE_ID)0;
@@ -189,7 +196,20 @@ TEST_FUNCTION(hm_hsp, nullptr, nullptr)
 
 TEST_FUNCTION(hm_cli_init, nullptr, nullptr)
 {
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call_any(__wrap_hm_cli_init);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_hm_cli_init.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_cli_init_no_ras, nullptr, nullptr)
+{
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_ras_disable_single_die, true);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_hm_cli_init.init_fn();

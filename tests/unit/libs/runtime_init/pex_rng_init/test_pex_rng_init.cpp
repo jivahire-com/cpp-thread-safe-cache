@@ -16,6 +16,7 @@ extern "C" {
 #include <boot_status.h>
 #include <core_info.h>
 #include <corebits.h>
+#include <cper.h>
 #include <crash_dump.h>
 #include <fpfw_init.h>
 #include <pex_rng.h>
@@ -107,6 +108,20 @@ void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, u
     check_expected(errorCode);
     check_expected(p3);
     check_expected(p4);
+}
+
+void __wrap_hm_register_error_domain(uint16_t error_domain_idx,
+                                     void* error_domain_guid,
+                                     void* error_domain_name,
+                                     void* err_inject_cb,
+                                     void* err_inject_ctx)
+{
+    check_expected(error_domain_idx);
+    FPFW_UNUSED(error_domain_guid);
+    FPFW_UNUSED(error_domain_name);
+    FPFW_UNUSED(err_inject_cb);
+    FPFW_UNUSED(err_inject_ctx);
+    function_called();
 }
 
 void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
@@ -213,6 +228,8 @@ TEST_FUNCTION(test_register_pex_error_domain_timer_failure, nullptr, nullptr)
     expect_value(__wrap_crash_dump_bug_check, errorCode, (uint32_t)KNG_PEX_POLLING_FAILED);
     expect_value(__wrap_crash_dump_bug_check, p3, timer_error_status);
     expect_value(__wrap_crash_dump_bug_check, p4, 100); // POLL_INTERVAL_MS
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_PEX);
+    expect_function_call(__wrap_hm_register_error_domain);
 
     __real_register_pex_error_domain(&config);
 }
@@ -221,6 +238,8 @@ TEST_FUNCTION(test_register_pex_error_domain_success, nullptr, nullptr)
 {
     pex_rng_config_t config = {0};
     will_return(mock_tx_timer_create, TX_SUCCESS);
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_PEX);
+    expect_function_call(__wrap_hm_register_error_domain);
 
     __real_register_pex_error_domain(&config);
 }

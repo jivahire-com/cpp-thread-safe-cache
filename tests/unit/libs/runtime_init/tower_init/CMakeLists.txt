@@ -16,6 +16,7 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::li
 
 target_link_libraries(${TARGET}
     PRIVATE
+    fwlib.lib.utils
     fwlib.lib.assert
     fwlib.lib.init
     fwlib.lib.interface.platform.dbgprint
@@ -42,4 +43,5 @@ mock_target(${TARGET}
     fpfw_init_get_handle
     idsw_get_die_id
     tower_init
+    hm_register_error_domain
 )

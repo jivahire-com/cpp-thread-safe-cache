@@ -65,4 +65,5 @@ mock_target(${TARGET}
     hm_set_pldm_ready_status
     DfwkAsyncRequestSetCompletionRoutine                # PLDM_DRV_WORKAROUND
     pldm_drv_register_platform_event_ready_notification # PLDM_DRV_WORKAROUND
+    config_get_ras_disable_single_die
 )

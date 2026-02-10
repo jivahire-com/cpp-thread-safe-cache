@@ -54,6 +54,7 @@ mock_target(${TARGET}
     _tx_timer_create
     _txe_timer_create
     crash_dump_bug_check
+    hm_register_error_domain
     boot_status_notify_extd
     idsw_get_cpu_type
     idsw_get_die_id

@@ -14,7 +14,9 @@
 #include <stdint.h>            // for uint16_t
 
 extern "C" {
+#include <FpFwUtils.h>
 #include <boot_status.h>
+#include <cper.h>
 #include <fpfw_init.h>
 #include <idsw.h>
 #include <idsw_kng.h>
@@ -53,6 +55,20 @@ void __wrap_enable_vab_isrs(uint16_t vab_instances_to_init)
     check_expected(vab_instances_to_init);
 }
 
+void __wrap_hm_register_error_domain(uint16_t error_domain_idx,
+                                     void* error_domain_guid,
+                                     void* error_domain_name,
+                                     void* err_inject_cb,
+                                     void* err_inject_ctx)
+{
+    check_expected(error_domain_idx);
+    FPFW_UNUSED(error_domain_guid);
+    FPFW_UNUSED(error_domain_name);
+    FPFW_UNUSED(err_inject_cb);
+    FPFW_UNUSED(err_inject_ctx);
+    function_called();
+}
+
 void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
 {
     check_expected(boot_status);
@@ -70,6 +86,8 @@ idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
 TEST_FUNCTION(test_vab_init_silicon_die0, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)0;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
@@ -93,6 +111,8 @@ TEST_FUNCTION(test_vab_init_silicon_die0, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_silicon_die1, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)1;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
@@ -116,6 +136,8 @@ TEST_FUNCTION(test_vab_init_silicon_die1, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_fpga_die0, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)0;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -138,6 +160,8 @@ TEST_FUNCTION(test_vab_init_fpga_die0, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_fpga_large_die0, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)0;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -160,6 +184,8 @@ TEST_FUNCTION(test_vab_init_fpga_large_die0, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_fpga_large_rvp_die0, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)0;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -182,6 +208,8 @@ TEST_FUNCTION(test_vab_init_fpga_large_rvp_die0, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_fpga_die1, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)1;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -205,6 +233,8 @@ TEST_FUNCTION(test_vab_init_fpga_die1, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_fpga_large_die1, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)1;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -227,6 +257,8 @@ TEST_FUNCTION(test_vab_init_fpga_large_die1, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_fpga_large_rvp_die1, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)1;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_vab_common_init,
                  vab_instances_to_init,
@@ -249,6 +281,8 @@ TEST_FUNCTION(test_vab_init_fpga_large_rvp_die1, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_svp_die0, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)0;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_vab_common_init,
@@ -272,6 +306,8 @@ TEST_FUNCTION(test_vab_init_svp_die0, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_svp_die1, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)1;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     expect_value(__wrap_vab_common_init,
@@ -295,6 +331,8 @@ TEST_FUNCTION(test_vab_init_svp_die1, nullptr, nullptr)
 TEST_FUNCTION(test_vab_init_invalid_plat, nullptr, nullptr)
 {
     const auto test_die = (KNG_DIE_ID)1;
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_VAB);
+    expect_function_call(__wrap_hm_register_error_domain);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     will_return_always(__wrap_idsw_get_platform_sdv, 0x100);
     expect_value(__wrap_vab_common_init, vab_instances_to_init, 0);

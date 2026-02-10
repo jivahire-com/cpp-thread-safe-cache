@@ -45,6 +45,7 @@ extern "C" {
 //
 TEST_FUNCTION(hm_mcp_error_domain_register_listener, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
@@ -62,7 +63,7 @@ TEST_FUNCTION(hm_mcp_error_domain_register_listener_failed, post_ddr_setup, null
 TEST_FUNCTION(hm_mcp_error_injection_cb, post_ddr_setup, nullptr)
 {
     will_return(__wrap_system_info_get_mission_mode, false);
-    will_return_always(__wrap_idhw_is_single_die_boot_en, true);
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_die_id, 0);
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
@@ -97,6 +98,7 @@ TEST_FUNCTION(hm_mcp_error_injection_cb, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(hm_mcp_error_record_submit_listener, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
     expect_function_call_any(__wrap_wait_for_semaphore);

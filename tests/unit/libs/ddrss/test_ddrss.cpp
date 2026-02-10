@@ -145,6 +145,14 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_partial_or_skip, setup, teardown)
     }
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_1);
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
 
     prod_ddrss_lib_init(test_die);
 
@@ -223,6 +231,15 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga, setup, teardown)
     }
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
 
     prod_ddrss_lib_init(test_die);
 }
@@ -305,6 +322,15 @@ TEST_FUNCTION(test_ddrss_lib_init_fpga_warm_start, setup, teardown)
         expect_value(__wrap_nvic_irq_enable, irq_num, this_irq_num);
     }
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
+
     prod_ddrss_lib_init(test_die);
     g_should_check_reset_reason_cfg_knobs = false;
 }
@@ -377,6 +403,14 @@ TEST_FUNCTION(test_ddrss_lib_init_emu, setup, teardown)
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_1);
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
     prod_ddrss_lib_init(test_die);
 }
 
@@ -445,6 +479,15 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp_warm_start_false, setup, teardown)
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
+
     prod_ddrss_lib_init(test_die);
 }
 
@@ -512,6 +555,14 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp_warm_start_true, setup, teardown)
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
     prod_ddrss_lib_init(test_die);
 }
 
@@ -580,6 +631,14 @@ TEST_FUNCTION(test_ddrss_lib_init_rvp_fips_kat_enable, setup, teardown)
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
     prod_ddrss_lib_init(test_die);
 }
 
@@ -656,6 +715,14 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure, setup, teardown)
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
     prod_ddrss_lib_init(test_die);
 }
 
@@ -729,6 +796,14 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure2, setup, teardown)
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
     prod_ddrss_lib_init(test_die);
 }
 
@@ -803,7 +878,14 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_failure_max_mc, setup, teardown)
     expect_function_call(__wrap_crash_dump_bug_check);
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
     prod_ddrss_lib_init(test_die);
 }
 
@@ -878,7 +960,14 @@ TEST_FUNCTION(test_prod_ddrss_lib_init_training_info_failure, setup, teardown)
     expect_function_call(__wrap_crash_dump_bug_check);
 
     expect_value(__wrap_ddrss_atu_unmap_cfg_space, die_num, DIE_0);
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_STD_MEMORY);
+    expect_function_call(__wrap_hm_register_error_domain);
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_DDR);
+    expect_function_call(__wrap_hm_register_error_domain);
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_RHTLM);
+    expect_function_call(__wrap_hm_register_error_domain);
     prod_ddrss_lib_init(test_die);
 }
 

@@ -206,11 +206,25 @@ bool __wrap_system_info_get_mission_mode()
 {
     return mock_type(bool);
 }
+
+bool __wrap_config_get_ras_disable_single_die()
+{
+    return mock_type(bool);
+}
 }
 
 //
 // Tests
 //
+TEST_FUNCTION(test_hm_inject_error_no_ras, post_ddr_setup, nullptr)
+{
+    will_return(__wrap_system_info_get_mission_mode, false);
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_ras_disable_single_die, true);
+
+    assert_true(hm_inject_error() == ACPI_EINJ_INVALID_ACCESS);
+}
+
 TEST_FUNCTION(test_hm_inject_error, post_ddr_setup, nullptr)
 {
     will_return(__wrap_system_info_get_mission_mode, false);
@@ -266,6 +280,7 @@ TEST_FUNCTION(test_hm_inject_error_remote, post_ddr_setup, nullptr)
 TEST_FUNCTION(test_hm_inject_error_singledie, post_ddr_setup, nullptr)
 {
     will_return(__wrap_system_info_get_mission_mode, false);
+    will_return_always(__wrap_config_get_ras_disable_single_die, false);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
     will_return_always(__wrap_idsw_get_die_id, 1);
@@ -289,6 +304,7 @@ TEST_FUNCTION(test_hm_inject_error_singledie, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_inject_error_mission_mode, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_get_mission_mode, true);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);

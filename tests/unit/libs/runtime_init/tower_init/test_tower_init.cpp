@@ -11,6 +11,8 @@
 #include <CMockaWrapper.h> // for CmockaWrapperTest, TEST_FUNCTION, che...
 
 extern "C" {
+#include <FpFwUtils.h>
+#include <cper.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #include <idsw.h>
@@ -51,6 +53,20 @@ void* __wrap_fpfw_init_get_handle(const char* id)
     return mock_ptr_type(void*);
 }
 
+void __wrap_hm_register_error_domain(uint16_t error_domain_idx,
+                                     void* error_domain_guid,
+                                     void* error_domain_name,
+                                     void* err_inject_cb,
+                                     void* err_inject_ctx)
+{
+    check_expected(error_domain_idx);
+    FPFW_UNUSED(error_domain_guid);
+    FPFW_UNUSED(error_domain_name);
+    FPFW_UNUSED(err_inject_cb);
+    FPFW_UNUSED(err_inject_ctx);
+    function_called();
+}
+
 TEST_FUNCTION(test_tower_init, nullptr, nullptr)
 {
     // Set up expectations
@@ -64,6 +80,8 @@ TEST_FUNCTION(test_tower_init, nullptr, nullptr)
     will_return(__wrap_fpfw_init_get_handle, &icc_ctx);
     will_return_always(__wrap_idsw_get_die_id, test_die);
     expect_value(__wrap_tower_init, die_num, test_die);
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_NITOWER);
+    expect_function_call(__wrap_hm_register_error_domain);
     _fpfw_component_tower_cfg.init_fn();
 }
 }

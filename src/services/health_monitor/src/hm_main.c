@@ -11,6 +11,7 @@
 #include <FpFwUtils.h>
 #include <atu_api.h>
 #include <bug_check.h>
+#include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
 #include <health_monitor_events.h>
 #include <health_monitor_i.h>
@@ -166,4 +167,9 @@ void wait_for_ghes_construction()
     BUG_ASSERT_PARAM(d2d_sync_status == SILIBS_SUCCESS, d2d_sync_status, SILIBS_SUCCESS);
 
     set_ghes_table_ready();
+}
+
+bool hm_allow_ras_reporting(void)
+{
+    return !(idhw_is_single_die_boot_en() && config_get_ras_disable_single_die());
 }

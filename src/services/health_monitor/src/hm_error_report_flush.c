@@ -63,6 +63,11 @@ static void hm_flush_ghes_callback(ULONG input)
 
 void hm_flush_GHES_until_OS_boot()
 {
+    if (hm_allow_ras_reporting() == false)
+    {
+        return;
+    }
+
     if (hm_flush_timer.tx_timer_id == TX_TIMER_ID)
     {
         return;

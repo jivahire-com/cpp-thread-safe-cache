@@ -11,6 +11,7 @@ add_executable(${TARGET} ${SOURCES})
 
 target_link_libraries(${TARGET}
     PRIVATE
+    fwlib.lib.utils
     fwlib.lib.init
     fwlib.lib.interface.platform.dbgprint
     ms::cmocka::testrunner
@@ -39,6 +40,7 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     idsw_get_die_id
     vab_common_init
+    hm_register_error_domain
     boot_status_notify_extd
     idsw_get_cpu_type
 )

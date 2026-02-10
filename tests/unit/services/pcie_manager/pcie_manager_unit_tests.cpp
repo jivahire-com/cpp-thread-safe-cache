@@ -88,12 +88,29 @@ bool __wrap_ift_is_enabled(void)
 {
     return ift_enabled;
 }
+
+void __wrap_hm_register_error_domain(uint16_t error_domain_idx,
+                                     void* error_domain_guid,
+                                     void* error_domain_name,
+                                     void* err_inject_cb,
+                                     void* err_inject_ctx)
+{
+    check_expected(error_domain_idx);
+    FPFW_UNUSED(error_domain_guid);
+    FPFW_UNUSED(error_domain_name);
+    FPFW_UNUSED(err_inject_cb);
+    FPFW_UNUSED(err_inject_ctx);
+    function_called();
+}
 }
 
 TEST_FUNCTION(pcie_service_init_fail, NULL, NULL)
 {
     auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
     uint16_t rpss_to_init = ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3));
+
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_function_call(__wrap_hm_register_error_domain);
 
     // Bad args
     expect_value(FPFwErrorRaise, error, (uint32_t)(-EINVAL));
@@ -149,6 +166,8 @@ TEST_FUNCTION(pcie_service_init_success_die1, NULL, NULL)
     auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
     uint16_t rpss_to_init = ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7));
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_function_call(__wrap_hm_register_error_domain);
     expect_any_always(__wrap__txe_event_flags_create, group_ptr);
     expect_any_always(__wrap__txe_event_flags_create, name_ptr);
     expect_any_always(__wrap__txe_event_flags_create, event_control_block_size);
@@ -183,6 +202,8 @@ TEST_FUNCTION(pcie_service_init_success_die1_coldboot, NULL, NULL)
     auto* sched = (PDFWK_SCHEDULE)0xdeadbeef;
     uint16_t rpss_to_init = ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7));
 
+    expect_value(__wrap_hm_register_error_domain, error_domain_idx, ACPI_ERROR_DOMAIN_PCIE);
+    expect_function_call(__wrap_hm_register_error_domain);
     expect_any_always(__wrap__txe_event_flags_create, group_ptr);
     expect_any_always(__wrap__txe_event_flags_create, name_ptr);
     expect_any_always(__wrap__txe_event_flags_create, event_control_block_size);

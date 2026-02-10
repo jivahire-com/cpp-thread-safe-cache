@@ -65,4 +65,5 @@ mock_target(${TARGET}
     ras_arm_fmu_agent_trigger_by_type
     tower_get_ras_agent_entity
     tower_sequence_configure_towers
+    hm_submit_cper
 )

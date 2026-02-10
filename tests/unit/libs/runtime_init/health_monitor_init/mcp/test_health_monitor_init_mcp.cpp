@@ -84,6 +84,11 @@ bool __wrap_idhw_is_single_die_boot_en(void)
     return mock_type(bool);
 }
 
+bool __wrap_config_get_ras_disable_single_die()
+{
+    return mock_type(bool);
+}
+
 #ifdef PLDM_DRV_WORKAROUND
 PDFWK_ASYNC_REQUEST_HEADER __wrap_last_async_request_sent = NULL;
 DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE __wrap_pldm_platform_event_ready_callback = NULL;
@@ -164,7 +169,20 @@ TEST_FUNCTION(hm_svc, nullptr, nullptr)
 
 TEST_FUNCTION(hm_cli_init, nullptr, nullptr)
 {
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call_any(__wrap_hm_cli_init);
+
+    // Call the function under test
+    fpfw_init_result_t result = _fpfw_component_hm_cli_init.init_fn();
+
+    // Perform necessary assertions on result
+    assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(hm_cli_init_no_ras, nullptr, nullptr)
+{
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_ras_disable_single_die, true);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_hm_cli_init.init_fn();

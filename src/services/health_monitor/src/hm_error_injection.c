@@ -73,6 +73,12 @@ acpi_einj_cmd_status_t hm_inject_error(void)
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
+    if (hm_allow_ras_reporting() == false)
+    {
+        HM_LOG_CRIT("RAS disabled");
+        return ACPI_EINJ_INVALID_ACCESS;
+    }
+
     hm_config_t* hm_config = get_hm_config();
 
     hm_map_error_injection_payload();

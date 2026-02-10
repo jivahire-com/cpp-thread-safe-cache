@@ -50,6 +50,7 @@ mock_target(${TARGET}
     hm_post_intercore_init
     hm_cli_init
     idhw_is_single_die_boot_en
+    config_get_ras_disable_single_die
     boot_status_notify_extd
     idsw_get_cpu_type
 )

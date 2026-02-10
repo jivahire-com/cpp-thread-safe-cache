@@ -45,6 +45,7 @@ extern ras_einj_info_t einj_payload_local;
 //
 TEST_FUNCTION(hm_apcore_error_injection_listener, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return(__wrap_system_info_get_mission_mode, false);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
@@ -55,7 +56,6 @@ TEST_FUNCTION(hm_apcore_error_injection_listener, post_ddr_setup, nullptr)
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call_any(hm_error_injection_cb);
     will_return_always(__wrap_idsw_get_die_id, 0);
-    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
 
     will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
     will_return_always(__wrap_atu_unmap, SILIBS_SUCCESS);

@@ -102,4 +102,5 @@ mock_target(${TARGET}
     variable_serv_copy_to_rmss_ram
     variable_service_async_set_variable
     variable_service_initialize_ctx
+    hm_register_error_domain
 )

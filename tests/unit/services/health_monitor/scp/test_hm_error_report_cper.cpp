@@ -66,8 +66,27 @@ int __wrap_idsw_get_platform_sdv(void)
 //
 // Tests
 //
+
+TEST_FUNCTION(test_hm_submit_cper_no_ras, post_ddr_setup, nullptr)
+{
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_ras_disable_single_die, true);
+
+    acpi_err_sec_generic_t general_cper_section = {};
+    general_cper_section.err_misc0 = 0x12;
+    general_cper_section.err_misc1 = 0x34;
+    general_cper_section.err_misc2 = 0x56;
+    general_cper_section.err_misc3 = 0x78;
+
+    acpi_cper_section_t cper_section;
+    cper_section.sec_mesh = general_cper_section;
+
+    hm_submit_cper(ACPI_ERROR_DOMAIN_MESH, ACPI_ERROR_SEVERITY_CORRECTED, &cper_section, sizeof(general_cper_section));
+}
+
 TEST_FUNCTION(test_hm_submit_cper_ce, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
@@ -103,6 +122,7 @@ TEST_FUNCTION(test_hm_submit_cper_ce, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_submit_cper_ce_multi, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
@@ -139,6 +159,7 @@ TEST_FUNCTION(test_hm_submit_cper_ce_multi, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_submit_cper_ue, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
@@ -175,6 +196,7 @@ TEST_FUNCTION(test_hm_submit_cper_ue, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_submit_cper_ue_multi, post_ddr_setup, nullptr)
 {
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
@@ -212,6 +234,7 @@ TEST_FUNCTION(test_hm_submit_cper_ue_multi, post_ddr_setup, nullptr)
 
 TEST_FUNCTION(test_hm_submit_cper_arsm, post_ddr_setup, nullptr)
 {
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
 

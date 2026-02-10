@@ -124,6 +124,12 @@ void hm_submit_cper_internal(uint16_t error_domain_idx,
                              uint32_t err_record_section_size,
                              bool pldm_transfer_allowed)
 {
+    if (hm_allow_ras_reporting() == false)
+    {
+        HM_LOG_CRIT("RAS disabled");
+        return;
+    }
+
     if ((error_domain_idx < ACPI_ERROR_DOMAIN_COUNT) && (err_record_section_size <= sizeof(acpi_cper_section_t)) &&
         err_record_section != NULL && err_record_section_size > 0)
     {

@@ -50,10 +50,20 @@ acpi_einj_cmd_status_t hm_error_injection_cb(ras_einj_info_t* payload, void* ctx
 //
 // Tests
 //
+TEST_FUNCTION(test_hm_register_error_domain_no_ras, post_ddr_setup, nullptr)
+{
+    int error_domain_idx = (int)test_error_domain;
+    will_return(__wrap_idhw_is_single_die_boot_en, true);
+    will_return(__wrap_config_get_ras_disable_single_die, true);
+
+    hm_register_error_domain(error_domain_idx, error_domain_guid, TEST_ERROR_DOMAIN_NAME, hm_error_injection_cb, nullptr);
+}
+
 TEST_FUNCTION(test_hm_register_error_domain, post_ddr_setup, nullptr)
 {
     int error_domain_idx = (int)test_error_domain;
 
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
     hm_register_error_domain(error_domain_idx, error_domain_guid, TEST_ERROR_DOMAIN_NAME, hm_error_injection_cb, nullptr);
@@ -84,6 +94,7 @@ TEST_FUNCTION(test_hm_register_error_domain_nofru, post_ddr_setup, nullptr)
 {
     int error_domain_idx = (int)test_error_domain + 1;
 
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
     expect_function_call(__wrap_wait_for_semaphore);
     expect_function_call(__wrap_release_semaphore);
     hm_register_error_domain(error_domain_idx, NULL, NULL, hm_error_injection_cb, nullptr);

@@ -296,7 +296,10 @@ void ift_execute_test(PDFWK_ASYNC_REQUEST_HEADER request)
 
     uint32_t core_defect_mfg_mask[CORE_DEFECT_MFG_MASK_ARRAY_SIZE] = {0};
 
-    FPFW_DBGPRINT_INFO("IFT Execute Test: DieID=%d, FWIdx=%ld\n", die_id, ift_get_fw_idx());
+    FPFW_DBGPRINT_INFO("IFT Execute Test: DieID=%d, FWIdx=%ld, CurrentFWSize=0x%lx\n",
+                       die_id,
+                       ift_get_fw_idx(),
+                       ift_get_current_fw_size());
 
     /* Increment the test firmware index */
     ift_inc_test_fw_idx();
@@ -310,7 +313,8 @@ void ift_execute_test(PDFWK_ASYNC_REQUEST_HEADER request)
                                            ift_get_pattern_version(),
                                            SCP_EXP_IFT_RESULT_MAX - (g_ift_result_offset >> 1),
                                            (uint32_t*)SCP_EXP_IFT_RESULT_BASE,
-                                           &g_ift_result_offset);
+                                           &g_ift_result_offset,
+                                           BYTES_TO_WORDS(ift_get_current_fw_size()));
 
     FPFW_DBGPRINT_INFO("IFT Execute Test: ExecuteStatus=%d, ResultOffset=%ld\n", g_ift_execute_status, g_ift_result_offset);
 

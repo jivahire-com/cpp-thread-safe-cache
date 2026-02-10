@@ -52,6 +52,8 @@ static void ift_recv_d2d_fw_done_cb(void* context, size_t output_size_bytes, fpf
     BUG_ASSERT_PARAM(status == FPFW_ICC_BASE_STATUS_SUCCESS, status, 0);
     BUG_ASSERT_PARAM(output_size_bytes >= sizeof(rmss_d2d_mailbox_msg_header), output_size_bytes, 0);
 
+    ift_set_current_fw_size(s_ift_tx_msg.ift_fw_size);
+
     ift_execute_test_dfwk();
 
     FPFW_DBGPRINT_INFO("IFT D2D FW download complete msg received from Die 0\n");

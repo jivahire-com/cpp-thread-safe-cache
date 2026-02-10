@@ -92,21 +92,21 @@ TEST_FUNCTION(ppr_setup_no_ppr_var_DIE_0_cold_reset, NULL, NULL)
     // Reuse local test framework buffer as stand-in for arsm0
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
-    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
-    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
-    // -- d0_determine_and_load_ppr_type --
-    // can_ppr_run
+    // -- d0_determine_ppr_type (runs before die sync) --
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
     // Variable not found handled same as PPR_NONE
     will_return(__wrap_variable_service_sync_get_variable, DDRSS_PPR_NONE);
     will_return(__wrap_variable_service_sync_get_variable, KNG_E_NOT_FOUND);
 
-    // send_ppr_type_to_die1
+    // send_ppr_type_to_die1 (runs before die sync)
     expect_value(__wrap_send_ppr_type_to_die1, ppr_type, DDRSS_PPR_NONE);
+
+    // -- synchronize_dies_for_ppr --
+    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
     // Final synchronize dies before ddr_init
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
@@ -126,16 +126,15 @@ TEST_FUNCTION(ppr_setup_no_ppr_var_DIE_1_cold_reset, NULL, NULL)
     test_ddrss_knobs.reset_reason = DDRSS_SYS_RESET_COLD;
 
     // -- init_ppr_shared_memory_arsm0 --
-    // Reuse local test framework buffer as stand-in for arsm0
     will_return(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0]);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
+
+    // -- synchronize_dies_for_ppr --
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_1);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
-    // -- handle_die1_ppr_reception --
-    // receive_ppr_type_from_die0
+    // -- handle_die1_ppr_reception (runs after die sync) --
     will_return(__wrap_receive_ppr_type_from_die0, DDRSS_PPR_NONE);
 
     // Final synchronize dies before ddr_init
@@ -156,16 +155,11 @@ TEST_FUNCTION(ppr_setup_hppr_var_DIE_0_cold_reset, NULL, NULL)
     test_ddrss_knobs.reset_reason = DDRSS_SYS_RESET_COLD;
 
     // -- init_ppr_shared_memory_arsm0 --
-    // Reuse local test framework buffer as stand-in for arsm0
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
-    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
-    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
-    // -- d0_determine_and_load_ppr_type --
-    // can_ppr_run
+    // -- d0_determine_ppr_type (runs before die sync) --
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
     // Variable found: DDRSS_HPPR
@@ -175,8 +169,12 @@ TEST_FUNCTION(ppr_setup_hppr_var_DIE_0_cold_reset, NULL, NULL)
     // Reset PPR variable since ppr_type != DDRSS_PPR_NONE
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
-    // send_ppr_type_to_die1
+    // send_ppr_type_to_die1 (runs before die sync)
     expect_value(__wrap_send_ppr_type_to_die1, ppr_type, DDRSS_HPPR);
+
+    // -- synchronize_dies_for_ppr --
+    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
     // Final sync before ddrss_init
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
@@ -196,16 +194,15 @@ TEST_FUNCTION(ppr_setup_hppr_var_DIE_1_cold_reset, NULL, NULL)
     test_ddrss_knobs.reset_reason = DDRSS_SYS_RESET_COLD;
 
     // -- init_ppr_shared_memory_arsm0 --
-    // Reuse local test framework buffer as stand-in for arsm0
     will_return(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0]);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
+
+    // -- synchronize_dies_for_ppr --
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_1);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
-    // -- handle_die1_ppr_reception --
-    // receive_ppr_type_from_die0
+    // -- handle_die1_ppr_reception (runs after die sync) --
     will_return(__wrap_receive_ppr_type_from_die0, DDRSS_HPPR);
 
     // -- synchronize_dies_before_init --
@@ -226,23 +223,23 @@ TEST_FUNCTION(ppr_setup_hppr_var_DIE_0_warm_reset, NULL, NULL)
     test_ddrss_knobs.reset_reason = DDRSS_SYS_RESET_WARM;
 
     // -- init_ppr_shared_memory_arsm0 --
-    // Reuse local test framework buffer as stand-in for arsm0
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
-    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
-    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
-    // -- d0_determine_and_load_ppr_type --
+    // -- d0_determine_ppr_type (runs before die sync) --
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
     // Variable found: DDRSS_HPPR but warm reset so PPR skipped
     will_return(__wrap_variable_service_sync_get_variable, DDRSS_HPPR);
     will_return(__wrap_variable_service_sync_get_variable, KNG_SUCCESS);
 
-    // send_ppr_type_to_die1 - sends NONE due to warm reset
+    // send_ppr_type_to_die1 - sends NONE due to warm reset (runs before die sync)
     expect_value(__wrap_send_ppr_type_to_die1, ppr_type, DDRSS_PPR_NONE);
+
+    // -- synchronize_dies_for_ppr --
+    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
     // Final sync before ddrss_init
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
@@ -262,15 +259,11 @@ TEST_FUNCTION(ppr_setup_sppr_var_DIE_0_cold_reset, NULL, NULL)
     test_ddrss_knobs.reset_reason = DDRSS_SYS_RESET_COLD;
 
     // -- init_ppr_shared_memory_arsm0 --
-    // Reuse local test framework buffer as stand-in for arsm0
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
-    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
-    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
-    // -- d0_determine_and_load_ppr_type --
+    // -- d0_determine_ppr_type (runs before die sync) --
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
     // Variable found: DDRSS_SPPR
@@ -280,9 +273,14 @@ TEST_FUNCTION(ppr_setup_sppr_var_DIE_0_cold_reset, NULL, NULL)
     // Reset PPR variable since ppr_type != DDRSS_PPR_NONE
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
-    // send_ppr_type_to_die1
+    // send_ppr_type_to_die1 (runs before die sync)
     expect_value(__wrap_send_ppr_type_to_die1, ppr_type, DDRSS_SPPR);
 
+    // -- synchronize_dies_for_ppr --
+    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
+
+    // Final sync before ddrss_init
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
@@ -300,15 +298,11 @@ TEST_FUNCTION(ppr_setup_mppr_var_DIE_0_cold_reset, NULL, NULL)
     test_ddrss_knobs.reset_reason = DDRSS_SYS_RESET_COLD;
 
     // -- init_ppr_shared_memory_arsm0 --
-    // Reuse local test framework buffer as stand-in for arsm0
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
-    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
-    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
-    // -- d0_determine_and_load_ppr_type --
+    // -- d0_determine_ppr_type (runs before die sync) --
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
     // Variable found: DDRSS_MPPR
@@ -318,9 +312,14 @@ TEST_FUNCTION(ppr_setup_mppr_var_DIE_0_cold_reset, NULL, NULL)
     // Reset PPR variable since ppr_type != DDRSS_PPR_NONE
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
-    // send_ppr_type_to_die1
+    // send_ppr_type_to_die1 (runs before die sync)
     expect_value(__wrap_send_ppr_type_to_die1, ppr_type, DDRSS_MPPR);
 
+    // -- synchronize_dies_for_ppr --
+    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
+
+    // Final sync before ddrss_init
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
@@ -356,20 +355,21 @@ TEST_FUNCTION(ppr_setup_invalid_ppr_type_DIE_0_cold_reset, NULL, NULL)
     // -- init_ppr_shared_memory_arsm0 --
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
-    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
-    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
-    // -- d0_determine_and_load_ppr_type --
+    // -- d0_determine_ppr_type (runs before die sync) --
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
     // Variable found with invalid type (value > DDRSS_MPPR)
     will_return(__wrap_variable_service_sync_get_variable, (DDRSS_PPR_TYPE)(DDRSS_MPPR + 1));
     will_return(__wrap_variable_service_sync_get_variable, KNG_SUCCESS);
 
-    // send_ppr_type_to_die1 - sends NONE due to invalid type
+    // send_ppr_type_to_die1 - sends NONE due to invalid type (runs before die sync)
     expect_value(__wrap_send_ppr_type_to_die1, ppr_type, DDRSS_PPR_NONE);
+
+    // -- synchronize_dies_for_ppr --
+    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
     // Final sync before ddrss_init
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
@@ -391,20 +391,21 @@ TEST_FUNCTION(ppr_setup_variable_service_error_DIE_0, NULL, NULL)
     // -- init_ppr_shared_memory_arsm0 --
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
-    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
-    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
-    // -- d0_determine_and_load_ppr_type --
+    // -- d0_determine_ppr_type (runs before die sync) --
     will_return(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
 
     // Variable service returns error (not KNG_SUCCESS or KNG_E_NOT_FOUND)
     will_return(__wrap_variable_service_sync_get_variable, DDRSS_PPR_NONE);
     will_return(__wrap_variable_service_sync_get_variable, KNG_E_ABORT);
 
-    // send_ppr_type_to_die1 - sends NONE due to error
+    // send_ppr_type_to_die1 - sends NONE due to error (runs before die sync)
     expect_value(__wrap_send_ppr_type_to_die1, ppr_type, DDRSS_PPR_NONE);
+
+    // -- synchronize_dies_for_ppr --
+    expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
+    will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
     // Final sync before ddrss_init
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_0);
@@ -426,8 +427,9 @@ TEST_FUNCTION(ppr_setup_sppr_var_DIE_1_cold_reset, NULL, NULL)
     // -- init_ppr_shared_memory_arsm0 --
     will_return(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0]);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
+
+    // -- synchronize_dies_for_ppr --
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_1);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
@@ -454,8 +456,9 @@ TEST_FUNCTION(ppr_setup_mppr_var_DIE_1_cold_reset, NULL, NULL)
     // -- init_ppr_shared_memory_arsm0 --
     will_return(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0]);
 
-    // -- synchronize_dies_for_ppr --
     will_return(__wrap_idhw_is_single_die_boot_en, false);
+
+    // -- synchronize_dies_for_ppr --
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_1);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 

@@ -62,15 +62,15 @@
 // #define SPD_READ_DEBUGPRINT_ENABLE        // Define to enable debug prints for SPD readback
 #define SPD_VERSION                       (3U)
 #define PROD_DDRSS_MAX_DIMM_DQ_PER_SUB_CH (40)
-#define TIMEOUT_1500_MS                   (1500U)
+#define TIMEOUT_MS                        (10000U)
 
 /* -- Prototypes --*/
 static void init_ppr_shared_memory_arsm0(ddrss_cfg_knobs_t* ddrss_cfgs);
 static void init_ppr_sync_msg_ptr(volatile ddr_ppr_sync_msg_t** ppr_sync_msg);
-static void synchronize_dies_for_ppr(DIE_INSTANCE die_id, volatile ddr_ppr_sync_msg_t* ppr_sync_msg);
+static void synchronize_dies_for_ppr(DIE_INSTANCE die_id);
 static void synchronize_dies_before_init(DIE_INSTANCE die_id);
 static DDRSS_PPR_TYPE handle_die1_ppr_reception(volatile ddr_ppr_sync_msg_t* ppr_sync_msg);
-static DDRSS_PPR_TYPE d0_determine_and_load_ppr_type(ddrss_cfg_knobs_t* ddrss_cfgs, volatile ddr_ppr_sync_msg_t* ppr_sync_msg);
+static DDRSS_PPR_TYPE d0_determine_ppr_type(ddrss_cfg_knobs_t* ddrss_cfgs);
 
 /*-- Declarations (Statics and globals) --*/
 static var_service_req_ctx_t ppr_get_var_svc_ctx = {};
@@ -89,7 +89,7 @@ ddrss_addr_t g_ddrss_defect_list[48]; // No pre-init to keep in .bss section
 
 void ppr_setup(ddrss_cfg_knobs_t* ddrss_cfgs)
 {
-    DDRSS_PPR_TYPE ppr_type;
+    DDRSS_PPR_TYPE ppr_type = DDRSS_PPR_NONE;
     DIE_INSTANCE die_id = ddrss_cfgs->die_id;
     volatile ddr_ppr_sync_msg_t* ppr_sync_msg;
 
@@ -108,25 +108,28 @@ void ppr_setup(ddrss_cfg_knobs_t* ddrss_cfgs)
     init_ppr_shared_memory_arsm0(ddrss_cfgs);
     ppr_sync_msg = get_ppr_sync_msg_ptr();
 
-    // Step 2: Synchronize dies
-    synchronize_dies_for_ppr(die_id, ppr_sync_msg);
+    // Step 2: Die 0 determines PPR type and writes it to shared memory before sync
+    if (die_id == SOC_D0)
+    {
+        ppr_type = d0_determine_ppr_type(ddrss_cfgs);
+        send_ppr_type_to_die1(ppr_type, ppr_sync_msg);
+    }
 
-    // Step 3: Die-specific PPR type handling
+    // Step 3: Synchronize dies - guarantees Die 0's write is visible to Die 1
+    synchronize_dies_for_ppr(die_id);
+
+    // Step 4: Die 1 reads PPR type from shared memory after sync
     if (die_id == SOC_D1)
     {
         ppr_type = handle_die1_ppr_reception(ppr_sync_msg);
     }
-    else // SOC_D0
-    {
-        ppr_type = d0_determine_and_load_ppr_type(ddrss_cfgs, ppr_sync_msg);
-    }
 
-    // Step 4: Configure PPR type for ddrss library
+    // Step 5: Configure PPR type for ddrss library
     ddrss_cfgs->ext_knobs.ppr_type = ppr_type;
 
-    // Step 5: Build defect lists if needed (Todo - next PR)
+    // Step 6: Build defect lists if needed (Todo - next PR)
 
-    // Step 6: Final sync before ddr_init()
+    // Step 7: Final sync before ddr_init()
     FPFW_DBGPRINT_INFO("PPR: Final die sync before ddr_init()\n");
     synchronize_dies_before_init(die_id);
 
@@ -185,17 +188,9 @@ ddrss_addr_t* ppr_get_defect_array_ptr(void)
  * @param die_id Current die instance
  * @param ppr_sync_msg Pointer to sync message structure
  */
-static void synchronize_dies_for_ppr(DIE_INSTANCE die_id, volatile ddr_ppr_sync_msg_t* ppr_sync_msg)
+static void synchronize_dies_for_ppr(DIE_INSTANCE die_id)
 {
     int sts = SILIBS_SUCCESS;
-
-    // Only Die 0 initializes the sync message to prevent race condition
-    if (die_id == SOC_D0)
-    {
-        BUG_ASSERT(ppr_sync_msg != NULL);
-        memset((void*)ppr_sync_msg, 0, sizeof(ddr_ppr_sync_msg_t));
-        __DSB();
-    }
 
     // FPFW_DBGPRINT_INFO("PPR: Syncing dies\n");
     mscp_exp_spi_sync_point_t d2d_ddr_sync_point;
@@ -203,7 +198,7 @@ static void synchronize_dies_for_ppr(DIE_INSTANCE die_id, volatile ddr_ppr_sync_
     d2d_ddr_sync_point.remote_write_addr = SCP_EXP_D2D_SYNC_DDR_BDAT_CRC_BASE + sizeof(uint32_t);
     d2d_ddr_sync_point.value = RMSS_D2D_DDR_PPR_SYNC_POINT_BEFORE_BUILD_DEFECT_LIST;
 
-    sts = mscp_exp_spi_synchronize_dies_timeout(d2d_ddr_sync_point, die_id, (uint32_t)TIMEOUT_1500_MS);
+    sts = mscp_exp_spi_synchronize_dies_timeout(d2d_ddr_sync_point, die_id, (uint32_t)TIMEOUT_MS);
     if (sts != SILIBS_SUCCESS)
     {
         PPR_DBG("Error Syncing dies for ppr_setup\n");
@@ -222,7 +217,7 @@ static void synchronize_dies_before_init(DIE_INSTANCE die_id)
                                          .remote_write_addr = SCP_EXP_D2D_SYNC_DDR_BDAT_CRC_BASE + sizeof(uint32_t),
                                          .value = RMSS_D2D_DDR_PPR_SYNC_POINT_READY_FOR_DDRSS_INIT};
 
-    int sts = mscp_exp_spi_synchronize_dies_timeout(sync_pt, die_id, (uint32_t)TIMEOUT_1500_MS);
+    int sts = mscp_exp_spi_synchronize_dies_timeout(sync_pt, die_id, (uint32_t)TIMEOUT_MS);
     if (sts != SILIBS_SUCCESS)
     {
         PPR_DBG("Error Syncing dies at end of ppr_setup\n");
@@ -354,38 +349,23 @@ void ppr_type_reset_variable()
 
 void send_ppr_type_to_die1(DDRSS_PPR_TYPE ppr_type, volatile ddr_ppr_sync_msg_t* ppr_sync_msg)
 {
-    uint64_t ppr_die_sync_timeout_ms = 0;
-
     FPFW_DBGPRINT_INFO("[DIE_0] ENTERED send_ppr_type_to_die1 with ppr_type=%d\n", ppr_type);
     DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_PPR_SYNC_DO_SEND_D1, (uint32_t)ppr_type);
 
-    ppr_sync_msg->ppr_type = (uint8_t)ppr_type;
-    ppr_sync_msg->valid = 0;
+    BUG_ASSERT(ppr_sync_msg != NULL);
+    memset((void*)ppr_sync_msg, 0, sizeof(ddr_ppr_sync_msg_t));
     __DSB();
+
+    ppr_sync_msg->ppr_type = (uint8_t)ppr_type;
     ppr_sync_msg->valid = DDR_PPR_VALID_DATA;
     __DSB();
 
-    uint64_t start_timestamp = gtimer_prodfw_get_counter();
-
-    int timeout = 1000000; // Arbitrary timeout value ~300ms
-    while (timeout-- > 0)
-    {
-        if (ppr_sync_msg->ack == DDR_PPR_VALID_DATA)
-        {
-            FPFW_DBGPRINT_INFO("Die 1 acknowledged receipt of PPR type\n");
-            ppr_die_sync_timeout_ms =
-                ((gtimer_prodfw_get_counter() - start_timestamp) * 1000) / gtimer_prodfw_get_frequency();
-            FPFW_DBGPRINT_INFO("PPRD2D sync took: %llu ms with %d counts remaining\n", ppr_die_sync_timeout_ms, timeout);
-            return;
-        }
-    }
-
-    FPFW_DBGPRINT_INFO("Timeout waiting for Die 1 acknowledgment\n");
-    BUG_ASSERT_PARAM(ppr_sync_msg->ack == DDR_PPR_VALID_DATA, ppr_sync_msg->ack, DDR_PPR_VALID_DATA);
+    FPFW_DBGPRINT_INFO("[DIE_0] PPR type written to shared memory, awaiting die sync\n");
 }
 
 /**
- * @brief Receive PPR type on Die 1 from Die 0 via shared mailbox in ARSM0
+ * @brief Receive PPR type on Die 1 from Die 0 via shared mailbox in ARSM0.
+ *        Must be called after synchronize_dies_for_ppr() guarantees data is available.
  * @param ppr_type Pointer to store the received PPR type
  * @param ppr_sync_msg Pointer to the PPR sync message structure
  */
@@ -395,22 +375,15 @@ void receive_ppr_type_from_die0(DDRSS_PPR_TYPE* ppr_type, volatile ddr_ppr_sync_
 
     FPFW_DBGPRINT_INFO("[DIE_1] ENTERED receive_ppr_type_from_die0\n");
 
-    int timeout = 1000000; // Arbitrary timeout value
-    while (timeout-- > 0)
-    {
-        if (ppr_sync_msg->valid == DDR_PPR_VALID_DATA)
-        {
-            ppr_sync_msg->ack = DDR_PPR_VALID_DATA;
-            __DSB();
-            DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_PPR_SYNC_D1_RECV_D0, (uint32_t)ppr_sync_msg->ppr_type);
-            *ppr_type = (DDRSS_PPR_TYPE)ppr_sync_msg->ppr_type;
-            FPFW_DBGPRINT_INFO("[DIE_1] Received ppr_type=%d from DIE_0\n", *ppr_type);
-            return;
-        }
-    }
+    BUG_ASSERT(ppr_sync_msg != NULL);
+    __DSB(); // Ensure memory barrier before reading shared memory
 
-    FPFW_DBGPRINT_INFO("[DIE_1] TIMEOUT waiting for valid flag - ppr_type still NONE\n");
+    // After die sync, the data must be valid
     BUG_ASSERT_PARAM(ppr_sync_msg->valid == DDR_PPR_VALID_DATA, ppr_sync_msg->valid, DDR_PPR_VALID_DATA);
+
+    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_PPR_SYNC_D1_RECV_D0, (uint32_t)ppr_sync_msg->ppr_type);
+    *ppr_type = (DDRSS_PPR_TYPE)ppr_sync_msg->ppr_type;
+    FPFW_DBGPRINT_INFO("[DIE_1] Received ppr_type=%d from DIE_0\n", *ppr_type);
 }
 
 // ============================================================================
@@ -433,12 +406,12 @@ static DDRSS_PPR_TYPE handle_die1_ppr_reception(volatile ddr_ppr_sync_msg_t* ppr
 }
 
 /**
- * @brief Determine PPR type and load necessary resources (Die 0 only)
+ * @brief Determine PPR type and reset variable if needed (Die 0 only).
+ *        Does not send to Die 1; that is handled separately.
  * @param ddrss_cfgs DDRSS configuration structure
- * @param ppr_sync_msg Pointer to sync message structure
  * @return Final PPR type to execute
  */
-static DDRSS_PPR_TYPE d0_determine_and_load_ppr_type(ddrss_cfg_knobs_t* ddrss_cfgs, volatile ddr_ppr_sync_msg_t* ppr_sync_msg)
+static DDRSS_PPR_TYPE d0_determine_ppr_type(ddrss_cfg_knobs_t* ddrss_cfgs)
 {
     DDRSS_PPR_TYPE ppr_type = DDRSS_PPR_NONE;
     int32_t status;
@@ -468,9 +441,6 @@ static DDRSS_PPR_TYPE d0_determine_and_load_ppr_type(ddrss_cfg_knobs_t* ddrss_cf
         FPFW_DBGPRINT_INFO("Reseting PPR variable to prevent boot loops\n");
         ppr_type_reset_variable();
     }
-
-    // Communicate PPR type to Die 1
-    send_ppr_type_to_die1(ppr_type, ppr_sync_msg);
 
     if (ppr_type == DDRSS_PPR_NONE)
     {

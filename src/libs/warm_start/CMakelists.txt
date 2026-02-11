@@ -14,11 +14,11 @@ target_link_libraries(
         PUBLIC
             fwlib.lib.status
         PRIVATE
+            fwlib.lib.interface.platform.interrupts
             ms::lib::cortex_m7::nvic
             ms::lib::crash_dump
             ms::lib::error_codes
             ms::lib::event_trace::trace
-            ms::lib::threadx
 )
 
 target_include_directories(${TARGET}

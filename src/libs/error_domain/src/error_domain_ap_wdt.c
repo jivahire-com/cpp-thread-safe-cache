@@ -46,14 +46,14 @@
     ATU_MAPPING((die_id == 0 ? AP_TOP_D0_AP_WDOG_C_FRAME_NS_ADDRESS : AP_TOP_D1_AP_WDOG_C_FRAME_NS_ADDRESS), \
                 0,                                                                                           \
                 (ALIGN_UP(AP_TOP_D0_AP_WDOG_C_FRAME_NS_SIZE, ATU_PAGE_SIZE) - 1),                            \
-                {ATU_BUS_ATTR_NS})
+                {ATU_BUS_ATTR_ROOT})
 
 // For AP Watchdog Secure Control Frame
 #define ATU_MAPPING_AP_WDOG_S(die_id)                                                                          \
     ATU_MAPPING((die_id == 0 ? AP_TOP_D0_AP_R_WDOG_C_FRAME_S_ADDRESS : AP_TOP_D1_AP_R_WDOG_C_FRAME_S_ADDRESS), \
                 0,                                                                                             \
                 (ALIGN_UP(AP_TOP_D0_AP_R_WDOG_C_FRAME_S_SIZE, ATU_PAGE_SIZE) - 1),                             \
-                {ATU_BUS_ATTR_S})
+                {ATU_BUS_ATTR_ROOT})
 
 /*-------- Function Prototypes -----------*/
 
@@ -161,7 +161,7 @@ void hm_ap_wdt_isr()
     uint32_t s_base = map_ap_wdog_address(&ap_wdog_s_atu_entry, true);
     static ap_watchdog_timer_control_registers_wcs s_wcs;
     s_wcs.as_uint32 = MMIO_READ32(s_base + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS);
-
+    FPFW_DBGPRINT_INFO("Registering crash dump data.\n");
     // Register crash dump data
     crash_dump_register_address32(&ns_wcs, sizeof(ns_wcs), FPFW_CD_DUMP_PRIORITY_CRITICAL);
     crash_dump_register_address32(&s_wcs, sizeof(s_wcs), FPFW_CD_DUMP_PRIORITY_CRITICAL);
@@ -181,7 +181,7 @@ void hm_ap_wdt_isr()
         crashdump_atu_entry = (atu_map_entry_t)ATU_MAPPING(AP_FW_CRASHDUMP_LOCATION,
                                                            0,
                                                            (ALIGN_UP(AP_FW_CRASHDUMP_REGION_SIZE, ATU_PAGE_SIZE) - 1),
-                                                           {ATU_BUS_ATTR_S});
+                                                           {ATU_BUS_ATTR_ROOT});
 
         status = atu_map(ATU_ID_MSCP, &crashdump_atu_entry);
         BUG_ASSERT_PARAM(status == SILIBS_SUCCESS, status, 0);
@@ -202,7 +202,7 @@ void hm_ap_wdt_isr()
         }
         else
         {
-            FPFW_DBGPRINT_WARNING("AP crashdump transfer not complete, skipping BUG_CHECK.\n");
+            FPFW_DBGPRINT_WARNING("AP crashdump transfer not complete.\n");
         }
 
         // Trigger bug check for AP watchdog timeout
@@ -234,19 +234,13 @@ static void enable_ap_wdt_interrupts(void)
     FPFW_DBGPRINT_INFO("AP WDT interrupt registration\n");
 }
 
-void cold_boot_completion_cb(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
-{
-    FPFW_UNUSED(p_completion_context);
-    FPFW_UNUSED(request);
-    FPFW_DBGPRINT_INFO("Cold boot completion\n");
-}
-
 void register_ap_wdt_error_domain()
 {
     uint32_t size = 0;
     bool ap_wdt_occurred_prev_boot = false;
-    static sos_interface_t sos_interface;
+
     static startup_shutdown_request_t shutdown_request;
+    DfwkAsyncRequestInitialize((void*)&shutdown_request.header, sizeof(shutdown_request));
 
     bool* p_apt_wdt_occurred_ws = ws_data_get(WARM_START_ID_AP_WDT, &size);
 
@@ -261,11 +255,7 @@ void register_ap_wdt_error_domain()
 
     if (ap_wdt_occurred_prev_boot)
     {
-        FPFW_DBGPRINT_INFO("AP WDT occurred previously, invoking a cold reset for recovery.\n");
-
-        sos_shutdown((void*)&sos_interface, &shutdown_request, COLD_RESET_POST_AP_WD_TIMEOUT, cold_boot_completion_cb, NULL);
-
-        return;
+        FPFW_DBGPRINT_INFO("AP WDT occurred on a previous boot.\n");
     }
     //  Register the error domain
     hm_register_error_domain(ACPI_ERROR_DOMAIN_AP_WDT, &AP_WDT_GUID, AP_WDT_FRU, hm_ap_wdt_error_injection_handler, NULL);

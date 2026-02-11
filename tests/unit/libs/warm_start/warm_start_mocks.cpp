@@ -10,8 +10,16 @@
 /*------------- Includes -----------------*/
 #include <CMockaWrapper.h>
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <stdint.h>
+
 extern "C" {
-#include <tx_api.h> // for UINT, TX_MUTEX, CHAR, ULONG
+
+// Define FpFwLock types locally for mocking
+typedef struct _FPFW_LOCK
+{
+    int dummy;
+} FPFW_LOCK, *PFPFW_LOCK;
+typedef uint32_t FPFW_LOCK_STATE;
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -20,48 +28,36 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-// FPFwCDDumpDescriptor desc_list[];
-TX_MUTEX* ws_mock_mutex;
+static PFPFW_LOCK ws_mock_lock = NULL;
+
 /*----------- Mock Functions -------------*/
 
 /*------------- Functions ----------------*/
 
-void init_ws_mutex()
+void __wrap_FpFwLockInitialize(PFPFW_LOCK Lock)
 {
-    ws_mock_mutex = NULL;
+    assert_non_null(Lock);
+    ws_mock_lock = Lock;
+
+    function_called();
 }
 
-UINT __wrap__txe_mutex_create(TX_MUTEX* mutex_ptr, CHAR* name_ptr, UINT inherit, UINT mutex_control_block_size)
+FPFW_LOCK_STATE __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
 {
-    assert_null(ws_mock_mutex); // Ensure this function is called first time
-    assert_non_null(mutex_ptr); // Ensure the mutex pointer is not NULL
-    ws_mock_mutex = mutex_ptr;  // Save the mutex pointer
-
-    check_expected(name_ptr);
-    FPFW_UNUSED(inherit);
-    FPFW_UNUSED(mutex_control_block_size);
+    assert_non_null(Lock);
+    assert_ptr_equal(ws_mock_lock, Lock);
 
     function_called();
 
-    return 0;
+    return mock_type(FPFW_LOCK_STATE);
 }
 
-UINT __wrap__txe_mutex_get(TX_MUTEX* mutex_ptr, ULONG wait_option)
+void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
 {
-    assert_ptr_equal(ws_mock_mutex, mutex_ptr); // Ensure the mutex pointer is the same as the one initialized
-
-    FPFW_UNUSED(wait_option);
+    assert_non_null(Lock);
+    assert_ptr_equal(ws_mock_lock, Lock);
+    check_expected(OldState);
 
     function_called();
-
-    return 0;
-}
-
-UINT __wrap__txe_mutex_put(TX_MUTEX* mutex_ptr)
-{
-    assert_ptr_equal(ws_mock_mutex, mutex_ptr); // Ensure the mutex pointer is the same as the one initialized
-
-    function_called();
-    return 0;
 }
 }

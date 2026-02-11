@@ -18,13 +18,14 @@ PRIVATE
 
 target_link_libraries(${TARGET}
     PRIVATE
+        fwlib.lib.init
+        fwlib.lib.interface.platform.interrupts
         ms::cmocka::testrunner
         ms::lib::warm_start
         silibs::kng_silibs_platform
     PUBLIC
         fwlib.lib.assert
         fwlib.lib.utils
-        ms::lib::threadx
  )
 
 # Defining platform APIs
@@ -40,7 +41,7 @@ unit_test_target(${TARGET})
 
 # Mock the functions needed
 mock_target(${TARGET}
-    _txe_mutex_create
-    _txe_mutex_get
-    _txe_mutex_put
+    FpFwLockInitialize
+    FpFwLockAcquire
+    FpFwLockRelease
 )

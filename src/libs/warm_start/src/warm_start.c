@@ -11,6 +11,7 @@
 #include "warm_start_events.h"
 #include "warm_start_i.h"
 
+#include <FpFwLock.h>
 #include <bug_check.h>
 #include <fpfw_status.h>
 #include <mscp_exp_rmss_memory_map.h>
@@ -18,8 +19,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <tx_api.h> // for TX_MUTEX
-#include <tx_thread.h>
 
 // clang-format off
 #include <cmsis_m7.h>
@@ -38,8 +37,7 @@
 /*-- Declarations (Statics and globals) --*/
 ws_data_list_t* p_ws_list = NULL;
 uint32_t ws_size;
-static TX_MUTEX ws_data_mutex = {};
-unsigned int tx_status = TX_SUCCESS; // Refer tx_api.h for addition api return values
+static FPFW_LOCK ws_data_lock;
 
 /*------------- Functions ----------------*/
 
@@ -103,8 +101,7 @@ void* ws_data_get(mod_ws_data_id_t id, uint32_t* p_size)
         WS_LOG_INFO("[WS] Data Get %d", (int)id);
         WS_ET_INFO_PARAM(WS_ET_TYPE_DATA_GET_ID, id);
 
-        tx_status = tx_mutex_get(&ws_data_mutex, TX_THREAD_GET_SYSTEM_STATE() == 0 ? TX_WAIT_FOREVER : TX_NO_WAIT);
-        BUG_ASSERT(tx_status == TX_SUCCESS);
+        FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&ws_data_lock);
 
         *p_size = 0;
 
@@ -124,8 +121,7 @@ void* ws_data_get(mod_ws_data_id_t id, uint32_t* p_size)
                 p_entry = p_entry->p_next;
             }
         }
-        tx_status = tx_mutex_put(&ws_data_mutex);
-        BUG_ASSERT(tx_status == TX_SUCCESS);
+        FpFwLockRelease(&ws_data_lock, lock_state);
     }
 
     return p_data;
@@ -140,8 +136,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
     WS_LOG_INFO("[WS] Data put %d", (int)id);
     WS_ET_INFO_PARAM(WS_ET_TYPE_DATA_PUT_ID, id);
 
-    tx_status = tx_mutex_get(&ws_data_mutex, TX_THREAD_GET_SYSTEM_STATE() == 0 ? TX_WAIT_FOREVER : TX_NO_WAIT);
-    BUG_ASSERT(tx_status == TX_SUCCESS);
+    FPFW_LOCK_STATE lock_state = FpFwLockAcquire(&ws_data_lock);
 
     if (p_ws_list->magic_id != WARM_START_MAGIC_ID)
     {
@@ -227,8 +222,7 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
         }
     }
 
-    tx_status = tx_mutex_put(&ws_data_mutex);
-    BUG_ASSERT(tx_status == TX_SUCCESS);
+    FpFwLockRelease(&ws_data_lock, lock_state);
 
     // Check for error
     if (p_entry_data == NULL)
@@ -244,11 +238,10 @@ void* ws_data_put(mod_ws_data_id_t id, void* p_data, uint32_t size)
 void warm_start_init(void)
 {
     // Initialize the list attributes
+    FpFwLockInitialize(&ws_data_lock);
 
     p_ws_list = (void*)SCP_EXP_SCP_WARM_START_DATA_BASE;
     ws_size = SCP_EXP_SCP_WARM_START_DATA_SIZE;
-
-    BUG_ASSERT(tx_mutex_create(&ws_data_mutex, "ws data mutex", TX_NO_INHERIT) == TX_SUCCESS);
 
     WS_LOG_INFO("[WARM_START] Init done");
     WS_ET_INFO(WS_ET_TYPE_INIT_DONE);

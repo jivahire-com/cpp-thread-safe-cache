@@ -285,7 +285,7 @@ static PLACED_CODE void print_power_config_limits(power_knobs_t* knobs)
 }
 
 static PLACED_CODE void print_power_config_pidcfg(power_knobs_t* knobs)
-{
+{    
     FpFwCliPrint("\nCtrl loop PID config.\n");
     FpFwCliPrint("--------------------\n");
     FpFwCliPrint("Kp : (%u.%03u)\n", (unsigned int)knobs->pid.kpt / 1000, (unsigned int)knobs->pid.kpt % 1000);

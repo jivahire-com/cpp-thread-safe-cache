@@ -1796,10 +1796,12 @@ TEST_FUNCTION(test_pcie_rpss_init_disabled_rpss_skips_init, test_setup, test_tea
         will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
 
         /*
-         * No further silibs calls should be mocked here (no bifur, deassert,
-         * toggle_clocks, warm_reset). If begin_rpss_init proceeds past the
-         * disabled check, cmocka will fail with unexpected mock calls.
+         * Disabled subsystems still go through a bare-bones initialization.
+         * (default completer setup + tower SAM and APU programming), root
+         * bridge configuration setup and enable_vab_isrs.
          */
+        will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
+        expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << i));
 
         int32_t ret = pcie_sched_sync_op(&(r.header));
         assert_int_equal(ret, 0);
@@ -1848,7 +1850,12 @@ TEST_FUNCTION(test_pcie_rpss_init_single_disabled_rpss, test_setup, test_teardow
         will_return(__wrap_pciess_config_entity, false);
         will_return(__wrap_pciess_config_entity, SILIBS_SUCCESS);
 
-        /* No bifur/deassert/toggle_clocks - disabled RPSS skips these */
+        /*
+         * Disabled RPSS still performs bare-bones init: config_ss_for_bifur,
+         * populate_rb_configs (real), and enable_vab_isrs.
+         */
+        will_return(__wrap_pciess_config_ss_for_bifur, SILIBS_SUCCESS);
+        expect_value(__wrap_enable_vab_isrs, vab_instances_to_init, (1 << RPSS4));
 
         int32_t ret = pcie_sched_sync_op(&(r.header));
         assert_int_equal(ret, 0);

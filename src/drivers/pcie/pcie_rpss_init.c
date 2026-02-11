@@ -87,15 +87,25 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
                                true);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
-    /* Skip initialization if RPSS is disabled by knob */
+    pciess_device_interface_t* iface = (pciess_device_interface_t*)(req->OwningInterface);
+    pciess_device_t* dev = (pciess_device_t*)(iface->dev);
+
+    /* Only carry out bare bones subsystem initialization if an RPSS is disabled by knob */
     if (pcie_cfg->pcie_ss_en == false)
     {
-        FPFW_DBGPRINT_INFO("[PCIe Init] RPSS%d: Disabled by knob, skipping initialization.\n", rpss_id);
+        pciess_config_ss_for_bifur(rpss);
+
+        populate_rb_configs_from_rpss_entity(rpss, dev->rb_configs);
+
+        /* Enable RPSS VAB ISRs so that we still get VAB errors reported */
+        enable_vab_isrs((1 << rpss->id));
         return SILIBS_E_SUPPORT;
     }
 
-    // Cold Boot info comes from the Request orginator
-    // By default its assumes to be false
+    /*
+     * Cold Boot info comes from the Request originator. By default its assumed
+     * to be false
+     */
     if ((r->p_sent_data) != NULL)
     {
         is_cold_boot = *((bool*)(r->p_sent_data));
@@ -122,8 +132,6 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
             sts = pciess_phys_toggle_clocks(rpss);
             BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, rpss_id, sts);
 
-            pciess_device_interface_t* iface = (pciess_device_interface_t*)(req->OwningInterface);
-            pciess_device_t* dev = (pciess_device_t*)(iface->dev);
             populate_rb_configs_from_rpss_entity(rpss, dev->rb_configs);
         }
         else

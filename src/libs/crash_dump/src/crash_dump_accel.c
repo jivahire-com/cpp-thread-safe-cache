@@ -589,13 +589,13 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
 
     if (accel_type == ACCEL_ID_SDM)
     {
-        cd_ddr_addr = CRASH_DUMP_FULL_SDM_ADDR;
-        cd_file_size = FPFW_MIN(CRASH_DUMP_FULL_SDM_SIZE, cd_file_size);
+        cd_ddr_addr = ctx->die_index == 0 ? CRASH_DUMP_FULL_SDM0_ADDR : CRASH_DUMP_FULL_SDM1_ADDR;
+        cd_file_size = FPFW_MIN(CRASH_DUMP_FULL_SIZE_PER_CORE, cd_file_size);
     }
     else
     {
-        cd_ddr_addr = CRASH_DUMP_FULL_CDED_ADDR;
-        cd_file_size = FPFW_MIN(CRASH_DUMP_FULL_CDED_SIZE, cd_file_size);
+        cd_ddr_addr = ctx->die_index == 0 ? CRASH_DUMP_FULL_CDED0_ADDR : CRASH_DUMP_FULL_CDED1_ADDR;
+        cd_file_size = FPFW_MIN(CRASH_DUMP_FULL_SIZE_PER_CORE, cd_file_size);
     }
 
     accel_dtcm_addr = atu_svc_accel_atu_addr(accel_type) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;

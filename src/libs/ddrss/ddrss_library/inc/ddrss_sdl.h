@@ -10,7 +10,7 @@
 
 
 /*----------- Nested includes ------------*/
-#include <stdint.h>
+#include <atu_lib.h>
 #include <cper.h>
 #include <ddr_erg0_regs.h>
 #include <ddr_erg1_regs.h>
@@ -263,7 +263,8 @@ void copy_empty_sdl_header_to_reserved_ddr(uintptr_t dest_addr_ddr);
 void sdl_map_atu(uint64_t base_addr);
 void sdl_unmap_atu(void);
 uintptr_t sdl_get_atu_start_addr(void); // Change
-uintptr_t get_sdl_arsm0_addr(void);
+uintptr_t get_sdl_arsm0_addr(atu_map_entry_t *map_entry);
+void unmap_sdl_arsm0(atu_map_entry_t *map_entry);
 void load_shared_defect_list_to_DDR(void);
 void ddr_publish_sdl_addr(void);
 void cleanup_after_sdl_load(void);

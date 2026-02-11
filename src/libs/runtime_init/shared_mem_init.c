@@ -54,15 +54,48 @@ FPFW_INIT_COMPONENT(shared_mem, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sys
     if (!system_info_is_warm_start())
     {
         // ARSM zero-init
-        uintptr_t arsm_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR;
-        if (idsw_get_die_id() != DIE_0)
+        if (idsw_get_die_id() == DIE_0)
         {
-            arsm_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR;
-        }
+            // Clear DIE0 ARSM ROOT
+            uintptr_t arsm_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR;
+            memset((void*)arsm_base, 0, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_SIZE);
+            FPFW_DBGPRINT_INFO("Cleared ARSM ROOT at 0x%08lX\n", arsm_base);
 
-        // The ARSM size is the same on either die.
-        memset((void*)arsm_base, 0, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_SIZE);
-        FPFW_DBGPRINT_INFO("Cleared ARSM at 0x%08lX\n", arsm_base);
+            atu_map_entry_t arsm_atu_entry = {
+                .ap_base_address = D0_ARSM_TFA_RMM_SHARED_BASE,
+                .mscp_start_address = 0,
+                .mscp_end_address = D0_MSCP_ARSM_SRAM_SIZE - D0_ARSM_TFA_RMM_SHARED_BASE - 1,
+                .attribute = {ATU_BUS_ATTR_NS},
+            };
+
+            // Clear DIE0 ARSM TFA region
+            result = atu_map(ATU_ID_MSCP, &arsm_atu_entry);
+            if (result != SILIBS_SUCCESS)
+            {
+                FPFW_DBGPRINT_ERROR("Failed to map ARSM TFA shared region, status=%d\n", result);
+                goto done;
+            }
+            memset((void*)(uintptr_t)arsm_atu_entry.mscp_start_address, 0, D0_MSCP_ARSM_SRAM_SIZE - D0_ARSM_TFA_RMM_SHARED_BASE);
+            FPFW_DBGPRINT_INFO("Cleared ARSM TFA shared region at 0x%08lX\n", arsm_atu_entry.mscp_start_address);
+            result = atu_unmap(ATU_ID_MSCP, &arsm_atu_entry);
+            if (result != SILIBS_SUCCESS)
+            {
+                FPFW_DBGPRINT_ERROR("Failed to unmap ARSM TFA shared region, status=%d\n", result);
+                goto done;
+            }
+        }
+        else
+        {
+            // Clear DIE1 ARSM ROOT
+            uintptr_t arsm_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR;
+            memset((void*)arsm_base, 0, MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_SIZE);
+            FPFW_DBGPRINT_INFO("Cleared ARSM ROOT at 0x%08lX\n", arsm_base);
+
+            // Clear DIE1 ARSM NS
+            arsm_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR;
+            memset((void*)arsm_base, 0, MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_SIZE);
+            FPFW_DBGPRINT_INFO("Cleared ARSM NS at 0x%08lX\n", arsm_base);
+        }
 
         // RSM zero-init
         atu_map_entry_t rsm_atu_entry = ATU_MAPPING_VOYAGER_RSM_RAM(idsw_get_die_id());

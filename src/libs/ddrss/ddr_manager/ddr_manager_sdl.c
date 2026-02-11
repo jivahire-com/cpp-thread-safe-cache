@@ -108,9 +108,25 @@ void sdl_get_mem_ctx(var_service_shared_mem_t* mem_ctx)
     mem_ctx->max_payload_size = SCP_EXP_SDL_LOAD_SIZE;
 }
 
-uintptr_t get_sdl_arsm0_addr(void)
+uintptr_t get_sdl_arsm0_addr(atu_map_entry_t* map_entry)
 {
-    return (uintptr_t)MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_SDL_RESERVED_BASE);
+    map_entry->ap_base_address = D0_ARSM_SDL_RESERVED_BASE;
+    map_entry->mscp_start_address = 0;
+    map_entry->mscp_end_address = ALIGN_UP(D0_ARSM_SDL_RESERVED_SIZE, ATU_PAGE_SIZE) - 1;
+    map_entry->attribute.axprot1 = ATU_BUS_ATTR_SET; // ATU_BUS_ATTR_NS
+    map_entry->attribute.axnse = ATU_BUS_ATTR_CLR;   // ATU_BUS_ATTR_NS
+
+    int sts = atu_map(ATU_ID_MSCP, map_entry);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
+
+    return map_entry->mscp_start_address;
+}
+
+void unmap_sdl_arsm0(atu_map_entry_t* map_entry)
+{
+    BUG_ASSERT_PARAM(map_entry->mscp_start_address != 0, map_entry->mscp_start_address, 0);
+    int sts = atu_unmap(ATU_ID_MSCP, map_entry);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 }
 
 // ============================================================================
@@ -345,13 +361,14 @@ void store_sdl_var_sync_from_arsm0(void)
         return;
     }
 
+    atu_map_entry_t arsm0_map_entry = {0};
     uint16_t sdl_var_name[] = SDL_VAR_NAME;
     const guid_t sdl_var_guid = SDL_VAR_GUID;
 
     sdl_init_var_ctx(&g_sdl_mem_ctx, &g_sdl_req_ctx);
 
     // Find ATU start address for SDL in ARSM0
-    g_sdl_set_var_req.data = (uint8_t*)get_sdl_arsm0_addr();
+    g_sdl_set_var_req.data = (uint8_t*)get_sdl_arsm0_addr(&arsm0_map_entry);
     sdl_fill_var_params(&g_sdl_set_var_req,
                         (uint16_t*)sdl_var_name,
                         sizeof(sdl_var_name),
@@ -362,6 +379,7 @@ void store_sdl_var_sync_from_arsm0(void)
     BUG_ASSERT(g_sdl_req_ctx.is_initialized);
     variable_service_sync_set_variable(&g_sdl_req_ctx, &g_sdl_set_var_req);
     variable_service_unlock_get_var_ctx(&g_sdl_req_ctx);
+    unmap_sdl_arsm0(&arsm0_map_entry);
 }
 
 // ============================================================================

@@ -408,13 +408,13 @@ uint32_t get_arsm_attr_address(uint32_t attributes, atu_map_entry_t* atu_entry, 
     *atu_entry = (atu_map_entry_t){
         .ap_base_address = AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS,
         .mscp_start_address = 0,
-        .mscp_end_address = ALIGN_UP(AP_TOP_D0_ARSM_SHARED_SRAM_SIZE, ATU_PAGE_SIZE) - 1,
+        .mscp_end_address = ATU_PAGE_SIZE - 1, // Single ATU page
         .attribute.as_uint32 = attributes,
     };
     if (idsw_get_die_id() == DIE_1)
     {
         atu_entry->ap_base_address = AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS;
-        atu_entry->mscp_end_address = ALIGN_UP(AP_TOP_D1_ARSM_SHARED_SRAM_SIZE, ATU_PAGE_SIZE) - 1;
+        atu_entry->mscp_end_address = ATU_PAGE_SIZE - 1; // Single ATU page
     }
 
     // Unmap if already mapped

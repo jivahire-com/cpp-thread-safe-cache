@@ -458,9 +458,12 @@ int32_t __wrap_variable_service_async_set_variable(var_service_req_ctx_t* var_se
     return 0;
 }
 
-uintptr_t __wrap_get_sdl_arsm0_addr(void)
+uintptr_t __wrap_get_sdl_arsm0_addr(atu_map_entry_t* map_entry)
 {
-    return (mock_type(uintptr_t));
+    assert_non_null(map_entry);
+    map_entry->mscp_start_address = mock_type(uint32_t);
+
+    return (uintptr_t)map_entry->mscp_start_address;
 }
 
 void __wrap_send_ppr_type_to_die1(DDRSS_PPR_TYPE ppr_type, volatile ddr_ppr_sync_msg_t* ppr_sync_msg)

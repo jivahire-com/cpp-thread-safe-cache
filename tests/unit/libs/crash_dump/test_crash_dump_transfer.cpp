@@ -42,32 +42,12 @@ typedef struct
 /*-- Declarations (Statics and globals) --*/
 crash_dump_file_test_t crash_dump_region[2 * CRASH_DUMP_CORE_NUM] = {};
 
-extern uint8_t* __real_get_crash_dump_region_address(atu_map_entry_t* die1_entry, KNG_DIE_ID die_id, crash_dump_core_t core_id);
-
 /*------------- Functions ----------------*/
 //
 // Mocks
 //
-int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+uint8_t* __wrap_get_crash_dump_region_address(KNG_DIE_ID die_id, crash_dump_core_t core_id)
 {
-    assert_int_equal(atu_id, ATU_ID_MSCP);
-    assert_non_null(atu_map_entry);
-
-    return mock_type(int);
-}
-
-int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
-{
-    assert_int_equal(atu_id, ATU_ID_MSCP);
-    assert_non_null(atu_map_entry);
-
-    return mock_type(int);
-}
-
-uint8_t* __wrap_get_crash_dump_region_address(atu_map_entry_t* die1_entry, KNG_DIE_ID die_id, crash_dump_core_t core_id)
-{
-    assert_non_null(die1_entry);
-
     return (uint8_t*)&crash_dump_region[(int)die_id * CRASH_DUMP_CORE_NUM + (int)core_id];
 }
 
@@ -170,8 +150,6 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump_no_dump, nullptr, test_teardown
     crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .core_index = CRASH_DUMP_CORE_MCP};
     will_return_always(__wrap_crash_dump_context, &context);
 
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
-
     for (int i = 0; i < 12; i++)
     {
         expect_any(__wrap_wait_for_semaphore, id);
@@ -180,8 +158,6 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump_no_dump, nullptr, test_teardown
         expect_any(__wrap_release_semaphore, id);
         expect_function_call(__wrap_release_semaphore);
     }
-
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     // Act
     crash_dump_pldm_transfer_dump();
@@ -198,7 +174,6 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump_error, test_setup, test_teardow
     crash_dump_context_t context = {.type_ctx = {NULL, &type_context}, .core_index = CRASH_DUMP_CORE_MCP};
     will_return_always(__wrap_crash_dump_context, &context);
 
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
     for (int i = 0; i < 9; i++)
     {
         expect_any(__wrap_wait_for_semaphore, id);
@@ -216,8 +191,6 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump_error, test_setup, test_teardow
     expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
 #endif
 
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
-
     // Act
     crash_dump_pldm_transfer_dump();
 
@@ -233,7 +206,6 @@ TEST_FUNCTION(test_crash_dump_pldm_transfer_dump, test_setup, test_teardown)
     will_return_always(__wrap_crash_dump_context, &context);
 
     // Set expectations
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
     for (int i = 0; i < 9; i++)
     {
         expect_any(__wrap_wait_for_semaphore, id);
@@ -280,7 +252,6 @@ TEST_FUNCTION(test_crash_dump_transfer_dump_platform_event_cb, test_setup, test_
     uint8_t dest[1024] = {0}; // Destination buffer for the transfer
 
     // Open the stream
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
     for (int i = 0; i < 9; i++)
     {
         expect_any(__wrap_wait_for_semaphore, id);
@@ -338,7 +309,6 @@ TEST_FUNCTION(test_crash_dump_transfer_dump_platform_event_cb, test_setup, test_
     expect_function_call(__wrap_wait_for_semaphore);
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     crash_dump_stream_close(&crash_dump_stream, true);
 }
@@ -353,7 +323,6 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete, test_setup, test_teardown)
 
     // Open the crash dump stream
     crash_dump_stream_t crash_dump_stream = {};
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
     for (int i = 0; i < 9; i++)
     {
         expect_any(__wrap_wait_for_semaphore, id);
@@ -371,7 +340,6 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete, test_setup, test_teardown)
     expect_function_call(__wrap_wait_for_semaphore);
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     expect_any(__wrap_wait_for_semaphore, id);
     expect_any(__wrap_wait_for_semaphore, key);
@@ -400,7 +368,6 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete_with_fail, test_setup, test_t
 
     // Open the crash dump stream
     crash_dump_stream_t crash_dump_stream = {};
-    will_return(__wrap_atu_map, SILIBS_SUCCESS);
     for (int i = 0; i < 9; i++)
     {
         expect_any(__wrap_wait_for_semaphore, id);
@@ -413,8 +380,6 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete_with_fail, test_setup, test_t
     crash_dump_stream_open(&crash_dump_stream);
 
     // Set expectations
-    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
-
     expect_any(__wrap_wait_for_semaphore, id);
     expect_any(__wrap_wait_for_semaphore, key);
     expect_function_call(__wrap_wait_for_semaphore);
@@ -430,22 +395,5 @@ TEST_FUNCTION(test_crash_dump_pldm_on_ppe_complete_with_fail, test_setup, test_t
 
     // Assert
     assert_true(full_header.status == CRASH_DUMP_IN_USE);
-}
-
-TEST_FUNCTION(test_get_crash_dump_region_address, nullptr, nullptr)
-{
-    atu_map_entry_t die1_map_entry = {.mscp_start_address = 0x1000000};
-    uint8_t* address = __real_get_crash_dump_region_address(&die1_map_entry, DIE_1, CRASH_DUMP_CORE_SCP);
-
-    // Check if the address is correctly calculated
-    assert_non_null(address);
-    assert_true((uintptr_t)address == (uintptr_t)(0x1000000 + (CRASH_DUMP_CORE_SCP * CRASH_DUMP_FULL_SIZE_PER_CORE)));
-
-    address = __real_get_crash_dump_region_address(&die1_map_entry, DIE_0, CRASH_DUMP_CORE_SCP);
-    assert_non_null(address);
-    assert_true((uintptr_t)address == (uintptr_t)(CRASH_DUMP_FULL_SCP_ADDR));
-
-    address = __real_get_crash_dump_region_address(NULL, DIE_0, CRASH_DUMP_CORE_MCP);
-    assert_null(address); // Expect null when die1_map_entry is NULL
 }
 }

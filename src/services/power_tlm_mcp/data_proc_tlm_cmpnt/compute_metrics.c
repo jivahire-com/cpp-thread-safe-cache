@@ -38,9 +38,9 @@
 
 #ifdef PWR_TLM_TEST_OVERRIDE
 
-    #undef MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR
+    #undef MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR
 static uint8_t test_array_24hrs[ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_PWR_TLM_LARGE_DATA_BASE) + D1_ARSM_MSCP_PWR_TLM_LARGE_DATA_SIZE];
-    #define MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR (test_array_24hrs)
+    #define MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR (test_array_24hrs)
 #endif
 
 computed_metrics_2_min_t computed_metrics_2_mins = {0};
@@ -48,7 +48,7 @@ computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins = {0};
 computed_metrics_oob_t computed_metrics_oob = {0};
 
 computed_metrics_24_hrs_t* p_computed_metrics_24_hrs = (computed_metrics_24_hrs_t*)(uintptr_t)((
-    MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_PWR_TLM_LARGE_DATA_BASE)));
+    MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_PWR_TLM_LARGE_DATA_BASE)));
 
 bool core_is_active[NUMBER_OF_CORES_PER_DIE] = {0};
 bool in_band_publishing_active = false;

@@ -216,14 +216,14 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
     case MCP_ERROR_TYPE_RT_ARSM_CE:
     case MCP_ERROR_TYPE_RL_ARSM_CE:
         test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
-                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
         break;
 
     case MCP_ERROR_TYPE_S_ARSM_UE:
     case MCP_ERROR_TYPE_NS_ARSM_UE:
     case MCP_ERROR_TYPE_RL_ARSM_UE:
         test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
-                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
         break;
 
     case MCP_ERROR_TYPE_S_ARSM_OVERFLOW:
@@ -231,16 +231,16 @@ nvic_status_t __wrap_nvic_irq_set_isr(uint32_t irq_num, isr_callback_fn_sans_par
     case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
     case MCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
         test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK,
-                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+                                            MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
         break;
     case MCP_ERROR_TYPE_S_RSM_CE:
         test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
-                                           MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+                                           MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
         break;
 
     case MCP_ERROR_TYPE_S_RSM_UE:
         test_trigger_shared_sram_rsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
-                                           MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
+                                           MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_RAM_DEFAULT_OFFSET);
         break;
 
     case HW_INT_MCP_RSM_RAM_FHI_INT:
@@ -789,13 +789,13 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
         case MCP_ERROR_TYPE_WATCHDOG:
             test_watchdog_handler();
             break;
-        case MCP_ERROR_TYPE_NS_ARSM_CE:
+        case MCP_ERROR_TYPE_RT_ARSM_CE:
             will_return(__wrap_is_cached_space, false);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
-                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR);
             break;
         case MCP_ERROR_TYPE_S_ARSM_CE:
-        case MCP_ERROR_TYPE_RT_ARSM_CE:
+        case MCP_ERROR_TYPE_NS_ARSM_CE:
         case MCP_ERROR_TYPE_RL_ARSM_CE:
             expect_function_call(__wrap_atu_find_map);
             expect_function_call(__wrap_atu_unmap);
@@ -806,14 +806,14 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_atu_unmap);
             expect_function_call(__wrap_atu_map);
             break;
-        case MCP_ERROR_TYPE_NS_ARSM_UE:
+        case MCP_ERROR_TYPE_RT_ARSM_UE:
             will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
             will_return(__wrap_is_cached_space, false);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
-                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR);
             break;
         case MCP_ERROR_TYPE_S_ARSM_UE:
-        case MCP_ERROR_TYPE_RT_ARSM_UE:
+        case MCP_ERROR_TYPE_NS_ARSM_UE:
         case MCP_ERROR_TYPE_RL_ARSM_UE:
             expect_function_call(__wrap_atu_find_map);
             expect_function_call(__wrap_atu_unmap);
@@ -825,15 +825,15 @@ void test_mcp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_atu_unmap);
             expect_function_call(__wrap_atu_map);
             break;
-        case MCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
+        case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
             will_return(__wrap_is_cached_space, false);
             will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
             will_return(__wrap_is_cached_space, false);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK,
-                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR);
             break;
         case MCP_ERROR_TYPE_S_ARSM_OVERFLOW:
-        case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
+        case MCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
         case MCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
             expect_function_call(__wrap_atu_find_map);
             expect_function_call(__wrap_atu_unmap);

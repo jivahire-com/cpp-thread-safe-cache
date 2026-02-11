@@ -31,4 +31,4 @@ void set_crash_dump_context(crash_dump_context_t* ctx);
  *
  * @return Pointer to crash dump raw buffer.
  */
-uint8_t* get_crash_dump_region_address(atu_map_entry_t* die1_entry, KNG_DIE_ID die_id, crash_dump_core_t core_id);
+uint8_t* get_crash_dump_region_address(KNG_DIE_ID die_id, crash_dump_core_t core_id);

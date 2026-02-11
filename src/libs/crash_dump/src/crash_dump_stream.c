@@ -41,58 +41,6 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-/**
- * @brief Map the crash dump region for die 1
- *
- * @param die1_crashdump_map Pointer to the ATU map entry for die 1
- * @return true Mapping successful
- * @return false Mapping failed
- */
-static bool map_die1_crash_dump_region(atu_map_entry_t* die1_crashdump_map)
-{
-    if (die1_crashdump_map == NULL)
-    {
-        return false;
-    }
-
-    die1_crashdump_map->ap_base_address = CRASH_DUMP_DDR_DIE_1_AP_BASE_ADDR;
-    die1_crashdump_map->mscp_start_address = 0;
-    die1_crashdump_map->mscp_end_address = CRASH_DUMP_DDR_PER_DIE_SIZE - 1;
-    die1_crashdump_map->attribute.axprot1 = ATU_BUS_ATTR_SET; // ATU_BUS_ATTR_NS
-    die1_crashdump_map->attribute.axnse = ATU_BUS_ATTR_CLR;   // ATU_BUS_ATTR_NS
-
-    int silib_status = atu_map(ATU_ID_MSCP, die1_crashdump_map);
-    if (silib_status != SILIBS_SUCCESS)
-    {
-        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_STREAM_ATU_ERROR, silib_status);
-        return false;
-    }
-    return true;
-}
-
-/**
- * @brief Unmap the crash dump region for die 1
- *
- * @param die1_crashdump_map Pointer to the ATU map entry for die 1
- * @return true Unmapping successful
- * @return false Unmapping failed
- */
-static bool unmap_die1_crash_dump_region(atu_map_entry_t* die1_crashdump_map)
-{
-    int silib_status = atu_unmap(ATU_ID_MSCP, die1_crashdump_map);
-    if (silib_status != SILIBS_SUCCESS)
-    {
-        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_STREAM_ATU_ERROR, silib_status);
-        return false;
-    }
-
-    // Reset the map entry to default values to reuse atu map entry later
-    die1_crashdump_map->mscp_start_address = 0;
-    die1_crashdump_map->mscp_end_address = CRASH_DUMP_DDR_PER_DIE_SIZE - 1;
-
-    return true;
-}
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmultichar"
 #ifdef CRASH_DUMP_AGGR_CHUNK_ALIGN_WORKAROUND
@@ -229,13 +177,6 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream)
     // Reset the stream state
     memset(stream, 0, sizeof(crash_dump_stream_t));
 
-    // Map the die1 crash dump region
-    if (!map_die1_crash_dump_region(&stream->die1_map_entry))
-    {
-        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_STREAM_OPEN_ERROR);
-        return false;
-    }
-
     crash_dump_context_t* ctx = crash_dump_context();
     crash_dump_type_context_t* type_context = ctx->type_ctx[CRASH_DUMP_TYPE_FULL];
 
@@ -248,7 +189,7 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream)
         for (crash_dump_core_t core = 0; core < CRASH_DUMP_CORE_NUM; core++, metadata_chunk_index++, payload_chunk_index++)
         {
             // Get the crash dump addresses for each core
-            uint8_t* crash_dump_address = get_crash_dump_region_address(&stream->die1_map_entry, die, core);
+            uint8_t* crash_dump_address = get_crash_dump_region_address(die, core);
             DUMP_HEADER* header = (DUMP_HEADER*)crash_dump_address;
 
             if (header->Magic == DUMP_HEADER_MAGIC_COMPLETE)
@@ -366,7 +307,6 @@ bool crash_dump_stream_open(crash_dump_stream_t* stream)
     }
     else
     {
-        unmap_die1_crash_dump_region(&stream->die1_map_entry);
         CRASH_DUMP_ET_WARNING(CRASH_DUMP_ET_TYPE_STREAM_OPEN_EMPTY);
     }
 
@@ -399,7 +339,7 @@ void crash_dump_stream_close(crash_dump_stream_t* stream, bool invalidate_dumps)
             for (crash_dump_core_t core = 0; core < CRASH_DUMP_CORE_NUM; core++)
             {
                 // Get the crash dump addresses for each core
-                DUMP_HEADER* header = (DUMP_HEADER*)get_crash_dump_region_address(&stream->die1_map_entry, die, core);
+                DUMP_HEADER* header = (DUMP_HEADER*)get_crash_dump_region_address(die, core);
                 if (header != NULL)
                 {
                     header->Magic = 0; // Invalidate the magic number
@@ -413,9 +353,6 @@ void crash_dump_stream_close(crash_dump_stream_t* stream, bool invalidate_dumps)
         }
         release_semaphore(type_context->semaphore.id);
     }
-
-    // Unmap the die1 crash dump region
-    unmap_die1_crash_dump_region(&stream->die1_map_entry);
 }
 
 static bool crash_dump_stream_get_chunk_index(crash_dump_stream_t* stream,

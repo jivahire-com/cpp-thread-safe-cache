@@ -99,8 +99,6 @@ mock_target(${TARGET}
     CdRegisterCallback
     CdRegisterRegisterSet
     CdRegisterCustomChunk
-    atu_map
-    atu_unmap
     atu_svc_accel_atu_addr
     fpfw_icc_base_recv
     fpfw_icc_base_recv_sync

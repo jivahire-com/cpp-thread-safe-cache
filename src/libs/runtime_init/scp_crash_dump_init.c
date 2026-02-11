@@ -287,12 +287,12 @@ FPFW_INIT_COMPONENT(cd_hsp, FPFW_INIT_DEPENDENCIES("cd_init", "icc_hspmbx"))
 
 FPFW_INIT_COMPONENT(cd_pomesh, FPFW_INIT_DEPENDENCIES("cd_init", "ddr", "hw_sem"))
 {
-    static crash_dump_type_context_t full_dump_ctx = {.type = CRASH_DUMP_TYPE_FULL,
-                                                      .mem_pool_addr = CRASH_DUMP_FULL_SCP_ADDR,
-                                                      .mem_pool_size = CRASH_DUMP_FULL_SCP_SIZE,
-                                                      .header = (crash_dump_header_t*)CRASH_DUMP_FULL_HEADER_ADDR};
-
     crash_dump_context_t* context = crash_dump_context();
+
+    static crash_dump_type_context_t full_dump_ctx = {.type = CRASH_DUMP_TYPE_FULL,
+                                                      .header = (crash_dump_header_t*)CRASH_DUMP_FULL_HEADER_ADDR};
+    full_dump_ctx.mem_pool_addr = (uint64_t)(intptr_t)CRASH_DUMP_CORE_ADDRESS(context->die_index, context->core_index);
+    full_dump_ctx.mem_pool_size = CRASH_DUMP_FULL_SIZE_PER_CORE;
 
     // Set the semaphore key
     // If initializing a crash dump on SVP use a local semaphore within the MSCP EXP Block.

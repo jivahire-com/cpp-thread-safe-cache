@@ -77,17 +77,22 @@ static uint32_t get_error_injection_address(ras_einj_info_t* einj_payload, atu_m
     case MCP_ERROR_TYPE_NS_ARSM_CE:
     case MCP_ERROR_TYPE_NS_ARSM_UE:
     case MCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
-        // Non-secure ARSM is always mapped in MSCP with NS attribute
-        err_addr = ((idsw_get_die_id() == DIE_0) ? MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR
-                                                 : MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR);
+        if (idsw_get_die_id() == DIE_0)
+        {
+            atu_entry_attr_t attributes = {ATU_BUS_ATTR_NS};
+            err_addr = get_arsm_attr_address(attributes.as_uint32, atu_entry, atu_recover_entry);
+        }
+        else
+        {
+            err_addr = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR;
+        }
         break;
     case MCP_ERROR_TYPE_RT_ARSM_CE:
     case MCP_ERROR_TYPE_RT_ARSM_UE:
-    case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW: {
-        atu_entry_attr_t attributes = {ATU_BUS_ATTR_ROOT};
-        err_addr = get_arsm_attr_address(attributes.as_uint32, atu_entry, atu_recover_entry);
-    }
-    break;
+    case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
+        err_addr = ((idsw_get_die_id() == DIE_0) ? MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR
+                                                 : MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR);
+        break;
     case MCP_ERROR_TYPE_RL_ARSM_CE:
     case MCP_ERROR_TYPE_RL_ARSM_UE:
     case MCP_ERROR_TYPE_RL_ARSM_OVERFLOW: {
@@ -95,7 +100,6 @@ static uint32_t get_error_injection_address(ras_einj_info_t* einj_payload, atu_m
         err_addr = get_arsm_attr_address(attributes.as_uint32, atu_entry, atu_recover_entry);
     }
     break;
-
     default:
         FPFW_DBGPRINT_ERROR("Invalid MCP error type(%d)\n", einj_payload->param_type.error_type);
         break;
@@ -106,8 +110,8 @@ static uint32_t get_error_injection_address(ras_einj_info_t* einj_payload, atu_m
 
 static void trigger_arsm_fault(ras_einj_info_t* einj_payload, mscp_arsm_ram_type_t type, uint32_t err_mask)
 {
-    atu_map_entry_t arsm_atu_entry;
-    atu_map_entry_t arsm_atu_recover_entry;
+    atu_map_entry_t arsm_atu_entry = {0};
+    atu_map_entry_t arsm_atu_recover_entry = {0};
     trigger_shared_sram_arsm_fault(type, get_error_injection_address(einj_payload, &arsm_atu_entry, &arsm_atu_recover_entry), err_mask);
     BUG_ASSERT(atu_unmap(ATU_ID_MSCP, &arsm_atu_entry) == SILIBS_SUCCESS);
     if (arsm_atu_recover_entry.mscp_start_address != 0)
@@ -266,49 +270,19 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
                     FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_S_ARSM_OVERFLOW is not supported on FPGA.\n");
                 }
                 break;
-            case MCP_ERROR_TYPE_NS_ARSM_CE:
+            case MCP_ERROR_TYPE_RT_ARSM_CE:
                 trigger_shared_sram_arsm_fault(
-                    MSCP_NS_ARSM_RAM,
+                    MSCP_RT_ARSM_RAM,
                     get_error_injection_address(&hm_err_injection_payload->error_injection_info, NULL, NULL),
                     SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
-                break;
-            case MCP_ERROR_TYPE_NS_ARSM_UE:
-                if (!IS_PLATFORM_FPGA())
-                {
-                    trigger_shared_sram_arsm_fault(
-                        MSCP_NS_ARSM_RAM,
-                        get_error_injection_address(&hm_err_injection_payload->error_injection_info, NULL, NULL),
-                        SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
-                }
-                else
-                {
-                    FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_NS_ARSM_UE is not supported on FPGA.\n");
-                }
-                break;
-            case MCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
-                if (!IS_PLATFORM_FPGA())
-                {
-                    trigger_shared_sram_arsm_fault(
-                        MSCP_NS_ARSM_RAM,
-                        get_error_injection_address(&hm_err_injection_payload->error_injection_info, NULL, NULL),
-                        SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
-                }
-                else
-                {
-                    FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_NS_ARSM_OVERFLOW is not supported on FPGA.\n");
-                }
-                break;
-            case MCP_ERROR_TYPE_RT_ARSM_CE:
-                trigger_arsm_fault(&hm_err_injection_payload->error_injection_info,
-                                   MSCP_RT_ARSM_RAM,
-                                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
                 break;
             case MCP_ERROR_TYPE_RT_ARSM_UE:
                 if (!IS_PLATFORM_FPGA())
                 {
-                    trigger_arsm_fault(&hm_err_injection_payload->error_injection_info,
-                                       MSCP_RT_ARSM_RAM,
-                                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+                    trigger_shared_sram_arsm_fault(
+                        MSCP_RT_ARSM_RAM,
+                        get_error_injection_address(&hm_err_injection_payload->error_injection_info, NULL, NULL),
+                        SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
                 }
                 else
                 {
@@ -318,13 +292,43 @@ static void mcp_error_injection_request_cb(void* context, size_t output_size_byt
             case MCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
                 if (!IS_PLATFORM_FPGA())
                 {
-                    trigger_arsm_fault(&hm_err_injection_payload->error_injection_info,
-                                       MSCP_RT_ARSM_RAM,
-                                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+                    trigger_shared_sram_arsm_fault(
+                        MSCP_RT_ARSM_RAM,
+                        get_error_injection_address(&hm_err_injection_payload->error_injection_info, NULL, NULL),
+                        SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
                 }
                 else
                 {
                     FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_RT_ARSM_OVERFLOW is not supported on FPGA.\n");
+                }
+                break;
+            case MCP_ERROR_TYPE_NS_ARSM_CE:
+                trigger_arsm_fault(&hm_err_injection_payload->error_injection_info,
+                                   MSCP_NS_ARSM_RAM,
+                                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK);
+                break;
+            case MCP_ERROR_TYPE_NS_ARSM_UE:
+                if (!IS_PLATFORM_FPGA())
+                {
+                    trigger_arsm_fault(&hm_err_injection_payload->error_injection_info,
+                                       MSCP_NS_ARSM_RAM,
+                                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK);
+                }
+                else
+                {
+                    FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_NS_ARSM_UE is not supported on FPGA.\n");
+                }
+                break;
+            case MCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
+                if (!IS_PLATFORM_FPGA())
+                {
+                    trigger_arsm_fault(&hm_err_injection_payload->error_injection_info,
+                                       MSCP_NS_ARSM_RAM,
+                                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK);
+                }
+                else
+                {
+                    FPFW_DBGPRINT_WARNING("MCP_ERROR_TYPE_NS_ARSM_OVERFLOW is not supported on FPGA.\n");
                 }
                 break;
             case MCP_ERROR_TYPE_RL_ARSM_CE:

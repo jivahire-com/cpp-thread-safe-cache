@@ -225,7 +225,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
         command="pwr set desired 0 5 0"
         core_com_channel.write_line(write_string=command)
         try:
-            command_response_cli = core_com_channel.read_until(key="pwr set desired: core - 0 (0x60200000) desired - 0x86", timeout_seconds=300)
+            command_response_cli = core_com_channel.read_until(key="pwr set desired: core - 0 (0x6010a000) desired - 0x86", timeout_seconds=300)
         except Exception as e:
             self.log.error(f"Error reading SCP UART: {e}")
             self.test_notify(step="Power module pwr set desired cmd status: Fail", msg="Test Fail", _is_error=True)

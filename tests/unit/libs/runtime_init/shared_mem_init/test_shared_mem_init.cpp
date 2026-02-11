@@ -161,10 +161,21 @@ TEST_FUNCTION(test_arsm_init_cold_boot_d0, test_setup, test_teardown)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
-    // ARSM memset expectations
-    expect_value(__wrap_memset, __a, (void*)MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
+    // ARSM ROOT memset expectations
+    expect_value(__wrap_memset, __a, (void*)MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR);
     expect_value(__wrap_memset, __b, 0);
-    expect_value(__wrap_memset, __c, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_SIZE);
+    expect_value(__wrap_memset, __c, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_SIZE);
+
+    // ARSM NS memset expectations
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_map);
+
+    expect_value(__wrap_memset, __a, (void*)mapped_rsm_addr);
+    expect_value(__wrap_memset, __b, 0);
+    expect_value(__wrap_memset, __c, D0_MSCP_ARSM_SRAM_SIZE - D0_ARSM_TFA_RMM_SHARED_BASE);
+
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
 
     // RSM memset expectations
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
@@ -202,9 +213,13 @@ TEST_FUNCTION(test_arsm_init_cold_boot_d1, test_setup, test_teardown)
     will_return(__wrap_system_info_is_warm_start, false);
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    expect_value(__wrap_memset, __a, (void*)MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR);
+    expect_value(__wrap_memset, __a, (void*)MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR);
     expect_value(__wrap_memset, __b, 0);
-    expect_value(__wrap_memset, __c, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_SIZE);
+    expect_value(__wrap_memset, __c, MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_SIZE);
+
+    expect_value(__wrap_memset, __a, (void*)MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR);
+    expect_value(__wrap_memset, __b, 0);
+    expect_value(__wrap_memset, __c, MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_SIZE);
 
     // RSM memset expectations
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);

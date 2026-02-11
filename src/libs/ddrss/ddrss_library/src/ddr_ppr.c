@@ -66,7 +66,6 @@
 
 /* -- Prototypes --*/
 static void init_ppr_shared_memory_arsm0(ddrss_cfg_knobs_t* ddrss_cfgs);
-static void init_ppr_sync_msg_ptr(volatile ddr_ppr_sync_msg_t** ppr_sync_msg);
 static void synchronize_dies_for_ppr(DIE_INSTANCE die_id);
 static void synchronize_dies_before_init(DIE_INSTANCE die_id);
 static DDRSS_PPR_TYPE handle_die1_ppr_reception(volatile ddr_ppr_sync_msg_t* ppr_sync_msg);
@@ -75,7 +74,6 @@ static DDRSS_PPR_TYPE d0_determine_ppr_type(ddrss_cfg_knobs_t* ddrss_cfgs);
 /*-- Declarations (Statics and globals) --*/
 static var_service_req_ctx_t ppr_get_var_svc_ctx = {};
 static var_service_req_ctx_t ppr_set_var_svc_ctx = {};
-volatile ddr_ppr_sync_msg_t* g_ppr_sync_msg = NULL;
 
 // Compiler was unhappy with defining array size with the const variable
 const int MAX_PPR_DEFECTS_SUPPORTED_PER_DIE = 48;
@@ -91,7 +89,8 @@ void ppr_setup(ddrss_cfg_knobs_t* ddrss_cfgs)
 {
     DDRSS_PPR_TYPE ppr_type = DDRSS_PPR_NONE;
     DIE_INSTANCE die_id = ddrss_cfgs->die_id;
-    volatile ddr_ppr_sync_msg_t* ppr_sync_msg;
+    volatile ddr_ppr_sync_msg_t* ppr_sync_msg = NULL;
+    atu_map_entry_t arsm0_map_entry = {0};
 
     // Event Trace (ppr_setup begin)
     DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_PPR_SETUP_BEGIN);
@@ -106,7 +105,7 @@ void ppr_setup(ddrss_cfg_knobs_t* ddrss_cfgs)
 
     // Step 1: Initialize shared memory & sets global pointer to ppr_sync_msg
     init_ppr_shared_memory_arsm0(ddrss_cfgs);
-    ppr_sync_msg = get_ppr_sync_msg_ptr();
+    ppr_sync_msg = get_ppr_sync_msg_ptr(&arsm0_map_entry);
 
     // Step 2: Die 0 determines PPR type and writes it to shared memory before sync
     if (die_id == SOC_D0)
@@ -133,6 +132,8 @@ void ppr_setup(ddrss_cfg_knobs_t* ddrss_cfgs)
     FPFW_DBGPRINT_INFO("PPR: Final die sync before ddr_init()\n");
     synchronize_dies_before_init(die_id);
 
+    unmap_sdl_arsm0(&arsm0_map_entry);
+
     // Event Trace (ppr_setup end)
     DDR_MANAGER_ET_STATUS(DDR_MANAGER_ET_TYPE_PPR_SETUP_END);
 }
@@ -148,30 +149,20 @@ static void init_ppr_shared_memory_arsm0(ddrss_cfg_knobs_t* ddrss_cfgs)
     // Only Die 0: Initialize ARSM0 shared memory for PPR operations
     if (die_id == SOC_D0)
     {
-        memset((void*)get_sdl_arsm0_addr(), 0, D0_ARSM_SDL_RESERVED_SIZE);
+        atu_map_entry_t arsm0_map_entry = {0};
+        memset((void*)get_sdl_arsm0_addr(&arsm0_map_entry), 0, D0_ARSM_SDL_RESERVED_SIZE);
         __DSB();
+        unmap_sdl_arsm0(&arsm0_map_entry);
     }
-
-    // Both dies initialize global sync message pointer
-    init_ppr_sync_msg_ptr(&g_ppr_sync_msg);
-}
-
-/**
- * @brief Set pointer to PPR sync message structure immediately after SDL
- * @param ppr_sync_msg Pointer to sync message structure
- */
-static void init_ppr_sync_msg_ptr(volatile ddr_ppr_sync_msg_t** ppr_sync_msg)
-{
-    *ppr_sync_msg = (volatile ddr_ppr_sync_msg_t*)(get_sdl_arsm0_addr() + SDL_MAX_SIZE);
 }
 
 /**
  * @brief Get pointer to PPR sync message structure
  * @return Pointer to sync message structure
  */
-volatile ddr_ppr_sync_msg_t* get_ppr_sync_msg_ptr(void)
+volatile ddr_ppr_sync_msg_t* get_ppr_sync_msg_ptr(atu_map_entry_t* map_entry)
 {
-    return g_ppr_sync_msg;
+    return (volatile ddr_ppr_sync_msg_t*)((uint8_t*)get_sdl_arsm0_addr(map_entry) + SDL_MAX_SIZE);
 }
 
 /**

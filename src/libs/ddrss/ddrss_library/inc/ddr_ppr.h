@@ -10,7 +10,7 @@
 
 
 /*----------- Nested includes ------------*/
-#include <stdint.h>
+#include <atu_lib.h>
 #include <cper.h>
 #include <ddr_erg0_regs.h>
 #include <ddr_erg1_regs.h>
@@ -157,4 +157,4 @@ bool is_defect_for_die(DIE_INSTANCE die_id, uint8_t MemoryControllerId);
 int ddrss_convert_sdl_info_from_mc_to_dimm (MEMORY_DEFECT_V2* sdl_defect, ddrss_spd_addr_info_t *ppr_spd_addr_info);
 int32_t ddrss_update_ppr_completion(ddrss_spd_addr_info_t *addr_info, ddrss_res_info_t *res_info);
 
-volatile ddr_ppr_sync_msg_t* get_ppr_sync_msg_ptr(void);
+volatile ddr_ppr_sync_msg_t* get_ppr_sync_msg_ptr(atu_map_entry_t* map_entry);

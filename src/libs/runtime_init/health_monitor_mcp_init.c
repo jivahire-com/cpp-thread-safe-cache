@@ -29,21 +29,23 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 // Ascii of 'H''M'
-#define HM_SEMAPHORE_KEY(die_id) (((die_id) << 16) | (0x686d & 0xFFFF))
+#define HM_SEMAPHORE_KEY(die_id)               (((die_id) << 16) | (0x686d & 0xFFFF))
+#define ARSM_GET_DIE1_NS_REGION_OFFSET(region) (region - D1_MSCP_ARSM_SRAM_NS_BASE)
 
 /*-------------- Functions ---------------*/
 
 FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("hw_ver", "icc_mscp2mscp", "icc_die2die", "atu_svc", "cd_drv", "cfg_mgr"))
 {
-    uintptr_t mscp_ghes_base = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_TABLE_BLOCK_BASE);
+    uintptr_t mscp_ghes_base =
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR + ARSM_GET_DIE1_NS_REGION_OFFSET(RAS_GHES_TABLE_BLOCK_BASE);
     uintptr_t mscp_ghes_error_record_addr_table_base =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_ERROR_RECORD_ADDRESS_TABLE_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR + ARSM_GET_DIE1_NS_REGION_OFFSET(RAS_ERROR_RECORD_ADDRESS_TABLE_BASE);
     uintptr_t mscp_ghes_ack_addr_table_base =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_ACK_ADDRESS_TABLE_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR + ARSM_GET_DIE1_NS_REGION_OFFSET(RAS_ACK_ADDRESS_TABLE_BASE);
     uintptr_t mscp_ghes_error_record_addr_base =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_GHES_ERROR_RECORD_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR + ARSM_GET_DIE1_NS_REGION_OFFSET(RAS_GHES_ERROR_RECORD_BASE);
     uintptr_t mscp_full_cper_record_base =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(RAS_LAST_CPER_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR + ARSM_GET_DIE1_NS_REGION_OFFSET(RAS_LAST_CPER_BASE);
 
     static hm_config_t hm_config = {0};
     hm_config.mscp_ghes_base = (acpi_ghes_t*)mscp_ghes_base;

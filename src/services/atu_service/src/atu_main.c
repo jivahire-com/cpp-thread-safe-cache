@@ -48,21 +48,9 @@
 #define VAR_SVC_DDR_DIE_1_AP_END_ADDR  (VAR_SVC_DDR_DIE_1_AP_BASE_ADDR + VAR_SVC_DDR_PER_DIE_SIZE)
 
 // Crash dump region is shared by primary and secondary die. The AP window is sized the same for both dies.
-#define CRASH_DUMP_DDR_HEADER_SIZE  (MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_SIZE)
-#define CRASH_DUMP_DDR_PER_DIE_SIZE (MSCP_ATU_AP_WINDOW_CRASH_DUMP_DIE_SIZE)
-
 #define CRASH_DUMP_DDR_TOTAL_AP_BASE_ADDR (CRASH_DUMP_RESERVATION_BASE)
 #define CRASH_DUMP_DDR_TOTAL_AP_END_ADDR  (CRASH_DUMP_RESERVATION_END)
 #define CRASH_DUMP_DDR_TOTAL_SIZE         (CRASH_DUMP_DDR_TOTAL_AP_END_ADDR - CRASH_DUMP_DDR_TOTAL_AP_BASE_ADDR)
-
-#define CRASH_DUMP_DDR_HEADER_AP_BASE_ADDR (CRASH_DUMP_DDR_TOTAL_AP_BASE_ADDR)
-#define CRASH_DUMP_DDR_HEADER_AP_END_ADDR  (CRASH_DUMP_DDR_TOTAL_AP_BASE_ADDR + CRASH_DUMP_DDR_HEADER_SIZE)
-
-#define CRASH_DUMP_DDR_DIE_0_AP_BASE_ADDR (CRASH_DUMP_DDR_HEADER_AP_END_ADDR)
-#define CRASH_DUMP_DDR_DIE_0_AP_END_ADDR  (CRASH_DUMP_DDR_DIE_0_AP_BASE_ADDR + CRASH_DUMP_DDR_PER_DIE_SIZE)
-
-#define CRASH_DUMP_DDR_DIE_1_AP_BASE_ADDR (CRASH_DUMP_DDR_DIE_0_AP_END_ADDR)
-#define CRASH_DUMP_DDR_DIE_1_AP_END_ADDR  (CRASH_DUMP_DDR_TOTAL_AP_END_ADDR)
 
 #define ATU_MAPPING_AP_SDM_MMIO_BASE(die_id) \
     ATU_MAPPING((die_id == 0 ? D0_SDM_PF_CFG_START : D1_SDM_PF_CFG_START), 0, D0_SDM_PF_CFG_SIZE, {ATU_BUS_ATTR_NS})
@@ -92,12 +80,12 @@ static_assert(MSCP_ATU_AP_WINDOW_IB_TELEMETRY_DIE_END_ADDR <= IB_TELEMETRY_RESER
 // TODO: Do we need to update the attributes to align with the security settings for host services?
 //       That would only be a subregion of the ARMS on DIE 0 (possibly DIE 1 as well).
 atu_map_entry_t atu_static_map_single_die_die0[] = {
-    // ARMS DIE 0
+    // ARMS DIE 0 ROOT
     {
-        .ap_base_address = AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
+        .ap_base_address = D0_MSCP_ARSM_SRAM_ROOT_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
     },
     // CORE_CLUSTER on DIE0
     {
@@ -127,16 +115,9 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
         .attribute = {ATU_BUS_ATTR_S},
     },
-    // Crash dump status header on DIE0
+    // Crash dump (including header) on DIE0
     {
-        .ap_base_address = CRASH_DUMP_DDR_HEADER_AP_BASE_ADDR,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
-    },
-    // Crash dump on DIE0
-    {
-        .ap_base_address = CRASH_DUMP_DDR_DIE_0_AP_BASE_ADDR,
+        .ap_base_address = CRASH_DUMP_DDR_TOTAL_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
@@ -187,18 +168,25 @@ atu_map_entry_t atu_static_map_single_die_die0[] = {
 };
 
 atu_map_entry_t atu_static_map_dual_die_die0[] = {
-    // ARMS DIE 0
+    // ARMS DIE 0 ROOT
     {
-        .ap_base_address = AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
+        .ap_base_address = D0_MSCP_ARSM_SRAM_ROOT_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
     },
-    // ARMS DIE 1
+    // ARMS DIE 1 ROOT
     {
-        .ap_base_address = AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_END_ADDR,
+        .ap_base_address = D1_MSCP_ARSM_SRAM_ROOT_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
+    // ARMS DIE 1 NS
+    {
+        .ap_base_address = D1_MSCP_ARSM_SRAM_NS_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     // CORE_CLUSTER on DIE0
@@ -229,16 +217,9 @@ atu_map_entry_t atu_static_map_dual_die_die0[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
         .attribute = {ATU_BUS_ATTR_S},
     },
-    // Crash dump status header on DIE0
+    // Crash dump (including header) on DIE0
     {
-        .ap_base_address = CRASH_DUMP_DDR_HEADER_AP_BASE_ADDR,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
-    },
-    // Crash dump on DIE0
-    {
-        .ap_base_address = CRASH_DUMP_DDR_DIE_0_AP_BASE_ADDR,
+        .ap_base_address = CRASH_DUMP_DDR_TOTAL_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
@@ -321,11 +302,18 @@ atu_map_entry_t atu_map_accel_die0[NUM_VALID_ACCEL_ID] = {
 };
 
 atu_map_entry_t atu_static_map_single_die_die1[] = {
-    // ARMS DIE 1
+    // ARMS DIE 1 ROOT
     {
-        .ap_base_address = AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_END_ADDR,
+        .ap_base_address = D1_MSCP_ARSM_SRAM_ROOT_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
+    // ARMS DIE 1 NS
+    {
+        .ap_base_address = D1_MSCP_ARSM_SRAM_NS_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     // CORE_CLUSTER on DIE1
@@ -356,16 +344,9 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
         .attribute = {ATU_BUS_ATTR_S},
     },
-    // Crash dump status header on DIE1
+    // Crash dump (including header) on DIE1
     {
-        .ap_base_address = CRASH_DUMP_DDR_HEADER_AP_BASE_ADDR,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
-    },
-    // Crash dump on DIE1
-    {
-        .ap_base_address = CRASH_DUMP_DDR_DIE_1_AP_BASE_ADDR,
+        .ap_base_address = CRASH_DUMP_DDR_TOTAL_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
@@ -409,18 +390,25 @@ atu_map_entry_t atu_static_map_single_die_die1[] = {
 };
 
 atu_map_entry_t atu_static_map_dual_die_die1[] = {
-    // ARMS DIE 0
+    // ARMS DIE 0 ROOT
     {
-        .ap_base_address = AP_TOP_D0_ARSM_SHARED_SRAM_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
+        .ap_base_address = D0_MSCP_ARSM_SRAM_ROOT_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
     },
-    // ARMS DIE 1
+    // ARMS DIE 1 ROOT
     {
-        .ap_base_address = AP_TOP_D1_ARSM_SHARED_SRAM_ADDRESS,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_END_ADDR,
+        .ap_base_address = D1_MSCP_ARSM_SRAM_ROOT_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_END_ADDR,
+        .attribute = {ATU_BUS_ATTR_ROOT},
+    },
+    // ARMS DIE 1 NS
+    {
+        .ap_base_address = D1_MSCP_ARSM_SRAM_NS_BASE,
+        .mscp_start_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR,
+        .mscp_end_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},
     },
     // CORE_CLUSTER on DIE1
@@ -451,16 +439,9 @@ atu_map_entry_t atu_static_map_dual_die_die1[] = {
         .mscp_end_address = MSCP_ATU_AP_WINDOW_VAR_SVC_END_ADDR,
         .attribute = {ATU_BUS_ATTR_S},
     },
-    // Crash dump status header on DIE1
+    // Crash dump (including header) on DIE1
     {
-        .ap_base_address = CRASH_DUMP_DDR_HEADER_AP_BASE_ADDR,
-        .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_BASE_ADDR,
-        .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_HEADER_END_ADDR,
-        .attribute = {ATU_BUS_ATTR_NS},
-    },
-    // Crash dump on DIE1
-    {
-        .ap_base_address = CRASH_DUMP_DDR_DIE_1_AP_BASE_ADDR,
+        .ap_base_address = CRASH_DUMP_DDR_TOTAL_AP_BASE_ADDR,
         .mscp_start_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_BASE_ADDR,
         .mscp_end_address = MSCP_ATU_AP_WINDOW_CRASH_DUMP_END_ADDR,
         .attribute = {ATU_BUS_ATTR_NS},

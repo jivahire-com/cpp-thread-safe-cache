@@ -89,16 +89,16 @@ FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "
     static mhu_icc_transport_device_t s_icc_mscp_2_tfa_dev = {};
 
     uintptr_t recv_payload_address =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_SEND_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_SEND_BASE);
     uintptr_t send_payload_address =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_RECEIVE_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_RECEIVE_BASE);
     KNG_DIE_ID die_id = idsw_get_die_id();
     if (die_id == DIE_1)
     {
         recv_payload_address =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_SEND_BASE);
-        send_payload_address =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_RECEIVE_BASE);
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_SEND_BASE);
+        send_payload_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR +
+                               ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_RECEIVE_BASE);
     }
 
     mhu_icc_transport_device_config_t dev_config = {
@@ -184,18 +184,18 @@ FPFW_INIT_COMPONENT(icc_mscp2aprt, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
     static mhu_icc_transport_device_t s_icc_mscp_2_ap_rt_dev = {};
 
     uintptr_t recv_payload_address =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_RT_SEND_BASE);
-    uintptr_t send_payload_address =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_RT_RECEIVE_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_RT_SEND_BASE);
+    uintptr_t send_payload_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR +
+                                     ARSM_GET_REGION_OFFSET(D0_ARSM_TFA_AP_2_SCP_RT_RECEIVE_BASE);
 
     uint32_t recv_ch_id = MHU_INTERFACE_ID(AP_CORE_RT, SCP_LOCAL);
     uint32_t send_ch_id = MHU_INTERFACE_ID(SCP_LOCAL, AP_CORE_RT);
 
     if (die_id == DIE_1)
     {
-        recv_payload_address =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_RT_SEND_BASE);
-        send_payload_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR +
+        recv_payload_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR +
+                               ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_RT_SEND_BASE);
+        send_payload_address = MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR +
                                ARSM_GET_REGION_OFFSET(D1_ARSM_TFA_AP_2_SCP_RT_RECEIVE_BASE);
     }
 

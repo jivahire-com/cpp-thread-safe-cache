@@ -35,7 +35,6 @@ target_compile_definitions(
     ${TARGET}
     PRIVATE
         PLDM_DRV_WORKAROUND
-        GHES_USE_ARSM_DIE_0
 )
 
 target_link_libraries(${TARGET}

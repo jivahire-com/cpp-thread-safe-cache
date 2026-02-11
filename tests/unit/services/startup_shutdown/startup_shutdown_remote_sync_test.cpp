@@ -102,7 +102,7 @@ SOS_TEST(wait_for_remote_die_boot_stage_dual_die, NULL, NULL)
     will_return_always(__wrap_idsw_get_die_id, DIE_0);
 
     uint32_t die0_point_base =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_D2D_SYNC_POINT_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_D2D_SYNC_POINT_BASE);
 
     uint32_t die1_point_base = die0_point_base + sizeof(uint32_t);
 

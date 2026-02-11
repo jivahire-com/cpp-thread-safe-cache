@@ -27,7 +27,7 @@
 
 // NOTE:  these asserts are for memory regions 13 and 14 below.
 
-static_assert(IS_ALIGNED_4K(MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_SDS_AP_BASE)),
+static_assert(IS_ALIGNED_4K(MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_SDS_AP_BASE)),
               "mpu region not 4k aligned");
 
 static_assert(((D0_ARSM_SDS_AP_BASE + 0x2000 - 1) < D0_ARSM_TFA_RP_DATA_BASE), "overlap TFA");
@@ -237,7 +237,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
          *                Priviledged R/W
          */
         {
-            .RBAR = ARM_MPU_RBAR(13, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR +
+            .RBAR = ARM_MPU_RBAR(13, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR +
                                    ARSM_GET_REGION_OFFSET(D0_ARSM_SDS_AP_BASE)), // NOLINT
             .RASR = ARM_MPU_RASR(DISABLE_EXEC,
                                  ARM_MPU_AP_PRIV,
@@ -258,7 +258,7 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
          *                Priviledged R/W
          */
         {
-            .RBAR = ARM_MPU_RBAR(14, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR +
+            .RBAR = ARM_MPU_RBAR(14, MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR +
                                    ARSM_GET_REGION_OFFSET(D0_ARSM_SDS_AP_BASE + 0x1000)), // NOLINT
             .RASR = ARM_MPU_RASR(DISABLE_EXEC,
                                  ARM_MPU_AP_PRIV,

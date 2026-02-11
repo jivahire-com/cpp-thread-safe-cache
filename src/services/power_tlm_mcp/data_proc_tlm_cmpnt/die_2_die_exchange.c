@@ -63,13 +63,13 @@ static bool mpam_data_read_occurred_since_last_write = true;  // tracks if read 
 
 #ifdef PWR_TLM_TEST_OVERRIDE
 
-    #undef MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR
+    #undef MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR
 static uint8_t test_array[ARSM_GET_REGION_OFFSET(D0_ARSM_PWR_TLM_MCP_2_MCP_BASE) + D0_ARSM_PWR_TLM_MCP_2_MCP_SIZE];
-    #define MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR (test_array)
+    #define MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR (test_array)
 #endif
 
 static die_2_die_exch_t* const s_die_2_die_exch = (die_2_die_exch_t*)(uintptr_t)((
-    MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_PWR_TLM_MCP_2_MCP_BASE)));
+    MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D0_ARSM_PWR_TLM_MCP_2_MCP_BASE)));
 
 /*------------- Functions ----------------*/
 

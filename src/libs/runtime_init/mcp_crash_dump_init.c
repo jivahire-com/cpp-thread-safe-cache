@@ -135,15 +135,16 @@ bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
 
 FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib", "hw_sem"))
 {
+    uint32_t die_id = idsw_get_die_id();
     static crash_dump_type_context_t mini_dump_ctx = {.type = CRASH_DUMP_TYPE_MINI,
                                                       .mem_pool_addr = CRASH_DUMP_MINI_MCP_ADDR,
                                                       .mem_pool_size = CRASH_DUMP_MINI_MCP_SIZE,
                                                       .header = (crash_dump_header_t*)CRASH_DUMP_MINI_HEADER_ADDR};
 
     static crash_dump_type_context_t full_dump_ctx = {.type = CRASH_DUMP_TYPE_FULL,
-                                                      .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
-                                                      .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
                                                       .header = (crash_dump_header_t*)CRASH_DUMP_FULL_HEADER_ADDR};
+    full_dump_ctx.mem_pool_addr = (uint64_t)(intptr_t)CRASH_DUMP_CORE_ADDRESS(die_id, CRASH_DUMP_CORE_MCP);
+    full_dump_ctx.mem_pool_size = CRASH_DUMP_FULL_SIZE_PER_CORE;
 
     static crash_dump_context_t crash_dump_ctx = {
         .type_ctx = {NULL, NULL},
@@ -153,9 +154,7 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib", "hw_se
         .mmio_register_count = sizeof(core_register_mmio) / sizeof(core_register_mmio[0]),
         .mmio_registers = core_register_mmio,
         .in_memory = in_memory};
-
-    // Get the DIE index
-    crash_dump_ctx.die_index = idsw_get_die_id();
+    crash_dump_ctx.die_index = die_id;
 
     // Set the semaphore key
     // If initializing a crash dump on SVP use a local semaphore within the MSCP EXP Block.

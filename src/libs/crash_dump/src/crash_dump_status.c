@@ -171,8 +171,7 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
                                             CRASH_DUMP_PROCESSOR_ID(ctx->die_index, ctx->core_index));
 
                 type_context->header->cores[ctx->die_index * CRASH_DUMP_CORE_NUM + ctx->core_index] = CRASH_DUMP_STATE_READY;
-                uint8_t* crash_dump_payload =
-                    CRASH_DUMP_CORE_ADDRESS(MSCP_ATU_AP_WINDOW_CRASH_DUMP_BASE_ADDR, ctx->core_index);
+                uint8_t* crash_dump_payload = CRASH_DUMP_CORE_ADDRESS(ctx->die_index, ctx->core_index);
                 memset(crash_dump_payload, 0, CRASH_DUMP_FULL_SIZE_PER_CORE);
             }
             release_semaphore(type_context->semaphore.id);

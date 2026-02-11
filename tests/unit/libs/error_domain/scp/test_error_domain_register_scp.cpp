@@ -1148,13 +1148,13 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
         case SCP_ERROR_TYPE_WATCHDOG:
             test_watchdog_handler();
             break;
-        case SCP_ERROR_TYPE_NS_ARSM_CE:
+        case SCP_ERROR_TYPE_RT_ARSM_CE:
             will_return(__wrap_is_cached_space, false);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_CE_MASK,
-                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR);
             break;
         case SCP_ERROR_TYPE_S_ARSM_CE:
-        case SCP_ERROR_TYPE_RT_ARSM_CE:
+        case SCP_ERROR_TYPE_NS_ARSM_CE:
         case SCP_ERROR_TYPE_RL_ARSM_CE:
             expect_function_call(__wrap_atu_find_map);
             expect_function_call(__wrap_atu_unmap);
@@ -1165,15 +1165,15 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_atu_unmap);
             expect_function_call(__wrap_atu_map);
             break;
-        case SCP_ERROR_TYPE_NS_ARSM_UE:
+        case SCP_ERROR_TYPE_RT_ARSM_UE:
             will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
             will_return(__wrap_is_cached_space, false);
 
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK,
-                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR);
             break;
         case SCP_ERROR_TYPE_S_ARSM_UE:
-        case SCP_ERROR_TYPE_RT_ARSM_UE:
+        case SCP_ERROR_TYPE_NS_ARSM_UE:
         case SCP_ERROR_TYPE_RL_ARSM_UE:
             expect_function_call(__wrap_atu_find_map);
             expect_function_call(__wrap_atu_unmap);
@@ -1186,16 +1186,16 @@ void test_scp_error_injection_handler(uint16_t component_group, uint16_t error_t
             expect_function_call(__wrap_atu_unmap);
             expect_function_call(__wrap_atu_map);
             break;
-        case SCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
+        case SCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
             will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
 
             will_return(__wrap_is_cached_space, false);
             will_return(__wrap_is_cached_space, false);
             test_trigger_shared_sram_arsm_fault(SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_OF_MASK,
-                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR);
+                                                MSCP_ATU_AP_WINDOW_ARSM_DIE_0_ROOT_BASE_ADDR);
             break;
         case SCP_ERROR_TYPE_S_ARSM_OVERFLOW:
-        case SCP_ERROR_TYPE_RT_ARSM_OVERFLOW:
+        case SCP_ERROR_TYPE_NS_ARSM_OVERFLOW:
         case SCP_ERROR_TYPE_RL_ARSM_OVERFLOW:
             will_return_count(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON, 3);
             expect_function_call(__wrap_atu_find_map);

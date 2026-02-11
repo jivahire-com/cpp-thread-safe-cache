@@ -380,8 +380,8 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp, nullptr, nullptr)
     crash_dump_header_t header = {.status = CRASH_DUMP_IN_USE};
 
     crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
-                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
-                                              .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP0_ADDR,
+                                              .mem_pool_size = CRASH_DUMP_FULL_MCP0_SIZE,
                                               .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 1},
                                               .header = &header};
 
@@ -400,13 +400,13 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp, nullptr, nullptr)
     set_expectations_init_dump_desc(true);
 
     // init_mem_pool()
-    set_expectations_init_mem_pool(CRASH_DUMP_FULL_MCP_ADDR, CRASH_DUMP_FULL_MCP_SIZE);
+    set_expectations_init_mem_pool(CRASH_DUMP_FULL_MCP0_ADDR, CRASH_DUMP_FULL_MCP0_SIZE);
 
     // init_dump_file()
     set_expectations_init_dump_file();
 
     // init_dump_manager()
-    set_expectations_init_dump_manager(CRASH_DUMP_FULL_MCP_SIZE);
+    set_expectations_init_dump_manager(CRASH_DUMP_FULL_MCP0_SIZE);
 
     // crash_dump_register_core_registers()
     set_expectations_crash_dump_register_core_registers();
@@ -443,8 +443,8 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp_warmstart, nullptr, nullptr
     crash_dump_header_t header = {.status = CRASH_DUMP_IN_USE};
 
     crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
-                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
-                                              .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP0_ADDR,
+                                              .mem_pool_size = CRASH_DUMP_FULL_MCP0_SIZE,
                                               .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 1},
                                               .header = &header};
 
@@ -463,13 +463,13 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp_warmstart, nullptr, nullptr
     set_expectations_init_dump_desc(true);
 
     // init_mem_pool()
-    set_expectations_init_mem_pool(CRASH_DUMP_FULL_MCP_ADDR, CRASH_DUMP_FULL_MCP_SIZE);
+    set_expectations_init_mem_pool(CRASH_DUMP_FULL_MCP0_ADDR, CRASH_DUMP_FULL_MCP0_SIZE);
 
     // init_dump_file()
     set_expectations_init_dump_file();
 
     // init_dump_manager()
-    set_expectations_init_dump_manager(CRASH_DUMP_FULL_MCP_SIZE);
+    set_expectations_init_dump_manager(CRASH_DUMP_FULL_MCP0_SIZE);
 
     // crash_dump_register_core_registers()
     set_expectations_crash_dump_register_core_registers();
@@ -506,8 +506,8 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
     crash_dump_header_t header = {};
 
     crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
-                                              .mem_pool_addr = CRASH_DUMP_FULL_SCP_ADDR,
-                                              .mem_pool_size = CRASH_DUMP_FULL_SCP_SIZE,
+                                              .mem_pool_addr = CRASH_DUMP_FULL_SCP0_ADDR,
+                                              .mem_pool_size = CRASH_DUMP_FULL_SCP0_SIZE,
                                               .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 2},
                                               .header = &header};
 
@@ -526,13 +526,13 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
     set_expectations_init_dump_desc(true);
 
     // init_mem_pool()
-    set_expectations_init_mem_pool(CRASH_DUMP_FULL_SCP_ADDR, CRASH_DUMP_FULL_SCP_SIZE);
+    set_expectations_init_mem_pool(CRASH_DUMP_FULL_SCP0_ADDR, CRASH_DUMP_FULL_SCP0_SIZE);
 
     // init_dump_file()
     set_expectations_init_dump_file();
 
     // init_dump_manager()
-    set_expectations_init_dump_manager(CRASH_DUMP_FULL_SCP_SIZE);
+    set_expectations_init_dump_manager(CRASH_DUMP_FULL_SCP0_SIZE);
 
     // crash_dump_register_core_registers()
     set_expectations_crash_dump_register_core_registers();
@@ -2028,8 +2028,8 @@ TEST_FUNCTION(test_crash_dump_dfwk, nullptr, nullptr)
         crash_dump_header_t header = {.status = CRASH_DUMP_IN_USE};
 
         crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
-                                                  .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
-                                                  .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                                  .mem_pool_addr = CRASH_DUMP_FULL_MCP0_ADDR,
+                                                  .mem_pool_size = CRASH_DUMP_FULL_MCP0_SIZE,
                                                   .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 1},
                                                   .header = &header};
 
@@ -2085,8 +2085,8 @@ TEST_FUNCTION(test_crash_dump_dump, nullptr, nullptr)
                                             CRASH_DUMP_STATE_READY}};
 
     crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
-                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
-                                              .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP0_ADDR,
+                                              .mem_pool_size = CRASH_DUMP_FULL_MCP0_SIZE,
                                               .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 1},
                                               .header = &header};
 
@@ -2149,8 +2149,8 @@ TEST_FUNCTION(test_crash_dump_state, nullptr, nullptr)
                                             CRASH_DUMP_STATE_READY}};
 
     crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL,
-                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP_ADDR,
-                                              .mem_pool_size = CRASH_DUMP_FULL_MCP_SIZE,
+                                              .mem_pool_addr = CRASH_DUMP_FULL_MCP0_ADDR,
+                                              .mem_pool_size = CRASH_DUMP_FULL_MCP0_SIZE,
                                               .semaphore = {.id = SEM_ID_DIE0_IOSS_0, .key = 1},
                                               .header = &header};
 

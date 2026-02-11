@@ -91,6 +91,7 @@ TEST_FUNCTION(ppr_setup_no_ppr_var_DIE_0_cold_reset, NULL, NULL)
     // -- init_ppr_shared_memory_arsm0 --
     // Reuse local test framework buffer as stand-in for arsm0
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
+    will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
 
@@ -141,6 +142,9 @@ TEST_FUNCTION(ppr_setup_no_ppr_var_DIE_1_cold_reset, NULL, NULL)
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_1);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
+    // Unmap ARSM0 shared memory
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
     g_ppr_testing = true;
     ppr_setup(&test_ddrss_knobs);
     g_ppr_testing = false;
@@ -156,6 +160,7 @@ TEST_FUNCTION(ppr_setup_hppr_var_DIE_0_cold_reset, NULL, NULL)
 
     // -- init_ppr_shared_memory_arsm0 --
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
+    will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
 
@@ -209,6 +214,9 @@ TEST_FUNCTION(ppr_setup_hppr_var_DIE_1_cold_reset, NULL, NULL)
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_1);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
+    // -- unmap_sdl_arsm0 --
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
     g_ppr_testing = true;
     ppr_setup(&test_ddrss_knobs);
     g_ppr_testing = false;
@@ -224,6 +232,7 @@ TEST_FUNCTION(ppr_setup_hppr_var_DIE_0_warm_reset, NULL, NULL)
 
     // -- init_ppr_shared_memory_arsm0 --
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
+    will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
 
@@ -260,6 +269,7 @@ TEST_FUNCTION(ppr_setup_sppr_var_DIE_0_cold_reset, NULL, NULL)
 
     // -- init_ppr_shared_memory_arsm0 --
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
+    will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
 
@@ -299,6 +309,7 @@ TEST_FUNCTION(ppr_setup_mppr_var_DIE_0_cold_reset, NULL, NULL)
 
     // -- init_ppr_shared_memory_arsm0 --
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
+    will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
 
@@ -354,6 +365,7 @@ TEST_FUNCTION(ppr_setup_invalid_ppr_type_DIE_0_cold_reset, NULL, NULL)
 
     // -- init_ppr_shared_memory_arsm0 --
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
+    will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
 
@@ -390,6 +402,7 @@ TEST_FUNCTION(ppr_setup_variable_service_error_DIE_0, NULL, NULL)
 
     // -- init_ppr_shared_memory_arsm0 --
     will_return_count(__wrap_get_sdl_arsm0_addr, &ppr_test_buffer[0], 2);
+    will_return_count(__wrap_atu_unmap, SILIBS_SUCCESS, 2);
 
     will_return(__wrap_idhw_is_single_die_boot_en, false);
 
@@ -440,6 +453,9 @@ TEST_FUNCTION(ppr_setup_sppr_var_DIE_1_cold_reset, NULL, NULL)
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_1);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
 
+    // -- unmap_sdl_arsm0 --
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
     g_ppr_testing = true;
     ppr_setup(&test_ddrss_knobs);
     g_ppr_testing = false;
@@ -468,6 +484,9 @@ TEST_FUNCTION(ppr_setup_mppr_var_DIE_1_cold_reset, NULL, NULL)
     // -- synchronize_dies_before_init --
     expect_value(__wrap_mscp_exp_spi_synchronize_dies_timeout, die_id, DIE_1);
     will_return(__wrap_mscp_exp_spi_synchronize_dies_timeout, SILIBS_SUCCESS);
+
+    // -- unmap_sdl_arsm0 --
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
 
     g_ppr_testing = true;
     ppr_setup(&test_ddrss_knobs);

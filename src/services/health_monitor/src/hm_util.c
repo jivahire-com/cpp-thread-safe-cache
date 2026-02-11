@@ -54,30 +54,17 @@ const char* get_error_domain_name(acpi_error_domain_t domain)
 
 uint64_t AP_GHES_ADDR(uint32_t mscp_addr)
 {
-#ifdef GHES_USE_ARSM_DIE_0
-    return (mscp_addr - MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR) + (uint64_t)D0_MSCP_ARSM_SRAM_BASE;
-#else
-    return (mscp_addr - MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR) + (uint64_t)D1_MSCP_ARSM_SRAM_BASE;
-#endif
+    return (mscp_addr - MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR) + (uint64_t)D1_MSCP_ARSM_SRAM_NS_BASE;
 }
 
 uint32_t MSCP_GHES_ADDR(uint64_t ap_addr)
 {
-#ifdef GHES_USE_ARSM_DIE_0
-    if (ap_addr >= ((uint64_t)D0_MSCP_ARSM_SRAM_BASE + (uint64_t)D0_MSCP_ARSM_SRAM_SIZE))
-    {
-        BUG_ASSERT_PARAM(false, ap_addr, 0);
-    }
-
-    return (uint32_t)MSCP_ATU_AP_WINDOW_ARSM_DIE_0_BASE_ADDR + (uint32_t)(ap_addr - (uint64_t)D0_MSCP_ARSM_SRAM_BASE);
-#else
     if (ap_addr >= ((uint64_t)D1_MSCP_ARSM_SRAM_BASE + (uint64_t)D1_MSCP_ARSM_SRAM_SIZE))
     {
         BUG_ASSERT_PARAM(false, ap_addr, 0);
     }
 
-    return (uint32_t)MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + (uint32_t)(ap_addr - (uint64_t)D1_MSCP_ARSM_SRAM_BASE);
-#endif
+    return (uint32_t)MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR + (uint32_t)(ap_addr - (uint64_t)D1_MSCP_ARSM_SRAM_NS_BASE);
 }
 
 void hm_map_error_injection_payload()

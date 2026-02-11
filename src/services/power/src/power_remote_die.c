@@ -351,32 +351,32 @@ void power_remote_die_init(power_runconfig_t* p_runconfig)
         //! Current die is die 0
         //! Die 0 writes to this addr for die 1
         s_power_remote_die_ctx.ex_inputs.d2d_send_arsm_payload =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_INPUT_EXCHANGE_BASE_D0);
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_INPUT_EXCHANGE_BASE_D0);
         //! Die 1 writes to this addr for die 0
         s_power_remote_die_ctx.ex_inputs.d2d_recv_arsm_payload =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_INPUT_EXCHANGE_BASE_D1);
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_INPUT_EXCHANGE_BASE_D1);
         //! Die 0 writes to this addr for die 1
         s_power_remote_die_ctx.ex_complete.d2d_send_arsm_payload =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_COMPLETE_EXCHANGE_BASE_D0);
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_COMPLETE_EXCHANGE_BASE_D0);
         //! Die 1 writes to this addr for die 0
         s_power_remote_die_ctx.ex_complete.d2d_recv_arsm_payload =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_COMPLETE_EXCHANGE_BASE_D1);
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_COMPLETE_EXCHANGE_BASE_D1);
     }
     else
     {
         //! Current die is die 1
         //! Die 1 writes to this addr for die 0
         s_power_remote_die_ctx.ex_inputs.d2d_send_arsm_payload =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_INPUT_EXCHANGE_BASE_D1);
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_INPUT_EXCHANGE_BASE_D1);
         //! Die 0 writes to this addr for die 1
         s_power_remote_die_ctx.ex_inputs.d2d_recv_arsm_payload =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_INPUT_EXCHANGE_BASE_D0);
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_INPUT_EXCHANGE_BASE_D0);
         //! Die 1 writes to this addr for die 0
         s_power_remote_die_ctx.ex_complete.d2d_send_arsm_payload =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_COMPLETE_EXCHANGE_BASE_D1);
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_COMPLETE_EXCHANGE_BASE_D1);
         //! Die 0 writes to this addr for die 1
         s_power_remote_die_ctx.ex_complete.d2d_recv_arsm_payload =
-            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_COMPLETE_EXCHANGE_BASE_D0);
+            MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D2D_PWR_MESG_COMPLETE_EXCHANGE_BASE_D0);
     }
 
     // Print all the d2d arsm payload addresses for debugging purposes
@@ -463,7 +463,7 @@ void power_remote_die_sync_barrier(power_runconfig_t* p_runconfig)
     uintptr_t my_slot_addr;
     uintptr_t peer_slot_addr;
     uintptr_t sync_base =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_D2D_POWER_SYNC_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_D2D_POWER_SYNC_BASE);
 
     if (idsw_get_die_id() == DIE_0)
     {

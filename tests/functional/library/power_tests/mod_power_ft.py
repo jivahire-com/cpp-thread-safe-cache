@@ -200,7 +200,7 @@ class mod_power_ft(EchoFallsBaseTest):
             core = match.group(1)
             core_addr = match.group(2)
             desired_val = match.group(3)
-            if not (core == "1" and core_addr == "60400000" and desired_val == "1f"):
+            if not (core == "1" and core_addr == "6030a000" and desired_val == "1f"):
                 self.log.error(f"Core: {core}, Addr: 0x{core_addr}, Desired value: 0x{desired_val}")
                 self.test_notify(step="plimit not set", msg="Test Fail", _is_error=True)
                 self.dut.teardown()

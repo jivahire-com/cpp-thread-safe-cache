@@ -52,7 +52,7 @@ bool wait_for_remote_die_boot_stage(startup_shutdown_boot_stage_t current_boot_s
 {
     int status = SILIBS_SUCCESS;
     uintptr_t sync_point_base =
-        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_D2D_SYNC_POINT_BASE);
+        MSCP_ATU_AP_WINDOW_ARSM_DIE_1_ROOT_BASE_ADDR + ARSM_GET_REGION_OFFSET(D1_ARSM_MSCP_D2D_SYNC_POINT_BASE);
 
     if (idhw_is_single_die_boot_en() == false)
     {

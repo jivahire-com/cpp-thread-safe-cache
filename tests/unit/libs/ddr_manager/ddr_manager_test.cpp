@@ -20,6 +20,7 @@ extern "C" {
 
 #include <atu_lib.h>     // for atu_map
 #include <bdat_schema.h> // for bdat structure
+#include <boot_status.h>
 #include <cli_ddr.h>
 #include <crash_dump.h> // for crash_dump_init
 #include <ddr_i3c.h>
@@ -45,6 +46,19 @@ extern "C" {
 #include <startup_shutdown.h>
 #include <thread_x_mocks.h>
 #include <tx_api.h> // for TX_SUCCESS, ULONG, TX_NOT_DONE, TX_NO_MEMORY
+
+bool g_check_boot_status_params = false;
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* req, uint32_t status_code, uint32_t ext_code)
+{
+    FPFW_UNUSED(req);
+    FPFW_UNUSED(ext_code);
+    if (g_check_boot_status_params)
+    {
+        check_expected(status_code);
+        function_called();
+    }
+}
 
 } // extern "C"
 
@@ -720,9 +734,134 @@ void tx_queue_copy_parameter(void* p)
     *(uint32_t*)p = mock_type(int);
 }
 
+TEST_FUNCTION(ddr_manager_init_boot_status_cold_start, NULL, NULL)
+{
+    static ddr_service_context_t ddr_service_ctx = {};
+
+    g_check_boot_status_params = true;
+
+    will_return_always(__wrap_config_get_ddrmanager_sdl_en, true);
+    will_return_always(__wrap_variable_service_sync_get_variable, SILIBS_SUCCESS);
+    will_return_always(__wrap_variable_service_initialize_ctx, SILIBS_SUCCESS);
+    will_return(__wrap_atu_map, 0x012345678);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_system_info_is_warm_start, false);
+
+    // Queue create
+    expect_any(__wrap__txe_queue_create, queue_ptr);
+    expect_any(__wrap__txe_queue_create, name_ptr);
+    expect_any(__wrap__txe_queue_create, message_size);
+    expect_any(__wrap__txe_queue_create, queue_start);
+    expect_any(__wrap__txe_queue_create, queue_size);
+    expect_any(__wrap__txe_queue_create, queue_control_block_size);
+    will_return(__wrap__txe_queue_create, TX_SUCCESS);
+
+    // Semaphore create
+    expect_any(__wrap__txe_semaphore_create, semaphore_ptr);
+    expect_any(__wrap__txe_semaphore_create, name_ptr);
+    expect_any(__wrap__txe_semaphore_create, initial_count);
+    expect_any(__wrap__txe_semaphore_create, semaphore_control_block_size);
+    will_return(__wrap__txe_semaphore_create, TX_SUCCESS);
+
+    // Queue sends: BDAT, SMBIOS, PRM, POLLING_TIMER
+    expect_any_count(__wrap__txe_queue_send, queue_ptr, 4);
+    expect_any_count(__wrap__txe_queue_send, source_ptr, 4);
+    expect_any_count(__wrap__txe_queue_send, wait_option, 4);
+    will_return_count(__wrap__txe_queue_send, TX_SUCCESS, 4);
+
+    // Thread create
+    expect_any(__wrap__txe_thread_create, thread_ptr);
+    expect_any(__wrap__txe_thread_create, name_ptr);
+    expect_any(__wrap__txe_thread_create, entry_function);
+    expect_any(__wrap__txe_thread_create, entry_input);
+    expect_any(__wrap__txe_thread_create, stack_start);
+    expect_any(__wrap__txe_thread_create, stack_size);
+    expect_any(__wrap__txe_thread_create, priority);
+    expect_any(__wrap__txe_thread_create, preempt_threshold);
+    expect_any(__wrap__txe_thread_create, time_slice);
+    expect_any(__wrap__txe_thread_create, auto_start);
+    expect_any(__wrap__txe_thread_create, thread_control_block_size);
+    will_return(__wrap__txe_thread_create, TX_SUCCESS);
+
+    // ddr_manager_i3c_init
+    will_return(__wrap_idhw_get_die_id, 0);
+
+    // gtimer mocks
+    will_return(__wrap_gtimer_prodfw_get_counter, 1000000); // start timestamp
+    will_return(__wrap_gtimer_prodfw_get_counter, 4000000); // ddr training end
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000);
+
+    // --- Boot status expectations ---
+    // 1. DDR training start
+    expect_value(__wrap_boot_status_notify_extd, status_code, MSCP_BOOT_STATUS_CODE_SCP_DDR_TRAINING_START);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    // 2. DDR training end
+    expect_value(__wrap_boot_status_notify_extd, status_code, MSCP_BOOT_STATUS_CODE_SCP_DDR_TRAINING_END);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    // SDL load
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
+    // Don't skip publishing SDL address variable
+    will_return(__wrap_config_get_skip_sdl_address_publishing, false);
+
+    // SDL pointer variable write
+    will_return(__wrap_sdl_get_mem_ctx, (uintptr_t)sdl_test_buffer);
+    will_return(__wrap_sdl_get_mem_ctx, SCP_EXP_SDL_LOAD_SIZE);
+
+    // Invalidate Cache for SDL region
+    expect_any(SCB_CleanInvalidateDCache_by_Addr, addr);
+    expect_any(SCB_CleanInvalidateDCache_by_Addr, dsize);
+    expect_function_call(SCB_CleanInvalidateDCache_by_Addr);
+
+    // 3. SDL load end
+    expect_value(__wrap_boot_status_notify_extd, status_code, MSCP_BOOT_STATUS_CODE_SCP_DDR_SDL_LOAD_END);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    // Memory map
+    g_should_wrap_ddr_create_memory_map = true;
+    expect_function_call(__wrap_ddr_create_memory_map);
+
+    // 4. Memory map end
+    expect_value(__wrap_boot_status_notify_extd, status_code, MSCP_BOOT_STATUS_CODE_SCP_DDR_MEMORY_MAP_END);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    // hsp_send_ddr_init_notify
+    kng_hsp_mailbox_msg expected_msg = {};
+    expected_msg.header.cmd = HSP_MAILBOX_CMD_DDR_INIT_DONE_NOTIFY;
+    expect_memory(__wrap_fpfw_icc_base_send_recv_sync, payload_buffer, &expected_msg, sizeof(expected_msg));
+    expect_any(__wrap_fpfw_icc_base_send_recv_sync, output_recv_bytes);
+    will_return(__wrap_fpfw_icc_base_send_recv_sync, SILIBS_SUCCESS);
+
+    // 5. HSP notify end
+    expect_value(__wrap_boot_status_notify_extd, status_code, MSCP_BOOT_STATUS_CODE_SCP_DDR_HSP_NOTIFY_END);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    // Telemetry init
+    expect_function_calls(__wrap__txe_mutex_create, 2);
+
+    // Crash dump
+    crash_dump_context_t context = {.die_index = 0, .core_index = CRASH_DUMP_CORE_SCP, .in_memory = in_memory};
+    crash_dump_init(&context);
+
+    // Duration calculation
+    will_return(__wrap_gtimer_prodfw_get_counter, 5000000);
+    will_return(__wrap_gtimer_prodfw_get_frequency, 125000000);
+
+    ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
+    g_should_wrap_ddr_create_memory_map = false;
+    g_check_boot_status_params = false;
+}
+
 TEST_FUNCTION(ddr_manager_init_warm_start, NULL, NULL)
 {
     static ddr_service_context_t ddr_service_ctx = {};
+
+    g_check_boot_status_params = false;
 
     will_return_always(__wrap_config_get_ddrmanager_sdl_en, true);
 

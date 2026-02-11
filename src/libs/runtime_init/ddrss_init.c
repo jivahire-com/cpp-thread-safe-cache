@@ -10,10 +10,13 @@
 
 /*------------- Includes -----------------*/
 #include <DbgPrint.h>
+#include <boot_status.h>
 #include <ddr_manager.h>
 #include <ddr_manager_dfwk.h>
 #include <ddrss.h>
 #include <fpfw_init.h>
+#include <idsw.h>
+#include <idsw_kng.h>
 #include <stdio.h>
 #include <system_info.h>
 
@@ -26,7 +29,7 @@
 
 /*-------------- Functions ---------------*/
 // Todo: Add "ddr_training" to dependencies when available
-FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_ver", "debug_print", "sysinfo"))
+FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_ver", "debug_print", "sysinfo", "boot_stat"))
 {
     if (system_info_is_warm_start())
     {
@@ -34,16 +37,28 @@ FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_v
         return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
     }
 
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_DDR_PCR_INIT_START,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_DDR, (idsw_get_die_id() == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
+
     KNG_DIE_ID die_num = idsw_get_die_id();
     FPFW_DBGPRINT_INFO("DDR PCR init, die_num: [%u]\n", die_num);
 
     prod_ddrss_pcr_init(die_num);
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_DDR_PCR_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_DDR, (idsw_get_die_id() == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
 FPFW_INIT_COMPONENT(
     ddr,
-    FPFW_INIT_DEPENDENCIES("sds_int", "std_io", "ddr_pcr", "mesh_stg_2", "hw_ver", "icc_hspmbx", "cfg_mgr", "css_pome", "atu_svc", "fuse_post_mesh", "sysinfo", "core_info"))
+    FPFW_INIT_DEPENDENCIES("sds_int", "std_io", "ddr_pcr", "mesh_stg_2", "hw_ver", "icc_hspmbx", "cfg_mgr", "css_pome", "atu_svc", "fuse_post_mesh", "sysinfo", "core_info", "boot_stat"))
 {
     static uint8_t ddr_stack[DDR_STACK_SIZE];
     static uint32_t ddr_queue_pool[10];
@@ -68,8 +83,20 @@ FPFW_INIT_COMPONENT(
         return (fpfw_init_result_t){FPFW_INIT_STATUS_E_POINTER, "icc_hspmbx is null"};
     }
 
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_DDR_MANAGER_INIT_START,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_DDR, (idsw_get_die_id() == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
+
     // Initialize DDR Manager - prod_ddrss_lib_init is moved to inside this init
     ddr_manager_init(&ddr_service_ctx, &config, icc_ctx);
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_DDR_MANAGER_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_DDR, (idsw_get_die_id() == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 

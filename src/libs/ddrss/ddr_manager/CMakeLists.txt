@@ -52,6 +52,7 @@ target_link_libraries(${TARGET}
         ms::cmsis::interface
         ms::lib::arm_intrinsic
         ms::lib::atomics
+        ms::lib::boot_status
         ms::lib::crash_dump
         ms::lib::ddrss_init
         ms::lib::error_codes

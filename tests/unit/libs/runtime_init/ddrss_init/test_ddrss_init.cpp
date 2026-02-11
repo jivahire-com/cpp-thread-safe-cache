@@ -12,7 +12,8 @@
 #include <cstdint>         // IWYU pragma: keep
 
 extern "C" {
-#include <FpFwUtils.h>   // for FPFW_UNUSED
+#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <boot_status.h>
 #include <ddr_manager.h> // for ddr_manager_init, ddr_service_context_t
 #include <ddrss.h>
 #include <ddrss_lib.h>
@@ -33,6 +34,7 @@ extern fpfw_init_component_t _fpfw_component_ddr;
 extern fpfw_init_component_t _fpfw_component_ddr_pcr;
 
 static uint32_t dummy_icc_ctx = 0;
+static bool g_check_boot_status_params = false;
 
 /*------------- Functions ----------------*/
 
@@ -161,6 +163,17 @@ fpfw_status_t __wrap_fpfw_icc_base_send_sync(fpfw_icc_base_ctx_t* icc_ctx, void*
     return mock_type(fpfw_status_t);
 }
 
+void __wrap_boot_status_notify_extd(boot_status_req_t* req, uint32_t status_code, uint32_t ext_code)
+{
+    FPFW_UNUSED(req);
+    FPFW_UNUSED(ext_code);
+    if (g_check_boot_status_params)
+    {
+        check_expected(status_code);
+        function_called();
+    }
+}
+
 //
 // Tests
 //
@@ -178,7 +191,7 @@ TEST_FUNCTION(test_ddr_pcr_init, nullptr, nullptr)
     // Set up expectations
     will_return(__wrap_system_info_is_warm_start, false);
     const auto test_die = (KNG_DIE_ID)0;
-    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return_always(__wrap_idsw_get_die_id, test_die);
 
     // Inside prod_ddrss_pcr_init
     will_return(__wrap_idhw_is_single_die_boot_en, false);
@@ -358,8 +371,59 @@ TEST_FUNCTION(test_fips_kat_ddrss_load_crypto_key_warm_reset, nullptr, nullptr)
 
 TEST_FUNCTION(test_ddr_init, nullptr, nullptr)
 {
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+
     // Call API under test
     _fpfw_component_ddr.init_fn();
+}
+
+TEST_FUNCTION(test_ddr_pcr_init_boot_status, nullptr, nullptr)
+{
+    g_check_boot_status_params = true;
+
+    // Cold start path: should emit PCR_INIT_START and PCR_INIT_END boot status
+    will_return(__wrap_system_info_is_warm_start, false);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+
+    // boot_status: PCR_INIT_START
+    expect_value(__wrap_boot_status_notify_extd, status_code, MSCP_BOOT_STATUS_CODE_SCP_DDR_PCR_INIT_START);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    // Inside prod_ddrss_pcr_init
+    will_return(__wrap_idhw_is_single_die_boot_en, false);
+    will_return(__wrap_ddrss_atu_map_cfg_space, 0x12345678);
+    will_return(__wrap_ddrss_set_die_base, SILIBS_SUCCESS);
+    expect_function_call(__wrap_pcr_ddrss_configure_clock_and_pcr_reset);
+    expect_function_call(__wrap_ddrss_atu_unmap_cfg_space);
+
+    // boot_status: PCR_INIT_END
+    expect_value(__wrap_boot_status_notify_extd, status_code, MSCP_BOOT_STATUS_CODE_SCP_DDR_PCR_INIT_END);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    fpfw_init_result_t result = _fpfw_component_ddr_pcr.init_fn();
+    assert_int_equal(result.status, FPFW_INIT_STATUS_SUCCESS);
+
+    g_check_boot_status_params = false;
+}
+
+TEST_FUNCTION(test_ddr_init_boot_status, nullptr, nullptr)
+{
+    g_check_boot_status_params = true;
+
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+
+    // boot_status: DDR_MANAGER_INIT_START
+    expect_value(__wrap_boot_status_notify_extd, status_code, MSCP_BOOT_STATUS_CODE_SCP_DDR_MANAGER_INIT_START);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    // boot_status: DDR_MANAGER_INIT_END
+    expect_value(__wrap_boot_status_notify_extd, status_code, MSCP_BOOT_STATUS_CODE_SCP_DDR_MANAGER_INIT_END);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
+    fpfw_init_result_t result = _fpfw_component_ddr.init_fn();
+    assert_int_equal(result.status, FPFW_INIT_STATUS_SUCCESS);
+
+    g_check_boot_status_params = false;
 }
 
 } // extern "C"

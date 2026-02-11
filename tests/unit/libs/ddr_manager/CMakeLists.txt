@@ -21,6 +21,7 @@ set(LIBS
         ms::lib::hsp_firmware_headers
         ms::lib::threadx
         ms::mocks::threadx
+        ms::lib::boot_status
         ms::lib::config_manager
         ms::lib::ddr::cli
         ms::lib::stdio_textio
@@ -144,6 +145,7 @@ mock_target(${TARGET}
     send_ppr_type_to_die1
     receive_ppr_type_from_die0
     copy_ppr_type
+    boot_status_notify_extd
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

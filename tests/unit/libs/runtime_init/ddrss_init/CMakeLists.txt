@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.interface.platform.dbgprint
         idhw
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::ddr_manager
         ms::lib::ddrss_init
         ms::lib::system_info
@@ -42,6 +43,7 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     FPFwCoreInterruptEnableVector
     FPFwCoreInterruptRegisterCallback
+    boot_status_notify_extd
     ddr_manager_init
     ddrss_atu_map_cfg_space
     ddrss_atu_unmap_cfg_space

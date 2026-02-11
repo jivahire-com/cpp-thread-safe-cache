@@ -12,6 +12,7 @@
 #include "ddr_manager_i.h" // for ddr_create_bdat, ddr_create_memory_map
 
 #include <ErrorHandler.h> // for FPFwErrorRaise
+#include <boot_status.h>
 #include <bug_check.h>
 #include <crash_dump.h>
 #include <ddr_manager_dfwk.h>
@@ -324,6 +325,8 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     ddr_service_config = pconfig;
     KNG_DIE_ID die_id = idsw_get_die_id();
 
+    boot_status_req_t boot_status_req = {0};
+
     uint32_t work_queue_msg = 0;
     int status = tx_queue_create((TX_QUEUE*)&pddr_service_ctx->work_queue, /* TX_QUEUE *queue_ptr */
                                  (char*)DDR_WORK_QUEUE_NAME,               /* CHAR *name_ptr */
@@ -407,6 +410,12 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     DDR_LOG_CRIT("DDR init, die_num: [%u]\n", die_id);
     // Record start timestamp
     uint64_t start_timestamp = gtimer_prodfw_get_counter();
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_DDR_TRAINING_START,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_DDR, (die_id == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
+
     prod_ddrss_lib_init(die_id);
 
     // Calculate DDRSS init duration in milliseconds
@@ -415,12 +424,22 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     DDR_LOG_CRIT("DDR training time: %llu ms\n", ddr_training_time_ms);
     DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DDR_TRAINING_TIME_MS, (int)ddr_training_time_ms);
 
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_DDR_TRAINING_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_DDR, (die_id == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
+
     // Load the SDL from flash to DDR reserved region
     if (config_get_ddrmanager_sdl_en() == true)
     {
         load_shared_defect_list_to_DDR();
         ddr_publish_sdl_addr();
         cleanup_after_sdl_load();
+
+        boot_status_notify_extd(
+            &boot_status_req,
+            MSCP_BOOT_STATUS_CODE_SCP_DDR_SDL_LOAD_END,
+            GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_DDR, (die_id == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
     }
     else
     {
@@ -429,7 +448,18 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     }
 
     ddr_create_memory_map(); // Includes publishing the memory map to SDS
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_DDR_MEMORY_MAP_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_DDR, (die_id == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
+
     hsp_send_ddr_init_notify(icc_ctx);
+
+    boot_status_notify_extd(
+        &boot_status_req,
+        MSCP_BOOT_STATUS_CODE_SCP_DDR_HSP_NOTIFY_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_DDR, (die_id == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY));
 
     ddr_init_telemetry();
 

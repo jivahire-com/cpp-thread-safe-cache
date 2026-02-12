@@ -33,6 +33,9 @@ extern "C" {
 
 /*-- Declarations (Statics and globals) --*/
 
+/** Typical EXC_RETURN value: thread mode, MSP, no FP context (bit 4 set) */
+#define TEST_EXC_RETURN 0xFFFFFFF9U
+
 /*------------- Functions ----------------*/
 //
 // Mocks
@@ -218,7 +221,7 @@ void test_exception_handler_params(int exception, uint32_t error_code)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 }
 
 TEST_FUNCTION(test_exception_handler_init, NULL, NULL)
@@ -291,7 +294,7 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 
     // Set up expectations
     expect_function_call(__wrap_wdog_cmsdk_apb_disable);
@@ -314,7 +317,7 @@ TEST_FUNCTION(test_exception_handler_bug_check, nullptr, nullptr)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 }
 
 TEST_FUNCTION(test_bus_fault_handler_d0_arsm_UE, nullptr, nullptr)
@@ -377,7 +380,7 @@ TEST_FUNCTION(test_bus_fault_handler_d0_arsm_UE, nullptr, nullptr)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 }
 
 TEST_FUNCTION(test_bus_fault_handler_d1_arsm_UE, nullptr, nullptr)
@@ -440,7 +443,7 @@ TEST_FUNCTION(test_bus_fault_handler_d1_arsm_UE, nullptr, nullptr)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 }
 
 TEST_FUNCTION(test_bus_fault_handler_d0_rsm_UE, nullptr, nullptr)
@@ -503,7 +506,7 @@ TEST_FUNCTION(test_bus_fault_handler_d0_rsm_UE, nullptr, nullptr)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 }
 
 TEST_FUNCTION(test_bus_fault_handler_d1_rsm_UE, nullptr, nullptr)
@@ -566,7 +569,7 @@ TEST_FUNCTION(test_bus_fault_handler_d1_rsm_UE, nullptr, nullptr)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 }
 
 TEST_FUNCTION(test_hard_fault_handler_scf_ram_UE, nullptr, nullptr)
@@ -626,7 +629,7 @@ TEST_FUNCTION(test_hard_fault_handler_scf_ram_UE, nullptr, nullptr)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 }
 
 TEST_FUNCTION(test_bus_fault_handler_rmss_ram0_UE, nullptr, nullptr)
@@ -686,7 +689,7 @@ TEST_FUNCTION(test_bus_fault_handler_rmss_ram0_UE, nullptr, nullptr)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 }
 
 TEST_FUNCTION(test_bus_fault_handler_rmss_ram1_UE, nullptr, nullptr)
@@ -746,7 +749,7 @@ TEST_FUNCTION(test_bus_fault_handler_rmss_ram1_UE, nullptr, nullptr)
     expect_function_call(crash_dump_wait_forever);
 
     // Call API
-    exception_handler(&stack_frame);
+    exception_handler(&stack_frame, TEST_EXC_RETURN);
 }
 
 TEST_FUNCTION(test_threadx_stack_error_handler, nullptr, nullptr)

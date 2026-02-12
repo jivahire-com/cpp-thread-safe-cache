@@ -21,6 +21,10 @@ __DTCMEND__          = 0x20077FFF;
 __RMSSDATASTART__    = 0x01345000;
 __RMSSDATAEND__      = 0x013B3FFF;
 
+/* Dummy offsets for ARM_EX data (stripped out of binary) */
+__ARM_EX_START__ = 0xF0000000;
+__ARM_EX_SIZE__  = 0x00FFFFFF;
+
 /*
  * ADO 2809728 - Rollback original reserved space
  * after create a new section in RMSS ro region for functions,

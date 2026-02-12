@@ -27,6 +27,7 @@ MEMORY
   CODE   (rx) : ORIGIN = __CODE_START__, LENGTH = __CODE_SIZE__
   DATA   (rw) : ORIGIN = __DATA_START__, LENGTH = __DATA_SIZE__
   RMSS_DATA   (rx) : ORIGIN = __RMSS_DATA_START__, LENGTH = __RMSS_DATA_SIZE__
+  ARM_EX (rx) : ORIGIN = __ARM_EX_START__, LENGTH = __ARM_EX_SIZE__
 }
 
 SECTIONS
@@ -67,13 +68,13 @@ SECTIONS
     .ARM.extab :
     {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
-    } > CODE
+    } > ARM_EX
 
     __exidx_start = .;
     .ARM.exidx :
     {
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
-    } > CODE
+    } > ARM_EX
     __exidx_end = .;
 
     .BuildBinaryVersion :

@@ -47,6 +47,18 @@
 #define AP_RSM_ADDRESS_DIEn(n)        ((uint64_t)0x2F000000UL + 0x1000000000ULL * (n))
 #define AP_RSM_SIZE                   (0x10000)
 
+/** Size of the basic exception stack frame (R0, R1, R2, R3, R12, LR, PC, xPSR) */
+#define EXCEPTION_FRAME_BASIC_SIZE (8U * sizeof(uint32_t))
+
+/** Size of the extended exception stack frame including FP context (S0-S15, FPSCR, reserved) */
+#define EXCEPTION_FRAME_FP_EXT_SIZE (18U * sizeof(uint32_t))
+
+/** EXC_RETURN bit 4: 0 = FP context stacked, 1 = no FP context */
+#define EXC_RETURN_FTYPE_MASK (1U << 4)
+
+/** xPSR bit 9: 1 = SP was force-aligned to 8 bytes (4-byte pad inserted) */
+#define XPSR_STKALIGN_MASK (1U << 9)
+
 /*------------- Functions ----------------*/
 static void print_context_info(core_crash_context_t* crash_context)
 {
@@ -85,11 +97,12 @@ static void print_context_info(core_crash_context_t* crash_context)
  * @brief Save the crash context into the global crash context object.
  *
  * @param stack_frame Pointer to the exception stack frame
+ * @param exc_return  The EXC_RETURN value from LR at exception entry
  */
 #ifndef _WIN32
-static inline __attribute__((always_inline)) void save_crash_context(exception_stack_frame_t* stack_frame)
+static inline __attribute__((always_inline)) void save_crash_context(exception_stack_frame_t* stack_frame, uint32_t exc_return)
 #else
-__attribute__((__weak__)) void save_crash_context(exception_stack_frame_t* stack_frame)
+__attribute__((__weak__)) void save_crash_context(exception_stack_frame_t* stack_frame, uint32_t exc_return)
 #endif
 {
 #ifndef _WIN32
@@ -127,7 +140,26 @@ __attribute__((__weak__)) void save_crash_context(exception_stack_frame_t* stack
     g_core_crash_context.lr = stack_frame->LR;
     g_core_crash_context.pc = stack_frame->PC;
     g_core_crash_context.xpsr = stack_frame->PSR;
-    g_core_crash_context.sp = (uint32_t)(stack_frame) + sizeof(exception_stack_frame_t);
+
+    // Calculate the pre-exception SP.
+    // Start with the basic exception frame size (8 words: R0-R3, R12, LR, PC, xPSR).
+    uint32_t frame_size = EXCEPTION_FRAME_BASIC_SIZE;
+
+    // If EXC_RETURN bit 4 (FTYPE) is 0, the hardware also stacked FP context
+    // (S0-S15, FPSCR, and a reserved word = 18 additional 32-bit words).
+    if ((exc_return & EXC_RETURN_FTYPE_MASK) == 0)
+    {
+        frame_size += EXCEPTION_FRAME_FP_EXT_SIZE;
+    }
+
+    // If xPSR bit 9 (STKALIGN) is set, the hardware inserted a 4-byte padding
+    // word to enforce 8-byte stack alignment before pushing the exception frame.
+    if (stack_frame->PSR & XPSR_STKALIGN_MASK)
+    {
+        frame_size += sizeof(uint32_t);
+    }
+
+    g_core_crash_context.sp = (uint32_t)(stack_frame) + frame_size;
 }
 
 /**
@@ -414,10 +446,11 @@ static bool check_ecc_fault(int32_t* errorCode, acpi_err_sec_firmware_t* sec_fw_
  * @brief Exception handler for Cortex-M7. This function is called when an exception occurs.
  *
  * @param stack_frame Pointer to the exception stack frame
+ * @param exc_return  The EXC_RETURN value from LR at exception entry
  */
-FPFW_NORETURN void exception_handler(exception_stack_frame_t* stack_frame)
+FPFW_NORETURN void exception_handler(exception_stack_frame_t* stack_frame, uint32_t exc_return)
 {
-    save_crash_context(stack_frame);
+    save_crash_context(stack_frame, exc_return);
 
     acpi_err_sec_firmware_t sec_fw_cper_section = {0};
     bool sec_fw_cper_section_valid = false;
@@ -523,6 +556,7 @@ FPFW_NORETURN __attribute__((naked)) void main_exception_handler(void)
                      "ite eq        \n"
                      "mrseq r0, msp \n" // Move msp into output register if EXC_RETURN[2] == 0
                      "mrsne r0, psp \n" // Move psp into output register if EXC_RETURN[2] == 1
+                     "mov r1, lr    \n" // Pass EXC_RETURN as second argument
                      "b exception_handler"); // Branch to exception handler with the location of the exception stack frame
 #endif
 }

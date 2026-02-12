@@ -32,5 +32,5 @@ typedef struct __attribute__((__packed__)) {
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
-void exception_handler(exception_stack_frame_t* stack_frame);
+void exception_handler(exception_stack_frame_t* stack_frame, uint32_t exc_return);
 void threadx_stack_error_handler(TX_THREAD* tx_thread);

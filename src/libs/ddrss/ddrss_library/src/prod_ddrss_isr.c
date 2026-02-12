@@ -273,6 +273,11 @@ void prod_ddrss_interrupt_handler(void* context)
     // Read DDRSS INTU status
     printf("DDRSS %d ISR Enter\n", (unsigned int)ddrss);
 
+    // Verify if MC IIDR is expected.
+    // It indirectly checks the DDRSS die base is correct or not.
+    sts = ddrss_check_mc_id(mc);
+    BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
+
     sts = ddrss_get_component_base(ddrss, DDRSS_COMP_ID_DDRINTU, &ddrss_base);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 

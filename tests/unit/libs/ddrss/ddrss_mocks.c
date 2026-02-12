@@ -101,6 +101,18 @@ void __wrap_crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, u
     function_called();
 }
 
+int __wrap_ddrss_check_mc_id(uint32_t mc)
+{
+    if (mc >= DDRSS_MAX_MC_NUM)
+    {
+        return SILIBS_E_SUPPORT;
+    }
+    else
+    {
+        return SILIBS_SUCCESS;
+    }
+}
+
 KNG_DIE_ID __wrap_idsw_get_die_id()
 {
     return mock_type(KNG_DIE_ID);

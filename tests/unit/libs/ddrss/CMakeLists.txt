@@ -60,6 +60,7 @@ mock_target(${TARGET}
     ddrss_atu_map_fips_ns_space
     ddrss_atu_map_fips_rt_space
     ddrss_atu_unmap_fips_space
+    ddrss_check_mc_id
     ddrss_clear_phy_interrupt_status
     ddrss_convert_ras_rec_to_cper
     ddrss_ddr_intu_clear_destination_interrupt

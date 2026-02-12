@@ -60,9 +60,11 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
         ddrss_print_cper(&ddr_ras_cper, &ddr_vendor_cper);
         if (sub_sts == SILIBS_SUCCESS)
         {
-            acpi_error_severity_t severity = (record.err_type & RAS_UNCORRECTABLE_ERROR)
-                                                 ? ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL
-                                                 : ACPI_ERROR_SEVERITY_CORRECTED;
+            acpi_error_severity_t severity =
+                (record.err_type & (RAS_UNCORRECTABLE_ERROR | RAS_ARM_UNCORRECTABLE_UNCONTAINABLE_ERROR |
+                                    RAS_ARM_UNCORRECTABLE_UNRECOVERABLE_ERROR))
+                    ? ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL
+                    : ACPI_ERROR_SEVERITY_CORRECTED;
             acpi_cper_section_t std_cper_section = {0};
             std_cper_section.sec_mem = ddr_ras_cper;
             hm_submit_cper(ACPI_ERROR_DOMAIN_STD_MEMORY, severity, &std_cper_section, sizeof(std_cper_section));

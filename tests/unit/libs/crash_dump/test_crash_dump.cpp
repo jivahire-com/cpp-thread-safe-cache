@@ -20,6 +20,8 @@
 #include <tx_api.h> // for TX_THREAD, ULONG
 
 extern "C" {
+#include "test_crash_dump_i.h"
+
 #include <../src/crash_dump_accel.h>     // for crash_dump_copy_accel_cd_file
 #include <../src/crash_dump_gpio.h>      // for cd_gpio_assert_cd_available, cd_gpio_as...
 #include <../src/crash_dump_icc.h>       // for crash_dump_transfer_full_dump_to_bmc
@@ -40,14 +42,6 @@ extern "C" {
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CD_DEFAULT_MEM_POOL_SIZE 1024
-// ECID INFO GUID
-#define CD_ECID_INFO_GUID                                  \
-    {                                                      \
-        0x185084EC, 0xE4AD, 0x4DA1,                        \
-        {                                                  \
-            0xA4, 0xDF, 0x8A, 0xDC, 0xF3, 0x3D, 0xD1, 0xB4 \
-        }                                                  \
-    }
 
 /*------------- Typedefs -----------------*/
 
@@ -76,8 +70,6 @@ extern VOID (*static_timer_cb)(ULONG id);
 
 extern bool transfer_completed;
 extern DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE static_cd_dfwk_CompletionRoutine;
-
-extern FPFW_CD_CUSTOM_CHUNK_UPDATE_CALLBACK __wrap_cd_ecid_update_callback;
 
 bool __real_crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
 bool __use_real_crash_dump_get_is_dump_complete = false;
@@ -261,6 +253,17 @@ void set_expectations_crash_dump_register_threadx(crash_dump_type_context_t* typ
                  type_context->type == CRASH_DUMP_TYPE_MINI ? FPFW_CD_DUMP_PRIORITY_NORMAL : FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }
 
+void set_expectations_crash_dump_register_serial_output()
+{
+    static GUID CD_SERIAL_OUTPUT_INFO_GUID_DATA = CD_SERIAL_OUTPUT_INFO_GUID;
+    expect_function_call(__wrap_CdRegisterCustomChunk);
+    expect_memory(__wrap_CdRegisterCustomChunk, &signature, &CD_SERIAL_OUTPUT_INFO_GUID_DATA, sizeof(GUID));
+    expect_value(__wrap_CdRegisterCustomChunk, clientContext, NULL);
+    expect_value(__wrap_CdRegisterCustomChunk, payloadSize, DUMP_ROUND_UP(sizeof(cd_serial_output_buffer_t), DUMP_NATURAL_ALIGNMENT));
+    expect_value(__wrap_CdRegisterCustomChunk, getSizeCallback, NULL);
+    expect_value(__wrap_CdRegisterCustomChunk, priority, FPFW_CD_DUMP_PRIORITY_OPPORTUNISTIC);
+}
+
 void set_expectations_crash_dump_register_mmio_register(volatile void* mmio_reg, uint32_t reg_count, FPFwCdDumpPriority priority)
 {
     expect_function_call(__wrap_CdRegisterMMIORegisterSet);
@@ -426,6 +429,9 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp, nullptr, nullptr)
     // crash_dump_register_threadx()
     set_expectations_crash_dump_register_threadx(&type_context);
 
+    // crash_dump_register_serial_output()
+    set_expectations_crash_dump_register_serial_output();
+
     // Call API under test
     KNG_STATUS result = crash_dump_register_dump(&type_context);
     assert_true(KNG_SUCCESS == result);
@@ -488,6 +494,9 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp_warmstart, nullptr, nullptr
 
     // crash_dump_register_threadx()
     set_expectations_crash_dump_register_threadx(&type_context);
+
+    // crash_dump_register_serial_output()
+    set_expectations_crash_dump_register_serial_output();
 
     // Call API under test
     KNG_STATUS result = crash_dump_register_dump(&type_context);
@@ -552,6 +561,9 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
     // crash_dump_register_threadx()
     set_expectations_crash_dump_register_threadx(&type_context);
 
+    // crash_dump_register_serial_output()
+    set_expectations_crash_dump_register_serial_output();
+
     // Call API under test
     KNG_STATUS result = crash_dump_register_dump(&type_context);
     assert_true(KNG_SUCCESS == result);
@@ -614,6 +626,9 @@ TEST_FUNCTION(test_crash_dump_register_mini_dump, nullptr, nullptr)
 
     // crash_dump_register_threadx()
     set_expectations_crash_dump_register_threadx(&type_context);
+
+    // crash_dump_register_serial_output()
+    set_expectations_crash_dump_register_serial_output();
 
     // Call API under test
     KNG_STATUS result = crash_dump_register_dump(&type_context);

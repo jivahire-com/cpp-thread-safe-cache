@@ -12,6 +12,8 @@
 #include <map>
 
 extern "C" {
+#include "test_crash_dump_i.h"
+
 #include <CrashDump.h>                // for FPFW_CD_DUMP_CALLBACK
 #include <FpFwUtils.h>                // for FPFW_UNUSED
 #include <crash_dump.h>               // for crash_dump_config_t, GetCrashDu...
@@ -411,7 +413,7 @@ bool __wrap_CdRegisterRegisterSet(FPFwCrashDumpCtx* ctx, void* address, uint32_t
     return true;
 }
 
-FPFW_CD_CUSTOM_CHUNK_UPDATE_CALLBACK __wrap_cd_ecid_update_callback = NULL;
+FPFW_CD_CUSTOM_CHUNK_UPDATE_CALLBACK __wrap_cd_custom_chunk_update_callbacks[CUSTOM_CHUNK_CALLBACK_MAX] = {0};
 
 bool __wrap_CdRegisterCustomChunk(FPFwCrashDumpCtx* ctx,
                                   GUID signature,
@@ -430,7 +432,21 @@ bool __wrap_CdRegisterCustomChunk(FPFwCrashDumpCtx* ctx,
     assert_non_null(updateCallback);
     check_expected(priority);
 
-    __wrap_cd_ecid_update_callback = updateCallback;
+    GUID CD_ECID_INFO_GUID_DATA = CD_ECID_INFO_GUID;
+    GUID CD_SERIAL_OUTPUT_INFO_GUID_DATA = CD_SERIAL_OUTPUT_INFO_GUID;
+
+    if (memcmp(&signature, &CD_ECID_INFO_GUID_DATA, sizeof(GUID)) == 0)
+    {
+        __wrap_cd_custom_chunk_update_callbacks[CUSTOM_CHUNK_CALLBACK_ECID] = updateCallback;
+    }
+    else if (memcmp(&signature, &CD_SERIAL_OUTPUT_INFO_GUID_DATA, sizeof(GUID)) == 0)
+    {
+        __wrap_cd_custom_chunk_update_callbacks[CUSTOM_CHUNK_CALLBACK_SERIAL_OUTPUT] = updateCallback;
+    }
+    else
+    {
+        assert_true(false); // Unexpected signature
+    }
 
     function_called();
 

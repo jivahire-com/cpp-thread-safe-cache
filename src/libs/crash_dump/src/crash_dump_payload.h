@@ -13,6 +13,7 @@
 #include <crash_dump.h> // for CD_GUID
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define MAX_CD_SERIAL_OUTPUT_BUFFER_SIZE 4096
 
 /*------------- Typedefs -----------------*/
 typedef struct _CD_THREADX_DATA
@@ -32,6 +33,14 @@ typedef struct _CD_MSFT_VERSION_INFO
     BUILD_ELF_SECTION_BINARY_METADATA versionInfo;
     uint8_t elf_build_id[SHA1_GNU_ELF_BUILD_ID_SIZE__bytes];
 } CD_MSFT_VERSION_INFO;
+
+// Ring buffer structure for storing serial output to include in crash dump
+typedef struct
+{
+    uint16_t head;
+    uint16_t tail;
+    uint8_t buffer[MAX_CD_SERIAL_OUTPUT_BUFFER_SIZE];
+} cd_serial_output_buffer_t;
 
 /*-------- Function Prototypes -----------*/
 /**
@@ -84,3 +93,10 @@ void crash_dump_capture_threadx(void* context);
  * #param type_context crash dump type based context
  */
 void crash_dump_register_ECID(crash_dump_type_context_t* type_context);
+
+/**
+ * @brief Captures serial output information
+ * 
+ * #param type_context crash dump type based context
+ */
+void crash_dump_register_serial_output(crash_dump_type_context_t* type_context);

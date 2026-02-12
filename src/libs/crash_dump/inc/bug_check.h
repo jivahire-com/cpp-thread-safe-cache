@@ -115,3 +115,5 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*--------- Function Prototypes ----------*/
+void crash_dump_utc_ready(bool ready);
+bool crash_dump_is_utc_ready(void);

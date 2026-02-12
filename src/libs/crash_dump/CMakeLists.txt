@@ -17,6 +17,7 @@ set (SOURCES
         src/crash_dump_payload_core.c
         src/crash_dump_payload_ecid.c
         src/crash_dump_payload_msft.c
+        src/crash_dump_payload_serial.c
         src/crash_dump_payload_threadx.c
         src/crash_dump_pldm.c
         src/crash_dump_status.c

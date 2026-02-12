@@ -27,7 +27,7 @@
 
 /*-- Declarations (Statics and globals) --*/
 static fpfw_tmr_queue_t s_timer_queue;
-static uintptr_t s_timer_base_address;
+static uintptr_t s_timer_base_address = 0;
 static int s_timer_irq;
 
 /*------------- Functions ----------------*/
@@ -154,4 +154,9 @@ uint64_t gtimer_get_timestamp_us()
 uint64_t gtimer_get_timestamp_ms()
 {
     return (FPFW_DUR_S_TO_MS(1) * gtimer_prodfw_get_counter()) / gtimer_prodfw_get_frequency();
+}
+
+uintptr_t gtimer_prodfw_get_timer_base_address()
+{
+    return s_timer_base_address;
 }

@@ -13,11 +13,12 @@
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <bug_check.h>  // for BUG_ASSERT_PARAM
 #include <crash_dump.h> // for GetCrashDumpConfig
-#include <stdarg.h>     // for va_list, va_start, va_end
-#include <stdbool.h>    // for bool
-#include <stdint.h>     // for uint32_t, uint64_t
-#include <stdio.h>      // for printf
-#include <tx_api.h>     // for tx_mutex_get, tx_mutex_put
+#include <gtimer_prodfw.h>
+#include <stdarg.h>  // for va_list, va_start, va_end
+#include <stdbool.h> // for bool
+#include <stdint.h>  // for uint32_t, uint64_t
+#include <stdio.h>   // for printf
+#include <tx_api.h>  // for tx_mutex_get, tx_mutex_put
 #include <utc_sync_client_service.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -162,6 +163,18 @@ bool postDumpCallbackOverride(void* postDumpCtx)
  */
 uint64_t getCurTimeDefault(void)
 {
+    if (!crash_dump_is_utc_ready())
+    {
+        // If the UTC is not initialized yet, use gtimer counter.
+        if (gtimer_prodfw_get_timer_base_address() != 0)
+        {
+            return gtimer_get_timestamp_ms();
+        }
+
+        // UTC and gtimer are not initialized.
+        return 0;
+    }
+
     return utc_sync_client_get_current_time_epoch_ms();
 }
 

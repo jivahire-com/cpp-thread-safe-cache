@@ -14,6 +14,7 @@
 #include <DfwkClient.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
+#include <crash_dump_serial.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <sys/stat.h>
@@ -77,11 +78,15 @@ int _write_r(struct _reent* reent, int fh, const unsigned char* buf, unsigned le
         while (write_request.output.written_bytes < write_request.input.byte_count)
         {
             uart_pl011_write_byte(config->base_address, *byte_ptr);
+            // Store the output in the crash dump buffer
+            crash_dump_write_serial_byte(*byte_ptr);
+
             //! If the byte is a newline, & carriage return is not skipped, insert a carriage return (0x0D)
             //! This is to ensure compatibility with systems that expect a CRLF line ending.
             if ((*byte_ptr == '\n') && (!config->disable_auto_cr))
             {
                 uart_pl011_write_byte(config->base_address, '\r');
+                crash_dump_write_serial_byte('\r');
             }
             if (config->is_vuart_enabled)
             {

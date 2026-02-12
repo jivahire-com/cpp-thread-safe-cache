@@ -150,6 +150,10 @@ FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "mts_
     {
         sc = FPFW_INIT_STATUS_E_POINTER;
     }
+    else
+    {
+        crash_dump_utc_ready(true);
+    }
 
     boot_status_notify_extd(
         &boot_status_req,

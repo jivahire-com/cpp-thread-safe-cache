@@ -103,3 +103,10 @@ uint64_t gtimer_get_timestamp_us();
  * @return uint64_t 
  */
 uint64_t gtimer_get_timestamp_ms();
+
+/**
+ * @brief Utility function to get the timer base address, which can be used for gtimer init state
+ * 
+ * @return uintptr_t - timer base address
+ */
+uintptr_t gtimer_prodfw_get_timer_base_address();

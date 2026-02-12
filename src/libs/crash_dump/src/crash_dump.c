@@ -30,6 +30,7 @@
 core_crash_context_t g_core_crash_context;
 static volatile bool s_bug_check_initiated_crash = false;
 static volatile bool s_is_ue = false;
+static bool g_utc_ready = false;
 uint32_t cd_origin_core_id = 0;
 
 /*------------- Functions ----------------*/
@@ -60,6 +61,16 @@ bool crash_dump_is_UE(void)
 bool crash_dump_bug_check_initiated_dump()
 {
     return s_bug_check_initiated_crash;
+}
+
+void crash_dump_utc_ready(bool ready)
+{
+    g_utc_ready = ready;
+}
+
+bool crash_dump_is_utc_ready(void)
+{
+    return g_utc_ready;
 }
 
 FPFW_NORETURN void crash_dump_bug_check(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)

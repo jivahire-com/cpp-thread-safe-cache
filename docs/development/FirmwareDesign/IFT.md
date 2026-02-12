@@ -17,7 +17,7 @@ IFT consists of several components:
 - **Private/Internal Logic** (`ift_i.h`): Internal helpers, constants, and private APIs.
 
 ### Mermaid: Single Die High level Sequence diagram
-```mermaid
+:::mermaid
 sequenceDiagram
     participant S0 as SCP
     participant H0 as HSP
@@ -33,11 +33,11 @@ sequenceDiagram
     S0 -) H0: ICC MSG: IFT test status
     H0 --) S0: ICC RSP
     Note over H0: SoC Reset
-```
+:::
 
 ### Mermaid: Detailed low level Sequence diagram
 
-```mermaid
+:::mermaid
 sequenceDiagram
     participant BMC as BMC
     participant H0 as HSP_Die_0
@@ -88,7 +88,7 @@ sequenceDiagram
     H0 -) BMC: IFT mismatch Test result
     H0 --) S0: ICC RSP
     Note over H0: SoC Reset
-```
+:::
 
 ---
 
@@ -104,7 +104,7 @@ void ift_init(fpfw_icc_base_ctx_t* hsp_icc_ctx)
 - Stores ICC context for future communication
 
 #### Basic very high level Memory Test Flow / Core Test Flow
-```mermaid
+:::mermaid
 sequenceDiagram
     participant SCP0
     participant SCP1
@@ -122,7 +122,7 @@ sequenceDiagram
     SCP1->>SCP0: IFT test complete, notify completion
     SCP0->>HSP0: Send test results/status
     Note over HSP0: SoC Reset
-```
+:::
 
 ---
 

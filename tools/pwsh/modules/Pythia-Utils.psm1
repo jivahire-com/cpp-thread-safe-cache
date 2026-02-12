@@ -105,7 +105,8 @@ Function Invoke-Pythia(
         } elseif ($TrimmedAgentName -match 'C41431157B0439B') {
             $hostfilename = "C41431157B0439B.json"
         } else {
-            Write-Error "Invalid Node for SoC platform: $TrimmedAgentName"
+            $hostfilename = "$TrimmedAgentName.json"
+            Write-Host "`tUsing user provided host configuration JSON : $hostfilename"
         }
     }
 
@@ -246,5 +247,40 @@ Function Invoke-Pythia(
         Start-Sleep -Seconds 20
         Remove-Item $test_results_dir/.svp_simulator -Recurse -Force -ErrorAction SilentlyContinue
     }
+}
 
+<#
+.SYNOPSIS
+Sets up the local Pythia environment by retrieving credentials from Azure Key Vault and creating a credentials file.
+
+.PARAMETER RepoRootPath
+The root path of the repository.
+
+.EXAMPLE
+Setup-LocalPythia -RepoRootPath "<<your_repo_root_path>>"
+#>
+Function Setup-LocalPythia {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string] $RepoRootPath
+    )
+
+    $rm_pw = az keyvault secret show --vault-name "chie-1pfw" --name "rack-manager-host-pwd" --query "value" -o tsv
+    $bmc_pw = az keyvault secret show --vault-name "chie-1pfw" --name "bmc-privmode-password" --query "value" -o tsv
+
+    $credsDir = Join-Path $RepoRootPath '.testlogs'
+    if (-not (Test-Path $credsDir)) {
+        New-Item -ItemType Directory -Path $credsDir -Force | Out-Null
+    }
+
+    $credsPath = Join-Path $credsDir 'creds.yaml'
+@"
+RM_USER: root
+RM_PASSWORD: $rm_pw
+BMC_USER: admin
+BMC_PASSWORD: $bmc_pw
+"@ | Set-Content -Path $credsPath -Encoding utf8 -NoNewline -Force
+
+
+    $env:SECURE_FILE_PATH = $credsPath
 }

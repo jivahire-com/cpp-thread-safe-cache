@@ -1,0 +1,92 @@
+{
+    "id": "C41431157B0234A",
+    "ip": "C41431157B0234A.redmond.corp.microsoft.com",
+    "type": "rvp",
+    "node_id": 3,
+    "rack_scm": {
+        "host": "172.29.131.23",
+        "credential": {
+            "service": "account",
+            "username": "root",
+            "keyring_name": "rack_manager_host_pwd"
+        }
+    },
+    "connections": {
+        "mb": {
+            "node_0": {
+                "soc": {
+                    "is_present": true,
+                    "primary_die": {
+                        "apns": {
+                            "channels": {
+                                "serialssh": {
+                                    "com_id": 22,
+                                    "recovery_window": 999999
+                                },
+                                "default": "serialssh"
+                            }
+                        },
+                        "hsp": {
+                            "channels": {
+                                "serialssh": {
+                                    "com_id": 2201,
+                                    "recovery_window": 999999
+                                },
+                                "default": "serialssh"
+                            }
+                        },
+                        "scp": {
+                            "channels": {
+                                "serialssh": {
+                                    "com_id": 2202,
+                                    "recovery_window": 999999
+                                },
+                                "default": "serialssh"
+                            }
+                        },
+                        "mcp": {
+                            "channels": {
+                                "serialssh": {
+                                    "com_id": 2202,
+                                    "recovery_window": 999999
+                                },
+                                "default": "serialssh"
+                            }
+                        }
+                    }
+                },
+                "dcscm": {
+                    "is_present": true,
+                    "bmc": {
+                        "ssh": {
+                            "host": "172.17.0.9",
+                            "port": 8390,
+                            "credential": {
+                                "service": "account",
+                                "username": "admin",
+                                "keyring_name": "bmc_admin_password"
+                            },
+                            "forwarding": {
+                                "host": "172.29.131.23",
+                                "credential": {
+                                    "service": "account",
+                                    "username": "root",
+                                    "keyring_name": "rack_manager_host_pwd"
+                                },
+                                "remote_port": 2200
+                            },
+                            "privilege_mode": {
+                                "enabled": true,
+                                "credential": {
+                                    "service": "account",
+                                    "username": "admin",
+                                    "keyring_name": "bmc_privmode_password"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } 
+}

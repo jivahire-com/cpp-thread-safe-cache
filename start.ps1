@@ -5,8 +5,9 @@
 param (
     [string] $Toolchain = "arm-eabi-aarch",
     [string] $Configuration = "Debug",
-    [boolean] $SkipEnv = $false,
-    [boolean] $MSCP_vUART = $false
+    [switch] $SkipEnv = $false,
+    [switch] $MSCP_vUART = $false,
+    [switch] $Localtest = $false
 )
 
 $Name = (Get-Item "$PSScriptRoot").Name
@@ -21,8 +22,12 @@ if (-not $SkipEnv) {
     Set-RepoEnv -Toolchain $Toolchain -Configuration $Configuration -MSCP_vUART $MSCP_vUART
 }
 
+if ($Localtest) {
+    Setup-LocalPythia -RepoRootPath $PSScriptRoot
+}
+
 # Dump help block for SVP and FPGA Debug
 Get-SvpHelp
 Get-SvpGuiHelp
 Get-FPGAHelp
-Get-SocHelp
+Get-SocHelp 

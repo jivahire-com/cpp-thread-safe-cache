@@ -675,8 +675,8 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         {
             acpi_err_sec_ddrss_rhm_tm_t rh_cper_section = {0};
             acpi_cper_section_t cper_section = {0};
-            cper_section.sec_rh_tlm = rh_cper_section;
             prod_ddrss_convert_rh_rec_to_rh_cper(mc, RHTLM_EVT, &ddrss_rm_telemetry, &rh_cper_section);
+            cper_section.sec_rh_tlm = rh_cper_section;
             hm_submit_cper(ACPI_ERROR_DOMAIN_RHTLM, ACPI_ERROR_SEVERITY_INFORMATIONAL, &cper_section, sizeof(cper_section));
         }
         mc_intu_clr_sts |= int_mask;

@@ -73,8 +73,8 @@
     <Knob name="address_hashing_mode" type="DDRSS_ADDR_HASHING_MODE" default="DDRSS_ADDR_HASHING_MODE_ROW_COL_BASED_BANK_HASHING" help="Enable Physical Bank hashing on bus/semi address." />
     <Knob name="a1_address_hashing_mode" type="DDRSS_ADDR_HASHING_MODE" default="DDRSS_ADDR_HASHING_MODE_ROW_COL_BASED_BANK_HASHING" help="Enable Physical Bank hashing on bus/semi address." />
     <Knob name="sub_bank_hashing_mode" type="DDRSS_SUB_BANK_HASHING_MODE" default="DDRSS_SUB_BANK_HASHING_MODE_8_SUB_BANK" help="Enable Row Sub-Bank Hashing for row-hammer mitigation." />
-    <Knob name="auto_phy_lp_en" type="uint8_t" default="0" help="Enable automatic entry of DDR PHY's low power mode. 0 - Disable, 1 - Enable when in self-refresh mode, 2 - Enable when in self-refresh or power-down mode, 3 - Enable when in self-refresh or power-down mode, or MC idle" />
-    <Knob name="phy_lp_entry_delay" type="uint8_t" default="8" help="Specify the delay to enter PHY low-power mode once all conditions are satisfied, in multiple-of-8 memory controller cycles. (0 ~ 255)" />
+    <Knob name="auto_phy_lp_en" type="uint8_t" default="3" help="Enable automatic entry of DDR PHY's low power mode. 0 - Disable, 1 - Enable when in self-refresh mode, 2 - Enable when in self-refresh or power-down mode, 3 - Enable when in self-refresh or power-down mode, or MC idle" />
+    <Knob name="phy_lp_entry_delay" type="uint8_t" default="255" help="Specify the delay to enter PHY low-power mode once all conditions are satisfied, in multiple-of-8 memory controller cycles. (0 ~ 255)" />
     <Knob name="phy_lp_wakeup" type="uint8_t" default="2" help="DFI wakeup parameter. (0 ~ 15)" />
     <Knob name="auto_phy_lp2_en" type="uint8_t" default="0" help="Enable automatic entry of the DDR PHY's low power mode, type 2. 0 - Disable, 1 - Enable" />
     <Knob name="phy_lp2_entry_delay" type="uint8_t" default="10" help="Specify the delay to enter PHY low-power mode type 2 once all conditions are satisfied, in the time units specified by the delay unit. (0 ~ 255)" />
@@ -90,8 +90,8 @@
     <Knob name="self_refresh_entry_delay_unit" type="DDRSS_POWER_DELAY_TIME_UNIT" default="DDRSS_POWER_DELAY_TIME_UNIT_1US" help="Specifies the time unit used for self-refresh entry delay" />
     <Knob name="dynamic_clk_gating_en" type="uint8_t" default="0" help="Enable dynamic clock gating for MC and DFI clock. 0 - Disable, 1 - Enable" />
     <Knob name="dram_active_power_down_en" type="uint8_t" default="0" help="Specify whether active power down is allowed. 0 - Always use precharged power down mode only, 1 - Allow both active power-down mode and precharge power-down mode are used" />
-    <Knob name="dram_power_down_en" type="uint8_t" default="0" help="Enable automatic entry of DRAM power-down mode. 0 - Disable, 1 - Enable" />
-    <Knob name="dram_power_down_entry_delay" type="uint8_t" default="16" help="Delay time for entering DRAM power down mode after entry conditions are satisfied. In multiple-of-8 memory controller cycles. (0 ~ 255)" />
+    <Knob name="dram_power_down_en" type="uint8_t" default="1" help="Enable automatic entry of DRAM power-down mode. 0 - Disable, 1 - Enable" />
+    <Knob name="dram_power_down_entry_delay" type="uint8_t" default="255" help="Delay time for entering DRAM power down mode after entry conditions are satisfied. In multiple-of-8 memory controller cycles. (0 ~ 255)" />
     <Knob name="keystore_scrub_en" type="uint8_t" default="1" help="Enable keystore patrol scrubbing. 0 - Disable, 1 - Enable" />
     <Knob name="media_scrub_en" type="uint8_t" default="1" help="Enable media patrol scrubbing. 0 - Disable, 1 - Enable" />
     <Knob name="media_scrub_interval" type="uint8_t" default="0" help="Media patrol scrub interval in unit specified by media_scrub_interval_unit. 0: AUTO interval, 1 ~ 255: customized interval" />

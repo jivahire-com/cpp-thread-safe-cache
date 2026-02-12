@@ -32,6 +32,12 @@ extern fpfw_init_component_t _fpfw_component_mpu;
 //
 // Mocks
 //
+
+void __wrap_wdog_cmsdk_apb_disable()
+{
+    function_called();
+}
+
 void __real_ARM_MPU_Load(ARM_MPU_Region_t const* table, uint32_t cnt);
 void __wrap_ARM_MPU_Load(ARM_MPU_Region_t const* table, uint32_t cnt)
 {
@@ -54,6 +60,7 @@ TEST_FUNCTION(test_mcp_mpu_init, nullptr, nullptr)
     expect_function_call(SCB_EnableICache);
     expect_function_call(SCB_InvalidateDCache);
     expect_function_call(SCB_EnableDCache);
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
 
     // Set expectations to have valid region table and its count.
     expect_not_value(__wrap_ARM_MPU_Load, table, NULL);

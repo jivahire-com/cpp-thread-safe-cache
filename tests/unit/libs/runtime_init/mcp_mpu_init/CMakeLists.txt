@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         silibs::platform
         silibs::kng_silibs_platform
+        silibs::cmsdk_wd
         register_headers
 )
 
@@ -37,4 +38,5 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     ARM_MPU_Load
+    wdog_cmsdk_apb_disable
 )

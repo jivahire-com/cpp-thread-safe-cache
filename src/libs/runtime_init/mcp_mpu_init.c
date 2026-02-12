@@ -8,6 +8,7 @@
 
 /*------------- Includes -----------------*/
 #include <atu_api.h>
+#include <cmsdk_wd.h>
 #include <fpfw_init.h>
 #include <kng_scp_tfa_shared.h>
 #include <mpu.h>
@@ -301,6 +302,9 @@ FPFW_INIT_COMPONENT(mpu, FPFW_INIT_NULL_NODE)
     // Enable D caches, ensures any stale data is not used.
     SCB_InvalidateDCache();
     SCB_EnableDCache();
+
+    // set wdog disabled by default
+    wdog_cmsdk_apb_disable();
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

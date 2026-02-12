@@ -43,4 +43,5 @@ mock_target(${TARGET}
     wdog_cmsdk_apb_init
     wdog_cmsdk_apb_reload
     config_get_wdog_en
+    idsw_get_platform_sdv
 )

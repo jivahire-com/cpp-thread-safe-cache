@@ -101,6 +101,8 @@ mock_target(${TARGET}
     accel_core_suspend
     mmio_read32
     mmio_write32
+    wdog_cmsdk_apb_disable
+    wdog_cmsdk_apb_lock_unlock
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

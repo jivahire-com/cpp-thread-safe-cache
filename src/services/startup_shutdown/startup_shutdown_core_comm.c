@@ -18,6 +18,7 @@
 #include <FPFwInterrupts.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
+#include <cmsdk_wd.h>
 #include <cmsis_m7.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
@@ -315,6 +316,9 @@ void prepare_reset_recv_cb(void* context, size_t output_size_bytes, fpfw_status_
     }
     else
     {
+        wdog_cmsdk_apb_disable();
+        wdog_cmsdk_apb_lock_unlock(true);
+
         FPFW_RUNTIME_ASSERT(recv_context->recv_cmd_code == HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
         FPFW_RUNTIME_ASSERT(recv_context->payload_buffer != NULL);
         FPFW_RUNTIME_ASSERT(recv_context->buffer_size >= sizeof(kng_hsp_mailbox_msg));

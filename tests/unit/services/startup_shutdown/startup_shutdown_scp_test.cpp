@@ -143,6 +143,17 @@ void __wrap_accel_core_suspend(ACCEL_ID accel_type)
     function_called();
 }
 
+void __wrap_wdog_cmsdk_apb_lock_unlock(bool lock)
+{
+    check_expected(lock);
+    function_called();
+}
+
+void __wrap_wdog_cmsdk_apb_disable()
+{
+    function_called();
+}
+
 } // extern "C"
 
 //
@@ -342,6 +353,9 @@ SOS_TEST(prepare_reset_recv_cb, NULL, NULL)
     expect_any(__wrap_DfwkAsyncRequestInitialize, Request);
     expect_value(__wrap_DfwkAsyncRequestInitialize, RequestSize, sizeof(startup_shutdown_request_t));
 
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
     expect_function_call(__wrap_sos_quiesce);
 
     prepare_reset_recv_cb(&test_recv_context, 0x0c, DFWK_SUCCESS);

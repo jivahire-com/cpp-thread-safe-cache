@@ -32,7 +32,7 @@
 /*------------- Functions ----------------*/
 FPFW_INIT_COMPONENT(wdog, FPFW_INIT_DEPENDENCIES("hw_ver", "cfg_mgr"))
 {
-    if (config_get_wdog_en())
+    if (config_get_wdog_en() && idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
     {
         const uint32_t wdog_timeout_s = config_get_wdog_timeout_s();
         const uint32_t wdog_freq_hz = config_get_wdog_counter_freq_Mhz() * MHz;

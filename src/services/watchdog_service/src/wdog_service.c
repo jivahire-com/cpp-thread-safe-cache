@@ -44,15 +44,17 @@ KNG_STATUS wdog_service_init(uint32_t timeout_in_s, uint32_t wdog_freq)
     }
 
     static TX_TIMER wdog_timer;
-    const uint32_t wdog_threshold = wdog_freq >> 1; // 0.5 sec threshold
 
-    UINT ret = tx_timer_create(&wdog_timer,                                        // timer_ptr
-                               "wdog_timer",                                       // name_ptr
-                               wdog_timer_callback,                                // expiration_function
-                               (ULONG)(timeout_in_s * wdog_freq + wdog_threshold), // input
-                               timeout_in_s * TX_TIMER_TICKS_PER_SECOND,           // initial_ticks
-                               timeout_in_s * TX_TIMER_TICKS_PER_SECOND,           // reschedule_ticks
-                               TX_AUTO_ACTIVATE);                                  // auto_activate
+    const uint32_t wdog_init_counter = timeout_in_s * wdog_freq;
+    const uint32_t wdog_margin = wdog_init_counter * 2;
+
+    UINT ret = tx_timer_create(&wdog_timer,                              // timer_ptr
+                               "wdog_timer",                             // name_ptr
+                               wdog_timer_callback,                      // expiration_function
+                               (ULONG)(wdog_init_counter + wdog_margin), // input
+                               timeout_in_s * TX_TIMER_TICKS_PER_SECOND, // initial_ticks
+                               timeout_in_s * TX_TIMER_TICKS_PER_SECOND, // reschedule_ticks
+                               TX_AUTO_ACTIVATE);                        // auto_activate
 
     return ret == TX_SUCCESS ? KNG_SUCCESS : KNG_E_FAIL;
 }

@@ -14,8 +14,10 @@
 extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT...
-#include <stddef.h>    // for NULL
-#include <tx_api.h>    // for TX_AUTO_ACTIVATE, TX_SUCCESS
+#include <idsw.h>
+#include <idsw_kng.h>
+#include <stddef.h> // for NULL
+#include <tx_api.h> // for TX_AUTO_ACTIVATE, TX_SUCCESS
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -74,6 +76,11 @@ bool __wrap_config_get_wdog_en()
     return true;
 }
 
+idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(idsw_plat_id_t);
+}
+
 //
 // Tests
 //
@@ -86,6 +93,7 @@ TEST_FUNCTION(test_watchdog_init, nullptr, nullptr)
     expect_value(__wrap__txe_timer_create, auto_activate, TX_AUTO_ACTIVATE);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
     expect_function_call(__wrap__txe_timer_create);
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     // Call API under test
     fpfw_init_result_t result = _fpfw_component_wdog.init_fn();

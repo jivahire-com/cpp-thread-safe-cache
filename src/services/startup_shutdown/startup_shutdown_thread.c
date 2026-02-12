@@ -75,12 +75,23 @@ int sos_queue_find_phase(ssi_startup_stage_t phase)
     return PHASE_INDEX_NOT_FOUND;
 }
 
+static inline void sos_signal_flags_and_assert(uint32_t flag_bits)
+{
+    int status = tx_event_flags_set(&s_sos_thread_ctx.ssi_flags, flag_bits, TX_OR);
+    FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
+}
+
 void sos_accel_quiesce_complete(uint32_t accel_id, uint32_t event_flag)
 {
-    FPFW_UNUSED(accel_id)
-    SOS_LOG_TRACE("Accel:%d Quiesce Complete, event flag: %x\n", (int)accel_id, (int)event_flag);
-    int status = tx_event_flags_set(&s_sos_thread_ctx.ssi_flags, event_flag, TX_OR);
-    FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
+    SOS_LOG_INFO("Accel:%d Quiesce Complete, event flag: %x\n", (int)accel_id, (int)event_flag);
+    sos_signal_flags_and_assert(event_flag);
+}
+
+void sos_quiesce_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+{
+    uint32_t interface_unique_flag = (uint32_t)p_completion_context;
+    SOS_LOG_INFO("Quiesce Request to an SSI %08lx completed (%x)", (unsigned long)interface_unique_flag, (uintptr_t)request);
+    sos_signal_flags_and_assert(interface_unique_flag);
 }
 
 void sos_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
@@ -88,8 +99,7 @@ void sos_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_conte
     FPFW_UNUSED(request);
     uint32_t interface_unique_flag = (uint32_t)p_completion_context;
     SOS_LOG_TRACE("Request to an SSI %08lx completed (%x)\n", (unsigned long)interface_unique_flag, (uintptr_t)request);
-    int status = tx_event_flags_set(&s_sos_thread_ctx.ssi_flags, interface_unique_flag, TX_OR);
-    FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
+    sos_signal_flags_and_assert(interface_unique_flag);
 }
 
 void sos_notify_ssi_boot_stage(psos_service_context_t p_context, ssi_startup_stage_t stage, ssi_startup_type_t startup_type, bool start)
@@ -164,7 +174,7 @@ void sos_notify_ssi_quiesce(psos_service_context_t p_context, ssi_shutdown_type_
         ssi_quiesce(p_registration->p_ssi_interface,
                     &p_registration->ssi_request,
                     shutdown_type,
-                    sos_completion,
+                    sos_quiesce_completion,
                     (void*)p_registration->interface_unique_flag);
     }
 }
@@ -330,17 +340,17 @@ void sos_worker_thread_function(ULONG service_ctx)
         case SOS_QUEUE_ENTRY_TYPE_QUIESCE:
             SOS_LOG_INFO("SOS message: quiesce, (%d)\n", message.data.shutdown_type);
 
-            // notify all registered interfaces
-            sos_notify_ssi_quiesce(p_sos_ctx, message.data.shutdown_type);
-
-            // Call accel mbox tx here
+            // Invoke async Accel quiesce flow first as it's quiesce time may be long
             if (idsw_get_cpu_type() == CPU_SCP)
             {
-                SOS_LOG_TRACE("Invoking Accel Quiesce Flow\n");
+                SOS_LOG_INFO("Invoking Accel Quiesce Flow\n");
                 uint32_t accel_event_mask = execute_accel_quiesce_flow(p_sos_ctx->registration_count);
                 // Update the flags to include accel events
                 s_sos_thread_ctx.expected_complete_flags |= accel_event_mask;
             }
+
+            // notify all locally registered interfaces
+            sos_notify_ssi_quiesce(p_sos_ctx, message.data.shutdown_type);
 
             current_stage.stage_category = QUIESCE_STAGE;
             current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
@@ -353,6 +363,7 @@ void sos_worker_thread_function(ULONG service_ctx)
                 event_trace_mts_send_final_message();
                 // Allow the event trace buffers to flush
                 tx_thread_sleep(MS_TO_TX_TICKS(EVT_TX_DELAY));
+                SOS_LOG_INFO("SOS message: quiesce, flush et buffer\n");
             }
 
             SOS_ET_BOOT_PROFILE_INFO(QUIESCE_STAGE, message.data.shutdown_type, SOS_ET_TYPE_BOOT_OPERATION_COMPLETE);
@@ -402,7 +413,7 @@ void sos_queue_quiesce(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HE
     message.data.shutdown_type = shutdown_type;
     message.p_request = p_request;
 
-    SOS_LOG_INFO("Queue shutdown type %d\n", shutdown_type);
+    SOS_LOG_INFO("Queue quiesce type %d\n", shutdown_type);
 
     int status = tx_queue_send(&s_sos_thread_ctx.work_queue, &message, TX_NO_WAIT);
     FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);

@@ -87,7 +87,8 @@ class warm_start_test(EchoFallsBaseTest):
         
         try:
             self.log.info("Waiting for SCP-AP Core Power ON Msg")
-            core_com_channel.read_until(key="Primary AP core power on", timeout_seconds=500)
+            core_com_channel.read_until(key="Primary AP core power on", timeout_seconds=1200)
+            apns_connection.read_until(key="SAC>", timeout_seconds=1200)
             command="warm_start wsreset subsys"
             core_com_channel.write_line(write_string=command)
             core_com_channel.read_until(key="[SoS] Reset complete notification sent successfully", timeout_seconds=500)

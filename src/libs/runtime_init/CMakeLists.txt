@@ -209,6 +209,7 @@ target_link_libraries(
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
         silibs::vab_init
+        silibs::cmsdk_wd
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)
@@ -428,6 +429,7 @@ target_link_libraries(
         silibs::platform
         silibs::sdm_command_desc
         silibs::sensor_ram_bridge
+        silibs::cmsdk_wd
 )
 
 target_include_directories(${TARGET} PRIVATE $<TARGET_PROPERTY:fwlib.service.iccBase,INCLUDE_DIRECTORIES>)

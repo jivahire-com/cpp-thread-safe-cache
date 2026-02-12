@@ -73,6 +73,7 @@ set(STARTUP_COMMON_LIBS
     silibs::sdm_em_ext_interrupts
     silibs::spi_bridge
     ms::lib::hw_semaphore
+    silibs::cmsdk_wd
 )
 
 # scp

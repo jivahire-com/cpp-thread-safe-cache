@@ -57,7 +57,7 @@ void rpss_req_completion_cb(PDFWK_ASYNC_REQUEST_HEADER req, void* ctx_ref)
     /* If LINK_UP is received, then we stop the link training expiration timer */
     if (cmpl.async_data.int_mask & (0x1 << PCIESS_RP_INT_LINK_UP))
     {
-        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: LINK_UP received!\n", ctx->rpss_idx, cmpl.rp_index);
+        // FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: LINK_UP received!\n", ctx->rpss_idx, cmpl.rp_index);
         tx_timer_delete(&(ctx->expiry_timer[cmpl.rp_index]));
     }
 
@@ -71,7 +71,7 @@ void rpss_req_completion_cb(PDFWK_ASYNC_REQUEST_HEADER req, void* ctx_ref)
     int status = tx_queue_send(&(ctx->work_queue), &(cmpl), TX_NO_WAIT);
     if (status != TX_SUCCESS)
     {
-        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: tx_queue_send error - %d\n", ctx->rpss_idx, cmpl.rp_index, status);
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: tx_queue_send error - %d\n", ctx->rpss_idx, cmpl.rp_index, status); // Error  Condition: Should not encounter tx_queue_send failure in production.
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 }

@@ -133,7 +133,10 @@ void pcie_per_rp_dispatch(PDFWK_ASYNC_REQUEST_HEADER req, void* context)
         if (status != TX_SUCCESS)
         {
             PCIE_ET_ERROR_PARAM(PCIE_ET_TYPE_ENQUEUE_REQUEST_FAILED, status);
-            FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Failed to enqueue request! Status: %d\n", r->rpss_index, r->rp_index, status);
+            FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Failed to enqueue request! Status: %d\n",
+                                r->rpss_index,
+                                r->rp_index,
+                                status); // Error Condition: Enqueue Failure [Not Removing Print]
             DfwkAsyncRequestComplete(req);
             return;
         }
@@ -146,7 +149,7 @@ void pcie_per_rp_dispatch(PDFWK_ASYNC_REQUEST_HEADER req, void* context)
         }
         default: {
             PCIE_ET_ERROR_PARAM(PCIE_ET_TYPE_UNKNOWN_REQUEST, r->rp_op);
-            FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Received an unknown request!\n", r->rpss_index, r->rp_index);
+            FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Received an unknown request!\n", r->rpss_index, r->rp_index); // Error Condition: Unknown Request [Not Removing Print]
             r->status = SILIBS_E_PARAM;
             complete_async_req_for_this_rp(r);
             break;
@@ -173,7 +176,9 @@ void pcie_default_dispatch(PDFWK_ASYNC_REQUEST_HEADER incoming, void* context)
     if (r->rp_index >= PCIESS_NUM_PORTS || r->rpss_index >= PCIE_NUM_RPSS)
     {
         PCIE_ET_ERROR_PARAM(PCIE_ET_TYPE_INVALID_RP_RANGES, r->rpss_index);
-        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Root port ranges invalid!\n", r->rpss_index, r->rp_index);
+        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: Root port ranges invalid!\n",
+                            r->rpss_index,
+                            r->rp_index); // Error Condition: Invalid RPSSID or RPID Failure [Not Removing Print]
         r->status = SILIBS_E_PARAM;
         DfwkAsyncRequestComplete(incoming);
         return;

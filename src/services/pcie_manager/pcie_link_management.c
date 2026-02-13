@@ -143,7 +143,7 @@ void initiate_link_training_on_rpss(pcie_manager_context_t* ctx)
         }
         else
         {
-            FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Skip link training!\n", ctx->rpss_idx, rp_idx);
+            FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Skip link training!\n", ctx->rpss_idx, rp_idx); // Warning Condition [Should not encounter in production]
         }
     }
 }
@@ -164,7 +164,7 @@ void handle_pcie_link_down_event(pcie_manager_context_t* ctx, pciess_completion_
      */
     if (send_sync_rp_is_ready((PDFWK_INTERFACE_HEADER)(ctx->iface), rpss_idx, rp_index) == false)
     {
-        FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: root port not ready after linkdown - cannot re-train!\n", rpss_idx, rp_index);
+        // FPFW_DBGPRINT_ERROR("RPSS[%d] RP[%d]: root port not ready after linkdown - cannot re-train!\n", rpss_idx, rp_index);
         PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_RP_NOT_READY_AFTER_LINK_DOWN,
                                     (uint32_t)((rpss_idx << 8) | rp_index));
         return;
@@ -179,7 +179,7 @@ void handle_pcie_link_down_event(pcie_manager_context_t* ctx, pciess_completion_
         FPFW_DBGPRINT_INFO("Reset LT retry Count: RPSS[%d] RP[%d]: Retry Count %d\n",
                            rpss_idx,
                            rp_index,
-                           (int8_t)ctx->lt_retry_count[rp_index]);
+                           (int8_t)ctx->lt_retry_count[rp_index]); // Print in Service Thread to indicate LT retry count reset after successful LT and a subsequent link down
         ctx->lt_retry_count[rp_index] = 0x0;
     }
     /* The root port is ready, initiate link re-training and return */
@@ -197,7 +197,10 @@ void handle_pcie_link_up_event(pcie_manager_context_t* ctx, pciess_completion_re
     if (status == SILIBS_E_OVERWRITTEN && ctx->lt_retry_count[rp_idx] < LT_RETRIES_MAX)
     {
         /* Send the SBR, this will result in link-down flow being triggered */
-        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Link training failed, issue SBR[%d] \n", rpss_idx, rp_idx, ctx->lt_retry_count[rp_idx]);
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Link training failed, issue SBR[%d] \n",
+                           rpss_idx,
+                           rp_idx,
+                           ctx->lt_retry_count[rp_idx]); // Print in Service thread to indicate Link training failure and SBR issue
         ctx->lt_retry_count[rp_idx]++;
         send_sync_rp_set_secondary_bus_reset((PDFWK_INTERFACE_HEADER)ctx->iface, rpss_idx, rp_idx);
         tx_thread_sleep(WAIT_SBR_MS);
@@ -216,7 +219,7 @@ void handle_pcie_link_up_event(pcie_manager_context_t* ctx, pciess_completion_re
             FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Link training failed, RetryCount set to max: [%d] \n",
                                   rpss_idx,
                                   rp_idx,
-                                  ctx->lt_retry_count[rp_idx]);
+                                  ctx->lt_retry_count[rp_idx]); // Print in Service thread to indicate Link training failure and that the retry count has reached max and will not be retried anymore
         }
     }
 

@@ -44,7 +44,8 @@ void complete_ssi_ltssm_startup_req(RPSS_INSTANCE rpss_idx)
 
     if (req_pending == true)
     {
-        FPFW_DBGPRINT_INFO("RPSS[%d]: Completing link training startup request\n", rpss_idx);
+        FPFW_DBGPRINT_INFO("RPSS[%d]: Completing link training startup request\n",
+                           rpss_idx); // Print kept as this is invoked only on PCIESS Initialization.
         DfwkAsyncRequestComplete(&(req->header));
         req_pending = false;
     }

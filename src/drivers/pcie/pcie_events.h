@@ -18,7 +18,6 @@
 #define PCIE_ET_ERROR_PARAM(type, param) EventWritePcieErrorParam((param), (type))
 
 // clang-format off
-
 /**
  * Define Event Trace events for the PCIe Driver Provider
 */
@@ -54,6 +53,9 @@ typedef enum
     PCIE_ET_TYPE_INT_RASDP,
     PCIE_ET_TYPE_INT_DPC,
     PCIE_ET_TYPE_INT_UNEXPECTED,
+    PCIE_ET_TYPE_RETRY_COUNT,
+    PCIE_ET_TYPE_INITIATE_LT, 
+    PCIE_ET_TYPE_POST_RP_LINK_UP_INIT,
 
     PCIE_ET_TYPE_COUNT
 } PCIE_ET_TYPE_T;

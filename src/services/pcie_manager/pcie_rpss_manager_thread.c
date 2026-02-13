@@ -66,7 +66,7 @@ static void full_pciess_init_scp_cold_boot(pcie_manager_context_t* ctx)
         status = send_sync_rpss_get_ready_request((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx);
         if (status != SILIBS_SUCCESS)
         {
-            FPFW_DBGPRINT_INFO("RPSS[%d]: not ready yet, status (%d), waiting..\n", ctx->rpss_idx, status);
+            FPFW_DBGPRINT_INFO("RPSS[%d]: not ready yet, status (%d), waiting..\n", ctx->rpss_idx, status); // Print Not removed as only during PCIESS Init.
             tx_thread_sleep(WORKER_YIELD_TICKS);
             elapsed_ticks += WORKER_YIELD_TICKS;
         }
@@ -79,13 +79,14 @@ static void full_pciess_init_scp_cold_boot(pcie_manager_context_t* ctx)
      */
     if (status != SILIBS_SUCCESS)
     {
-        FPFW_DBGPRINT_ERROR("RPSS[%d]: Timed out waiting for RPSS to get ready!\n", ctx->rpss_idx);
+        FPFW_DBGPRINT_ERROR("RPSS[%d]: Timed out waiting for RPSS to get ready!\n",
+                            ctx->rpss_idx); // Print Not removed as only during PCIESS Init.
         PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_RPSS_READY_TIMEOUT, ctx->rpss_idx);
         BUG_ASSERT_PARAM((status == SILIBS_SUCCESS), status, ctx->rpss_idx);
     }
     else
     {
-        FPFW_DBGPRINT_INFO("RPSS[%d]: RPSS is ready! Elapsed ticks: %lu\n", ctx->rpss_idx, elapsed_ticks);
+        FPFW_DBGPRINT_INFO("RPSS[%d]: RPSS is ready! Elapsed ticks: %lu\n", ctx->rpss_idx, elapsed_ticks); // Print Not removed as only during PCIESS Init.
     }
 }
 
@@ -102,14 +103,15 @@ static bool send_full_pciess_init(pcie_manager_context_t* ctx)
      * initial rpss configuration is complete.
      */
 
-    FPFW_DBGPRINT_INFO("RPSS[%d]: Cold Boot : 0x%d\n", ctx->rpss_idx, (uint8_t)ctx->is_cold_boot);
+    FPFW_DBGPRINT_INFO("RPSS[%d]: Cold Boot : 0x%d\n", ctx->rpss_idx, (uint8_t)ctx->is_cold_boot); // Print Not removed as only during PCIESS Init.
     sts = send_sync_rpss_initial_config((PDFWK_INTERFACE_HEADER)(ctx->iface), ctx->rpss_idx, &ctx->is_cold_boot);
     tx_event_flags_set(ctx->event_ptr, (1 << ctx->rpss_idx), TX_OR);
 
     /* RPSS is disabled by configuration, nothing more to do */
     if (sts == SILIBS_E_SUPPORT)
     {
-        FPFW_DBGPRINT_INFO("RPSS[%d]: Disabled by configuration, skipping init.\n", ctx->rpss_idx);
+        FPFW_DBGPRINT_INFO("RPSS[%d]: Disabled by configuration, skipping init.\n",
+                           ctx->rpss_idx); // Print Not removed as only during PCIESS Init.
 
         /*
          * Complete the SSI LTSSM startup phase to prevent the platform boot
@@ -153,7 +155,7 @@ static bool send_full_pciess_init(pcie_manager_context_t* ctx)
 static bool rpss_init_scp_cold_boot(pcie_manager_context_t* ctx)
 {
     /* Wait for the PCIe phy firmware load event - set within the AP core firmware load module */
-    FPFW_DBGPRINT_INFO("RPSS[%d]: Waiting for phy firmware load\n", ctx->rpss_idx);
+    FPFW_DBGPRINT_INFO("RPSS[%d]: Waiting for phy firmware load\n", ctx->rpss_idx); // Print Not removed as only during PCIESS Init.
     pcie_phyfw_wait_load_event(ctx->phyfw_load_event_ptr);
 
     /* Start Initial PCIESS/RP Init */
@@ -237,7 +239,7 @@ void rpss_service_thread_fn(ULONG thread_input)
                            ctx->rpss_idx,
                            cmpl_req.rp_index,
                            cmpl_req.op,
-                           (int)cmpl_req.async_data.int_mask);
+                           (int)cmpl_req.async_data.int_mask); // Print Not removed as this is in Service thread context and is useful to have visibility on events coming from the RPSS.
 
         process_wait_for_event_data(ctx, &cmpl_req);
         fflush(stdout);

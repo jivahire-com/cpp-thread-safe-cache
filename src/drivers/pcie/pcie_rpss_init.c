@@ -109,7 +109,7 @@ int begin_rpss_init(PDFWK_SYNC_REQUEST_HEADER req)
     if ((r->p_sent_data) != NULL)
     {
         is_cold_boot = *((bool*)(r->p_sent_data));
-        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Cold Boot Notification. \n", r->rpss_index, r->rp_index);
+        FPFW_DBGPRINT_INFO("RPSS[%d] RP[%d]: Cold Boot Notification. \n", r->rpss_index, r->rp_index); // COLD BOOT Notification [ Not Removing Print]
     }
 
     if (is_cold_boot)
@@ -209,7 +209,7 @@ int begin_rpss_post_rp_ready_init(PDFWK_SYNC_REQUEST_HEADER req)
     if ((r->p_sent_data) != NULL)
     {
         is_cold_boot = *((bool*)(r->p_sent_data));
-        FPFW_DBGPRINT_VERBOSE("RPSS[%d] RP[%d]: Cold Boot Notification. \n", r->rpss_index, r->rp_index);
+        FPFW_DBGPRINT_VERBOSE("RPSS[%d] RP[%d]: Cold Boot Notification. \n", r->rpss_index, r->rp_index); // COLD BOOT Notification [ Not Removing Print]
     }
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
@@ -408,7 +408,8 @@ int get_rp_link_status(PDFWK_SYNC_REQUEST_HEADER req)
     if ((r->p_sent_data) != NULL)
     {
         lt_retry_count = *((uint8_t*)(r->p_sent_data));
-        FPFW_DBGPRINT_VERBOSE("RPSS[%d] RP[%d]: Retry Count %d\n", r->rpss_index, r->rp_index, (int8_t)lt_retry_count);
+        // FPFW_DBGPRINT_VERBOSE("RPSS[%d] RP[%d]: Retry Count %d\n", r->rpss_index, r->rp_index, (int8_t)lt_retry_count);
+        PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_RETRY_COUNT, (r->rpss_index << 16) | ((r->rp_index & 0xff) << 8) | lt_retry_count); // Adding ET with RPSS/RP and retry Count
     }
 
     pcie_ss_entity_t* rpss = pciess_get_entity(r->rpss_index);
@@ -425,7 +426,8 @@ int get_rp_link_status(PDFWK_SYNC_REQUEST_HEADER req)
     sts = pciess_rp_get_link_train_done(&(rpss->rps[r->rp_index]));
     if (((sts & (SILIBS_E_BUSY | SILIBS_E_OVERWRITTEN)) != 0) && lt_retry_count == LT_RETRIES_MAX)
     {
-        FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Retry Count %d\n", r->rpss_index, r->rp_index, (int8_t)lt_retry_count);
+        // FPFW_DBGPRINT_WARNING("RPSS[%d] RP[%d]: Retry Count %d\n", r->rpss_index, r->rp_index, (int8_t)lt_retry_count);
+        PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_RETRY_COUNT, (rpss->id << 16) | ((r->rp_index & 0xff) << 8) | lt_retry_count); // Adding ET with RPSS/RP and retry Count
         log_link_training_failure_cper(rpss, r->rp_index);
     }
 

@@ -157,8 +157,8 @@ bool __wrap_all_requests_completed(avs_pwr_request_context_t* pwr_avs_request, u
 
 void __wrap_power_loops_control_handle_event(power_ctrl_loop_signal_t event, const void* event_data)
 {
-    UNUSED(event);
-    UNUSED(event_data);
+    check_expected(event);
+    check_expected_ptr(event_data);
     function_called();
     return;
 }
@@ -1616,6 +1616,7 @@ POWER_TEST(power_vrs_write_vcpu_voltage_callback, setup, teardown)
     scp_avs_device_t test_avs_device = {
         .avs_bus_num = AVS_BUS0,
     };
+    uint32_t test_written_voltage = 995;
 
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.v_done = 1;
@@ -1624,7 +1625,11 @@ POWER_TEST(power_vrs_write_vcpu_voltage_callback, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].rail_id = 0;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_data = test_written_voltage;
 
+    // Verify VCPU_DONE is signaled with the written voltage as event_data
+    expect_value(__wrap_power_loops_control_handle_event, event, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE);
+    expect_value(__wrap_power_loops_control_handle_event, event_data, (void*)(uintptr_t)test_written_voltage);
     expect_function_call(__wrap_power_loops_control_handle_event);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     AVSPwrWriteRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
@@ -1647,6 +1652,9 @@ POWER_TEST(power_vrs_write_vcpu_voltage_callback_no_vrs, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].rail_id = 0;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
 
+    // No VRs: expect VCPU_DONE with NULL event_data, which makes current_vcpu = 0
+    expect_value(__wrap_power_loops_control_handle_event, event, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE);
+    expect_value(__wrap_power_loops_control_handle_event, event_data, NULL);
     expect_function_call(__wrap_power_loops_control_handle_event);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     AVSPwrWriteRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
@@ -1663,6 +1671,9 @@ POWER_TEST(power_vrs_write_vcpu_voltage_callback_error, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_WRITE_FAIL;
     pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
 
+    // Error path: expect VCPU_SET_FAIL with NULL event_data
+    expect_value(__wrap_power_loops_control_handle_event, event, POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL);
+    expect_value(__wrap_power_loops_control_handle_event, event_data, NULL);
     expect_function_call(__wrap_power_loops_control_handle_event);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     AVSPwrWriteRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
@@ -1684,6 +1695,7 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback_vdone, setup, teardown)
 
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.as_uint8 = AVS_ERROR_NONE;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.error.v_done = 1;
+    pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_single_resp.data = 1005;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_SUCCESS;
     pwr_avs_request[test_avs_device.avs_bus_num].request.Header.RequestType = AVS_REQUEST_READ_DATA;
     pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
@@ -1691,6 +1703,9 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback_vdone, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
+    // Verify the read-back voltage is passed as event_data
+    expect_value(__wrap_power_loops_control_handle_event, event, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE);
+    expect_value(__wrap_power_loops_control_handle_event, event_data, (void*)(uintptr_t)1005);
     expect_function_call(__wrap_power_loops_control_handle_event);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
     AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
@@ -1720,6 +1735,9 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback_vdone_no_vrs, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
     will_return(__wrap_power_runconfig_get, &test_runconfig);
 
+    // No VRs: expect VCPU_DONE with NULL, meaning current_vcpu will be set to 0
+    expect_value(__wrap_power_loops_control_handle_event, event, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE);
+    expect_value(__wrap_power_loops_control_handle_event, event_data, NULL);
     expect_function_call(__wrap_power_loops_control_handle_event);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
     AVSPwrReadRequestCompletion(request, (void*)(int)test_avs_device.avs_bus_num);
@@ -1748,6 +1766,9 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].rail_id = 0;
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_params.avs_cmd_array[0].cmd_type = AVS_VOLTAGE_RW;
     will_return(__wrap_power_runconfig_get, &test_runconfig);
+    // v_done=0: expect VCPU_PENDING with NULL event_data
+    expect_value(__wrap_power_loops_control_handle_event, event, POWER_CTRL_LOOP_SIGNAL_VCPU_PENDING);
+    expect_value(__wrap_power_loops_control_handle_event, event_data, NULL);
     expect_function_call(__wrap_power_loops_control_handle_event);
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
@@ -1774,6 +1795,9 @@ POWER_TEST(power_vrs_read_vcpu_voltage_callback_error, setup, teardown)
     pwr_avs_request[test_avs_device.avs_bus_num].request.avs_response_status = SCP_AVS_STATUS_WRITE_FAIL;
     pwr_avs_request[test_avs_device.avs_bus_num].in_use = 1;
 
+    // Error path: expect VCPU_SET_FAIL with NULL event_data
+    expect_value(__wrap_power_loops_control_handle_event, event, POWER_CTRL_LOOP_SIGNAL_VCPU_SET_FAIL);
+    expect_value(__wrap_power_loops_control_handle_event, event_data, NULL);
     expect_function_call(__wrap_power_loops_control_handle_event);
     will_return(__wrap_power_runconfig_get, &test_runconfig);
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);

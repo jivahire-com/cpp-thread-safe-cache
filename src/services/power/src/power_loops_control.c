@@ -502,6 +502,7 @@ static void wait_vr_handler(power_ctrl_loop_state_t next_state_done, power_ctrl_
         break;
     case POWER_CTRL_LOOP_SIGNAL_VCPU_DONE:
         POWER_LOG_TRACE("[POWER CTRL LOOP] [wait_vr_handler] POWER_CTRL_LOOP_SIGNAL_VCPU_DONE\n");
+        s_ctrl_loop.current_vcpu = (uint16_t)(uintptr_t)event_data;
         power_control_loop_change_state(next_state_done);
         break;
     case POWER_CTRL_LOOP_SIGNAL_INTERVAL:

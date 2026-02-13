@@ -185,7 +185,10 @@ void AVSPwrReadRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Compl
                             pwr_avs_request[pwr_avs_bus].request.avs_params.avs_cmd_info.rail_id,
                             ((pwr_avs_request[pwr_avs_bus].request.avs_response_single_resp.data) / 1000),
                             ((pwr_avs_request[pwr_avs_bus].request.avs_response_single_resp.data) % 1000));
-            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+
+            //! Send the current voltage set to the power control loop
+            uint16_t current_vcpu = pwr_avs_request[pwr_avs_bus].request.avs_response_single_resp.data;
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, (void*)(uintptr_t)current_vcpu);
         }
         else
         {

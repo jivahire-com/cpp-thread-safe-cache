@@ -837,11 +837,20 @@ POWER_TEST(control_set_vr_after_handler__signal_pending, NULL, NULL)
 
 POWER_TEST(control_set_vr_after_handler__signal_done, NULL, NULL)
 {
+    // get internal control loop data to verify current_vcpu
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+    // set current_vcpu to a non-zero value to prove it gets overwritten
+    p_ctrl_loop->current_vcpu = 1000;
+
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_EXCHANGE_COMPLETION);
     will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
-    // call state handler
+    // call state handler with NULL event_data (no-VR platform case)
     call_handler(POWER_CONTROL_STATE_SET_VR_AFTER_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+
+    // verify current_vcpu is set to 0 when event_data is NULL
+    assert_int_equal(p_ctrl_loop->current_vcpu, 0);
 }
 
 POWER_TEST(control_set_vr_after_handler__signal_interval_error, NULL, NULL)
@@ -898,11 +907,20 @@ POWER_TEST(control_wait_vr_after_handler__signal_pending, NULL, NULL)
 
 POWER_TEST(control_wait_vr_after_handler__signal_done, NULL, NULL)
 {
+    // get internal control loop data to verify current_vcpu
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+    // set current_vcpu to a non-zero value to prove it gets overwritten
+    p_ctrl_loop->current_vcpu = 1000;
+
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_EXCHANGE_COMPLETION);
     will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
-    // call state handler
+    // call state handler with NULL event_data (no-VR platform case)
     call_handler(POWER_CONTROL_STATE_WAIT_VR_AFTER_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+
+    // verify current_vcpu is set to 0 when event_data is NULL
+    assert_int_equal(p_ctrl_loop->current_vcpu, 0);
 }
 
 POWER_TEST(control_wait_vr_after_handler__signal_interval_error, NULL, NULL)
@@ -941,20 +959,111 @@ POWER_TEST(control_set_vr_before_handler__signal_pending, NULL, NULL)
 
 POWER_TEST(control_set_vr_before_handler__signal_done, NULL, NULL)
 {
+    // get internal control loop data to verify current_vcpu
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+    // set current_vcpu to a non-zero value to prove it gets overwritten
+    p_ctrl_loop->current_vcpu = 1000;
+
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR);
     will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
-    // call state handler
+    // call state handler with NULL event_data (no-VR platform case)
     call_handler(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+
+    // verify current_vcpu is set to 0 when event_data is NULL
+    assert_int_equal(p_ctrl_loop->current_vcpu, 0);
 }
 
 POWER_TEST(control_wait_vr_before_handler__signal_done, NULL, NULL)
 {
+    // get internal control loop data to verify current_vcpu
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+    // set current_vcpu to a non-zero value to prove it gets overwritten
+    p_ctrl_loop->current_vcpu = 1000;
+
     // expectations on entry
     setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR);
     will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
-    // call state handler
+    // call state handler with NULL event_data (no-VR platform case)
     call_handler(POWER_CONTROL_STATE_WAIT_VR_BEFORE_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, NULL);
+
+    // verify current_vcpu is set to 0 when event_data is NULL
+    assert_int_equal(p_ctrl_loop->current_vcpu, 0);
+}
+
+// Tests for VCPU_DONE with a valid (non-NULL) voltage value
+#define TEST_VCPU_VOLTAGE_MV 995
+
+POWER_TEST(control_set_vr_after_handler__signal_done_with_voltage, NULL, NULL)
+{
+    // get internal control loop data to verify current_vcpu
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+    p_ctrl_loop->current_vcpu = 0;
+
+    // expectations on entry
+    setup_expectations_for_state_change(POWER_CONTROL_STATE_EXCHANGE_COMPLETION);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
+    // call state handler with a real voltage value as event_data
+    call_handler(POWER_CONTROL_STATE_SET_VR_AFTER_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, (const void*)(uintptr_t)TEST_VCPU_VOLTAGE_MV);
+
+    // verify current_vcpu is set to the voltage from event_data
+    assert_int_equal(p_ctrl_loop->current_vcpu, TEST_VCPU_VOLTAGE_MV);
+}
+
+POWER_TEST(control_wait_vr_after_handler__signal_done_with_voltage, NULL, NULL)
+{
+    // get internal control loop data to verify current_vcpu
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+    p_ctrl_loop->current_vcpu = 0;
+
+    // expectations on entry
+    setup_expectations_for_state_change(POWER_CONTROL_STATE_EXCHANGE_COMPLETION);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
+    // call state handler with a real voltage value as event_data
+    call_handler(POWER_CONTROL_STATE_WAIT_VR_AFTER_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, (const void*)(uintptr_t)TEST_VCPU_VOLTAGE_MV);
+
+    // verify current_vcpu is set to the voltage from event_data
+    assert_int_equal(p_ctrl_loop->current_vcpu, TEST_VCPU_VOLTAGE_MV);
+}
+
+POWER_TEST(control_set_vr_before_handler__signal_done_with_voltage, NULL, NULL)
+{
+    // get internal control loop data to verify current_vcpu
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+    p_ctrl_loop->current_vcpu = 0;
+
+    // expectations on entry
+    setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
+    // call state handler with a real voltage value as event_data
+    call_handler(POWER_CONTROL_STATE_SET_VR_BEFORE_PLIMIT, POWER_CTRL_LOOP_SIGNAL_VCPU_DONE, (const void*)(uintptr_t)TEST_VCPU_VOLTAGE_MV);
+
+    // verify current_vcpu is set to the voltage from event_data
+    assert_int_equal(p_ctrl_loop->current_vcpu, TEST_VCPU_VOLTAGE_MV);
+}
+
+POWER_TEST(control_wait_vr_before_handler__signal_done_with_voltage, NULL, NULL)
+{
+    // get internal control loop data to verify current_vcpu
+    power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+    assert_non_null(p_ctrl_loop);
+    p_ctrl_loop->current_vcpu = 0;
+
+    // expectations on entry
+    setup_expectations_for_state_change(POWER_CONTROL_STATE_SET_PLIMIT_AFTER_VR);
+    will_return(__wrap_power_timer_get_counter, TEST_TIMER_VAL);
+    // call state handler with a real voltage value as event_data
+    call_handler(POWER_CONTROL_STATE_WAIT_VR_BEFORE_PLIMIT,
+                 POWER_CTRL_LOOP_SIGNAL_VCPU_DONE,
+                 (const void*)(uintptr_t)TEST_VCPU_VOLTAGE_MV);
+
+    // verify current_vcpu is set to the voltage from event_data
+    assert_int_equal(p_ctrl_loop->current_vcpu, TEST_VCPU_VOLTAGE_MV);
 }
 
 void setup_write_plimits()

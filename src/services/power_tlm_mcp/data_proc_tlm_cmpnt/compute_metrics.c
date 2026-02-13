@@ -643,7 +643,8 @@ void comp_metrics_for_total_dimm_pwr(uint32_t dimm_total_pwr_mW)
         die_2_die_exch_oob_write_window_dimm_pwr(computed_metrics_oob.dimm_total_pwr_mov_avg_mW.total_sum,
                                                  computed_metrics_oob.dimm_total_pwr_mov_avg_mW.sample_count);
 
-        die_2_die_exch_ib_write_total_memory_power(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.memory_avg_pwr_mW));
+        die_2_die_exch_ib_write_total_memory_power_mW(
+            data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.memory_avg_pwr_mW));
     }
 }
 

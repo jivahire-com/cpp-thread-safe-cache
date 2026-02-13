@@ -697,3 +697,9 @@ void data_smpl_get_secondary_die_package_cstate(void);
  *
  */
 void data_smpl_update_mpam_mem_power(void);
+/* *
+ * @brief Calculate memory power based on total memory power in mW and update MPAM data.
+ *
+ * @param[in] total_memory_power_mW - The total memory power in milliwatts.
+ */
+void data_sample_calculate_vm_memory_power(uint32_t total_memory_power_mW);

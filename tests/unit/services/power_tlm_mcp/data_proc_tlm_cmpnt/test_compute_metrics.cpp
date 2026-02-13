@@ -923,9 +923,8 @@ TEST_FUNCTION(test_comp_metrics_for_total_dimm_pwr, test_setup, test_teardown)
     assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.memory_avg_pwr_mW), 200);
 
     // Die 0 doesn't write to die-to-die exchange, so verify it's 0
-    uint32_t read_memory_pwr_die0 = 999;
-    die_2_die_exch_ib_read_total_memory_power_mW(0, &read_memory_pwr_die0);
-    assert_int_equal(read_memory_pwr_die0, 999); // Should remain unchanged (invalid die)
+    uint32_t read_memory_pwr_die0 = die_2_die_exch_ib_read_total_memory_power_mW(0);
+    assert_int_equal(read_memory_pwr_die0, 0); // Should return 0 (invalid die)
 
     // Reset for die 1 test
     comp_metrics_reset_local_2_min_metrics();
@@ -944,8 +943,7 @@ TEST_FUNCTION(test_comp_metrics_for_total_dimm_pwr, test_setup, test_teardown)
     assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.memory_avg_pwr_mW), 200);
 
     // Die 1 writes the running average (200 mW) to the die-to-die exchange
-    uint32_t read_memory_pwr_die1 = 0;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_memory_pwr_die1);
+    uint32_t read_memory_pwr_die1 = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_memory_pwr_die1, 200); // Running average: (190 + 210) / 2 = 200
 }
 

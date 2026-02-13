@@ -207,7 +207,7 @@ uint16_t die_2_die_exch_ib_read_inst_max_die_temp_dC(uint8_t die_id)
     return ib_max_inst_die_temperature_dC;
 }
 
-void die_2_die_exch_ib_write_total_memory_power(uint32_t total_memory_power_mW)
+void die_2_die_exch_ib_write_total_memory_power_mW(uint32_t total_memory_power_mW)
 {
     if (die_id_is_valid(this_die_id))
     {
@@ -218,16 +218,18 @@ void die_2_die_exch_ib_write_total_memory_power(uint32_t total_memory_power_mW)
     }
 }
 
-void die_2_die_exch_ib_read_total_memory_power_mW(uint8_t die_id, uint32_t* total_memory_power_mW)
+uint32_t die_2_die_exch_ib_read_total_memory_power_mW(uint8_t die_id)
 {
-    if (die_id_is_valid(die_id) && total_memory_power_mW != NULL)
+    uint32_t total_memory_power_mW = 0;
+    if (die_id_is_valid(die_id))
     {
         // only secondary dies values can be read from the exchange
         uint32_t* power_ptr_mW = &s_die_2_die_exch->sec_mcp_to_die0_mcp[die_id - 1].ib_total_memory_power_mW;
         d2d_exch_wait_for_sem();
-        *total_memory_power_mW = *power_ptr_mW;
+        total_memory_power_mW = *power_ptr_mW;
         d2d_exch_release_sem();
     }
+    return total_memory_power_mW;
 }
 
 void die_2_die_exch_ib_write_pwr_pkg_max_die_temp(uint16_t average_max_temp_dC, uint16_t num_samples, uint16_t peak_temp_dC)

@@ -907,18 +907,17 @@ TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_mon_data_negative, test_
     die_2_die_exch_ib_write_pwr_pkg_mon_data(nullptr); // Should not crash
 }
 
-TEST_FUNCTION(test_die_2_die_exch_ib_write_total_memory_power, test_setup, test_teardown)
+TEST_FUNCTION(test_die_2_die_exch_ib_write_total_memory_power_mW, test_setup, test_teardown)
 {
     die_2_die_exch_init(1);
-    die_2_die_exch_ib_write_total_memory_power(5000);
+    die_2_die_exch_ib_write_total_memory_power_mW(5000);
 
-    uint32_t read_power_mW = 0;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW);
+    uint32_t read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, 5000);
 
     // Write again to verify overwrite behavior
-    die_2_die_exch_ib_write_total_memory_power(10000);
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW);
+    die_2_die_exch_ib_write_total_memory_power_mW(10000);
+    read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, 10000);
 }
 
@@ -926,47 +925,39 @@ TEST_FUNCTION(test_die_2_die_exch_ib_write_total_memory_power_negative, test_set
 {
     // Test 1: Write from die 1, then try to read from invalid die 0
     die_2_die_exch_init(1);
-    die_2_die_exch_ib_write_total_memory_power(5000);
+    die_2_die_exch_ib_write_total_memory_power_mW(5000);
 
-    uint32_t read_power_mW = 9999;                                   // Initialize with non-zero
-    die_2_die_exch_ib_read_total_memory_power_mW(0, &read_power_mW); // die 0 is invalid
+    uint32_t read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(0); // die 0 is invalid
 
-    // Verify: Data should be unchanged due to invalid die ID
-    assert_int_equal(read_power_mW, 9999);
+    // Verify: Should return 0 due to invalid die ID
+    assert_int_equal(read_power_mW, 0);
 
-    // Test 2: NULL pointer for read
-    die_2_die_exch_ib_read_total_memory_power_mW(1, nullptr); // Should not crash
+    // Test 2: Read from out-of-range die 2
+    uint32_t read_power_mW3 = die_2_die_exch_ib_read_total_memory_power_mW(2); // die 2 doesn't exist
 
-    // Test 3: Read from out-of-range die 2
-    uint32_t read_power_mW3 = 9999;
-    die_2_die_exch_ib_read_total_memory_power_mW(2, &read_power_mW3); // die 2 doesn't exist
+    // Verify: Should return 0
+    assert_int_equal(read_power_mW3, 0);
 
-    // Verify: Data should be unchanged
-    assert_int_equal(read_power_mW3, 9999);
-
-    // Test 4: Write from out-of-range die 2 (doesn't clear memory like die 0 init would)
+    // Test 3: Write from out-of-range die 2 (doesn't clear memory like die 0 init would)
     die_2_die_exch_init(2);
-    die_2_die_exch_ib_write_total_memory_power(7000); // Should not write
+    die_2_die_exch_ib_write_total_memory_power_mW(7000); // Should not write
 
     // Verify the original value from die 1 is still there
-    uint32_t read_power_mW4 = 0;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW4);
+    uint32_t read_power_mW4 = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW4, 5000); // Should still have the original value
 }
 
 TEST_FUNCTION(test_die_2_die_exch_ib_read_total_memory_power_mW, test_setup, test_teardown)
 {
     die_2_die_exch_init(1);
-    die_2_die_exch_ib_write_total_memory_power(5000);
+    die_2_die_exch_ib_write_total_memory_power_mW(5000);
     // Test 1: Read initial value after first write
-    uint32_t read_power_mW = 9999; // Initialize with non-zero to verify it gets set
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW);
+    uint32_t read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, 5000); // Should be 5000 after first write
 
     // Test 2: Write a value and verify read returns correct value
-    die_2_die_exch_ib_write_total_memory_power(1500);
-    read_power_mW = 0;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW);
+    die_2_die_exch_ib_write_total_memory_power_mW(1500);
+    read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, 1500);
 }
 
@@ -974,24 +965,21 @@ TEST_FUNCTION(test_die_2_die_exch_ib_read_total_memory_power_mW_invalid_die_id, 
 {
     // Test 1: Write from die 1, then try to read from invalid die 0 (primary die)
     die_2_die_exch_init(1);
-    die_2_die_exch_ib_write_total_memory_power(3000);
+    die_2_die_exch_ib_write_total_memory_power_mW(3000);
 
-    uint32_t read_power_mW = 7777; // Initialize with non-zero
-    die_2_die_exch_ib_read_total_memory_power_mW(0, &read_power_mW);
+    uint32_t read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(0);
 
-    // Verify: Data should be unchanged due to invalid die ID (die 0 is primary)
-    assert_int_equal(read_power_mW, 7777);
+    // Verify: Should return 0 due to invalid die ID (die 0 is primary)
+    assert_int_equal(read_power_mW, 0);
 
     // Test 2: Try to read from out-of-range die 2 (beyond NUMBER_OF_SECONDARY_DIES)
-    uint32_t read_power_mW2 = 8888;
-    die_2_die_exch_ib_read_total_memory_power_mW(2, &read_power_mW2);
+    uint32_t read_power_mW2 = die_2_die_exch_ib_read_total_memory_power_mW(2);
 
-    // Verify: Data should be unchanged
-    assert_int_equal(read_power_mW2, 8888);
+    // Verify: Should return 0
+    assert_int_equal(read_power_mW2, 0);
 
     // Test 3: Verify die 1's value is still intact after invalid reads
-    uint32_t read_power_mW3 = 0;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW3);
+    uint32_t read_power_mW3 = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW3, 3000);
 }
 
@@ -999,14 +987,10 @@ TEST_FUNCTION(test_die_2_die_exch_ib_read_total_memory_power_mW_null_pointer, te
 {
     // Test 1: Write a value first
     die_2_die_exch_init(1);
-    die_2_die_exch_ib_write_total_memory_power(4000);
+    die_2_die_exch_ib_write_total_memory_power_mW(4000);
 
-    // Test 2: Call read with NULL pointer - should not crash
-    die_2_die_exch_ib_read_total_memory_power_mW(1, nullptr);
-
-    // Test 3: Verify the data is still intact after NULL pointer read
-    uint32_t read_power_mW = 0;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW);
+    // Test 2: Verify the data can be read correctly
+    uint32_t read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, 4000);
 }
 
@@ -1015,39 +999,37 @@ TEST_FUNCTION(test_die_2_die_exch_ib_read_total_memory_power_mW_edge_cases, test
     die_2_die_exch_init(1);
 
     // Test 1: Write and read zero value
-    die_2_die_exch_ib_write_total_memory_power(0);
-    uint32_t read_power_mW = 9999;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW);
+    die_2_die_exch_ib_write_total_memory_power_mW(0);
+    uint32_t read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, 0);
 
     // Test 2: Write and read maximum uint32_t value
     uint32_t max_value = 0xFFFFFFFF;
-    die_2_die_exch_ib_write_total_memory_power(max_value);
-    read_power_mW = 0;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW);
+    die_2_die_exch_ib_write_total_memory_power_mW(max_value);
+    read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, max_value);
 
     // Test 3: Write and read a typical value
-    die_2_die_exch_ib_write_total_memory_power(12345);
-    read_power_mW = 0;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW);
+    die_2_die_exch_ib_write_total_memory_power_mW(12345);
+    read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, 12345);
 }
 
 TEST_FUNCTION(test_die_2_die_exch_ib_read_total_memory_power_mW_combined_invalid, test_setup, test_teardown)
 {
-    // Test combined invalid scenarios: NULL pointer AND invalid die ID
+    // Test combined invalid scenarios with invalid die IDs
     die_2_die_exch_init(1);
-    die_2_die_exch_ib_write_total_memory_power(5500);
+    die_2_die_exch_ib_write_total_memory_power_mW(5500);
 
-    // Test 1: NULL pointer with invalid die 0 - should not crash
-    die_2_die_exch_ib_read_total_memory_power_mW(0, nullptr);
+    // Test 1: Read with invalid die 0 - should return 0
+    uint32_t read_power_mW_die0 = die_2_die_exch_ib_read_total_memory_power_mW(0);
+    assert_int_equal(read_power_mW_die0, 0);
 
-    // Test 2: NULL pointer with invalid die 2 - should not crash
-    die_2_die_exch_ib_read_total_memory_power_mW(2, nullptr);
+    // Test 2: Read with invalid die 2 - should return 0
+    uint32_t read_power_mW_die2 = die_2_die_exch_ib_read_total_memory_power_mW(2);
+    assert_int_equal(read_power_mW_die2, 0);
 
-    // Test 3: Verify the original data is still intact
-    uint32_t read_power_mW = 0;
-    die_2_die_exch_ib_read_total_memory_power_mW(1, &read_power_mW);
+    // Test 3: Verify the original data is still intact for valid die
+    uint32_t read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, 5500);
 }

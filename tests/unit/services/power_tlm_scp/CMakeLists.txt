@@ -63,4 +63,5 @@ mock_target(${TARGET}
     config_get_pwr_tlm_mpam_scp_knobs
     power_get_adclk_telem
     pwr_tlm_core_exch_scp_write_droop_counts
+    pwr_tlm_core_exch_scp_write_mpam_pmu_counts
 )

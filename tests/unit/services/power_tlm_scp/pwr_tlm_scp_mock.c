@@ -16,6 +16,7 @@
 #include <kng_soc_constants.h>
 #include <message_transfer_service.h>
 #include <power_runconfig.h>
+#include <pwr_tlm_core_exchange.h>
 #include <tx_api.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -236,10 +237,21 @@ void __wrap_pwr_tlm_core_exch_scp_write_droop_counts(uint64_t (*droop_count_arra
     function_called();
 }
 
+void __wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts(uint64_t* mpam_pmu_count_array)
+{
+    check_expected_ptr(mpam_pmu_count_array);
+    function_called();
+}
+
 int __wrap_ddrss_pmu_read_counter_snapshot(uint32_t mc, uint16_t pmu_idx, uint64_t* pmn_cnt)
 {
     FPFW_UNUSED(mc);
     FPFW_UNUSED(pmu_idx);
-    FPFW_UNUSED(pmn_cnt);
+
+    if (pmn_cnt != NULL)
+    {
+        *pmn_cnt = mock_type(uint64_t);
+    }
+
     return mock_type(int);
 }

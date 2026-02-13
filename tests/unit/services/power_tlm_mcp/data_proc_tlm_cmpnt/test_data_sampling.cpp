@@ -5144,7 +5144,7 @@ TEST_FUNCTION(test_data_smpl_update_mpam_mem_power_primary_die, test_setup, test
 
     // Set up secondary die (die 1) memory power
     die_2_die_exch_init(1);
-    die_2_die_exch_ib_write_total_memory_power(1500); // Secondary die memory power = 1500 mW
+    die_2_die_exch_ib_write_total_memory_power_mW(1500); // Secondary die memory power = 1500 mW
 
     // Switch back to primary die
     die_2_die_exch_init(0);

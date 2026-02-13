@@ -251,8 +251,19 @@ TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_gen_pwr_package_vm_memory_only
 
     // Mocks for data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp
     will_return(__wrap_mts_get_this_die_id, 0);
-    will_return_count(__wrap_ddrss_pmu_read_counter_snapshot, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Each ddrss_pmu_read_counter_snapshot call needs 2 return values: counter value and status
+    for (uint16_t i = 0; i < DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT; i++)
+    {
+        will_return(__wrap_ddrss_pmu_read_counter_snapshot, 0); // counter value
+        will_return(__wrap_ddrss_pmu_read_counter_snapshot, 0); // SILIBS_SUCCESS
+    }
+
     expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Expect write to core exchange
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, mpam_pmu_count_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, 1);
 
     mts_manager_scp_handle_trp_msg(&trp_msg);
 }
@@ -273,8 +284,19 @@ TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_gen_pwr_package_both_enabled, 
 
     // Mocks for data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp
     will_return(__wrap_mts_get_this_die_id, 0);
-    will_return_count(__wrap_ddrss_pmu_read_counter_snapshot, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Each ddrss_pmu_read_counter_snapshot call needs 2 return values: counter value and status
+    for (uint16_t i = 0; i < DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT; i++)
+    {
+        will_return(__wrap_ddrss_pmu_read_counter_snapshot, 0); // counter value
+        will_return(__wrap_ddrss_pmu_read_counter_snapshot, 0); // SILIBS_SUCCESS
+    }
+
     expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Expect write to core exchange
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, mpam_pmu_count_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, 1);
 
     mts_manager_scp_handle_trp_msg(&trp_msg);
 }
@@ -298,4 +320,88 @@ TEST_FUNCTION(test_mts_manager_scp_init, test_setup, test_teardown)
 
     mts_client_register(MTS_CLIENT_ID_PWR_INST_TELEM, &s_pwr_tlm_mts_client_scp_test);
     mts_manager_scp_init();
+}
+
+TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp_die0, test_setup, test_teardown)
+{
+    // Test for die 0 (mc 0-11)
+    will_return(__wrap_mts_get_this_die_id, 0);
+
+    // Expect PMU counter reads for all MCs (0-11) and all PMU indices (0-7)
+    for (uint16_t mc = 0; mc < DDRSS_MAX_MC_NUM_PER_DIE; mc++)
+    {
+        for (uint16_t pmu_idx = 0; pmu_idx < DDRSS_MAX_PWR_TEL_EVT; pmu_idx++)
+        {
+            // Return unique counter value for each MC/PMU combination for verification
+            uint64_t counter_value = (uint64_t)mc * 1000 + pmu_idx;
+            will_return(__wrap_ddrss_pmu_read_counter_snapshot, counter_value);
+            will_return(__wrap_ddrss_pmu_read_counter_snapshot, 0); // SILIBS_SUCCESS
+        }
+    }
+
+    // Expect FPFW_RUNTIME_ASSERT_EXT calls
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Expect the write to core exchange
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, mpam_pmu_count_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, 1);
+
+    // Call the function under test
+    data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp();
+}
+
+TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp_die1, test_setup, test_teardown)
+{
+    // Test for die 1 (mc 12-23)
+    will_return(__wrap_mts_get_this_die_id, 1);
+
+    // Expect PMU counter reads for all MCs on die 1 and all PMU indices
+    for (uint16_t mc = 0; mc < DDRSS_MAX_MC_NUM_PER_DIE; mc++)
+    {
+        for (uint16_t pmu_idx = 0; pmu_idx < DDRSS_MAX_PWR_TEL_EVT; pmu_idx++)
+        {
+            // Return unique counter value
+            uint64_t counter_value = (uint64_t)(mc + DDRSS_MAX_MC_NUM_PER_DIE) * 1000 + pmu_idx;
+            will_return(__wrap_ddrss_pmu_read_counter_snapshot, counter_value);
+            will_return(__wrap_ddrss_pmu_read_counter_snapshot, 0); // SILIBS_SUCCESS
+        }
+    }
+
+    // Expect FPFW_RUNTIME_ASSERT_EXT calls
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Expect the write to core exchange
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, mpam_pmu_count_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, 1);
+
+    // Call the function under test
+    data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp();
+}
+
+TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp_counter_values, test_setup, test_teardown)
+{
+    // Test that counter values are properly accumulated in local array
+    will_return(__wrap_mts_get_this_die_id, 0);
+
+    // Set specific counter values to verify proper indexing
+    uint64_t expected_counters[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_MAX_PWR_TEL_EVT];
+    for (uint16_t mc = 0; mc < DDRSS_MAX_MC_NUM_PER_DIE; mc++)
+    {
+        for (uint16_t pmu_idx = 0; pmu_idx < DDRSS_MAX_PWR_TEL_EVT; pmu_idx++)
+        {
+            expected_counters[mc][pmu_idx] = 0x1000000000000000ULL + (mc << 8) + pmu_idx;
+            will_return(__wrap_ddrss_pmu_read_counter_snapshot, expected_counters[mc][pmu_idx]);
+            will_return(__wrap_ddrss_pmu_read_counter_snapshot, 0); // SILIBS_SUCCESS
+        }
+    }
+
+    // Expect FPFW_RUNTIME_ASSERT_EXT calls
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Expect the write to core exchange
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, mpam_pmu_count_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts, 1);
+
+    // Call the function under test
+    data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp();
 }

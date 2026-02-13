@@ -42,6 +42,8 @@ static_assert(sizeof(power_adclk_tel_t) == sizeof(uint64_t) * NUM_AP_CORES_PER_D
 // for dcs client subscription
 p_trp_msg_t pwr_tlm_client_queue_mem[PWR_TLM_MAX_TRP_MESSAGES];
 uint8_t pwr_tlm_client_pool_mem[PWR_TLM_CLIENT_BLOCK_POOL_SIZE];
+// This will accumulate all allocated and unallocated counts across all memory controllers on this die
+uint64_t pmu_cnt_all[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_MAX_PWR_TEL_EVT];
 
 static mts_client_t s_pwr_tlm_mts_client_scp = {
     .notify_from_drv_frmwk = pwr_tlm_scp_handle_incoming_mts_msgs,
@@ -293,17 +295,32 @@ void data_proc_scp_tlm_cmpnt_received_prep_droop_count_from_mcp(void)
 
 void data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp(void)
 {
+
     int silibs_status = SILIBS_SUCCESS;
     uint64_t pmn_cnt = 0;
     uint8_t die_id = mts_get_this_die_id();
     uint16_t mc_start = die_id * DDRSS_MAX_MC_NUM_PER_DIE;
     uint16_t mc_end = mc_start + DDRSS_MAX_MC_NUM_PER_DIE;
+    // clear the pmu_cnt_all buffer before accumulation, in case there are stale values from previous collections
+    memset(pmu_cnt_all, 0, sizeof(pmu_cnt_all));
+
+    if (IS_PLATFORM_SVP())
+    {
+        // not all ddrss features are supported on SVP
+        return;
+    }
+
     for (uint16_t mc = mc_start; mc < mc_end; mc++)
     {
+        // Calculate mc and local buffer index.
+        uint16_t mc_local_index = mc - mc_start;
         for (uint16_t pmu_idx = 0; pmu_idx < DDRSS_MAX_PWR_TEL_EVT; pmu_idx++)
         {
             silibs_status = ddrss_pmu_read_counter_snapshot(mc, pmu_idx, &pmn_cnt);
             FPFW_RUNTIME_ASSERT_EXT(silibs_status == SILIBS_SUCCESS, silibs_status, mc, pmu_idx, 0);
+            pmu_cnt_all[mc_local_index][pmu_idx] = pmn_cnt;
         }
     }
+    // Write VM memory power telemetry to SCP telemetry exchange
+    pwr_tlm_core_exch_scp_write_mpam_pmu_counts((uint64_t*)pmu_cnt_all);
 }

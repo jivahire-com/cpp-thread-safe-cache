@@ -626,6 +626,13 @@ void data_smpl_finalize_pwr_pkg_metrics(void)
     data_smpl_update_mpam_mem_power();
 }
 
+void data_sample_calculate_vm_memory_power(uint32_t total_memory_power_mW)
+{
+    // TODO: Add memory power calculation when data is available, this is a placeholder function
+    // to show where the memory power calculation should be done and how it should be used in data_smpl_update_mpam_mem_power()
+    FPFW_UNUSED(total_memory_power_mW);
+}
+
 void data_smpl_update_mpam_mem_power(void)
 {
     // constant/fix  MC power + PHY power for MPAM memory power calculation, should be used from Knobs
@@ -636,10 +643,10 @@ void data_smpl_update_mpam_mem_power(void)
 
     if (die_2_die_exch_get_this_die_id() == PRIMARY_DIE_ID)
     {
-        uint32_t total_memory_power_mW = 0;
-        die_2_die_exch_ib_read_total_memory_power_mW(1, &total_memory_power_mW);
+        uint32_t total_memory_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
         total_memory_power_mW += comp_metrics_get_memory_avg_pwr_mW();
         total_memory_power_mW += local_mpam_vm_mem_fixed_pwr_mW;
+        data_sample_calculate_vm_memory_power(total_memory_power_mW);
     }
 }
 

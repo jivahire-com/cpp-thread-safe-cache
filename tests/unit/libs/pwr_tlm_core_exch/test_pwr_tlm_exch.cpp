@@ -62,3 +62,69 @@ TEST_FUNCTION(test_droop_counts, test_setup, test_teardown)
         assert_true(verify_array[i] == 0xABABABABABABABAB);
     }
 }
+
+TEST_FUNCTION(test_mpam_pmu_counts, test_setup, test_teardown)
+{
+    uint64_t mpam_pmu_count_array[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+    memset(mpam_pmu_count_array, 0xCD, sizeof(mpam_pmu_count_array));
+
+    uint64_t verify_array[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+    memset(verify_array, 0x00, sizeof(verify_array));
+
+    pwr_tlm_core_exch_init();
+
+    uint8_t seq_num = pwr_tlm_core_exch_mcp_read_mpam_pmu_counts((uint64_t*)verify_array);
+    assert_int_equal(seq_num, 0);
+
+    pwr_tlm_core_exch_scp_write_mpam_pmu_counts((uint64_t*)mpam_pmu_count_array);
+
+    seq_num = pwr_tlm_core_exch_mcp_read_mpam_pmu_counts((uint64_t*)verify_array);
+    assert_int_equal(seq_num, 0);
+
+    // Verify data was written and read correctly
+    for (size_t mc = 0; mc < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; ++mc)
+    {
+        for (size_t mpam = 0; mpam < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; ++mpam)
+        {
+            assert_true(verify_array[mc][mpam] == 0xCDCDCDCDCDCDCDCD);
+        }
+    }
+}
+
+TEST_FUNCTION(test_mpam_pmu_counts_write_read_multiple, test_setup, test_teardown)
+{
+    uint64_t write_array[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+    uint64_t read_array[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+
+    pwr_tlm_core_exch_init();
+
+    // First write with pattern 0x1111111111111111
+    memset(write_array, 0x11, sizeof(write_array));
+    pwr_tlm_core_exch_scp_write_mpam_pmu_counts((uint64_t*)write_array);
+
+    memset(read_array, 0x00, sizeof(read_array));
+    pwr_tlm_core_exch_mcp_read_mpam_pmu_counts((uint64_t*)read_array);
+
+    for (size_t mc = 0; mc < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; ++mc)
+    {
+        for (size_t mpam = 0; mpam < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; ++mpam)
+        {
+            assert_true(read_array[mc][mpam] == 0x1111111111111111);
+        }
+    }
+
+    // Second write with pattern 0x2222222222222222
+    memset(write_array, 0x22, sizeof(write_array));
+    pwr_tlm_core_exch_scp_write_mpam_pmu_counts((uint64_t*)write_array);
+
+    memset(read_array, 0x00, sizeof(read_array));
+    pwr_tlm_core_exch_mcp_read_mpam_pmu_counts((uint64_t*)read_array);
+
+    for (size_t mc = 0; mc < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; ++mc)
+    {
+        for (size_t mpam = 0; mpam < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; ++mpam)
+        {
+            assert_true(read_array[mc][mpam] == 0x2222222222222222);
+        }
+    }
+}

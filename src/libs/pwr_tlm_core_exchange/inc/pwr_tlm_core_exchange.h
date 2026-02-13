@@ -41,6 +41,10 @@
 
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define NUMBER_OF_MEM_CONTROLLERS_PER_DIE (12)
+// All the counters including untracked.
+#define NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR (8)
+#define NUMBER_OF_MPAMS_PER_MEM_CTRLR (7)
 
 /*-------------- Typedefs ----------------*/
 
@@ -94,3 +98,17 @@ void pwr_tlm_core_exch_scp_write_droop_counts(uint64_t (*droop_count_array)[NUM_
  * @return sequence number of the droop counts. This is used to determine if the data is stale from last read
  */
 uint8_t  pwr_tlm_core_exch_mcp_read_droop_counts(uint64_t (*droop_count_array)[NUM_AP_CORES_PER_DIE]);
+
+/* @brief Write the MPAM PMU counts(from DDRSS) for the each memory controller specific to MPAMs. This function is intended to be called by the SCP.
+
+ * @param[in] mpam_pmu_count_array Pointer to the array of MPAM PMU counts to write.
+ */
+void pwr_tlm_core_exch_scp_write_mpam_pmu_counts(uint64_t *mpam_pmu_count_array);
+
+/**
+ * @brief Read the MPAM PMU counts for the all the memory controllers. This function is intended to be called by the MCP.
+ *
+ * @param[out] mpam_pmu_count_array destination pointer to array where MPAM PMU counts will be written.
+ * @return sequence number of the MPAM PMU counts. This is used to determine if the data is stale from last read
+ */
+uint8_t pwr_tlm_core_exch_mcp_read_mpam_pmu_counts(uint64_t *mpam_pmu_count_array);

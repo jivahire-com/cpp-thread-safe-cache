@@ -1,7 +1,5 @@
 Guid,Knob,Value,Help
-FE3ED49F-B173-41ED-9076-356661D46A42,pcie_rpss3_rp0_cfg.silibs_rp_cfg.pcie_rp_completion_timeout_val,PCIE_RP_COMPLETION_TIMEOUT_260_MS_TO_900_MS,"Overlake 3: increase completion timeout from 50us-50ms to 260ms-900ms"
-*,pcie_rpss3_rp0_cfg.silibs_rp_cfg.pcie_rp_cap_gen_speed,PCIE_GEN_5,"Overlake 3: upgrade Gen speed from Gen 4 to Gen 5"
-*,pcie_rpss0_cfg.pcie_system_counter_delay,0x11,"override pcie_system_counter_delay on silicon"
+FE3ED49F-B173-41ED-9076-356661D46A42,pcie_rpss0_cfg.pcie_system_counter_delay,0x11,"override pcie_system_counter_delay on silicon"
 *,pcie_rpss1_cfg.pcie_system_counter_delay,0x0C,"override pcie_system_counter_delay on silicon"
 *,pcie_rpss2_cfg.pcie_system_counter_delay,0x07,"override pcie_system_counter_delay on silicon"
 *,pcie_rpss3_cfg.pcie_system_counter_delay,0x03,"override pcie_system_counter_delay on silicon"

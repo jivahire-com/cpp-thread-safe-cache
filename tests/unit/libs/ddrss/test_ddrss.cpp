@@ -985,7 +985,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC0_CRI_INT, setup, teardown)
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
     expect_function_call(__wrap_crash_dump_bug_check);
 
@@ -1017,7 +1016,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_MC1_CRI_INT, setup, teardown)
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
     expect_function_call(__wrap_crash_dump_bug_check);
 
@@ -1054,7 +1052,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_FHI_UEU, setup, t
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
@@ -1073,7 +1070,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_FHI_UEU, setup, t
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
@@ -1103,7 +1099,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_FHI_UEU, setup, t
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
@@ -1122,7 +1117,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_FHI_UEU, setup, t
     will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
@@ -1156,7 +1150,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
@@ -1175,7 +1168,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
@@ -1201,7 +1193,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
 
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER
@@ -1220,7 +1211,6 @@ TEST_FUNCTION(test_prod_ddrss_interrupt_handler_DDRSS_INTU_SRA_ERI, setup, teard
     will_return(__wrap_ddrss_get_ras_agent, &local_ras_agent);
     will_return(__wrap_ddrss_get_ras_agent, SILIBS_SUCCESS);
     expect_function_call(__wrap_ras_arm_agent_probe);
-    expect_function_call(__wrap_ras_print_record);
     expect_function_call(__wrap_ddrss_convert_ras_rec_to_cper);
 
     // Std. CPER

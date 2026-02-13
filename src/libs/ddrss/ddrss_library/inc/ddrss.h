@@ -25,6 +25,21 @@
 #include <stdint.h>
 #include <variable_services.h>
 
+#ifndef DDRSS_ENABLE_ISR_PRINT
+#define DDRSS_ENABLE_ISR_PRINT (0)
+#endif
+
+#if DDRSS_ENABLE_ISR_PRINT
+    #define DDRSS_ISR_DEBUG_PRINT(...) printf(__VA_ARGS__)
+    #define ras_print_record(...)  ras_print_record(__VA_ARGS__)
+    #define ddrss_print_cper(...)  ddrss_print_cper(__VA_ARGS__)
+#else
+    #define DDRSS_ISR_DEBUG_PRINT(...)
+    #define ras_print_record(...)
+    #define ddrss_print_cper(...)
+#endif
+#define DDRSS_ISR_CRITICAL_PRINT  printf
+
 /*-- Symbolic Constant Macros (defines) --*/
 #define DDRSS_PRINT(lvl, statement)
 #define DDRSS_ERROR(...) DDRSS_PRINT(DDRSS_DEBUG_LEVEL_CRITICAL, CRITICAL_PRINT("ERROR: " __VA_ARGS__))

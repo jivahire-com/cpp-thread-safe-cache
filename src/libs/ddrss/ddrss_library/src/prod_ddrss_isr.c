@@ -92,12 +92,12 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
         {
             if (record.handler(&record))
             {
-                printf("Error encountered while handling record!\n");
+                DDRSS_ISR_DEBUG_PRINT("Error encountered while handling record!\n");
             }
         }
         else
         {
-            printf("Record was marked invalid! No further handling will be done.\n");
+            DDRSS_ISR_DEBUG_PRINT("Record was marked invalid! No further handling will be done.\n");
         }
 
         if ((erg_id == DDRSS_RAS_NODE_ID_MC_ERG0) && record.status_valid && (record.status & DDR_ERG0_ERR0STATUS_LO_CE_MASK))
@@ -107,7 +107,7 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
             sub_sts = prod_ddrss_set_ras_erg_ce_interrupt_enable(mc, erg_id, false);
             if (sub_sts != SILIBS_SUCCESS)
             {
-                printf("Error in disabling CE RAS interrupt!\n");
+                DDRSS_ISR_DEBUG_PRINT("Error in disabling CE RAS interrupt!\n");
             }
         }
     }
@@ -246,7 +246,7 @@ bool prod_ddrss_interrupt_pending(void* context)
  *
  *        Each pass through this ISR will handle one subtype of possible DDRSS error sources.
  *
- * @todo printf statements don't belong in an ISR but are here for testing purposes
+ * @todo DDRSS_ISR_DEBUG_PRINT statements don't belong in an ISR but are here for testing purposes
  *
  * @param context - Void pointer to a static array of ints 0-5 representing the DDR controller number the ISR is for
  *
@@ -271,7 +271,7 @@ void prod_ddrss_interrupt_handler(void* context)
     int sub_sts = SILIBS_SUCCESS;
 
     // Read DDRSS INTU status
-    printf("DDRSS %d ISR Enter\n", (unsigned int)ddrss);
+    DDRSS_ISR_DEBUG_PRINT("DDRSS %d ISR Enter\n", (unsigned int)ddrss);
 
     // Verify if MC IIDR is expected.
     // It indirectly checks the DDRSS die base is correct or not.
@@ -283,7 +283,7 @@ void prod_ddrss_interrupt_handler(void* context)
 
     sts = intu_get_interrupt_status(ddrss_base, &ddr_intu_sts);
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
-    printf("SS%d INTU STS: 0x%08x\n", (unsigned int)ddrss, (unsigned int)ddr_intu_sts);
+    DDRSS_ISR_DEBUG_PRINT("SS%d INTU STS: 0x%08x\n", (unsigned int)ddrss, (unsigned int)ddr_intu_sts);
 
     // Only check enabled interrupts
     uint32_t intu_enable = 0;
@@ -291,7 +291,7 @@ void prod_ddrss_interrupt_handler(void* context)
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
     ddr_intu_sts = ddr_intu_sts & intu_enable;
-    printf("SS%d INTU STS after filtering on enabled: 0x%08x\n", (unsigned int)ddrss, (unsigned int)ddr_intu_sts);
+    DDRSS_ISR_DEBUG_PRINT("SS%d INTU STS after filtering on enabled: 0x%08x\n", (unsigned int)ddrss, (unsigned int)ddr_intu_sts);
 
     // DDRSS MC should not route interrupt to MCP or HSP directly
     // Ni-Tower interrupts should be handled by HSP since SCP has no access to it.
@@ -305,7 +305,7 @@ void prod_ddrss_interrupt_handler(void* context)
     if (ddr_intu_sts & ddrss_unexpected_int)
     {
         // ERROR condition
-        printf("DDRSS received unexpected interrupts!\n");
+        DDRSS_ISR_CRITICAL_PRINT("DDRSS received unexpected interrupts!\n");
         ddr_intu_clr_sts |= (ddr_intu_sts & ddrss_unexpected_int);
 
         ddr_cper.module = DDRSS_MC_TO_DDRSS(mc);
@@ -328,7 +328,7 @@ void prod_ddrss_interrupt_handler(void* context)
     int_mask = (1 << DDRSS_INTU_MC0_CRI_INT);
     if (ddr_intu_sts & int_mask)
     {
-        printf("MC0 CRI int\n");
+        DDRSS_ISR_CRITICAL_PRINT("MC0 CRI int\n");
         sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1], &err_status);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -340,7 +340,7 @@ void prod_ddrss_interrupt_handler(void* context)
     int_mask = (1 << DDRSS_INTU_MC1_CRI_INT);
     if (ddr_intu_sts & int_mask)
     {
-        printf("MC1 CRI int\n");
+        DDRSS_ISR_CRITICAL_PRINT("MC1 CRI int\n");
         sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG1, &ras_agent[1], &err_status);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -355,7 +355,7 @@ void prod_ddrss_interrupt_handler(void* context)
     uint32_t sra_ras_int_msk = (1 << DDRSS_INTU_SRA_ERI) | (1 << DDRSS_INTU_SRA_FHI);
     if (ddr_intu_sts & sra_ras_int_msk)
     {
-        printf("DDR ERI/FHI int\n");
+        DDRSS_ISR_DEBUG_PRINT("DDR ERI/FHI int\n");
         sts = ddrss_get_component_base(ddrss, DDRSS_COMP_ID_MC0, &ddrss_base);
         BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
         grp_sts = MMIO_READ32(PROD_DDRSS_MC0_RASERG_REG_ADDR(ddrss_base, errgsr_lo));
@@ -364,7 +364,7 @@ void prod_ddrss_interrupt_handler(void* context)
             sub_sts = ddrss_get_and_probe_ras_agent(mc, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0], &err_status);
             if (sub_sts != SILIBS_SUCCESS)
             {
-                printf("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
+                DDRSS_ISR_DEBUG_PRINT("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
                 ddr_intu_err |= sra_ras_int_msk;
             }
             else
@@ -379,7 +379,7 @@ void prod_ddrss_interrupt_handler(void* context)
             sub_sts = ddrss_get_and_probe_ras_agent(mc + 1, DDRSS_RAS_NODE_ID_MC_ERG0, &ras_agent[0], &err_status);
             if (sub_sts != SILIBS_SUCCESS)
             {
-                printf("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
+                DDRSS_ISR_DEBUG_PRINT("Failed to get RAS agent for MC%d ERG0\n", (unsigned int)mc);
                 ddr_intu_err |= sra_ras_int_msk;
             }
             else
@@ -394,7 +394,7 @@ void prod_ddrss_interrupt_handler(void* context)
     int_mask = (1 << DDRSS_INTU_PHY_IRQ);
     if (ddr_intu_sts & int_mask)
     {
-        printf("DDR PHY int\n");
+        DDRSS_ISR_CRITICAL_PRINT("DDR PHY int\n");
         sub_sts = prod_ddrss_phy_interrupt_handler(mc);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -406,10 +406,10 @@ void prod_ddrss_interrupt_handler(void* context)
     int_mask = (1 << DDRSS_INTU_PLL_INTERRUPT_OUT);
     if (ddr_intu_sts & int_mask)
     {
-        printf("DDR PLL int\n");
+        DDRSS_ISR_CRITICAL_PRINT("DDR PLL int\n");
         ddr_intu_clr_sts |= int_mask;
 
-        printf("CPER:DDR PLL");
+        DDRSS_ISR_DEBUG_PRINT("CPER:DDR PLL");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_PLL_INTERRUPT_OUT, &ddr_cper);
 
         acpi_cper_section_t cper_section = {0};
@@ -421,10 +421,10 @@ void prod_ddrss_interrupt_handler(void* context)
     int_mask = (1 << DDRSS_INTU_PCR_PAR_ERR);
     if (ddr_intu_sts & int_mask)
     {
-        printf("DDR PCR PAR int\n");
+        DDRSS_ISR_CRITICAL_PRINT("DDR PCR PAR int\n");
         ddr_intu_clr_sts |= int_mask;
 
-        printf("CPER:DDR PCR PAR");
+        DDRSS_ISR_DEBUG_PRINT("CPER:DDR PCR PAR");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_PCR_PAR_ERR, &ddr_cper);
 
         acpi_cper_section_t cper_section = {0};
@@ -436,10 +436,10 @@ void prod_ddrss_interrupt_handler(void* context)
     int_mask = (1 << DDRSS_INTU_INTU_PAR_ERR);
     if (ddr_intu_sts & int_mask)
     {
-        printf("DDR INTU PAR int\n");
+        DDRSS_ISR_CRITICAL_PRINT("DDR INTU PAR int\n");
         ddr_intu_clr_sts |= int_mask;
 
-        printf("CPER:DDR INTU PAR");
+        DDRSS_ISR_DEBUG_PRINT("CPER:DDR INTU PAR");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_INTU_PAR_ERR, &ddr_cper);
 
         acpi_cper_section_t cper_section = {0};
@@ -450,7 +450,7 @@ void prod_ddrss_interrupt_handler(void* context)
     int_mask = (1 << DDRSS_INTU_MC0_SCP_INT);
     if (ddr_intu_sts & int_mask)
     {
-        printf("MC0 SCP int\n");
+        DDRSS_ISR_DEBUG_PRINT("MC0 SCP int\n");
         sub_sts = prod_ddrss_mc_interrupt_handler(mc);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -462,7 +462,7 @@ void prod_ddrss_interrupt_handler(void* context)
     int_mask = (1 << DDRSS_INTU_MC1_SCP_INT);
     if (ddr_intu_sts & int_mask)
     {
-        printf("MC1 SCP int\n");
+        DDRSS_ISR_DEBUG_PRINT("MC1 SCP int\n");
         sub_sts = prod_ddrss_mc_interrupt_handler(mc + 1);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -480,7 +480,7 @@ void prod_ddrss_interrupt_handler(void* context)
     if (sub_sts != SILIBS_SUCCESS)
     {
         sts = SILIBS_E_DEVICE;
-        printf("DDR int handler failed for INTU mask 0x%08x\n", (unsigned int)ddr_intu_err);
+        DDRSS_ISR_DEBUG_PRINT("DDR int handler failed for INTU mask 0x%08x\n", (unsigned int)ddr_intu_err);
     }
 
     // If DDR RAS CRI is active, trigger crash dump since it is fatal.
@@ -488,18 +488,22 @@ void prod_ddrss_interrupt_handler(void* context)
     if (is_cri)
     {
         uint32_t mc_cri = mc + ((ddr_intu_clr_sts & (1 << DDRSS_INTU_MC0_CRI_INT)) ? 0 : 1);
-        printf("Force CD due to fatal DDR CRI from MC%d\n", (unsigned int)mc_cri);
+        DDRSS_ISR_CRITICAL_PRINT("Force CD due to fatal DDR CRI from MC%d\n", (unsigned int)mc_cri);
         BUG_CHECK(KNG_DDR_RAS_CRI_FATAL, mc_cri, ddr_intu_sts);
     }
 
     // For DDR RAS UEU, treat it as critical and generate crash dump.
     if (has_ueu)
     {
-        printf("Force CD due to DDR RAS UEU from MC%d\n", (unsigned int)mc_ueu);
+        DDRSS_ISR_CRITICAL_PRINT("Force CD due to DDR RAS UEU from MC%d\n", (unsigned int)mc_ueu);
         BUG_CHECK(KNG_DDR_RAS_UEU_FATAL, mc_ueu, ddr_intu_sts);
     }
 
-    printf("DDRSS %d ISR Exit with sts=%d\n\n", (int)ddrss, sts);
+    // Resolve compiler warning on unused variables when DDRSS_ISR_DEBUG_PRINT is mapped to empty.
+    FPFW_UNUSED(sts);
+    FPFW_UNUSED(ddr_intu_err);
+
+    DDRSS_ISR_DEBUG_PRINT("DDRSS %d ISR Exit with sts=%d\n\n", (int)ddrss, sts);
 
     __DSB();
 }
@@ -522,11 +526,11 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
     sts = ddrss_get_phy_interrupt_status(mc, &phy_int_sts);
     if (sts != SILIBS_SUCCESS)
     {
-        printf("Failed to get INTU enable status.  Retval = %d\n", sts);
+        DDRSS_ISR_CRITICAL_PRINT("Failed to get INTU enable status.  Retval = %d\n", sts);
     }
     else
     {
-        printf("DDR PHY int sts = 0x%08x\n", (unsigned int)phy_int_sts);
+        DDRSS_ISR_DEBUG_PRINT("DDR PHY int sts = 0x%08x\n", (unsigned int)phy_int_sts);
     }
 
     if (phy_int_sts & csr_PhyTrngFailEn_MASK)
@@ -622,7 +626,7 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
     sts = ddrss_clear_phy_interrupt_status(mc, phy_int_clr);
     if (sts != SILIBS_SUCCESS)
     {
-        printf("Failed to clear PHY interrupt status.  Retval = %d\n", sts);
+        DDRSS_ISR_CRITICAL_PRINT("Failed to clear PHY interrupt status.  Retval = %d\n", sts);
     }
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
@@ -645,7 +649,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     sub_sts = ddrss_mc_intu_get_interrupt_dest_enable(mc, DDRSS_INTU_SCP_INT, &intu_enable);
     if (sub_sts != SILIBS_SUCCESS)
     {
-        printf("Failed to get INTU enable status.  Retval = %d\n", sub_sts);
+        DDRSS_ISR_CRITICAL_PRINT("Failed to get INTU enable status.  Retval = %d\n", sub_sts);
         return sub_sts;
     }
 
@@ -660,7 +664,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     if (mc_intu_sts & int_mask)
     {
         // Warm reset is removed, this should not fire.
-        printf("MC FEDB flush done int\n");
+        DDRSS_ISR_DEBUG_PRINT("MC FEDB flush done int\n");
         mc_intu_clr_sts |= int_mask;
     }
 
@@ -668,12 +672,12 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     if (mc_intu_sts & int_mask)
     {
         ddrss_rhm_tm_evt_t ddrss_rm_telemetry;
-        printf("MC RM telemetry avail int\n");
+        DDRSS_ISR_DEBUG_PRINT("MC RM telemetry avail int\n");
         sub_sts = ddrss_get_telemetry_record(mc, DDRSS_TELEMETRY_TYPE_RHM_EVT, &ddrss_rm_telemetry, sizeof(ddrss_rm_telemetry));
 
         if (sub_sts != SILIBS_SUCCESS)
         {
-            printf("sub_sts res %d\n", sub_sts);
+            DDRSS_ISR_DEBUG_PRINT("sub_sts res %d\n", sub_sts);
             mc_intu_err |= int_mask;
         }
         else
@@ -690,7 +694,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     int_mask = 1 << DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED;
     if (mc_intu_sts & int_mask)
     {
-        printf("MC media ESC trans changed int\n");
+        DDRSS_ISR_DEBUG_PRINT("MC media ESC trans changed int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_ECS_TRANS_CHANGED);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -698,7 +702,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         }
         mc_intu_clr_sts |= int_mask;
 
-        printf("CPER:MC media ESC trans changed");
+        DDRSS_ISR_DEBUG_PRINT("CPER:MC media ESC trans changed");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAECSTRANSPCHANGED, &ddr_cper);
 
         acpi_cper_section_t cper_section = {0};
@@ -710,7 +714,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     int_mask = 1 << DDRSS_INTU_MC_MEDIAREFTEMPCHANGED;
     if (mc_intu_sts & int_mask)
     {
-        printf("MC media ref temp changed int\n");
+        DDRSS_ISR_DEBUG_PRINT("MC media ref temp changed int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_REF_TEMP_CHANGED);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -720,7 +724,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
         // ADO Feature#1140772, Task#1494090
 
-        printf("CPER:MC media ref temp changed");
+        DDRSS_ISR_DEBUG_PRINT("CPER:MC media ref temp changed");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAREFTEMPCHANGED, &ddr_cper);
         acpi_cper_section_t cper_section = {0};
         cper_section.sec_ddr_mem_vendor = ddr_cper;
@@ -731,7 +735,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     int_mask = 1 << DDRSS_INTU_MC_MEDIAREFTEMPHIGH;
     if (mc_intu_sts & int_mask)
     {
-        printf("MC media ref temp high int\n");
+        DDRSS_ISR_DEBUG_PRINT("MC media ref temp high int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_REF_TEMP_HIGH);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -741,7 +745,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         // TODO: BWL: Handle the temperature change by sending to DDR_Manager queue: RAS - Temperature
         // ADO Feature#1140772, Task#1494090
 
-        printf("CPER:MC media ref temp changed");
+        DDRSS_ISR_DEBUG_PRINT("CPER:MC media ref temp changed");
         prod_ddrss_get_intr_event_cper(mc, DDRSS_INTU_MC_MEDIAREFTEMPHIGH, &ddr_cper);
         acpi_cper_section_t cper_section = {0};
         cper_section.sec_ddr_mem_vendor = ddr_cper;
@@ -753,7 +757,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     if (mc_intu_sts & int_mask)
     {
         // PHY in LP3 for media data preserving. Not supported in KNG.
-        printf("MC PHY in LP3 int\n");
+        DDRSS_ISR_DEBUG_PRINT("MC PHY in LP3 int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_PHY_IN_LP3);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -765,7 +769,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     int_mask = 1 << DDRSS_INTU_MC_MEDIASCRUBINITDONE;
     if (mc_intu_sts & int_mask)
     {
-        printf("MC media scrub init done int\n");
+        DDRSS_ISR_DEBUG_PRINT("MC media scrub init done int\n");
         sub_sts = ddrss_mc_event_clear_interrupt(mc, DDRSS_MC_INTR_EVT_SCRUB_INIT_DONE);
         if (sub_sts != SILIBS_SUCCESS)
         {
@@ -783,7 +787,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     if (sub_sts)
     {
         sts = SILIBS_E_DEVICE;
-        printf("MC int handler failed for INTU mask 0x%08x\n", (unsigned int)mc_intu_err);
+        DDRSS_ISR_CRITICAL_PRINT("MC int handler failed for INTU mask 0x%08x\n", (unsigned int)mc_intu_err);
     }
 
     return sts;
@@ -871,7 +875,7 @@ int prod_ddrss_set_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NODE_ID er
     sts = ddrss_get_ras_agent(mc, erg_id, &ddrss_ras_agent);
     if (sts == SILIBS_SUCCESS)
     {
-        printf("MC%d: %s DDR CE INT\n", (unsigned int)mc, enable ? "Enable" : "Disable");
+        DDRSS_ISR_DEBUG_PRINT("MC%d: %s DDR CE INT\n", (unsigned int)mc, enable ? "Enable" : "Disable");
         if (enable)
         {
             prod_ddrss_mc_ras_ce_en[local_mc][erg_id] = 1;

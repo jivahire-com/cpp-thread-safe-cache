@@ -51,9 +51,11 @@ mock_target(${TARGET}
     _tx_mutex_get
     _tx_mutex_put
     dvfs_vft_from_fuse_data_per_itd
+    dvfs_mvolt_from_ldo_dac
     power_fuses_get_curve_assignment
     power_fuses_read
     power_knobs_read
+    power_ctrl_loop_get
     crash_dump_bug_check
 )
 

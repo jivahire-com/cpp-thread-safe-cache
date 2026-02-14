@@ -19,6 +19,7 @@ extern "C" {
 #include "power_runconfig_i.h"
 
 #include <CMockaWrapper.h>
+#include <FpFwUtils.h>
 #include <corebits.h>
 #include <interrupts.h>
 #include <nvic.h> // for nvic_status_t
@@ -71,6 +72,12 @@ nvic_status_t __wrap_nvic_get_current_irq(uint32_t* irq_num)
 power_runconfig_t* __wrap_power_runconfig_get()
 {
     return mock_type(power_runconfig_t*);
+}
+
+void __wrap_power_loops_control_handle_event(int event, const void* event_data)
+{
+    FPFW_UNUSED(event);
+    FPFW_UNUSED(event_data);
 }
 } // extern "C"
 

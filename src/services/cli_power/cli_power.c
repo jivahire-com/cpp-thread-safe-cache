@@ -690,6 +690,7 @@ static PLACED_CODE FPFW_CLI_STATUS cli_power_status_command(int argc, const char
         FpFwCliPrint("%-72s%s", "Usage: pwr status vr_inst", "VR instance info\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr status pstate2cppc", "Pstate to CPPC mapping info\n");
         FpFwCliPrint("%-72s%s", "Usage: pwr status dvfs_throt_sr <core>", "DVFS throttle status info for core\n");
+        FpFwCliPrint("%-72s%s", "Usage: pwr status vmin <core>", "Vmin/LDO voltage at P31 (all cores if no core specified)\n");
         FpFwCliPrint("\n");
 
         return CLI_SUCCESS;
@@ -728,6 +729,19 @@ static PLACED_CODE FPFW_CLI_STATUS cli_power_status_command(int argc, const char
                 return CLI_ERROR;
             }
             pwrset_sub_command_args.minupdate_val = (uint16_t)strtoul(argv[2],0,0);
+            break;
+        }
+        case POWER_IF_CMD_STATUS_VMIN : {
+            // Optional core argument: if argc==3, use specified core; if argc==2, use 0xFF to indicate all cores
+            if(argc == 3)
+            {
+                pwrset_sub_command_args.minupdate_val = (uint16_t)strtoul(argv[2],0,0);
+            }
+            else
+            {
+                // Use 0xFF as sentinel to indicate "all cores"
+                pwrset_sub_command_args.minupdate_val = 0xFF;
+            }
             break;
         }
 

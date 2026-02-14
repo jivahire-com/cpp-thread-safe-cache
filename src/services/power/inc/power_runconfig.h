@@ -396,7 +396,8 @@ typedef enum
     POWER_IF_CMD_STATUS_VR_INST,
     POWER_IF_CMD_STATUS_PSTATE2CPPC,
     POWER_IF_CMD_STATUS_DVFS_THROT_SR,
-
+    POWER_IF_CMD_STATUS_VMIN,
+    
     //! All log commands
     POWER_IF_CMD_LOG_DUMP,
     POWER_IF_CMD_LOG_DDR,
@@ -783,6 +784,23 @@ void power_get_adclk_telem(power_adclk_tel_t* adclk_tel);
  *
  */
 void power_reset_adclk_telem();
+
+/**
+ * @brief Get the minimum voltage (Vmin) for a core.
+ *
+ * \b Description:
+ *      Returns the minimum operating voltage for the specified core at P31 (lowest performance state).
+ *      When ITD is enabled, uses the cached core temperature to determine the ITD column and returns
+ *      the appropriate voltage for that temperature range.
+ *      When ITD is disabled, returns the highest Vmin across all ITD temperature columns to ensure
+ *      safe operation at any temperature.
+ *
+ * @param[in] core_id       Core index (0 to NUM_AP_CORES_PER_DIE-1)
+ * @param[out] p_vmin_mv    Pointer to store the Vmin voltage in millivolts
+ *
+ * @return FPFW_STATUS_SUCCESS on success, FPFW_STATUS_INVALID_ARG if parameters are invalid
+ */
+int32_t power_runconfig_get_core_vmin_mv(uint32_t core_id, uint16_t* p_vmin_mv);
 
 /*--------- Function Prototypes ----------*/
 #ifdef __cplusplus

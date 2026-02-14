@@ -11,15 +11,16 @@
 
 #include "power_runconfig.h"
 
-#include "fpfw_status.h"
 #include "power_hw_int_i.h"
 #include "power_i.h"
+#include "power_loops_i.h"
 #include "power_runconfig_i.h"
 
 #include <bug_check.h> // for BUG_CHECK
 #include <corebits.h>  // for corebits_is_bit_set, corebits_is_clear
 #include <dvfs.h>
 #include <dvfs_struct.h> // for dvfs_vft_t, NUM_PSTATES, dvfs_vf_fuse...
+#include <fpfw_status.h> // for FPFW_STATUS_SUCCESS, FPFW_STATUS_INVALID_ARG
 #include <idsw_kng.h>
 #include <silibs_common.h> // for MAX, MIN
 #include <stdbool.h>
@@ -40,6 +41,8 @@
 
 /*-------- Function Prototypes -----------*/
 void dummy_set_function(char* p_string, void* p_set_data);
+static uint8_t power_runconfig_get_itd_column_from_temp(int16_t temp_dC);
+static int32_t power_runconfig_get_core_vmin_for_itd_mv(uint32_t core_id, uint8_t itd_column, uint16_t* p_vmin_mv);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -336,4 +339,123 @@ void power_runconfig_init(const power_service_config_t* p_config)
 
     // update valid cores to only include those that are present
     corebits_and(&power_runconfig.fuses.valid_cores, p_config->platform_cores_in_die);
+}
+
+int32_t power_runconfig_get_core_vmin_mv(uint32_t core_id, uint16_t* p_vmin_mv)
+{
+    // Validate inputs
+    if (p_vmin_mv == NULL)
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    if (core_id >= NUM_AP_CORES_PER_DIE)
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    // Check if core is valid/enabled
+    if (!corebits_is_bit_set(&power_runconfig.fuses.valid_cores, core_id))
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    // Check if ITD is enabled
+    if (power_runconfig.knobs.itd_cfg)
+    {
+        // ITD enabled - use cached core temperature to determine ITD column and Vmin
+        power_ctrl_loop_detail_t* p_ctrl_loop = power_ctrl_loop_get();
+        int16_t temp_dC = (int16_t)p_ctrl_loop->cores.core[core_id].temperature_dC;
+        uint8_t itd_column = power_runconfig_get_itd_column_from_temp(temp_dC);
+        return power_runconfig_get_core_vmin_for_itd_mv(core_id, itd_column, p_vmin_mv);
+    }
+
+    // ITD disabled - return worst-case (max) voltage across all ITD columns
+    // Get the VFT curveset assigned to this core
+    uint8_t curveset_idx = power_runconfig.derived.assigned_vft[core_id];
+
+    // Vmin is at P31 (NUM_PSTATES - 1), the lowest performance state
+    *p_vmin_mv = power_runconfig.derived.vfts[curveset_idx].vf[NUM_PSTATES - 1].voltage_mv;
+
+    return FPFW_STATUS_SUCCESS;
+}
+
+static uint8_t power_runconfig_get_itd_column_from_temp(int16_t temp_dC)
+{
+    // ITD boundaries are in curve_max_temp[] (3 boundaries for 4 columns)
+    // curve_max_temp values are stored as (actual_temp_C + 127) in fuses, then converted to int8_t
+    // temp_dC is in deci-degrees Celsius (e.g., 850 = 85.0°C)
+
+    // Convert temp_dC to degrees C for comparison
+    int16_t temp_C = temp_dC / 10;
+
+    // Compare against boundaries to find ITD column
+    // Column 0: T < T1
+    // Column 1: T1 <= T < T2
+    // Column 2: T2 <= T < T3
+    // Column 3: T >= T3
+    for (uint8_t i = 0; i < (NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1); i++)
+    {
+        if (temp_C < power_runconfig.fuses.curve_max_temp[i])
+        {
+            return i;
+        }
+    }
+
+    // Temperature is above all thresholds - use hottest column
+    return (NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1);
+}
+
+static int32_t power_runconfig_get_core_vmin_for_itd_mv(uint32_t core_id, uint8_t itd_column, uint16_t* p_vmin_mv)
+{
+    // Validate inputs
+    if (p_vmin_mv == NULL)
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    if (core_id >= NUM_AP_CORES_PER_DIE)
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    if (itd_column >= VFT_CURVE_COUNT_PER_CURVESET)
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    // Check if core is valid/enabled
+    if (!corebits_is_bit_set(&power_runconfig.fuses.valid_cores, core_id))
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    // Check if ITD is enabled - if not, fall back to worst-case value
+    if (!power_runconfig.knobs.itd_cfg)
+    {
+        // ITD disabled - return the worst-case (max) voltage across all ITD columns
+        // Get the VFT curveset assigned to this core
+        uint8_t curveset_idx = power_runconfig.derived.assigned_vft[core_id];
+
+        // Vmin is at P31 (NUM_PSTATES - 1), the lowest performance state
+        *p_vmin_mv = power_runconfig.derived.vfts[curveset_idx].vf[NUM_PSTATES - 1].voltage_mv;
+
+        return FPFW_STATUS_SUCCESS;
+    }
+
+    // Get the VFT curveset assigned to this core
+    uint8_t curveset_idx = power_runconfig.derived.assigned_vft[core_id];
+
+    // Get the LDO DAC code for P31 in the specified ITD column
+    uint16_t ldo_dac =
+        power_runconfig.dvfs_vft.curveset[curveset_idx].vmat_info[itd_column].ldo_dac_in[NUM_PSTATES - 1];
+
+    // Convert LDO DAC to voltage
+    int status = dvfs_mvolt_from_ldo_dac(ldo_dac, &power_runconfig.fuses.ldodac_to_volt, p_vmin_mv);
+    if (DVFS_SUCCESS != status)
+    {
+        return FPFW_STATUS_FAIL;
+    }
+
+    return FPFW_STATUS_SUCCESS;
 }

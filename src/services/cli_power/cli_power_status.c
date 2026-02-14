@@ -24,6 +24,7 @@
 #include <dvfs.h>
 #include <dvfs_nonsecure_regs.h> // for DVFS_NONSECURE_REGS
 #include <dvfs_regs.h>
+#include <fpfw_status.h> // for FPFW_STATUS_SUCCESS
 #include <inttypes.h>
 #include <numa_config_variable.h>
 #include <pex_regs.h>
@@ -83,6 +84,7 @@ static void print_power_status_dvfs_plimit(ppower_service_cli_request_t p_cli_re
 static void print_power_status_dvfs_cppc(ppower_service_cli_request_t p_cli_request);
 static void print_power_status_pstate2cppc(ppower_service_cli_request_t p_cli_request);
 static void print_power_status_dvfs_throt_sr(ppower_service_cli_request_t p_cli_request);
+static void print_power_status_vmin_info(ppower_service_cli_request_t p_cli_request);
 static void print_cl_detail(power_ctrl_loop_detail_t* s_ctrl_loop, power_knobs_t* p_knobs);
 static int32_t power_loops_info(power_loop_residency_t* residency,
                                 unsigned max_state,
@@ -121,6 +123,7 @@ const power_cli_sub_command_dictionary_element_t power_cli_status_sub_command_di
     {"vr_inst",           NULL,            POWER_IF_CMD_STATUS_VR_INST},
     {"pstate2cppc",       NULL,            POWER_IF_CMD_STATUS_PSTATE2CPPC},
     {"dvfs_throt_sr",     NULL,            POWER_IF_CMD_STATUS_DVFS_THROT_SR},
+    {"vmin",              NULL,            POWER_IF_CMD_STATUS_VMIN},
 };
 
 //clang-format on
@@ -227,6 +230,9 @@ PLACED_CODE void cli_power_status_async_print(PDFWK_ASYNC_REQUEST_HEADER p_reque
             break;
         case POWER_IF_CMD_STATUS_DVFS_THROT_SR:
             print_power_status_dvfs_throt_sr(p_cli_request);
+            break;
+        case POWER_IF_CMD_STATUS_VMIN:
+            print_power_status_vmin_info(p_cli_request);
             break;
         default:
            break;
@@ -1101,4 +1107,68 @@ static PLACED_CODE void print_power_status_dvfs_throt_sr(ppower_service_cli_requ
     } else {
         printf("  invalid core - %d\n", core);
     }
+}
+
+static PLACED_CODE void print_power_status_vmin_info(ppower_service_cli_request_t p_cli_request)
+{
+    unsigned int core_arg = p_cli_request->pwrset_sub_command_args.minupdate_val;
+    power_runconfig_t* s_runconfig = power_runconfig_get();
+    bool itd_enabled = (s_runconfig->knobs.itd_cfg != 0);
+
+    printf("\nVmin Status (LDO Voltage at P31)\n");
+    printf("================================\n");
+    printf("ITD (In-Die Temperature): %s\n\n", itd_enabled ? "ENABLED" : "DISABLED");
+
+    if (itd_enabled)
+    {
+        printf("Note: When ITD is enabled, Vmin is determined by the ITD column\n");
+        printf("      selected based on the core's current temperature.\n\n");
+    }
+    else
+    {
+        printf("Note: When ITD is disabled, Vmin is the worst-case (highest)\n");
+        printf("      voltage across all ITD columns.\n\n");
+    }
+
+    printf("|-------|----------|------------|\n");
+    printf("| Core  | Vmin(mV) |   Status   |\n");
+    printf("|-------|----------|------------|\n");
+
+    // Determine start and end core based on argument
+    unsigned int start_core = 0;
+    unsigned int end_core = NUM_AP_CORES_PER_DIE;
+
+    if (core_arg != 0xFF)
+    {
+        // Specific core requested
+        if (core_arg >= NUM_AP_CORES_PER_DIE)
+        {
+            printf("| %5u |   N/A    | Invalid    |\n", core_arg);
+            printf("|-------|----------|------------|\n");
+            return;
+        }
+        start_core = core_arg;
+        end_core = core_arg + 1;
+    }
+
+    for (unsigned int core_idx = start_core; core_idx < end_core; ++core_idx)
+    {
+        uint16_t vmin_mv = 0;
+        int32_t status = power_runconfig_get_core_vmin_mv(core_idx, &vmin_mv);
+
+        if (status == FPFW_STATUS_SUCCESS)
+        {
+            printf("| %5u | %8u | OK         |\n", core_idx, vmin_mv);
+        }
+        else if (!corebits_is_bit_set(&s_runconfig->fuses.valid_cores, core_idx))
+        {
+            printf("| %5u |   N/A    | Disabled   |\n", core_idx);
+        }
+        else
+        {
+            printf("| %5u |   N/A    | Error      |\n", core_idx);
+        }
+    }
+
+    printf("|-------|----------|------------|\n");
 }

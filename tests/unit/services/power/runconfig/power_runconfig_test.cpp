@@ -25,6 +25,7 @@ extern "C" {
 #include <fpfw_status.h>       // for FPFW_STATUS_SUCCESS
 #include <mock_bug_check.h>    // for __wrap_crash_dump_bug_check
 #include <power_hw_int_i.h>    // for power_telcfg_t
+#include <power_loops_i.h>     // for power_ctrl_loop_detail_t
 #include <power_runconfig.h>   // for power_service_config_t
 #include <power_runconfig_i.h> // for power_runconfig_t
 #include <silibs_common.h>
@@ -54,6 +55,7 @@ static power_fuse_data_t s_expected_fuses = {};
 static const corebits_t platform_cores = (corebits_t)COREBITS_INIT_UINT32(0xFFFFFFFF, 0xFFFFFFFF, 0xF);
 static power_service_config_t s_test_config = {.platform_cores_in_die = &platform_cores};
 uint8_t valid_cores = NUM_AP_CORES_PER_DIE;
+static power_ctrl_loop_detail_t s_mock_ctrl_loop = {};
 
 /*------------- Functions ----------------*/
 //
@@ -104,6 +106,11 @@ int32_t __wrap_power_fuses_get_curve_assignment(uint32_t core, uint32_t* curve_a
     return mock_type(int);
 }
 
+power_ctrl_loop_detail_t* __wrap_power_ctrl_loop_get()
+{
+    return mock_ptr_type(power_ctrl_loop_detail_t*);
+}
+
 int __wrap_dvfs_vft_from_fuse_data_per_itd(const dvfs_vf_fused_pairs_t* vf_pairs,
                                            const dvfs_core_memasst_entries_t* core_memasst_entries,
                                            uint8_t* min_valid_plimit,
@@ -120,7 +127,11 @@ int __wrap_dvfs_mvolt_from_ldo_dac(uint16_t ldo_dac_in, const dvfs_vf_slope_t* s
 {
     FPFW_UNUSED(ldo_dac_in);
     FPFW_UNUSED(slope_offset);
-    FPFW_UNUSED(mvolt);
+    // Set a non-zero mock voltage value for Vmin tests
+    if (mvolt != NULL)
+    {
+        *mvolt = 700; // Mock voltage in mV
+    }
     return DVFS_SUCCESS;
 }
 }
@@ -370,4 +381,95 @@ POWER_TEST(runconfig_dvfs_default, NULL, NULL)
     dvfs_config_t test_config = DVFS_DEFAULT_CONFIG;
     assert_non_null(power_get_dvfs_config()); // check for non-null
     assert_memory_equal(power_get_dvfs_config(), &test_config, sizeof(dvfs_config_t));
+}
+//
+// Tests for power_runconfig_get_core_vmin_mv API
+//
+
+// ensure NULL pointer returns invalid arg
+POWER_TEST(runconfig_vmin_null_ptr, setup, NULL)
+{
+    set_default_expectations(TEST_MIN_VALID_PLIMIT);
+    power_runconfig_init(&s_test_config);
+
+    int32_t status = power_runconfig_get_core_vmin_mv(0, NULL);
+    assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
+}
+
+// ensure invalid core_id returns invalid arg
+POWER_TEST(runconfig_vmin_invalid_core, setup, NULL)
+{
+    set_default_expectations(TEST_MIN_VALID_PLIMIT);
+    power_runconfig_init(&s_test_config);
+
+    uint16_t vmin_mv = 0;
+    int32_t status = power_runconfig_get_core_vmin_mv(NUM_AP_CORES_PER_DIE, &vmin_mv);
+    assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
+}
+
+// ensure disabled core returns invalid arg
+POWER_TEST(runconfig_vmin_disabled_core, setup, NULL)
+{
+#define VMIN_DISABLED_CORE 5
+    valid_cores--;
+    set_default_expectations(TEST_MIN_VALID_PLIMIT);
+
+    // disable a core
+    corebits_clear_bit(&s_expected_fuses.valid_cores, VMIN_DISABLED_CORE);
+
+    power_runconfig_init(&s_test_config);
+
+    uint16_t vmin_mv = 0;
+    int32_t status = power_runconfig_get_core_vmin_mv(VMIN_DISABLED_CORE, &vmin_mv);
+    assert_int_equal(status, FPFW_STATUS_INVALID_ARGS);
+}
+
+// ensure happy path for Vmin with ITD disabled
+POWER_TEST(runconfig_vmin_itd_disabled, setup, NULL)
+{
+#define TEST_CORE_ID 0
+    valid_cores = NUM_AP_CORES_PER_DIE;
+    set_default_expectations(TEST_MIN_VALID_PLIMIT);
+
+    // Ensure ITD is disabled (default knobs should have itd_cfg = 0)
+    s_expected_knobs.itd_cfg = 0;
+
+    power_runconfig_init(&s_test_config);
+
+    uint16_t vmin_mv = 0;
+    int32_t status = power_runconfig_get_core_vmin_mv(TEST_CORE_ID, &vmin_mv);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+
+    // Verify Vmin matches the P31 voltage from the assigned curveset
+    uint8_t curveset_idx = power_runconfig_get()->derived.assigned_vft[TEST_CORE_ID];
+    uint16_t expected_vmin = power_runconfig_get()->derived.vfts[curveset_idx].vf[NUM_PSTATES - 1].voltage_mv;
+    assert_int_equal(vmin_mv, expected_vmin);
+}
+
+// ensure happy path for Vmin with ITD enabled
+POWER_TEST(runconfig_vmin_itd_enabled, setup, NULL)
+{
+#define TEST_ITD_CORE_ID 0
+#define TEST_TEMP_DC     500 // 50.0°C in deci-degrees
+    valid_cores = NUM_AP_CORES_PER_DIE;
+    set_default_expectations(TEST_MIN_VALID_PLIMIT);
+
+    // Enable ITD
+    s_expected_knobs.itd_cfg = 1;
+
+    power_runconfig_init(&s_test_config);
+
+    // Setup mock ctrl loop with temperature data
+    memset(&s_mock_ctrl_loop, 0, sizeof(s_mock_ctrl_loop));
+    s_mock_ctrl_loop.cores.core[TEST_ITD_CORE_ID].temperature_dC = TEST_TEMP_DC;
+
+    // Set expectation for power_ctrl_loop_get mock
+    will_return(__wrap_power_ctrl_loop_get, &s_mock_ctrl_loop);
+
+    uint16_t vmin_mv = 0;
+    int32_t status = power_runconfig_get_core_vmin_mv(TEST_ITD_CORE_ID, &vmin_mv);
+    assert_int_equal(status, FPFW_STATUS_SUCCESS);
+
+    // Vmin should be non-zero when ITD is enabled
+    assert_int_not_equal(vmin_mv, 0);
 }

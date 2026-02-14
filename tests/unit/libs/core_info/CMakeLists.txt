@@ -37,6 +37,7 @@ unit_test_target(${TARGET})
 
 mock_target(${TARGET}
    idsw_get_die_id
+   idsw_get_cpu_type
    read_core_defect_fuses
    config_get_die0_core_disable_value_31_0
    config_get_die0_core_disable_value_63_32

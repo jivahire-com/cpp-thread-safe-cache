@@ -3,12 +3,14 @@
 //
 
 /**
- * @file system_info.c
+ * @file core_info.c
  * Implements system info APIs
  */
 
 /*------------- Includes -----------------*/
+#include <DbgPrint.h>
 #include <assert.h>
+#include <bug_check.h>
 #include <core_info.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_send_recv_req_t, fpfw...
@@ -26,6 +28,7 @@
 #include <scp_exp_top_regs.h>
 #include <scp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
+#include <shared_crashdump_def.h>
 #include <shared_sds_def.h> //Fuse SDS block and struct id
 #include <stdint.h>
 #include <stdio.h>
@@ -38,6 +41,8 @@
 
 /*-- Declarations (Statics and globals) --*/
 static corebits_t sys_cores_in_die;
+
+static etc_core_identifier_t core_id = {.die_id = 0xFFFF, .core_id = 0xFFFF}; // Initialize to invalid value
 
 /*------------- Functions ----------------*/
 void core_info_get_platform_disable_cores()
@@ -115,5 +120,34 @@ corebits_t* core_info_get_enable_cores_result()
 void core_info_init()
 {
     core_info_get_platform_disable_cores();
-    printf("Core info init\n");
+
+    /* Initialize core info */
+    core_id.die_id = idsw_get_die_id();
+    core_id.core_id = idsw_get_cpu_type();
+
+    /* Translate to the ID in crash_dump_core_t */
+    switch (core_id.core_id)
+    {
+    case CPU_MCP:
+        core_id.core_id = CRASH_DUMP_CORE_MCP;
+        break;
+    case CPU_SCP:
+        core_id.core_id = CRASH_DUMP_CORE_SCP;
+        break;
+    case CPU_SDM:
+        core_id.core_id = CRASH_DUMP_CORE_SDM;
+        break;
+    case CPU_CDED_SDM:
+        core_id.core_id = CRASH_DUMP_CORE_CDED;
+        break;
+    default:
+        BUG_ASSERT(false);
+    }
+
+    FPFW_DBGPRINT_INFO("Core info init, Die[%d] : Core[0x%" PRIx32 "]\n", core_id.die_id, core_id.core_id);
+}
+
+uint32_t core_info_get_combined_core_id()
+{
+    return core_id.combined_id;
 }

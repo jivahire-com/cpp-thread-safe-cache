@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.assert
         ms::build_data
         ms::lib::crash_dump
+        ms::lib::core_info
         ms::lib::event_trace::trace
         ms::lib::register_headers
         ms::lib::gtimer

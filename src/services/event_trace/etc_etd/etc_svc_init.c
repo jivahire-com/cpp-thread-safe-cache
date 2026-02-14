@@ -13,6 +13,7 @@
 #include <IFpFwEventTracing.h>        // for FPFwETGetController, FPFwETControllerFlushBuffer
 #include <bug_check.h>                // for BUG_ASSERT
 #include <build_data.h>               // for BUILD_ELF_SECTION_BINARY_METADATA
+#include <core_info.h>                // for core_info_get_core_id
 #include <crash_dump.h>               // for crash_dump_register_address32
 #include <et_mts_client.h>            // for et_mts_notify_buffer_complete
 #include <etc_etd_svc.h>              // for etc_svc_init
@@ -83,7 +84,7 @@ void etc_svc_init(void)
         BUG_ASSERT(false);
     }
 
-    etc_config.core_id = cpu_type;
+    etc_config.core_id = core_info_get_combined_core_id();
     etc_config.p_decoder_service = get_etd_service_context();
 
     // the gnu build id is unique per core.  Use the first 16 bytes for the manifest id which needs to be

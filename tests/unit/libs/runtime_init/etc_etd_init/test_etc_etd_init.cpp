@@ -164,9 +164,6 @@ TEST_FUNCTION(test_etc_init_mcp, nullptr, nullptr)
     expect_not_value(__wrap_etc_initialize, p_service, NULL);
     expect_not_value(__wrap_etc_initialize, p_config, NULL);
 
-    expect_function_calls(__wrap_crash_dump_register_address32, ETC_SERVICE_CORE_BUFFER_COUNT);
-    expect_function_call(__wrap_FPFwETControllerFlushBuffer);
-
     will_return_always(__wrap_idsw_get_cpu_type, CPU_MCP);
 
     // Call API under test
@@ -178,9 +175,6 @@ TEST_FUNCTION(test_etc_init_scp, nullptr, nullptr)
     // Set up expectations
     expect_not_value(__wrap_etc_initialize, p_service, NULL);
     expect_not_value(__wrap_etc_initialize, p_config, NULL);
-
-    expect_function_calls(__wrap_crash_dump_register_address32, ETC_SERVICE_CORE_BUFFER_COUNT);
-    expect_function_call(__wrap_FPFwETControllerFlushBuffer);
 
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
 

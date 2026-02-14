@@ -21,6 +21,9 @@ add_compile_definitions(SCP_CONFIG_VARIABLE_TYPE)
 # Suppress rtosmon log prints
 add_compile_definitions(SUPPRESS_RTOSMON_LOG_PRINT)
 
+# Add append event traces to crashdump
+add_compile_definitions(FPFW_EN_ET_BUFFER_CD_PAYLOAD)
+
 # Verbosity levels for INFO, DEBUG and CRITICAL below
 # SILIBS_PRINT_VERBOSITY_LEVEL_NONE     0x0
 # SILIBS_PRINT_VERBOSITY_LEVEL_CRITICAL 0x1

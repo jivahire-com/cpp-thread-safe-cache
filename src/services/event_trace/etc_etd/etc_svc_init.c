@@ -62,15 +62,6 @@ static etc_service_config_t etc_config = {
 };
 
 /*----------------------------- Static Functions ----------------------------*/
-static void etc_crash_dump_predump_cb(void* ctx)
-{
-    FPFW_UNUSED(ctx);
-
-    // Flush the event trace buffer before crash dump data collection
-    // This ensures that all pending trace events are written to memory
-    // and available for crash dump analysis
-    FPFwETControllerFlushBuffer(FPFwETGetController(), 0); // Use immediate flush (timeout = 0)
-}
 
 /*----------------------------- Global Functions ----------------------------*/
 void etc_svc_init(void)
@@ -98,19 +89,6 @@ void etc_svc_init(void)
     // the gnu build id is unique per core.  Use the first 16 bytes for the manifest id which needs to be
     // unique for the diagnostic decoder tool to decode the data
     memcpy((void*)&etc_config.manifest_id, (void*)g_note_gnu_build_id.BuildId, sizeof(etc_config.manifest_id));
-
-    /* Register the trace buffers' memory with the crash dump system */
-    for (unsigned int evt_buffer_index = 0; evt_buffer_index < ETC_SERVICE_CORE_BUFFER_COUNT; evt_buffer_index++)
-    {
-        crash_dump_register_address32(
-            etc_config.trace_buffer_memory.p_pool +
-                (evt_buffer_index * etc_config.trace_buffer_memory.byte_count / ETC_SERVICE_CORE_BUFFER_COUNT),
-            etc_config.trace_buffer_memory.byte_count / ETC_SERVICE_CORE_BUFFER_COUNT,
-            FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    }
-
-    /* Register pre-dump callback to flush event trace buffers before crash dump */
-    crash_dump_register_pre_dump_callback(etc_crash_dump_predump_cb, NULL, CRASH_DUMP_TYPE_ALL);
 
     etc_initialize(&s_etc_service_ctx, &etc_config);
 }

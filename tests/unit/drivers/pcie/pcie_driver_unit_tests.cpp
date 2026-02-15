@@ -1425,38 +1425,45 @@ TEST_FUNCTION(test_rpss_int_rasdp, test_setup, test_teardown)
 /* Test DPC interrupt when link is in disabled state - triggers DPC workaround */
 TEST_FUNCTION(test_rpss_int_dpc_link_disabled, test_setup, test_teardown)
 {
+    #if 0 /* Bug 3360329 - Restore when Windows build supports Erratum 1081195 */
     /* Test all three disabled states */
     PCIE_LTSSM_STATE disabled_states[] = {PCIE_LTSSM_STATE_DISABLED_0x17, PCIE_LTSSM_STATE_DISABLED_0x18, PCIE_LTSSM_STATE_DISABLED_0x19};
 
     for (uint8_t state_idx = 0; state_idx < 3; state_idx++)
     {
-        for (uint8_t i = RPSS0; i < RPSS4; i++)
-        {
-            /* Setup mocks */
-            memset(&mock_int_info, 0x0, sizeof(mock_int_info));
+    #endif
+    for (uint8_t i = RPSS0; i < RPSS4; i++)
+    {
+        /* Setup mocks */
+        memset(&mock_int_info, 0x0, sizeof(mock_int_info));
 
-            mock_pcie_ent.id = (RPSS_INSTANCE)i;
-            mock_pcie_ent.ss_type = PCIE_SS_X16;
-            mock_pcie_ent.rps[0].enabled = true;
-            mock_pcie_ent.rps[1].enabled = false;
-            mock_pcie_ent.rps[2].enabled = false;
-            mock_pcie_ent.rps[3].enabled = false;
+        mock_pcie_ent.id = (RPSS_INSTANCE)i;
+        mock_pcie_ent.ss_type = PCIE_SS_X16;
+        mock_pcie_ent.rps[0].enabled = true;
+        mock_pcie_ent.rps[1].enabled = false;
+        mock_pcie_ent.rps[2].enabled = false;
+        mock_pcie_ent.rps[3].enabled = false;
 
-            mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_DPC].asserted = true;
-            mock_int_info.rp_ints[1].ints[PCIESS_RP_INT_DPC].asserted = false;
-            mock_int_info.rp_ints[2].ints[PCIESS_RP_INT_DPC].asserted = false;
-            mock_int_info.rp_ints[3].ints[PCIESS_RP_INT_DPC].asserted = false;
+        mock_int_info.rp_ints[0].ints[PCIESS_RP_INT_DPC].asserted = true;
+        mock_int_info.rp_ints[1].ints[PCIESS_RP_INT_DPC].asserted = false;
+        mock_int_info.rp_ints[2].ints[PCIESS_RP_INT_DPC].asserted = false;
+        mock_int_info.rp_ints[3].ints[PCIESS_RP_INT_DPC].asserted = false;
 
+    #if 0 /* Bug 3360329 - Restore when Windows build supports Erratum 1081195 */
             /* Setup silibs expectations - link is disabled, so DPC workaround is triggered */
             will_return(__wrap_pcie_rp_sii_get_link_state, disabled_states[state_idx]);
             will_return(__wrap_pciess_fallback_rp_to_default_completer, SILIBS_SUCCESS);
-            expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, rp_index, 0);
-            expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, busy, false);
-            will_return(__wrap_oi_pcie_ss_set_rp_dpc_status, SILIBS_SUCCESS);
+    #endif
+        /* Bug 3360329 - Only RP_BUSY is cleared unconditionally */
+        expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, rp_index, 0);
+        expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, busy, false);
+        will_return(__wrap_oi_pcie_ss_set_rp_dpc_status, SILIBS_SUCCESS);
 
-            rpss_irq_callback(&mock_pcie_ent, &mock_int_info);
-        }
+        rpss_irq_callback(&mock_pcie_ent, &mock_int_info);
     }
+    #if 0 /* Bug 3360329 - Restore when Windows build supports Erratum 1081195 */
+    }
+    #endif
 }
 
 /* Test DPC interrupt when link is NOT in disabled state - no DPC workaround */
@@ -1479,10 +1486,17 @@ TEST_FUNCTION(test_rpss_int_dpc_link_not_disabled, test_setup, test_teardown)
         mock_int_info.rp_ints[2].ints[PCIESS_RP_INT_DPC].asserted = false;
         mock_int_info.rp_ints[3].ints[PCIESS_RP_INT_DPC].asserted = false;
 
+    #if 0 /* Bug 3360329 - Restore when Windows build supports Erratum 1081195 */
         /* Setup silibs expectations - link is active, so no DPC workaround */
         will_return(__wrap_pcie_rp_sii_get_link_state, PCIE_LTSSM_STATE_L0);
 
         /* No calls to pciess_fallback_rp_to_default_completer or oi_pcie_ss_set_rp_dpc_status expected */
+    #else
+        /* Bug 3360329 - RP_BUSY is cleared unconditionally regardless of link state */
+        expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, rp_index, 0);
+        expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, busy, false);
+        will_return(__wrap_oi_pcie_ss_set_rp_dpc_status, SILIBS_SUCCESS);
+    #endif
         rpss_irq_callback(&mock_pcie_ent, &mock_int_info);
     }
 }
@@ -1507,9 +1521,12 @@ TEST_FUNCTION(test_rpss_int_dpc_fallback_error, test_setup, test_teardown)
         mock_int_info.rp_ints[2].ints[PCIESS_RP_INT_DPC].asserted = false;
         mock_int_info.rp_ints[3].ints[PCIESS_RP_INT_DPC].asserted = false;
 
+    #if 0 /* Bug 3360329 - Restore when Windows build supports Erratum 1081195 */
         /* Setup silibs expectations - fallback fails but clear RP_BUSY still called */
         will_return(__wrap_pcie_rp_sii_get_link_state, PCIE_LTSSM_STATE_DISABLED_0x17);
         will_return(__wrap_pciess_fallback_rp_to_default_completer, SILIBS_E_STATE);
+    #endif
+        /* Bug 3360329 - Only RP_BUSY is cleared unconditionally */
         expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, rp_index, 0);
         expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, busy, false);
         will_return(__wrap_oi_pcie_ss_set_rp_dpc_status, SILIBS_SUCCESS);
@@ -1538,9 +1555,12 @@ TEST_FUNCTION(test_rpss_int_dpc_clear_rp_busy_error, test_setup, test_teardown)
         mock_int_info.rp_ints[2].ints[PCIESS_RP_INT_DPC].asserted = false;
         mock_int_info.rp_ints[3].ints[PCIESS_RP_INT_DPC].asserted = false;
 
+    #if 0 /* Bug 3360329 - Restore when Windows build supports Erratum 1081195 */
         /* Setup silibs expectations - fallback succeeds but clear RP_BUSY fails */
         will_return(__wrap_pcie_rp_sii_get_link_state, PCIE_LTSSM_STATE_DISABLED_0x18);
         will_return(__wrap_pciess_fallback_rp_to_default_completer, SILIBS_SUCCESS);
+    #endif
+        /* Bug 3360329 - Only RP_BUSY is cleared unconditionally */
         expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, rp_index, 0);
         expect_value(__wrap_oi_pcie_ss_set_rp_dpc_status, busy, false);
         will_return(__wrap_oi_pcie_ss_set_rp_dpc_status, SILIBS_E_STATE);

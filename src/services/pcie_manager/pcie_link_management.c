@@ -153,8 +153,14 @@ void handle_pcie_link_down_event(pcie_manager_context_t* ctx, pciess_completion_
     RPSS_INSTANCE rpss_idx = ctx->rpss_idx;
     uint8_t rp_index = cmpl->rp_index;
 
+    /*
+     * Bug 3360329 - Sleep commented out until we have a Windows build that
+     * supports changes needed for ERRATUM 1081195.
+     */
+#if 0
     /* Sleep for 60 ms to allow transactions to flush after a link down */
     sleep_ms(60);
+#endif
 
     /*
      * If the rp is not in ready state after link down, we cannot re-enable the

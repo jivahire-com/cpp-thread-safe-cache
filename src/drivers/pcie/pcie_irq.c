@@ -276,6 +276,21 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
             PCIE_ET_INFO_PARAM(PCIE_ET_TYPE_INT_DPC, (ss->id << 16) | rp_index);
 
             /*
+             * Bug 3360329 - ERRATUM 1081195 workaround commented out until we have
+             * a Windows build that supports a longer DL up link time that results
+             * due to this workaround. Till then, simply clear RP_BUSY without
+             * re-routing to default completer, which means that transactions
+             * will continue to be posted to the endpoint even when the link is
+             * down. This is not ideal, but should not cause any functional issues
+             * for use-cases apart from hotplug.
+             */
+            silibs_status_t status = oi_pcie_ss_set_rp_dpc_status(ss, rp_index, false);
+            if (status)
+            {
+                FPFW_DBGPRINT_ALWAYS("RP[%d, %d] Error: Unable to clear RP_BUSY!\n", ss->id, rp_index);
+            }
+#if 0
+            /*
              *  Obtain the current LTSSM state, we reroute transactions to
              *  the default completer only if the link is disabled
              */
@@ -304,6 +319,7 @@ void rpss_irq_callback(pcie_ss_entity_t* ss, pciess_int_probe_t* info)
             {
                 FPFW_DBGPRINT_ERROR("RP[%d, %d]: Transactions not re-routed to default completer!\n", ss->id, rp_index);
             }
+#endif
         }
 
         /*

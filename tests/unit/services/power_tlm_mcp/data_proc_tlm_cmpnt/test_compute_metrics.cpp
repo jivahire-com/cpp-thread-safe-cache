@@ -269,7 +269,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails, test_setup, test_teardown)
     // Assert voltage and current values for each VR rail
     for (uint16_t i = 0; i < NUM_DIE1_VR_RAILS; i++)
     {
-        assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg),
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg),
                          voltage_mV[i]);
         assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg),
                          current_mA[i]);
@@ -318,7 +318,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails_primary_die_inband_inactive, test_
     // In-band voltage and current metrics should NOT be updated (should remain at initial values)
     for (uint16_t i = 0; i < NUM_DIE0_VR_RAILS; i++)
     {
-        assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg), 0);
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg), 0);
         assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg), 0);
     }
 }
@@ -362,7 +362,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rails_underflow_protection, test_setup, 
     // Assert voltage and current values are still recorded correctly
     for (uint16_t i = 0; i < NUM_DIE1_VR_RAILS; i++)
     {
-        assert_int_equal(data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg),
+        assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].voltage_mV.running_avg),
                          voltage_mV[i]);
         assert_int_equal(data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[i].current_mA.running_avg),
                          current_mA[i]);
@@ -388,7 +388,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rail_temp, test_setup, test_teardown)
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.min, 500);
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.max, 2000);
     assert_int_equal(
-        data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg),
+        data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg),
         1063);
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.num_samples, 4);
 
@@ -412,7 +412,7 @@ TEST_FUNCTION(test_comp_metrics_for_soc_rail_temp, test_setup, test_teardown)
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.min, 500);
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.max, 2000);
     assert_int_equal(
-        data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg),
+        data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg),
         1063);
     assert_int_equal(computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC.running_avg.num_samples, 4);
 

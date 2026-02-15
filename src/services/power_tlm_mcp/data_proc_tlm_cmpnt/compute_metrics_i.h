@@ -144,8 +144,8 @@ typedef struct
 typedef struct
 {
     mma_u32_t current_mA;
-    mma_u16_t voltage_mV;
-    mma_u16_t temperature_dC;
+    mma_u32_t voltage_mV;
+    mma_u32_t temperature_dC;
 } computed_per_rail_metrics_t;
 
 typedef struct

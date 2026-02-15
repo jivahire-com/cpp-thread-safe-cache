@@ -340,12 +340,12 @@ void data_proc_tlm_cmpnt_get_pwr_soc_vr_rail_data(uint16_t rail_id, p_pwr_soc_el
         rail_data->current.min_mA = computed_metrics_2_mins.soc.vr_rail[rail_id].current_mA.min;
 
         rail_data->temperature.average_dC =
-            data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.running_avg);
+            data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.running_avg);
         rail_data->temperature.max_dC = computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.max;
         rail_data->temperature.min_dC = computed_metrics_2_mins.soc.vr_rail[rail_id].temperature_dC.min;
 
         rail_data->voltage.average_mV =
-            data_util_running_avg_u16_get(&computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.running_avg);
+            data_util_running_avg_u32_get(&computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.running_avg);
         rail_data->voltage.max_mV = computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.max;
         rail_data->voltage.min_mV = computed_metrics_2_mins.soc.vr_rail[rail_id].voltage_mV.min;
     }

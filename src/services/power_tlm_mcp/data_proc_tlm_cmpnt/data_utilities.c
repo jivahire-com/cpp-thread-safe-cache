@@ -209,7 +209,7 @@ void data_util_running_avg_u16_add_sample(running_u16_avg_t* avg, uint16_t sampl
     {
         // TODO: Re‑instate this change once the root cause of the issue mentioned above is identified and
         // validated. https://azurecsi.visualstudio.com/Dev/_workitems/edit/3334457
-        // FPFW_ET_LOG(RunningAvg16AddSampleNumSat, (uint32_t)avg);
+        FPFW_ET_LOG(RunningAvg16AddSampleNumSat, (uint32_t)avg);
         return;
     }
 
@@ -218,7 +218,7 @@ void data_util_running_avg_u16_add_sample(running_u16_avg_t* avg, uint16_t sampl
     {
         // TODO: Re‑instate this change once the root cause of the issue mentioned above is identified and
         // validated. https://azurecsi.visualstudio.com/Dev/_workitems/edit/3334457
-        // FPFW_ET_LOG(RunningAvg16AddSampleSumSat, (uint32_t)avg);
+        FPFW_ET_LOG(RunningAvg16AddSampleSumSat, (uint32_t)avg);
         return; // Don't add sample to prevent overflow
     }
 
@@ -278,7 +278,7 @@ void data_util_running_avg_u32_add_sample(running_u32_avg_t* avg, uint32_t sampl
     {
         // TODO: Re‑instate this change once the root cause of the issue mentioned above is identified and
         // validated. https://azurecsi.visualstudio.com/Dev/_workitems/edit/3334457
-        // FPFW_ET_LOG(RunningAvg32AddSampleNumSat, (uint32_t)avg);
+        FPFW_ET_LOG(RunningAvg32AddSampleNumSat, (uint32_t)avg);
         return;
     }
 
@@ -287,7 +287,7 @@ void data_util_running_avg_u32_add_sample(running_u32_avg_t* avg, uint32_t sampl
     {
         // TODO: Re‑instate this change once the root cause of the issue mentioned above is identified and
         // validated. https://azurecsi.visualstudio.com/Dev/_workitems/edit/3334457
-        // FPFW_ET_LOG(RunningAvg32AddSampleSumSat, (uint32_t)avg);
+        FPFW_ET_LOG(RunningAvg32AddSampleSumSat, (uint32_t)avg);
         return; // Don't add sample to prevent overflow
     }
 

@@ -337,7 +337,7 @@ void comp_metrics_for_soc_rails(uint16_t (*latest_rail_voltage_mV)[MAX_NUM_OF_VR
         if (in_band_publishing_active)
         {
             // Update the rail voltage
-            data_util_calc_mma_u16(&computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV,
+            data_util_calc_mma_u32(&computed_metrics_2_mins.soc.vr_rail[vr_index].voltage_mV,
                                    (*latest_rail_voltage_mV)[vr_index]);
 
             // Update the rail current
@@ -397,7 +397,7 @@ void comp_metrics_for_soc_rail_temperature(uint16_t (*latest_rail_temperature_dC
     {
         if (in_band_publishing_active)
         {
-            data_util_calc_mma_u16(&computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC,
+            data_util_calc_mma_u32(&computed_metrics_2_mins.soc.vr_rail[vr_index].temperature_dC,
                                    (*latest_rail_temperature_dC)[vr_index]);
         }
 

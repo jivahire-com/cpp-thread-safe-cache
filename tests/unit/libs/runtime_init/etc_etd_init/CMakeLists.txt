@@ -52,6 +52,7 @@ mock_target(${TARGET}
     crash_dump_bug_check
     crash_dump_register_pre_dump_callback
 
+    fpfw_init_get_handle
     idsw_get_cpu_type
 
     FPFwETControllerFlushBuffer

@@ -268,7 +268,7 @@ static void etr_complete_asic_buffer(etr_service_context_t* p_context)
     memcpy(dst, src, size);
 
     /* Flush Cache so that the data is written to DDR - Address and size aligned to 32 Byte boundaries */
-    SCB_CleanDCache_by_Addr((uint32_t*)FPFW_ALIGN_BY(32, (uint32_t)dst), (int32_t)FPFW_ALIGN_BY(32, size));
+    SCB_CleanDCache_by_Addr((uint32_t*)FPFW_ALIGN_DOWN_BY(32, (uint32_t)dst), (int32_t)FPFW_ALIGN_BY(32, size));
 
     /* Get a new buffer */
     etr_get_new_asic_buffer(p_context);
@@ -795,7 +795,7 @@ fpfw_status_t decode_and_validate_buffer_metadata(etr_service_request_t* p_reque
     /* On SCP, data is written on the other side of the (cached) EXP RAM, so invalidate cache for Trace Buffer Memory */
     /* Align address and size to 32B boundaries */
     case CPU_SCP:
-        SCB_InvalidateDCache_by_Addr((uint32_t*)FPFW_ALIGN_BY(32, SCP_EXP_SCP_TRACE_BUFFER_BASE),
+        SCB_InvalidateDCache_by_Addr((uint32_t*)FPFW_ALIGN_DOWN_BY(32, SCP_EXP_SCP_TRACE_BUFFER_BASE),
                                      FPFW_ALIGN_BY(32, SCP_EXP_SCP_TRACE_BUFFER_SIZE));
         break;
 
@@ -804,6 +804,11 @@ fpfw_status_t decode_and_validate_buffer_metadata(etr_service_request_t* p_reque
         break;
 
     default:
+        FPFW_ET_LOG(Error,
+                    this_die,
+                    this_core,
+                    ETR_ERR_INVALID_ETC_BUFFER_CORE,
+                    p_request->p_trp_msg->hdr.src_node.core_id);
         return FPFW_STATUS_FAIL;
     }
 
@@ -811,11 +816,10 @@ fpfw_status_t decode_and_validate_buffer_metadata(etr_service_request_t* p_reque
     PFPFW_ET_CORE_BUFFER_HEADER p_etc_header = (PFPFW_ET_CORE_BUFFER_HEADER)p_request->buffer_addr;
     p_request->buffer_size_bytes = p_etc_header->UsedBytes;
 
-    /* Sanity Check the Buffer Header */
-    if ((p_etc_header->CoreId != CPU_SCP && p_etc_header->CoreId != CPU_MCP &&
-         p_etc_header->CoreId != CPU_SDM && p_etc_header->CoreId != CPU_CDED_SDM) ||
-        (p_etc_header->BufferSize == 0))
+    /* Sanity Check the Buffer Header - TODO, revisit the sanity check check all parameters, including timestamp, etc */
+    if (p_etc_header->BufferSize == 0)
     {
+        FPFW_ET_LOG(Error, this_die, this_core, ETR_ERR_INVALID_ETC_BUFFER_SIZE, 0);
         return FPFW_STATUS_FAIL;
     }
 
@@ -997,8 +1001,6 @@ void etr_worker_thread_func(ULONG thread_input)
 
                 if (decode_and_validate_buffer_metadata(&etr_request) != FPFW_STATUS_SUCCESS)
                 {
-                    FPFW_ET_LOG(Error, this_die, this_core, ETR_ERR_INVALID_ETC_BUFFER_METADATA, 0);
-
                     /* Update the TRP message status to TRP_STATUS_E_PARAM and notify the ETC */
                     etr_request.p_trp_msg->hdr.trp_msg_status = TRP_STATUS_E_PARAM;
                     etr_notify_etc(&etr_request);

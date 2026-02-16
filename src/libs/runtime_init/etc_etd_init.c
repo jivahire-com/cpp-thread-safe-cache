@@ -22,14 +22,14 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static etc_service_context_t s_etc_service_ctx = {0};
+static etd_service_context_t s_etd_service_ctx = {0};
 
 /*------------- Functions ----------------*/
 
 FPFW_INIT_COMPONENT(etd, FPFW_INIT_DEPENDENCIES("std_io", "debug_print"))
 {
-    etd_service_context_t* context;
-    etd_svc_init();
-    context = get_etd_service_context();
+    etd_svc_init(&s_etd_service_ctx);
 
     boot_status_req_t boot_status_req = {0};
     boot_status_notify_extd(
@@ -41,14 +41,12 @@ FPFW_INIT_COMPONENT(etd, FPFW_INIT_DEPENDENCIES("std_io", "debug_print"))
                                             ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
                                             : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
-    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, context};
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_etd_service_ctx};
 }
 
 FPFW_INIT_COMPONENT(etc, FPFW_INIT_DEPENDENCIES("etd"))
 {
-    etc_service_context_t* context;
-    etc_svc_init();
-    context = get_etc_service_context();
+    etc_svc_init(&s_etc_service_ctx);
 
     boot_status_req_t boot_status_req = {0};
     boot_status_notify_extd(
@@ -60,5 +58,5 @@ FPFW_INIT_COMPONENT(etc, FPFW_INIT_DEPENDENCIES("etd"))
                                             ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
                                             : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
-    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, context};
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_etc_service_ctx};
 }

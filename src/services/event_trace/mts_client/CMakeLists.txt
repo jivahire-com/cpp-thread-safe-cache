@@ -17,6 +17,7 @@ target_include_directories(${TARGET}
 
 target_link_libraries(${TARGET} 
     PRIVATE
+        fwlib.lib.init
         ms::build_data
         ms::cmsis::interface
         ms::lib::crash_dump

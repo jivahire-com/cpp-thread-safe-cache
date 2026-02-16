@@ -55,6 +55,8 @@ mock_target(${TARGET}
     mts_client_send_trp_response
     mts_client_send_new_trp_msg
 
+    fpfw_init_get_handle
+
     FPFwETControllerFlushBuffer
     FPFwETControllerRecycleBuffer
 

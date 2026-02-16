@@ -29,8 +29,6 @@
 /*--------------------------- Function Prototypes ---------------------------*/
 
 /*------------------- Declarations (Statics and globals) --------------------*/
-
-static etd_service_context_t s_etd_service_ctx = {0};
 static etd_event_t s_etd_event_queue_memory[ETD_EVENT_QUOTA + FPFW_ET_BUFFER_COUNT];
 static uint8_t s_etd_stack[ETD_STACK_SIZE];
 
@@ -43,7 +41,7 @@ extern uint8_t _EventMetadata_et_msdata_end;      // Pointer to the end   of the
 /*----------------------------- Static Functions ----------------------------*/
 
 /*----------------------------- Global Functions ----------------------------*/
-void etd_svc_init(void)
+void etd_svc_init(etd_service_context_t* p_etd_service_ctx)
 {
     etd_service_config_t etd_config = {
         .event_queue_config = {.base_address = (uintptr_t)s_etd_event_queue_memory,
@@ -61,10 +59,5 @@ void etd_svc_init(void)
                            .event_start = (PFPFW_ET_EVENT_METADATA_HEADER)&_EventMetadata_et_msdata_start,
                            .event_end = (PFPFW_ET_EVENT_METADATA_HEADER)&_EventMetadata_et_msdata_end}};
 
-    etd_initialize(&s_etd_service_ctx, &etd_config);
-}
-
-etd_service_context_t* get_etd_service_context(void)
-{
-    return &s_etd_service_ctx;
+    etd_initialize(p_etd_service_ctx, &etd_config);
 }

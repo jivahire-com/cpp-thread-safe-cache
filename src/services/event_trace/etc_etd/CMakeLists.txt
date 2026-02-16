@@ -16,6 +16,7 @@ target_include_directories(${TARGET}
 target_link_libraries(${TARGET} 
     PRIVATE
         fwlib.lib.assert
+        fwlib.lib.init
         ms::build_data
         ms::lib::crash_dump
         ms::lib::core_info

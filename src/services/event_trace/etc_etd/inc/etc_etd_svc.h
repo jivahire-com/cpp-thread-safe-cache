@@ -34,25 +34,7 @@
  * 
  * @return None
  */
-void etc_svc_init(void);
-
-/**
- * @brief Gets the size of the ETC buffer.
- * 
- * This function returns the size of the ETC buffer in bytes.
- * 
- * @return The size of the ETC buffer (in bytes)
- */
-uint32_t get_etc_buffer_size(void);
-
-/**
- * @brief Gets the address of the ETC buffer byte pool.
- * 
- * This function returns a pointer to the ETC buffer memory.
- * 
- * @return Pointer to the ETC buffer memory.
- */
-uint8_t* get_etc_buffer_byte_pool_address(void);
+void etc_svc_init(etc_service_context_t* p_etc_service_ctx);
 
 /**
  * @brief Gets the Event Trace Collection (ETC) service context.
@@ -63,16 +45,6 @@ uint8_t* get_etc_buffer_byte_pool_address(void);
  * @return Pointer to the ETC service context.
  */
 etc_service_context_t* get_etc_service_context(void);
-
-/**
- * @brief Gets the Event Trace Decoder (ETD) service context.
- * 
- * This function returns a pointer to the ETD service context, which contains
- * the state and configuration for the ETD service.
- * 
- * @return Pointer to the ETD service context.
- */
-etd_service_context_t* get_etd_service_context(void);
 
 /**
  * @brief Initializes the Event Trace Decoder (ETD) service.
@@ -87,4 +59,4 @@ etd_service_context_t* get_etd_service_context(void);
  * 
  * @return None
  */
-void etd_svc_init(void);
+void etd_svc_init(etd_service_context_t* p_etd_service_ctx);

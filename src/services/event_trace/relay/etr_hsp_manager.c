@@ -99,12 +99,13 @@ static fpfw_status_t etr_copy_hsp_telemetry(etr_service_context_t* p_service_con
             size_t size = p_active_hsp_buffer->payload_management.size_bytes;
 
             /* Data is written by HSP to DDR, so invalidate cache before memcpy */
-            SCB_InvalidateDCache_by_Addr((uint32_t*)FPFW_ALIGN_BY(32, (uint32_t)src), (int32_t)FPFW_ALIGN_BY(32, size));
+            SCB_InvalidateDCache_by_Addr((uint32_t*)FPFW_ALIGN_DOWN_BY(32, (uint32_t)src),
+                                         (int32_t)FPFW_ALIGN_BY(32, size));
 
             memcpy(dst, src, size);
 
             /* Flush Cache so that the data is written to DDR - Address and size aligned to 32 Byte boundaries */
-            SCB_CleanDCache_by_Addr((uint32_t*)FPFW_ALIGN_BY(32, (uint32_t)dst), (int32_t)FPFW_ALIGN_BY(32, size));
+            SCB_CleanDCache_by_Addr((uint32_t*)FPFW_ALIGN_DOWN_BY(32, (uint32_t)dst), (int32_t)FPFW_ALIGN_BY(32, size));
 
             /* Log the contents of payload_header */
             FPFW_ET_LOG(HspBufferProc,

@@ -14,7 +14,7 @@
 #include <cmsis_m7.h>                 // for SCB_CleanInvalidateDCache_by_Addr
 #include <et_mts_client.h>            // for et_mts_rx_msg_handler
 #include <et_mts_client_events.h>     // for ET_LOG_ET_SVC
-#include <etc_etd_svc.h>              // for get_etc_buffer_size, get_etc_buffer_byte_pool_address
+#include <fpfw_init.h>                // for fpfw_init_get_handle
 #include <idsw_kng.h>                 // for CPU_SDM, CPU_CDED_SDM
 #include <inttypes.h>                 // for PRIx32, PRIu32
 #include <message_transfer_service.h> // for mts_client_t ...
@@ -180,7 +180,12 @@ fpfw_status_t et_mts_notify_buffer_complete(void* p_buffer, etc_service_completi
     uint16_t buffer_id = p_request->core_buffer_request.p_core_buffer->BufferId;
     BUG_ASSERT_PARAM(buffer_id < ETC_SERVICE_CORE_BUFFER_COUNT, buffer_id, p_request);
 
-    uint32_t et_buffer_addr = (uint32_t)get_etc_buffer_byte_pool_address() + (get_etc_buffer_size() * buffer_id);
+    /* Fetch ETC service context */
+    etc_service_context_t* p_etc_service_context = (etc_service_context_t*)fpfw_init_get_handle("etc");
+    BUG_ASSERT(p_etc_service_context != NULL);
+
+    uint32_t et_buffer_addr = (uint32_t)p_etc_service_context->controller.CoreTraceBuffers[buffer_id];
+
     uint32_t crc = fpfw_crc32(0, (void*)et_buffer_addr, block_size);
 
     trp_msg_t send_msg = {.hdr =
@@ -215,7 +220,7 @@ fpfw_status_t et_mts_notify_buffer_complete(void* p_buffer, etc_service_completi
     if (core_id == CPU_SCP)
     {
         /* Flush Cache so that the data is written to memory - Address and size aligned to 32 Byte boundaries */
-        SCB_CleanDCache_by_Addr((uint32_t*)FPFW_ALIGN_BY(32, et_buffer_addr), FPFW_ALIGN_BY(32, block_size));
+        SCB_CleanDCache_by_Addr((uint32_t*)FPFW_ALIGN_DOWN_BY(32, et_buffer_addr), FPFW_ALIGN_BY(32, block_size));
     }
 
     mts_client_send_new_trp_msg(&send_msg);

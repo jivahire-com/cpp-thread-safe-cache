@@ -42,6 +42,7 @@ extern fpfw_init_component_t _fpfw_component_etd;
 extern fpfw_init_component_t _fpfw_component_et_mts_clnt;
 
 static jmp_buf mock_jump_buf;
+static etd_service_context_t s_mock_etd_service_ctx = {{0}};
 
 /*------------- Functions ----------------*/
 
@@ -150,6 +151,12 @@ void __wrap_crash_dump_register_pre_dump_callback(void cb(void*), void* ctx, uin
     cb(ctx);
 }
 
+void* __wrap_fpfw_init_get_handle(const char* id)
+{
+    FPFW_UNUSED(id);
+    return mock_type(void*);
+}
+
 uint8_t __wrap_idsw_get_cpu_type(void)
 {
     return mock_type(uint8_t);
@@ -180,6 +187,7 @@ TEST_FUNCTION(test_etc_init_mcp, nullptr, nullptr)
     expect_not_value(__wrap_etc_initialize, p_config, NULL);
 
     will_return_always(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_fpfw_init_get_handle, &s_mock_etd_service_ctx);
 
     const auto test_die = (KNG_DIE_ID)0;
     will_return(__wrap_idsw_get_die_id, test_die);
@@ -201,6 +209,7 @@ TEST_FUNCTION(test_etc_init_scp, nullptr, nullptr)
     expect_not_value(__wrap_etc_initialize, p_config, NULL);
 
     will_return_always(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_fpfw_init_get_handle, &s_mock_etd_service_ctx);
 
     const auto test_die = (KNG_DIE_ID)0;
     will_return(__wrap_idsw_get_die_id, test_die);
@@ -246,9 +255,6 @@ TEST_FUNCTION(test_et_mts_clnt_init, nullptr, nullptr)
     expect_value(__wrap_mts_client_register, id, MTS_CLIENT_ID_EVENT_TRACE);
 
     // Call API under test
-    if (!bugcheck_mock_return())
-    {
-        _fpfw_component_et_mts_clnt.init_fn();
-    }
+    _fpfw_component_et_mts_clnt.init_fn();
 }
 }

@@ -13,7 +13,7 @@
 
 extern "C" {
 #include <et_mts_client.h>               // for et_mts_rx_msg_handler
-#include <etc_etd_svc.h>                 // for get_etc_buffer_size, get_etc_buffer_byte_pool_address
+#include <etc_etd_svc.h>                 // for etc_service_context_t
 #include <idsw_kng.h>                    // for DIE_0, CPU_SCP, CPU_MCP
 #include <mscp_exp_rmss_memory_map.h>    // for ETC_CORE_BUFFERS_MEMORY_SIZE
 #include <mts_platform_specialization.h> // for p_trp_msg_t
@@ -22,6 +22,10 @@ extern "C" {
 #include <tx_api.h> // for tx_queue_receive, TX_NO_WAIT, UINT
 
 /*------------------------------- Mock Functions ----------------------------*/
+
+static uint8_t s_mock_trace_buffer_0[64];
+static uint8_t s_mock_trace_buffer_1[64];
+static etc_service_context_t s_mock_etc_service_ctx = {{0}};
 
 void set_tx_queue_receive_value(VOID* destination_ptr)
 {
@@ -93,6 +97,12 @@ void __wrap_SCB_CleanDCache_by_Addr(uint32_t* addr, int32_t dsize)
 {
     FPFW_UNUSED(addr);
     FPFW_UNUSED(dsize);
+}
+
+void* __wrap_fpfw_init_get_handle(const char* id)
+{
+    FPFW_UNUSED(id);
+    return mock_type(void*);
 }
 }
 
@@ -226,9 +236,14 @@ TEST_FUNCTION(test_mts_notify_buffer_complete, NULL, NULL)
                                                                .p_origin_controller = nullptr // No specific controller for this test
                                                            }};
 
+    /* Set up mock trace buffers in the etc service context */
+    s_mock_etc_service_ctx.controller.CoreTraceBuffers[0] = s_mock_trace_buffer_0;
+    s_mock_etc_service_ctx.controller.CoreTraceBuffers[1] = s_mock_trace_buffer_1;
+
     for (int i = 0; i < ETC_SERVICE_CORE_BUFFER_COUNT; i++)
     {
         core_buffer.BufferId = i; // Set a valid buffer ID
+        will_return(__wrap_fpfw_init_get_handle, &s_mock_etc_service_ctx);
         et_mts_notify_buffer_complete(nullptr, &completion_request);
     }
 }

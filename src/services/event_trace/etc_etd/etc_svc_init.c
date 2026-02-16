@@ -17,6 +17,7 @@
 #include <crash_dump.h>               // for crash_dump_register_address32
 #include <et_mts_client.h>            // for et_mts_notify_buffer_complete
 #include <etc_etd_svc.h>              // for etc_svc_init
+#include <fpfw_init.h>                // for fpfw_init_get_handle
 #include <gtimer_prodfw.h>            // for gtimer_prodfw_get_counter
 #include <idsw.h>                     // for idsw_get_cpu_type
 #include <idsw_kng.h>                 // for CPU_MCP, CPU_SCP
@@ -33,9 +34,7 @@
 /*--------------------------- Function Prototypes ---------------------------*/
 
 /*------------------- Declarations (Statics and globals) --------------------*/
-
 static uint8_t s_etc_stack[ETC_STACK_SIZE];
-static etc_service_context_t s_etc_service_ctx = {0};
 
 extern uint8_t _data_etproviderfilter_start; // Pointer to the start of the .ProviderFilter section
 extern uint8_t _data_etproviderfilter_end;   // Pointer to the end   of the .ProviderFilter section
@@ -65,7 +64,7 @@ static etc_service_config_t etc_config = {
 /*----------------------------- Static Functions ----------------------------*/
 
 /*----------------------------- Global Functions ----------------------------*/
-void etc_svc_init(void)
+void etc_svc_init(etc_service_context_t* p_etc_service_ctx)
 {
     uint8_t cpu_type = idsw_get_cpu_type();
 
@@ -85,26 +84,13 @@ void etc_svc_init(void)
     }
 
     etc_config.core_id = core_info_get_combined_core_id();
-    etc_config.p_decoder_service = get_etd_service_context();
+
+    etc_config.p_decoder_service = (etd_service_context_t*)fpfw_init_get_handle("etd");
+    BUG_ASSERT(etc_config.p_decoder_service != NULL);
 
     // the gnu build id is unique per core.  Use the first 16 bytes for the manifest id which needs to be
     // unique for the diagnostic decoder tool to decode the data
     memcpy((void*)&etc_config.manifest_id, (void*)g_note_gnu_build_id.BuildId, sizeof(etc_config.manifest_id));
 
-    etc_initialize(&s_etc_service_ctx, &etc_config);
-}
-
-uint32_t get_etc_buffer_size(void)
-{
-    return (uint32_t)(etc_config.trace_buffer_memory.byte_count / ETC_SERVICE_CORE_BUFFER_COUNT);
-}
-
-uint8_t* get_etc_buffer_byte_pool_address(void)
-{
-    return (uint8_t*)etc_config.trace_buffer_memory.p_pool;
-}
-
-etc_service_context_t* get_etc_service_context(void)
-{
-    return &s_etc_service_ctx;
+    etc_initialize(p_etc_service_ctx, &etc_config);
 }

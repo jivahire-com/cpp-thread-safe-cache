@@ -58,7 +58,7 @@ void ift_sos_completion_cb(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completio
 }
 
 FPFW_INIT_COMPONENT(sos_int,
-                    FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift_drv"))
+                    FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift_drv", "boot_stat"))
 {
     static sos_interface_t sos_interface;
     sos_interface_init(fpfw_init_get_handle("sos_svc"), &sos_interface, true);
@@ -103,12 +103,19 @@ FPFW_INIT_COMPONENT(sos_int,
         sos_start_phase((void*)&sos_interface, &startup_phase_request, IFT_BOOT, STARTUP_PHASE_IFT_ASYNC, ift_sos_completion_cb, NULL); // asynchronous
     }
 
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            MSCP_BOOT_STATUS_CODE_SCP_SOS_INIT_END,
+                            GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP,
+                                                            MSCP_GENERIC,
+                                                            ((idsw_get_die_id() == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY)));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &sos_interface};
 }
 
 #elif MCP_RUNTIME_INIT
 
-FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx"))
+FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "boot_stat"))
 {
     // Initialize the public SOS Interface
     static sos_interface_t sos_interface;
@@ -132,6 +139,13 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx"))
 
     // queue the boot phases for this reset type, handled by the SOS service thread
     sos_start_phase((void*)&sos_interface, NULL, COLD_BOOT, STARTUP_PHASE_MSCP_ASYNC, NULL, NULL);
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            MSCP_BOOT_STATUS_CODE_MCP_SOS_INIT_END,
+                            GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP,
+                                                            MSCP_GENERIC,
+                                                            ((idsw_get_die_id() == DIE_0) ? MCP_PRIMARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &sos_interface};
 }

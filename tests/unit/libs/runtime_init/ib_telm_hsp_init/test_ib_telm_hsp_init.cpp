@@ -12,7 +12,8 @@
 #include <CMockaWrapper.h>
 
 extern "C" {
-#include <FpFwUtils.h>     // for FPFW_UNUSED
+#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <boot_status.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_init, fpfw_icc_ba...
 #include <fpfw_init.h>
 #include <idsw.h>
@@ -53,11 +54,37 @@ KNG_DIE_ID __wrap_idsw_get_die_id()
     return mock_type(KNG_DIE_ID);
 }
 
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
+idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
+{
+    return mock_type(idsw_cpu_type_t);
+}
+
 TEST_FUNCTION(test_ib_telm_hsp_init_success_die_0, nullptr, nullptr)
 {
     // Set up expectations
     will_return_always(__wrap_idsw_get_die_id, (KNG_DIE_ID)DIE_0);
     will_return_always(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    // will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_IB_TELM_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     fpfw_init_result_t result = _fpfw_component_ib_telm_hsp.init_fn();
     assert_int_equal(result.status, FPFW_INIT_STATUS_SUCCESS);
@@ -69,6 +96,17 @@ TEST_FUNCTION(test_ib_telm_hsp_init_success_die_1, nullptr, nullptr)
     // Set up expectations
     will_return_always(__wrap_idsw_get_die_id, (KNG_DIE_ID)DIE_1);
     will_return_always(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_IB_TELM_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     fpfw_init_result_t result = _fpfw_component_ib_telm_hsp.init_fn();
     assert_int_equal(result.status, FPFW_INIT_STATUS_SUCCESS);

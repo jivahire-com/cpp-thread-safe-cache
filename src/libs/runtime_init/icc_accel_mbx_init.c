@@ -9,14 +9,15 @@
 /*------------- Includes -----------------*/
 
 #include <DbgPrint.h>
-#include <DfwkHost.h>                // for DfwkDeviceInitialize
-#include <DfwkThreadXHost.h>         // for PDFWK_THREADX_HOST
-#include <MboxPrimitives.h>          // for ACCEL_MBOX_OFFSET_AFTER_0X100000
-#include <accel_intr.h>              // for accel_intr_init
-#include <accel_intr_virt_irq.h>     // for SDM_DOMAIN, CDED_SDM_DOMAIN
-#include <accelerator_ip.h>          // for accel_is_isolation_enabled
-#include <accelip_id.h>              // for ACCEL_ID_CDED, ACCEL_ID_SDM
-#include <atu_init.h>                // for atu_svc_accel_atu_addr
+#include <DfwkHost.h>            // for DfwkDeviceInitialize
+#include <DfwkThreadXHost.h>     // for PDFWK_THREADX_HOST
+#include <MboxPrimitives.h>      // for ACCEL_MBOX_OFFSET_AFTER_0X100000
+#include <accel_intr.h>          // for accel_intr_init
+#include <accel_intr_virt_irq.h> // for SDM_DOMAIN, CDED_SDM_DOMAIN
+#include <accelerator_ip.h>      // for accel_is_isolation_enabled
+#include <accelip_id.h>          // for ACCEL_ID_CDED, ACCEL_ID_SDM
+#include <atu_init.h>            // for atu_svc_accel_atu_addr
+#include <boot_status.h>
 #include <fpfw_icc_base.h>           // for fpfw_icc_base_ctx_t
 #include <fpfw_icc_base_i.h>         // for _fpfw_icc_base_ctx_t
 #include <fpfw_init.h>               // for FPFW_INIT_STATUS_E_INVALID_NODE
@@ -154,7 +155,8 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
 }
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel", "debug_print", "virt_irq", "cfg_mgr"))
+FPFW_INIT_COMPONENT(icc_sdm_mbx,
+                    FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel", "debug_print", "virt_irq", "cfg_mgr", "boot_stat"))
 {
     ACCEL_ID accel_type = ACCEL_ID_SDM;
 
@@ -168,6 +170,16 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel
     {
         return (fpfw_init_result_t){status, NULL};
     }
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_SDM_MHU_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_SDM_MHU_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     //! pass in status & ref to ctx to the clients
     return (fpfw_init_result_t){status, &s_accel_mbx_icc_base_ctx[accel_type]};
@@ -187,6 +199,16 @@ FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "acce
     {
         return (fpfw_init_result_t){status, NULL};
     }
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_CDED_MHU_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_CDED_MHU_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     //! pass in status & ref to ctx to the clients
     return (fpfw_init_result_t){status, &s_accel_mbx_icc_base_ctx[accel_type]};

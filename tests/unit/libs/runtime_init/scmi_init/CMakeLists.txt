@@ -19,9 +19,11 @@ target_link_libraries(${TARGET}
         fwlib.platform.dfwkhost.threadx
         ms::cmocka::testrunner
         ms::driver::scmi_drv
+        ms::lib::boot_status
         ms::lib::threadx
         ms::service::scp_startup_shutdown
         silibs::atu
+        silibs::idsw
         silibs::idsw_kng
         silibs::kng_silibs_platform
 )
@@ -42,4 +44,7 @@ mock_target(${TARGET}
     fpfw_init_get_handle
     scmi_set_apcore_interface
     scmi_drv_init
+    boot_status_notify_extd
+    idsw_get_cpu_type
+    idsw_get_die_id
 )

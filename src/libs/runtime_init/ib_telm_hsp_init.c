@@ -9,10 +9,12 @@
 /*------------- Includes -----------------*/
 
 #include <FpFwUtils.h>
+#include <boot_status.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #include <hsp_firmware_headers.h>
 #include <idsw.h>
+#include <idsw_kng.h>
 #include <in_band_telemetry_ddr.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -27,7 +29,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(ib_telm_hsp, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver", "ddr"))
+FPFW_INIT_COMPONENT(ib_telm_hsp, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver", "ddr", "boot_stat"))
 {
     // Send the hsp where in DDR it can store logs now that DDR is initialized
     uint64_t hsp_ddr_mem_ap_address = IB_TLM_DDR_ATU_AP_ADDR_TRACE_HSP_BASE_ADDR(idsw_get_die_id());
@@ -45,6 +47,16 @@ FPFW_INIT_COMPONENT(ib_telm_hsp, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver", 
     {
         return (fpfw_init_result_t){icc_base_status, NULL};
     }
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_IB_TELM_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_IB_TELM_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

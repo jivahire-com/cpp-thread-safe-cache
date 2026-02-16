@@ -71,9 +71,9 @@
 
 #ifdef SCP_RUNTIME_INIT
 FPFW_INIT_COMPONENT(icc_mscp2tfa_if,
-                    FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "mesh_stg_2", "shared_mem", "sysinfo"))
+                    FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "mesh_stg_2", "shared_mem", "sysinfo", "boot_stat"))
 #else
-FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "sysinfo"))
+FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "hw_ver", "sysinfo", "boot_stat"))
 #endif
 {
 
@@ -159,15 +159,26 @@ FPFW_INIT_COMPONENT(icc_mscp2tfa_if, FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "
         return (fpfw_init_result_t){status, NULL};
     }
 
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_MSCP_TFA_MHU_INIT_END
+                                                             : MSCP_BOOT_STATUS_CODE_MCP_MSCP_TFA_MHU_INIT_END,
+                            GEN_BOOT_STATUS_EX_GENERIC_CODE(
+                                (idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                MSCP_GENERIC,
+                                (idsw_get_die_id() == DIE_0)
+                                    ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                    : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_mscp_2_tfa_if};
 }
 //
 // RT MailBox ICC
 //
 #ifdef SCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(icc_mscp2aprt, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh_stg_2", "sysinfo"))
+FPFW_INIT_COMPONENT(icc_mscp2aprt, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh_stg_2", "sysinfo", "boot_stat"))
 #else
-FPFW_INIT_COMPONENT(icc_mscp2aprt, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "sysinfo"))
+FPFW_INIT_COMPONENT(icc_mscp2aprt, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "sysinfo", "boot_stat"))
 #endif
 {
     idsw_die_id_t die_id = idsw_get_die_id();
@@ -301,10 +312,21 @@ FPFW_INIT_COMPONENT(icc_mscp2aprt, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
         return (fpfw_init_result_t){status, NULL};
     }
 
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_MSCP_APRT_MHU_INIT_END
+                                                             : MSCP_BOOT_STATUS_CODE_MCP_MSCP_APRT_MHU_INIT_END,
+                            GEN_BOOT_STATUS_EX_GENERIC_CODE(
+                                (idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                MSCP_GENERIC,
+                                (idsw_get_die_id() == DIE_0)
+                                    ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                    : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_mscp_ap_rt_ctx};
 }
 
-FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "sysinfo"))
+FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "sysinfo", "boot_stat"))
 {
     KNG_CPU_TYPE cpu_id = idsw_get_cpu_type();
 
@@ -429,13 +451,24 @@ FPFW_INIT_COMPONENT(icc_mscp2mscp, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "sys
         return (fpfw_init_result_t){status, NULL};
     }
 
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_MCSP2MSCP_MHU_INIT_END
+                                                             : MSCP_BOOT_STATUS_CODE_MCP_MCSP2MSCP_MHU_INIT_END,
+                            GEN_BOOT_STATUS_EX_GENERIC_CODE(
+                                (idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                MSCP_GENERIC,
+                                (idsw_get_die_id() == DIE_0)
+                                    ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                    : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_mscp_mscp_ctx};
 }
 
 #ifdef SCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh_stg_2", "sysinfo"))
+FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "mesh_stg_2", "sysinfo", "boot_stat"))
 #else
-FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "sysinfo"))
+FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "sysinfo", "boot_stat"))
 #endif
 {
     KNG_CPU_TYPE cpu_id = idsw_get_cpu_type();
@@ -571,6 +604,17 @@ FPFW_INIT_COMPONENT(icc_mscp2apns, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu
     {
         return (fpfw_init_result_t){status, NULL};
     }
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_MSCP_APNS_MHU_INIT_END
+                                                             : MSCP_BOOT_STATUS_CODE_MCP_MSCP_APNS_MHU_INIT_END,
+                            GEN_BOOT_STATUS_EX_GENERIC_CODE(
+                                (idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                MSCP_GENERIC,
+                                (idsw_get_die_id() == DIE_0)
+                                    ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                    : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_mscp_ap_ns_ctx};
 }
@@ -736,7 +780,7 @@ FPFW_INIT_COMPONENT(icc_die2die, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_die_2_die_ctx};
 }
 
-FPFW_INIT_COMPONENT(icc_mcp2aps, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "sysinfo"))
+FPFW_INIT_COMPONENT(icc_mcp2aps, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_svc", "sysinfo", "boot_stat"))
 {
     KNG_CPU_TYPE cpu_id = idsw_get_cpu_type();
     idsw_die_id_t die_id = idsw_get_die_id();
@@ -864,6 +908,17 @@ FPFW_INIT_COMPONENT(icc_mcp2aps, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "atu_s
     {
         return (fpfw_init_result_t){status, NULL};
     }
+
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(&boot_status_req,
+                            (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_MSCP_APS_MHU_INIT_END
+                                                             : MSCP_BOOT_STATUS_CODE_MCP_MSCP_APS_MHU_INIT_END,
+                            GEN_BOOT_STATUS_EX_GENERIC_CODE(
+                                (idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                MSCP_GENERIC,
+                                (idsw_get_die_id() == DIE_0)
+                                    ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                    : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_icc_base_mcp_ap_s_ctx};
 }

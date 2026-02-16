@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
     fwlib.platform.dfwkhost.threadx
     ms::cmocka::testrunner
     ms::driver::pcie
+    ms::lib::boot_status
     ms::lib::threadx
     ms::mocks::threadx
     ms::lib::cxl
@@ -55,4 +56,6 @@ mock_target(${TARGET}
     scp_pcie_initialize
     idsw_get_die_id
     _txe_thread_create
+    boot_status_notify_extd
+    idsw_get_cpu_type
 )

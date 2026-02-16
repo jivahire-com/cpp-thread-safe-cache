@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::idsw_kng
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::ioss_ini
         silibs_platform
         kng_silibs_platform
@@ -46,5 +47,8 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     ioss_ini
+    idsw_get_die_id
+    boot_status_notify_extd
+    idsw_get_cpu_type
     idsw_get_die_id
 )

@@ -13,9 +13,12 @@ add_executable(${TARGET} ${SOURCES})
 target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
+        ms::lib::boot_status
         ms::lib::arm_intrinsic
         ms::lib::pwr_tlm_core_ex
         ms::cmocka::testrunner
+        silibs::idsw
+        silibs::idsw_kng
 )
 
 # Defining platform APIs
@@ -31,4 +34,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
+    boot_status_notify_extd
+    idsw_get_cpu_type
+    idsw_get_die_id
 )

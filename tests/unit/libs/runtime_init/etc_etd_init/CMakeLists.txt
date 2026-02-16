@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.service.mts
         ms::cmocka::testrunner
+        ms::lib::boot_status
         ms::lib::crash_dump
         ms::lib::threadx
         ms::mocks::event_trace
@@ -54,4 +55,6 @@ mock_target(${TARGET}
     idsw_get_cpu_type
 
     FPFwETControllerFlushBuffer
+    idsw_get_die_id
+    boot_status_notify_extd
 )

@@ -14,8 +14,11 @@ extern "C" {
 #include <DfwkDriver.h>      // for DFWK_SCHEDULE
 #include <DfwkThreadXHost.h> // for DFWK_THREADX_HOST
 #include <FpFwUtils.h>       // for FPFW_UNUSED
-#include <fpfw_init.h>       // for fpfw_init_result_t, fpfw_init_component_t
+#include <boot_status.h>
+#include <fpfw_init.h> // for fpfw_init_result_t, fpfw_init_component_t
 #include <hsp_firmware_headers.h>
+#include <idsw.h>     // for idsw_get_die_id
+#include <idsw_kng.h> // for KNG_DIE_ID, KNG_PLAT_ID
 #include <ift_fw.h>
 #include <startup_shutdown.h>
 #include <startup_shutdown_init.h>
@@ -110,6 +113,20 @@ bool __wrap_ift_is_enabled(void)
 {
     return mock_type(bool);
 }
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
+KNG_DIE_ID __wrap_idsw_get_die_id(void)
+{
+    return mock_type(KNG_DIE_ID);
+}
 }
 
 //
@@ -193,6 +210,15 @@ TEST_FUNCTION(sos_init_sos_int, nullptr, nullptr)
     expect_not_value(__wrap_sos_start_phase, completion_routine, NULL);
     expect_any(__wrap_sos_start_phase, p_completion_context);
 
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_SOS_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_sos_int.init_fn();
 
@@ -253,6 +279,15 @@ TEST_FUNCTION(sos_init_sos_ift_enabled_int, nullptr, nullptr)
     expect_not_value(__wrap_sos_start_phase, completion_routine, NULL);
     expect_any(__wrap_sos_start_phase, p_completion_context);
 
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_SOS_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     //! Call the function under test
     fpfw_init_result_t result = _fpfw_component_sos_int.init_fn();
 
@@ -260,7 +295,6 @@ TEST_FUNCTION(sos_init_sos_ift_enabled_int, nullptr, nullptr)
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
     assert_non_null(result.associated_handle);
 }
-
 #endif
 
 #ifdef MCP_RUNTIME_INIT
@@ -301,6 +335,15 @@ TEST_FUNCTION(sos_init_sos_int_mcp, nullptr, nullptr)
     expect_value(__wrap_sos_start_phase, startup_stage, STARTUP_PHASE_MSCP_ASYNC);
     expect_value(__wrap_sos_start_phase, completion_routine, NULL);   // NULL for synchronous
     expect_value(__wrap_sos_start_phase, p_completion_context, NULL); // NULL for synchronous
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, (test_die == DIE_0) ? MCP_PRIMARY : MCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_SOS_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_sos_int.init_fn();

@@ -54,6 +54,8 @@ function(create_sos_init_test TARGET_NAME RUNTIME_INIT_DEFINE)
         sos_interface_init
         sos_register_ssi
         sos_start_phase
+        boot_status_notify_extd
+        idsw_get_die_id
     )
 
     # Runtime-specific mocks

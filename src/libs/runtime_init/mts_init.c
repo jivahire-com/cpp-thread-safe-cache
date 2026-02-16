@@ -285,9 +285,8 @@ FPFW_INIT_COMPONENT(mts_svc,
     s_config.trp_icc_config.num_icc_endpoints = num_icc_endpoints;
 
     mts_init(&s_config);
-
     mts_cli_svc_initialize();
-
+    boot_status_req = (boot_status_req_t){0};
     boot_status_notify_extd(
         &boot_status_req,
         (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_MTS_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_MTS_INIT_END,

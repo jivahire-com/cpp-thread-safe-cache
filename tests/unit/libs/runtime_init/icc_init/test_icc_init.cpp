@@ -361,6 +361,17 @@ TEST_FUNCTION(test_icc_sdm_mbx_init, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
 
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_SDM_MHU_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_sdm_mbx.init_fn();
 
@@ -529,6 +540,17 @@ TEST_FUNCTION(test_icc_cded_mbx_init, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_CDED_MHU_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_cded_mbx.init_fn();
@@ -724,6 +746,18 @@ TEST_FUNCTION(test_icc_mhu_mscp2tfa_if_scp_success, nullptr, nullptr)
     will_return(__wrap_mhu_icc_transport_device_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
     will_return(__wrap_mhu_icc_transport_interface_init, FPFW_ICC_TRANSPORT_STATUS_SUCCESS);
 
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_TFA_MHU_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_mscp2tfa_if.init_fn();
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -803,6 +837,18 @@ TEST_FUNCTION(test_icc_mhu_mscp2aprt_scp_success, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_STATUS_SUCCESS);
 
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_APRT_MHU_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_mscp2aprt.init_fn();
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -863,6 +909,18 @@ TEST_FUNCTION(test_icc_mhu_mscp2mscp_success, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MCSP2MSCP_MHU_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_mscp2mscp.init_fn();
@@ -928,6 +986,18 @@ TEST_FUNCTION(test_icc_mhu_mscp2apns_scp_d0_success, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
 
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_APNS_MHU_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_mscp2apns.init_fn();
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -958,6 +1028,18 @@ TEST_FUNCTION(test_icc_mhu_mscp2apns_scp_d1_success, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
+
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_APNS_MHU_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_mscp2apns.init_fn();
@@ -990,6 +1072,18 @@ TEST_FUNCTION(test_icc_mhu_mscp2apns_mcp_d0_success, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
 
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_APNS_MHU_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_mscp2apns.init_fn();
     assert_true(result.status == FPFW_INIT_STATUS_SUCCESS);
@@ -1020,6 +1114,18 @@ TEST_FUNCTION(test_icc_mhu_mscp2apns_mcp_d1_success, nullptr, nullptr)
     expect_value(__wrap_fpfw_icc_base_init, icc_cfg->dispatch_cfg.match_strategy_ctx, NULL);
     will_return(__wrap_fpfw_icc_base_init, FPFW_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_dispatcher_start, FPFW_ICC_DISPATCH_STATUS_SUCCESS);
+
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_APNS_MHU_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_icc_mscp2apns.init_fn();

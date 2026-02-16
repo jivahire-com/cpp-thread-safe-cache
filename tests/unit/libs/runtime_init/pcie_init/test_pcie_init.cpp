@@ -14,6 +14,7 @@
 
 extern "C" {
 #include <FpFwUtils.h>
+#include <boot_status.h>
 #include <cmocka.h>
 #include <fpfw_init.h>
 #include <idsw.h>
@@ -63,86 +64,199 @@ KNG_DIE_ID __wrap_idsw_get_die_id(void)
 {
     return mock_type(KNG_DIE_ID);
 }
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
+}
+
+idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
+{
+    return mock_type(idsw_cpu_type_t);
+}
 }
 
 TEST_FUNCTION(test_die0_svp_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     _fpfw_component_pcie.init_fn();
 }
 
 TEST_FUNCTION(test_die1_svp_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_SIM);
-    will_return(__wrap_idsw_get_die_id, DIE_1);
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_1);
+
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     _fpfw_component_pcie.init_fn();
 }
 
 TEST_FUNCTION(test_die0_emu_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_1D);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     _fpfw_component_pcie.init_fn();
 }
 
 TEST_FUNCTION(test_die1_emu_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_EMU_2D);
-    will_return(__wrap_idsw_get_die_id, DIE_1);
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_1);
+
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     _fpfw_component_pcie.init_fn();
 }
 
 TEST_FUNCTION(test_die0_fpga_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS1) | (1 << RPSS2)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     _fpfw_component_pcie.init_fn();
 }
 
 TEST_FUNCTION(test_die1_fpga_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA);
-    will_return(__wrap_idsw_get_die_id, DIE_1);
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, (1 << RPSS5));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_1);
+
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     _fpfw_component_pcie.init_fn();
 }
 
 TEST_FUNCTION(test_die0_silicon_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS0) | (1 << RPSS1) | (1 << RPSS2) | (1 << RPSS3)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     _fpfw_component_pcie.init_fn();
 }
 
 TEST_FUNCTION(test_die1_silicon_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
-    will_return(__wrap_idsw_get_die_id, DIE_1);
+    will_return_always(__wrap_idsw_get_die_id, DIE_1);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, ((1 << RPSS4) | (1 << RPSS5) | (1 << RPSS6) | (1 << RPSS7)));
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_1);
+
+    const auto test_die = (KNG_DIE_ID)1;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     _fpfw_component_pcie.init_fn();
 }
 
 TEST_FUNCTION(test_die0_unknown_plat_init, NULL, NULL)
 {
     will_return_always(__wrap_idsw_get_platform_sdv, 0xFF);
-    will_return(__wrap_idsw_get_die_id, DIE_0);
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
     expect_value(__wrap_scp_pcie_initialize, rpss_to_init, 0);
     expect_value(__wrap_scp_pcie_initialize, die_id, DIE_0);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_SCP, MSCP_GENERIC, (test_die == DIE_0) ? SCP_PRIMARY : SCP_SECONDARY);
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     _fpfw_component_pcie.init_fn();
 }
 

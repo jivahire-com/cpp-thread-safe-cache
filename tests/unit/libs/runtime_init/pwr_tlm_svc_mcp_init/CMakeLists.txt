@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
     PRIVATE
         fwlib.lib.init
         fwlib.lib.utils
+        ms::lib::boot_status
         ms::lib::config_manager
         ms::service::pwr_tlm_mcp
         ms::service::pwr_tlm_mcp::cli
@@ -43,4 +44,6 @@ mock_target(${TARGET}
     idhw_is_single_die_boot_en
     telemetry_service_init
     pwr_tlm_cli_svc_init
+    boot_status_notify_extd
+    idsw_get_cpu_type
 )

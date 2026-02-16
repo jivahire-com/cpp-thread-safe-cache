@@ -12,6 +12,7 @@
 #include <DfwkPtrTypes.h>
 #include <DfwkThreadXHost.h>
 #include <atu_api.h>
+#include <boot_status.h>
 #include <cxl.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
@@ -32,7 +33,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "dfwk", "tower_cfg", "vab", "cfg_mgr"))
+FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "dfwk", "tower_cfg", "vab", "cfg_mgr", "boot_stat"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST host = fpfw_init_get_handle(dfwk_id);
@@ -86,6 +87,16 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "dfwk", "tower_cf
     rpss_to_init &= rpss_mask;
 
     void* pcie_dev_handles = scp_pcie_initialize(&(host->Schedule), rpss_to_init, die_id);
+    boot_status_req_t boot_status_req = {0};
+    boot_status_notify_extd(
+        &boot_status_req,
+        (idsw_get_cpu_type() == CPU_SCP) ? MSCP_BOOT_STATUS_CODE_SCP_MSCP_PCIE_INIT_END : MSCP_BOOT_STATUS_CODE_MCP_MSCP_PCIE_INIT_END,
+        GEN_BOOT_STATUS_EX_GENERIC_CODE((idsw_get_cpu_type() == CPU_SCP) ? COMPONENT_GROUP_SCP : COMPONENT_GROUP_MCP,
+                                        MSCP_GENERIC,
+                                        (idsw_get_die_id() == DIE_0)
+                                            ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
+                                            : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
+
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, pcie_dev_handles};
 }
 

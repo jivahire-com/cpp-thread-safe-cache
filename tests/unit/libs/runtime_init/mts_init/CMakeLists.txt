@@ -15,6 +15,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         ms::service::mts
+        ms::lib::boot_status
         fwlib.service.mts.cli
         ms::lib::accelerator_ip
         ms::lib::boot_status

@@ -16,6 +16,7 @@
 
 extern "C" {
 #include <FpFwUtils.h>
+#include <boot_status.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>
 #include <idsw.h>
@@ -87,7 +88,22 @@ void __wrap_pwr_tlm_cli_svc_init(void)
 {
     function_called();
 }
+
+void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_status, uint32_t boot_status_ex)
+{
+    check_expected(boot_status);
+    assert_non_null(p_req_mem);
+    check_expected(boot_status_ex);
+
+    function_called();
 }
+
+idsw_cpu_type_t __wrap_idsw_get_cpu_type(void)
+{
+    return mock_type(idsw_cpu_type_t);
+}
+}
+
 //
 // Tests
 //
@@ -120,6 +136,18 @@ TEST_FUNCTION(test_tlm_svc_init, nullptr, nullptr)
     expect_value(__wrap_telemetry_service_init, is_single_die_system, false);
 
     expect_function_call(__wrap_pwr_tlm_cli_svc_init);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, (test_die == DIE_0) ? MCP_PRIMARY : MCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_POWER_TLM_SCP_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_tlm_svc_mcp.init_fn();
@@ -159,6 +187,18 @@ TEST_FUNCTION(test_tlm_svc_init_other_branches, nullptr, nullptr)
 
     expect_function_call(__wrap_pwr_tlm_cli_svc_init);
 
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, (test_die == DIE_0) ? MCP_PRIMARY : MCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_POWER_TLM_SCP_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
+
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_tlm_svc_mcp.init_fn();
 
@@ -196,6 +236,18 @@ TEST_FUNCTION(test_tlm_svc_init_range_limit, nullptr, nullptr)
     expect_value(__wrap_telemetry_service_init, is_single_die_system, false);
 
     expect_function_call(__wrap_pwr_tlm_cli_svc_init);
+
+    const auto test_die = (KNG_DIE_ID)0;
+    will_return(__wrap_idsw_get_die_id, test_die);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+    uint32_t expected_boot_status_ex =
+        GEN_BOOT_STATUS_EX_GENERIC_CODE(COMPONENT_GROUP_MCP, MSCP_GENERIC, (test_die == DIE_0) ? MCP_PRIMARY : MCP_SECONDARY);
+
+    expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_MCP_POWER_TLM_SCP_INIT_END);
+    expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
+    expect_function_call(__wrap_boot_status_notify_extd);
 
     // Call the function under test
     fpfw_init_result_t result = _fpfw_component_pwr_tlm_svc_mcp.init_fn();

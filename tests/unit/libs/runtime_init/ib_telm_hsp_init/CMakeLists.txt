@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.init
         fwlib.lib.utils
         fwlib.service.iccBase
+        ms::lib::boot_status
         ms::cmocka::testrunner
         ms::lib::hsp_firmware_headers
         ms::lib::interface::in_band_telemetry_ddr
@@ -39,4 +40,6 @@ mock_target(${TARGET}
     fpfw_icc_base_send_sync
     fpfw_init_get_handle
     idsw_get_die_id
+    boot_status_notify_extd
+    idsw_get_cpu_type
 )

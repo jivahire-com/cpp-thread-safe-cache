@@ -96,11 +96,12 @@ class ap_wdt_test(EchoFallsBaseTest):
 
         # Clear buffer before starting to ensure we don't match stale data
         apns_cli.clear_buffer()
- 
+        
+        # Set boot option FIRST, then reset SOC
         self.log.info("Setup boot options")
         rscm_helper.rscm_set_boot_option(option="ConfApp")
- 
-        self.log.info("Booting UEFI Shell...")
+        time.sleep(5)
+        
         return self._navigate_to_uefi_shell(apns_cli)
 
     def setup_mission_mode_and_reset(
@@ -235,6 +236,15 @@ class ap_wdt_test(EchoFallsBaseTest):
         self.log.info("Running AP WDT error handling test  . . .") 
         self.dut.setup()
 
+        scp_connection=self.dut.mb.node_0.soc.primary_die.scp.channel_manager
+        apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
+        hsp_connection = self.dut.mb.node_0.soc.primary_die.hsp.channel_manager
+
+        # Ensure the host config file used alongside this test has these connections defined.
+        assert scp_connection is not None
+        assert apns_connection is not None
+        assert hsp_connection is not None
+
         if self.dut.get_dut_type() == DeviceType.BIGFPGA:
             self.log.warning("Device type is bigFPGA. Performing an additional OOB reset ...")
             KngPythiaTestSetup.fpga_oob_reset(self.log)
@@ -243,6 +253,8 @@ class ap_wdt_test(EchoFallsBaseTest):
             cred_path = os.environ.get('SECURE_FILE_PATH')
             creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
             rscm_helper = RscmHelperLibrary(rm_host=self.host_config.rack_scm.host, bmc_host=self.dut.mb.node_0.dcscm.bmc.ip, rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'], node=self.host_config.node_id)
+            rscm_helper.rscm_soc_reset()
+            set_bmc_uart_mux(self.dut, self.log, "SCP")
 
             # Setup mission mode before running the test
             apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
@@ -253,14 +265,7 @@ class ap_wdt_test(EchoFallsBaseTest):
                 time.sleep(30)
                 return False
 
-            rscm_helper.rscm_soc_reset()
-            set_bmc_uart_mux(self.dut, self.log, "SCP")
-
-        scp_connection = self.dut.mb.node_0.soc.primary_die.scp.channel_manager
-
-        # Ensure the host config file used alongside this test has these connections defined.
-        assert scp_connection is not None
-    
+        # Open SCP connection for reading UART
         scp_connection.get_current_channel().open()
         if not scp_connection.get_current_channel().is_open():
             self.log.error("scp_connection is not open")

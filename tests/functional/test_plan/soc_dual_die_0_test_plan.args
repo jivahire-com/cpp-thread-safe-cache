@@ -51,5 +51,4 @@
 ./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_loop_health_soc.robot
 
 ## AP WDT tests
-# Disabling the test temporarily since the test is sporadically failing
-#./../../../tests/functional/test_suites/ap_wdt_test/ap_wdt_test.robot
+./../../../tests/functional/test_suites/ap_wdt_test/ap_wdt_test.robot

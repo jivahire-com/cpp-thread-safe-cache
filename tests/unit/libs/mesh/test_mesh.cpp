@@ -604,7 +604,7 @@ uint64_t __wrap_config_get_a1_mesh_hnf_aux_ctl(void)
 
 uint64_t __wrap_config_get_a1_mesh_hnf_aux_ctl_1(void)
 {
-    return 0x3001005A900ULL; // XML default value
+    return 0x10001005A900ULL; // XML default value
 }
 
 uint64_t __wrap_config_get_a1_mesh_hnf_cfg_ctl(void)
@@ -734,7 +734,7 @@ uint64_t __wrap_config_get_mesh_hnf_aux_ctl(void)
 }
 uint64_t __wrap_config_get_mesh_hnf_aux_ctl_1(void)
 {
-    return 0x3001005A900ULL;
+    return 0x10001005A900ULL;
 }
 uint64_t __wrap_config_get_mesh_hnf_cfg_ctl(void)
 {
@@ -2022,7 +2022,7 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_mode_ctl, 0x3000);
 
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl, 0x2000001000200002);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl_1, 0x3001005A900);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl_1, 0x10001005A900);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738921000);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F09);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006);
@@ -2182,7 +2182,7 @@ void verify_mesh_config_knobs_a1_stepping(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_write_limit_ctl, 0x302010ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_mode_ctl, 0x3000ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl, 0x2000001000200002ULL);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl_1, 0x3001005A900ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl_1, 0x10001005A900ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738921000ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F09ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006ULL);

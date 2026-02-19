@@ -111,8 +111,8 @@
     <Knob name="a1_mesh_hnf_cbusy_mode_ctl" type="uint64_t" default="0x3000" help="Control register for additional CBusy controls"/>
     <Knob name="mesh_hnf_aux_ctl" type="uint64_t" default="0x2000001000200002" help="Auxiliary control register for HNF. Default val 0x2000_0010_0020_0002"/>
     <Knob name="a1_mesh_hnf_aux_ctl" type="uint64_t" default="0x2000001000200002" help="Auxiliary control register for HNF. Default val 0x2000_0010_0020_0002"/>
-    <Knob name="mesh_hnf_aux_ctl_1" type="uint64_t" default="0x3001005A900" help="Set value for por_hnf_aux_ctl_1"/>
-    <Knob name="a1_mesh_hnf_aux_ctl_1" type="uint64_t" default="0x3001005A900" help="Set value for por_hnf_aux_ctl_1"/>
+    <Knob name="mesh_hnf_aux_ctl_1" type="uint64_t" default="0x10001005A900" help="Set value for por_hnf_aux_ctl_1"/>
+    <Knob name="a1_mesh_hnf_aux_ctl_1" type="uint64_t" default="0x10001005A900" help="Set value for por_hnf_aux_ctl_1"/>
     <Knob name="mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C01738921000" help="Set value for por_hnf_cfg_ctl"/>
     <Knob name="a1_mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C01738921000" help="Set value for por_hnf_cfg_ctl"/>
     <Knob name="mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F09" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>

@@ -216,9 +216,6 @@ class RscmHelperLibrary:
 
     @keyword
     def rscm_set_boot_option(self, option:str):
-        print(f"Setting boot option to General...")
-        command = f"set system cmd -i {self.node} -c raw 0x38 0x74 0x00"
-
         """Set the boot option for the current boot. Boot-order will be reset to default after cold reset"""
         if option not in ["Pxe", "Nvme", "ConfApp", "Usb"]:
             raise ValueError("Invalid boot option. Choose from 'Pxe', 'Nvme', 'ConfApp' or 'Usb'.")
@@ -234,16 +231,6 @@ class RscmHelperLibrary:
             command = f"set system cmd -i {self.node} -c raw 0x00 0x08 0x05 0xA0 0x3C 0x00 0x00 0x00"
 
         stdout, stderr = self.execute_rm_command(command)
-        if stderr:
-            print(f"Error setting boot option: {stderr}")
-            raise AssertionError
-        else:
-            print(f"Boot option set to {option} successfully.")
-
-        # No UART dongle, commenting out disconnecitng BU5 on BMC side
-        #command = "devmem 0xf0800270 32 0x48AF8142"
-        #stdout, stderr = self.execute_bmc_command(command)
-        
         if stderr:
             print(f"Error setting boot option: {stderr}")
             raise AssertionError

@@ -50,5 +50,9 @@
 ./../../../tests/functional/test_suites/power_tests/mod_power_pstate_transition_soc.robot
 ./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_loop_health_soc.robot
 
+## Mission Mode Disable Test
+./../../../tests/functional/test_suites/boot_tests/soc_mission_mode_disable.robot
+./../../../tests/functional/test_suites/boot_tests/soc_win_boot_dual_die.robot
+
 ## AP WDT tests
 ./../../../tests/functional/test_suites/ap_wdt_test/ap_wdt_test.robot

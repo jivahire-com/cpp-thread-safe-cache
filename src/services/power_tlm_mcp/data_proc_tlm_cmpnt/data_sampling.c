@@ -22,8 +22,10 @@
 #include <exec_tlm_cmpnt.h>
 #include <fpfw_status.h> // for FPFW_STATUS_SUCCEEDED, fpf...
 #include <in_band_tlm_cmpnt.h>
+#include <kng_soc_constants.h>
 #include <mcp_telemetry_shared.h> //for cstate_instr_timestamp_t
 #include <mesh_d2d_telemetry.h>
+#include <pwr_tlm_core_exchange.h>
 #include <sensor_fifo_service.h> // for QUADWORD_SIZE, sensor_ram_...
 #include <sensor_thresholds.h>   // for DIMM_MAX_TMP_XX_HIGH_CRITICAL_DC
 #include <stdbool.h>             // for false, true
@@ -195,7 +197,7 @@ void data_smpl_process_aging_data(uint8_t core_id, uint64_t this_pwr_pkg_timesta
                 {
                     uint8_t counter_id = core_aging[core_id].measurement_index;
                     comp_metrics_for_single_core_aging_counters(core_id,
-                                                                core_rt[core_id].latest_voltage_mV,
+                                                                core_rt[core_id].latest_vmin_mV,
                                                                 core_rt[core_id].latest_max_value_dC,
                                                                 this_pwr_pkg_timestamp_uS,
                                                                 latest_aged_counter,
@@ -1646,6 +1648,19 @@ void data_smpl_die_mesh_tlm_reset(void)
 {
     // Reset the mesh telemetry hardware block
     mesh_clock_telemetry(false, PER_DIE_MESH_PWR_TLM_INTERVAL); // Disable mesh telemetry
+}
+
+void data_smpl_read_and_populate_core_vmin(void)
+{
+    // Read Vmin values from SCP via core exchange
+    uint16_t vmin_array[NUM_AP_CORES_PER_DIE] = {0};
+    pwr_tlm_core_exch_mcp_read_vmin(vmin_array);
+
+    // Populate the core runtime info with Vmin values
+    for (unsigned int core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; ++core_id)
+    {
+        core_rt[core_id].latest_vmin_mV = vmin_array[core_id];
+    }
 }
 
 void data_smpl_init_d2dss_pmu_counters(void)

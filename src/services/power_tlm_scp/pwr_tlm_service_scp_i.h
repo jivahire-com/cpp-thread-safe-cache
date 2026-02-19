@@ -59,3 +59,10 @@ void data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp(void);
  * @param[in] enables - The record enables from MCP
  */
 void data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(tlm_scp_record_enables_t enables);
+
+/**
+ * @brief Initialize and write core Vmin values to core exchange.
+ * This should be called once during SCP boot to populate Vmin table for MCP.
+ * @return None
+ */
+void data_proc_scp_tlm_cmpnt_init_core_vmin(void);

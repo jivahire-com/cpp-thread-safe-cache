@@ -62,6 +62,9 @@ mock_target(${TARGET}
     ddrss_pmu_set_event
     config_get_pwr_tlm_mpam_scp_knobs
     power_get_adclk_telem
+    core_info_get_enable_cores_result
+    power_runconfig_get_core_vmin_mv
     pwr_tlm_core_exch_scp_write_droop_counts
     pwr_tlm_core_exch_scp_write_mpam_pmu_counts
+    pwr_tlm_core_exch_scp_write_vmin
 )

@@ -140,6 +140,7 @@ typedef struct {
     uint64_t latest_cstate_exit_timestamp_uS;
     uint16_t latest_voltage_mV;
     uint16_t latest_vcpu_voltage_mV; // for droop count record
+    uint16_t latest_vmin_mV; // Vmin value for this core from SCP
     uint16_t latest_current_mA;
     uint16_t latest_power_mW;
     uint16_t latest_max_value_dC;
@@ -697,7 +698,16 @@ void data_smpl_get_secondary_die_package_cstate(void);
  *
  */
 void data_smpl_update_mpam_mem_power(void);
-/* *
+
+/**
+ * @brief Read Vmin value from SCP and populate the core runtime info structure.
+ *
+ * This function reads the Vmin value for each core , written by SCP via core exchange, 
+ * and updates the corresponding field in the core runtime info structure.
+ */
+void data_smpl_read_and_populate_core_vmin(void);
+
+/**
  * @brief Calculate memory power based on total memory power in mW and update MPAM data.
  *
  * @param[in] total_memory_power_mW - The total memory power in milliwatts.

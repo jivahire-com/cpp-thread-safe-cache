@@ -79,5 +79,10 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_TLM_SERVICE,
                     FPFW_ET_LEVEL_INFO,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, enables))
 
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_TLM_SERVICE,
+                    8,
+                    ScpCoreVminInitialized,
+                    FPFW_ET_LEVEL_INFO)
+
 /*--------- Function Prototypes ----------*/
 

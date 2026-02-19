@@ -1848,7 +1848,7 @@ TEST_FUNCTION(test_data_smpl_process_aging_data, test_setup, test_teardown)
     uint8_t core_id = 0;
     core_aging[core_id].measurement_index = 0;
     core_is_active[core_id] = 1;
-    core_rt[core_id].latest_voltage_mV = 100;
+    core_rt[core_id].latest_vmin_mV = 100;
     core_rt[core_id].latest_max_value_dC = 20;
     core_aging[core_id].measurement_armed = true;
     uint8_t counter_id = core_aging[core_id].measurement_index;
@@ -5189,4 +5189,33 @@ TEST_FUNCTION(test_data_smpl_update_mpam_mem_power_secondary_die, test_setup, te
     // Verify function completes without error
     // On secondary die, the function should exit early without performing calculations
     // This test verifies the die ID check works correctly
+}
+
+TEST_FUNCTION(test_data_smpl_read_and_populate_core_vmin, test_setup, test_teardown)
+{
+    // Test: Verify that data_smpl_read_and_populate_core_vmin correctly reads Vmin values
+    // from core exchange and populates core_rt[] structure
+
+    // Setup: Create test Vmin data (600-667 mV for cores 0-67)
+    uint16_t test_vmin_data[NUMBER_OF_CORES_PER_DIE];
+    for (unsigned int i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
+    {
+        test_vmin_data[i] = (uint16_t)(600 + i);
+    }
+
+    // Clear core_rt to ensure clean state
+    memset(core_rt, 0, sizeof(core_rt));
+
+    // Setup the mock to return the test data
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_vmin, test_vmin_data);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_vmin, 1); // sequence number
+
+    // Call the function under test
+    data_smpl_read_and_populate_core_vmin();
+
+    // Verify: Check that all core Vmin values were populated correctly
+    for (unsigned int core_id = 0; core_id < NUMBER_OF_CORES_PER_DIE; ++core_id)
+    {
+        assert_int_equal(core_rt[core_id].latest_vmin_mV, (600 + core_id));
+    }
 }

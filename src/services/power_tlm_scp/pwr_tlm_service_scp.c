@@ -15,6 +15,7 @@
 #include <FpFwAssert.h>                  // for FPFW_RUNTIME_ASSERT
 #include <FpFwUtils.h>                   // for FPFW_UNUSED
 #include <IFpFwEventTracingGeneration.h> // for FPFW_ET_LOG
+#include <core_info.h>
 #include <ddrss_runtime_api.h>
 #include <fpfw_cfg_mgr.h>
 #include <kng_soc_constants.h>
@@ -134,6 +135,8 @@ void mts_manager_scp_handle_trp_msg(p_trp_msg_t trp_msg)
         {
         case TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH:
             data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(tlm_client_msg->payload.scp_records);
+            // Initialize and write core Vmin values to core exchange
+            data_proc_scp_tlm_cmpnt_init_core_vmin();
             break;
 
         case TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH:
@@ -323,4 +326,30 @@ void data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp(void)
     }
     // Write VM memory power telemetry to SCP telemetry exchange
     pwr_tlm_core_exch_scp_write_mpam_pmu_counts((uint64_t*)pmu_cnt_all);
+}
+
+void data_proc_scp_tlm_cmpnt_init_core_vmin(void)
+{
+    uint16_t vmin_array[NUM_AP_CORES_PER_DIE] = {0};
+    corebits_t* enabled_cores = core_info_get_enable_cores_result();
+
+    // Retrieve Vmin values from power service for each enabled core
+    for (unsigned int core_id = 0; core_id < NUM_AP_CORES_PER_DIE; core_id++)
+    {
+        if (corebits_is_bit_set(enabled_cores, core_id))
+        {
+            int32_t status = power_runconfig_get_core_vmin_mv(core_id, &vmin_array[core_id]);
+            FPFW_RUNTIME_ASSERT_EXT(status == 0, status, core_id, 0, 0);
+        }
+        else
+        {
+            // Core is disabled, set Vmin to 0
+            vmin_array[core_id] = 0;
+        }
+    }
+
+    // Write Vmin values to SCP telemetry exchange
+    pwr_tlm_core_exch_scp_write_vmin(vmin_array);
+
+    FPFW_ET_LOG(ScpCoreVminInitialized);
 }

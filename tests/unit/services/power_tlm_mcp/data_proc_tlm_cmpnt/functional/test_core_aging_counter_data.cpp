@@ -83,7 +83,7 @@ static int32_t test_setup(void** state)
         core_aging[core_id].measurement_index = 0; // Start with first counter pair
 
         // Initialize core runtime voltage and temperature (needed for aging counter metrics)
-        core_rt[core_id].latest_voltage_mV = 1000;  // 1.0V
+        core_rt[core_id].latest_vmin_mV = 1000;     // 1.0V
         core_rt[core_id].latest_max_value_dC = 850; // 85.0°C
     }
 
@@ -141,7 +141,7 @@ static void setup_mock_aging_counter_not_ready(void)
 // 4. Verify: measurement_index incremented to 1
 // 5. Create package: package_create_pwr_core_aging_record()
 // 6. Assert: Package data matches expected values (counter_id=0, aged=12345, unaged=10000,
-//            timestamp=5000000us, voltage_mV=1000, temperature_dC=850)
+//            timestamp=5000000us, vmin_mV=1000, temperature_dC=850)
 TEST_FUNCTION(test_single_core_aging_counter_complete, test_setup, test_teardown)
 {
     // ===== INPUT VALUES =====

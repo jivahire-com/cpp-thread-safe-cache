@@ -12,8 +12,9 @@
 
 extern "C" {
 
-#include <FpFwCMocka.h>        // for check_expected_ptr, mock_type, function_called
-#include <FpFwUtils.h>         // for FPFW_UNUSED
+#include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
+#include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <corebits.h>
 #include <ddrss_runtime_api.h> // for DDRSS_MAX_MC_NUM_PER_DIE, DDRSS_MAX_PWR_TEL_EVT
 #include <kng_soc_constants.h>
 #include <message_transfer_service.h> // for mts_client_flush_incoming_queue
@@ -170,6 +171,15 @@ TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_sync_enables_disabled, test_se
     will_return_count(__wrap_ddrss_pmu_enable, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
     expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
 
+    // Mocks for data_proc_scp_tlm_cmpnt_init_core_vmin (called after handle_enables)
+    // Mock all cores as disabled for simplicity
+    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
+    {
+        will_return(__wrap_core_info_get_enable_cores_result, 0x00000000);
+    }
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_vmin, vmin_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_vmin, 1);
+
     mts_manager_scp_handle_trp_msg(&trp_msg);
 
     assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0000);
@@ -197,6 +207,15 @@ TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_sync_enables_vm_memory_enabled
     expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
     will_return_count(__wrap_ddrss_pmu_enable, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
     expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Mocks for data_proc_scp_tlm_cmpnt_init_core_vmin (called after handle_enables)
+    // Mock all cores as disabled for simplicity
+    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
+    {
+        will_return(__wrap_core_info_get_enable_cores_result, 0x00000000);
+    }
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_vmin, vmin_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_vmin, 1);
 
     mts_manager_scp_handle_trp_msg(&trp_msg);
 
@@ -404,4 +423,99 @@ TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp_cou
 
     // Call the function under test
     data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp();
+}
+
+TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_init_core_vmin_all_cores_enabled, test_setup, test_teardown)
+{
+    // Test with all cores enabled
+    // Mock core_info_get_enable_cores_result to return all cores enabled
+    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
+    {
+        will_return(__wrap_core_info_get_enable_cores_result, 0xFFFFFFFF);
+    }
+
+    // Mock power_runconfig_get_core_vmin_mv for each enabled core
+    for (uint32_t core_id = 0; core_id < NUM_AP_CORES_PER_DIE; core_id++)
+    {
+        expect_value(__wrap_power_runconfig_get_core_vmin_mv, core_id, core_id);
+        will_return(__wrap_power_runconfig_get_core_vmin_mv, 800 + core_id); // Unique Vmin per core
+        will_return(__wrap_power_runconfig_get_core_vmin_mv, 0);             // Success status
+    }
+
+    // Expect FPFW_RUNTIME_ASSERT_EXT calls for each core
+    expect_function_calls(__wrap_FpFwAssertWithArgs, NUM_AP_CORES_PER_DIE);
+
+    // Expect write to core exchange
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_vmin, vmin_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_vmin, 1);
+
+    // Call the function under test
+    data_proc_scp_tlm_cmpnt_init_core_vmin();
+}
+
+TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_init_core_vmin_some_cores_disabled, test_setup, test_teardown)
+{
+    // Test with some cores disabled
+    // Mock core_info_get_enable_cores_result to return pattern with some cores disabled
+    // Enable cores 0, 2, 4, 6, etc. (even cores only)
+    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
+    {
+        will_return(__wrap_core_info_get_enable_cores_result, 0x55555555); // Alternating pattern
+    }
+
+    // Mock power_runconfig_get_core_vmin_mv only for enabled cores
+    for (uint32_t core_id = 0; core_id < NUM_AP_CORES_PER_DIE; core_id++)
+    {
+        // Calculate bit position
+        uint32_t word_idx = core_id / 32;
+        uint32_t bit_idx = core_id % 32;
+        bool is_enabled = (0x55555555 & (1U << bit_idx)) != 0;
+
+        if (is_enabled && word_idx < BITTYPE_COUNT)
+        {
+            expect_value(__wrap_power_runconfig_get_core_vmin_mv, core_id, core_id);
+            will_return(__wrap_power_runconfig_get_core_vmin_mv, 750 + core_id); // Unique Vmin per core
+            will_return(__wrap_power_runconfig_get_core_vmin_mv, 0);             // Success status
+        }
+    }
+
+    // Count enabled cores for FPFW_RUNTIME_ASSERT_EXT expectation
+    uint32_t enabled_count = 0;
+    for (uint32_t core_id = 0; core_id < NUM_AP_CORES_PER_DIE; core_id++)
+    {
+        uint32_t word_idx = core_id / 32;
+        uint32_t bit_idx = core_id % 32;
+        bool is_enabled = (0x55555555 & (1U << bit_idx)) != 0;
+        if (is_enabled && word_idx < BITTYPE_COUNT)
+        {
+            enabled_count++;
+        }
+    }
+    expect_function_calls(__wrap_FpFwAssertWithArgs, enabled_count);
+
+    // Expect write to core exchange
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_vmin, vmin_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_vmin, 1);
+
+    // Call the function under test
+    data_proc_scp_tlm_cmpnt_init_core_vmin();
+}
+
+TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_init_core_vmin_all_cores_disabled, test_setup, test_teardown)
+{
+    // Test with all cores disabled
+    // Mock core_info_get_enable_cores_result to return all cores disabled
+    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
+    {
+        will_return(__wrap_core_info_get_enable_cores_result, 0x00000000);
+    }
+
+    // No power_runconfig_get_core_vmin_mv calls expected since all cores are disabled
+
+    // Expect write to core exchange with all zeros
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_vmin, vmin_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_vmin, 1);
+
+    // Call the function under test
+    data_proc_scp_tlm_cmpnt_init_core_vmin();
 }

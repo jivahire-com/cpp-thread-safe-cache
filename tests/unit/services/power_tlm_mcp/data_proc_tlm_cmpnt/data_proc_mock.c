@@ -220,6 +220,20 @@ void __wrap_pwr_tlm_core_exch_mcp_read_droop_counts(uint64_t (*droop_count_array
     memcpy(*droop_count_array, mock_data, sizeof(uint64_t) * NUM_AP_CORES_PER_DIE);
 }
 
+uint8_t __wrap_pwr_tlm_core_exch_mcp_read_vmin(uint16_t* vmin_array)
+{
+    assert_non_null(vmin_array);
+
+    // Get the mock data pointer passed in the test
+    uint16_t* mock_data = mock_ptr_type(uint16_t*);
+    assert_non_null(mock_data);
+
+    memcpy(vmin_array, mock_data, sizeof(uint16_t) * NUM_AP_CORES_PER_DIE);
+
+    // Return mock sequence number
+    return mock_type(uint8_t);
+}
+
 corebits_t mock_cores_in_die;
 corebits_t* __wrap_core_info_get_enable_cores_result()
 {

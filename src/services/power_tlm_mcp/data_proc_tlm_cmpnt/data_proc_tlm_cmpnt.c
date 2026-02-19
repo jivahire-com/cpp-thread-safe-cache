@@ -52,6 +52,9 @@ void data_proc_tlm_cmpnt_tlm_mode_enter_actions(tlm_operating_mode_t entering_mo
         comp_metrics_reset_d2d_2_min_metrics();
         comp_metrics_reset_24_hrs_metrics();
 
+        // Read and populate Vmin values for all cores from SCP
+        data_smpl_read_and_populate_core_vmin();
+
         // Note:  Enable first counter pair id for each core
         aging_counter_init();
         data_smpl_die_mesh_tlm_init();

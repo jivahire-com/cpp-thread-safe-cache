@@ -99,8 +99,24 @@ void pwr_tlm_core_exch_scp_write_droop_counts(uint64_t (*droop_count_array)[NUM_
  */
 uint8_t  pwr_tlm_core_exch_mcp_read_droop_counts(uint64_t (*droop_count_array)[NUM_AP_CORES_PER_DIE]);
 
-/* @brief Write the MPAM PMU counts(from DDRSS) for the each memory controller specific to MPAMs. This function is intended to be called by the SCP.
+/**
+ * @brief Write the Vmin values for all cores. This function is intended to be called by the SCP during boot.
+ *
+ * @param[in] vmin_array Pointer to the array of Vmin values to write (in millivolts).
+ */
+void pwr_tlm_core_exch_scp_write_vmin(uint16_t *vmin_array);
 
+/**
+ * @brief Read the Vmin values for all cores. This function is intended to be called by the MCP.
+ *
+ * @param[out] vmin_array destination pointer to array where Vmin values will be written (in millivolts).
+ * @return sequence number of the Vmin data. This is used to determine if the data is stale from last read
+ */
+uint8_t pwr_tlm_core_exch_mcp_read_vmin(uint16_t *vmin_array);
+
+/**
+ * @brief Write the MPAM PMU counts(from DDRSS) for the each memory controller specific to MPAMs. This function is intended to be called by the SCP.
+ *
  * @param[in] mpam_pmu_count_array Pointer to the array of MPAM PMU counts to write.
  */
 void pwr_tlm_core_exch_scp_write_mpam_pmu_counts(uint64_t *mpam_pmu_count_array);

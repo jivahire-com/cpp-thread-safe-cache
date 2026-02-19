@@ -108,6 +108,15 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_tlm_mode_enter_actions, test_setup, test_
     die_2_die_exch_init(1);
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
 
+    // Mock for data_smpl_read_and_populate_core_vmin() call
+    uint16_t test_vmin_data[NUMBER_OF_CORES_PER_DIE];
+    for (unsigned int i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
+    {
+        test_vmin_data[i] = (uint16_t)(600 + i);
+    }
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_vmin, test_vmin_data);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_vmin, 1); // sequence number
+
     will_return(__wrap_core_info_get_enable_cores_result, 0xffffffff);
     will_return(__wrap_core_info_get_enable_cores_result, 0xffffffff);
     will_return(__wrap_core_info_get_enable_cores_result, 0xffffffff);

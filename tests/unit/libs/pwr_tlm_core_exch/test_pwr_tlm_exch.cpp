@@ -63,6 +63,37 @@ TEST_FUNCTION(test_droop_counts, test_setup, test_teardown)
     }
 }
 
+TEST_FUNCTION(test_vmin_values, test_setup, test_teardown)
+{
+    uint16_t vmin_array[NUM_AP_CORES_PER_DIE];
+    memset(vmin_array, 0, sizeof(vmin_array));
+
+    // Initialize test data with Vmin values (600-667 mV for cores 0-67)
+    for (size_t i = 0; i < NUM_AP_CORES_PER_DIE; ++i)
+    {
+        vmin_array[i] = (uint16_t)(600 + i);
+    }
+
+    uint16_t verify_array[NUM_AP_CORES_PER_DIE];
+    memset(verify_array, 0x00, sizeof(verify_array));
+
+    pwr_tlm_core_exch_init();
+
+    uint8_t seq_num = pwr_tlm_core_exch_mcp_read_vmin(verify_array);
+    assert_int_equal(seq_num, 0);
+
+    pwr_tlm_core_exch_scp_write_vmin(vmin_array);
+
+    seq_num = pwr_tlm_core_exch_mcp_read_vmin(verify_array);
+    assert_int_equal(seq_num, 1);
+
+    // Verify all Vmin values were written and read correctly
+    for (size_t i = 0; i < NUM_AP_CORES_PER_DIE; ++i)
+    {
+        assert_int_equal(verify_array[i], (600 + i));
+    }
+}
+
 TEST_FUNCTION(test_mpam_pmu_counts, test_setup, test_teardown)
 {
     uint64_t mpam_pmu_count_array[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];

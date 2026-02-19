@@ -10,6 +10,8 @@
 /*------------- Includes -----------------*/
 #include <FpFwCMocka.h> // for check_expected_ptr, mock_type, function_called
 #include <FpFwUtils.h>  // for FPFW_UNUSED
+#include <core_info.h>
+#include <corebits.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <fpfw_cfg_mgr.h>
 #include <in_band_tlm_cmpnt_i.h>
@@ -254,4 +256,32 @@ int __wrap_ddrss_pmu_read_counter_snapshot(uint32_t mc, uint16_t pmu_idx, uint64
     }
 
     return mock_type(int);
+}
+
+corebits_t mock_cores_in_die;
+corebits_t* __wrap_core_info_get_enable_cores_result()
+{
+    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
+    {
+        mock_cores_in_die.bits[i] = mock_type(uint32_t);
+    }
+    return (&mock_cores_in_die);
+}
+
+int32_t __wrap_power_runconfig_get_core_vmin_mv(uint32_t core_id, uint16_t* p_vmin_mv)
+{
+    check_expected(core_id);
+
+    if (p_vmin_mv != NULL)
+    {
+        *p_vmin_mv = mock_type(uint16_t);
+    }
+
+    return mock_type(int32_t);
+}
+
+void __wrap_pwr_tlm_core_exch_scp_write_vmin(uint16_t* vmin_array)
+{
+    check_expected_ptr(vmin_array);
+    function_called();
 }

@@ -549,5 +549,6 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_TLM_SERVICE,
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, interface_id),
                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, event_number))
 
+
 /*--------- Function Prototypes ----------*/
 

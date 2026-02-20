@@ -125,14 +125,20 @@ Function Install-AzCli()
     Write-Host $Message -NoNewLine -ForegroundColor Cyan
 
     $ExpectedPath = "${env:ProgramFiles(x86)}\Microsoft SDKs\Azure\CLI2\wbin\"
+    $AlternatePath = "${env:ProgramFiles}\Microsoft SDKs\Azure\CLI2\wbin\"
+
+    if (Test-Path $AlternatePath)
+    {
+        $ExpectedPath = $AlternatePath
+    }
 
     if (-not (Test-Path $ExpectedPath))
     {
         # Uninstall existing Azure CLI if present
-        Get-WmiObject -Class Win32_Product |
+        Get-CimInstance -ClassName Win32_Product |
             Where-Object { $_.Name -match "Azure CLI" } |
             ForEach-Object {
-                $_.Uninstall() | Out-Null
+                Invoke-CimMethod -InputObject $_ -MethodName Uninstall | Out-Null
             }
 
         # Install version 2.73.0
@@ -162,6 +168,7 @@ Function Install-AzCli()
     }
     else
     {
+        $env:Path += ";$ExpectedPath"
         try
         {
             $Return = Invoke-Executable -exe "az" -exeArgs 'extension add --name azure-devops'
@@ -172,7 +179,6 @@ Function Install-AzCli()
             Write-Host $Return
         }
         Write-Host "Exists" -ForegroundColor Green
-        $env:Path += ";$ExpectedPath"
     }
 
 }

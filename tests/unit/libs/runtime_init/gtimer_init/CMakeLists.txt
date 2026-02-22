@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         ms::lib::register_headers
         ms::lib::scp_interrupts
         ms::lib::systick_update
+        ms::lib::utils
         silibs::idsw
         silibs::idsw_kng
         silibs::kng_silibs_platform
@@ -47,6 +48,8 @@ mock_target(${TARGET}
     idsw_get_platform_sdv
     gtimer_prodfw_init
     systick_get_emcpu_clock
+    delay_init
+    gtimer_prodfw_get_counter
     idsw_get_cpu_type
     boot_status_notify_extd
     idsw_get_die_id

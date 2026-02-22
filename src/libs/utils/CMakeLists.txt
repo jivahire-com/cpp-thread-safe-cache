@@ -18,9 +18,7 @@ target_link_libraries(
     PUBLIC
         ms::lib::arm_intrinsic
         ms::lib::corebits
-
 )
-
 
 lint_target(${TARGET})
 format_target(${TARGET})

@@ -929,6 +929,12 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_
 
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
+    /* Expect event flag set from notify_ddr_buffer_available() */
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1057,6 +1063,12 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die
     // Since SCP, expect a Cache Invalidate call
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
+
+    /* Expect event flag set from notify_ddr_buffer_available() */
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -1342,6 +1354,12 @@ TEST_FUNCTION(test_etr_process_request_read_package_notification, test_setup_die
 
     // Set both accelerators to be isolated for branch coverage
     accel_isolation = true;
+
+    /* Expect event flag set from notify_ddr_buffer_available() */
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -1745,8 +1763,42 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup_die0, test_teardow
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
-    /* Expect a SCP Notification since there are no pending buffers */
-    expect_function_call(__wrap_mts_client_send_dcp_notification);
+    /* Expect event flag set from notify_ddr_buffer_available() since the dcp client is running */
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die_buffers_pending, test_setup_die0, test_teardown)
+{
+    // The HSP ICC interface simply handles a request, sends a response, and sets up another receive
+    will_return(__wrap_fpfw_icc_base_send_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+
+    static hsp_log_payload_header_t test_payload_pending = {
+        .output_header =
+            {
+                .manifest_size = 10,
+                .log_size = 10,
+            },
+    };
+    will_return_always(__wrap_idsw_get_die_id, DIE_0);
+    etr_set_override_atu_test_address(&test_payload_pending);
+
+    /* Override number of pending buffers to a non-zero value */
+    set_num_buffers_pending(3);
+
+    expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
+
+    /* Expect event flag set from notify_ddr_buffer_available() even with buffers pending since the dcp client is running */
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
 }

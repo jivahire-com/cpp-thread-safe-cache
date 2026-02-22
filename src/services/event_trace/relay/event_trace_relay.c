@@ -895,9 +895,10 @@ void notify_ddr_buffer_available()
      */
     if (primary_instance)
     {
-        if ((num_buffers_pending == 0) && (evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING))
+        if (evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING)
         {
-            mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+            UINT tx_status = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION, TX_OR);
+            BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
         }
     }
     else

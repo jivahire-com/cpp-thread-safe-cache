@@ -90,6 +90,7 @@ static etr_service_config_t s_test_config = {
 
 extern DFWK_ASYNC_REQUEST_DISPATCH dfwk_cb;
 extern void* dfwk_cb_ctx;
+void event_trace_relay_quiesce_reset(void);
 
 /*------------- Functions ----------------*/
 
@@ -152,20 +153,6 @@ void __wrap_mts_client_send_dcp_notification(mts_client_id_t client_id, dcp_noti
     FPFW_UNUSED(client_id);
     FPFW_UNUSED(notification);
     function_called();
-}
-
-FPFW_LOCK_STATE __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
-{
-    FPFW_UNUSED(Lock);
-    return 0;
-}
-
-void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
-{
-    FPFW_UNUSED(Lock);
-    FPFW_UNUSED(OldState);
-
-    // Do Nothing - just an empty mock
 }
 
 void __wrap_SCB_InvalidateDCache_by_Addr(uint32_t* addr, int32_t dsize)
@@ -259,12 +246,40 @@ bool __wrap_accel_is_isolation_enabled(ACCEL_ID accel_type)
     return mock_type(bool);
 }
 
+void __wrap_FpFwLockInitialize(PFPFW_LOCK Lock)
+{
+    assert_non_null(Lock);
+
+    function_called();
+}
+
+FPFW_LOCK_STATE __wrap_FpFwLockAcquire(PFPFW_LOCK Lock)
+{
+    assert_non_null(Lock);
+
+    function_called();
+
+    return mock_type(FPFW_LOCK_STATE);
+}
+
+void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
+{
+    assert_non_null(Lock);
+    check_expected(OldState);
+
+    function_called();
+}
+
 } // extern "C"
 static inline void test_setup_common()
 {
     memset(&s_test_context, 0, sizeof(s_test_context));
     memset(&s_asic_ddr_memory, 0, sizeof(s_asic_ddr_memory));
     memset(&s_hsp_ddr_memory, 0, sizeof(s_hsp_ddr_memory));
+
+    // Reset cross-test globals/statics
+    accel_isolation = false;
+    event_trace_relay_quiesce_reset();
 
     // Setup the threadx expectations
     expect_any(__wrap__txe_block_pool_create, pool_ptr);
@@ -328,6 +343,11 @@ static inline void test_setup_common()
     // accel_isolation can be modified by the tests without needing code changes
     will_return_always(__wrap_accel_is_isolation_enabled, accel_isolation);
 
+    expect_function_call(__wrap_FpFwLockInitialize);
+
+    // Expect quiesce timer creation during dfwk init
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
+
     etr_initialize(&s_test_context, &s_test_config);
 }
 
@@ -364,8 +384,22 @@ int test_teardown(void** ppContext)
 
 void setup_quiesce_acks()
 {
+    will_return(__wrap_FpFwLockAcquire, 0x1234);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
+    expect_function_call(__wrap_FpFwLockRelease);
     event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SDM);
+
+    will_return(__wrap_FpFwLockAcquire, 0x1234);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
+    expect_function_call(__wrap_FpFwLockRelease);
     event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_CDED_SDM);
+
+    will_return(__wrap_FpFwLockAcquire, 0x1234);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
+    expect_function_call(__wrap_FpFwLockRelease);
     event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SCP);
 }
 
@@ -1827,21 +1861,100 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_secondary_die, test_setup_die1, test_teard
     etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_etr_dfwk_cb, NULL, NULL)
+TEST_FUNCTION(test_etr_dfwk_cb, test_setup_die0, test_teardown)
 {
     DFWK_ASYNC_REQUEST_HEADER request;
-
     request.RequestType = SSI_QUIESCE_ASYNC;
 
+    will_return(__wrap_FpFwLockAcquire, 0x1234);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
+    expect_function_call(__wrap_FpFwLockRelease);
+
+    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
     dfwk_cb(&request, dfwk_cb_ctx);
 }
 
-TEST_FUNCTION(test_etr_dfwk_completion, NULL, NULL)
+TEST_FUNCTION(test_etr_dfwk_completion, test_setup_die0, test_teardown)
 {
     DFWK_ASYNC_REQUEST_HEADER request;
-
     request.RequestType = SSI_QUIESCE_ASYNC;
 
     setup_quiesce_acks();
+    dfwk_cb(&request, dfwk_cb_ctx);
+}
+
+TEST_FUNCTION(test_etr_dfwk_quiesce_deferred_then_satisfied, test_setup_die0, test_teardown)
+{
+    DFWK_ASYNC_REQUEST_HEADER request = {0};
+    request.RequestType = SSI_QUIESCE_ASYNC;
+
+    // Dispatch with flags not yet satisfied - timer should be activated
+    will_return(__wrap_FpFwLockAcquire, 0x1234);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
+    expect_function_call(__wrap_FpFwLockRelease);
+    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
+    dfwk_cb(&request, dfwk_cb_ctx);
+
+    // Now send all quiesce acks - timer should be deactivated and request completed
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    setup_quiesce_acks();
+}
+
+TEST_FUNCTION(test_etr_dfwk_quiesce_immediate_completion, test_setup_die0, test_teardown)
+{
+    DFWK_ASYNC_REQUEST_HEADER request = {0};
+    request.RequestType = SSI_QUIESCE_ASYNC;
+
+    // Send all quiesce acks before dispatching the SSI request
+    setup_quiesce_acks();
+
+    // Flags already satisfied - request completes immediately without timer
+    dfwk_cb(&request, dfwk_cb_ctx);
+}
+
+TEST_FUNCTION(test_etr_dfwk_quiesce_partial_acks_then_dispatch, test_setup_die0, test_teardown)
+{
+    DFWK_ASYNC_REQUEST_HEADER request = {0};
+    request.RequestType = SSI_QUIESCE_ASYNC;
+
+    // Send partial quiesce acks (only SDM and SCP, missing CDED_SDM)
+    will_return(__wrap_FpFwLockAcquire, 0x1234);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
+    expect_function_call(__wrap_FpFwLockRelease);
+    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SDM);
+
+    will_return(__wrap_FpFwLockAcquire, 0x1234);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
+    expect_function_call(__wrap_FpFwLockRelease);
+    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SCP);
+
+    // Dispatch with flags not yet fully satisfied - timer should be activated
+    will_return(__wrap_FpFwLockAcquire, 0x1234);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
+    expect_function_call(__wrap_FpFwLockRelease);
+    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
+    dfwk_cb(&request, dfwk_cb_ctx);
+
+    // Send remaining ack - timer should be deactivated and request completed
+    will_return(__wrap_FpFwLockAcquire, 0x1234);
+    expect_function_call(__wrap_FpFwLockAcquire);
+    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
+    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
+    expect_function_call(__wrap_FpFwLockRelease);
+    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_CDED_SDM);
+}
+
+TEST_FUNCTION(test_etr_dfwk_quiesce_non_quiesce_request, test_setup_die0, test_teardown)
+{
+    DFWK_ASYNC_REQUEST_HEADER request = {0};
+
+    // Use a non-quiesce request type - should complete immediately via default case
+    request.RequestType = SSI_QUIESCE_ASYNC + 1;
+
     dfwk_cb(&request, dfwk_cb_ctx);
 }

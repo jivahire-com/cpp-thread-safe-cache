@@ -49,6 +49,9 @@ mock_target(${TARGET}
     _txe_event_flags_create
     _txe_event_flags_get
     _txe_event_flags_set
+    _txe_timer_create
+    _txe_timer_activate
+    _txe_timer_deactivate
     
     fpfw_icc_base_recv
     fpfw_icc_base_send_sync
@@ -85,4 +88,8 @@ mock_target(${TARGET}
     DfwkAsyncRequestComplete
 
     sos_register_ssi
+
+    FpFwLockInitialize
+    FpFwLockAcquire
+    FpFwLockRelease
 )

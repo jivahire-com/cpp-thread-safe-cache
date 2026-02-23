@@ -73,8 +73,14 @@ class pldm_platform(pldm_common):
         )
 
     def setup(self):
-        setup_status = super().setup(
-            keep_pldm_service_active=True
+        setup_status = super().setup(keep_pldm_service_active=True)
+        if setup_status is False:
+            return False
+        return True
+
+    def setup_by_copy(self, dut, log, bmc_cli, core_mcp_channel, mctp_eid_list):
+        setup_status = super().setup_by_copy(
+            dut, log, bmc_cli, core_mcp_channel, mctp_eid_list
         )
         if setup_status is False:
             return False

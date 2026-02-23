@@ -15,6 +15,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "kng_pythia_libs")
 
 from kng_pythia_test_setup import KngPythiaTestSetup
 from library.pldm_tests.pldm_common import pldm_common
+from library.pldm_tests.pldm_spec_parser import pldm_spec_parser
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 from pathlib import Path
@@ -67,6 +68,19 @@ class pldm_sensors_effecters(pldm_common):
 
     def setup(self):
         setup_status = super().setup()
+        if setup_status is False:
+            return False
+        self.numeric_sensor_limit = self.pldm_spec.get_numeric_sensor_limit()
+        self.state_sensor_limit = self.pldm_spec.get_state_sensor_limit()
+        self.numeric_effecter_limit = self.pldm_spec.get_numeric_effecter_limit()
+        self.state_effecter_limit = self.pldm_spec.get_state_effecter_limit()
+        self.__parse_pdr_records()
+        return True
+
+    def setup_by_copy(self, dut, log, bmc_cli, core_mcp_channel, mctp_eid_list):
+        setup_status = super().setup_by_copy(
+            dut, log, bmc_cli, core_mcp_channel, mctp_eid_list
+        )
         if setup_status is False:
             return False
         self.numeric_sensor_limit = self.pldm_spec.get_numeric_sensor_limit()

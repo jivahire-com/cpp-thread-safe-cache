@@ -44,3 +44,4 @@
 ./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
 ./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
 ./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
+./../../../tests/functional/test_suites/pldm_tests/pldm_stress.robot

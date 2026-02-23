@@ -270,7 +270,21 @@ void __wrap_FpFwLockRelease(PFPFW_LOCK Lock, FPFW_LOCK_STATE OldState)
     function_called();
 }
 
+uint64_t __wrap_utc_sync_client_get_current_time_epoch_ms(void)
+{
+    return mock_type(uint64_t);
+}
+
+uint64_t __wrap_gtimer_get_timestamp_ms(void)
+{
+    return mock_type(uint64_t);
+}
+
 } // extern "C"
+
+// Forward declare fake_core_buffer so test_setup_common can reset it
+extern FPFW_ET_CORE_BUFFER_HEADER fake_core_buffer;
+
 static inline void test_setup_common()
 {
     memset(&s_test_context, 0, sizeof(s_test_context));
@@ -280,6 +294,13 @@ static inline void test_setup_common()
     // Reset cross-test globals/statics
     accel_isolation = false;
     event_trace_relay_quiesce_reset();
+
+    // Reset fake_core_buffer fields that may be modified by previous tests
+    fake_core_buffer.StartAsicTimeStamp = 50;
+    fake_core_buffer.EndAsicTimeStamp = 100;
+    fake_core_buffer.StartUTCTimeStamp = 50;
+    fake_core_buffer.EndUTCTimeStamp = 100;
+    fake_core_buffer.UsedBytes = 1000;
 
     // Setup the threadx expectations
     expect_any(__wrap__txe_block_pool_create, pool_ptr);
@@ -492,9 +513,9 @@ TEST_FUNCTION(test_etr_init_nominal, test_setup_die0, test_teardown)
 // Mock Structures to pass on to the ETR functions
 FPFW_ET_CORE_BUFFER_HEADER fake_core_buffer = {
     .ManifestId = {0},
-    .StartAsicTimeStamp = 0,
+    .StartAsicTimeStamp = 50,
     .EndAsicTimeStamp = 100,
-    .StartUTCTimeStamp = 0,
+    .StartUTCTimeStamp = 50,
     .EndUTCTimeStamp = 100,
     .ETVersion = 0,
     // .CoreId = CPU_SDM,
@@ -902,6 +923,12 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_available, test_setup_d
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
 
+    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
@@ -956,6 +983,12 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_
 
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
 
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
@@ -1019,6 +1052,12 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup_
 
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
 
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
@@ -1089,6 +1128,12 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die
 
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
 
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);

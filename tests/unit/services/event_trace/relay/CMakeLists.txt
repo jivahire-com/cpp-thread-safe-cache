@@ -82,6 +82,9 @@ mock_target(${TARGET}
 
     FPFwETControllerRecycleBuffer
 
+    utc_sync_client_get_current_time_epoch_ms
+    gtimer_get_timestamp_ms
+
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize

@@ -22,12 +22,14 @@ target_link_libraries(
         fwlib.lib.interface.platform.specialization.mts
         fwlib.service.iccBase
         fwlib.service.mts
+        fwlib.service.utc_sync.client
         ms::cmsis::interface
         ms::lib::accelerator_ip
         ms::lib::crash_dump
         ms::lib::ddr_manager
         ms::lib::error_codes
         ms::lib::event_trace::trace
+        ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         ms::lib::register_headers
         ms::service::atu_service

@@ -4,7 +4,6 @@ utc_sync_test.py - Python based Pythia 2.0 Test.
 Validates UTC time synchronization between BMC and MCP firmware
 using the 'utc time' MCP CLI command.
 """
-import re
 import time
 import sys
 from pathlib import Path
@@ -24,10 +23,10 @@ class utc_sync_test(pldm_common):
 
     def __init__(
         self,
-        workspace_config: Path | str = None,
-        default_log_home: str = None,
-        fw_payload_path: str = None,
-        host_config: Path | str = None,
+        workspace_config: Path | str | None = None,
+        default_log_home: str | None = None,
+        fw_payload_path: str | None = None,
+        host_config: Path | str | None = None,
         name: str = "utc_sync_test",
         number: str = "NaN",
         dut_platform: str = "KingsgateSVP",
@@ -62,7 +61,7 @@ class utc_sync_test(pldm_common):
 
             return True
         except Exception as e:
-            self.log.error(f"Error during DUT setup: {str(e)}")
+            self.log.error(f"Error during DUT setup: {e}", exc_info=True)
             return False
 
     def teardown_dut(self) -> bool:
@@ -72,7 +71,7 @@ class utc_sync_test(pldm_common):
             time.sleep(30)
             return True
         except Exception as e:
-            self.log.error(f"Error during DUT teardown: {str(e)}")
+            self.log.error(f"Error during DUT teardown: {e}", exc_info=True)
             return False
 
     # ── Helper Methods ──

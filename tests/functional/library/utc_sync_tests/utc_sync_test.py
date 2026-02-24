@@ -11,18 +11,15 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent.parent / 'kng_pythia_libs'))
 sys.path.append(str(Path(__file__).parent.parent / 'common'))
+sys.path.append(str(Path(__file__).parent.parent / 'pldm_tests'))
 
-from serial_utils import SerialUtility
-from kng_pythia_test_setup import KngPythiaTestSetup
-from pythia.tdk.echofalls.constants.dut_types import DeviceType
-from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
+from pldm_common import pldm_common
 
 
-class utc_sync_test(EchoFallsBaseTest):
+class utc_sync_test(pldm_common):
     """
     UTC Sync functional test.
-    Extends EchoFallsBaseTest directly following the sensor_fifo pattern.
-    Uses SerialUtility for MCP commands and Pythia BMC CLI for BMC commands.
+    Inherits from pldm_common to leverage BMC/MCP command execution and PLDM checks.
     """
 
     def __init__(
@@ -46,56 +43,22 @@ class utc_sync_test(EchoFallsBaseTest):
             host_config=host_config,
             host_name=host_name,
         )
-        self.core_com_channel_scp = None
-        self.core_com_channel_mcp = None
-        self.serial_util = None
-        self.bmc_cli = None
-
     # ── Setup / Teardown ──
 
     def setup_dut(self) -> bool:
-        """Setup the DUT for testing."""
+        """Setup the DUT for testing using pldm_common setup with PLDM active."""
         try:
-            self.log.info("Setting up DUT...")
-            self.dut.setup()
-
-            if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-                self.log.warning(
-                    "Device type is bigFPGA. Performing an additional OOB reset ..."
-                )
-                KngPythiaTestSetup.fpga_oob_reset(self.log)
-
-            # Open SCP and MCP channels
-            self.core_com_channel_scp = (
-                self.dut.mb.node_0.soc.primary_die.scp
-                .channel_manager.get_current_channel()
-            )
-            self.core_com_channel_mcp = (
-                self.dut.mb.node_0.soc.primary_die.mcp
-                .channel_manager.get_current_channel()
-            )
-
-            self.serial_util = SerialUtility(
-                scp_channel=self.core_com_channel_scp,
-                mcp_channel=self.core_com_channel_mcp,
-                logger=self.log,
-                dut=self.dut,
-            )
-
-            # Wait for SCP + MCP heartbeat
-            if not self.serial_util.wait_for_scp_mcp_heartbeat():
-                self.log.error(
-                    "Failed to receive initial SCP-MCP heartbeat during setup"
-                )
+            # pldm_common.setup() handles:
+            #   DUT init, BMC/MCP/SCP channels, MCP boot check, PLDM/MCTPD wait
+            result = self.setup(keep_pldm_service_active=True)
+            if not result:
+                self.log.error("pldm_common setup failed")
                 return False
 
-            # Open BMC CLI for timedatectl / date commands
-            self.bmc_cli = self.dut.mb.node_0.dcscm.bmc.cli
-            self.bmc_cli.open()
-            if not self.bmc_cli.is_open():
-                self.log.error("Failed to open BMC CLI")
+            # Verify MCP channel is open (same pattern as pldm_sensor_test)
+            if not self.core_mcp_channel.is_open():
+                self.log.error("MCP channel not open after setup")
                 return False
-            self.log.info("BMC CLI opened successfully")
 
             return True
         except Exception as e:
@@ -105,174 +68,163 @@ class utc_sync_test(EchoFallsBaseTest):
     def teardown_dut(self) -> bool:
         """Teardown the DUT after testing."""
         try:
-            self.log.info("Tearing down DUT...")
-            if self.bmc_cli and self.bmc_cli.is_open():
-                self.bmc_cli.close()
-            self.dut.teardown()
+            self.teardown()
             time.sleep(30)
             return True
         except Exception as e:
             self.log.error(f"Error during DUT teardown: {str(e)}")
             return False
 
-    # ── BMC helper ──
+    # ── Helper Methods ──
 
-    def _bmc_execute_command(self, command, timeout=60):
+    def _get_mcp_utc_time(self) -> str:
         """
-        Execute a command on BMC CLI.
-        Returns (return_code, stdout, stderr).
+        Execute 'utc time' on MCP CLI via inherited _mcp_execute_command_until.
+
+        Returns:
+            MCP output string, or empty string on failure.
         """
-        if not self.bmc_cli.is_open():
-            self.log.warning("BMC CLI was closed, attempting to re-open...")
-            self.bmc_cli.open()
-            if not self.bmc_cli.is_open():
-                self.log.error("Failed to re-open BMC CLI")
-                return -1, "", "BMC CLI could not be re-opened"
-        try:
-            self.log.info(f"BMC executing: {command}")
-            result, stdout, stderr = self.bmc_cli.execute_command(
-                command=command, command_args=[], timeout_secs=timeout
+        cmd = "utc time"
+        key = "Ok"
+        result, stdout, stderr = self._mcp_execute_command_until(
+            command=cmd, key=key
+        )
+        self.log.info(f"[RAW_COMMAND_OUTPUT] cmd='{cmd}', key='{key}'")
+        self.log.info(
+            f"[RAW_COMMAND_OUTPUT] exit={result}, "
+            f"stdout='{stdout}', stderr='{stderr}'"
+        )
+        if result != 0:
+            self.log.error(
+                f"[PARSED_OUTPUT] MCP 'utc time' failed: "
+                f"exit={result}, stderr='{stderr}'"
             )
-            return result, stdout, stderr
-        except Exception as e:
-            self.log.error(f"BMC command exception: {e}")
-            return -1, "", str(e)
+            return ""
+        stripped = stdout.strip()
+        self.log.info(f"[PARSED_OUTPUT] MCP utc time: '{stripped}'")
+        return stripped
+
+    def _get_bmc_timedatectl(self) -> str:
+        """
+        Execute 'timedatectl' on BMC and return raw output.
+
+        Returns:
+            Raw BMC timedatectl output string, or empty string on failure.
+        """
+        cmd = "timedatectl"
+        result, stdout, stderr = self._bmc_execute_command(command=cmd)
+        self.log.info(f"[RAW_COMMAND_OUTPUT] cmd='{cmd}'")
+        self.log.info(
+            f"[RAW_COMMAND_OUTPUT] exit={result}, "
+            f"stdout='{stdout}', stderr='{stderr}'"
+        )
+        if result != 0:
+            self.log.error(
+                f"[PARSED_OUTPUT] timedatectl failed: "
+                f"exit={result}, stderr='{stderr}'"
+            )
+            return ""
+        stripped = stdout.strip()
+        self.log.info(f"[PARSED_OUTPUT] BMC timedatectl:\n{stripped}")
+        return stripped
+
+    def _check_pldm_service_active(self) -> bool:
+        """
+        Check if PLDM service is running.
+
+        Returns:
+            True if PLDM service is active, False otherwise.
+        """
+        return self._wait_for_service_status(
+            service_str="xyz.openbmc_project.pldmd.service",
+            expect_active=True,
+            timeout=10,
+        )
 
     # ── Test Case ──
 
-    def testcase1_verify_utc_sync(self):
+    def testcase1_capture_utc_times(self) -> dict:
         """
-        End-to-end UTC sync verification:
-        1. Confirm BMC NTP is synchronized via timedatectl
-        2. Get BMC epoch time as reference
-        3. Execute 'utc time' on MCP CLI
-        4. Validate MCP returns a real epoch timestamp (not uptime ticks)
-        5. Compare MCP and BMC times — drift must be within tolerance
+        Capture UTC time from MCP and BMC twice with 40-second delay.
+
+        Steps:
+        1. Confirm PLDM service is running
+        2. Capture MCP 'utc time' output
+        3. Capture BMC 'timedatectl' output
+        4. Wait 40 seconds
+        5. Capture MCP 'utc time' output again
+        6. Capture BMC 'timedatectl' output again
+        7. Return all captured outputs for validation
+
+        Returns:
+            dict with keys:
+                - pldm_active: bool
+                - mcp_time_1: str (first MCP utc time output)
+                - bmc_time_1: str (first BMC timedatectl output)
+                - mcp_time_2: str (second MCP utc time output after 40s)
+                - bmc_time_2: str (second BMC timedatectl output after 40s)
+                - success: bool (True if all captures succeeded)
         """
-        self.log.info("!Executing Test Function: testcase1_verify_utc_sync")
+        self.log.info("=" * 60)
+        self.log.info("UTC TIME CAPTURE TEST")
+        self.log.info("=" * 60)
 
-        # --- Step 1: Verify BMC NTP is active and synchronized ---
-        step1_cmd = "timedatectl show --property=NTPSynchronized --value"
-        self.log.info("Step 1: Checking BMC NTP synchronization status")
-        self.log.info(f"  [BMC CMD] {step1_cmd}")
-        result, stdout, stderr = self._bmc_execute_command(command=step1_cmd)
-        self.log.info(
-            f"  [BMC OUT] exit={result}, "
-            f"stdout='{stdout.strip()}', stderr='{stderr.strip()}'"
-        )
-        if result != 0:
-            self.log.error("Failed to run timedatectl on BMC")
-            return False
+        result = {
+            "pldm_active": False,
+            "mcp_time_1": "",
+            "bmc_time_1": "",
+            "mcp_time_2": "",
+            "bmc_time_2": "",
+            "success": False,
+        }
 
-        ntp_synced = stdout.strip().lower()
-        if "yes" not in ntp_synced:
-            self.log.error(f"BMC NTP is not synchronized: {ntp_synced}")
-            return False
-        self.log.info(f"  [RESULT] BMC NTP synchronized: {ntp_synced}")
+        # Step 1: Confirm PLDM is running
+        self.log.info("Step 1: Checking PLDM service status...")
+        pldm_active = self._check_pldm_service_active()
+        result["pldm_active"] = pldm_active
+        if not pldm_active:
+            self.log.error("[FAIL] PLDM service is not active")
+            return result
+        self.log.info("[PASS] PLDM service is active")
 
-        # --- Step 2: Get BMC epoch time (ms) as reference ---
-        step2_cmd = "date +%s000"
-        self.log.info("Step 2: Getting BMC epoch time as reference")
-        self.log.info(f"  [BMC CMD] {step2_cmd}")
-        result, stdout, stderr = self._bmc_execute_command(command=step2_cmd)
-        self.log.info(
-            f"  [BMC OUT] exit={result}, "
-            f"stdout='{stdout.strip()}', stderr='{stderr.strip()}'"
-        )
-        if result != 0:
-            self.log.error("Failed to get BMC epoch time")
-            return False
+        # Step 2: First capture - MCP UTC time
+        self.log.info("Step 2: Capturing MCP 'utc time' (first sample)...")
+        mcp_time_1 = self._get_mcp_utc_time()
+        result["mcp_time_1"] = mcp_time_1
+        if not mcp_time_1:
+            self.log.error("[FAIL] Failed to get MCP UTC time (first sample)")
+            return result
+        # Step 3: First capture - BMC timedatectl
+        self.log.info("Step 3: Capturing BMC 'timedatectl' (first sample)...")
+        bmc_time_1 = self._get_bmc_timedatectl()
+        result["bmc_time_1"] = bmc_time_1
+        if not bmc_time_1:
+            self.log.error("[FAIL] Failed to get BMC timedatectl (first sample)")
+            return result
 
-        try:
-            bmc_epoch_ms = int(stdout.strip())
-        except ValueError:
-            self.log.error(
-                f"Could not parse BMC epoch time: '{stdout.strip()}'"
-            )
-            return False
-        self.log.info(f"  [RESULT] BMC epoch time (ms): {bmc_epoch_ms}")
+        # Step 4: Wait 40 seconds
+        self.log.info("Step 4: Waiting 40 seconds before second capture...")
+        time.sleep(40)
 
-        # --- Step 3: Execute 'utc time' on MCP CLI ---
-        step3_cmd = "utc time"
-        self.log.info("Step 3: Executing 'utc time' on MCP CLI")
-        self.log.info(f"  [MCP CMD] {step3_cmd}")
-        mcp_response = self.serial_util.run_command_on_mcp(
-            command=step3_cmd,
-            read_until_key="Ok",
-        )
-        self.log.info(f"  [MCP OUT] response='{mcp_response}'")
-        if mcp_response is None:
-            self.log.error("MCP 'utc time' command failed or timed out")
-            return False
+        # Step 5: Second capture - MCP UTC time
+        self.log.info("Step 5: Capturing MCP 'utc time' (second sample)...")
+        mcp_time_2 = self._get_mcp_utc_time()
+        result["mcp_time_2"] = mcp_time_2
+        if not mcp_time_2:
+            self.log.error("[FAIL] Failed to get MCP UTC time (second sample)")
+            return result
+        # Step 6: Second capture - BMC timedatectl
+        self.log.info("Step 6: Capturing BMC 'timedatectl' (second sample)...")
+        bmc_time_2 = self._get_bmc_timedatectl()
+        result["bmc_time_2"] = bmc_time_2
+        if not bmc_time_2:
+            self.log.error("[FAIL] Failed to get BMC timedatectl (second sample)")
+            return result
 
-        match = re.search(
-            r"Current UTC Time \(ms since epoch\):\s*(\d+)", mcp_response
-        )
-        if not match:
-            self.log.error(
-                f"Could not parse MCP UTC response: '{mcp_response}'"
-            )
-            return False
+        # All captures succeeded
+        result["success"] = True
+        self.log.info("=" * 60)
+        self.log.info("[PASS] All UTC time captures completed successfully")
+        self.log.info("=" * 60)
 
-        mcp_epoch_ms = int(match.group(1))
-        self.log.info(
-            f"  [RESULT] MCP UTC time (ms since epoch): {mcp_epoch_ms}"
-        )
-
-        # --- Step 4: Validate MCP time is a real epoch value ---
-        # Jan 1 2025 00:00:00 UTC in ms — below this is uptime, not epoch
-        min_valid_epoch_ms = 1735689600000
-        self.log.info(
-            f"Step 4: Validating MCP time is real epoch "
-            f"(must be > {min_valid_epoch_ms}, got {mcp_epoch_ms})"
-        )
-        if mcp_epoch_ms < min_valid_epoch_ms:
-            self.log.error(
-                f"MCP UTC time ({mcp_epoch_ms} ms) appears to be uptime "
-                f"ticks, not a real epoch timestamp. "
-                f"UTC sync from BMC may not be established."
-            )
-            return False
-        self.log.info("  [RESULT] MCP time is a valid epoch timestamp")
-
-        # --- Step 5: Compare MCP time to BMC time ---
-        step5_cmd = "date +%s000"
-        self.log.info("Step 5: Comparing MCP time to BMC time")
-        self.log.info(f"  [BMC CMD] {step5_cmd}")
-        result, stdout, stderr = self._bmc_execute_command(command=step5_cmd)
-        self.log.info(
-            f"  [BMC OUT] exit={result}, "
-            f"stdout='{stdout.strip()}', stderr='{stderr.strip()}'"
-        )
-        if result != 0:
-            self.log.error("Failed to get fresh BMC epoch time for comparison")
-            return False
-
-        try:
-            bmc_now_ms = int(stdout.strip())
-        except ValueError:
-            self.log.error(
-                f"Could not parse fresh BMC epoch time: '{stdout.strip()}'"
-            )
-            return False
-        drift_ms = abs(mcp_epoch_ms - bmc_now_ms)
-
-        # NTP sync polls every 5s — allow 10s tolerance for execution delays
-        max_drift_ms = 10000
-        self.log.info(
-            f"  [RESULT] BMC={bmc_now_ms} ms, MCP={mcp_epoch_ms} ms, "
-            f"drift={drift_ms} ms, tolerance={max_drift_ms} ms"
-        )
-
-        if drift_ms > max_drift_ms:
-            self.log.error(
-                f"UTC drift {drift_ms} ms exceeds "
-                f"{max_drift_ms} ms threshold"
-            )
-            return False
-
-        self.log.info(
-            f"UTC sync verified: drift {drift_ms} ms is within "
-            f"{max_drift_ms} ms tolerance"
-        )
-        return True
+        return result

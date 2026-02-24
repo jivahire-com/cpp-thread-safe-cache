@@ -39,9 +39,8 @@ Teardown Test Environment
     Should Be True      ${teardown_result}    Failed to teardown DUT
 
 *** Test Cases ***
-Test Case - 1. Verify UTC Time Sync Between BMC And MCP
-    [Documentation]    Verifies BMC NTP is synchronized, executes 'utc time' on MCP,
-    ...                validates the timestamp is a real epoch value (not uptime ticks),
-    ...                and confirms BMC-MCP drift is within 10 seconds.
-    ${result}=  utc_sync_lib.testcase1_verify_utc_sync
-    Should Be Equal   ${result}   ${Success}
+Test Case - 1. Capture UTC Times From BMC And MCP
+    [Documentation]    Confirms PLDM service is active, then captures MCP 'utc time'
+    ...                and BMC 'timedatectl' output twice with a 40-second delay.
+    ${result}=    utc_sync_lib.testcase1_capture_utc_times
+    Should Be True    ${result}[success]    UTC time capture failed

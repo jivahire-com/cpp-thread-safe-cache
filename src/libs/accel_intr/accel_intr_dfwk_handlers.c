@@ -75,6 +75,7 @@ static accel_intr_crash_dump_collection_timer_data_t accel_intr_crash_dump_colle
 
     // ACCEL_ID_CDED
     {.accel_type = ACCEL_ID_CDED, .retry_count = 0, .skip_cper = false, .skip_cd = false, .has_crashed = false, .cper_collected = false}};
+static uint32_t s_accel_bh_irq_val[NUM_VALID_ACCEL_ID] = {0};
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -115,6 +116,8 @@ static void accel_intr_delay_cb(void* ctx, fpfw_dur_t latency)
      */
 
     FPFW_UNUSED(latency);
+
+    s_accel_bh_irq_val[accel_type] = interrupt_reg_value;
 
     if (interrupt_reg_value & cper_cd_skip_flags)
     {
@@ -194,6 +197,11 @@ cper_collect_failed:
 }
 
 /*----------------------------- Global Functions ----------------------------*/
+
+uint32_t* accel_intr_get_bh_irq_val_addr(ACCEL_ID accel_type)
+{
+    return &s_accel_bh_irq_val[accel_type];
+}
 
 uint32_t accel_intr_crash_dump_collection_timer_init(ACCEL_ID accel_type)
 {

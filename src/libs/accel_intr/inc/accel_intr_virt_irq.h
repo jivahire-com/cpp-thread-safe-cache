@@ -63,3 +63,11 @@
   * @param cded_nvic_int NVIC interrupt number for CDED-SDM accelerator
   */
  void accel_intr_virt_irq_register_isr(uint32_t sdm_nvic_int, uint32_t cded_nvic_int);
+
+ /**
+  * @brief Function to get address of variables to register with crash dump
+  * 
+  * @param irq_th_val_addr Pointer to store address of variable holding the interrupt status register value at the time of interrupt
+  * @param irq_mask_th_val_addr Pointer to store address of variable holding the interrupt mask
+  */
+ void accel_intr_virt_irq_cd_reg(ACCEL_ID accel_type, uint32_t* irq_th_val_addr, uint32_t* irq_mask_th_val_addr);

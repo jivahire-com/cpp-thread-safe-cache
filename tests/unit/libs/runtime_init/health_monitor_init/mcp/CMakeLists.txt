@@ -53,7 +53,6 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    accel_is_isolation_enabled
     fpfw_init_get_handle
     idsw_get_die_id
     hm_pre_ddr_init

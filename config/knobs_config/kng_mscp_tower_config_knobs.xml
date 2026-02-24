@@ -15,7 +15,7 @@
   <!-- namespace indicates the GUID namespace the values are stored in -->
   <Knobs namespace="{FE3ED49F-B173-41ED-9076-356661D46A42}">
     <!--  Tower Knobs -->
-    <Knob name="tower_knobs" type = "tower_knobs_t" help = "Tower config knobs"/>
+    <Knob name="tower_knobs" type = "tower_knobs_t" default="{{false, false, false, false, false, true}}" help = "Tower config knobs"/>
   </Knobs>
 
 </ConfigSchema>

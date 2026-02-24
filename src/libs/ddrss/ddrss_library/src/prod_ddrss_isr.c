@@ -530,7 +530,7 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
     }
     else
     {
-        DDRSS_ISR_DEBUG_PRINT("DDR PHY int sts = 0x%08x\n", (unsigned int)phy_int_sts);
+        DDRSS_ISR_CRITICAL_PRINT("DDR PHY int sts = 0x%08x\n", (unsigned int)phy_int_sts);
     }
 
     if (phy_int_sts & csr_PhyTrngFailEn_MASK)

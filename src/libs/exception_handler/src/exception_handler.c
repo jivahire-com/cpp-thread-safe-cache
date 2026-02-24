@@ -232,9 +232,16 @@ static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm,
                          SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_LSB);
     }
 #endif
+
     if ((err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK) &&
-        (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK))
+        (err_status & (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK |
+                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK)))
     {
+        if (err_status & SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK)
+        {
+            FPFwCDPrintf("Poisoned memory access at 0x%08lx\n", err_addr);
+        }
+
         *errorCode = (is_arsm) ? KNG_HM_ARSM_UE : KNG_HM_RSM_UE;
         sec_fw_cper_section->severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
 
@@ -244,14 +251,20 @@ static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm,
         sec_fw_cper_section->param[2] = *errorCode;
         sec_fw_cper_section->param[3] = 0;
 
-        // clear UE
-        uint32_t err_clr_mask = err_status & ~SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK;
-        err_clr_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK;
+        // arm_voyager-68c_reference_manual : all fields are W1C
+        uint32_t err_clr_mask = err_status;
+        err_clr_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK;
+        err_clr_mask |= SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_V_MASK;
+        err_clr_mask |= (err_status & (SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_MASK |
+                                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
+                                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_DE_MASK |
+                                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_UE_MASK |
+                                       SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK));
 
         MMIO_WRITE32(atu_entry->mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS, err_clr_mask);
-
         ret = true;
     }
+
     atu_unmap(ATU_ID_MSCP, atu_entry);
 
     return ret;
@@ -265,7 +278,8 @@ static bool check_rmss_ram_ecc_ue(int32_t* errorCode,
                                   uint32_t address_reg_addr,
                                   uint32_t err_code,
                                   uint16_t record_id,
-                                  const char* fault_log)
+                                  const char* fault_log,
+                                  acpi_error_severity_t report_severity)
 {
     bool ret = false;
 
@@ -279,7 +293,7 @@ static bool check_rmss_ram_ecc_ue(int32_t* errorCode,
             *errorCode = err_code;
 
             // Set CPER section
-            sec_fw_cper_section->severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+            sec_fw_cper_section->severity = report_severity;
             sec_fw_cper_section->record_id = record_id;
             sec_fw_cper_section->param[0] = status;
             sec_fw_cper_section->param[1] = MMIO_READ32(address_reg_addr);
@@ -398,7 +412,8 @@ static bool check_ecc_fault(int32_t* errorCode, acpi_err_sec_firmware_t* sec_fw_
                     MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_MSCP_EXP_CSR_ADDRESS + MSCP_EXP_CSR_SCFRAM_MSCP_ERRADDR_REG_ADDRESS,
                     KNG_HM_SCF_UE,
                     RECORD_ID_MSCP_SCF_RAM,
-                    "SCF");
+                    "SCF",
+                    ACPI_ERROR_SEVERITY_CORRECTED);
             }
             else if (fault_addr >= (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_RAM0_ADDRESS) &&
                      fault_addr < (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_RAM0_ADDRESS + MSCP_EXP_TOP_RAM0_SIZE))
@@ -416,7 +431,8 @@ static bool check_ecc_fault(int32_t* errorCode, acpi_err_sec_firmware_t* sec_fw_
                                                 MSCP_EXP_CSR_RMSS_RAM0_MSCP_ERRADDR_REG_ADDRESS,
                                             KNG_HM_RMSS_RAM0_UE,
                                             RECORD_ID_MSCP_RMSS_RAM0,
-                                            "RMSS RAM0");
+                                            "RMSS RAM0",
+                                            ACPI_ERROR_SEVERITY_CORRECTED);
             }
             else if (fault_addr >= (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_RAM1_ADDRESS) &&
                      fault_addr < (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_RAM1_ADDRESS + MSCP_EXP_TOP_RAM1_SIZE))
@@ -434,7 +450,8 @@ static bool check_ecc_fault(int32_t* errorCode, acpi_err_sec_firmware_t* sec_fw_
                                                 MSCP_EXP_CSR_RMSS_RAM1_MSCP_ERRADDR_REG_ADDRESS,
                                             KNG_HM_RMSS_RAM1_UE,
                                             RECORD_ID_MSCP_RMSS_RAM1,
-                                            "RMSS RAM1");
+                                            "RMSS RAM1",
+                                            ACPI_ERROR_SEVERITY_CORRECTED);
             }
         }
     }

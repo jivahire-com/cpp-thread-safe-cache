@@ -105,6 +105,7 @@ mock_target(${TARGET}
     fpfw_icc_base_send
     fpfw_icc_base_send_sync
     fpfw_init_get_handle
+    idsw_get_cpu_type
     _txe_mutex_create
     _txe_timer_create
     _txe_timer_deactivate

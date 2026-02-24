@@ -849,4 +849,8 @@ void fuse_print_version(void)
                        ((FUSE_ARTIFACT_VERSION >> 24) & 0xff),
                        ((FUSE_ARTIFACT_VERSION >> 12) & 0xfff),
                        (FUSE_ARTIFACT_VERSION & 0xfff));
+
+    uint32_t soc_id = idhw_get_soc_id();
+    FPFW_DBGPRINT_INFO(FUSE_NAME "Soc ID: 0x%08X\n", soc_id);
+    FUSE_ET_LOG_TRACE_PARAM(FUSE_ET_TYPE_GET_SOC_ID, soc_id);
 }

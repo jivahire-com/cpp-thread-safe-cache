@@ -159,6 +159,18 @@ class pldm_common(EchoFallsBaseTest):
             return False
         return True
 
+    def setup_by_copy(self, dut, log, bmc_cli, core_mcp_channel, mctp_eid_list):
+        self.dut = dut
+        self.log = log
+        self.bmc_cli = bmc_cli
+        self.core_mcp_channel = core_mcp_channel
+
+        # Last step: Load PLDM specification data and check platform event callback
+        self.pldm_spec = pldm_spec_parser()
+        self.pldm_spec.load_spec_data("pldm_spec_data.json")
+        self.mctp_eids = mctp_eid_list
+        return True
+
     def teardown(self):
         if self.pldmd_stopped is True:
             result, _, _ = self._bmc_execute_command(

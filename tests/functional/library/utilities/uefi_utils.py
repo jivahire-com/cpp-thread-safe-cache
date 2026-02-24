@@ -16,9 +16,9 @@ class UEFI_helper:
         self.log = log
         self.output = ""
 
-    def reset_and_boot_uefi(self, apns_cli: Any, rscm_helper: Any) -> bool:
+    def boot_uefi(self, apns_cli: Any, rscm_helper: Any) -> bool:
         """
-        Reset SOC by BMC and APNS boot to UEFI.
+        APNS boot to UEFI.
         :param apns_cli: Any
         :param rscm_helper: Any : from RscmHelperLibrary import RscmHelperLibrary
         :return:  bool, True if shell is up and interactive, False otherwise.
@@ -32,9 +32,6 @@ class UEFI_helper:
 
         self.log.info(f"Setup boot options")
         rscm_helper.rscm_set_boot_option(option="ConfApp")
-
-        self.log.info(f"RSCM_helper do a SOC reset...")
-        rscm_helper.rscm_soc_reset()
 
         self.log.info(f"Booting UEFI Shell...")
         is_uefi_shell_up = self.wait_for_uefi_shell_up(apns_cli=apns_cli)
@@ -82,16 +79,6 @@ class UEFI_helper:
                         f"Execute UEFI shell command failed : ver : output = {self.output}"
                     )
                     break
-
-        try:
-            self.output = self.write_console_interaction_command_read_until(
-                apns_cli=apns_cli, command="\r\n", expected_key="SAC>", timeout=5
-            )
-            self.log.error(
-                f"UEFI boot failed. Entering to SAC>. output = {self.output}"
-            )
-        except TimeoutError:
-            self.log.error(f"Timeout for waiting SAC>")
 
         self.log.error(f"Timeout waiting for UEFI shell to be up")
         raise TimeoutError("Timeout waiting for UEFI shell to be up")

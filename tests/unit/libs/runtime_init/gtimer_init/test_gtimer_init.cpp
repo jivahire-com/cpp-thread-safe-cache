@@ -50,6 +50,17 @@ uint32_t __wrap_systick_get_emcpu_clock(void)
     return mock_type(uint32_t);
 }
 
+void __wrap_delay_init(uint32_t cpu_freq_hz, uint64_t (*get_counter)(void))
+{
+    check_expected(cpu_freq_hz);
+    (void)get_counter;
+}
+
+uint64_t __wrap_gtimer_prodfw_get_counter(void)
+{
+    return mock_type(uint64_t);
+}
+
 KNG_DIE_ID __wrap_idsw_get_die_id()
 {
     return mock_type(KNG_DIE_ID);
@@ -83,6 +94,9 @@ TEST_FUNCTION(test_gtimer_init_soc, NULL, NULL)
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
 
+    will_return(__wrap_systick_get_emcpu_clock, (uint32_t)(1000000000U));
+    expect_value(__wrap_delay_init, cpu_freq_hz, (uint32_t)(1000000000U));
+
     const auto test_die = (KNG_DIE_ID)0;
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
@@ -110,6 +124,9 @@ TEST_FUNCTION(test_gtimer_init_fpga, NULL, NULL)
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_FPGA_LARGE);
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
+
+    will_return(__wrap_systick_get_emcpu_clock, (uint32_t)(10000000U));
+    expect_value(__wrap_delay_init, cpu_freq_hz, (uint32_t)(10000000U));
 
     const auto test_die = (KNG_DIE_ID)0;
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
@@ -139,6 +156,9 @@ TEST_FUNCTION(test_gtimer_init_svp, NULL, NULL)
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
 
+    will_return(__wrap_systick_get_emcpu_clock, (uint32_t)(125000000U));
+    expect_value(__wrap_delay_init, cpu_freq_hz, (uint32_t)(125000000U));
+
     const auto test_die = (KNG_DIE_ID)0;
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
@@ -166,6 +186,9 @@ TEST_FUNCTION(test_gtimer_init_svp_min_config, NULL, NULL)
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_SVP_MIN_CONFIG_SIM);
 
     expect_memory(__wrap_gtimer_prodfw_init, config, &test_config, sizeof(gtimer_prodfw_init_config_t));
+
+    will_return(__wrap_systick_get_emcpu_clock, (uint32_t)(125000000U));
+    expect_value(__wrap_delay_init, cpu_freq_hz, (uint32_t)(125000000U));
 
     const auto test_die = (KNG_DIE_ID)0;
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);

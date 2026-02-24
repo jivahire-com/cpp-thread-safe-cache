@@ -60,6 +60,7 @@ target_link_libraries(${TARGET}
         ms::driver::pldm    # PLDM_DRV_WORKAROUND
         ms::lib::accel_intr
         ms::lib::cortex_m7::nvic
+        ms::lib::cortex_m7::virt_irq
         ms::lib::gtimer
         ms::lib::icc_platform_defines
         ms::lib::register_headers

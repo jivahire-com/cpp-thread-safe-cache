@@ -104,6 +104,11 @@ idsw_die_id_t __wrap_idsw_get_die_id(void)
     return mock_type(idsw_die_id_t);
 }
 
+uint32_t __wrap_idhw_get_soc_id()
+{
+    return mock_type(uint32_t);
+}
+
 /* Tests */
 
 TEST_FUNCTION(test_fuse_pre_mesh, NULL, NULL)
@@ -130,6 +135,7 @@ TEST_FUNCTION(test_fuse_pre_mesh, NULL, NULL)
     expect_value(__wrap_boot_status_notify_extd, boot_status, MSCP_BOOT_STATUS_CODE_SCP_PRE_FUSE_INIT_END);
     expect_value(__wrap_boot_status_notify_extd, boot_status_ex, expected_boot_status_ex);
     expect_function_call(__wrap_boot_status_notify_extd);
+    will_return(__wrap_idhw_get_soc_id, 0);
 
     _fpfw_component_fuse_pre_mesh.init_fn();
 }

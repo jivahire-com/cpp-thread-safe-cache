@@ -341,13 +341,6 @@ bool crash_dump_get_is_dump_transferring(crash_dump_type_context_t* type_context
 void crash_dump_cli_init(void);
 
 /**
- * @brief Captures accel cores externally accessible registers
- * 
- * @param[in] accel_type SDM or CDED accel type
- */
-void crash_dump_register_accel_ext_mmio(ACCEL_ID accel_type);
-
-/**
  * @brief Check is given accel core has completed its CD file collection
  * 
  * @param[in] accel_type SDM or CDED accel type
@@ -391,6 +384,11 @@ void crash_dump_set_UE(bool is_ue);
  * @return true if UE is set, false otherwise
  */
 bool crash_dump_is_UE(void);
+
+/**
+ * @brief Register variables to collect minimal info for accelerator crash dump
+ */
+void crash_dump_register_accel_cd();
 
 #ifdef __cplusplus
 }

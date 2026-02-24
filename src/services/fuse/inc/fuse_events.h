@@ -63,6 +63,7 @@ typedef enum
     FUSE_ET_TYPE_REMOTE_DIE_CONFIG_FAIL,
     FUSE_ET_TYPE_READ_CORE_DISABLE_FAIL,
     FUSE_ET_TYPE_GET_EXCLUSION_LIST_FAIL,
+    FUSE_ET_TYPE_GET_SOC_ID,
     FUSE_ET_TYPE_COUNT
 }   FUSE_ET_TYPE_T;
 
@@ -74,7 +75,7 @@ typedef enum {
     FUSE_ET_ID_TYPE_STATUS_NOPARAMS,
     FUSE_ET_ID_TYPE_STATUS_PARAMS,
     FUSE_ET_ID_TYPE_LOG_TRACE,
-
+    FUSE_ET_ID_TYPE_LOG_TRACE_PARAMS,
     FUSE_ET_ID_TYPE_COUNT
 } FUSE_ET_ID_TYPES_T;
 
@@ -122,6 +123,13 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_FUSE,         // Provider ID fo
                      FuseStatusParam,                          // Event Name
                      FPFW_ET_LEVEL_INFO,                        // Event Log Level, filterable by provider mask
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, param),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_FUSE,         // Provider ID for this event
+                     FUSE_ET_ID_TYPE_LOG_TRACE_PARAMS,         // Event ID, for this provider
+                     FuseLogTraceParam,                        // Event Name
+                     FPFW_ET_LEVEL_ALWAYS,                     // Event Log Level, filterable by provider mask
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, param),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, type))
 
 /*--------- Function Prototypes ----------*/

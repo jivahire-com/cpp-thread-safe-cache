@@ -10,6 +10,7 @@
 ./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
 ./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
 ./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
+./../../../tests/functional/test_suites/pldm_tests/pldm_stress.robot
 
 ## Power Tests
 ./../../../tests/functional/test_suites/power_tests/mod_power_pldm_service.robot

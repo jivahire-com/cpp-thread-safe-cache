@@ -51,7 +51,6 @@ static void validate_individual_manifest(p_diag_manifest_header_t p_diag_manifes
         FPFW_RUNTIME_ASSERT_EXT(p_diag_packed_manifest->provider_metadata_size != 0, 0, 0, 0, 0);
         FPFW_RUNTIME_ASSERT_EXT(p_diag_packed_manifest->event_metadata_size != 0, 0, 0, 0, 0);
 
-        // Move to the next manifest - TODO: Decode better based on actual sizes
         p_diag_manifest =
             (p_diag_manifest_header_t)((uintptr_t)p_diag_packed_manifest + sizeof(diag_packed_manifest_header_t) +
                                        p_diag_packed_manifest->provider_metadata_size +

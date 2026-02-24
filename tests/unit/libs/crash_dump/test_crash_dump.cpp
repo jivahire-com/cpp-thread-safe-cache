@@ -33,12 +33,14 @@ extern "C" {
 #include <crash_dump_dfwk.h>             // for crash_dump_device_t, crash_dump_interface_t
 #include <crash_dump_memory.h>           // for CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE...
 #include <icc_platform_defines.h>        // for accel_cd_addr_msg
-#include <kng_icc_shared.h>              // for ICC_SIGNAL_CRASH_DUMP_COLLECT
-#include <nvic.h>                        // for NVIC_STATUS_SUCCESS
-#include <sdm_ext_cfg_regs.h>            // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
-#include <silibs_platform_mock.h>        // for mmio_set_mock_data
-#include <startup_shutdown_ssi.h>        // for sos_register_ssi
-#include <tlm_fuses.h>                   // for ecid_t, tlm_fuses_get_ecid
+#include <idsw.h>
+#include <idsw_kng.h>
+#include <kng_icc_shared.h>       // for ICC_SIGNAL_CRASH_DUMP_COLLECT
+#include <nvic.h>                 // for NVIC_STATUS_SUCCESS
+#include <sdm_ext_cfg_regs.h>     // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
+#include <silibs_platform_mock.h> // for mmio_set_mock_data
+#include <startup_shutdown_ssi.h> // for sos_register_ssi
+#include <tlm_fuses.h>            // for ecid_t, tlm_fuses_get_ecid
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define CD_DEFAULT_MEM_POOL_SIZE 1024
@@ -354,6 +356,22 @@ void set_expectations_crash_dump_register_default_registers(const core_register_
     expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }
 
+void set_expectations_crash_dump_register_accel_cd()
+{
+    // 3 expectations for sdm and 3 cded
+    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+}
+
+idsw_cpu_type_t __wrap_idsw_get_cpu_type()
+{
+    return mock_type(idsw_cpu_type_t);
+}
+
 //
 // Tests
 //
@@ -396,6 +414,8 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp, nullptr, nullptr)
 
     will_return_always(__wrap_crash_dump_context, &context);
     will_return_always(__wrap_system_info_is_warm_start, false);
+
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
 
     set_expectations_initialize_crash_dump_header(SEM_ID_DIE0_IOSS_0, 1);
 
@@ -463,6 +483,8 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_mcp_warmstart, nullptr, nullptr
     will_return_always(__wrap_crash_dump_context, &context);
     will_return_always(__wrap_system_info_is_warm_start, true);
 
+    will_return(__wrap_idsw_get_cpu_type, CPU_MCP);
+
     set_expectations_initialize_crash_dump_header_warmstart(false, SEM_ID_DIE0_IOSS_0, 1);
 
     // init_dump_desc()
@@ -529,6 +551,8 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
     will_return_always(__wrap_crash_dump_context, &context);
     will_return_always(__wrap_system_info_is_warm_start, false);
 
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
     set_expectations_initialize_crash_dump_header(SEM_ID_DIE0_IOSS_0, 2);
 
     // init_dump_desc()
@@ -560,6 +584,9 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
 
     // crash_dump_register_threadx()
     set_expectations_crash_dump_register_threadx(&type_context);
+
+    // crash_dump_register_accel_cd()
+    set_expectations_crash_dump_register_accel_cd();
 
     // crash_dump_register_serial_output()
     set_expectations_crash_dump_register_serial_output();
@@ -595,6 +622,8 @@ TEST_FUNCTION(test_crash_dump_register_mini_dump, nullptr, nullptr)
     will_return_always(__wrap_crash_dump_context, &context);
     will_return_always(__wrap_system_info_is_warm_start, false);
 
+    will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+
     set_expectations_initialize_crash_dump_header(SEM_ID_MSCP_EXP_0, 2);
 
     // init_dump_desc()
@@ -626,6 +655,9 @@ TEST_FUNCTION(test_crash_dump_register_mini_dump, nullptr, nullptr)
 
     // crash_dump_register_threadx()
     set_expectations_crash_dump_register_threadx(&type_context);
+
+    // crash_dump_register_accel_cd()
+    set_expectations_crash_dump_register_accel_cd();
 
     // crash_dump_register_serial_output()
     set_expectations_crash_dump_register_serial_output();

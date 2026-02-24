@@ -30,9 +30,10 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
-#define PPU_V1_PWCR_DEV_REQ_EN    UINT32_C(0x000000FF)
-#define PPU_V1_PWCR_DEV_ACTIVE_EN UINT32_C(0x0007FF00)
-#define PPU_V1_PWPR_DYNAMIC_EN    UINT32_C(0x00000100)
+#define DISABLE_DYN_TRANSITION_TIMEOUT_US 2000
+#define PPU_V1_PWCR_DEV_REQ_EN            UINT32_C(0x000000FF)
+#define PPU_V1_PWCR_DEV_ACTIVE_EN         UINT32_C(0x0007FF00)
+#define PPU_V1_PWPR_DYNAMIC_EN            UINT32_C(0x00000100)
 
 /*------------- Typedefs -----------------*/
 
@@ -241,15 +242,30 @@ void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsi
 }
 
 // future silibs API for disabling PPU handshaking
-void ppu_v1_disable_handshake(uintptr_t ppu_v1_base_addr)
+void ppu_v1_disable_handshake(uintptr_t ppu_v1_base_addr, uint32_t timeout_us)
 {
     vptr_cluster_ppu_reg ppu = (vptr_cluster_ppu_reg)ppu_v1_base_addr;
 
     // Disable dynamic transitions (per TRM: needed before disabling handshaking)
     ppu->ppu_pwpr.as_uint32 = PPU_V1_MODE_ON;
 
+    while ((((ppu->ppu_pwsr.as_uint32) &
+             (CLUSTER_PPU_PPU_PWSR_PWR_DYN_STATUS_MASK | CLUSTER_PPU_PPU_PWSR_OP_DYN_STATUS_MASK)) != 0U) &&
+           (timeout_us != 0U))
+    {
+        SLEEP_US(1ULL);
+        timeout_us--;
+    }
+
+    BUG_ASSERT_PARAM((timeout_us != 0), ppu->ppu_pwsr.as_uint32, ppu->ppu_pwpr.as_uint32);
+
     // Disable PPU handshaking
     ppu->ppu_pwcr.as_uint32 &= ~(PPU_V1_PWCR_DEV_REQ_EN | PPU_V1_PWCR_DEV_ACTIVE_EN);
+
+    APCORE_LOG_INFO("PPU after disabled handshaking - pwpr:0x%08lx, pwsr:0x%08lx, pwcr:0x%08lx",
+                    MMIO_READ32(&ppu->ppu_pwpr),
+                    MMIO_READ32(&ppu->ppu_pwsr),
+                    MMIO_READ32(&ppu->ppu_pwcr));
 }
 
 // function to disable PPU handshaking
@@ -269,8 +285,8 @@ void ap_core_ppu_disable_handshaking(ap_core_service_context_t* p_context)
                 (p_context->p_config->cluster_pex_base + (core_idx * p_context->p_config->cluster_stride) +
                  CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CORE0_PPU_ADDRESS);
 
-            ppu_v1_disable_handshake(core_ppu_addr);
-            ppu_v1_disable_handshake(cluster_ppu_addr);
+            ppu_v1_disable_handshake(core_ppu_addr, DISABLE_DYN_TRANSITION_TIMEOUT_US);
+            ppu_v1_disable_handshake(cluster_ppu_addr, DISABLE_DYN_TRANSITION_TIMEOUT_US);
         }
     }
 }

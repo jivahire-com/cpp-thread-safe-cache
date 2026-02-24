@@ -69,4 +69,5 @@ mock_target(${TARGET}
    boot_status_notify_extd
    idsw_get_cpu_type
    idsw_get_die_id
+   idhw_get_soc_id
 )

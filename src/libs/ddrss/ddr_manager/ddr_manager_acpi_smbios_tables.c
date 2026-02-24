@@ -670,16 +670,12 @@ static PLACED_CODE uint32_t ddr_create_smbios_type_16(uint32_t smbios_next_addr)
     MaximumCapacity expressed in kB
     ExtendedMaximumCapacity expressed in B
     */
-    if (dimm_capacity_kb >= EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16)
-    {
-        smb_table16.MaximumCapacity = EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16;
-        smb_table16.ExtendedMaximumCapacity = (uint64_t)dimm_capacity_kb * 1024; // In Bytes
-    }
-    else
-    {
-        smb_table16.MaximumCapacity = dimm_capacity_kb;
-        smb_table16.ExtendedMaximumCapacity = 0;
-    }
+    // Calculate total capacity for this memory array (all DIMMs in this die)
+    uint64_t array_capacity_kb = (uint64_t)dimm_capacity_kb * NUM_DIMM_PER_DIE;
+
+    // Always use Extended Maximum Capacity field for the actual capacity value
+    smb_table16.MaximumCapacity = EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16;
+    smb_table16.ExtendedMaximumCapacity = array_capacity_kb * 1024; // In Bytes
 
     smb_table16.MemoryErrorInformationHandle = 0;
     smb_table16.NumberOfMemoryDevices = NUM_DIMM_PER_DIE;
@@ -981,8 +977,11 @@ void ddr_create_smbios_tables(void)
         uint32_t d0_smbios_len = MMIO_READ32(start_addr + size_off);
         BUG_ASSERT(d0_smbios_len < SMBIOS_HANDOFF_RESERVATION_SIZE);
 
+        // Create Type 16 for Die 1 (second memory array)
+        next_addr = ddr_create_smbios_type_16(start_addr + d0_smbios_len);
+
         // Append SMBIOS type 17 for D1
-        next_addr = ddr_create_smbios_type_17(start_addr + d0_smbios_len);
+        next_addr = ddr_create_smbios_type_17(next_addr);
         BUG_ASSERT(next_addr - start_addr + 8 < SMBIOS_HANDOFF_RESERVATION_SIZE);
 
         // Zero out the next 8 bytes to indicate the end of SMBIOS table

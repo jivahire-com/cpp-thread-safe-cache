@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <systick_update.h> // for systick_get_emcpu_clock
+#include <utils.h>          // for delay_init
 
 #define __NO_CSR_TYPEDEFS__
 #include <scp_top_regs.h>
@@ -92,6 +93,7 @@ void gtimer_init_internal(bool d2d_sync_point_required)
 
     config.d2d_sync_point_required = (d2d_sync_point_required) ? true : false;
     gtimer_prodfw_init(&config);
+    delay_init(systick_get_emcpu_clock(), gtimer_prodfw_get_counter);
 
     boot_status_req_t boot_status_req = {0};
 

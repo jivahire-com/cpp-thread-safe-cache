@@ -111,6 +111,9 @@ KNG_STATUS crash_dump_register_dump(crash_dump_type_context_t* type_context)
     // Register ThreadX data registerer callback
     crash_dump_register_threadx(type_context);
 
+    // Register accel irq info
+    crash_dump_register_accel_cd();
+
     // Register serial output capture callback
     crash_dump_register_serial_output(type_context);
 

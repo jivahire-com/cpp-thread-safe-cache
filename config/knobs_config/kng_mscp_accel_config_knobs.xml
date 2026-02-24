@@ -168,6 +168,7 @@
 
     <!-- Test Knobs -->
     <Knob name="kmp_safe_state" type="bool" default="true" help="Knob to set KMP to a safe state (reset)" />
+    <Knob name="cper_ratelimiting_period" type="uint32_t" default="100" help="Knob to set CPER thread period(ms) for CE and CP non-fatal error" />
 
     <Knob name="err_intr_enb_disable" type="soc_accel_err_intr_en_disable_t" />
   </Knobs>

@@ -58,9 +58,7 @@ const char* scp_end_magic_string = END_MAGIC_STRING;
 const uint32_t config_offset = 0x0007fc00;
 const uint32_t config_size = 0x00000400;
 
-const char* knob_transfer_list[] = {
-    "kmp_safe_state",
-};
+const char* knob_transfer_list[] = {"kmp_safe_state", "cper_ratelimiting_period"};
 
 /*--------------------------------- Externs ---------------------------------*/
 

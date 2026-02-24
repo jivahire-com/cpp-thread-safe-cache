@@ -176,3 +176,10 @@ void accel_intr_scp_err_intr_enable(ACCEL_ID accel_type);
  * @retval true/false
  */
 bool accel_intr_get_cd_skip(ACCEL_ID accel_type);
+
+/**
+ * @brief This function sets the flag to skip cper and cd collection in the crash dump collection callback
+ * 
+ * @return Pointer to bottom half irq value variable
+ */
+uint32_t *accel_intr_get_bh_irq_val_addr(ACCEL_ID accel_type);

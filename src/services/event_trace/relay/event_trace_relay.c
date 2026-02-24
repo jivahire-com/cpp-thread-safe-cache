@@ -39,12 +39,14 @@
 #include <event_trace_collector.h>
 #include <event_trace_relay_events.h>
 #include <fpfw_cfg_mgr.h>
+#include <gtimer_prodfw.h> // for gtimer_get_timestamp_ms
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
 #include <inttypes.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <mts_platform_specialization.h>
 #include <sdm_ext_cfg_regs.h>
+#include <utc_sync_client_service.h> // for utc_sync_client_get_current_time_epoch_ms
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -766,6 +768,38 @@ static void etr_initialize_worker_thread(etr_service_context_t* p_context, const
 }
 
 /**
+ * @brief Convert the system timestamp in the buffer header to UTC timestamp using the current UTC time and current system time.
+ *
+ * @param p_timestamp_ms Pointer to the timestamp in milliseconds that needs to be converted from system time to UTC time.
+ * This is an in-out parameter, where the input is the system timestamp and the output is the converted UTC timestamp.
+ *
+ * @return None
+ *
+ */
+static void convert_system_timestamp_to_utc(uint64_t* p_timestamp_ms)
+{
+    if (*p_timestamp_ms != 0)
+    {
+        /* Fetch Current UTC Timestamp and current SoC timestamp in ms */
+        uint64_t current_utc_time = utc_sync_client_get_current_time_epoch_ms();
+        uint64_t current_system_time_ms = gtimer_get_timestamp_ms();
+
+        /* Gate against UTC timestamp not available */
+        if (current_utc_time != 0)
+        {
+            /* Compute and Update UTC Time */
+            if (current_system_time_ms < *p_timestamp_ms)
+            {
+                FPFW_ET_LOG(Error, this_die, this_core, ETR_ERR_ETC_BUFFER_TIME_FROM_THE_FUTURE, *p_timestamp_ms - current_system_time_ms);
+                return;
+            }
+            uint64_t utc_converted_time = current_utc_time - (current_system_time_ms - *p_timestamp_ms);
+            *p_timestamp_ms = utc_converted_time;
+        }
+    }
+}
+
+/**
  * @brief Decode and validate the buffer metadata from the service request.
  *
  * This function reads the buffer address from the request, validates it, and extracts the buffer size.
@@ -774,7 +808,7 @@ static void etr_initialize_worker_thread(etr_service_context_t* p_context, const
  * @param p_request Pointer to the service request
  * @return fpfw_status_t Returns FPFW_STATUS_SUCCESS if the buffer metadata is valid, otherwise returns FPFW_STATUS_FAIL.
  */
-fpfw_status_t decode_and_validate_buffer_metadata(etr_service_request_t* p_request)
+static fpfw_status_t decode_and_validate_buffer_metadata(etr_service_request_t* p_request)
 {
     /* Read the MTS buffer address from the TRP message */
     p_request->buffer_addr = p_request->p_trp_msg->payload.intercore_block_notification.addr_offset;
@@ -807,7 +841,7 @@ fpfw_status_t decode_and_validate_buffer_metadata(etr_service_request_t* p_reque
         FPFW_ET_LOG(Error,
                     this_die,
                     this_core,
-                    ETR_ERR_INVALID_ETC_BUFFER_CORE,
+                    ETR_ERR_INVALID_TRP_MSG_SRC,
                     p_request->p_trp_msg->hdr.src_node.core_id);
         return FPFW_STATUS_FAIL;
     }
@@ -816,11 +850,35 @@ fpfw_status_t decode_and_validate_buffer_metadata(etr_service_request_t* p_reque
     PFPFW_ET_CORE_BUFFER_HEADER p_etc_header = (PFPFW_ET_CORE_BUFFER_HEADER)p_request->buffer_addr;
     p_request->buffer_size_bytes = p_etc_header->UsedBytes;
 
-    /* Sanity Check the Buffer Header - TODO, revisit the sanity check check all parameters, including timestamp, etc */
-    if (p_etc_header->BufferSize == 0)
+    /* Sanity Check the Buffer Header */
+    if ((p_etc_header->BufferSize == 0) || (p_etc_header->UsedBytes == 0) ||
+        (p_etc_header->UsedBytes > p_etc_header->BufferSize))
     {
         FPFW_ET_LOG(Error, this_die, this_core, ETR_ERR_INVALID_ETC_BUFFER_SIZE, 0);
         return FPFW_STATUS_FAIL;
+    }
+
+    /* Check that timestamps are valid (non-zero and End is greater than Start) */
+    if ((p_etc_header->StartAsicTimeStamp) == 0 || (p_etc_header->EndAsicTimeStamp == 0) ||
+        (p_etc_header->StartUTCTimeStamp == 0) || (p_etc_header->EndUTCTimeStamp == 0) ||
+        (p_etc_header->EndAsicTimeStamp < p_etc_header->StartAsicTimeStamp) ||
+        (p_etc_header->EndUTCTimeStamp < p_etc_header->StartUTCTimeStamp))
+    {
+        FPFW_ET_LOG(Error, this_die, this_core, ETR_ERR_INVALID_ETC_BUFFER_TIMESTAMP, 0);
+        return FPFW_STATUS_FAIL;
+    }
+
+    /* The event trace controller on each core populates system timestamp on to both ASIC timestamp and UTC
+       timestamp. Calculate and update the UTC timestamp if it is missing */
+    if (p_etc_header->StartUTCTimeStamp == p_etc_header->StartAsicTimeStamp)
+    {
+        convert_system_timestamp_to_utc(&p_etc_header->StartUTCTimeStamp);
+    }
+
+    if (p_etc_header->EndUTCTimeStamp == p_etc_header->EndAsicTimeStamp)
+    {
+
+        convert_system_timestamp_to_utc(&p_etc_header->EndUTCTimeStamp);
     }
 
     return FPFW_STATUS_SUCCESS;
@@ -895,9 +953,10 @@ void notify_ddr_buffer_available()
      */
     if (primary_instance)
     {
-        if ((num_buffers_pending == 0) && (evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING))
+        if (evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING)
         {
-            mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+            UINT tx_status = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION, TX_OR);
+            BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
         }
     }
     else

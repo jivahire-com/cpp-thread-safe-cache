@@ -49,6 +49,9 @@ mock_target(${TARGET}
     _txe_event_flags_create
     _txe_event_flags_get
     _txe_event_flags_set
+    _txe_timer_create
+    _txe_timer_activate
+    _txe_timer_deactivate
     
     fpfw_icc_base_recv
     fpfw_icc_base_send_sync
@@ -79,10 +82,17 @@ mock_target(${TARGET}
 
     FPFwETControllerRecycleBuffer
 
+    utc_sync_client_get_current_time_epoch_ms
+    gtimer_get_timestamp_ms
+
     DfwkDeviceInitialize
     DfwkQueueInitialize
     DfwkInterfaceInitialize
     DfwkAsyncRequestComplete
 
     sos_register_ssi
+
+    FpFwLockInitialize
+    FpFwLockAcquire
+    FpFwLockRelease
 )

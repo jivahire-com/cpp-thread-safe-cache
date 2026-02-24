@@ -57,6 +57,8 @@ static virt_irq_plat_cb_t accel_virt_irq_plat_info[NUM_VALID_ACCEL_ID] = {
      .platform_disable_virtual_irq = accel_intr_virt_irq_disable,
      .platform_is_irq_enabled = accel_intr_virt_irq_is_enabled},
 };
+static uint32_t s_accel_irq_th_val[NUM_VALID_ACCEL_ID] = {0};
+static uint32_t s_accel_irq_mask_th_val[NUM_VALID_ACCEL_ID] = {0};
 
 /*--------------------------------- Externs ---------------------------------*/
 
@@ -96,6 +98,7 @@ static void accel_intr_virt_irq_level1_wrapper_isr(void* irq_num)
     BUG_ASSERT_PARAM(interrupt_mask_addr != SDM_EXT_INVALID_INTERRUPT_INPUT, interrupt_mask_addr, 0);
 
     uint32_t isr_val = (uint32_t)MMIO_READ32(interrupt_reg_addr);
+    uint32_t mask_val = (uint32_t)MMIO_READ32(interrupt_mask_addr);
 
     // Mask interrupt value with mask bits
     uint32_t interrupt_reg_value = BITWISE_AND(isr_val, BITWISE_INVERT(MMIO_READ32(interrupt_mask_addr)));
@@ -103,6 +106,11 @@ static void accel_intr_virt_irq_level1_wrapper_isr(void* irq_num)
     // CDED IRQ is 118 and SDM is 119, subtracting CDED IRQ enum from irq_num will give a value of 0/1 to index the array
     uint32_t virt_irq_table_index =
         (uint32_t)((uint32_t)irq_num - accel_intr_get_irq_num_from_accel_type(ACCEL_ID_CDED));
+
+    ACCEL_ID accel_type = accel_intr_get_accel_type_from_irq_num((uint32_t)irq_num);
+
+    s_accel_irq_th_val[accel_type] = isr_val;
+    s_accel_irq_mask_th_val[accel_type] = mask_val;
 
     FPFW_ET_LOG(AccelIntr, isr_val, interrupt_reg_value);
 
@@ -245,6 +253,12 @@ void accel_intr_virt_irq_register_isr(uint32_t sdm_nvic_int, uint32_t cded_nvic_
     {
         FPFwCoreInterruptRegisterCallback(cded_nvic_int, accel_intr_virt_irq_level1_wrapper_isr, (void*)cded_nvic_int);
     }
+}
+
+void accel_intr_virt_irq_cd_reg(ACCEL_ID accel_type, uint32_t* irq_th_val_addr, uint32_t* irq_mask_th_val_addr)
+{
+    *irq_th_val_addr = (uint32_t)&s_accel_irq_th_val[accel_type];
+    *irq_mask_th_val_addr = (uint32_t)&s_accel_irq_mask_th_val[accel_type];
 }
 
 #ifdef _WIN32

@@ -106,6 +106,11 @@ static uint32_t get_error_injection_address(ras_einj_info_t* einj_payload, atu_m
         break;
     }
 
+    if (einj_payload->value_type.error_values < (1 << 20))
+    {
+        err_addr += einj_payload->value_type.error_values;
+    }
+
     return err_addr;
 }
 

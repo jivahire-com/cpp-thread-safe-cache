@@ -123,21 +123,10 @@ class soc_mission_mode_disable(EchoFallsBaseTest):
             node=self.host_config.node_id,
         )
 
-        # Step
-        rscm_helper.set_bmc_uart_mux_scp(self.bmc_cli)
+        rscm_helper.rscm_soc_reset()
 
         # Step
-        self.log.info("Waiting for Win boot to complete")
-        res = self.wait_for_win_boot_complete(
-            rscm_helper=rscm_helper, scp_cli=self.scp_cli, apns_cli=self.apns_cli
-        )
-        if res is False:
-            self.log.error("SOC reset or Win boot failed")
-            self.test_notify(
-                step="Mission Mode Disable Test", msg="Test Fail", _is_error=True
-            )
-            self.teardown()
-            return False
+        rscm_helper.set_bmc_uart_mux_scp(self.bmc_cli)
 
         # Step
         self.log.info("Turning off mission mode")
@@ -163,31 +152,6 @@ class soc_mission_mode_disable(EchoFallsBaseTest):
         self.teardown()
         return True
 
-    def wait_for_win_boot_complete(
-        self, rscm_helper: Any, scp_cli: Any, apns_cli: Any
-    ) -> bool:
-
-        assert rscm_helper is not None
-        assert scp_cli is not None
-        assert apns_cli is not None
-
-        if not scp_cli.is_open():  # type: ignore
-            scp_cli.open()  # type: ignore
-
-        if not apns_cli.is_open():  # type: ignore
-            apns_cli.open()  # type: ignore
-
-        rscm_helper.rscm_soc_reset()
-
-        try:
-            scp_cli.read_until(key="Primary AP core power on", timeout_seconds=1200)
-            apns_cli.read_until(key="SAC>", timeout_seconds=1200)
-            apns_cli.read_until(key="CMD command is now available", timeout_seconds=250)
-        except Exception as e:
-            self.log.error(f"Error in wait_for_win_boot_complete: {e}")
-            return False
-        return True
-
     def disable_mission_mode(
         self, rscm_helper: Any, scp_cli: Any, apns_cli: Any, uefi_helper: Any
     ) -> bool:
@@ -200,7 +164,7 @@ class soc_mission_mode_disable(EchoFallsBaseTest):
             apns_cli.open()
 
         try:
-            is_uefi_shell_up = uefi_helper.reset_and_boot_uefi(
+            is_uefi_shell_up = uefi_helper.boot_uefi(
                 apns_cli=apns_cli, rscm_helper=rscm_helper
             )
             if is_uefi_shell_up is True:

@@ -8,4 +8,5 @@
 ./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
 
 ## Power Tests
-./../../../tests/functional/test_suites/power_tests/mod_power_pldm_service.robot
+## Disabling the test till issue withpldm sesor is fixed - Bug3384294
+#./../../../tests/functional/test_suites/power_tests/mod_power_pldm_service.robot

@@ -6,11 +6,13 @@ using the 'utc time' MCP CLI command.
 """
 import time
 import sys
+import re
 from pathlib import Path
+from datetime import datetime, timezone
 
-sys.path.append(str(Path(__file__).parent.parent / 'kng_pythia_libs'))
-sys.path.append(str(Path(__file__).parent.parent / 'common'))
-sys.path.append(str(Path(__file__).parent.parent / 'pldm_tests'))
+sys.path.append(str(Path(__file__).parent.parent / "kng_pythia_libs"))
+sys.path.append(str(Path(__file__).parent.parent / "common"))
+sys.path.append(str(Path(__file__).parent.parent / "pldm_tests"))
 
 from pldm_common import pldm_common
 
@@ -42,6 +44,7 @@ class utc_sync_test(pldm_common):
             host_config=host_config,
             host_name=host_name,
         )
+
     # ── Setup / Teardown ──
 
     def setup_dut(self) -> bool:
@@ -85,9 +88,7 @@ class utc_sync_test(pldm_common):
         """
         cmd = "utc time"
         key = "Ok"
-        result, stdout, stderr = self._mcp_execute_command_until(
-            command=cmd, key=key
-        )
+        result, stdout, stderr = self._mcp_execute_command_until(command=cmd, key=key)
         self.log.info(f"[RAW_COMMAND_OUTPUT] cmd='{cmd}', key='{key}'")
         self.log.info(
             f"[RAW_COMMAND_OUTPUT] exit={result}, "
@@ -140,6 +141,64 @@ class utc_sync_test(pldm_common):
             timeout=10,
         )
 
+    def _parse_mcp_timestamp(self, mcp_output: str) -> int | None:
+        """
+        Extract milliseconds since epoch from MCP 'utc time' output.
+
+        Args:
+            mcp_output: Raw output from 'utc time' command
+
+        Returns:
+            Timestamp in milliseconds, or None if parsing fails
+        """
+        match = re.search(r"Current UTC Time \(ms since epoch\):\s*(\d+)", mcp_output)
+        if match:
+            return int(match.group(1))
+        return None
+
+    def _parse_bmc_timestamp(self, bmc_output: str) -> int | None:
+        """
+        Extract seconds since epoch from BMC 'timedatectl' output.
+
+        Args:
+            bmc_output: Raw output from 'timedatectl' command
+
+        Returns:
+            Timestamp in seconds, or None if parsing fails
+        """
+        # Extract "Local time: Wed 2026-02-25 10:01:11 UTC"
+        match = re.search(
+            r"Local time:\s+(\w+)\s+(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})\s+UTC",
+            bmc_output,
+        )
+        if match:
+            year, month, day, hour, minute, second = map(int, match.groups()[1:])
+            dt = datetime(year, month, day, hour, minute, second, tzinfo=timezone.utc)
+            return int(dt.timestamp())
+        return None
+
+    def _compare_times(
+        self, mcp_ms: int, bmc_sec: int, tolerance_sec: float = 10.0
+    ) -> tuple[bool, str]:
+        """
+        Compare MCP and BMC timestamps with tolerance for command execution delay.
+
+        Args:
+            mcp_ms: MCP timestamp in milliseconds since epoch
+            bmc_sec: BMC timestamp in seconds since epoch
+            tolerance_sec: Maximum allowed difference in seconds (default 10.0)
+
+        Returns:
+            Tuple of (match_ok: bool, description: str)
+        """
+        mcp_sec = mcp_ms / 1000.0
+        diff_sec = abs(mcp_sec - bmc_sec)
+
+        match_ok = diff_sec <= tolerance_sec
+        desc = f"MCP={mcp_sec:.3f}s, BMC={bmc_sec:.3f}s, Diff={diff_sec:.3f}s"
+
+        return match_ok, desc
+
     # ── Test Case ──
 
     def testcase1_capture_utc_times(self) -> dict:
@@ -153,7 +212,8 @@ class utc_sync_test(pldm_common):
         4. Wait 40 seconds
         5. Capture MCP 'utc time' output again
         6. Capture BMC 'timedatectl' output again
-        7. Return all captured outputs for validation
+        7. Compare timestamps from each capture
+        8. Return all captured outputs and comparison results for validation
 
         Returns:
             dict with keys:
@@ -162,7 +222,13 @@ class utc_sync_test(pldm_common):
                 - bmc_time_1: str (first BMC timedatectl output)
                 - mcp_time_2: str (second MCP utc time output after 40s)
                 - bmc_time_2: str (second BMC timedatectl output after 40s)
-                - success: bool (True if all captures succeeded)
+                - mcp_timestamp_1_ms: int or None (parsed MCP timestamp)
+                - bmc_timestamp_1_sec: int or None (parsed BMC timestamp)
+                - mcp_timestamp_2_ms: int or None (parsed MCP timestamp)
+                - bmc_timestamp_2_sec: int or None (parsed BMC timestamp)
+                - time_match_1: bool (first samples match within tolerance)
+                - time_match_2: bool (second samples match within tolerance)
+                - success: bool (True if all captures and comparisons succeeded)
         """
         self.log.info("=" * 60)
         self.log.info("UTC TIME CAPTURE TEST")
@@ -174,6 +240,12 @@ class utc_sync_test(pldm_common):
             "bmc_time_1": "",
             "mcp_time_2": "",
             "bmc_time_2": "",
+            "mcp_timestamp_1_ms": None,
+            "bmc_timestamp_1_sec": None,
+            "mcp_timestamp_2_ms": None,
+            "bmc_timestamp_2_sec": None,
+            "time_match_1": False,
+            "time_match_2": False,
             "success": False,
         }
 
@@ -220,10 +292,59 @@ class utc_sync_test(pldm_common):
             self.log.error("[FAIL] Failed to get BMC timedatectl (second sample)")
             return result
 
-        # All captures succeeded
-        result["success"] = True
+        # Step 7: Parse timestamps and compare
+        self.log.info("Step 7: Parsing and comparing timestamps...")
+
+        # Parse first sample
+        mcp_ts_1 = self._parse_mcp_timestamp(mcp_time_1)
+        bmc_ts_1 = self._parse_bmc_timestamp(bmc_time_1)
+        result["mcp_timestamp_1_ms"] = mcp_ts_1
+        result["bmc_timestamp_1_sec"] = bmc_ts_1
+
+        if mcp_ts_1 is not None and bmc_ts_1 is not None:
+            match_1, desc_1 = self._compare_times(mcp_ts_1, bmc_ts_1)
+            result["time_match_1"] = match_1
+            status_1 = "[PASS]" if match_1 else "[FAIL]"
+            self.log.info(f"  {status_1} First sample: {desc_1}")
+        else:
+            self.log.error(
+                f"  [FAIL] Could not parse first sample: "
+                f"mcp={mcp_ts_1}, bmc={bmc_ts_1}"
+            )
+            result["time_match_1"] = False
+            return result
+
+        # Parse second sample
+        mcp_ts_2 = self._parse_mcp_timestamp(mcp_time_2)
+        bmc_ts_2 = self._parse_bmc_timestamp(bmc_time_2)
+        result["mcp_timestamp_2_ms"] = mcp_ts_2
+        result["bmc_timestamp_2_sec"] = bmc_ts_2
+
+        if mcp_ts_2 is not None and bmc_ts_2 is not None:
+            match_2, desc_2 = self._compare_times(mcp_ts_2, bmc_ts_2)
+            result["time_match_2"] = match_2
+            status_2 = "[PASS]" if match_2 else "[FAIL]"
+            self.log.info(f"  {status_2} Second sample: {desc_2}")
+        else:
+            self.log.error(
+                f"  [FAIL] Could not parse second sample: "
+                f"mcp={mcp_ts_2}, bmc={bmc_ts_2}"
+            )
+            result["time_match_2"] = False
+            return result
+
+        # Determine overall success based on both samples matching
+        result["success"] = result["time_match_1"] and result["time_match_2"]
+
         self.log.info("=" * 60)
-        self.log.info("[PASS] All UTC time captures completed successfully")
+        if result["success"]:
+            self.log.info("[PASS] UTC times are synchronized (both samples matched)")
+        else:
+            self.log.error("[FAIL] UTC time synchronization failed")
+            if not result["time_match_1"]:
+                self.log.error("  - First sample: times do not match within tolerance")
+            if not result["time_match_2"]:
+                self.log.error("  - Second sample: times do not match within tolerance")
         self.log.info("=" * 60)
 
         return result

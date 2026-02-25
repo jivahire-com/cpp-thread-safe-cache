@@ -42,5 +42,9 @@ Teardown Test Environment
 Test Case - 1. Capture UTC Times From BMC And MCP
     [Documentation]    Confirms PLDM service is active, then captures MCP 'utc time'
     ...                and BMC 'timedatectl' output twice with a 40-second delay.
+    ...                Validates that UTC times match within tolerance on both samples.
     ${result}=    utc_sync_lib.testcase1_capture_utc_times
-    Should Be True    ${result}[success]    UTC time capture failed
+    Should Be True    ${result}[pldm_active]    PLDM service is not active
+    Should Be True    ${result}[time_match_1]    First sample: UTC times do not match
+    Should Be True    ${result}[time_match_2]    Second sample: UTC times do not match
+    Should Be True    ${result}[success]    UTC time synchronization test failed

@@ -708,12 +708,15 @@ PLACED_CODE int ddrss_load_crypto_key(uint32_t mc, uint32_t msg, uint32_t timeou
             {
                 ddrss_key_loading_req |= DDRSS_PROD_FW_PROD_KEY_LOADED;
                 // check the ddr reserved regionversion from the response and compare with the expected version
-                uint32_t ddrss_fw_version = mailbox_msg.rsp.status_ex;
+                uint32_t ddrss_reserved_region_version = mailbox_msg.rsp.status_ex;
                 printf("DDRSS PROD KEY: DDRSS reserved region version received from HSP: 0x%lx, "
                        "expected version: "
                        "0x%x\n",
-                       (unsigned long)ddrss_fw_version,
+                       (unsigned long)ddrss_reserved_region_version,
                        DDRSS_RESERVED_REGIONS_REVISION);
+                BUG_ASSERT_PARAM(ddrss_reserved_region_version == DDRSS_RESERVED_REGIONS_REVISION,
+                                 ddrss_reserved_region_version,
+                                 DDRSS_RESERVED_REGIONS_REVISION);
             }
             else if (req_cmd == HSP_MAILBOX_CMD_DDRSS_DEPLOY_FIPS_KEYS_REQ)
             {

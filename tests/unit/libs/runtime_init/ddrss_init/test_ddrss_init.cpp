@@ -17,6 +17,7 @@ extern "C" {
 #include <ddr_manager.h> // for ddr_manager_init, ddr_service_context_t
 #include <ddrss.h>
 #include <ddrss_lib.h>
+#include <ddrss_reserved_regions_version.h>
 #include <fpfw_icc_base.h>
 #include <fpfw_init.h>
 #include <hsp_firmware_headers.h>
@@ -148,6 +149,7 @@ fpfw_status_t __wrap_fpfw_icc_base_send_recv_sync(fpfw_icc_base_ctx_t* icc_ctx, 
     {
         recv_msg->header.cmd = HSP_MAILBOX_CMD_DDRSS_DEPLOY_PROD_KEYS_RSP;
         recv_msg->rsp.status = HSP_MAILBOX_RSP_STATUS_SUCCESS;
+        recv_msg->rsp.status_ex = DDRSS_RESERVED_REGIONS_REVISION;
         *output_recv_bytes = sizeof(kng_hsp_mailbox_msg);
     }
 

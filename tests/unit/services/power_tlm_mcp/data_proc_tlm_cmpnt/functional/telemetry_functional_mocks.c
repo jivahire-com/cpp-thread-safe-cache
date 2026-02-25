@@ -377,6 +377,44 @@ void __wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg(void)
     function_called();
 }
 
+// Mock functions for mesh telemetry hardware APIs
+uint32_t __wrap_mesh_get_m0_residency(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m1_residency(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m2_residency(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m1_entry_count(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_m2_entry_count(void)
+{
+    return mock_type(uint32_t);
+}
+
+uint32_t __wrap_mesh_get_telemetry_delivered_perf_count(void)
+{
+    return mock_type(uint32_t);
+}
+
+void __wrap_mesh_clock_telemetry(bool enable, uint32_t interval_count)
+{
+    check_expected(enable);
+    check_expected(interval_count);
+    function_called();
+}
+
 int __wrap_d2dss_pmu_init(uint8_t d2dss_index, uint8_t event_number, uint32_t event_count, bool enable)
 {
     FPFW_UNUSED(d2dss_index);
@@ -453,50 +491,4 @@ void reset_d2d_pmu_mocks(void)
     // Reset D2D mock state for clean test isolation
     d2d_pmu_initialized = false;
     memset(d2d_mock_counter_values, 0, sizeof(d2d_mock_counter_values));
-}
-
-// Mesh telemetry mock functions (hardware interface)
-// These follow the same pattern as the unit test mesh mocks
-uint32_t __wrap_mesh_get_m0_residency(void)
-{
-    // Mock mesh M0 residency counter read from hardware
-    return mock_type(uint32_t);
-}
-
-uint32_t __wrap_mesh_get_m1_residency(void)
-{
-    // Mock mesh M1 residency counter read from hardware
-    return mock_type(uint32_t);
-}
-
-uint32_t __wrap_mesh_get_m2_residency(void)
-{
-    // Mock mesh M2 residency counter read from hardware
-    return mock_type(uint32_t);
-}
-
-uint32_t __wrap_mesh_get_m1_entry_count(void)
-{
-    // Mock mesh M1 entry counter read from hardware
-    return mock_type(uint32_t);
-}
-
-uint32_t __wrap_mesh_get_m2_entry_count(void)
-{
-    // Mock mesh M2 entry counter read from hardware
-    return mock_type(uint32_t);
-}
-
-uint32_t __wrap_mesh_get_telemetry_delivered_perf_count(void)
-{
-    // Mock mesh delivered performance counter read from hardware
-    return mock_type(uint32_t);
-}
-
-void __wrap_mesh_clock_telemetry(bool enable, uint32_t interval_count)
-{
-    // Mock mesh telemetry clock configuration (hardware register write)
-    check_expected(enable);
-    check_expected(interval_count);
-    function_called();
 }

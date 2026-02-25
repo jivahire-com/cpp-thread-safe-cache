@@ -84,6 +84,9 @@ FPFW_INIT_COMPONENT(fuse_post_mesh,
 
     fuse_post_mesh_init(icc_die2die_ctx);
 
+    // Apply hardcoded overrides based on sample milestone
+    fuse_hardcoded_overrides();
+
     boot_status_req_t boot_status_req = {0};
     boot_status_notify_extd(
         &boot_status_req,
@@ -94,6 +97,16 @@ FPFW_INIT_COMPONENT(fuse_post_mesh,
                                             ? ((idsw_get_cpu_type() == CPU_SCP) ? SCP_PRIMARY : MCP_PRIMARY)
                                             : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+//
+// Apply hardcoded fuse overrides after DDR init is complete
+//
+
+FPFW_INIT_COMPONENT(fuse_override, FPFW_INIT_DEPENDENCIES("fuse_post_mesh", "ddr"))
+{
+    fuse_hardcoded_overrides();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 

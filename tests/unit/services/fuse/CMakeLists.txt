@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         ms::lib::threadx
         ms::mocks::event_trace
         ms::mocks::threadx
+        ms::service::atu_service
         ms::service::fuse
         ms::service::sds_service
     PUBLIC
@@ -24,6 +25,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.cfg_mgr
         fwlib.lib.linkedlist
         fwlib.lib.utils
+        silibs::atu
         silibs::fuse
         silibs::idsw
         silibs::idsw_kng
@@ -52,6 +54,8 @@ unit_test_target(${TARGET})
 
 
 mock_target(${TARGET}
+    atu_map
+    atu_unmap
     crash_dump_bug_check
     idsw_get_platform_sdv
     idsw_get_die_id

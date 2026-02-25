@@ -15,6 +15,8 @@
 
 extern "C" {
 #include <FpFwUtils.h> // for FPFW_UNUSED
+#include <atu_api.h>
+#include <atu_lib.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h> // for fpfw_icc_base_send_recv_req_t, fpfw...
 #include <fpfw_init.h>     // for fpfw_init_get_handle, FPFW_INIT_C...
@@ -65,10 +67,35 @@ static jmp_buf cd_mock_jump_buf;
 static kng_fuse_disable_core_t DIE0_fuse_disable_test = {0x00, 0x00, 0x0, 0xFFFFFFFF};
 static kng_fuse_disable_core_t DIE1_core_disable_post_knob_test = {0x04000000, 0x40, 0xfffffff0, 0xffffffff};
 
+// Mock CSR memory buffer for ATU-mapped access tests
+// Size must cover page offset 0x120 + sizeof(uint32_t) = 0x124 bytes
+static uint8_t mock_atu_csr_memory[0x200] = {0};
+
 /*------------- Functions ----------------*/
 
 //
 // Mocks
+
+int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    check_expected(atu_id);
+    assert_non_null(atu_map_entry);
+
+    // Set up the mapped address to point to our mock CSR memory buffer
+    // This allows the code to read/write without causing access violations
+    atu_map_entry->mscp_start_address = (uintptr_t)mock_atu_csr_memory;
+
+    function_called();
+    return mock_type(int);
+}
+
+int __wrap_atu_unmap(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
+{
+    check_expected(atu_id);
+    FPFW_UNUSED(atu_map_entry);
+    function_called();
+    return mock_type(int);
+}
 
 KNG_PLAT_ID __wrap_idsw_get_platform_sdv()
 {
@@ -1410,4 +1437,69 @@ TEST_FUNCTION(test_fuse_post_mesh_init, NULL, NULL)
     fpfw_icc_base_ctx_t* dummy_icc_d2d_ctx = reinterpret_cast<fpfw_icc_base_ctx_t*>(1);
 
     fuse_post_mesh_init(dummy_icc_d2d_ctx);
+}
+
+//
+// Test: fuse_hardcoded_overrides skips for PR milestone (value 3)
+//
+TEST_FUNCTION(test_fuse_hardcoded_overrides_skip_pr_milestone, NULL, NULL)
+{
+    // Return silicon platform
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
+    // Mock fuse read for customer sample milestone - return PR (3)
+    expect_value(__wrap_fuse_read, fuse_bit_offset, CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_WIDTH);
+    will_return(__wrap_fuse_read, 3); // PR milestone
+
+    // Should return early without ATU operations since milestone > PC
+    fuse_hardcoded_overrides();
+}
+
+//
+// Test: fuse_hardcoded_overrides applies override for PC milestone (value 2)
+//
+TEST_FUNCTION(test_fuse_hardcoded_overrides_apply_pc_milestone, NULL, NULL)
+{
+    // Return silicon platform
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
+    // Mock fuse read for customer sample milestone - return PC (2)
+    expect_value(__wrap_fuse_read, fuse_bit_offset, CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_WIDTH);
+    will_return(__wrap_fuse_read, 2); // PC milestone
+
+    // Expect ATU map call
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_map);
+    will_return(__wrap_atu_map, SILIBS_SUCCESS);
+
+    // Expect ATU unmap call
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+    will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    fuse_hardcoded_overrides();
+}
+
+//
+// Test: fuse_hardcoded_overrides handles ATU map failure gracefully
+//
+TEST_FUNCTION(test_fuse_hardcoded_overrides_atu_map_fail, NULL, NULL)
+{
+    // Return silicon platform
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
+    // Mock fuse read for customer sample milestone - return ES (1)
+    expect_value(__wrap_fuse_read, fuse_bit_offset, CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_BIT_OFFSET);
+    expect_value(__wrap_fuse_read, fuse_bit_size, CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_WIDTH);
+    will_return(__wrap_fuse_read, 1); // ES milestone
+
+    // Expect ATU map call - return failure
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_map);
+    will_return(__wrap_atu_map, SILIBS_E_PARAM);
+
+    // Should return early without unmap since map failed
+    fuse_hardcoded_overrides();
 }

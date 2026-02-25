@@ -8,6 +8,8 @@
 
 /*------------- Includes -----------------*/
 
+#include <atu_api.h>
+#include <atu_lib.h>
 #include <bug_check.h> // for BUG_ASSERT_PARAM, BUG_ASSERT
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_C...
@@ -46,6 +48,12 @@
 #include <utils.h>  // for sleep_ms()...
 /*-- Symbolic Constant Macros (defines) --*/
 #define FUSE_PAYLOAD_SIZE 7
+
+// Customer sample milestone values
+#define CUSTOMER_SAMPLE_MILESTONE_UNKNOWN 0
+#define CUSTOMER_SAMPLE_MILESTONE_ES      1
+#define CUSTOMER_SAMPLE_MILESTONE_PC      2
+#define CUSTOMER_SAMPLE_MILESTONE_PR      3
 
 /*------------- Typedefs -----------------*/
 #define NUM_CSR_BACKED_CORE_FUSE_DESCRIPTORS (4)
@@ -805,6 +813,87 @@ int platform_fuse_distribution(fuse_distribution_stage_t stage)
     }
 
     return status;
+}
+
+/**
+ * @brief Apply hardcoded fuse overrides based on customer sample milestone.
+ */
+void fuse_hardcoded_overrides(void)
+{
+    KNG_PLAT_ID platform_id = idsw_get_platform_sdv();
+
+    // Only apply on silicon platform
+    if (platform_id != PLATFORM_RVP_EVT_SILICON)
+    {
+        return;
+    }
+
+    // Read customer sample milestone fuse
+    // 0x0 = undefined; 0x1 = ES; 0x2 = PC; 0x3 = PR; >0x3 TBD
+    uint64_t customer_fuse_data = 0;
+    int status = platform_read_for_fuse((uintptr_t)&customer_fuse_data,
+                                        CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_BIT_OFFSET,
+                                        CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_WIDTH);
+    if (status != FPFW_INIT_STATUS_SUCCESS)
+    {
+        FPFW_DBGPRINT_ERROR(FUSE_NAME "Failed to read customer sample milestone fuse\n");
+        return;
+    }
+
+    uint8_t customer_sample_milestone = (uint8_t)customer_fuse_data;
+    FPFW_DBGPRINT_INFO(FUSE_NAME "Customer sample milestone: %d\n", customer_sample_milestone);
+
+    // Apply override if milestone <= PC (UNKNOWN=0, ES=1, PC=2)
+    // PR (3) and beyond use the correctly fused value
+    if (customer_sample_milestone <= CUSTOMER_SAMPLE_MILESTONE_PC)
+    {
+        FPFW_DBGPRINT_INFO(FUSE_NAME
+                           "Applying cdedss_uhd1rwrf_memtrim_wa override (0x4) for pre-PR sample\n");
+
+        const uint64_t csr_ap_address = 0x502e810120ULL;
+        const uint32_t csr_field_offset = 2;
+        const uint32_t csr_field_width = 3;
+        const uint32_t override_value = 0x4;
+
+        // Set up ATU mapping to access AP address space
+        // Use ATU_BUS_ATTR_ROOT for privileged access to CDEDSS registers
+        atu_map_entry_t atu_entry = {.ap_base_address = csr_ap_address & ~(ATU_PAGE_SIZE - 1), // Align to page boundary
+                                     .mscp_start_address = 0, // Let ATU assign
+                                     .mscp_end_address = ATU_PAGE_SIZE - 1,
+                                     .attribute = {ATU_BUS_ATTR_ROOT}};
+
+        int atu_status = atu_map(ATU_ID_MSCP, &atu_entry);
+        if (atu_status != SILIBS_SUCCESS)
+        {
+            FPFW_DBGPRINT_ERROR(FUSE_NAME "Failed to map ATU for cdedss_uhd1rwrf_memtrim_wa CSR: %d\n", atu_status);
+            return;
+        }
+
+        // Calculate the offset within the page
+        uint32_t page_offset = (uint32_t)(csr_ap_address & (ATU_PAGE_SIZE - 1));
+        volatile uint32_t* csr_addr = (volatile uint32_t*)(atu_entry.mscp_start_address + page_offset);
+
+        // Read current CSR value
+        uint32_t current_csr = *csr_addr;
+
+        // Create mask for the field (3 bits at offset 2)
+        uint32_t field_mask = ((1U << csr_field_width) - 1) << csr_field_offset;
+
+        // Clear the field and set new value
+        uint32_t new_csr = (current_csr & ~field_mask) | ((override_value << csr_field_offset) & field_mask);
+
+        // Write new value to CSR
+        *csr_addr = new_csr;
+
+        FPFW_DBGPRINT_INFO(FUSE_NAME "cdedss_uhd1rwrf_memtrim_wa CSR: 0x%08x -> 0x%08x\n", current_csr, new_csr);
+
+        // Unmap ATU
+        atu_status = atu_unmap(ATU_ID_MSCP, &atu_entry);
+        if (atu_status != SILIBS_SUCCESS)
+        {
+            FPFW_DBGPRINT_ERROR(FUSE_NAME "Failed to unmap ATU: %d\n", atu_status);
+        }
+    }
 }
 
 void fuse_init(fpfw_icc_base_ctx_t* icc_hspmbx_ctx)

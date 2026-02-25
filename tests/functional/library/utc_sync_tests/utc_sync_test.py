@@ -195,7 +195,7 @@ class utc_sync_test(pldm_common):
         diff_sec = abs(mcp_sec - bmc_sec)
 
         match_ok = diff_sec <= tolerance_sec
-        desc = f"MCP={mcp_sec:.3f}s, BMC={bmc_sec:.3f}s, Diff={diff_sec:.3f}s"
+        desc = f"MCP={mcp_sec:.3f}s, BMC={bmc_sec:.3f}s, Diff={diff_sec:.3f}s (Tolerance={tolerance_sec:.3f}s)"
 
         return match_ok, desc
 
@@ -203,51 +203,54 @@ class utc_sync_test(pldm_common):
 
     def testcase1_capture_utc_times(self) -> dict:
         """
-        Capture UTC time from MCP and BMC twice with 40-second delay.
+        Capture UTC time from MCP and BMC five times with 40-second delays.
 
         Steps:
         1. Confirm PLDM service is running
-        2. Capture MCP 'utc time' output
-        3. Capture BMC 'timedatectl' output
-        4. Wait 40 seconds
-        5. Capture MCP 'utc time' output again
-        6. Capture BMC 'timedatectl' output again
-        7. Compare timestamps from each capture
-        8. Return all captured outputs and comparison results for validation
+        2. Capture MCP 'utc time' and BMC 'timedatectl' (Sample 1)
+        3. Wait 40 seconds
+        4. Capture MCP 'utc time' and BMC 'timedatectl' (Sample 2)
+        5. Wait 40 seconds
+        6. Capture MCP 'utc time' and BMC 'timedatectl' (Sample 3)
+        7. Wait 40 seconds
+        8. Capture MCP 'utc time' and BMC 'timedatectl' (Sample 4)
+        9. Wait 40 seconds
+        10. Capture MCP 'utc time' and BMC 'timedatectl' (Sample 5)
+        11. Compare timestamps from all captures
+        12. Return all captured outputs and comparison results for validation
 
         Returns:
             dict with keys:
                 - pldm_active: bool
-                - mcp_time_1: str (first MCP utc time output)
-                - bmc_time_1: str (first BMC timedatectl output)
-                - mcp_time_2: str (second MCP utc time output after 40s)
-                - bmc_time_2: str (second BMC timedatectl output after 40s)
-                - mcp_timestamp_1_ms: int or None (parsed MCP timestamp)
-                - bmc_timestamp_1_sec: int or None (parsed BMC timestamp)
-                - mcp_timestamp_2_ms: int or None (parsed MCP timestamp)
-                - bmc_timestamp_2_sec: int or None (parsed BMC timestamp)
-                - time_match_1: bool (first samples match within tolerance)
-                - time_match_2: bool (second samples match within tolerance)
+                - tolerance_sec: float (tolerance range used for comparisons)
+                - mcp_time_[1-5]: str (MCP utc time outputs)
+                - bmc_time_[1-5]: str (BMC timedatectl outputs)
+                - mcp_timestamp_[1-5]_ms: int or None (parsed MCP timestamps)
+                - bmc_timestamp_[1-5]_sec: int or None (parsed BMC timestamps)
+                - time_match_[1-5]: bool (sample matches within tolerance)
                 - success: bool (True if all captures and comparisons succeeded)
         """
+        tolerance_sec = 10.0
+
         self.log.info("=" * 60)
-        self.log.info("UTC TIME CAPTURE TEST")
+        self.log.info("UTC TIME CAPTURE TEST (5 SAMPLES)")
+        self.log.info("=" * 60)
+        self.log.info(f"Tolerance Range: +/- {tolerance_sec:.1f} seconds")
         self.log.info("=" * 60)
 
         result = {
             "pldm_active": False,
-            "mcp_time_1": "",
-            "bmc_time_1": "",
-            "mcp_time_2": "",
-            "bmc_time_2": "",
-            "mcp_timestamp_1_ms": None,
-            "bmc_timestamp_1_sec": None,
-            "mcp_timestamp_2_ms": None,
-            "bmc_timestamp_2_sec": None,
-            "time_match_1": False,
-            "time_match_2": False,
+            "tolerance_sec": tolerance_sec,
             "success": False,
         }
+
+        # Initialize result dictionaries for 5 samples
+        for i in range(1, 6):
+            result[f"mcp_time_{i}"] = ""
+            result[f"bmc_time_{i}"] = ""
+            result[f"mcp_timestamp_{i}_ms"] = None
+            result[f"bmc_timestamp_{i}_sec"] = None
+            result[f"time_match_{i}"] = False
 
         # Step 1: Confirm PLDM is running
         self.log.info("Step 1: Checking PLDM service status...")
@@ -258,93 +261,76 @@ class utc_sync_test(pldm_common):
             return result
         self.log.info("[PASS] PLDM service is active")
 
-        # Step 2: First capture - MCP UTC time
-        self.log.info("Step 2: Capturing MCP 'utc time' (first sample)...")
-        mcp_time_1 = self._get_mcp_utc_time()
-        result["mcp_time_1"] = mcp_time_1
-        if not mcp_time_1:
-            self.log.error("[FAIL] Failed to get MCP UTC time (first sample)")
-            return result
-        # Step 3: First capture - BMC timedatectl
-        self.log.info("Step 3: Capturing BMC 'timedatectl' (first sample)...")
-        bmc_time_1 = self._get_bmc_timedatectl()
-        result["bmc_time_1"] = bmc_time_1
-        if not bmc_time_1:
-            self.log.error("[FAIL] Failed to get BMC timedatectl (first sample)")
-            return result
+        # Capture 5 samples with 40-second intervals
+        for sample_num in range(1, 6):
+            self.log.info(f"\n--- SAMPLE {sample_num}/5 ---")
 
-        # Step 4: Wait 40 seconds
-        self.log.info("Step 4: Waiting 40 seconds before second capture...")
-        time.sleep(40)
+            # Capture MCP UTC time
+            self.log.info(f"Capturing MCP 'utc time' (sample {sample_num})...")
+            mcp_time = self._get_mcp_utc_time()
+            result[f"mcp_time_{sample_num}"] = mcp_time
+            if not mcp_time:
+                self.log.error(
+                    f"[FAIL] Failed to get MCP UTC time (sample {sample_num})"
+                )
+                return result
 
-        # Step 5: Second capture - MCP UTC time
-        self.log.info("Step 5: Capturing MCP 'utc time' (second sample)...")
-        mcp_time_2 = self._get_mcp_utc_time()
-        result["mcp_time_2"] = mcp_time_2
-        if not mcp_time_2:
-            self.log.error("[FAIL] Failed to get MCP UTC time (second sample)")
-            return result
-        # Step 6: Second capture - BMC timedatectl
-        self.log.info("Step 6: Capturing BMC 'timedatectl' (second sample)...")
-        bmc_time_2 = self._get_bmc_timedatectl()
-        result["bmc_time_2"] = bmc_time_2
-        if not bmc_time_2:
-            self.log.error("[FAIL] Failed to get BMC timedatectl (second sample)")
-            return result
+            # Capture BMC timedatectl
+            self.log.info(f"Capturing BMC 'timedatectl' (sample {sample_num})...")
+            bmc_time = self._get_bmc_timedatectl()
+            result[f"bmc_time_{sample_num}"] = bmc_time
+            if not bmc_time:
+                self.log.error(
+                    f"[FAIL] Failed to get BMC timedatectl (sample {sample_num})"
+                )
+                return result
 
-        # Step 7: Parse timestamps and compare
-        self.log.info("Step 7: Parsing and comparing timestamps...")
+            # Parse timestamps
+            mcp_ts = self._parse_mcp_timestamp(mcp_time)
+            bmc_ts = self._parse_bmc_timestamp(bmc_time)
+            result[f"mcp_timestamp_{sample_num}_ms"] = mcp_ts
+            result[f"bmc_timestamp_{sample_num}_sec"] = bmc_ts
 
-        # Parse first sample
-        mcp_ts_1 = self._parse_mcp_timestamp(mcp_time_1)
-        bmc_ts_1 = self._parse_bmc_timestamp(bmc_time_1)
-        result["mcp_timestamp_1_ms"] = mcp_ts_1
-        result["bmc_timestamp_1_sec"] = bmc_ts_1
+            # Compare timestamps
+            if mcp_ts is not None and bmc_ts is not None:
+                match, desc = self._compare_times(mcp_ts, bmc_ts, tolerance_sec)
+                result[f"time_match_{sample_num}"] = match
+                status = "[PASS]" if match else "[FAIL]"
+                self.log.info(f"  {status} Sample {sample_num}: {desc}")
+            else:
+                self.log.error(
+                    f"  [FAIL] Could not parse sample {sample_num}: "
+                    f"mcp={mcp_ts}, bmc={bmc_ts}"
+                )
+                result[f"time_match_{sample_num}"] = False
+                return result
 
-        if mcp_ts_1 is not None and bmc_ts_1 is not None:
-            match_1, desc_1 = self._compare_times(mcp_ts_1, bmc_ts_1)
-            result["time_match_1"] = match_1
-            status_1 = "[PASS]" if match_1 else "[FAIL]"
-            self.log.info(f"  {status_1} First sample: {desc_1}")
-        else:
-            self.log.error(
-                f"  [FAIL] Could not parse first sample: "
-                f"mcp={mcp_ts_1}, bmc={bmc_ts_1}"
-            )
-            result["time_match_1"] = False
-            return result
+            # Wait 40 seconds before next sample (except after last sample)
+            if sample_num < 5:
+                self.log.info(f"Waiting 40 seconds before sample {sample_num + 1}...")
+                time.sleep(40)
 
-        # Parse second sample
-        mcp_ts_2 = self._parse_mcp_timestamp(mcp_time_2)
-        bmc_ts_2 = self._parse_bmc_timestamp(bmc_time_2)
-        result["mcp_timestamp_2_ms"] = mcp_ts_2
-        result["bmc_timestamp_2_sec"] = bmc_ts_2
+        # Determine overall success - all 5 samples must match
+        all_matches = all(result[f"time_match_{i}"] for i in range(1, 6))
+        result["success"] = all_matches
 
-        if mcp_ts_2 is not None and bmc_ts_2 is not None:
-            match_2, desc_2 = self._compare_times(mcp_ts_2, bmc_ts_2)
-            result["time_match_2"] = match_2
-            status_2 = "[PASS]" if match_2 else "[FAIL]"
-            self.log.info(f"  {status_2} Second sample: {desc_2}")
-        else:
-            self.log.error(
-                f"  [FAIL] Could not parse second sample: "
-                f"mcp={mcp_ts_2}, bmc={bmc_ts_2}"
-            )
-            result["time_match_2"] = False
-            return result
-
-        # Determine overall success based on both samples matching
-        result["success"] = result["time_match_1"] and result["time_match_2"]
-
+        self.log.info("\n" + "=" * 60)
+        self.log.info("TEST SUMMARY")
         self.log.info("=" * 60)
+        for i in range(1, 6):
+            status = "PASS" if result[f"time_match_{i}"] else "FAIL"
+            self.log.info(f"  Sample {i}: {status}")
+        self.log.info("=" * 60)
+
         if result["success"]:
-            self.log.info("[PASS] UTC times are synchronized (both samples matched)")
+            self.log.info("[PASS] UTC times are synchronized (all 5 samples matched)")
         else:
             self.log.error("[FAIL] UTC time synchronization failed")
-            if not result["time_match_1"]:
-                self.log.error("  - First sample: times do not match within tolerance")
-            if not result["time_match_2"]:
-                self.log.error("  - Second sample: times do not match within tolerance")
+            for i in range(1, 6):
+                if not result[f"time_match_{i}"]:
+                    self.log.error(
+                        f"  - Sample {i}: times do not match within tolerance"
+                    )
         self.log.info("=" * 60)
 
         return result

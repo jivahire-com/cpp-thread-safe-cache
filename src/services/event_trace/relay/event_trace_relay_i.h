@@ -16,7 +16,8 @@
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 #define ETR_EVENT_FLAG_NEW_MTS_MSG                  (1U << 1)
 #define ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION        (1U << 2)
-#define ETR_EVENT_FLAG_ANY_VALID                    (ETR_EVENT_FLAG_NEW_MTS_MSG | ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION)
+#define ETR_EVENT_FLAG_PROCESS_HSP_BUFFER           (1U << 3)
+#define ETR_EVENT_FLAG_ANY_VALID                    (ETR_EVENT_FLAG_NEW_MTS_MSG | ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION | ETR_EVENT_FLAG_PROCESS_HSP_BUFFER)
 
 /*-------------------------------- Typedefs ---------------------------------*/
 
@@ -49,6 +50,14 @@ void etr_worker_thread_func(ULONG thread_input);
  * @return None
  */
 void notify_ddr_buffer_available();
+
+/**
+ * @brief Set ThreadX event flags for the ETR worker thread.
+ * 
+ * @param flags The event flags to set.
+ * @return None 
+ */
+void set_etr_thread_event_flags(ULONG flags);
 
 #ifdef _WIN32   // Unit Test Only
 /**

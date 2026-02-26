@@ -280,6 +280,42 @@ uint64_t __wrap_gtimer_get_timestamp_ms(void)
     return mock_type(uint64_t);
 }
 
+/* Mask applied to event flags returned by the mock. Default 0xFFFFFFFF passes all flags through.
+ * Tests can call set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER) to exclude HSP handler. */
+static ULONG s_event_flags_mask = 0xFFFFFFFF;
+
+void set_event_flags_mask(ULONG mask)
+{
+    s_event_flags_mask = mask;
+}
+
+/* Local override of the shared ThreadX event_flags_get mock.
+ * Applies s_event_flags_mask so that non-HSP tests can exclude
+ * ETR_EVENT_FLAG_PROCESS_HSP_BUFFER from the returned flags. */
+UINT __wrap__txe_event_flags_get(TX_EVENT_FLAGS_GROUP* group_ptr, ULONG requested_flags, UINT get_option, ULONG* actual_flags_ptr, ULONG wait_option)
+{
+    check_expected_ptr(group_ptr);
+    check_expected(requested_flags);
+    check_expected(get_option);
+    check_expected_ptr(actual_flags_ptr);
+    check_expected(wait_option);
+
+    static int count = 0x0;
+
+    if (count == 0)
+    {
+        *actual_flags_ptr = requested_flags & s_event_flags_mask;
+        count++;
+    }
+    else
+    {
+        *actual_flags_ptr = ~requested_flags;
+        count = 0x0;
+    }
+
+    return mock_type(UINT);
+}
+
 } // extern "C"
 
 // Forward declare fake_core_buffer so test_setup_common can reset it
@@ -399,6 +435,9 @@ int test_setup_die1(void** ppContext)
 int test_teardown(void** ppContext)
 {
     FPFW_UNUSED(ppContext);
+
+    /* Reset event flags mask so subsequent tests get all flags by default */
+    set_event_flags_mask(0xFFFFFFFF);
 
     return TX_SUCCESS;
 }
@@ -994,15 +1033,9 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
-
-    /* Expect event flag set from notify_ddr_buffer_available() */
-    expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
-    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
-    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
-
     expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -1063,11 +1096,15 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup_
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
-
-    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    /* Exclude HSP handler - this test covers the copy buffer path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
+
+    /* Expect mts_client_send_new_trp_msg from notify_ddr_buffer_available() via etr_complete_asic_buffer (die1) */
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -1139,17 +1176,11 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     // Since SCP, expect a Cache Invalidate call
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
-
-    /* Expect event flag set from notify_ddr_buffer_available() */
-    expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
-    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
-    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
-
-    expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -1247,6 +1278,9 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending_die1
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    /* Exclude HSP handler - this test covers the read package complete path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1339,6 +1373,9 @@ TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete_invalid_blo
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    /* Exclude HSP handler - this test covers the intercore block complete path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1388,6 +1425,9 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address_die
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    /* Exclude HSP handler - this test covers the read package complete path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1434,11 +1474,8 @@ TEST_FUNCTION(test_etr_process_request_read_package_notification, test_setup_die
     // Set both accelerators to be isolated for branch coverage
     accel_isolation = true;
 
-    /* Expect event flag set from notify_ddr_buffer_available() */
-    expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
-    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
-    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+    /* Exclude HSP handler - this test covers the package notification path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -1489,6 +1526,9 @@ TEST_FUNCTION(test_etr_process_request_read_package_no_pending_buffer, test_setu
 
     /* Override number of pending buffers to 0 */
     set_num_buffers_pending(0);
+
+    /* Exclude HSP handler - this test covers the read package path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -1541,8 +1581,11 @@ TEST_FUNCTION(test_etr_process_request_read_package_buffer_pending, test_setup_d
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    /* Override number of pending buffers to 2 */
-    set_num_buffers_pending(2);
+    /* Override number of pending buffers to 1 */
+    set_num_buffers_pending(1);
+
+    /* Exclude HSP handler - this test covers the read package path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -1758,6 +1801,9 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     /* Override number of pending buffers to 2. After completing this buffer, there will be only one pending buffer */
     set_num_buffers_pending(2);
 
+    /* Exclude HSP handler - this test covers the read data complete path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1842,9 +1888,9 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup_die0, test_teardow
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
-    /* Expect event flag set from notify_ddr_buffer_available() since the dcp client is running */
+    /* Expect event flag set from set_etr_thread_event_flags() to process HSP buffer */
     expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
     expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
     will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
@@ -1873,9 +1919,9 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die_buffers_pending, test_setup_di
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
-    /* Expect event flag set from notify_ddr_buffer_available() even with buffers pending since the dcp client is running */
+    /* Expect event flag set from set_etr_thread_event_flags() to process HSP buffer */
     expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
     expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
     will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
@@ -1901,7 +1947,11 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_secondary_die, test_setup_die1, test_teard
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
     etr_set_override_atu_test_address(&test_payload);
 
-    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    /* Expect event flag set from set_etr_thread_event_flags() to process HSP buffer */
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
 }

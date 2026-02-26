@@ -55,6 +55,9 @@
                 (ALIGN_UP(AP_TOP_D0_AP_R_WDOG_C_FRAME_S_SIZE, ATU_PAGE_SIZE) - 1),                             \
                 {ATU_BUS_ATTR_ROOT})
 
+#define CRASH_DUMP_MAX_RETRY_COUNT    10
+#define CRASH_DUMP_MAX_RETRY_DELAY_US 1000000 // 1 seconds
+
 /*-------- Function Prototypes -----------*/
 
 /*-------------- Typedefs ----------------*/
@@ -71,7 +74,24 @@ static const GUID CD_AP_WDT_CHUNK_GUID = {0x4e4e2c2b, 0x5416, 0x4800, {0xb1, 0xd
 // Callback to get payload size
 static uint32_t ap_wdt_chunk_get_size(void* userContext)
 {
-    kng_ap_fw_hdr* fw_hdr = (kng_ap_fw_hdr*)userContext;
+    uint32_t retry_count = 0;
+    volatile kng_ap_fw_hdr* fw_hdr = (volatile kng_ap_fw_hdr*)userContext;
+
+    // Check cd_status before getting size.
+    while (fw_hdr->cd_status != KNG_CD_STATUS_COMPLETED && retry_count < CRASH_DUMP_MAX_RETRY_COUNT)
+    {
+        FPFW_DBGPRINT_WARNING("AP crashdump not ready. cd_status: 0x%08x. Retrying... (%u/%u)\n",
+                              fw_hdr->cd_status,
+                              retry_count + 1,
+                              CRASH_DUMP_MAX_RETRY_COUNT);
+        SLEEP_US(CRASH_DUMP_MAX_RETRY_DELAY_US);
+        retry_count++;
+    }
+
+    if (fw_hdr->cd_status != KNG_CD_STATUS_COMPLETED)
+    {
+        FPFW_DBGPRINT_WARNING("AP crashdump transfer not complete.\n");
+    }
 
     // Return the size from the mapped header, rounded up to natural alignment
     return DUMP_ROUND_UP(fw_hdr->size, DUMP_NATURAL_ALIGNMENT);
@@ -81,10 +101,27 @@ static uint32_t ap_wdt_chunk_get_size(void* userContext)
 static void ap_wdt_chunk_write(FPFwCrashDumpCtx* ctx, uint64_t dumpOffset, void* userContext, uint32_t payloadSize)
 {
     FPFW_UNUSED(payloadSize);
-    kng_ap_fw_hdr* fw_hdr = (kng_ap_fw_hdr*)userContext;
+    uint32_t retry_count = 0;
+    volatile kng_ap_fw_hdr* fw_hdr = (volatile kng_ap_fw_hdr*)userContext;
+
+    // Check cd_status before memcpy.
+    while (fw_hdr->cd_status != KNG_CD_STATUS_COMPLETED && retry_count < CRASH_DUMP_MAX_RETRY_COUNT)
+    {
+        FPFW_DBGPRINT_WARNING("AP crashdump not ready. cd_status: 0x%08x. Retrying... (%u/%u)\n",
+                              fw_hdr->cd_status,
+                              retry_count + 1,
+                              CRASH_DUMP_MAX_RETRY_COUNT);
+        SLEEP_US(CRASH_DUMP_MAX_RETRY_DELAY_US);
+        retry_count++;
+    }
+
+    if (fw_hdr->cd_status == KNG_CD_STATUS_COMPLETED)
+    {
+        FPFW_DBGPRINT_INFO("AP crashdump transfer complete (size=%d).\n", fw_hdr->size);
+    }
 
     // Copy the entire payload from the mapped AP_FW_CRASHDUMP_LOCATION
-    ctx->memAPIs.FPFwCDMemcpyLocalToGlobal(&ctx->memAPIs, dumpOffset, fw_hdr, fw_hdr->size);
+    ctx->memAPIs.FPFwCDMemcpyLocalToGlobal(&ctx->memAPIs, dumpOffset, (void*)fw_hdr, fw_hdr->size);
 }
 
 uint32_t map_ap_wdog_address(atu_map_entry_t* atu_entry, bool secure)
@@ -188,22 +225,14 @@ void hm_ap_wdt_isr()
 
         kng_ap_fw_hdr* fw_hdr = (kng_ap_fw_hdr*)crashdump_atu_entry.mscp_start_address;
 
-        // Check cd_status before bug check
-        if (fw_hdr->cd_status == KNG_CD_STATUS_COMPLETED)
-        {
-            // Register custom chunk with mapped crashdump address as userContext
-            CdRegisterCustomChunk(&crash_dump_context()->type_ctx[CRASH_DUMP_TYPE_FULL]->crash_dump_ctx,
-                                  (GUID)CD_AP_WDT_CHUNK_GUID,
-                                  fw_hdr,
-                                  0,
-                                  ap_wdt_chunk_get_size,
-                                  ap_wdt_chunk_write,
-                                  FPFW_CD_DUMP_PRIORITY_CRITICAL);
-        }
-        else
-        {
-            FPFW_DBGPRINT_WARNING("AP crashdump transfer not complete.\n");
-        }
+        // Register custom chunk with mapped crashdump address as userContext
+        CdRegisterCustomChunk(&crash_dump_context()->type_ctx[CRASH_DUMP_TYPE_FULL]->crash_dump_ctx,
+                              (GUID)CD_AP_WDT_CHUNK_GUID,
+                              fw_hdr,
+                              0,
+                              ap_wdt_chunk_get_size,
+                              ap_wdt_chunk_write,
+                              FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
         // Trigger bug check for AP watchdog timeout
         BUG_CHECK(KNG_AP_WDT_TIMEOUT, nvic_irq_num, RECORD_ID_AP_WDT);
@@ -255,11 +284,16 @@ void register_ap_wdt_error_domain()
 
     if (ap_wdt_occurred_prev_boot)
     {
+        // If AP WDT occurred on a previous boot, log the event and do not register the error domain or enable interrupts to avoid potential repeated crashes.
+        // The AP WDT error domain will be registered and interrupts will be enabled on the next cold boot.
         FPFW_DBGPRINT_INFO("AP WDT occurred on a previous boot.\n");
     }
-    //  Register the error domain
-    hm_register_error_domain(ACPI_ERROR_DOMAIN_AP_WDT, &AP_WDT_GUID, AP_WDT_FRU, hm_ap_wdt_error_injection_handler, NULL);
+    else
+    {
+        //  Register the error domain
+        hm_register_error_domain(ACPI_ERROR_DOMAIN_AP_WDT, &AP_WDT_GUID, AP_WDT_FRU, hm_ap_wdt_error_injection_handler, NULL);
 
-    // Enable AP WDT interrupts
-    enable_ap_wdt_interrupts();
+        // Enable AP WDT interrupts
+        enable_ap_wdt_interrupts();
+    }
 }

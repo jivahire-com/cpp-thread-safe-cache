@@ -328,10 +328,10 @@ PLACED_CODE void ddr_create_bdat(void)
             MMIO_WRITE8(addr + 1, (uint8_t)((data >> 8) & 0xFF));
         } // end of DIE_0 ONLY
 
-        // Both DIEs iterate over thier respective 6 DIMMs (dimm_global_idx)
+        // Both DIEs iterate over their respective 6 DIMMs (dimm_global_idx)
         for (uint16_t dimm_local_idx = 0; dimm_local_idx < DDRSS_SS_NUM_PER_DIE; dimm_local_idx++)
         {
-            dimm_global_idx = (die_num * 6) + dimm_local_idx; // 6 dimm per die: die0- 0 to 5, die1- 6 to 11
+            dimm_global_idx = (die_num * NUM_DIMM_PER_DIE) + dimm_local_idx;
             mc = dimm_global_idx * 2;
 
             bool this_dimm_is_present = dimm_is_present(dimm_local_idx);
@@ -658,7 +658,7 @@ static PLACED_CODE uint32_t ddr_create_smbios_type_16(uint32_t smbios_next_addr)
     smb_table16.Handle = 0;
     smb_table16.Location = 0x3; // System board or motherboard, refer to Table 72 of SMBIOS Ref Spec (DSP0134_3.8.0)
     smb_table16.Use = 0x3; // System memory, refer to Table 73 of SMBIOS Ref Spec (DSP0134_3.8.0)
-    smb_table16.MemoryErrorCorrection = 0x3; // None, refer to Table 74 of SMBIOS Ref Spec (DSP0134_3.8.0)
+    smb_table16.MemoryErrorCorrection = 0x5; // Single-bit ECC , refer to Table 74 of SMBIOS Ref Spec (DSP0134_3.8.0)
 
     /* Maximum memory capacity, in kilobytes, for this array
     If the capacity is not represented in this field, then this
@@ -670,19 +670,18 @@ static PLACED_CODE uint32_t ddr_create_smbios_type_16(uint32_t smbios_next_addr)
     MaximumCapacity expressed in kB
     ExtendedMaximumCapacity expressed in B
     */
-    if (dimm_capacity_kb >= EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16)
-    {
-        smb_table16.MaximumCapacity = EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16;
-        smb_table16.ExtendedMaximumCapacity = (uint64_t)dimm_capacity_kb * 1024; // In Bytes
-    }
-    else
-    {
-        smb_table16.MaximumCapacity = dimm_capacity_kb;
-        smb_table16.ExtendedMaximumCapacity = 0;
-    }
+    // Calculate total capacity for this memory array (all DIMMs across all dies)
+    // Single Type 16 table covers all memory devices in the system
+    uint32_t num_dies = idhw_is_single_die_boot_en() ? 1 : 2;
+    uint32_t total_num_dimms = NUM_DIMM_PER_DIE * num_dies;
+    uint64_t array_capacity_kb = (uint64_t)dimm_capacity_kb * total_num_dimms;
+
+    // Always use Extended Maximum Capacity field for the actual capacity value
+    smb_table16.MaximumCapacity = EXTENDED_DIMM_CAP_LIMIT_KB_TYPE16;
+    smb_table16.ExtendedMaximumCapacity = array_capacity_kb * 1024; // In Bytes
 
     smb_table16.MemoryErrorInformationHandle = 0;
-    smb_table16.NumberOfMemoryDevices = NUM_DIMM_PER_DIE;
+    smb_table16.NumberOfMemoryDevices = total_num_dimms;
 
     // Copy Type16 table to memory
     uint8_t temp_buffer[sizeof(smb_table16)];
@@ -735,7 +734,7 @@ static PLACED_CODE uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
     KNG_DIE_ID die_num = idsw_get_die_id();
     for (uint16_t dimm_local_idx = 0; dimm_local_idx < NUM_DIMM_PER_DIE; dimm_local_idx++)
     {
-        dimm_global_idx = (die_num * 6) + dimm_local_idx; // 6 dimm per die: die0- 0 to 5, die1- 6 to 11
+        dimm_global_idx = (die_num * NUM_DIMM_PER_DIE) + dimm_local_idx;
 
         dimm_spd = ddrss_get_dimm_spd(dimm_local_idx);
 
@@ -951,7 +950,7 @@ void ddr_create_smbios_tables(void)
 
     uint32_t start_addr = smbios_mem_atu_map_struct.mscp_start_address;
     uint32_t next_addr = start_addr;
-    uint32_t size_off = SMBIOS_HANDOFF_RESERVATION_SIZE - sizeof(uint32_t);
+    uint32_t smbios_len_offset = SMBIOS_HANDOFF_RESERVATION_SIZE - sizeof(uint32_t);
     KNG_DIE_ID die_num = idsw_get_die_id();
     if (die_num == DIE_0)
     {
@@ -967,7 +966,7 @@ void ddr_create_smbios_tables(void)
         BUG_ASSERT(next_addr - start_addr < SMBIOS_HANDOFF_RESERVATION_SIZE);
 
         // Update the SMBIOS length
-        MMIO_WRITE32(start_addr + size_off, next_addr - start_addr);
+        MMIO_WRITE32(start_addr + smbios_len_offset, next_addr - start_addr);
 
         ddr_wait_for_smbios_sync_point();
     }
@@ -977,12 +976,15 @@ void ddr_create_smbios_tables(void)
         // Only after it, we know where to start building SMBIOS table for D1.
         ddr_wait_for_smbios_sync_point();
 
-        // Retrieve the SMBIOS table length built by D0
-        uint32_t d0_smbios_len = MMIO_READ32(start_addr + size_off);
+        // Retrieve the SMBIOS table length built by D0 (TYPE16 + D0's TYPE17 entries)
+        uint32_t d0_smbios_len = MMIO_READ32(start_addr + smbios_len_offset);
         BUG_ASSERT(d0_smbios_len < SMBIOS_HANDOFF_RESERVATION_SIZE);
 
+        // Calculate starting address for D1's TYPE17 tables
+        uint32_t d1_smbios_start_addr = start_addr + d0_smbios_len;
+
         // Append SMBIOS type 17 for D1
-        next_addr = ddr_create_smbios_type_17(start_addr + d0_smbios_len);
+        next_addr = ddr_create_smbios_type_17(d1_smbios_start_addr);
         BUG_ASSERT(next_addr - start_addr + 8 < SMBIOS_HANDOFF_RESERVATION_SIZE);
 
         // Zero out the next 8 bytes to indicate the end of SMBIOS table

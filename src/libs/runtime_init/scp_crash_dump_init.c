@@ -333,6 +333,7 @@ FPFW_INIT_COMPONENT(cd_accel,
         }
 
         crash_dump_config_icc(icc_config_type, icc_ctx);
+        crash_dump_default_accel_cd_init(accel_type);
     }
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

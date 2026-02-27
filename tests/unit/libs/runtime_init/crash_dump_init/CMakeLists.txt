@@ -70,6 +70,7 @@ mock_target(${TARGET}
     sos_register_ssi
     crash_dump_context
     crash_dump_init
+    crash_dump_default_accel_cd_init
     crash_dump_register_dump
     crash_dump_config_icc
     exception_handler_init

@@ -55,7 +55,11 @@ target_link_libraries(${TARGET}
         silibs::idsw_kng
         silibs::spi_bridge
         ms::driver::pldm    # PLDM_DRV_WORKAROUND
+        ms::lib::accel_intr
         ms::lib::accelerator_ip
+        ms::lib::cortex_m7::nvic
+        ms::lib::cortex_m7::virt_irq
+        ms::lib::gtimer
         ms::lib::system_info
         ms::lib::crash_dump
         ms::lib::icc_platform_defines

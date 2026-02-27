@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include "accel_intr_virt_irq.h"
 #include "accelip_id.h"
 
 #include <FpFwUtils.h>
@@ -16,11 +17,13 @@
 #include <bug_check.h>
 #include <cper.h>
 #include <fpfw_icc_base.h>
+#include <gtimer_prodfw.h>
 #include <health_monitor.h>
 #include <health_monitor_events.h>
 #include <health_monitor_i.h>
 #include <health_monitor_icc.h>
 #include <icc_platform_defines.h>
+#include <idsw.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <sdm_ext_cfg_regs.h>
 
@@ -29,6 +32,27 @@
 #ifndef ACCEL_CPER_EXPECTED_MAGIC
     #define ACCEL_CPER_EXPECTED_MAGIC (0x43504552U) /* 'CPER' */
 #endif
+
+#define SDM_INTERRUPT_CPER_MAJOR_VERSION_NUMER 0U
+#define SDM_INTERRUPT_CPER_MINOR_VERSION_NUMER 2U
+#define ACCEL_GET_VENDOR_ID(sdm_ext_cfg_addr)                                                       \
+    (MMIO_READ32(sdm_ext_cfg_addr + _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_PF_TYPE0_SDM_ID_ADDRESS) & \
+     _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_PF_TYPE0_SDM_ID_VEN_ID_MASK)
+#define ACCEL_GET_DEVICE_ID(sdm_ext_cfg_addr)                                                        \
+    ((MMIO_READ32(sdm_ext_cfg_addr + _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_PF_TYPE0_SDM_ID_ADDRESS) & \
+      _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_PF_TYPE0_SDM_ID_DEV_ID_MASK) >>                           \
+     _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_PF_TYPE0_SDM_ID_VEN_ID_WIDTH)
+#define ACCEL_GET_FUNC_NUM(sdm_ext_cfg_addr)                                            \
+    (MMIO_READ32(sdm_ext_cfg_addr + _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BDF_ADDRESS) & \
+     _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BDF_PF_FUNC_NUM_MASK)
+#define ACCEL_GET_DEVICE_NUM(sdm_ext_cfg_addr)                                           \
+    ((MMIO_READ32(sdm_ext_cfg_addr + _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BDF_ADDRESS) & \
+      _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BDF_PF_DEVICE_NUM_MASK) >>                    \
+     _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BDF_PF_DEVICE_NUM_WIDTH)
+#define ACCEL_GET_BUS_NUM(sdm_ext_cfg_addr)                                              \
+    ((MMIO_READ32(sdm_ext_cfg_addr + _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BDF_ADDRESS) & \
+      _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BDF_PF_BUS_NUM_MASK) >>                       \
+     _ADDRESSBLOCK_0X100000_BCFG_BOOT_CFG_BDF_PF_BUS_NUM_WIDTH)
 
 /*------------- Typedefs -----------------*/
 
@@ -323,6 +347,40 @@ bool hm_collect_accel_fatal_cper(uint32_t accel_id)
     return true;
 }
 
+void hm_generate_default_cper(uint32_t accel_id)
+{
+    hm_accel_cper_info_t* curr_cper_info = &accel_cper_info[accel_id];
+    uint32_t sdm_ext_cfg_addr = atu_svc_accel_atu_addr(accel_id) + SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS;
+    uint32_t accel_irq_isr_val = 0;
+    uint32_t accel_irq_mask_val = 0;
+
+    // CPER collection was skipped for TCM UEs, emCPU lockup
+    // Generate a default CPER with the irq status from the ISR handler embedded in it
+    memset(&curr_cper_info->accel_err_payload, 0, sizeof(acpi_err_sec_accel_vendor_t));
+    accel_intr_virt_irq_cd_reg(accel_id, &accel_irq_isr_val, &accel_irq_mask_val);
+
+    curr_cper_info->accel_err_payload.pcie_details.vendor_id = (uint16_t)ACCEL_GET_VENDOR_ID(sdm_ext_cfg_addr);
+    curr_cper_info->accel_err_payload.pcie_details.device_id = (uint16_t)ACCEL_GET_DEVICE_ID(sdm_ext_cfg_addr);
+    curr_cper_info->accel_err_payload.pcie_details.function_number = (uint8_t)ACCEL_GET_FUNC_NUM(sdm_ext_cfg_addr);
+    curr_cper_info->accel_err_payload.pcie_details.device_number = (uint8_t)ACCEL_GET_DEVICE_NUM(sdm_ext_cfg_addr);
+    curr_cper_info->accel_err_payload.pcie_details.bus_number = (uint16_t)ACCEL_GET_BUS_NUM(sdm_ext_cfg_addr);
+    curr_cper_info->accel_err_payload.pcie_details.segment_number = 0x0; // This field is currently empty
+
+    curr_cper_info->accel_err_payload.header.version_major = SDM_INTERRUPT_CPER_MAJOR_VERSION_NUMER;
+    curr_cper_info->accel_err_payload.header.version_minor = SDM_INTERRUPT_CPER_MINOR_VERSION_NUMER;
+    curr_cper_info->accel_err_payload.header.timestamp = gtimer_prodfw_get_counter();
+    curr_cper_info->accel_err_payload.header.instance = idsw_get_die_id();
+
+    curr_cper_info->accel_err_payload.sdm_interrupt_events = (uint64_t)accel_irq_isr_val;
+
+    // Currently double fault handling is not implemented - the assumption is that error
+    // is likely not fatal since bus accesses are still working but accel cd collection failed
+    // Since the most probable source of this error is TCM UE/emCPU lockup - severity is set to corrected
+    curr_cper_info->err_severity = ACPI_ERROR_SEVERITY_CORRECTED;
+
+    fatal_cper_info[accel_id].is_valid = true;
+}
+
 void hm_send_accel_error_cper(uint32_t accel_id)
 {
     acpi_cper_section_t cper_section = {0};
@@ -341,6 +399,7 @@ void hm_send_accel_error_cper(uint32_t accel_id)
         HM_LOG_INFO("%s:FATAL_CPER_SEND_EVTS:0x%x\r\n",
                     (char*)accel_name,
                     (int)curr_cper_info->accel_err_payload.sdm_interrupt_events);
+
         cper_section.sec_sdm = curr_cper_info->accel_err_payload;
         hm_submit_cper(curr_cper_info->error_domain_index, curr_cper_info->err_severity, &cper_section, sizeof(acpi_err_sec_accel_vendor_t));
     }

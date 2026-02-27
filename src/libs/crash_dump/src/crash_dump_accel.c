@@ -12,22 +12,25 @@
 
 #include "crash_dump_icc.h"
 #include "crash_dump_memory.h"
+#include "crash_dump_overrides.h"
 #include "crash_dump_status.h" // for crash_dump_update_accel_state
 
 #include <CrashDump.h>           // for FPFwCDPrintf
 #include <DbgPrint.h>            // for FPFW_DBGPRINT_INFO
 #include <FpFwUtils.h>           // for FPFW_MIN
 #include <accel_intr.h>          // for accel_intr_has_accel_crashed
-#include <accel_intr_virt_irq.h> // for accel_intr_virt_irq_cd_reg
+#include <accel_intr_virt_irq.h> // for accel_intr_get_isr_value
 #include <atu_init.h>            // for atu_svc_accel_atu_addr
+#include <bug_check.h>           // for BUG_ASSERT_PARAM
 #include <cded_regs_regs.h>      // for CDED_REGS_CCMP_CFG_ADDRESS
 #include <cdedss_config_regs.h>  // for CDEDSS_CONFIG_CDED_REGS_REGS_ADDRESS
 #include <crash_dump.h>          // for crash_dump_register_address32
 #include <crash_dump_events.h>   // for CRASH_DUMP_ET
 #include <gtimer_prodfw.h>       // for gtimer_get_timestamp_ms
 #include <health_monitor.h>      // for hm_send_accel_error_cper
-#include <idsw.h>                // for idsw_get_cpu_type
+#include <idsw.h>                // for idsw_get_cpu_type, idsw_get_die_id
 #include <idsw_kng.h>
+#include <kng_error.h>
 #include <sdm_ext_cfg_regs.h>        // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS...
 #include <silibs_common.h>           // for BYTES_IN_WORD32
 #include <silibs_platform.h>         // for MMIO_READ32
@@ -47,11 +50,33 @@
  */
 #define CD_MAGIC_NUMBER 0xCDED5D55
 
-#define CRASH_DUMP_MAX_RETRY_COUNT    2
-#define CRASH_DUMP_MAX_RETRY_DELAY_US 2000 // 2 seconds
-static uint8_t s_retry_count = 0;
+#define CORE_BUILTIN_REG_INDEX 0
+
+#define CRASH_DUMP_MAX_RETRY_COUNT               2
+#define CRASH_DUMP_MAX_RETRY_DELAY_US            2000 // 2 seconds
+#define CRASH_DUMP_DEFAULT_ACCEL_NUM_DESCRIPTORS 1    // Need 1 descriptor for the register info
 
 /*-------------- Typedefs ----------------*/
+
+typedef struct
+{
+    uint64_t mem_pool_addr;
+    uint32_t mem_pool_size;
+
+    FPFwCrashDumpCtx crash_dump_ctx;
+    FPFwCDMemPoolCtx mem_ctx;
+    FPFwCDDumpDescriptorCtx desc_ctx;
+    FPFwCDDumpFileCtx file_ctx;
+    FPFwCDDumpDescriptor desc_list[CRASH_DUMP_DEFAULT_ACCEL_NUM_DESCRIPTORS];
+
+    TX_MUTEX desc_mutex;
+} crash_dump_accel_ctx_t;
+
+/*-- Declarations (Statics and globals) --*/
+
+static uint8_t s_retry_count = 0;
+static crash_dump_accel_ctx_t s_crash_dump_accel_ctx[NUM_VALID_ACCEL_ID];
+core_crash_context_t g_accel_core_crash_context[NUM_VALID_ACCEL_ID];
 
 /*--------- Private Function ----------*/
 
@@ -65,6 +90,7 @@ static bool crash_dump_wait_for_accel_cd_complete(ACCEL_ID accel_type)
     if (accel_intr_get_cd_skip(accel_type))
     {
         CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_ACCEL_CD_SKIP, accel_type);
+        crash_dump_generate_default_accel_cd(accel_type);
         return false;
     }
 
@@ -74,6 +100,7 @@ static bool crash_dump_wait_for_accel_cd_complete(ACCEL_ID accel_type)
         if (s_retry_count >= CRASH_DUMP_MAX_RETRY_COUNT)
         {
             CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ACCEL_CD_WAIT_FAILED, accel_type);
+            crash_dump_generate_default_accel_cd(accel_type);
             return false;
         }
 
@@ -216,18 +243,6 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
         goto cd_transfer_failed;
     }
 
-    // Collect crash dump here only if the accel has not crashed
-    if (!crash_dump_wait_for_accel_cd_complete(accel_type))
-    {
-        // Invalid MAGIC number address or CD collection is not complete for given accel core
-        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_CD_INCOMPLETE);
-        goto cd_transfer_failed;
-    }
-    else
-    {
-        // TODO ADO 3041451: Need to generate a default CD in case dump is not available
-    }
-
     if (accel_type == ACCEL_ID_SDM)
     {
         cd_ddr_addr = ctx->die_index == 0 ? CRASH_DUMP_FULL_SDM0_ADDR : CRASH_DUMP_FULL_SDM1_ADDR;
@@ -239,9 +254,19 @@ static void copy_cd_file_dtcm_to_ddr(crash_dump_context_t* ctx, ACCEL_ID accel_t
         cd_file_size = FPFW_MIN(CRASH_DUMP_FULL_SIZE_PER_CORE, cd_file_size);
     }
 
+    // Collect crash dump here only if the accel has not crashed
+    if (!crash_dump_wait_for_accel_cd_complete(accel_type))
+    {
+        // Invalid MAGIC number address or CD collection is not complete for given accel core
+        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_CD_INCOMPLETE);
+        cd_file_size = FPFwCDTotalMemoryAllocated(&s_crash_dump_accel_ctx[accel_type].mem_ctx);
+        goto skip_cd_copy;
+    }
+
     accel_dtcm_addr = atu_svc_accel_atu_addr(accel_type) + SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
     memcpy((void*)cd_ddr_addr, (void*)(accel_dtcm_addr + cd_file_off), cd_file_size);
 
+skip_cd_copy:
     // Transmit the cper to the OS at this point - this ensures we won't react to SCMI requests
     hm_send_accel_error_cper(accel_type);
 
@@ -258,7 +283,160 @@ cd_transfer_failed:
     CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ACCEL_TRANSFER_FAILED);
 }
 
+/**
+ * @brief Initialize crash dump memory pool.
+ *
+ * @param cd_mem_pool Crash dump memory pool address.
+ * @param block_size Size of the memory pool.
+ *
+ */
+void init_mem_pool(crash_dump_accel_ctx_t* type_context)
+{
+    // Initialize crash dump memory pool
+    BUG_ASSERT_PARAM(FPFwCDInitMemoryPool(&type_context->mem_ctx, type_context->mem_pool_addr, type_context->mem_pool_size),
+                     type_context->mem_pool_addr,
+                     type_context->mem_pool_size);
+    (void)FPFwCDMemPoolOverrideCacheFlush(&type_context->mem_ctx, &cacheFlushOverride);
+    (void)FPFwCDMemPoolOverrideCacheInvalidate(&type_context->mem_ctx, &cacheInvalidateOverride);
+}
+
+/**
+ * @brief Initialize crash dump description.
+ *
+ */
+void init_dump_desc(crash_dump_accel_ctx_t* type_context)
+{
+    // Create Tx mutex for descriptor set
+    BUG_ASSERT(tx_mutex_create(&type_context->desc_mutex, "cd full mutex", TX_NO_INHERIT) == TX_SUCCESS);
+
+    // Create crash dump descriptor
+    BUG_ASSERT(FPFwCDInitDumpDescriptor(&type_context->desc_ctx, type_context->desc_list, CRASH_DUMP_DEFAULT_ACCEL_NUM_DESCRIPTORS));
+
+    (void)FPFwCDDumpDescriptorSetMutexCtx(&type_context->desc_ctx, (void*)&type_context->desc_mutex);
+    (void)FPFwCDDumpDescriptorOverrideMutexLock(&type_context->desc_ctx, &mutexLockOverride);
+    (void)FPFwCDDumpDescriptorOverrideMutexUnlock(&type_context->desc_ctx, &mutexUnlockOverride);
+}
+
+/**
+ * @brief Initialize crash dump file.
+ *
+ */
+void init_dump_file(crash_dump_accel_ctx_t* type_context)
+{
+    BUG_ASSERT(FPFwCDInitDumpFile(&type_context->file_ctx));
+    (void)FPFwCDDumpFileOverrideInValidMemory(&type_context->file_ctx, &inMemoryOverride);
+    (void)FPFwCDDumpFileOverrideInValidCsrMemory(&type_context->file_ctx, &inMemoryOverride);
+    (void)FPFwCDDumpFileOverrideInValidGlobalMemory(&type_context->file_ctx, &inGlobalMemoryOverride);
+    type_context->file_ctx.product = CD_PRODUCT_ID_KINGSGATE;
+}
+
+/**
+ * @brief Initialize crash dump manager.
+ *
+ */
+void init_dump_manager(crash_dump_accel_ctx_t* type_context)
+{
+    BUG_ASSERT_PARAM(FPFwCDInitDumpManager(&type_context->crash_dump_ctx,
+                                           &type_context->mem_ctx,
+                                           &type_context->desc_ctx,
+                                           &type_context->file_ctx,
+                                           NULL, // No state manager
+                                           type_context->mem_pool_size),
+                     type_context->mem_pool_size,
+                     0);
+    FPFwCDOverridePrintf(&crash_dump_printf);
+    (void)FPFwCDDumpManagerSetPreDumpCallback(&type_context->crash_dump_ctx, &preDumpCallbackOverride, type_context);
+    (void)FPFwCDDumpManagerSetPostDumpCallback(&type_context->crash_dump_ctx, &postDumpCallbackOverride, type_context);
+    (void)FPFwCDDumpManagerOverrideGetCurTime(&type_context->crash_dump_ctx, &getCurTimeDefault);
+}
+
+/**
+ * @brief Captures built-in Cortex M7 registers
+ *
+ * @param type_context crash dump type based context
+ * @param accel_type accel type
+ * This will be a dummy register capture and will only capture the level-1 register value
+ * r0 - level-1 register value
+ * r1 - actual interrupt seen on scp
+ */
+void crash_dump_accel_core_register_reg(crash_dump_accel_ctx_t* type_context, ACCEL_ID accel_type)
+{
+    if (type_context)
+    {
+        CdRegisterRegisterSet(&type_context->crash_dump_ctx,
+                              &g_accel_core_crash_context[accel_type],
+                              CORE_BUILTIN_REG_INDEX,
+                              sizeof(g_accel_core_crash_context[accel_type]) / (sizeof(uint32_t)),
+                              FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    }
+}
+
 /*------------- Public Functions ----------------*/
+
+void crash_dump_generate_default_accel_cd(ACCEL_ID accel_type)
+{
+    FPFwCdBugCheckInfo bug_check_info = {0};
+    uint32_t prid = CRASH_DUMP_PROCESSOR_ID(idsw_get_die_id(),
+                                            (accel_type == ACCEL_ID_SDM) ? CRASH_DUMP_CORE_SDM : CRASH_DUMP_CORE_CDED);
+    uint32_t accel_irq_isr_ptr = 0;
+    uint32_t accel_irq_mask_ptr = 0;
+    uint32_t* accel_irq_bh_val = 0;
+    uint32_t accl_irq_isr_val = 0;
+
+    s_crash_dump_accel_ctx[accel_type].crash_dump_ctx.prid = prid;
+    bug_check_info.coreIndex = prid;
+
+    /**
+     * Core context will be modified to show the following values
+     * 1. r0 will have the dummy bug check code 0xdeadbeef
+     * 2. r1 will be accel isr value captured in virt irq
+     * 3. r2 will be isr reg value from the bottom half
+     */
+
+    accel_intr_virt_irq_cd_reg(accel_type, &accel_irq_isr_ptr, &accel_irq_mask_ptr);
+    accel_irq_bh_val = (uint32_t*)accel_intr_get_bh_irq_val_addr(accel_type);
+    accl_irq_isr_val = (uint32_t)(*((uint32_t*)(uintptr_t)accel_irq_isr_ptr));
+
+    // The error code will indicate this is a default CD with very limited info
+    bug_check_info.data.Code = KNG_CD_ACCEL_DEFAULT_CD; // Error code indicates default CD generate
+
+    g_accel_core_crash_context[accel_type].r0 = KNG_CD_ACCEL_DEFAULT_CD;
+    g_accel_core_crash_context[accel_type].r1 = accl_irq_isr_val;
+    g_accel_core_crash_context[accel_type].r2 = (uint32_t)(*accel_irq_bh_val); // NOLINT
+
+    FPFwCDCrashDumpHandler(&s_crash_dump_accel_ctx[accel_type].crash_dump_ctx,
+                           &g_accel_core_crash_context[accel_type],
+                           &bug_check_info);
+}
+
+void crash_dump_default_accel_cd_init(ACCEL_ID accel_type)
+{
+    crash_dump_accel_ctx_t* type_context = &s_crash_dump_accel_ctx[accel_type];
+
+    // Initialize the accel crash dump context based on the accel type
+    if (accel_type == ACCEL_ID_SDM)
+    {
+        type_context->mem_pool_addr = (idsw_get_die_id() == DIE_0) ? CRASH_DUMP_FULL_SDM0_ADDR : CRASH_DUMP_FULL_SDM1_ADDR;
+        type_context->mem_pool_size = CRASH_DUMP_FULL_SIZE_PER_CORE;
+    }
+    else
+    {
+        type_context->mem_pool_addr = (idsw_get_die_id() == DIE_0) ? CRASH_DUMP_FULL_CDED0_ADDR : CRASH_DUMP_FULL_CDED1_ADDR;
+        type_context->mem_pool_size = CRASH_DUMP_FULL_SIZE_PER_CORE;
+    }
+
+    FPFW_DBGPRINT_INFO("Creating default crash dump for accel %d at addr 0x%llx with size 0x%llx\r\n",
+                       accel_type,
+                       (long long unsigned int)type_context->mem_pool_addr,
+                       (long long unsigned int)type_context->mem_pool_size);
+
+    init_dump_desc(&s_crash_dump_accel_ctx[accel_type]);
+    init_mem_pool(&s_crash_dump_accel_ctx[accel_type]);
+    init_dump_file(&s_crash_dump_accel_ctx[accel_type]);
+    init_dump_manager(&s_crash_dump_accel_ctx[accel_type]);
+
+    crash_dump_accel_core_register_reg(type_context, accel_type);
+}
 
 /**
  * @brief Copies accel device crashdump from accel DTCM to DDR

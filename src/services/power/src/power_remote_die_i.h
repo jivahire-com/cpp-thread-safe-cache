@@ -84,7 +84,6 @@ typedef struct _power_d2d_arsm_data
 typedef struct _power_d2d_data_exchange_input
 {
     uint16_t vrcpu_cap_die0; //!< VCPU cap from die 0, die 1 needs to use this value
-    power_capping_mode_t capping_mode; //!< Do we need this? Capping mode, we may already have this info from knobs on each die
     /**
      * @brief contains the data to be sent to the remote die
      * 1. Latest power calculations from local die
@@ -103,9 +102,7 @@ typedef struct _power_d2d_data_exchange_input
 typedef struct _power_d2d_data_exchange_complete
 {
     pid_context_t pid_context; //!< on mismatch die1 will update to die0 value w/ pid_set_context AND both sides will log to power trace
-    power_loop_plimit_stats_t plimit_stats; //!< Plimit selection stats
-    bool is_currently_throttling;
-    //! What else do we need to send?
+    bool is_currently_throttling; //!< flag to indicate if the local die is currently throttling, used for remote die to make better decisions on resource distribution
 } power_d2d_data_ex_complete_t;
 
 // power_d2d_context_t: context structure for D2D communication

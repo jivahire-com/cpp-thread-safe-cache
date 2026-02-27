@@ -496,12 +496,12 @@ typedef struct _power_loop_residency_t {
 
 /**
  *  @brief Structure for per-loop iteration timing stats
+ *  Fields ordered with 64-bit members first to avoid internal padding.
  */
 typedef struct _power_loop_timing_stats_t {
     uint64_t counter_start;      // timestamp when current iteration started
-    uint32_t min_ticks;          // minimum iteration duration in ticks
-    uint32_t max_ticks;          // maximum iteration duration in ticks
-    uint32_t sample_count;       // internal: number of samples collected (for validity check)
+    uint64_t total_ticks;        // accumulated iteration duration in ticks (for avg computation)
+    uint32_t sample_count;       // number of samples collected in current window
 } power_loop_timing_stats_t;
 
 // Time-based emission interval (200 seconds in microseconds)
@@ -511,8 +511,8 @@ typedef struct _power_loop_timing_stats_t {
  *  @brief Structure for combined timing stats for all loops
  */
 typedef struct _power_all_loops_timing_t {
-    power_loop_timing_stats_t loops[LOOP_ID_COUNT];  // stats per loop
-    uint64_t window_start;                            // timestamp when current window started
+    power_loop_timing_stats_t loops[LOOP_ID_COUNT];       // stats per loop
+    uint64_t window_start;                                // timestamp when current window started
 } power_all_loops_timing_t;
 
 /**

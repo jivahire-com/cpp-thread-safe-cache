@@ -253,13 +253,10 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID f
                      POWER_ET_ID_TYPE_ALL_LOOP_METRICS,         // Event ID, for this provider
                      PowerAllLoopMetricsInUs,                       // Event Name
                      FPFW_ET_LEVEL_INFO,                        // Event Log Level, filterable by provider mask
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, ctrl_loop_min),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, ctrl_loop_max),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, vr_loop_min),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, vr_loop_max),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pvt_loop_min),
-                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pvt_loop_max))
-#define POWER_ET_ALL_LOOP_METRICS(c_min, c_max, vr_min, vr_max, pvt_min, pvt_max) \
-    EventWritePowerAllLoopMetricsInUs(c_min, c_max, vr_min, vr_max, pvt_min, pvt_max)
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, ctrl_loop_avg),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, vr_loop_avg),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pvt_loop_avg))
+#define POWER_ET_ALL_LOOP_METRICS(c_avg, vr_avg, pvt_avg) \
+    EventWritePowerAllLoopMetricsInUs(c_avg, vr_avg, pvt_avg)
 
 /*--------- Function Prototypes ----------*/

@@ -306,6 +306,66 @@ TEST_FUNCTION(test_gtimer_add_periodic, nullptr, nullptr)
     gtimer_add_periodic(&tmr, tick_interval, cb, ctx);
 }
 
+TEST_FUNCTION(test_gtimer_add_abs_init_periodic, nullptr, nullptr)
+{
+    // Set up expectations
+    fpfw_tmr_entry_t tmr = {};
+    uint64_t tick_interval = 5000;
+    void (*cb)(void*, uint64_t, uint64_t) = [](void*, uint64_t, uint64_t) {};
+    void* ctx = nullptr;
+
+    // Verify that init_tick is hardcoded to 0 (epoch-aligned for cross-die sync)
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, tmr, &tmr);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, init_tick, 0);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, tick_interval, tick_interval);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, cb, cb);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, ctx, ctx);
+
+    will_return(__wrap_fpfw_tmr_queue_expire, 5000);
+
+    expect_value(__wrap_FPFwCoreInterruptDisableVector, irqnum, 45);
+    expect_value(__wrap_gtimer_set_timer, timestamp, 5000);
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, 45);
+
+    // Call API under test
+    gtimer_add_abs_init_periodic(&tmr, tick_interval, cb, ctx);
+}
+
+TEST_FUNCTION(test_gtimer_add_abs_init_periodic_different_intervals, nullptr, nullptr)
+{
+    // Verify epoch-aligned behavior: two timers with different intervals both use init_tick = 0
+    fpfw_tmr_entry_t tmr1 = {};
+    fpfw_tmr_entry_t tmr2 = {};
+    uint64_t interval_1ms = 1000000;
+    uint64_t interval_5ms = 5000000;
+    void (*cb1)(void*, uint64_t, uint64_t) = [](void*, uint64_t, uint64_t) {};
+    void (*cb2)(void*, uint64_t, uint64_t) = [](void*, uint64_t, uint64_t) {};
+
+    // First timer
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, tmr, &tmr1);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, init_tick, 0);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, tick_interval, interval_1ms);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, cb, cb1);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, ctx, nullptr);
+    will_return(__wrap_fpfw_tmr_queue_expire, interval_1ms);
+    expect_value(__wrap_FPFwCoreInterruptDisableVector, irqnum, 45);
+    expect_value(__wrap_gtimer_set_timer, timestamp, interval_1ms);
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, 45);
+    gtimer_add_abs_init_periodic(&tmr1, interval_1ms, cb1, nullptr);
+
+    // Second timer with different interval — still init_tick = 0
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, tmr, &tmr2);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, init_tick, 0);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, tick_interval, interval_5ms);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, cb, cb2);
+    expect_value(__wrap_fpfw_tmr_queue_add_periodic, ctx, nullptr);
+    will_return(__wrap_fpfw_tmr_queue_expire, interval_1ms);
+    expect_value(__wrap_FPFwCoreInterruptDisableVector, irqnum, 45);
+    expect_value(__wrap_gtimer_set_timer, timestamp, interval_1ms);
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, 45);
+    gtimer_add_abs_init_periodic(&tmr2, interval_5ms, cb2, nullptr);
+}
+
 TEST_FUNCTION(test_gtimer_get_timestamp_us, nullptr, nullptr)
 {
     will_return(__wrap_gtimer_get_counter, 1000000000);

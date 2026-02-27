@@ -295,10 +295,21 @@ uint64_t power_timer_get_counter_ticks_us(uint32_t time_in_us);
 uint64_t power_timer_get_us_from_counter(uint32_t ticks);
 
 /**
- * @brief Start the loop timers
+ * @brief Start the loop timers (epoch-aligned for cross-die synchronization)
  *
  * \b Description:
- *      Use to start loop timers once all init is done
+ *      Use to start loop timers once all init is done.
+ *
+ *      Timers are created using gtimer_add_abs_init_periodic() which anchors the
+ *      periodic expiry grid to the system counter epoch (tick 0) rather than the
+ *      current counter value at call time. Because the system counters on SCP0 and
+ *      SCP1 are synchronized via d2d sync during gtimer_prodfw_init(), this ensures
+ *      both dies fire their power loop timers on the same absolute tick boundaries,
+ *      even if one die reaches this function thousands of ticks after the other.
+ *
+ *      Example: With a 1ms interval and SCP0 calling at tick 1,000,000 and SCP1 at
+ *      tick 1,020,000, both will compute the next expiry on the same grid point
+ *      (the next multiple of the interval after their respective "now").
  *
  */
 void power_timer_start_loop_timers();

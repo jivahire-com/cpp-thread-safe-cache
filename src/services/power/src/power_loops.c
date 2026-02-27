@@ -244,27 +244,11 @@ static void power_loops_internal_change_state(power_loop_context_t* p_context, i
         {
             const uint32_t current_ticks = (uint32_t)(counter - timing->counter_start);
 
-            // First sample for this loop in this window: initialize min and max
-            if (timing->sample_count == 0)
-            {
-                timing->min_ticks = current_ticks;
-                timing->max_ticks = current_ticks;
-            }
-            else
-            {
-                if (current_ticks > timing->max_ticks)
-                {
-                    timing->max_ticks = current_ticks;
-                }
-                if (current_ticks < timing->min_ticks)
-                {
-                    timing->min_ticks = current_ticks;
-                }
-            }
+            timing->total_ticks += current_ticks;
             timing->sample_count++;
         }
 
-        // Control loop checks if 10-second window has elapsed and triggers the combined trace
+        // Control loop checks if 200-second window has elapsed and triggers the combined trace
         if (loop_id == LOOP_ID_CONTROL)
         {
             const uint64_t window_ticks = power_timer_get_counter_ticks_us(POWER_LOOP_TIMING_EMIT_INTERVAL_US);
@@ -274,14 +258,18 @@ static void power_loops_internal_change_state(power_loop_context_t* p_context, i
                 s_all_loops_timing.loops[LOOP_ID_VR_TELEM].sample_count > 0 &&
                 s_all_loops_timing.loops[LOOP_ID_PVT_TELEM].sample_count > 0)
             {
-                // Emit combined trace for all loops (convert ticks to microseconds)
-                POWER_ET_ALL_LOOP_METRICS(
-                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_CONTROL].min_ticks),
-                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_CONTROL].max_ticks),
-                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_VR_TELEM].min_ticks),
-                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_VR_TELEM].max_ticks),
-                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_PVT_TELEM].min_ticks),
-                    (uint32_t)power_timer_get_us_from_counter(s_all_loops_timing.loops[LOOP_ID_PVT_TELEM].max_ticks));
+                // Compute average ticks per loop across the timing window
+                const uint32_t ctrl_avg_ticks = (uint32_t)(s_all_loops_timing.loops[LOOP_ID_CONTROL].total_ticks /
+                                                           s_all_loops_timing.loops[LOOP_ID_CONTROL].sample_count);
+                const uint32_t vr_avg_ticks = (uint32_t)(s_all_loops_timing.loops[LOOP_ID_VR_TELEM].total_ticks /
+                                                         s_all_loops_timing.loops[LOOP_ID_VR_TELEM].sample_count);
+                const uint32_t pvt_avg_ticks = (uint32_t)(s_all_loops_timing.loops[LOOP_ID_PVT_TELEM].total_ticks /
+                                                          s_all_loops_timing.loops[LOOP_ID_PVT_TELEM].sample_count);
+
+                // Emit combined trace for all loops (convert ticks to microseconds): avg only
+                POWER_ET_ALL_LOOP_METRICS((uint32_t)power_timer_get_us_from_counter(ctrl_avg_ticks),
+                                          (uint32_t)power_timer_get_us_from_counter(vr_avg_ticks),
+                                          (uint32_t)power_timer_get_us_from_counter(pvt_avg_ticks));
 
                 // Reset all loop stats and start new window
                 memset(&s_all_loops_timing, 0, sizeof(s_all_loops_timing));

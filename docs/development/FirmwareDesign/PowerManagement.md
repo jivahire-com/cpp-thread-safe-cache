@@ -1,3 +1,7 @@
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
 # Power Management Design
 
 ## Table of Contents
@@ -902,17 +906,17 @@ In the below diagram, consider that the output of the PID is treated as a count 
 
 ```mermaid
 flowchart TD
-    Init1(Start) --> Init2{Resources for Nominal?}
+    Init1(PID Output <br> Power Budget) --> Init2{Resources for Nominal?}
     Init2 -->|No| Throttle1[Throttle]
     Init2 -->|Yes| Turbo1[Turbo/Velocity Boost]
     
-    Throttle1 -->|Start at Throttle Priority 0 - protected| Throttle2{Last Throttle Priority? - reached 15?}
-    Throttle2 --->|No| Throttle3{Max plimit throttle at priority? - at max throttle?}
+    Throttle1 -->|Start at Throttle Priority 0 - protected, allocated first| Throttle2{Last Throttle Priority? - reached 15?}
+    Throttle2 --->|No| Throttle3{Nominal reached at this priority? - best affordable plimit?}
     Throttle2 ------>|Yes, all priorities processed| End
     Throttle3 -->|Yes, Next Higher Throttle Priority - 0 to 15| Throttle2
-    Throttle3 -->|No| Throttle4{Required Resources >= Available? - need more savings?}
-    Throttle4 -->|Yes, Decrease one Plimit Level - throttle more| Throttle3
-    Throttle4 -->|No - sufficient resources| End
+    Throttle3 -->|No| Throttle4{Required Resources <= Available? - budget allows?}
+    Throttle4 -->|Yes, Increase one Plimit Level toward nominal - allocate more| Throttle3
+    Throttle4 -->|No - budget exhausted, this and remaining priorities get best affordable plimit| End
     
     Turbo1 -->|Start at Boost Priority 15 - boosted first| Turbo2{Last Boost Priority? - reached 0?}
     Turbo2 --->|No| Turbo3{Max plimit boost at priority? - at max boost?}
@@ -924,6 +928,18 @@ flowchart TD
     End[Enforce Plimit Change Maximums]
     End --> End2(End)
 ```
+
+#### Can cores with the same boost/throttle priority have different frequencies?
+
+Yes. While the distribution algorithm assigns the same group-level plimit selection to all cores sharing a priority, the final per-core plimit can differ due to individual adjustments applied in `select_plimit()` and `get_minimum_plimit()`. The factors that can cause differences include:
+
+- **Per-core base_pstate (OSPM Nominal Performance)**: Each core can have a different `base_pstate` set by the hypervisor. If the group selection falls between `pnominal` and a core's `base_pstate`, that core is clamped to its own `base_pstate`.
+- **C-state**: Cores in C2/C3/C4 can be limited to nominal via the `power_cX_cores_limit_to_nominal` knobs, while C0 cores at the same priority are not restricted.
+- **OS desired performance (CPPC)**: Each core's OS-requested desired pstate affects its `min_plimit` floor. A core whose OS requests lower performance will have a higher (worse) floor than a peer at the same priority.
+- **VFT silicon curve assignment**: Different cores may be assigned to different VF curves based on fused silicon quality, resulting in different `min_plimit` capabilities (some cores can boost higher than others).
+- **Step size limits**: The `max_plimit_step_size_up` and `max_plimit_step_size_down` knobs limit how much a core's plimit can change per iteration. Two cores at the same priority but starting from different current plimits may converge to the group selection at different rates.
+- **allowed_plimit_maximum knob**: A system-wide ceiling that clips the final selection uniformly, but interacts differently depending on each core's other constraints.
+
 
 Configuration has been added to limit the number of steps a PLIMIT can be changed per iteration; this would dampen fluctuations, but also potentially reduce the responsiveness of the PID loop to both OS requests for performance and requests to reduce power consumption.  Further investigation will need to be done to ensure desired behavior, and the default configuration will leave these step limits disabled.  Aside from dampening the PLIMIT changes to prevent large fluctations, another benefit of this approach could be the fact that adapting to HW throttling may be more easily accomplished, since the step would start from current PSTATE, which may have been affected by a HW throttling event.
 
@@ -1008,6 +1024,24 @@ If the Vcpu setpoint calculation results in a higher requirement than the curren
 #### **Exchange Completion with Remote Die**
 
 This state exists to sync SCPs at the end of a power loop interval.  It is here that a power cap change would be finalized.
+
+### **Power Loop Timing Metrics**
+
+The firmware tracks per-loop iteration timing and emits averaged metrics via the `PowerAllLoopMetricsInUs` event trace every `POWER_LOOP_TIMING_EMIT_INTERVAL_US` (default 200 seconds). Each emission reports the average iteration duration (IDLE-to-IDLE, excluding error transitions) in microseconds for the control, VR telemetry, and PVT telemetry loops.
+
+Typical steady-state values observed on dual-die hardware (control loop interval = 1 ms):
+
+| Loop | Min (us) | Max (us) | Avg (us) |
+|------|----------|----------|----------|
+| Control | ~383 | ~1523 | ~550 |
+| VR Telemetry | ~49 | ~261 | ~199 |
+| PVT Telemetry | ~41 | ~44 | ~41 |
+
+Typical event trace on scp0/1 uart looks as follows
+
+```txt
+SocPowerModule::PowerAllLoopMetricsInUs: Ticks (724152) ctrl_loop_avg (535) vr_loop_avg (198) pvt_loop_avg (41)
+```
 
 ### **Telemetry Loops**
 

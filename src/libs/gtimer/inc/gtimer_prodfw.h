@@ -70,6 +70,34 @@ void gtimer_add_oneshot(fpfw_tmr_entry_t* tmr, uint64_t tick_interval, void (*cb
 void gtimer_add_periodic(fpfw_tmr_entry_t* tmr, uint64_t tick_interval, void (*cb)(void* ctx, uint64_t exp_tick, uint64_t now_tick), void* ctx);
 
 /**
+ *   This function adds a periodic timer whose expiry grid is anchored to the
+ *   system counter epoch (tick 0) rather than the current counter value.
+ *
+ *   Unlike gtimer_add_periodic(), which anchors the first expiry relative to
+ *   "now" (the counter value at call time), this function uses an absolute
+ *   init tick of 0. The timer queue computes the next expiry as:
+ *       0 + n * tick_interval >= now_tick   (for the smallest n)
+ *   If now_tick is exactly on a grid boundary (e.g., now_tick == k * tick_interval),
+ *   the timer will fire at k * interval rather than skipping to (k+1) * interval.
+ *
+ *   This guarantees that all callers sharing the same synchronized system
+ *   counter -- even across dies with software scheduling jitter -- will fire
+ *   on identical absolute ticks (0, interval, 2*interval, ...).
+ *
+ *   Typical use case: cross-die synchronization of power loop timers on SCP0
+ *   and SCP1 where the system counters are aligned via d2d sync but timer
+ *   setup may occur at different wall-clock times on each die.
+ *
+ *   @param tmr - timer entry
+ *   @param tick_interval - interval in ticks
+ *   @param cb - callback function (void* ctx, uint64_t exp_tick, uint64_t now_tick)
+ *      exp_tick - expiry tick
+ *      now_tick - current tick
+ *   @param ctx - context
+ */
+void gtimer_add_abs_init_periodic(fpfw_tmr_entry_t* tmr, uint64_t tick_interval, void (*cb)(void* ctx, uint64_t exp_tick, uint64_t now_tick), void* ctx);
+
+/**
  * Removes a timer from the queue
  *
  * @param   tmr pointer to the timer entry

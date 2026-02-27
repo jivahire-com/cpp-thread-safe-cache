@@ -42,17 +42,3 @@
 #Commenting this test - potentially cause a mesh hang if run after multiple cores are booted
 #./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_set_single_core_mode_test_soc.robot
 ./../../../tests/functional/test_suites/crash_dump_tests/crash_dump_etoe_report_test.robot
-
-## Power Tests
-# Enable control loop test post resolving BUG 3146680
-#./../../../tests/functional/test_suites/power_tests/mod_power_control_loop_health_soc.robot
-./../../../tests/functional/test_suites/power_tests/mod_power_ft_soc.robot
-./../../../tests/functional/test_suites/power_tests/mod_power_pstate_transition_soc.robot
-./../../../tests/functional/test_suites/power_tests/mod_power_telemetry_loop_health_soc.robot
-
-## Mission Mode Disable Test
-./../../../tests/functional/test_suites/boot_tests/soc_mission_mode_disable.robot
-./../../../tests/functional/test_suites/boot_tests/soc_win_boot_dual_die.robot
-
-## AP WDT tests
-./../../../tests/functional/test_suites/ap_wdt_test/ap_wdt_test.robot

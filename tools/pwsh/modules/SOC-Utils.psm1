@@ -28,7 +28,8 @@ function Get-SOCSshIp {
         @{ "PC Name" = "C41431157B0209A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.45";  "RM IP" = "172.29.131.24"; "Node ID" = "12"},
         @{ "PC Name" = "C41431157B0209B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.141";  "RM IP" = "172.29.131.24"; "Node ID" = "36"},
         @{ "PC Name" = "C41431157B0439A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.41";  "RM IP" = "10.199.88.18"; "Node ID" = "11"},
-        @{ "PC Name" = "C41431157B0439B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.137";  "RM IP" = "10.199.88.18"; "Node ID" = "35"}
+        @{ "PC Name" = "C41431157B0439B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.137";  "RM IP" = "10.199.88.18"; "Node ID" = "35"},
+        @{ "PC Name" = "C41431157B0235A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.17";  "RM IP" = "172.29.131.23"; "Node ID" = "5"}
     )
 
     # Find the matching PC Name and return both IsRM and IP
@@ -216,7 +217,7 @@ Function Write-SOCFlash(
                 }
             }
 
-            Import-Module Posh-SSH
+            Import-Module Posh-SSH -Force
 
             # Create the SFTP and SSH sessions to the RM
             $RmSecurePassword = ConvertTo-SecureString $rmpw -AsPlainText -Force

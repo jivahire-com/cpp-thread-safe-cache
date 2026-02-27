@@ -104,6 +104,8 @@ Function Invoke-Pythia(
             $hostfilename = "C41431157B0439A.json"
         } elseif ($TrimmedAgentName -match 'C41431157B0439B') {
             $hostfilename = "C41431157B0439B.json"
+        } elseif ($TrimmedAgentName -match 'C41431157B0235A') {
+            $hostfilename = "C41431157B0235A.json"
         } else {
             $hostfilename = "$TrimmedAgentName.json"
             Write-Host "`tUsing user provided host configuration JSON : $hostfilename"

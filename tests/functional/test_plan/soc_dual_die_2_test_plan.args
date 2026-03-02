@@ -11,3 +11,6 @@
 
 ## AP WDT tests
 ./../../../tests/functional/test_suites/ap_wdt_test/ap_wdt_test.robot
+
+## DDR Error Injection Test
+./../../../tests/functional/test_suites/error_injection_tests/ddr_ecc_ce_error_injection_soc.robot

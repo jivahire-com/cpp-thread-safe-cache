@@ -105,7 +105,7 @@ jobs:
         showWarnings: true
         script: | 
           # Cleanup pip cache - Holding off purging process to speedup artifact download
-          #pip cache purge
+          pip cache purge
 
           # Init Env
           ./start.ps1 -Toolchain ${{ parameters.Toolchain }} -Configuration ${{ parameters.Configuration }}

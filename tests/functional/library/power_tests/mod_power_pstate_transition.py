@@ -95,7 +95,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             return False
         
         self.log.info("Submitting power module pwr set cap command . . .") 
-        command="pwr set cap 0"
+        command="pwr set cap 50"
         core_com_channel.write_line(write_string=command)
         try:
             command_response_cli = core_com_channel.read_until(key="(success)", timeout_seconds=300)
@@ -106,7 +106,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             time.sleep(30)
             return False
         
-        pattern = re.compile(r"pwr_set cap: current - (\d{1}W)")
+        pattern = re.compile(r"pwr_set cap: current - (\d{2}W)")
         match = pattern.search(command_response_cli)
 
         if match:
@@ -148,7 +148,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             return False
 
         self.log.info("Submitting power module pwr set cap command . . .") 
-        command="pwr set cap 0"
+        command="pwr set cap 50"
         core_com_channel.write_line(write_string=command)
         try:
             command_response_cli = core_com_channel.read_until(key="(success)", timeout_seconds=300)
@@ -159,7 +159,7 @@ class mod_power_pstate_transition(EchoFallsBaseTest):
             time.sleep(30)
             return False
         
-        pattern = re.compile(r"pwr_set cap: current - (\d{1}W)")
+        pattern = re.compile(r"pwr_set cap: current - (\d{2}W)")
         match = pattern.search(command_response_cli)
 
         if match:

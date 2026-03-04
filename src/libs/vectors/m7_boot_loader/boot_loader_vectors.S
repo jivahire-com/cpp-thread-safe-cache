@@ -44,7 +44,9 @@ reset_handler:
     .global  __default_exception_handler
     .thumb_func
 __default_exception_handler:
-    MRS  r0, IPSR        // Get the Interrupt Program Status Register
+    MRS  r0, IPSR        // Get the Interrupt Program Status Register    
+    CMP  r0, #2          // If NonMaskableInt (NMI)
+    BEQ  nmi_handler     // Jump to nmi_handler
     LDR  r1, =0xE000ED28 // Get address of CFSR
     LDR  r1, [r1]        // Get the Configurable Fault Status Register
     LDR  r2, =0xE000ED34 // Get address of MMFAR
@@ -56,3 +58,8 @@ __default_exception_handler:
 
 deadloop:    
     B       deadloop
+      
+nmi_handler:
+    BL   disable_mscp_watchdog
+    BX   lr
+

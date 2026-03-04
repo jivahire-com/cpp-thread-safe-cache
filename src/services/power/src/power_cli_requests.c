@@ -69,12 +69,19 @@ static void power_set_cap_callback(int result, uint16_t current, uint16_t previo
 // "pwr set cap" command
 static void power_set_cap(uint16_t cap_value, ppower_service_cli_request_t p_request)
 {
-
     // save off request so that we can complete it when the cap update is complete.
     sp_cli_cap_request = p_request;
 
     // send update to power_cap api
-    power_cap_update(power_set_cap_callback, cap_value, true);
+    int result = power_cap_update(power_set_cap_callback, cap_value, true);
+
+    if (result != MP_POWER_CAP_PENDING)
+    {
+        printf("[PWR CLI] Set Cap Failed: Requested Cap Value 0x%x\n", cap_value);
+
+        sp_cli_cap_request->fetch_data.pwrset_response_val.pwr_icc_cap_result.result = result;
+        DfwkAsyncRequestComplete(&sp_cli_cap_request->header);
+    }
 }
 
 // "pwr set minupdate" command

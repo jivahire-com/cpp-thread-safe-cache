@@ -39,9 +39,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    _txe_timer_create
-    wdog_cmsdk_apb_init
-    wdog_cmsdk_apb_reload
     config_get_wdog_en
     idsw_get_platform_sdv
+    wdog_service_init
 )

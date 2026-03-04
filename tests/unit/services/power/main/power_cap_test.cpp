@@ -79,7 +79,7 @@ static int teardown(void** state)
     return 0;
 }
 
-#define TEST_POWER_CAP 10
+#define TEST_POWER_CAP POWER_CAP_MIN
 POWER_TEST(power_cap_get_vrcpu_cap__new_cap__false, setup, teardown)
 {
     power_latest_calcs_t test_calcs = {0};
@@ -302,4 +302,13 @@ POWER_TEST(power_cap_is_capped, setup, teardown)
     power_cap_get_vrcpu_cap(NULL, &test_calcs, &test_calcs);
 
     assert_true(power_cap_is_capped());
+}
+
+POWER_TEST(power_cap_invalid_value, setup, teardown)
+{
+    // have to call init to ensure internal state
+    power_cap_init();
+
+    int response = power_cap_update(test_power_cap_callback, POWER_CAP_MIN - 1, false);
+    assert_int_equal(response, MP_POWER_CAP_FAIL_INVALID_REQUEST);
 }

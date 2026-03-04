@@ -105,7 +105,15 @@ static void hm_hsp_error_record_submit_listener_cb(void* context, size_t output_
         (struct kng_hsp_mailbox_cmd_ras_error_report_req*)hm_icc_hsp_err_submit_recv_req->payload_buffer;
     hm_error_record_t* hm_err_submit_payload = (hm_error_record_t*)ras_error_report_req->cper_payload_address_low;
 
-    // Check if the payload is valid
+    // Check if the payload pointer is valid first
+    if (hm_err_submit_payload == NULL)
+    {
+        HM_LOG_CRIT("HSP CPER NULL");
+        HM_ET_ERROR(HM_ET_TYPE_HSP_CPER_ERROR);
+        return;
+    }
+
+    // Check if the payload is within valid memory range
     hm_config_t* hm_config = get_hm_config();
 
     uint32_t hsp_payload_end_addr =
@@ -113,7 +121,7 @@ static void hm_hsp_error_record_submit_listener_cb(void* context, size_t output_
     uint32_t cper_end_addr = (uintptr_t)hm_err_submit_payload + offsetof(hm_error_record_t, cper_section) +
                              hm_err_submit_payload->section_size;
 
-    if (hm_err_submit_payload == NULL || hsp_payload_end_addr < cper_end_addr)
+    if (hsp_payload_end_addr < cper_end_addr)
     {
         HM_LOG_CRIT("Invalid HSP CPER payload(%p - %p)", hm_err_submit_payload, (void*)cper_end_addr);
         HM_ET_ERROR(HM_ET_TYPE_HSP_CPER_ERROR);

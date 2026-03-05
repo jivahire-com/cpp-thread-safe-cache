@@ -54,7 +54,7 @@
  * Step 4: Assert calculations:
  *    - Current: avg * CORE_CURRENT_CONVERSION_FACTOR
  *    - Voltage: DOUT2MILLIVOLTS(vcore0)
- *    - Power: pwr_field * 22 (CORE_POWER_MW_PER_BIT)
+ *    - Power: pwr_field * 32 (CORE_POWER_MW_PER_BIT)
  *    - Pstate/Cstate: Direct from sensor data (validates throttling-dependent logic)
  *    - Throttling Rack Priority: From configuration (config->throttling_rack_priority)
  *    - Frequency: From DVFS table (Just printing it and not doing assertion)
@@ -205,7 +205,7 @@ TEST_FUNCTION(test_core_instantaneous_data_integration, test_setup, test_teardow
         mock_current_data.data.min = config->current_min_mA;
         mock_current_data.data.max = config->current_max_mA;
         mock_current_data.data.volt = config->voltage_mV;
-        mock_current_data.data.pwr = (uint16_t)((config->power_mW + 11) / 22); // Round to nearest integer for conversion
+        mock_current_data.data.pwr = (uint16_t)((config->power_mW + 16) / 32); // Round to nearest integer for conversion
         // Current sensor pstate - used when throttling is active
         mock_current_data.data.pstate = config->current_sensor_pstate;
         mock_current_data.data.mpam_id_low = config->mpam_id;
@@ -298,8 +298,9 @@ TEST_FUNCTION(test_core_instantaneous_data_integration, test_setup, test_teardow
         int32_t expected_voltage_mV = DOUT2MILLIVOLTS(config->tile_voltage_avg_mV);
         // Temperature: core_rt[core_id].latest_max_value_dC (appears to be 0 for instantaneous data)
         int32_t expected_temp_dC = 0;
-        // Power: core_rt[core_id].latest_power_mW = config->power_mW
-        uint16_t expected_power_mW = config->power_mW;
+        // Power: Account for conversion rounding (power_mW → raw → power_mW)
+        // Raw value: (config->power_mW + 16) / 32, then back: raw * 32
+        uint16_t expected_power_mW = ((config->power_mW + 16) / 32) * CORE_POWER_MW_PER_BIT;
         // Frequency: dvfs_get_freq_from_plimit(current_pstate) - calls external DVFS function
         // So skipping exact frequency assertion against expected value.
         // Pstate: Conditional logic based on throttling status

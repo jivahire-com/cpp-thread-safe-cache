@@ -35,13 +35,14 @@
 #define MICROSECONDS_TO_MILLISECONDS(time_diff_uS) ((time_diff_uS) / 1000)
 
 
-// The current conversion factor is set by default as 26.5 per bit.
+// The current conversion factor is set by default as 32.2 per bit.
 #ifndef CORE_CURRENT_CONVERSION_FACTOR
-    #define CORE_CURRENT_CONVERSION_FACTOR 26.5F
+    #define CORE_CURRENT_CONVERSION_FACTOR 32.2F
 #endif
-// The power conversion factor is set by default as 22mW per bit.
+// Power management HAS V1.04 section 20.1.4.1.2, the power conversion factor is set by default as 32mW per bit.
+// The power conversion factor is set by default as 32mW per bit.
 #ifndef CORE_POWER_MW_PER_BIT
-    #define CORE_POWER_MW_PER_BIT 22
+    #define CORE_POWER_MW_PER_BIT 32
 #endif
 
 #define ROUND_USEC_TO_MSEC(usec) ((usec + 500) / 1000)

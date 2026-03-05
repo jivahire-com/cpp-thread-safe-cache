@@ -26,6 +26,7 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static const guid_t guid_vab = ACPI_ERROR_TYPE_VAB;
 
 /*------------- Functions ----------------*/
 static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
@@ -106,7 +107,7 @@ FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "
     vab_common_init(vab_instances_enabled);
 
     /* Register the error domain for VABs in Health Monitor */
-    hm_register_error_domain(ACPI_ERROR_DOMAIN_VAB, NULL, "VAB Error Domain", vab_error_injection_cb, NULL);
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_VAB, &guid_vab, "VAB Error Domain", vab_error_injection_cb, NULL);
 
     FPFW_DBGPRINT_INFO("VAB Initialization: End\n");
 

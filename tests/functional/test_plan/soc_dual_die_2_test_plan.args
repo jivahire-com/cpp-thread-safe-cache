@@ -14,3 +14,6 @@
 
 ## DDR Error Injection Test
 ./../../../tests/functional/test_suites/error_injection_tests/ddr_ecc_ce_error_injection_soc.robot
+
+## CPER Functional Tests
+./../../../tests/functional/test_suites/cper_tests/cper_functional_test_soc.robot

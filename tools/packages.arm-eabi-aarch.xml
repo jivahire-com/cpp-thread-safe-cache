@@ -33,7 +33,7 @@
     <pip_packages>
         <package name="pythia-tdk-rrm" version="0.1.99" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
         <package name="pythia-tdk-echofalls" version="1.0.44" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
-        <package name="pythia-tdk-common" version="0.5.12" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
+        <package name="pythia-tdk-common" version="0.5.28" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
         <!-- /// @TODO: click 8.3.0 breaks diagtool, remove once fixed https://azurecsi.visualstudio.com/Dev/_workitems/edit/2943104 -->
         <package name="click" version="8.2.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
         <package name="diagtool" version="1.1.271" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>

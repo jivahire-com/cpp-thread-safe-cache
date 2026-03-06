@@ -159,6 +159,7 @@ void ddr_create_memory_map()
     if (status != SILIBS_SUCCESS)
     {
         DDR_LOG_CRIT(TEXT_DDR_MMAP_ERR_NUM, 0);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_UNEXPECTED_RESERVATION_OVERLAP, status);
         FPFwErrorRaise(status, 0, 0, 0, 0);
     }
 

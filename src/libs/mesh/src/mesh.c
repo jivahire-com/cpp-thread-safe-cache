@@ -31,6 +31,7 @@
 #include <kng_soc_constants.h> // for NUM_DIE
 #include <mesh.h>              // for mesh_init
 #include <mesh_error_handler.h>
+#include <mesh_events.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <mscp_exp_spi_synchronize_dies.h> // for mscp_exp_spi_synchronize_dies
 #include <stdbool.h>                       // for true
@@ -624,6 +625,7 @@ void save_numa_info(void)
     if (status != SILIBS_SUCCESS)
     {
         MESH_CRIT("GetVariable failed with status 0x%x\n", status);
+        FPFW_ET_LOG(MeshVariableServiceSyncGetVariableError, __LINE__);
     }
     else
     {
@@ -633,6 +635,7 @@ void save_numa_info(void)
         if (status != 0)
         {
             MESH_CRIT("GetVariable data mismatch, NUMA config DataCheck Failed!!\n");
+            FPFW_ET_LOG(MeshMismatchNumaConfig, __LINE__);
         }
         else
         {
@@ -655,6 +658,7 @@ int mesh_read_binary_table_from_rmss(uint8_t die_num, uint32_t cmn_config_enum)
     if (sts != SILIBS_SUCCESS)
     {
         MESH_CRIT("process_mesh_binary_from_spi failed sts 0x%x\n", sts);
+        FPFW_ET_LOG(MeshProcessMeshBinaryFromSpi, __LINE__);
     }
     MESH_CRIT("Mesh Bin Tbl Rd RMSS End sts 0x%x\n", sts);
     return sts;
@@ -682,6 +686,7 @@ void mesh_check_ddrss_from_config(uint32_t* ddrss_en, uint32_t cmn_config_enum)
     if (cmn_config_enum >= CONFIG_CMN800_MAX_enum)
     {
         MESH_CRIT("Invalid Mesh Config Enum 0x%x\n", cmn_config_enum);
+        FPFW_ET_LOG(MeshInvalidMeshConfig, __LINE__);
         return;
     }
 
@@ -771,6 +776,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     if (sts != 0)
     {
         MESH_CRIT("mesh_read_binary_table_from_rmss failed sts 0x%x\n", sts);
+        FPFW_ET_LOG(MeshReadBinaryTableFromRmss, __LINE__);
     }
 
     if (is_i3c_supported())
@@ -793,6 +799,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
                 if (idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
                 {
                     MESH_CRIT("Cannot Proceed with Boot\n");
+                    FPFW_ET_LOG(MeshPlatformNotSupport, __LINE__);
                     BUG_ASSERT(0);
                 }
                 else
@@ -804,6 +811,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         else
         {
             MESH_CRIT("ddrss_mask_from_mesh is 0x%x, Cannot Proceed with Boot\n", ddrss_mask_from_mesh);
+            FPFW_ET_LOG(MeshDdrssDecodeError, __LINE__);
             BUG_ASSERT(0);
         }
         cmn800_set_i3c_dimm_params(dimm_sku, test32);
@@ -813,6 +821,7 @@ void mesh_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     if (system_info_is_warm_start())
     {
         MESH_CRIT("mesh_init Warm restart Flow\n");
+        FPFW_ET_LOG(MeshWarmStart, __LINE__);
         return;
     }
 
@@ -850,11 +859,13 @@ void d2d_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     if (system_info_is_warm_start())
     {
         MESH_CRIT("d2d_init Warm restart Flow\n");
+        FPFW_ET_LOG(MeshWarmStart, __LINE__);
         cold_reset = false;
     }
     else
     {
         MESH_CRIT("d2d_init Cold start Flow\n");
+        FPFW_ET_LOG(MeshColdStart, __LINE__);
     }
     if (cmn800_sequence_param.BOOT_2D_ENABLE)
     {

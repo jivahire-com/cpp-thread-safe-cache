@@ -4,7 +4,9 @@ set(TARGET scp_avs)
 
 set(SRC
     ./scp_avs_driver.c
-    ./scp_avs_api.c)
+    ./scp_avs_api.c
+    ./scp_avs_events.c
+)
 
 set(LIBS PUBLIC fwlib.dfwk fwlib.lib.linkedlist fwlib.lib.assert)
 

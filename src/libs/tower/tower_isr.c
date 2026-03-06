@@ -19,6 +19,7 @@
 #include <kng_atu_mappings.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <tower_events.h>
 #include <tower_fmu_utility.h>
 #include <tower_isr.h>
 #include <utils.h>
@@ -168,6 +169,7 @@ silibs_status_t tower_fmu_handler(TOWER_INSTANCE tower_id, DIE_INSTANCE die, uin
         if (ras_agent_record_to_cper(&record, tower_cper, sizeof(acpi_err_sec_nitower_t), &severity))
         {
             FPFW_DBGPRINT_ALWAYS("Unable to convert RAS record to CPER!\n");
+            FPFW_ET_LOG(TowerRasRecordToCperError, __LINE__);
         }
         else
         {
@@ -215,12 +217,14 @@ silibs_status_t tower_fmu_handler(TOWER_INSTANCE tower_id, DIE_INSTANCE die, uin
             if (record.handler(&record))
             {
                 FPFW_DBGPRINT_ALWAYS("Error encountered while handling Tower record\n");
+                FPFW_ET_LOG(TowerTowerRecordHandleError, __LINE__);
                 status = SILIBS_E_STATE;
             }
         }
         else
         {
             FPFW_DBGPRINT_ALWAYS("Tower Record was marked as invalid! No further handling will be done\n");
+            FPFW_ET_LOG(TowerInvalidTowerRecord, __LINE__);
             continue;
         }
     }
@@ -247,6 +251,7 @@ PLACED_CODE acpi_einj_cmd_status_t tower_error_injection_cb(ras_einj_info_t* ein
     if (einj_payload == NULL)
     {
         FPFW_DBGPRINT_ALWAYS("|Tower| Error: NULL injection payload\n");
+        FPFW_ET_LOG(TowerISRInvalidAccess, __LINE__);
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
@@ -267,6 +272,7 @@ PLACED_CODE acpi_einj_cmd_status_t tower_error_injection_cb(ras_einj_info_t* ein
         if (einj_payload->component_instance != idsw_get_die_id())
         {
             FPFW_DBGPRINT_ALWAYS("|Tower| Error: Invalid component instance %d\n", einj_payload->component_instance);
+            FPFW_ET_LOG(TowerISRInvalidAccess, __LINE__);
             return ACPI_EINJ_INVALID_ACCESS;
         }
     }
@@ -335,6 +341,7 @@ PLACED_CODE acpi_einj_cmd_status_t tower_error_injection_cb(ras_einj_info_t* ein
         break;
     default:
         FPFW_DBGPRINT_ALWAYS("|Tower| Error: Invalid injection type: (%d)\n", op_type.op);
+        FPFW_ET_LOG(TowerISRInvalidAccess, __LINE__);
         goto exit;
     }
 

@@ -26,6 +26,7 @@
 #include <kng_soc_constants.h> // for NUM_DIE
 #include <mesh.h>              // for mesh_init
 #include <mesh_error_handler.h>
+#include <mesh_events.h>
 #include <ras_arm.h>
 #include <silibs_ap_top_regs.h>
 #include <stdbool.h> // for true
@@ -285,6 +286,7 @@ void mesh_ns_fault_isr(void* context)
     UNUSED(context);
 
     MESH_CRIT("Mesh NS Fault ISR\n");
+    FPFW_ET_LOG(MeshErrorHandlerNSFaultIsr, __LINE__);
 
     // Clear mesh_cper
     mesh_cper = (acpi_err_sec_generic_t){0x0};
@@ -322,6 +324,7 @@ void mesh_ns_error_isr(void* context)
     UNUSED(context);
 
     MESH_CRIT("Mesh NS Error ISR\n");
+    FPFW_ET_LOG(MeshErrorHandlerNSErrorIsr, __LINE__);
 
     // Clear mesh_cper
     mesh_cper = (acpi_err_sec_generic_t){0x0};
@@ -352,6 +355,7 @@ uint32_t d2d_set_atu_map(uint8_t d2d_subsystem, bool* d2d_atu_unmap_required)
 {
     uint32_t translated_addr_ras2 = 0x0;
     MESH_CRIT("D2D2:: Setting ATU Map for D2D Subsystem %d\n", d2d_subsystem);
+    FPFW_ET_LOG(MeshD2dAtuMap, __LINE__);
 
     // Create a temp entry for the ATU Map
     atu_map_entry_t temp_atu_map_entry = {.ap_base_address = atu_d2d2_map[d2d_subsystem].ap_base_address,
@@ -385,6 +389,8 @@ uint32_t d2d_set_atu_map(uint8_t d2d_subsystem, bool* d2d_atu_unmap_required)
 void d2d_clear_atu_map(uint8_t d2d_subsystem, uint32_t translated_addr_ras2)
 {
     MESH_CRIT("D2D2:: Clearing ATU Map for D2D Subsystem %d Start\n", d2d_subsystem);
+    FPFW_ET_LOG(MeshD2dAtuUnmap, __LINE__);
+
     // Create a temp entry for the ATU Map
     atu_map_entry_t temp_atu_map_entry = {.ap_base_address = UINT64_MAX,
                                           .mscp_start_address = translated_addr_ras2,
@@ -402,6 +408,7 @@ int mesh_error_handler_convert_d2d_ras_record_to_cper(ras_error_record_t* record
     if (record == NULL || mesh_cper == NULL)
     {
         MESH_CRIT("Invalid Record or Mesh CPER\n");
+        FPFW_ET_LOG(MeshErrorHandlerConvertRasRecordToCper, __LINE__);
         return SILIBS_E_DEVICE;
     }
 
@@ -452,6 +459,7 @@ void d2d_error_isr(void* context)
         if (status != SILIBS_SUCCESS)
         {
             MESH_CRIT("Failed to set base addr, D2DSS2_AGENT%d\n", d2d_subsystem);
+            FPFW_ET_LOG(MeshErrorHandlerRasArmAgentSetBase, __LINE__);
             goto d2d_ras_error_isr_exit;
         }
         bool error_found = ras_arm_agent_probe(&d2dss2_agent[d2d_subsystem], &record);
@@ -485,6 +493,7 @@ void d2d_error_isr(void* context)
                 if (record.handler(&record)) // Clears the Error Record Status Register
                 {
                     MESH_CRIT("Error encountered while handling record\n");
+                    FPFW_ET_LOG(MeshErrorHandlerClearErrorRecordStatusReg, __LINE__);
                 }
             }
             else
@@ -509,6 +518,7 @@ void d2d_error_isr(void* context)
             {
                 // If the severity is fatal, we need to bug check
                 MESH_CRIT("Fatal Error in D2D Subsystem %d, Bug Check\n", d2d_subsystem);
+                FPFW_ET_LOG(MeshErrorHandlerAcpiFatal, __LINE__);
                 BUG_CHECK(((record.err_code_valid && record.err_code != 0) ? (KNG_STATUS)record.err_code : KNG_E_RAS_MESH_D2D_UE),
                           0,
                           0);
@@ -576,6 +586,7 @@ void d2d_ras_init(void)
                           d2d_subsystem,
                           status,
                           config_get_d2d_ecc_ce_counter());
+                FPFW_ET_LOG(MeshErrorHandlerRasSetRecordCntThresholds, __LINE__);
             }
             status = ras_arm_agent_set_record_counter_thresholds_by_index(&d2dss2_agent[d2d_subsystem], 1, cec, 0);
             if (status != SILIBS_SUCCESS)
@@ -585,6 +596,7 @@ void d2d_ras_init(void)
                           d2d_subsystem,
                           status,
                           config_get_d2d_ecc_ce_counter());
+                FPFW_ET_LOG(MeshErrorHandlerRasSetRecordCntThresholds, __LINE__);
             }
         }
         if (d2d_atu_unmap_required)
@@ -632,6 +644,7 @@ void d2d_ecc_ce_counter_update(uint8_t d2d_subsystem, uint16_t cec_cli)
                       d2d_subsystem,
                       status,
                       cec_cli);
+            FPFW_ET_LOG(MeshErrorHandlerRasSetRecordCntThresholds, __LINE__);
         }
         status = ras_arm_agent_set_record_counter_thresholds_by_index(&d2dss2_agent[d2d_subsystem], 1, cec, 0);
         if (status != SILIBS_SUCCESS)
@@ -641,6 +654,7 @@ void d2d_ecc_ce_counter_update(uint8_t d2d_subsystem, uint16_t cec_cli)
                       d2d_subsystem,
                       status,
                       cec_cli);
+            FPFW_ET_LOG(MeshErrorHandlerRasSetRecordCntThresholds, __LINE__);
         }
     }
     if (d2d_atu_unmap_required)
@@ -674,6 +688,7 @@ void d2d_ras_error_inj(uint8_t d2d_subsystem, uint32_t err_inj, uint32_t err_cnt
     if (status != SILIBS_SUCCESS)
     {
         MESH_CRIT("Failed to set base addr, D2DSS2_AGENT%d\n", d2d_subsystem);
+        FPFW_ET_LOG(MeshErrorHandlerRasArmAgentSetBase, __LINE__);
         goto d2d_ras_error_inj_exit;
     }
 
@@ -705,12 +720,14 @@ PLACED_CODE acpi_einj_cmd_status_t mesh_error_injection_cb(ras_einj_info_t* einj
     if (einj_payload == NULL)
     {
         MESH_CRIT("Set error with address struct pointer invalid\n");
+        FPFW_ET_LOG(MeshErrorHandlerEinjInvalidPayload, __LINE__);
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
     if (einj_payload->component_group != ACPI_ERROR_DOMAIN_MESH)
     {
         MESH_ERR("Invalid Mesh error domain(%d)\n", einj_payload->component_group);
+        FPFW_ET_LOG(MeshErrorHandlerEinjInvalidPayload, __LINE__);
         return ACPI_EINJ_INVALID_ACCESS;
     }
 
@@ -719,6 +736,7 @@ PLACED_CODE acpi_einj_cmd_status_t mesh_error_injection_cb(ras_einj_info_t* einj
         if (einj_payload->component_instance != idsw_get_die_id())
         {
             MESH_ERR("Invalid DIE_ID(%d)", einj_payload->component_instance);
+            FPFW_ET_LOG(MeshErrorHandlerEinjInvalidPayload, __LINE__);
             return ACPI_EINJ_INVALID_ACCESS;
         }
     }
@@ -777,6 +795,7 @@ PLACED_CODE acpi_einj_cmd_status_t mesh_error_injection_cb(ras_einj_info_t* einj
             else
             {
                 MESH_ERR("Invalid value(%d)\n", einj_payload->status_operation.value);
+                FPFW_ET_LOG(MeshErrorHandlerEinjInvalidPayload, __LINE__);
                 return ACPI_EINJ_INVALID_ACCESS;
             }
         }
@@ -802,6 +821,7 @@ PLACED_CODE acpi_einj_cmd_status_t mesh_error_injection_cb(ras_einj_info_t* einj
     else
     {
         MESH_ERR("Invalid component type(%d)\n", einj_payload->component_type);
+        FPFW_ET_LOG(MeshErrorHandlerEinjInvalidPayload, __LINE__);
         return ACPI_EINJ_INVALID_ACCESS;
     }
     MESH_INFO("Mesh Error Injection Callback End\n");

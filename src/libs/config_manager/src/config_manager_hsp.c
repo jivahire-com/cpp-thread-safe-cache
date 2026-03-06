@@ -8,6 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include "config_manager_events.h"
+
 #include <FpFwSpinLock.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
@@ -53,12 +55,14 @@ static PLACED_CODE void check_var_store_cb(void* context,
         else
         {
             CFG_CRIT("var store contains invalid data, idx[%d]", current_entry->index);
+            FPFW_ET_LOG(ConfigManagerVarStoreInvalidData, current_entry->index, __LINE__);
         }
     }
     else
     {
         // var store read operation failed
         CFG_CRIT("var store access failed, idx[%d]", current_entry->index);
+        FPFW_ET_LOG(ConfigManagerVarStoreAccessFailed, current_entry->index, __LINE__);
     }
 
     variable_service_unlock_get_var_ctx(&var_svc_ctx);

@@ -471,6 +471,7 @@ PLACED_CODE void prod_ddrss_lib_init(KNG_DIE_ID die_num)
     else
     {
         printf("DDRSS init not supported on plat. Id 0x%x\n", platform_id);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORT, __LINE__);
         return;
     }
 
@@ -598,6 +599,7 @@ PLACED_CODE void prod_ddrss_lib_init(KNG_DIE_ID die_num)
             else
             {
                 printf("DDRSS - HSP notifcation: FIPS KAT test FAILED!\n");
+                DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_DDRSS_FIPS_KAT_TEST_FAILED, __LINE__);
             }
         }
     }
@@ -813,6 +815,7 @@ PLACED_CODE int32_t ddrss_update_ppr_completion(ddrss_spd_addr_info_t* addr_info
         // TODO ADO: 3144540 Add an event trace here?
         FPFW_DBGPRINT_ERROR("SPD_READ_FAIL: %d\r\n", status);
         status = E_PPR_STATUS_UPDATE_SPD_READ_FAIL;
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_DDRSS_READ_DIMM_BY_I3C, __LINE__);
         goto exit;
     }
 
@@ -852,6 +855,7 @@ PLACED_CODE int32_t ddrss_update_ppr_completion(ddrss_spd_addr_info_t* addr_info
             // TODO ADO: 3144540 Add an event trace here?
             FPFW_DBGPRINT_ERROR("SPD_WRITE_FAIL: %d\r\n", status);
             status = E_PPR_STATUS_UPDATE_SPD_WRITE_FAIL;
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_DDRSS_WRITE_DIMM_BY_I3C, __LINE__);
             goto exit;
         }
     }
@@ -872,6 +876,7 @@ PLACED_CODE int32_t ddrss_update_ppr_completion(ddrss_spd_addr_info_t* addr_info
         // TODO ADO: 3144540 Add an event trace here?
         status = E_PPR_STATUS_UPDATE_SEL_LOG_FAIL;
         FPFW_DBGPRINT_ERROR("SEL_LOG_FAIL: %d\r\n", status);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_DDRSS_UPDATE_SEL_LOG, __LINE__);
     }
 
 exit:

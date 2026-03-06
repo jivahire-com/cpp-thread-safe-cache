@@ -23,6 +23,7 @@
 #include <scp_avs.h>
 #include <scp_avs_cli.h>
 #include <scp_avs_driver.h>
+#include <scp_avs_events.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -263,6 +264,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
     {
         // don't modify any data, return error
         AVS_LOG_CRIT("AVS CRC error!");
+        FPFW_ET_LOG(ScpAvsCrcError, __LINE__);
         avs_error_count.crc_error_count++;
         original_request->avs_response_status = SCP_AVS_STATUS_CRC_ERROR;
         avs_isr_request->avs_crc_error = false;
@@ -280,6 +282,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         if (status != SILIBS_SUCCESS)
         {
             AVS_LOG_CRIT("avs_get_cmd_resp_data failure (Read)!");
+            FPFW_ET_LOG(ScpAvsDriGetCmdRespReadError, __LINE__);
             original_request->avs_response_status = SCP_AVS_STATUS_READ_FAIL;
         }
         else
@@ -300,6 +303,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         if (status != SILIBS_SUCCESS)
         {
             AVS_LOG_CRIT("avs_get_cmd_resp_data (Write) failure!");
+            FPFW_ET_LOG(ScpAvsDriGetCmdRespWriteError, __LINE__);
             original_request->avs_response_status = SCP_AVS_STATUS_WRITE_FAIL;
         }
         else
@@ -330,6 +334,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         if (status != SILIBS_SUCCESS)
         {
             AVS_LOG_CRIT("avs_get_cmd_resp_data failure (Read VCT)!");
+            FPFW_ET_LOG(ScpAvsDriGetCmdRespReadError, __LINE__);
             original_request->avs_response_status = SCP_AVS_STATUS_READ_ALL_VCT_FAIL;
         }
         else
@@ -362,6 +367,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         if (status != SILIBS_SUCCESS)
         {
             AVS_LOG_CRIT("avs_get_cmd_resp_data failure (Read multi)!");
+            FPFW_ET_LOG(ScpAvsDriGetCmdRespReadError, __LINE__);
             original_request->avs_response_status = SCP_AVS_STATUS_READ_MULTI_FAIL;
         }
         else
@@ -390,6 +396,7 @@ void scp_avs_isr_dispatch(PDFWK_ASYNC_REQUEST_HEADER Request, void* Context)
         if (status != SILIBS_SUCCESS)
         {
             AVS_LOG_CRIT("avs_get_cmd_resp_data failure (Write multi)!");
+            FPFW_ET_LOG(ScpAvsDriGetCmdRespWriteError, __LINE__);
             original_request->avs_response_status = SCP_AVS_STATUS_WRITE_MULTI_FAIL;
         }
         else

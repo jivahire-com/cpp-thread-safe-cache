@@ -6,6 +6,7 @@ add_library(${TARGET}
     STATIC
         src/config_manager.c
         src/config_manager_hsp.c
+        src/config_manager_events.c
 )
 
 target_link_libraries(${TARGET}

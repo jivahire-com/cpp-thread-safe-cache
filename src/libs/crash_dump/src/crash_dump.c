@@ -261,7 +261,7 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
                                          ctx->type_ctx[i]->mem_ctx.nextAddr - ctx->type_ctx[i]->mem_ctx.baseAddr);
                 }
 
-                CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_CD_CRASH);
+                CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_CD_CRASH, __LINE__);
             }
         }
 

@@ -180,7 +180,7 @@ static fpfw_status_t crash_dump_send_hsp_command_async(uint32_t command, uint32_
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send 0x%08lx command to HSP: status = 0x%08lx\n", command, status);
-            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_HSP_CMD_ASYNC_ERROR, status);
         }
     }
 
@@ -203,7 +203,7 @@ static void crash_dump_send_hsp_command_sync(uint32_t command, uint32_t flags)
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send 0x%08lx command to HSP: status = 0x%08lx\n", command, status);
-            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_HSP_CMD_SYNC_ERROR, status);
         }
     }
 }
@@ -355,7 +355,7 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
     if (ctx == NULL)
     {
         FPFwCDPrintf("Crash dump context is not set for %d ICC\n", type);
-        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS, type);
+        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_INVALID_CRASHDUMP_CONTEXT, __LINE__);
         return;
     }
 
@@ -399,6 +399,7 @@ void crash_dump_config_icc(crash_dump_icc_config_t type, fpfw_icc_base_ctx_t* ic
     else
     {
         FPFwCDPrintf("ICC context is NULL for %d ICC or ICC context is already set %p\n", type, ctx->icc_ctx[type]);
+        CRASH_DUMP_ET_WARNING_PARAM(CRASH_DUMP_ET_TYPE_ICC_ICC_CONTEXT_ALREADY_SET, __LINE__);
     }
 }
 
@@ -412,7 +413,7 @@ void crash_dump_notify_hsp()
     if (ctx == NULL)
     {
         FPFwCDPrintf("Crash dump context is not set to notify HSP\n");
-        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS);
+        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_INVALID_CRASHDUMP_CONTEXT, __LINE__);
         return;
     }
 
@@ -439,7 +440,7 @@ void crash_dump_notify_accelerators(bool is_ue, uint32_t origin_core)
     if (ctx == NULL)
     {
         FPFwCDPrintf("Crash dump config is not set to notify SDM/CDED\n");
-        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS);
+        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_INVALID_CRASHDUMP_CONTEXT, __LINE__);
         return;
     }
 
@@ -483,7 +484,7 @@ void crash_dump_notify_accelerators(bool is_ue, uint32_t origin_core)
         else
         {
             FPFwCDPrintf("Fail to send CD req to %u: status = 0x%08lx\n", accel_type, status);
-            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_LARGE_FIFO_CD_MSG_ERROR, status);
 
             crash_dump_update_accel_state(accel_type, CRASH_DUMP_STATE_NOT_AVAILABLE);
         }
@@ -502,7 +503,7 @@ void crash_dump_notify_cores(uint32_t origin_core)
     if (ctx == NULL)
     {
         FPFwCDPrintf("Crash dump context is not set to notify other cores\n");
-        CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_ICC_INVALID_ADDRESS);
+        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_INVALID_CRASHDUMP_CONTEXT, __LINE__);
         return;
     }
 
@@ -512,7 +513,7 @@ void crash_dump_notify_cores(uint32_t origin_core)
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to local core : status = 0x%08lx\n", status);
-            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_MHU_SEND_CD_SYNC_LOCAL_ERROR, status);
         }
     }
 
@@ -522,7 +523,7 @@ void crash_dump_notify_cores(uint32_t origin_core)
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to remote core : status = 0x%08lx\n", status);
-            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_MHU_SEND_CD_SYNC_REMOTE_ERROR, status);
         }
         else
         {
@@ -543,7 +544,7 @@ void crash_dump_notify_cores(uint32_t origin_core)
         if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
         {
             FPFwCDPrintf("Failed to send Crash dump signal to remote core via SPI : status = 0x%08lx\n", status);
-            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_ERROR, status);
+            CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_ICC_SEND_LARGE_REMOTE_CORE_CD_MSG_ERROR, status);
         }
     }
 }

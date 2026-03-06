@@ -59,6 +59,7 @@ static void ddr_manager_control_bwl(int action)
             if (sts != SILIBS_SUCCESS)
             {
                 printf("Failed to configure BWL for MC %d: %d\n", mc, sts);
+                DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_BWL_BANDWIDTH_LIMITER, __LINE__);
             }
         }
 
@@ -87,6 +88,7 @@ static void ddr_manager_control_bwl(int action)
             if (sts != SILIBS_SUCCESS)
             {
                 printf("Failed to configure BWL for MC %d: %d\n", mc, sts);
+                DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_BWL_BANDWIDTH_LIMITER, __LINE__);
             }
         }
 

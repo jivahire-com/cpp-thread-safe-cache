@@ -45,6 +45,9 @@ typedef enum {
     SCP_ACCEL_EVENT_ID_CPER_COMPLETION_FAILED,                  // Printed when CPER submission from accel core failed
     SCP_ACCEL_EVENT_ID_DFWK_HANDLER_ERROR,                      // Printed when an error occurs in file accel_intr_dfwk_handlers.c
     SCP_ACCEL_EVENT_ID_IRQ_INIT_ERROR,                          // Printed when an error occurs in file accel_intr_irq_init.c
+    SCP_ACCEL_EVENT_ID_INTR_INVALID_PARAM,                      // Printed when an invalid param is used in accel_intr_virt_irq.c
+
+    SCP_ACCEL_EVENT_ID_MAX
 } SCP_ACCEL_EVENT_ID;
 
 
@@ -181,6 +184,20 @@ FPFW_ET_DEFINE_EVENT(
     FPFW_ET_LEVEL_ERROR,
     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, accel_id),
     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, status),
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, line)
+)
+
+/**
+ * Event indicating an invalid Param in virt_irq file
+ * param - Parameter that caused the error
+ * line - Line number where the error occurred in this file
+ */
+FPFW_ET_DEFINE_EVENT(
+    EVENT_TRACE_PROVIDER_ID_SCP_ACCEL_INTR,
+    SCP_ACCEL_EVENT_ID_INTR_INVALID_PARAM,
+    AccelIntrInvalidParam,
+    FPFW_ET_LEVEL_ERROR,
+    FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32_HEX, param),
     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, line)
 )
 

@@ -21,6 +21,7 @@
 #include <silibs_common.h>
 #include <stddef.h> // for NULL
 #include <string.h> // for memcpy
+#include <variable_services_events.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -193,6 +194,7 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
         DEBUG_PRINT("Error!! ICC send recv failed\n");
+        FPFW_ET_LOG(VariableServicesAsyncIccSendError, icc_status, __LINE__);
         return KNG_E_FAIL;
     }
     DEBUG_PRINT("----End of Async %s Variable----\n", var_serv_ctx->operation_type == ASYNC_SET_VARIABLE ? "Set" : "Get");

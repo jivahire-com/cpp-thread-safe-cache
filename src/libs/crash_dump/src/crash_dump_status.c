@@ -140,7 +140,7 @@ void initialize_crash_dump_header(crash_dump_type_context_t* type_context)
     if (system_info_is_warm_start())
     {
         // Keep crash dump status if warm start.
-        CRASH_DUMP_ET_WARNING(CRASH_DUMP_ET_TYPE_STATUS_WARM_START);
+        CRASH_DUMP_ET_WARNING_PARAM(CRASH_DUMP_ET_TYPE_STATUS_WARM_START, __LINE__);
 
         // Check crash dump status and assert gpio if available.
         if (type_context->type == CRASH_DUMP_TYPE_FULL && type_context->header != NULL)
@@ -361,7 +361,7 @@ void crash_dump_update_accel_state(ACCEL_ID accel_type, crash_dump_core_state_t 
         break;
     default:
         // Not valid Accelerator ID
-        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_STATUS_INVALID_PARAMS, accel_type);
+        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_STATUS_INVALID_PARAMS, __LINE__);
         return;
     }
 

@@ -17,6 +17,7 @@
 #include <bdat_schema.h>
 #include <bug_check.h>
 #include <ddr_i3c.h>
+#include <ddr_manager_events.h>
 #include <ddrss.h>
 #include <ddrss_dimm.h>
 #include <ddrss_lib.h>
@@ -182,6 +183,7 @@ PLACED_CODE void ddr_create_bdat(void)
         {
             // Raise error
             printf("Error Syncing dies\n");
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_SYNC_DIES_ERROR, __LINE__);
         }
     }
 
@@ -365,6 +367,7 @@ PLACED_CODE void ddr_create_bdat(void)
                     SILIBS_SUCCESS)
                 {
                     printf("Error reading DIE=%d global DIMM=%d SPD", die_num, dimm_global_idx);
+                    DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_READ_DIMM_BY_I3C, __LINE__);
                 }
 
                 for (size_t spdData_idx = 0; spdData_idx < (MAX_SPD_BYTE_1024); spdData_idx++)
@@ -382,6 +385,7 @@ PLACED_CODE void ddr_create_bdat(void)
                 if (ddrss_phy_get_training_margin(mc, &ddrss_phy_training_margin[dimm_local_idx]) != SILIBS_SUCCESS)
                 {
                     printf("Error reading DIE=%d global DIMM=%d margin data\n", die_num, dimm_global_idx);
+                    DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_READ_DIMM_BY_I3C, __LINE__);
                 }
 
                 for (size_t rank_idx = 0; rank_idx < ddrss_prd_cfg_knobs.dimm_rank; rank_idx++)
@@ -522,6 +526,7 @@ PLACED_CODE void ddr_create_bdat(void)
             else
             {
                 printf("BDAT: Skipping global DIMM %d - not enabled\n", dimm_global_idx);
+                DDR_MANAGER_ET_WARN(DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_DIMM_IS_DISABLE, __LINE__);
             }
         }
     }
@@ -581,6 +586,7 @@ PLACED_CODE void ddr_create_bdat(void)
         {
             // Raise error
             printf("Error Syncing dies\n");
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_SYNC_DIES_ERROR, __LINE__);
         }
     }
 
@@ -782,6 +788,7 @@ static PLACED_CODE uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
                 SILIBS_SUCCESS)
             {
                 printf("Error reading DIE=%d DIMM=%d SPD\n", die_num, dimm_local_idx);
+                DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_READ_DIMM_BY_I3C, __LINE__);
             }
         }
 
@@ -868,6 +875,7 @@ static PLACED_CODE uint32_t ddr_create_smbios_type_17(uint32_t smbios_next_addr)
         {
             // Continue if error here - data will be all 0s
             printf("Error reading DIMM %d SPD", dimm_global_idx);
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_READ_DIMM_BY_I3C, __LINE__);
         }
 
         // (3) DIMM (Module) Manufacturer: Variable # of Bytes

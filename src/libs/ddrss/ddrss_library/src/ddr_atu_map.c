@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include <atu_lib.h>
 #include <bug_check.h>
+#include <ddr_manager_events.h>
 #include <ddrss.h>
 #include <ddrss_lib.h>
 #include <kng_soc_constants.h>
@@ -109,6 +110,7 @@ uintptr_t ddrss_atu_map_media_addr(uint64_t p_addr_8K_aligned)
     {
         // BUG_ASSERT_PARAM(retval == SILIBS_SUCCESS, retval, 0);
         printf("ERR: atu_map() returned %d\n", retval);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ATU_MAP_ERROR, __LINE__);
     }
     else
     {
@@ -127,6 +129,7 @@ void ddrss_atu_unmap_media_addr(uint64_t p_addr_8K_aligned)
     if (!new_atu_mapping)
     {
         printf("No need to unmap ATU region since it was already mapped\n");
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ATU_MAP_ERROR, __LINE__);
         return;
     }
 
@@ -135,6 +138,7 @@ void ddrss_atu_unmap_media_addr(uint64_t p_addr_8K_aligned)
     {
         // BUG_ASSERT_PARAM(retval == SILIBS_SUCCESS, retval, 0);
         printf("ERR: atu_unmap() returned %d\n", retval);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_ATU_UNMAP_ERROR, __LINE__);
     }
     else
     {

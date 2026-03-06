@@ -10,17 +10,16 @@
 #include "crash_dump_icc.h"
 #include "crash_dump_status.h"
 
-#include <FpFwCli.h>           // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
-#include <FpFwUtils.h>         // for FPFW_ARRAY_SIZE, FPFW_UNUSED
-#include <bug_check.h>         // for BUG_CHECK
-#include <crash_dump.h>        // for crash_dump_register_address32
-#include <crash_dump_events.h> // for CRASH_DUMP_ET
-#include <kng_error.h>         // for KNG_SUCCESS
-#include <nvic.h>              // for NVIC_SetVector
-#include <string.h>            // for strlen
-#include <tx_api.h>            // for tx_thread_sleep
-#include <tx_thread.h>         // for _tx_thread_current_ptr
-#include <utils.h>             // for PLACED_CODE
+#include <FpFwCli.h>    // for FPFW_CLI_COMMAND, FpFwCliRegisterTable
+#include <FpFwUtils.h>  // for FPFW_ARRAY_SIZE, FPFW_UNUSED
+#include <bug_check.h>  // for BUG_CHECK
+#include <crash_dump.h> // for crash_dump_register_address32
+#include <kng_error.h>  // for KNG_SUCCESS
+#include <nvic.h>       // for NVIC_SetVector
+#include <string.h>     // for strlen
+#include <tx_api.h>     // for tx_thread_sleep
+#include <tx_thread.h>  // for _tx_thread_current_ptr
+#include <utils.h>      // for PLACED_CODE
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -87,7 +86,6 @@ static PLACED_CODE FPFW_CLI_STATUS cd_register_string(int argc, const char** pp_
     else
     {
         FpFwCliPrint("Invalid arguments!\n");
-        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_CLI_INVALID_PARAMS, argc);
     }
 
     return CLI_SUCCESS;
@@ -105,7 +103,6 @@ static PLACED_CODE FPFW_CLI_STATUS cd_bug_check(int argc, const char** pp_argv)
     else
     {
         FpFwCliPrint("Using Default Crash Code: %d\n", crashCode);
-        CRASH_DUMP_ET_WARNING_PARAM(CRASH_DUMP_ET_TYPE_CLI_INVALID_PARAMS, crashCode);
     }
 
     FpFwCliPrint("Crash Dump collection requested. Entering dump handler\n");
@@ -123,7 +120,6 @@ static PLACED_CODE FPFW_CLI_STATUS cd_trigger_exception(int argc, const char** p
 
     FpFwCliPrint("Triggering exception\n");
     FpFwCliPrint("Dereferencing invalid_ptr [%lu]\n", *invalid_ptr);
-    CRASH_DUMP_ET_ERROR(CRASH_DUMP_ET_TYPE_CLI_EXCEPTION);
 
     return CLI_SUCCESS;
 }
@@ -140,7 +136,6 @@ static PLACED_CODE FPFW_CLI_STATUS cd_set_single_core_mode(int argc, const char*
     else
     {
         FpFwCliPrint("Invalid arguments!\n");
-        CRASH_DUMP_ET_ERROR_PARAM(CRASH_DUMP_ET_TYPE_CLI_INVALID_PARAMS, argc);
         return CLI_ERROR;
     }
 
@@ -185,7 +180,6 @@ static PLACED_CODE FPFW_CLI_STATUS cd_stack_overflow(int argc, const char** pp_a
     else
     {
         FpFwCliPrint("Stack overflow using default suspend time %d ticks\n", suspend_time);
-        CRASH_DUMP_ET_WARNING_PARAM(CRASH_DUMP_ET_TYPE_CLI_INVALID_PARAMS, suspend_time);
     }
 
     FpFwCliPrint("System Stack range [0x%08lx - 0x%08lx]\n", &__stack_start__, &__stack_end__);

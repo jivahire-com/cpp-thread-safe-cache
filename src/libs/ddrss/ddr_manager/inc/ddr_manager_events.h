@@ -105,7 +105,30 @@ typedef enum
     DDR_MANAGER_ET_TYPE_PPR_SETUP_BEGIN,                                   // 65
     DDR_MANAGER_ET_TYPE_PPR_SETUP_END,                                     // 66
     DDR_MANAGER_ET_TYPE_PPR_SETUP_SKIPPED_SINGLE_DIE,                      // 67
-    DDR_MANAGER_ET_TYPE_COUNT                                              // 68
+    DDR_MANAGER_ET_TYPE_BWL_BANDWIDTH_LIMITER,                             // 68
+    DDR_MANAGER_ET_TYPE_TOP_DDR_INIT,                                      // 69
+    DDR_MANAGER_ET_TYPE_TOP_DDR_INIT_DURATION_MS,                          // 70
+    DDR_MANAGER_ET_TYPE_TOP_DDR_TRAINING_TIME_MS,                          // 71
+    DDR_MANAGER_ET_TYPE_TOP_ENABLED_ECC_CE_POLLING_TIMER,                  // 72
+    DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_SYNC_DIES_ERROR,                       // 73
+    DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_READ_DIMM_BY_I3C,                      // 74
+    DDR_MANAGER_ET_TYPE_ACPI_SMBIOS_DIMM_IS_DISABLE,                       // 75
+    DDR_MANAGER_ET_TYPE_TELEMETRY_READ_DIMM_BY_I3C,                        // 76
+    DDR_MANAGER_ET_TYPE_DDRSS_READ_DIMM_BY_I3C,                            // 77
+    DDR_MANAGER_ET_TYPE_DDRSS_WRITE_DIMM_BY_I3C,                           // 78
+    DDR_MANAGER_ET_TYPE_DDRSS_FIPS_KAT_TEST_FAILED,                        // 79
+    DDR_MANAGER_ET_TYPE_DDRSS_UPDATE_SEL_LOG,                              // 80
+    DDR_MANAGER_ET_TYPE_ATU_MAP_ERROR,                                     // 81
+    DDR_MANAGER_ET_TYPE_ATU_UNMAP_ERROR,                                   // 82
+    DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_RAS_RECORD_ERROR,                   // 83
+    DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_ENABLED_RAS_ERG_CE_INTERRUPT,       // 84
+    DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_DDR_INTU_ERROR,                     // 85
+    DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_IS_CRI_ACTIVE,                      // 86
+    DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_HAS_UEU,                            // 87
+    DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_GET_TELEMETRY_RECORD,               // 88
+    DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_PHY_INTERRUPT_ERROR,                // 89
+    DDR_MANAGER_ET_TYPE_PLATFORM_NOT_SUPPORT,                              // 90
+    DDR_MANAGER_ET_TYPE_COUNT                                              // 91
 }   DDR_MANAGER_ET_TYPE_T;
 
 typedef enum {

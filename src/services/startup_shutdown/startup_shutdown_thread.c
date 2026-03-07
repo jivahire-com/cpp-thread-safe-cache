@@ -356,16 +356,6 @@ void sos_worker_thread_function(ULONG service_ctx)
             current_stage.timeout_ms = DEFAULT_SOS_TIMEOUT_MS;
             wait_ssi_complete(&current_stage);
 
-            // This will flush the event trace buffer and send evt quiesce
-            // notification to MCP for SCP
-            if (idsw_get_cpu_type() == CPU_SCP)
-            {
-                event_trace_mts_send_final_message();
-                // Allow the event trace buffers to flush
-                tx_thread_sleep(MS_TO_TX_TICKS(EVT_TX_DELAY));
-                SOS_LOG_INFO("SOS message: quiesce, flush et buffer\n");
-            }
-
             SOS_ET_BOOT_PROFILE_INFO(QUIESCE_STAGE, message.data.shutdown_type, SOS_ET_TYPE_BOOT_OPERATION_COMPLETE);
 
             break;

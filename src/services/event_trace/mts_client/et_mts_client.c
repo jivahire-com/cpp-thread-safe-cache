@@ -59,8 +59,6 @@ static uint8_t s_et_mts_stack[ET_MTS_STACK_SIZE];
 /* MTS Client Definition for Event Trace */
 static mts_client_t s_et_mts_client = {0};
 
-static trp_status_t s_curr_evt_status = TRP_STATUS_SUCCESS;
-
 /*----------------------------- Static Functions ----------------------------*/
 
 /*----------------------------- Global Functions ----------------------------*/
@@ -157,12 +155,6 @@ void event_trace_mts_client_init(void)
     ET_LOG_ET_SVC(MTSClientInfo, "ET MTS Client Init Done");
 }
 
-void event_trace_mts_send_final_message()
-{
-    s_curr_evt_status = TRP_STATUS_RD_DATA_NONE;
-    FPFwETControllerFlushBuffer(FPFwETGetController(), ET_MTS_IMM_BUFFER_FLUSH_TOUT);
-}
-
 fpfw_status_t et_mts_notify_buffer_complete(void* p_buffer, etc_service_completion_request_t* p_request)
 {
     FPFW_UNUSED(p_buffer);
@@ -200,7 +192,7 @@ fpfw_status_t et_mts_notify_buffer_complete(void* p_buffer, etc_service_completi
                                           .die_id = die_id,
                                           .core_id = CPU_MCP,
                                       },
-                                  .trp_msg_status = s_curr_evt_status,
+                                  .trp_msg_status = TRP_STATUS_RD_DATA_NONE,
                                   .broadcast_type = TRP_BROADCAST_NONE,
                                   .mts_client_id = MTS_CLIENT_ID_EVENT_TRACE,
                                   .trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION,

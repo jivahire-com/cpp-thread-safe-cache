@@ -27,7 +27,6 @@
 /*-------------------------------- Includes ---------------------------------*/
 #include "etr_init_config_i.h"
 #include "event_trace_relay_i.h"
-#include "event_trace_relay_quiesce_i.h"
 
 #include <DbgPrint.h>
 #include <ErrorHandler.h>
@@ -1000,9 +999,6 @@ void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t
     /* Initialize the MTS client for the Event Trace Relay */
     etr_mts_client_init();
 
-    /* Register with the SOS service */
-    event_trace_relay_dfwk_init();
-
     /* Cache MTS client information and core/die data for future use */
     primary_instance = mts_is_primary_instance();
     this_die = mts_get_this_die_id();
@@ -1015,7 +1011,6 @@ void etr_worker_thread_func(ULONG thread_input)
 {
     etr_service_context_t* p_context = (etr_service_context_t*)thread_input;
     etr_service_request_t etr_request = {0};
-    mts_platform_core_id_t src_core_id;
 
     /* Infinite loop that will decode and recycle buffers marked as completed */
     while (true)
@@ -1045,8 +1040,6 @@ void etr_worker_thread_func(ULONG thread_input)
         if ((event_flags & ETR_EVENT_FLAG_NEW_MTS_MSG) == ETR_EVENT_FLAG_NEW_MTS_MSG)
         {
             tx_status = tx_queue_receive(&s_etr_mts_client.rx_queue, &etr_request.p_trp_msg, TX_WAIT_FOREVER);
-            // etr_handle_copy_buffer_request will modify the core_id hence caching it
-            src_core_id = etr_request.p_trp_msg->hdr.src_node.core_id;
 
             // Assert if the queue status is not TX_SUCCESS or TX_QUEUE_EMPTY
             BUG_ASSERT_PARAM((tx_status == TX_SUCCESS), tx_status, 0);
@@ -1081,13 +1074,6 @@ void etr_worker_thread_func(ULONG thread_input)
 
                 /* Handle the copy buffer request */
                 etr_handle_copy_buffer_request(p_context, &etr_request);
-
-                if (etr_request.p_trp_msg->hdr.trp_msg_status == TRP_STATUS_RD_DATA_NONE)
-                {
-                    // This is the indication that the message source core has quiesced
-                    // Need to update the quiesce status here
-                    event_trace_relay_external_core_quiesce_update(src_core_id);
-                }
                 break;
 
             case TRP_MSG_ID_PACKAGE_NOTIFICATION:

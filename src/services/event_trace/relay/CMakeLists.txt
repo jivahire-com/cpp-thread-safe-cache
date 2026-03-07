@@ -7,7 +7,6 @@ add_library(${TARGET}
         etr_hsp_manager.c
         event_trace_relay.c
         event_trace_relay_events.c
-        event_trace_relay_quiesce.c
 )
 
 target_link_libraries(

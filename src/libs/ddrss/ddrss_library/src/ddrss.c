@@ -74,6 +74,8 @@ static const guid_t STD_MEMORY_ERROR_DOMAIN_GUID = {0xB7E2A3C9, 0x4F1D, 0x4569, 
 static const guid_t DDR_ERROR_DOMAIN_FRU_GUID = {0x3AC75B2E, 0xC8F1, 0x43E1, {0x88, 0x7C, 0x9A, 0x12, 0x34, 0x56, 0x78, 0x9A}};
 static const guid_t DDR_RHTL_ERROR_DOMAIN_FRU_GUID = ACPI_ERROR_TYPE_VENDOR_RHTLM;
 
+uint16_t prod_ddrss_ecc_ce_th;
+
 /*------------- Functions ----------------*/
 static void prod_ddrss_register_isr_handler(void)
 {
@@ -533,6 +535,8 @@ PLACED_CODE void prod_ddrss_lib_init(KNG_DIE_ID die_num)
             ddrss_cfgs.fips_kat_cfg.rt_mem_base[SOC_D1] = ddrss_atu_map_fips_rt_space(SOC_D1);
         }
     }
+
+    prod_ddrss_ecc_ce_th = config_get_ecc_ce_th();
 
     if (ddrss_cfgs.reset_reason != DDRSS_SYS_RESET_WARM)
     {

@@ -32,6 +32,8 @@
 
 volatile uint8_t prod_ddrss_mc_ras_ce_en[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_RAS_NODE_ID_MC_ERG_MAX];
 
+extern uint16_t prod_ddrss_ecc_ce_th;
+
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
@@ -84,9 +86,9 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
         DDRSS_RAS_NODE_ID erg_id = DDRSS_IS_RAS_ERG(record.reporting_agent, DDRSS_RAS_NODE_ID_MC_ERG0)
                                        ? DDRSS_RAS_NODE_ID_MC_ERG0
                                        : DDRSS_RAS_NODE_ID_MC_ERG1;
-        if ((erg_id == DDRSS_RAS_NODE_ID_MC_ERG0) && record.ce_count_valid && (record.ce_count > 0))
+        if ((erg_id == DDRSS_RAS_NODE_ID_MC_ERG0) && record.ce_count_valid && ((record.ce_count > 0) || record.ce_count_overflow))
         {
-            ddrss_ras_update_ce_threshold(mc, 1 << record.position, true);
+            ddrss_ras_update_ce_threshold(mc, 1 << record.position, prod_ddrss_ecc_ce_th ? false : true);
         }
 
         if (record.handler)
@@ -883,6 +885,13 @@ int prod_ddrss_set_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NODE_ID er
     }
 
     uint32_t local_mc = DDRSS_GET_LOCAL_MC(mc);
+    if (prod_ddrss_ecc_ce_th > 0)
+    {
+        // Use ECC CE thresthold, skip the rate limiting flow.
+        prod_ddrss_mc_ras_ce_en[local_mc][erg_id] = 1;
+        return SILIBS_SUCCESS;
+    }
+
     sts = ddrss_get_ras_agent(mc, erg_id, &ddrss_ras_agent);
     if (sts == SILIBS_SUCCESS)
     {

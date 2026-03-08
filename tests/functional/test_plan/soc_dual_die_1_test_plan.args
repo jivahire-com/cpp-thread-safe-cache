@@ -3,8 +3,7 @@
 
 ## PLDM Tests
 ./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-## Commenting out this test for BUG 3338079 - https://azurecsi.visualstudio.com/Dev/_workitems/edit/3338079
-#./../../../tests/functional/test_suites/pldm_tests/pldm_platform.robot
+./../../../tests/functional/test_suites/pldm_tests/pldm_platform.robot
 ./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
 
 ## Power Tests

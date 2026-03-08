@@ -66,7 +66,13 @@ class pldm_common(EchoFallsBaseTest):
         self.delay_5_minutes = 300
         self.pldmd_stopped = False
 
-    def setup(self, keep_pldm_service_active = False):
+# perform_reset_boot parameter is added to setup function to allow flexibility in performing the reset and boot steps during setup based 
+# on the needs of different test cases that may inherit from this common library. 
+# Some test cases may require starting with a fresh boot, while others may want to skip the reset and boot process 
+# if they are only testing specific PLDM functionalities that do not require a full reboot.
+# This parameter allows derived test cases to choose whether to execute the reset and boot sequence as part of their setup 
+# or not, enhancing the reusability of the setup code across various test scenarios.
+    def setup(self, keep_pldm_service_active = False, perform_reset_boot = False):
         # Step 1: DUT setup
         self.dut.setup()
 
@@ -75,7 +81,7 @@ class pldm_common(EchoFallsBaseTest):
         self.bmc_cli.open()
         assert self.bmc_cli.is_open()
 
-        hsp_channel=self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
+        hsp_channel = self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
         hsp_channel.open()
         assert hsp_channel.is_open()
 
@@ -101,42 +107,49 @@ class pldm_common(EchoFallsBaseTest):
         self.core_mcp_channel.open()
         assert self.core_mcp_channel.is_open()
 
-        # Step 5: Perform reset based on DUT type
-        if self.dut.get_dut_type() == DeviceType.BIGFPGA:
-            self.log.warning(
-                "Device type is bigFPGA. Performing an additional OOB reset ..."
+        if perform_reset_boot:
+            # Step 5: Perform reset based on DUT type
+            if self.dut.get_dut_type() == DeviceType.BIGFPGA:
+                self.log.warning(
+                    "Device type is bigFPGA. Performing an additional OOB reset ..."
+                )
+                KngPythiaTestSetup.fpga_oob_reset(self.log)
+            elif self.dut.get_dut_type() == DeviceType.RVP:
+                self.log.warning("Device type is RVP. Performing SoC Reset ...")
+                self.rscm_helper.rscm_soc_reset()
+            
+            # Step 6: Check for SAC prompt in APNS connection
+            sac_prompt_rslt = self._wait_for_sac_prompt_in_apns_connection()
+            if sac_prompt_rslt is False:
+                self.log.info("Failed to see SAC prompt in APNS connection during setup")
+                return False
+
+            # Step 7: wait for MCP boot complete
+            mcp_boot_status = self._check_mcp_boot_complete(
+                timeout=self.delay_3_mins_20_secs
             )
-            KngPythiaTestSetup.fpga_oob_reset(self.log)
-        elif self.dut.get_dut_type() == DeviceType.RVP:
-            self.log.warning("Device type is RVP. Performing SoC Reset ...")
-            self.rscm_helper.rscm_soc_reset()
+            if mcp_boot_status is False:
+                self.log.info("MCP boot check failed during setup")
+                return False
 
-        # Step 6: wait for MCP boot complete
-        mcp_boot_status = self._check_mcp_boot_complete(
-            timeout=self.delay_3_mins_20_secs
-        )
-        if mcp_boot_status is False:
-            self.log.info("MCP boot check failed during setup")
-            return False
+            # Step 8: Wait for PLDM and MCTPD services to be active
+            pldm_status = self._wait_for_service_status(
+                service_str="xyz.openbmc_project.pldmd.service",
+                expect_active=True,
+                timeout=60,
+            )
+            if pldm_status is False:
+                self.log.info("PLDM service is not active after waiting period")
+                return False
 
-        # Step 7: Wait for PLDM and MCTPD services to be active
-        pldm_status = self._wait_for_service_status(
-            service_str="xyz.openbmc_project.pldmd.service",
-            expect_active=True,
-            timeout=60,
-        )
-        if pldm_status is False:
-            self.log.info("PLDM service is not active after waiting period")
-            return False
-
-        mctpd_status = self._wait_for_service_status(
-            service_str="xyz.openbmc_project.mctpd@kernel.service",
-            expect_active=True,
-            timeout=60,
-        )
-        if mctpd_status is False:
-            self.log.info("MCTPD service is not active after waiting period")
-            return False
+            mctpd_status = self._wait_for_service_status(
+                service_str="xyz.openbmc_project.mctpd@kernel.service",
+                expect_active=True,
+                timeout=60,
+            )
+            if mctpd_status is False:
+                self.log.info("MCTPD service is not active after waiting period")
+                return False
 
         if keep_pldm_service_active is False:
             result, _, _ = self._bmc_execute_command(
@@ -150,7 +163,7 @@ class pldm_common(EchoFallsBaseTest):
 
         time.sleep(30)
 
-        # Step 8: Load PLDM specification data and get MCP EID
+        # Step 9: Load PLDM specification data and get MCP EID
         self.pldm_spec = pldm_spec_parser()
         self.pldm_spec.load_spec_data("pldm_spec_data.json")
         mctp_id_status = self._pldm_get_mctp_id()
@@ -427,3 +440,19 @@ class pldm_common(EchoFallsBaseTest):
             msg = f"{service_str} service did not become inactive within {timeout}s (last state: '{last_state}')"
         self.log.warning(msg)
         return False
+
+    def _wait_for_sac_prompt_in_apns_connection(self):
+        """
+        Wait for SAC prompt in APNS connection
+        """
+        apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager
+        self.rscm_helper.set_bmc_uart_mux_scp(self.bmc_cli)
+        assert apns_connection is not None
+        apns_connection.get_current_channel().open()
+        if not apns_connection.get_current_channel().is_open():
+            self.log.error("apns_connection is not open")
+            self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
+            return False
+        apns_connection.get_current_channel().read_until(key="SAC>", timeout_seconds=450) 
+        self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
+        return True

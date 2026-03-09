@@ -52,3 +52,20 @@ Test Case - 1. Capture UTC Times From BMC And MCP
     Should Be True    ${result}[time_match_4]    Sample 4: UTC times do not match within ${result}[tolerance_sec]s tolerance
     Should Be True    ${result}[time_match_5]    Sample 5: UTC times do not match within ${result}[tolerance_sec]s tolerance
     Should Be True    ${result}[success]    UTC time synchronization failed - not all samples synchronized
+
+Test Case - 2. Parallel Capture UTC Times From BMC And MCP
+    [Documentation]    Captures MCP 'utc time' and BMC 'timedatectl' in true parallel
+    ...                (MCP over UART, BMC over SSH) five times with 40-second delays.
+    ...                Parallel capture eliminates sequential command latency from the
+    ...                measured difference, giving a direct measurement of clock drift.
+    ...                Includes debug instrumentation: per-command latency, overlap,
+    ...                midpoint correction, raw vs corrected diff.
+    ...                Uses 5-second tolerance.
+    ${result}=    utc_sync_lib.testcase2_parallel_capture_utc_times
+    Should Be True    ${result}[pldm_active]    PLDM service is not active
+    Should Be True    ${result}[time_match_1]    Sample 1: UTC times do not match within ${result}[tolerance_sec]s tolerance
+    Should Be True    ${result}[time_match_2]    Sample 2: UTC times do not match within ${result}[tolerance_sec]s tolerance
+    Should Be True    ${result}[time_match_3]    Sample 3: UTC times do not match within ${result}[tolerance_sec]s tolerance
+    Should Be True    ${result}[time_match_4]    Sample 4: UTC times do not match within ${result}[tolerance_sec]s tolerance
+    Should Be True    ${result}[time_match_5]    Sample 5: UTC times do not match within ${result}[tolerance_sec]s tolerance
+    Should Be True    ${result}[success]    UTC time synchronization failed - not all parallel samples synchronized

@@ -9,6 +9,7 @@ import sys
 import re
 from pathlib import Path
 from datetime import datetime, timezone
+from threading import Thread
 
 sys.path.append(str(Path(__file__).parent.parent / "kng_pythia_libs"))
 sys.path.append(str(Path(__file__).parent.parent / "common"))
@@ -330,6 +331,313 @@ class utc_sync_test(pldm_common):
                 if not result[f"time_match_{i}"]:
                     self.log.error(
                         f"  - Sample {i}: times do not match within tolerance"
+                    )
+        self.log.info("=" * 60)
+
+        return result
+
+    # ── Parallel Capture Helpers ──
+
+    def _get_bmc_time_no_health_check(self) -> str:
+        """
+        Execute 'timedatectl' on BMC WITHOUT the post-command MCP health check.
+
+        _bmc_execute_command() calls _check_mcp_health() after every command,
+        which reads core_mcp_channel (UART). Running that concurrently with
+        _get_mcp_utc_time() on the same UART would corrupt the data stream.
+
+        This helper uses bmc_cli directly (open/execute/close) to avoid that.
+
+        Returns:
+            Raw BMC timedatectl output string, or empty string on failure.
+        """
+        cmd = "timedatectl"
+        try:
+            if not self.bmc_cli.is_open():
+                self.bmc_cli.open()
+            self.log.info(f"[BMC CMD (no health check)] {cmd}")
+            result, stdout, stderr = self.bmc_cli.execute_command(
+                command=cmd, command_args=[], timeout_secs=30
+            )
+            self.log.info(
+                f"[RAW_COMMAND_OUTPUT] cmd='{cmd}', "
+                f"exit={result}, stdout='{stdout.strip()[:200]}', "
+                f"stderr='{stderr}'"
+            )
+            self.bmc_cli.close()
+            if result != 0:
+                self.log.error(
+                    f"BMC 'timedatectl' failed: exit={result}, stderr='{stderr}'"
+                )
+                return ""
+            stripped = stdout.strip()
+            self.log.info(f"[PARSED_OUTPUT] BMC timedatectl:\n{stripped}")
+            return stripped
+        except Exception as e:
+            self.log.error(f"BMC 'timedatectl' exception: {e}")
+            try:
+                self.bmc_cli.close()
+            except Exception:
+                pass
+            return ""
+
+    def _capture_times_parallel(self) -> dict:
+        """
+        Capture MCP and BMC timestamps in parallel using threads.
+
+        MCP is queried via UART ('utc time') and BMC via SSH ('timedatectl').
+        These use independent I/O channels (UART vs SSH), so true parallel
+        execution is safe — provided the BMC helper does NOT read the MCP
+        UART (which _get_bmc_time_no_health_check ensures by skipping the
+        MCP health check).
+
+        Records wall-clock timestamps around each call for instrumentation.
+
+        Returns:
+            dict with keys:
+                - mcp_output: str
+                - bmc_output: str
+                - mcp_wall_before / mcp_wall_after: float
+                - bmc_wall_before / bmc_wall_after: float
+        """
+        capture = {
+            "mcp_output": "",
+            "bmc_output": "",
+            "mcp_wall_before": 0.0,
+            "mcp_wall_after": 0.0,
+            "bmc_wall_before": 0.0,
+            "bmc_wall_after": 0.0,
+        }
+
+        def _fetch_mcp():
+            capture["mcp_wall_before"] = time.time()
+            capture["mcp_output"] = self._get_mcp_utc_time()
+            capture["mcp_wall_after"] = time.time()
+
+        def _fetch_bmc():
+            capture["bmc_wall_before"] = time.time()
+            capture["bmc_output"] = self._get_bmc_time_no_health_check()
+            capture["bmc_wall_after"] = time.time()
+
+        t_mcp = Thread(target=_fetch_mcp, daemon=True)
+        t_bmc = Thread(target=_fetch_bmc, daemon=True)
+
+        t_mcp.start()
+        t_bmc.start()
+
+        t_mcp.join(timeout=120)
+        t_bmc.join(timeout=120)
+
+        return capture
+
+    # ── Test Case 2: Parallel + Instrumented ──
+
+    def testcase2_parallel_capture_utc_times(self) -> dict:
+        """
+        Capture UTC time from MCP and BMC in true parallel five times,
+        with debug instrumentation.
+
+        Both queries run on separate threads using independent I/O channels:
+          - MCP: UART 'utc time' command  (returns ms since epoch)
+          - BMC: SSH  'timedatectl'       (returns seconds resolution)
+
+        The BMC helper (_get_bmc_time_no_health_check) deliberately skips
+        the MCP health check to avoid UART contention with the MCP thread.
+
+        Debug output includes wall-clock instrumentation so the capture
+        overhead and overlap for each channel is visible in the log.
+
+        Returns:
+            dict with keys:
+                - pldm_active: bool
+                - tolerance_sec: float
+                - mcp_time_[1-5]: str        (raw MCP output)
+                - bmc_time_[1-5]: str        (raw BMC output)
+                - mcp_timestamp_[1-5]_ms: int | None
+                - bmc_timestamp_[1-5]_sec: int | None
+                - time_match_[1-5]: bool
+                - mcp_capture_latency_[1-5]_sec: float
+                - bmc_capture_latency_[1-5]_sec: float
+                - capture_overlap_[1-5]_sec: float
+                - raw_diff_[1-5]_sec: float
+                - corrected_diff_[1-5]_sec: float
+                - success: bool
+        """
+        tolerance_sec = 5.0
+
+        self.log.info("=" * 60)
+        self.log.info("UTC TIME PARALLEL CAPTURE TEST (5 SAMPLES)")
+        self.log.info("=" * 60)
+        self.log.info(f"Tolerance: +/- {tolerance_sec:.1f} seconds")
+        self.log.info("MCP: UART 'utc time' (ms since epoch)")
+        self.log.info("BMC: SSH 'timedatectl' (seconds resolution)")
+        self.log.info("Mode: true parallel (MCP UART + BMC SSH, no contention)")
+        self.log.info("=" * 60)
+
+        result = {
+            "pldm_active": False,
+            "tolerance_sec": tolerance_sec,
+            "success": False,
+        }
+
+        # Initialize per-sample result keys
+        for i in range(1, 6):
+            result[f"mcp_time_{i}"] = ""
+            result[f"bmc_time_{i}"] = ""
+            result[f"mcp_timestamp_{i}_ms"] = None
+            result[f"bmc_timestamp_{i}_sec"] = None
+            result[f"time_match_{i}"] = False
+            result[f"mcp_capture_latency_{i}_sec"] = None
+            result[f"bmc_capture_latency_{i}_sec"] = None
+            result[f"capture_overlap_{i}_sec"] = None
+            result[f"raw_diff_{i}_sec"] = None
+            result[f"corrected_diff_{i}_sec"] = None
+
+        # Step 1: Confirm PLDM is running
+        self.log.info("Step 1: Checking PLDM service status...")
+        pldm_active = self._check_pldm_service_active()
+        result["pldm_active"] = pldm_active
+        if not pldm_active:
+            self.log.error("[FAIL] PLDM service is not active")
+            return result
+        self.log.info("[PASS] PLDM service is active")
+
+        # Capture 5 samples with 40-second intervals
+        for sample_num in range(1, 6):
+            self.log.info("")
+            self.log.info(f"--- SAMPLE {sample_num}/5 (parallel) ---")
+
+            # Launch parallel capture
+            cap = self._capture_times_parallel()
+
+            mcp_time = cap["mcp_output"]
+            bmc_time = cap["bmc_output"]
+            result[f"mcp_time_{sample_num}"] = mcp_time
+            result[f"bmc_time_{sample_num}"] = bmc_time
+
+            # Compute capture latencies
+            mcp_latency = cap["mcp_wall_after"] - cap["mcp_wall_before"]
+            bmc_latency = cap["bmc_wall_after"] - cap["bmc_wall_before"]
+            result[f"mcp_capture_latency_{sample_num}_sec"] = mcp_latency
+            result[f"bmc_capture_latency_{sample_num}_sec"] = bmc_latency
+
+            # Overlap = time both commands were concurrently in-flight
+            overlap_start = max(cap["mcp_wall_before"], cap["bmc_wall_before"])
+            overlap_end = min(cap["mcp_wall_after"], cap["bmc_wall_after"])
+            overlap = max(0.0, overlap_end - overlap_start)
+            result[f"capture_overlap_{sample_num}_sec"] = overlap
+
+            # Capture gap between midpoints (should be small for parallel)
+            mcp_midpoint = (cap["mcp_wall_before"] + cap["mcp_wall_after"]) / 2
+            bmc_midpoint = (cap["bmc_wall_before"] + cap["bmc_wall_after"]) / 2
+            capture_gap = bmc_midpoint - mcp_midpoint
+
+            self.log.info("[DEBUG TIMING]")
+            self.log.info(f"  MCP capture latency  : {mcp_latency:.3f} s")
+            self.log.info(f"  BMC capture latency  : {bmc_latency:.3f} s")
+            self.log.info(f"  Capture overlap      : {overlap:.3f} s")
+            self.log.info(f"  Capture midpoint gap : {capture_gap:+.3f} s")
+            self.log.info(
+                f"  MCP wall window      : "
+                f"{cap['mcp_wall_before']:.3f} -> {cap['mcp_wall_after']:.3f}"
+            )
+            self.log.info(
+                f"  BMC wall window      : "
+                f"{cap['bmc_wall_before']:.3f} -> {cap['bmc_wall_after']:.3f}"
+            )
+
+            # Validate raw outputs
+            if not mcp_time:
+                self.log.error(
+                    f"[FAIL] MCP 'utc time' returned empty (sample {sample_num})"
+                )
+                return result
+            if not bmc_time:
+                self.log.error(
+                    f"[FAIL] BMC 'timedatectl' returned empty (sample {sample_num})"
+                )
+                return result
+
+            # Parse timestamps
+            mcp_ms = self._parse_mcp_timestamp(mcp_time)
+            bmc_sec = self._parse_bmc_timestamp(bmc_time)
+            result[f"mcp_timestamp_{sample_num}_ms"] = mcp_ms
+            result[f"bmc_timestamp_{sample_num}_sec"] = bmc_sec
+
+            if mcp_ms is None or bmc_sec is None:
+                self.log.error(
+                    f"[FAIL] Could not parse timestamps (sample {sample_num}): "
+                    f"mcp_ms={mcp_ms}, bmc_sec={bmc_sec}"
+                )
+                result[f"time_match_{sample_num}"] = False
+                return result
+
+            # Compute diffs
+            mcp_sec_f = mcp_ms / 1000.0
+            raw_diff = mcp_sec_f - float(bmc_sec)
+            result[f"raw_diff_{sample_num}_sec"] = raw_diff
+
+            # Corrected diff: subtract midpoint gap (small for parallel capture)
+            corrected_diff = raw_diff - capture_gap
+            result[f"corrected_diff_{sample_num}_sec"] = corrected_diff
+
+            match_ok = abs(corrected_diff) <= tolerance_sec
+            result[f"time_match_{sample_num}"] = match_ok
+            status = "[PASS]" if match_ok else "[FAIL]"
+
+            self.log.info("[DEBUG TIMESTAMPS]")
+            self.log.info(f"  MCP (ms since epoch) : {mcp_ms}")
+            self.log.info(f"  MCP (as seconds)     : {mcp_sec_f:.3f}")
+            self.log.info(f"  BMC (seconds)        : {bmc_sec}")
+            self.log.info(f"  Raw diff (MCP - BMC) : {raw_diff:+.3f} s")
+            self.log.info(f"  Midpoint correction  : {capture_gap:+.3f} s")
+            self.log.info(f"  Corrected diff       : {corrected_diff:+.3f} s")
+            self.log.info(
+                f"  {status} Sample {sample_num}: "
+                f"|corrected_diff|={abs(corrected_diff):.3f} s "
+                f"(tolerance={tolerance_sec:.1f} s)"
+            )
+
+            # Wait 40 seconds before next sample (except after last)
+            if sample_num < 5:
+                self.log.info(f"Waiting 40 seconds before sample {sample_num + 1}...")
+                time.sleep(40)
+
+        # Overall result
+        all_matches = all(result[f"time_match_{i}"] for i in range(1, 6))
+        result["success"] = all_matches
+
+        self.log.info("")
+        self.log.info("=" * 60)
+        self.log.info("PARALLEL CAPTURE TEST SUMMARY")
+        self.log.info("=" * 60)
+        for i in range(1, 6):
+            status = "PASS" if result[f"time_match_{i}"] else "FAIL"
+            raw = result.get(f"raw_diff_{i}_sec")
+            corr = result.get(f"corrected_diff_{i}_sec")
+            ovlp = result.get(f"capture_overlap_{i}_sec")
+            raw_str = f"{raw:+.3f} s" if raw is not None else "N/A"
+            corr_str = f"{corr:+.3f} s" if corr is not None else "N/A"
+            ovlp_str = f"{ovlp:.3f} s" if ovlp is not None else "N/A"
+            self.log.info(
+                f"  Sample {i}: {status}  "
+                f"raw={raw_str}  overlap={ovlp_str}  corrected={corr_str}"
+            )
+        self.log.info("=" * 60)
+
+        if result["success"]:
+            self.log.info(
+                "[PASS] UTC times are synchronized "
+                "(all 5 parallel samples within tolerance)"
+            )
+        else:
+            self.log.error("[FAIL] UTC time synchronization failed")
+            for i in range(1, 6):
+                if not result[f"time_match_{i}"]:
+                    corr = result.get(f"corrected_diff_{i}_sec")
+                    self.log.error(
+                        f"  - Sample {i}: |corrected_diff|="
+                        f"{abs(corr):.3f} s exceeds {tolerance_sec:.1f} s"
                     )
         self.log.info("=" * 60)
 

@@ -2,9 +2,9 @@
 ./../../../tests/functional/test_suites/cold_start_tests/cold_start_test.robot
 
 ## PLDM Tests
-#./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
-#./../../../tests/functional/test_suites/pldm_tests/pldm_platform.robot
-#./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
+./../../../tests/functional/test_suites/pldm_tests/pldm_base.robot
+./../../../tests/functional/test_suites/pldm_tests/pldm_platform.robot
+./../../../tests/functional/test_suites/pldm_tests/pldm_sensors_effecters.robot
 
 ## Power Tests
 ## Disabling the test till issue withpldm sesor is fixed - Bug3384294

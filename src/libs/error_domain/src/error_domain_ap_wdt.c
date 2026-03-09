@@ -41,6 +41,10 @@
 /*-- Symbolic Constant Macros (defines) --*/
 #define AP_WDT_FRU "AP_WDT"
 
+// AP WDT error types for CPER reporting
+#define AP_WDT_ERROR_TYPE_NONE    0 // No error
+#define AP_WDT_ERROR_TYPE_TIMEOUT 1 // AP WDT timeout occurred
+
 // For AP Watchdog Non-Secure Control Frame
 #define ATU_MAPPING_AP_WDOG_NS(die_id)                                                                       \
     ATU_MAPPING((die_id == 0 ? AP_TOP_D0_AP_WDOG_C_FRAME_NS_ADDRESS : AP_TOP_D1_AP_WDOG_C_FRAME_NS_ADDRESS), \
@@ -175,12 +179,11 @@ void hm_ap_wdt_isr()
     ws_data_put(WARM_START_ID_AP_WDT, &ap_wdt_occurred, sizeof(ap_wdt_occurred));
 
     // Create and submit CPER record
-    acpi_err_sec_firmware_t sec_fw_cper_section = {.severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL,
-                                                   .record_id = RECORD_ID_AP_WDT, // AP_WDT record ID
-                                                   .param = {nvic_irq_num, 0, 0}};
+    acpi_err_ap_wdt_t ap_wdt_cper_section = {0};
+    ap_wdt_cper_section.error_type = AP_WDT_ERROR_TYPE_TIMEOUT;
 
     acpi_cper_section_t cper_section = {0};
-    cper_section.sec_fw = sec_fw_cper_section;
+    cper_section.sec_ap_wdt = ap_wdt_cper_section;
 
     // Submit CPER using AP_WDT error domain
     hm_submit_cper(ACPI_ERROR_DOMAIN_AP_WDT, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL, &cper_section, sizeof(cper_section));

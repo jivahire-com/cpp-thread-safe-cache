@@ -250,6 +250,7 @@ These knobs are available for debug and test purposes. Once the project reaches 
 | power_force_pstate | Force specific pstate, rewrites PLL/VMAT tables. 32 = disabled | 32 | uint8_t (0-32) |
 | power_itd_cfg | Enable ITD (In-Die Temperature) feature | true | bool |
 | power_es1_fuse_overrides | Enable ES1 power fuse overrides for ES2 compatibility | false | bool |
+| power_rc0_override_for_rc3 | Enable RC0 VF recipe override for RC3 fused units (ES2/PC). Adjusts VF anchor LDO DAC codes to match RC0 recipe for ES2 (milestone 0x1, major_rev 0x2) and PC (milestone 0x2) samples | false | bool |
 | power_current_throt | Core current throttling configuration | {5, 15, 31, 31, 0, 1, 2} | power_currthrot_cfg_t |
 | power_tile_temp_throt | Tile temperature throttling configuration | {{930, 950}, {1130, 1150}, 15, 15, 0, 1} | power_tile_tempthrot_cfg_t |
 | power_tile_vms | Tile voltage monitor thresholds | (see XML) | power_pvt_tile_vm_cfg_t |
@@ -269,11 +270,11 @@ These knobs are available for debug and test purposes. Once the project reaches 
 | power_enable_fgpll_calsm | Enable FGPLL calibration | true | bool |
 | power_fllcal_pstate_bounds | Start and end pstate for FLL calibration | {0, 31} | power_fllcal_pstate_bounds_t |
 | power_plllock_cfg | Core PLL lock interrupt settings | {true, 2, false, false, false, false, false} | power_plllock_cfg_t |
-| power_nominal_pstate | Nominal pstate number, 0 = use SOC fused default | 0 | uint8_t |
+| power_nominal_pstate | Nominal pstate number, 0 = use SOC fused default | 8 | uint8_t |
 | power_c1_telemetry_enable | Enable C1 entry/exit telemetry in DVFS | false | bool |
 | power_soc_static_rails | Static power (mW) to add to SOC power calculations | 0 | uint16_t |
 | power_avs_ds | AVS drive strength configuration | {{2,2},{2,2},{2,2},{2,2}} | avs_ds_cfg_array_t |
-| power_enable_vsys_vboot_override | Enable VSYS VBOOT override from fuse field vsys_vid | false | bool |
+| power_enable_vsys_vboot_override | Enable VSYS VBOOT override from fuse field vsys_vid | true | bool |
 | power_cppc_lowest_nonlin_perf | Lowest non-linear CPPC performance point (pstate). 32 = disabled | 32 | uint8_t (0-32) |
 | power_plimit_current_thresholds | Current threshold percentages for pstate generation | {true, 100, 70, 80, 90} | power_currthrot_threshold_cfg_t |
 | power_soc_vm_overvolt_en | Enable SOC VM overvolt alarm | true | bool |
@@ -457,6 +458,31 @@ The VFT is used throughout the power management system:
 | **VR Setpoint** | VFT voltage + headroom + guardband determines CPU VR target |
 | **DVFS/VMAT** | VFT is programmed to hardware VMAT tables for P-state transitions |
 | **Power Estimation** | P = C × V² × f uses VFT values |
+
+**VF Fuse Overrides**
+
+The firmware supports two VF anchor override mechanisms applied during fuse initialization, before the full 32-point VFT is interpolated. Both are controlled by BIOS knobs and gated by the `customer_sample_milestone` fuse.
+
+*ES1 Fuse Override (`power_es1_fuse_overrides`)*
+
+When enabled for ES1 samples (milestone 0x1), replaces anchor pair index 5 across all curvesets and ITD columns with a fixed 3600 MHz frequency and hardcoded LDO DAC values {473, 475, 480, 495} per temperature range. This is applied inside `power_fuses_read_vf()`.
+
+*RC0 Override for RC3 (`power_rc0_override_for_rc3`)*
+
+When enabled for ES2 (customer_sample_milestone == 0x1 and sample_major_rev == 0x2) or PC (customer_sample_milestone == 0x2) samples, applies relative mV delta adjustments to VF anchor pairs that match specific frequencies. The adjustment is converted to LDO DAC codes using the fused slope: `delta_ldo = mv_offset × 1000 / slope_uvolt`. This is applied by `power_fuses_apply_rc3_vf_override()` after VF data and slope are both read in `power_fuses_read()`.
+
+**RC3 VF Override Table:**
+
+| Frequency (MHz) | TempRange0 (mV) | TempRange1 (mV) | TempRange2 (mV) | TempRange3 (mV) |
+|-----------------|-----------------|-----------------|-----------------|-----------------|
+| 1200 | -60 | -50 | -40 | -40 |
+| 2100 | -60 | -50 | -40 | -40 |
+| 2800 | -80 | -70 | -50 | -50 |
+| 3300 | -20 | -20 | -20 | -20 |
+| 3500 | -6 | 0 | 0 | 0 |
+| 3600 | +10 | -4 | 0 | 0 |
+
+Negative offsets reduce voltage (lower LDO DAC). Values are clamped to the valid uint16 range. Anchor frequencies not in the table are left unchanged. The override can be verified at runtime via the `pwr cfg vf` CLI command, which displays the post-override anchor data.
 
 **VFT Precalculation**
 
@@ -1116,12 +1142,18 @@ The power distribution algorithm uses two distinct "nominal" concepts that work 
 
 | Term | Scope | Source | Description |
 |------|-------|--------|-------------|
-| `pnominal` | System-wide | TDP fuse (BASE_FREQUENCY) or knob override | The SoC's fused nominal pstate - represents the guaranteed performance level for the entire chip |
+| `pnominal` | System-wide | `power_nominal_pstate` knob (default P8 = 3200 MHz) | The SoC's nominal pstate - represents the guaranteed performance level for the entire chip |
 | `base_pstate` (current_base_pstate) | Per-core | OS via CPPC update message | The "OSPM Nominal Performance" for a specific core - can vary per core/VM |
 
 **Key Constraint**: `base_pstate >= pnominal` (always enforced)
 
 The system nominal (`pnominal`) acts as a **floor** - no core's base performance can request higher performance than the SoC's fused nominal. However, the OS/Hypervisor can set individual cores to have a **lower guaranteed performance** via their `base_pstate`.
+
+**Fixed Nominal Pstate (P8 = 3200 MHz)**
+
+The `power_nominal_pstate` knob defaults to **8** (P8 = 3200 MHz), which means the fused TDP frequency (`BASE_FREQUENCY`) is no longer used to determine nominal. Previously the knob defaulted to 0, which caused `runconfig_generate_derived_tdp()` to fall back to the fuse-derived pstate. With the current default of 8, pnominal is always P8 regardless of the fused TDP frequency.
+
+This change was made because 3200 MHz represents a frequency that the vast majority of workloads can sustain without throttling, providing a more consistent and achievable guaranteed performance level across all silicon bins. The fused `BASE_FREQUENCY` can still be used by setting `power_nominal_pstate` to 0 via the BIOS knob, but this is no longer the default behavior.
 
 **Why Per-Core Base Performance Matters**
 

@@ -249,6 +249,21 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config);
 int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset, bool apply_es1_overrides);
 
 /**
+ * @brief Applies RC0 VF recipe overrides for RC3 fused units (ES2/PC)
+ *
+ * Adjusts fused VF anchor pair LDO DAC codes by mV offsets from the RC3 override
+ * table when the part is identified as ES2 (customer_sample_milestone == 0x1 and
+ * sample_major_rev == 0x2) or PC (customer_sample_milestone == 0x2).
+ *
+ * @param[in,out] vf_curves - Pointer to the fused VF curveset data (modified in-place)
+ * @param[in]     slope     - Pointer to the fused LDO DAC to voltage slope
+ *
+ * @return FPFW_STATUS_SUCCESS on success, or error code on fuse read failure
+ */
+int32_t power_fuses_apply_rc3_vf_override(power_fuse_vf_curveset_t* vf_curves,
+                                          const dvfs_vf_slope_t* slope);
+
+/**
  * @brief Reads VSYS VID from fuses
  * 
  * @param[out] vsys_vid  - Pointer to vsys vid value

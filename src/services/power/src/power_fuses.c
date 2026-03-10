@@ -28,6 +28,7 @@
 #include <stddef.h>                 // for NULL
 #include <stdint.h>                 // for uint32_t, uint8_t, int32_t, uint64_t
 #include <string.h>                 // for memset
+#include <utils.h>                  // for PLACED_CODE
 /*-- Symbolic Constant Macros (defines) --*/
 
 // defaults for gradient/offset equation for platforms where fuse isn't available
@@ -42,6 +43,12 @@
 #define VF_CURVE_TEMP_RANGE_OFFSET    0x7F // offset for VF curve temp ranges in fuses
 #define ES1_CURVSET_OVERRIDE_INDEX    5    // index of curve set to override for es1 samples
 #define ES1_CURVSET_OVERRIDE_FREQ_MHZ 3600 // frequency in Mhz to set for es1 override
+
+// RC3 to RC0 VF recipe override - sample identification for applicability
+#define RC3_OVERRIDE_ES_MILESTONE  0x1 // ES milestone value
+#define RC3_OVERRIDE_ES2_MAJOR_REV 0x2 // Major revision identifying ES2
+#define RC3_OVERRIDE_PC_MILESTONE  0x2 // PC milestone value
+#define RC3_OVERRIDE_ENTRY_COUNT   6
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -165,6 +172,30 @@ static const uint32_t core_cdyn_ldo_widths[] = {CC_WIDTHS(LDO)};
 // helpers for ES1 fuse override
 static const uint32_t es1_ldo_dac_in_overrides[] = {473, 475, 480, 495};
 
+/**
+ * @brief RC3 to RC0 VF recipe override table
+ * Each entry specifies a frequency anchor and mV offsets per ITD temp range.
+ * mV offsets are converted to LDO DAC adjustments using the fused slope at runtime.
+ *
+ * Columns: freq_Mhz, mv_offset[TempRange0, TempRange1, TempRange2, TempRange3]
+ */
+typedef struct _rc3_vf_override_entry_t
+{
+    uint16_t freq_Mhz;
+    int16_t mv_offset[VFT_CURVE_COUNT_PER_CURVESET];
+} rc3_vf_override_entry_t;
+
+// clang-format off
+static const rc3_vf_override_entry_t rc3_vf_override_table[RC3_OVERRIDE_ENTRY_COUNT] = {
+    {1200, {-60, -50, -40, -40}},
+    {2100, {-60, -50, -40, -40}},
+    {2800, {-80, -70, -50, -50}},
+    {3300, {-20, -20, -20, -20}},
+    {3500, { -6,   0,   0,   0}},
+    {3600, { 10,  -4,   0,   0}},
+};
+// clang-format on
+
 /*------------- Functions ----------------*/
 
 bool power_fuses_is_power_hw_supported()
@@ -195,7 +226,7 @@ int32_t platform_read_fuse(const uint32_t* target_addr, const uint32_t fuse_bit_
     return status;
 }
 
-uint8_t power_fuses_get_pmm_rev()
+PLACED_CODE uint8_t power_fuses_get_pmm_rev()
 {
     uint64_t fuse_data = 0;
 
@@ -220,14 +251,14 @@ uint8_t power_fuses_get_pmm_rev()
     return pmm_rev;
 }
 
-int32_t power_fuses_get_dts_coeff(uint32_t k_offset,
-                                  uint32_t k_width,
-                                  uint32_t y_offset,
-                                  uint32_t y_width,
-                                  uint32_t fuse_elements,
-                                  uint32_t coeff_count,
-                                  uint32_t coeff_spacing,
-                                  dts_coeff_t* dts_coeff)
+PLACED_CODE int32_t power_fuses_get_dts_coeff(uint32_t k_offset,
+                                              uint32_t k_width,
+                                              uint32_t y_offset,
+                                              uint32_t y_width,
+                                              uint32_t fuse_elements,
+                                              uint32_t coeff_count,
+                                              uint32_t coeff_spacing,
+                                              dts_coeff_t* dts_coeff)
 {
     // verify input -- count of elements with the spacing we were given doesn't exceed count of fuse elements
     BUG_ASSERT_PARAM(((coeff_count * coeff_spacing) <= fuse_elements), (coeff_count * coeff_spacing), fuse_elements);
@@ -290,7 +321,7 @@ int32_t power_fuses_get_dts_coeff(uint32_t k_offset,
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t ldo_cap_to_max(uint32_t freq, uint32_t ldodac, uint32_t curve_idx)
+PLACED_CODE int32_t ldo_cap_to_max(uint32_t freq, uint32_t ldodac, uint32_t curve_idx)
 {
     const uint32_t max_value = (1 << core_vft_fuse_ldodac_widths[curve_idx][0]) - 1;
     uint32_t ldodac_ret = ldodac;
@@ -308,7 +339,7 @@ int32_t ldo_cap_to_max(uint32_t freq, uint32_t ldodac, uint32_t curve_idx)
     return ldodac_ret;
 }
 
-int32_t power_fuses_read_memasst(dvfs_core_memasst_entries_t* memasst_entries)
+PLACED_CODE int32_t power_fuses_read_memasst(dvfs_core_memasst_entries_t* memasst_entries)
 {
     // unexpected, but if something changes want to know about it
     // NOTE: The SCP FW is starting from 0x80 and 0x0 could contain garbage data hence commenting out below line
@@ -375,7 +406,7 @@ int32_t power_fuses_read_memasst(dvfs_core_memasst_entries_t* memasst_entries)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_clear_core_valid_bits(corebits_t* valid_bits)
+PLACED_CODE int32_t power_fuses_clear_core_valid_bits(corebits_t* valid_bits)
 {
     uint32_t corebit = 0;
     uint32_t fuse_core_disable_st;
@@ -424,7 +455,7 @@ int32_t power_fuses_clear_core_valid_bits(corebits_t* valid_bits)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_get_ldodac_to_voltage(dvfs_vf_slope_t* slope_offset)
+PLACED_CODE int32_t power_fuses_get_ldodac_to_voltage(dvfs_vf_slope_t* slope_offset)
 {
     if (!slope_offset)
     {
@@ -462,7 +493,7 @@ int32_t power_fuses_get_ldodac_to_voltage(dvfs_vf_slope_t* slope_offset)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_get_dts_coeff_tile(dts_coeff_t* dts_coeff, uint32_t count)
+PLACED_CODE int32_t power_fuses_get_dts_coeff_tile(dts_coeff_t* dts_coeff, uint32_t count)
 {
     return power_fuses_get_dts_coeff(TILE_THERMALS_SENSOR_RTS_K_BIT_OFFSET,
                                      TILE_THERMALS_SENSOR_RTS_K_WIDTH,
@@ -474,7 +505,7 @@ int32_t power_fuses_get_dts_coeff_tile(dts_coeff_t* dts_coeff, uint32_t count)
                                      dts_coeff);
 }
 
-int32_t power_fuses_get_dts_coeff_soctop(dts_coeff_t* dts_coeff, uint32_t count)
+PLACED_CODE int32_t power_fuses_get_dts_coeff_soctop(dts_coeff_t* dts_coeff, uint32_t count)
 {
     return power_fuses_get_dts_coeff(TOP_THERMALS_SENSOR_RTS_K_BIT_OFFSET,
                                      TOP_THERMALS_SENSOR_RTS_K_WIDTH,
@@ -486,7 +517,7 @@ int32_t power_fuses_get_dts_coeff_soctop(dts_coeff_t* dts_coeff, uint32_t count)
                                      dts_coeff);
 }
 
-int32_t power_fuses_get_ldo_headroom(uint8_t* ldo_headroom)
+PLACED_CODE int32_t power_fuses_get_ldo_headroom(uint8_t* ldo_headroom)
 {
     if (!ldo_headroom)
     {
@@ -505,7 +536,7 @@ int32_t power_fuses_get_ldo_headroom(uint8_t* ldo_headroom)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_get_vcpu_guardband(uint8_t* vcpu_guardband)
+PLACED_CODE int32_t power_fuses_get_vcpu_guardband(uint8_t* vcpu_guardband)
 {
     if (!vcpu_guardband)
     {
@@ -524,7 +555,7 @@ int32_t power_fuses_get_vcpu_guardband(uint8_t* vcpu_guardband)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_vcpu_leakage(power_vcpu_interp_t* vcpu_leakage, uint32_t count)
+PLACED_CODE int32_t power_fuses_vcpu_leakage(power_vcpu_interp_t* vcpu_leakage, uint32_t count)
 {
     // unexpected, but if something changes want to know about it
     BUG_ASSERT_PARAM((count >= DIMOF(vcpu_leakage_temp_offsets)), count, DIMOF(vcpu_leakage_temp_offsets));
@@ -568,7 +599,7 @@ int32_t power_fuses_vcpu_leakage(power_vcpu_interp_t* vcpu_leakage, uint32_t cou
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_ldo_dyn(power_vcpu_interp_t* vcpu_ldo_dyn, uint32_t count)
+PLACED_CODE int32_t power_fuses_ldo_dyn(power_vcpu_interp_t* vcpu_ldo_dyn, uint32_t count)
 {
     // unexpected, but if something changes want to know about it
     BUG_ASSERT_PARAM((count >= DIMOF(vcpu_ldo_dyn_temp_offsets)), count, DIMOF(vcpu_ldo_dyn_temp_offsets));
@@ -612,7 +643,7 @@ int32_t power_fuses_ldo_dyn(power_vcpu_interp_t* vcpu_ldo_dyn, uint32_t count)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_core_cdyn(power_vcpu_interp_t* core_cdyn, uint32_t count)
+PLACED_CODE int32_t power_fuses_core_cdyn(power_vcpu_interp_t* core_cdyn, uint32_t count)
 {
     // unexpected, but if something changes want to know about it
     BUG_ASSERT_PARAM((count >= DIMOF(core_cdyn_cdyn_offsets)), count, DIMOF(core_cdyn_cdyn_offsets));
@@ -645,7 +676,7 @@ int32_t power_fuses_core_cdyn(power_vcpu_interp_t* core_cdyn, uint32_t count)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_process_id(power_fuse_process_id_t* process_id)
+PLACED_CODE int32_t power_fuses_process_id(power_fuse_process_id_t* process_id)
 {
     if (!process_id)
     {
@@ -666,7 +697,7 @@ int32_t power_fuses_process_id(power_fuse_process_id_t* process_id)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
+PLACED_CODE int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
 {
     if (!tdp_config)
     {
@@ -702,7 +733,7 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_get_curve_assignment(uint32_t core, uint32_t* curve_assignment)
+PLACED_CODE int32_t power_fuses_get_curve_assignment(uint32_t core, uint32_t* curve_assignment)
 {
     // ensure unexpected doesn't occur
     BUG_ASSERT_PARAM((core < VF_CORE_ANCHOR_SEL_ARRAY_ELEMENTS), core, VF_CORE_ANCHOR_SEL_ARRAY_ELEMENTS);
@@ -726,7 +757,7 @@ int32_t power_fuses_get_curve_assignment(uint32_t core, uint32_t* curve_assignme
 }
 
 // NOTE: Currently the temperature curves are not considered and temp0 is used statically and hence hardcoded
-int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset, bool apply_es1_overrides)
+PLACED_CODE int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset, bool apply_es1_overrides)
 {
     // unexpected, but if something changes want to know about it
     // Checking that the size of pair index in the innermost struct matches with our array definitions
@@ -820,7 +851,7 @@ int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offs
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_get_curve_temp(int8_t* core_max_temp, uint32_t count)
+PLACED_CODE int32_t power_fuses_get_curve_temp(int8_t* core_max_temp, uint32_t count)
 {
     if (!core_max_temp)
     {
@@ -858,7 +889,7 @@ int32_t power_fuses_get_curve_temp(int8_t* core_max_temp, uint32_t count)
     return FPFW_STATUS_SUCCESS;
 }
 
-int32_t power_fuses_get_vsys_vid(uint16_t* vsys_vid)
+PLACED_CODE int32_t power_fuses_get_vsys_vid(uint16_t* vsys_vid)
 {
     if (!vsys_vid)
     {
@@ -879,7 +910,127 @@ int32_t power_fuses_get_vsys_vid(uint16_t* vsys_vid)
     return FPFW_STATUS_SUCCESS;
 }
 
-void power_fuses_read(power_fuse_data_t* p_fuses)
+/**
+ * @brief Apply RC0 VF recipe override for RC3-fused units (ES2/PC samples).
+ *
+ * Reads the customer_sample_milestone fuse and, for ES parts, the sample_major_rev fuse
+ * to determine if the part is an ES2 (milestone 0x1, major_rev 0x2) or PC (milestone 0x2)
+ * sample. If so, adjusts fused VF anchor pair LDO DAC codes by converting the mV offsets
+ * from the RC3 override table using the fused LDO slope.
+ *
+ * @param vf_curves Pointer to the fused VF curveset data (modified in-place)
+ * @param slope     Pointer to the fused LDO DAC to voltage slope
+ * @return FPFW_STATUS_SUCCESS on success, or error code on fuse read failure
+ */
+PLACED_CODE int32_t power_fuses_apply_rc3_vf_override(power_fuse_vf_curveset_t* vf_curves, const dvfs_vf_slope_t* slope)
+{
+    if ((vf_curves == NULL) || (slope == NULL))
+    {
+        return FPFW_STATUS_NULL_POINTER;
+    }
+
+    if (slope->slope_uvolt == 0)
+    {
+        return FPFW_STATUS_INVALID_ARGS;
+    }
+
+    // Read customer sample milestone fuse
+    uint64_t customer_fuse_data = 0;
+    uint8_t customer_sample_milestone = 0;
+    int32_t status = platform_read_fuse((uint32_t*)&customer_fuse_data,
+                                        CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_BIT_OFFSET,
+                                        CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_WIDTH);
+    if (status != FPFW_STATUS_SUCCESS)
+    {
+        return status;
+    }
+    customer_sample_milestone = (uint8_t)customer_fuse_data;
+
+    // Determine if this is an ES2 or PC sample that needs the RC3 override
+    if (customer_sample_milestone == RC3_OVERRIDE_PC_MILESTONE)
+    {
+        // PC sample - continue to apply override
+    }
+    else if (customer_sample_milestone == RC3_OVERRIDE_ES_MILESTONE)
+    {
+        // ES milestone - check major revision to distinguish ES2 from ES1
+        uint64_t major_rev_fuse_data = 0;
+        uint8_t sample_major_rev = 0;
+        status = platform_read_fuse((uint32_t*)&major_rev_fuse_data,
+                                    GENERAL_SAMPLE_INFO_SAMPLE_MAJOR_REV_BIT_OFFSET,
+                                    GENERAL_SAMPLE_INFO_SAMPLE_MAJOR_REV_WIDTH);
+        if (status != FPFW_STATUS_SUCCESS)
+        {
+            return status;
+        }
+        sample_major_rev = (uint8_t)major_rev_fuse_data;
+
+        if (sample_major_rev != RC3_OVERRIDE_ES2_MAJOR_REV)
+        {
+            return FPFW_STATUS_SUCCESS; // ES1 or other ES revision, no override needed
+        }
+        // ES2 sample - continue to apply override
+    }
+    else
+    {
+        return FPFW_STATUS_SUCCESS; // Not applicable, no override needed
+    }
+
+    // Apply mV offsets to fuse anchor pairs across all curvesets and temp curves
+    for (uint32_t curve_idx = 0; curve_idx < DIMOF(core_vft_fuse_freq_offsets); ++curve_idx)
+    {
+        for (uint32_t temp_idx = 0; temp_idx < VFT_CURVE_COUNT_PER_CURVESET; ++temp_idx)
+        {
+            for (uint32_t pair_idx = 0; pair_idx < DVFS_FUSED_PAIRS_COUNT; ++pair_idx)
+            {
+                uint16_t freq = vf_curves->curveset[curve_idx].curve[temp_idx].pair[pair_idx].freq_Mhz;
+
+                // Find matching override entry by frequency
+                for (uint32_t ovr_idx = 0; ovr_idx < RC3_OVERRIDE_ENTRY_COUNT; ++ovr_idx)
+                {
+                    if (freq == rc3_vf_override_table[ovr_idx].freq_Mhz)
+                    {
+                        int16_t mv_offset = rc3_vf_override_table[ovr_idx].mv_offset[temp_idx];
+                        if (mv_offset != 0)
+                        {
+                            // Convert mV offset to LDO DAC offset: delta_ldo = delta_mv * 1000 / slope_uvolt
+                            int32_t delta_ldo = (int32_t)mv_offset * 1000 / (int32_t)slope->slope_uvolt;
+                            uint16_t old_ldo = vf_curves->curveset[curve_idx].curve[temp_idx].pair[pair_idx].ldo_dac_in;
+                            int32_t new_ldo = (int32_t)old_ldo + delta_ldo;
+
+                            // Clamp to valid uint16 range
+                            if (new_ldo < 0)
+                            {
+                                new_ldo = 0;
+                            }
+                            if (new_ldo > UINT16_MAX)
+                            {
+                                new_ldo = UINT16_MAX;
+                            }
+                            vf_curves->curveset[curve_idx].curve[temp_idx].pair[pair_idx].ldo_dac_in = (uint16_t)new_ldo;
+                            POWER_LOG_INFO(
+                                MODULE_NAME
+                                "RC3 override cs%lu t%lu freq=%uMHz mv_offset=%d old_ldo=%u new_ldo=%u\n",
+                                (unsigned long)curve_idx,
+                                (unsigned long)temp_idx,
+                                freq,
+                                mv_offset,
+                                old_ldo,
+                                (uint16_t)new_ldo);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    POWER_LOG_INFO(MODULE_NAME "RC3 sample (milestone 0x%x) - applied RC0 VF recipe override\n", customer_sample_milestone);
+
+    return FPFW_STATUS_SUCCESS;
+}
+
+PLACED_CODE void power_fuses_read(power_fuse_data_t* p_fuses)
 {
     power_runconfig_t* p_run_config = power_runconfig_get();
 
@@ -906,6 +1057,12 @@ void power_fuses_read(power_fuse_data_t* p_fuses)
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_get_ldodac_to_voltage(&p_fuses->ldodac_to_volt);
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
+        // Apply RC0 VF override for RC3 units if knob is enabled
+        if (p_run_config->knobs.rc0_override_for_rc3)
+        {
+            status = power_fuses_apply_rc3_vf_override(&p_fuses->vf, &p_fuses->ldodac_to_volt);
+            BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
+        }
         status = power_fuses_get_dts_coeff_tile(&p_fuses->dts_coeff_tile[0], ARRAY_SIZE(p_fuses->dts_coeff_tile));
         BUG_ASSERT_PARAM((status == FPFW_STATUS_SUCCESS), status, FPFW_STATUS_SUCCESS);
         status = power_fuses_get_dts_coeff_soctop(&p_fuses->dts_coeff_soctop[0], ARRAY_SIZE(p_fuses->dts_coeff_soctop));

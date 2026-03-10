@@ -196,6 +196,7 @@
       <Member name="ldo_offset" type="int8_t" help="ldo dac code offset" />
       <Member name="itd_cfg" type="bool" help="Controls whether ITD is enabled or disabled" />
       <Member name="es1_fuse_overrides" type="bool" help="Enables Es1 power fuse overrides to match ES2 configurations" />
+      <Member name="rc0_override_for_rc3" type="bool" help="Enable RC0 VF recipe override for RC3 units (ES2/PC/PR samples)" />
       <Member name="avs_ds" type="avs_ds_cfg_array_t" help="AVS drive strength" />
       <Member name="enable_vsys_vboot_override" type="bool" help="Enable override for VSYS VBOOT" />
       <Member name="cppc_lowest_nonlin_perf" type="uint8_t" help="Sets the lowest non-linear performance point for CPPC takes in pstate range 0-31 as input" />
@@ -236,6 +237,7 @@
     <Knob name="power_force_pstate" type="uint8_t" default="32" help="Limits plimit to forced pstate and rewrites pll/vma tables for lower performance states to prevent HW throttle" />
     <Knob name="power_itd_cfg" type="bool" default="true" help="Controls whether ITD is enabled or disabled" />
     <Knob name="power_es1_fuse_overrides" type="bool" default="false" help="Enables Es1 power fuse overrides to match ES2 configurations" />
+    <Knob name="power_rc0_override_for_rc3" type="bool" default="false" help="Enable RC0 VF recipe override for RC3 fused units. When true and customer_sample_milestone is ES2/PC/PR (0x2-0x4), adjusts VF anchor LDO DAC codes to match RC0 recipe" />
     <Knob name="vmat_log_en" type="bool" default="false" help="Enable or disable DVFS VMAT debug log." />
     <Knob name="fcal_log_en" type="bool" default="false" help="Enable or disable DVFS FCAL debug log." />
 
@@ -296,11 +298,11 @@
     <Knob name="power_enable_fgpll_calsm" type="bool" default="true" help="True to enable FGPLL calibration" />
     <Knob name="power_fllcal_pstate_bounds" type="power_fllcal_pstate_bounds_t" default="{0, 31}" help="Start and end of fll calibration" />
     <Knob name="power_plllock_cfg" type="power_plllock_cfg_t" default="{true, 2, false, false, false, false, false}" help="Use to configure core PLL lock interrupt settings" />
-    <Knob name="power_nominal_pstate" type="uint8_t" default="0" help="Nominal pstate number, 0 uses SOC fused default" />
+    <Knob name="power_nominal_pstate" type="uint8_t" default="8" help="Nominal pstate number, 0 uses SOC fused default" />
     <Knob name="power_c1_telemetry_enable" type="bool" default="false" help="Enable C1 telemetry in DVFS" />
     <Knob name="power_soc_static_rails" type="uint16_t" default="0" help="Static power in mW to add to SOC power calculations" />
     <Knob name="power_avs_ds" type="avs_ds_cfg_array_t" default="{{{2,2},{2,2},{2,2},{2,2}}}" help="AVS drive strength" />
-    <Knob name="power_enable_vsys_vboot_override" type="bool" default="false" help="If true and power_force_vrs knob for VSYS is zero update VSYS voltage from system Fuse field vsys_vid, else it relies of default setting of VSYS Vreg ie 921 mV" />
+    <Knob name="power_enable_vsys_vboot_override" type="bool" default="true" help="If true and power_force_vrs knob for VSYS is zero update VSYS voltage from system Fuse field vsys_vid, else it relies of default setting of VSYS Vreg ie 921 mV" />
     <Knob name="power_cppc_lowest_nonlin_perf" type="uint8_t" default="32" help="Sets the lowest non-linear performance point for CPPC takes in pstate range 0-31 as input" />
 
  

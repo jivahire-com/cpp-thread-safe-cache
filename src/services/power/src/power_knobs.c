@@ -151,6 +151,8 @@ void power_knobs_read(power_knobs_t* p_knobs)
 
     p_knobs->es1_fuse_overrides = config_get_power_es1_fuse_overrides();
 
+    p_knobs->rc0_override_for_rc3 = config_get_power_rc0_override_for_rc3();
+
     p_knobs->avs_ds = config_get_power_avs_ds();
 
     p_knobs->enable_vsys_vboot_override = config_get_power_enable_vsys_vboot_override();

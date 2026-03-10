@@ -65,6 +65,7 @@ static void print_power_adclk_offset_cfg(power_knobs_t* knobs);
 static void print_power_config_vsys_override(power_knobs_t* knobs);
 static void print_power_config_vsys_vid(power_fuse_data_t* fuses);
 static void print_power_config_cppc_lowest_nonlin_perf(power_knobs_t* knobs);
+static void print_power_config_fuse_overrides(power_knobs_t* knobs);
 
 /*-- Declarations (Statics and globals) --*/
 
@@ -500,6 +501,14 @@ static PLACED_CODE void print_power_config_fgpll(power_knobs_t* knobs)
     FpFwCliPrint("\n");
 }
 
+static PLACED_CODE void print_power_config_fuse_overrides(power_knobs_t* knobs)
+{
+    FpFwCliPrint("\nFuse Override Config\n");
+    FpFwCliPrint("--------------------------\n");
+    FpFwCliPrint("ES1 fuse overrides    : %s\n", knobs->es1_fuse_overrides ? "enabled" : "disabled");
+    FpFwCliPrint("RC0 override for RC3  : %s\n", knobs->rc0_override_for_rc3 ? "enabled" : "disabled");
+}
+
 static PLACED_CODE void print_power_config_itd_cfg(power_knobs_t* knobs)
 {
     FpFwCliPrint("\nITD Config\n");
@@ -619,6 +628,7 @@ static PLACED_CODE void print_power_config_knobs(power_knobs_t* knobs)
     print_power_adclk_offset_cfg(knobs);
     print_power_config_vsys_override(knobs);
     print_power_config_cppc_lowest_nonlin_perf(knobs);
+    print_power_config_fuse_overrides(knobs);
 }
 
 static PLACED_CODE void print_power_config_max_allowed_plimit(power_knobs_t* knobs)

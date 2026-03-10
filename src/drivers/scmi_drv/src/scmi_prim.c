@@ -155,9 +155,9 @@ int scmi_power_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
     SCMI_LOG_INFO("Processing SCMI Power Protocol Cmd: %x\n", cmd_code);
     if (size != 0 && ((scmi_debug & 0x04) != 0))
     {
-        for (uint8_t data_count = 0; data_count < size; data_count++)
+        for (size_t data_count = 0; data_count < size; data_count++)
         {
-            SCMI_LOG_INFO(" scmi_message data[%d]: %x\n", data_count, payload[data_count]);
+            SCMI_LOG_INFO(" scmi_message data[%zu]: %x\n", data_count, payload[data_count]);
         }
     }
 
@@ -226,9 +226,9 @@ int scmi_sys_pwr_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
     SCMI_LOG_INFO("Processing SCMI Power Protocol Cmd: %x\n", cmd_code);
     if (size != 0 && ((scmi_debug & 0x04) != 0))
     {
-        for (uint8_t data_count = 0; data_count < size; data_count++)
+        for (size_t data_count = 0; data_count < size; data_count++)
         {
-            SCMI_LOG_INFO(" scmi_message data[%d]: %x\n", data_count, payload[data_count]);
+            SCMI_LOG_INFO(" scmi_message data[%zu]: %x\n", data_count, payload[data_count]);
         }
     }
 
@@ -363,9 +363,9 @@ int scmi_ap_core_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
     SCMI_LOG_INFO("Processing AP Core Protocol Cmd: %d\n", cmd_code);
     if (size != 0 && ((scmi_debug & 0x04) != 0))
     {
-        for (uint8_t data_count = 0; data_count < size; data_count++)
+        for (size_t data_count = 0; data_count < size; data_count++)
         {
-            SCMI_LOG_INFO(" scmi_message data[%d]: %x\n", data_count, payload[data_count]);
+            SCMI_LOG_INFO(" scmi_message data[%zu]: %x\n", data_count, payload[data_count]);
         }
     }
 
@@ -438,26 +438,34 @@ int scmi_check_message(scmi_icc_packet_t* packet)
         SCMI_LOG_INFO("SCMI Message  ID: 0x %x\n", (int)packet->header.cmd_code);
     }
 
+    const size_t header_size = sizeof(packet->header);
+    const size_t max_payload_size = sizeof(((scmi_local_packet_t*)0)->payload);
+    if ((size_t)packet->smt_header.payload_size < header_size)
+    {
+        SCMI_LOG_INFO("SCMI payload_size (%zu) too small for header (%zu)\n", (size_t)packet->smt_header.payload_size, header_size);
+        return SCMI_PROTOCOL_CMD_UKNOWN;
+    }
+    const size_t payload_data_size = (size_t)packet->smt_header.payload_size - header_size;
+    if (payload_data_size > max_payload_size)
+    {
+        SCMI_LOG_INFO("SCMI payload_data_size (%zu) exceeds max payload buffer (%zu)\n", payload_data_size, max_payload_size);
+        return SCMI_PROTOCOL_CMD_UKNOWN;
+    }
+
     // Check for the appropriate action
     switch (packet->header.protocol_id)
     {
 
     case SCMI_PWR_DMN_PROTO_ID:
-        status = scmi_power_protocol_cmds(packet->header.cmd_code,
-                                          (uint8_t*)packet->payload,
-                                          (packet->smt_header.payload_size - sizeof(packet->header)));
+        status = scmi_power_protocol_cmds(packet->header.cmd_code, (uint8_t*)packet->payload, payload_data_size);
         break;
 
     case SCMI_SYS_PWR_PROTO_ID:
-        status = scmi_sys_pwr_protocol_cmds(packet->header.cmd_code,
-                                            (uint8_t*)packet->payload,
-                                            (packet->smt_header.payload_size - sizeof(packet->header)));
+        status = scmi_sys_pwr_protocol_cmds(packet->header.cmd_code, (uint8_t*)packet->payload, payload_data_size);
         break;
 
     case SCMI_AP_CORE_PROTO_ID:
-        status = scmi_ap_core_protocol_cmds(packet->header.cmd_code,
-                                            (uint8_t*)packet->payload,
-                                            (packet->smt_header.payload_size - sizeof(packet->header)));
+        status = scmi_ap_core_protocol_cmds(packet->header.cmd_code, (uint8_t*)packet->payload, payload_data_size);
         break;
 
     default:
@@ -530,11 +538,13 @@ static void scmi_async_recv_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void*
                 SCMI_LOG_INFO("SCMI ICC Message: %x\n", (int)scmi_recv_message->header.msg_header.command);
                 SCMI_LOG_INFO("SCMI ICC Size: %x\n", (int)scmi_recv_message->header.msg_header.payload_size);
 
-                if (scmi_recv_message->header.msg_header.payload_size != 0 && (scmi_debug & 8) != 0)
+                if (scmi_recv_message->header.msg_header.payload_size != 0 &&
+                    scmi_recv_message->header.msg_header.payload_size <= sizeof(scmi_recv_message->data) &&
+                    (scmi_debug & 8) != 0)
                 {
-                    for (uint8_t data_count = 0; data_count < scmi_recv_message->header.msg_header.payload_size; data_count++)
+                    for (size_t data_count = 0; data_count < scmi_recv_message->header.msg_header.payload_size; data_count++)
                     {
-                        SCMI_LOG_INFO("  scmi_message data[%d]: %x\n", data_count, scmi_recv_message->data[data_count]);
+                        SCMI_LOG_INFO("  scmi_message data[%zu]: %x\n", data_count, scmi_recv_message->data[data_count]);
                     }
                 }
             }

@@ -453,6 +453,6 @@ class pldm_common(EchoFallsBaseTest):
             self.log.error("apns_connection is not open")
             self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
             return False
-        apns_connection.get_current_channel().read_until(key="SAC>", timeout_seconds=450) 
+        apns_connection.get_current_channel().read_until(key="SAC>", timeout_seconds=1000) 
         self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
         return True

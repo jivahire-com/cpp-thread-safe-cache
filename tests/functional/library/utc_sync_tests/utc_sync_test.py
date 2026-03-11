@@ -45,6 +45,8 @@ class utc_sync_test(pldm_common):
             host_config=host_config,
             host_name=host_name,
         )
+        self._last_mcp_cmd_timing: dict = {}
+        self._last_bmc_cmd_timing: dict = {}
 
     # ── Setup / Teardown ──
 
@@ -89,7 +91,32 @@ class utc_sync_test(pldm_common):
         """
         cmd = "utc time"
         key = "Ok"
+
+        start_wall = time.time()
+        start_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+        self.log.info(
+            f"[CMD_TIMING][MCP] START cmd='{cmd}' utc='{start_utc}' "
+            f"wall={start_wall:.6f}"
+        )
+
         result, stdout, stderr = self._mcp_execute_command_until(command=cmd, key=key)
+
+        end_wall = time.time()
+        end_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+        elapsed = end_wall - start_wall
+        self._last_mcp_cmd_timing = {
+            "cmd": cmd,
+            "start_wall": start_wall,
+            "end_wall": end_wall,
+            "elapsed_sec": elapsed,
+            "start_utc": start_utc,
+            "end_utc": end_utc,
+        }
+        self.log.info(
+            f"[CMD_TIMING][MCP] END cmd='{cmd}' utc='{end_utc}' "
+            f"wall={end_wall:.6f} elapsed={elapsed:.3f}s"
+        )
+
         self.log.info(f"[RAW_COMMAND_OUTPUT] cmd='{cmd}', key='{key}'")
         self.log.info(
             f"[RAW_COMMAND_OUTPUT] exit={result}, "
@@ -113,7 +140,32 @@ class utc_sync_test(pldm_common):
             Raw BMC timedatectl output string, or empty string on failure.
         """
         cmd = "timedatectl"
+
+        start_wall = time.time()
+        start_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+        self.log.info(
+            f"[CMD_TIMING][BMC] START cmd='{cmd}' utc='{start_utc}' "
+            f"wall={start_wall:.6f}"
+        )
+
         result, stdout, stderr = self._bmc_execute_command(command=cmd)
+
+        end_wall = time.time()
+        end_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+        elapsed = end_wall - start_wall
+        self._last_bmc_cmd_timing = {
+            "cmd": cmd,
+            "start_wall": start_wall,
+            "end_wall": end_wall,
+            "elapsed_sec": elapsed,
+            "start_utc": start_utc,
+            "end_utc": end_utc,
+        }
+        self.log.info(
+            f"[CMD_TIMING][BMC] END cmd='{cmd}' utc='{end_utc}' "
+            f"wall={end_wall:.6f} elapsed={elapsed:.3f}s"
+        )
+
         self.log.info(f"[RAW_COMMAND_OUTPUT] cmd='{cmd}'")
         self.log.info(
             f"[RAW_COMMAND_OUTPUT] exit={result}, "
@@ -245,6 +297,12 @@ class utc_sync_test(pldm_common):
             result[f"bmc_time_{i}"] = ""
             result[f"mcp_timestamp_{i}_ms"] = None
             result[f"bmc_timestamp_{i}_sec"] = None
+            result[f"mcp_cmd_exec_{i}_sec"] = None
+            result[f"bmc_cmd_exec_{i}_sec"] = None
+            result[f"capture_end_gap_{i}_sec"] = None
+            result[f"raw_time_diff_{i}_sec"] = None
+            result[f"delay_added_{i}_sec"] = None
+            result[f"delay_adjusted_diff_{i}_sec"] = None
             result[f"time_match_{i}"] = False
 
         # Step 1: Confirm PLDM is running
@@ -280,6 +338,22 @@ class utc_sync_test(pldm_common):
                 )
                 return result
 
+            # Command execution timing breakdown (sequential path)
+            mcp_cmd = self._last_mcp_cmd_timing
+            bmc_cmd = self._last_bmc_cmd_timing
+            mcp_exec = mcp_cmd.get("elapsed_sec")
+            bmc_exec = bmc_cmd.get("elapsed_sec")
+            if mcp_exec is not None and bmc_exec is not None:
+                end_gap = bmc_cmd.get("end_wall", 0.0) - mcp_cmd.get("end_wall", 0.0)
+                result[f"mcp_cmd_exec_{sample_num}_sec"] = mcp_exec
+                result[f"bmc_cmd_exec_{sample_num}_sec"] = bmc_exec
+                result[f"capture_end_gap_{sample_num}_sec"] = end_gap
+
+                self.log.info("[CMD_TIMING][SAMPLE_BREAKDOWN]")
+                self.log.info(f"  MCP execution time        : {mcp_exec:.3f} s")
+                self.log.info(f"  BMC execution time        : {bmc_exec:.3f} s")
+                self.log.info(f"  End-time gap (BMC-MCP)    : {end_gap:+.3f} s")
+
             # Parse timestamps
             mcp_ts = self._parse_mcp_timestamp(mcp_time)
             bmc_ts = self._parse_bmc_timestamp(bmc_time)
@@ -288,10 +362,29 @@ class utc_sync_test(pldm_common):
 
             # Compare timestamps
             if mcp_ts is not None and bmc_ts is not None:
+                raw_time_diff = (mcp_ts / 1000.0) - float(bmc_ts)
+                delay_added = result.get(f"capture_end_gap_{sample_num}_sec")
+                delay_adjusted_diff = None
+                if delay_added is not None:
+                    delay_adjusted_diff = raw_time_diff + delay_added
+
+                result[f"raw_time_diff_{sample_num}_sec"] = raw_time_diff
+                result[f"delay_added_{sample_num}_sec"] = delay_added
+                result[f"delay_adjusted_diff_{sample_num}_sec"] = delay_adjusted_diff
+
                 match, desc = self._compare_times(mcp_ts, bmc_ts, tolerance_sec)
                 result[f"time_match_{sample_num}"] = match
                 status = "[PASS]" if match else "[FAIL]"
                 self.log.info(f"  {status} Sample {sample_num}: {desc}")
+                self.log.info("[TIME_DIFF_ANALYSIS]")
+                self.log.info(f"  Raw time diff (MCP-BMC)   : {raw_time_diff:+.3f} s")
+                if delay_added is not None:
+                    self.log.info(
+                        f"  Estimated delay added      : {delay_added:+.3f} s"
+                    )
+                    self.log.info(
+                        f"  Delay-adjusted diff        : {delay_adjusted_diff:+.3f} s"
+                    )
             else:
                 self.log.error(
                     f"  [FAIL] Could not parse sample {sample_num}: "
@@ -314,7 +407,30 @@ class utc_sync_test(pldm_common):
         self.log.info("=" * 60)
         for i in range(1, 3):
             status = "PASS" if result[f"time_match_{i}"] else "FAIL"
-            self.log.info(f"  Sample {i}: {status}")
+            raw_diff = result.get(f"raw_time_diff_{i}_sec")
+            delay_added = result.get(f"delay_added_{i}_sec")
+            adjusted = result.get(f"delay_adjusted_diff_{i}_sec")
+            end_gap = result.get(f"capture_end_gap_{i}_sec")
+            raw_diff_str = f"{raw_diff:+.3f}s" if raw_diff is not None else "N/A"
+            delay_added_str = (
+                f"{delay_added:+.3f}s" if delay_added is not None else "N/A"
+            )
+            adjusted_str = f"{adjusted:+.3f}s" if adjusted is not None else "N/A"
+            end_gap_str = f"{end_gap:+.3f}s" if end_gap is not None else "N/A"
+            self.log.info(
+                f"  Sample {i}: {status}  raw(M-B)={raw_diff_str}  "
+                f"delay_added={delay_added_str}  adjusted={adjusted_str}  "
+                f"end_gap(B-M)={end_gap_str}"
+            )
+
+        all_delay_added = [
+            result.get(f"delay_added_{i}_sec")
+            for i in range(1, 3)
+            if result.get(f"delay_added_{i}_sec") is not None
+        ]
+        if all_delay_added:
+            avg_delay_added = sum(all_delay_added) / len(all_delay_added)
+            self.log.info(f"  End difference avg delay_added: {avg_delay_added:+.3f}s")
         self.log.info("=" * 60)
 
         if result["success"]:
@@ -347,12 +463,36 @@ class utc_sync_test(pldm_common):
         """
         cmd = "timedatectl"
         try:
+            start_wall = time.time()
+            start_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+            self.log.info(
+                f"[CMD_TIMING][BMC_NO_HEALTH] START cmd='{cmd}' utc='{start_utc}' "
+                f"wall={start_wall:.6f}"
+            )
+
             if not self.bmc_cli.is_open():
                 self.bmc_cli.open()
             self.log.info(f"[BMC CMD (no health check)] {cmd}")
             result, stdout, stderr = self.bmc_cli.execute_command(
                 command=cmd, command_args=[], timeout_secs=30
             )
+
+            end_wall = time.time()
+            end_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+            elapsed = end_wall - start_wall
+            self._last_bmc_cmd_timing = {
+                "cmd": cmd,
+                "start_wall": start_wall,
+                "end_wall": end_wall,
+                "elapsed_sec": elapsed,
+                "start_utc": start_utc,
+                "end_utc": end_utc,
+            }
+            self.log.info(
+                f"[CMD_TIMING][BMC_NO_HEALTH] END cmd='{cmd}' utc='{end_utc}' "
+                f"wall={end_wall:.6f} elapsed={elapsed:.3f}s"
+            )
+
             self.log.info(
                 f"[RAW_COMMAND_OUTPUT] cmd='{cmd}', "
                 f"exit={result}, stdout='{stdout.strip()[:200]}', "

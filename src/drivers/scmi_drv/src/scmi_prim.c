@@ -174,6 +174,14 @@ int scmi_power_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
         break;
     }
     case SCMI_PROTO_MSG_ATTR_MSG: {
+        if (size < sizeof(scmi_protocol_message_attributes_a2p_t))
+        {
+            SCMI_LOG_ERR("SCMI_PROTO_MSG_ATTR_MSG: invalid payload size %zu\n", size);
+            scmi_protocol_message_attributes_p2a_t resp = {0};
+            resp.status = SCMI_STATUS_INVALID_PARAMETERS;
+            scmi_send_resp(SCMI_PWR_DMN_PROTO_ID, SCMI_PROTO_MSG_ATTR_MSG, (uint8_t*)&resp, sizeof(resp));
+            break;
+        }
         scmi_protocol_message_attributes_a2p_t* p_message_attr = (scmi_protocol_message_attributes_a2p_t*)payload;
         SCMI_LOG_INFO("SCMI_PROTO_ATTR_MSG: %x message_id %" PRIx32 "\n", cmd_code, p_message_attr->message_id);
         scmi_protocol_message_attributes_p2a_t resp;
@@ -196,6 +204,12 @@ int scmi_power_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
     }
     case SCMI_PWR_STATE_SET_MSG: {
         SCMI_LOG_INFO("SCMI_PWR_STATE_SET_MSG: %x\n", cmd_code);
+        if (size < sizeof(scmi_pd_power_state_set_a2p_t))
+        {
+            SCMI_LOG_ERR("SCMI_PWR_STATE_SET_MSG: invalid payload size %zu\n", size);
+            ap_core_power_response(SCMI_STATUS_INVALID_PARAMETERS);
+            break;
+        }
         //! Do we not care about flags?
         scmi_pd_power_state_set_a2p_t power_state;
         // because alignment :(
@@ -245,6 +259,14 @@ int scmi_sys_pwr_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
         break;
     }
     case SCMI_PROTO_MSG_ATTR_MSG: {
+        if (size < sizeof(scmi_protocol_message_attributes_a2p_t))
+        {
+            SCMI_LOG_ERR("SCMI_PROTO_MSG_ATTR_MSG: invalid payload size %zu\n", size);
+            scmi_protocol_message_attributes_p2a_t resp = {0};
+            resp.status = SCMI_STATUS_INVALID_PARAMETERS;
+            scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_PROTO_MSG_ATTR_MSG, (uint8_t*)&resp, sizeof(resp));
+            break;
+        }
         scmi_protocol_message_attributes_a2p_t* p_message_attr = (scmi_protocol_message_attributes_a2p_t*)payload;
         SCMI_LOG_INFO("SCMI_PROTO_MSG_ATTR_MSG: %x message_id %" PRIx32 "\n", cmd_code, p_message_attr->message_id);
         scmi_protocol_message_attributes_p2a_t resp;
@@ -266,6 +288,15 @@ int scmi_sys_pwr_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
     }
     case SCMI_SYS_PWR_STATE_SET_MSG: {
         SCMI_LOG_INFO("SCMI_SYS_PWR_STATE_SET_MSG: %x\n", cmd_code);
+
+        if (size < sizeof(scmi_sys_pwr_set_state_a2p_t))
+        {
+            SCMI_LOG_ERR("SCMI_SYS_PWR_STATE_SET_MSG: invalid payload size %zu\n", size);
+            scmi_sys_pwr_set_state_p2a_t resp = {0};
+            resp.status = SCMI_STATUS_INVALID_PARAMETERS;
+            scmi_send_resp(SCMI_SYS_PWR_PROTO_ID, SCMI_SYS_PWR_STATE_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+            break;
+        }
 
         scmi_sys_pwr_set_state_a2p_t* p_sys_pwr_set_state = (scmi_sys_pwr_set_state_a2p_t*)payload;
         bool ignore_pwr_up = (bool)(p_sys_pwr_set_state->flags & 0x1U);
@@ -381,6 +412,14 @@ int scmi_ap_core_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
         break;
     }
     case SCMI_PROTO_MSG_ATTR_MSG: {
+        if (size < sizeof(scmi_protocol_message_attributes_a2p_t))
+        {
+            SCMI_LOG_ERR("SCMI_PROTO_MSG_ATTR_MSG: invalid payload size %zu\n", size);
+            scmi_protocol_message_attributes_p2a_t resp = {0};
+            resp.status = SCMI_STATUS_INVALID_PARAMETERS;
+            scmi_send_resp(SCMI_AP_CORE_PROTO_ID, SCMI_PROTO_MSG_ATTR_MSG, (uint8_t*)&resp, sizeof(resp));
+            break;
+        }
         scmi_protocol_message_attributes_a2p_t* p_message_attr = (scmi_protocol_message_attributes_a2p_t*)payload;
         SCMI_LOG_INFO("SCMI_PROTO_MSG_ATTR_MSG: %x message_id %" PRIx32 "\n", cmd_code, p_message_attr->message_id);
         scmi_protocol_message_attributes_p2a_t resp;
@@ -401,6 +440,14 @@ int scmi_ap_core_protocol_cmds(uint8_t cmd_code, uint8_t* payload, size_t size)
         break;
     }
     case SCMI_AP_CORE_RESET_ADDR_SET_MSG: {
+        if (size < sizeof(scmi_apcore_reset_address_set_a2p_t))
+        {
+            SCMI_LOG_ERR("SCMI_AP_CORE_RESET_ADDR_SET_MSG: invalid payload size %zu\n", size);
+            scmi_apcore_reset_address_set_p2a_t resp = {0};
+            resp.status = SCMI_STATUS_INVALID_PARAMETERS;
+            scmi_send_resp(SCMI_AP_CORE_PROTO_ID, SCMI_AP_CORE_RESET_ADDR_SET_MSG, (uint8_t*)&resp, sizeof(resp));
+            break;
+        }
         scmi_apcore_reset_address_set_a2p_t reset_address;
         memcpy(&reset_address, payload, sizeof(reset_address));
         SCMI_LOG_INFO("SCMI_AP_CORE_RESET_ADDR_SET_MSG: %x high: %08" PRIx32 " low: %08" PRIx32

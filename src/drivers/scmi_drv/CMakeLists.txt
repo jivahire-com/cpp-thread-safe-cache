@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         fwlib.lib.status
         fwlib.service.cli
+        fwlib.lib.interface.platform.dbgprint
         silibs::icc_mhu
         silibs::idhw
         silibs::idsw

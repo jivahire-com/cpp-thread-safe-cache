@@ -104,15 +104,14 @@ class crash_dump_etoe_report_test(EchoFallsBaseTest):
             core_mcp_connection.open()
             assert core_mcp_connection.is_open()
 
+            apns_connection = self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel()
+            apns_connection.open()
+            assert apns_connection.is_open()
            
-            set_bmc_uart_mux(self.dut, self.log, "SCP")
+            set_bmc_uart_mux(self.dut, self.log, "MCP")
             
-            self.log.info(f"Reading from self.dut.mb.node_0.soc.primary_die.scp.channel_manager\n")
-            core_scp_channel.read_until(key="ScpHeartBeat", timeout_seconds=300)
-            self.rscm_helper.set_bmc_uart_mux_mcp(self.bmc_cli)
-            self.log.info(f"Reading from self.dut.mb.node_0.soc.primary_die.mcp.channel_manager\n")
-            core_mcp_connection.read_until(key="McpHeartBeat", timeout_seconds=300)
-            time.sleep(300)
+            self.log.info(f"Waiting for SAC> prompt...\n")
+            apns_connection.read_until(key="SAC>", timeout_seconds=1000)
 
     def teardown(self):
         if self.dut.get_dut_type() == DeviceType.RVP:

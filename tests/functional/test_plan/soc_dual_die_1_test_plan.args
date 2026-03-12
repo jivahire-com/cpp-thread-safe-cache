@@ -11,4 +11,4 @@
 #./../../../tests/functional/test_suites/power_tests/mod_power_pldm_service.robot
 
 ## UTC Sync test
-./../../../tests/functional/test_suites/utc_sync_tests/utc_sync_test.robot
+./../../../tests/functional/test_suites/utc_sync_tests/utc_sync_test.robot 

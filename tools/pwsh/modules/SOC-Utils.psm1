@@ -77,7 +77,7 @@ createifwitar -version 1.2.3-4
 Function Invoke-CreateIfwiTar(
     [Parameter(Mandatory=$false)] [string] $dat_loc = "${env:REPO_APP_ROOT}/.build/Debug/arm-eabi-aarch/bin/flash",
     [Parameter(Mandatory=$false)] [string] $dat_file = "kingsgate.ifwi.soc.debug.custom.dat",
-    [Parameter(Mandatory=$false)] [string] $tar_loc = "${env:REPO_APP_ROOT}/.build/Debug/arm-eabi-aarch/bin/flash/kingsgate.ifwi.soc.debug.custom.tar.gz",
+    [Parameter(Mandatory=$false)] [string] $tar_loc = "${env:REPO_APP_ROOT}/.build/Debug/arm-eabi-aarch/bin/flash/kingsgate.ifwi.soc.debug.custom-$nodeid.tar.gz",
     [Parameter(Mandatory=$false)] [string] $version = "0.0.0-0"
 )
 {
@@ -178,7 +178,7 @@ Function Write-SOCFlash(
             Write-Host -ForegroundColor Red "                    \;;|              - Use the right system name!!!"
             Write-Host -ForegroundColor Red "                     \/                     "
 
-            $tar_file = ($file -replace '\.dat$', '') + '.tar.gz'
+            $tar_file = ($file -replace '\.dat$', '') + "-$nodeid.tar.gz"
             $tar_loc = Join-Path -Path $loc -ChildPath $tar_file
         
             Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
@@ -239,7 +239,7 @@ Function Write-SOCFlash(
 
             # Flash Ifwi tar file
 			Write-Title -Title "Flash Ifwi tar file" -Color Cyan
-            $Command = "set system bios update -i $nodeid -f kingsgate.ifwi.soc.debug.custom.tar.gz"
+            $Command = "set system bios update -i $nodeid -f kingsgate.ifwi.soc.debug.custom-$nodeid.tar.gz"
             $maxRetries = 4
             $retryCount = 0
             $success = $false
@@ -267,7 +267,17 @@ Function Write-SOCFlash(
                 throw "Failed to flash Ifwi tar after $maxRetries attempts."
             }
             else {
-                Write-Host -ForegroundColor Green "Ifwi tar successfully flashed."
+                # Check for FW update success message
+                $stdout = $output.Output | Out-String
+                if ($stdout -match "FW Status: FW update completed successfully") {
+                    Write-Host -ForegroundColor Green "Ifwi tar successfully flashed."
+                }
+                else {
+                    Write-Host -ForegroundColor Yellow "Flash command completed, but success message not detected."
+                    Write-Host -ForegroundColor Yellow "Output was:"
+                    Write-Host $stdout
+                    throw "FW update did not report successful completion."
+                }
             }
 
             Remove-SFTPSession -SFTPSession $RmSFTPSession | Out-Null

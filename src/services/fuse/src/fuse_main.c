@@ -8,9 +8,11 @@
 
 /*------------- Includes -----------------*/
 
+#include <arm_intrinsic.h> // for __DSB on Windows builds (empty define)
 #include <atu_api.h>
 #include <atu_lib.h>
 #include <bug_check.h> // for BUG_ASSERT_PARAM, BUG_ASSERT
+#include <cmsis_m7.h>  // for __DSB
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_C...
 #include <fpfw_status.h> // for fpfw_status_t
@@ -54,6 +56,9 @@
 #define CUSTOMER_SAMPLE_MILESTONE_ES      1
 #define CUSTOMER_SAMPLE_MILESTONE_PC      2
 #define CUSTOMER_SAMPLE_MILESTONE_PR      3
+
+// CSS HS1R1WRF memctl CSR address (SCP address space)
+#define CSS_HS1R1WRF_MEMCTL_CSR_ADDRESS 0x1500144U
 
 /*------------- Typedefs -----------------*/
 #define NUM_CSR_BACKED_CORE_FUSE_DESCRIPTORS (4)
@@ -847,6 +852,8 @@ void fuse_hardcoded_overrides(void)
     // PR (3) and beyond use the correctly fused value
     if (customer_sample_milestone <= CUSTOMER_SAMPLE_MILESTONE_PC)
     {
+        // Override 1: cdedss_uhd1rwrf_memtrim_wa - incorrectly fused as 0x0, should be 0x4
+        // This CSR is at AP address, requires ATU mapping
         FPFW_DBGPRINT_INFO(FUSE_NAME
                            "Applying cdedss_uhd1rwrf_memtrim_wa override (0x4) for pre-PR sample\n");
 
@@ -893,6 +900,30 @@ void fuse_hardcoded_overrides(void)
         {
             FPFW_DBGPRINT_ERROR(FUSE_NAME "Failed to unmap ATU: %d\n", atu_status);
         }
+
+        // Override 2: css_hs1r1wrf_memctl_wa - incorrectly fused as 0x4, should be 0x0
+        // This CSR is at SCP address, directly accessible without ATU
+        FPFW_DBGPRINT_INFO(FUSE_NAME "Applying css_hs1r1wrf_memctl_wa override (0x0) for pre-PR sample\n");
+
+        const uint32_t css_csr_field_offset = 2;
+        const uint32_t css_csr_field_width = 3;
+        const uint32_t css_override_value = 0x0;
+
+        // Read current CSR value
+        uint32_t css_current_csr = MMIO_READ32(CSS_HS1R1WRF_MEMCTL_CSR_ADDRESS);
+
+        // Create mask for the field (3 bits at offset 2)
+        uint32_t css_field_mask = ((1U << css_csr_field_width) - 1) << css_csr_field_offset;
+
+        // Clear the field and set new value
+        uint32_t css_new_csr = (css_current_csr & ~css_field_mask) |
+                               ((css_override_value << css_csr_field_offset) & css_field_mask);
+
+        // Write new value to CSR
+        MMIO_WRITE32(CSS_HS1R1WRF_MEMCTL_CSR_ADDRESS, css_new_csr);
+        __DSB();
+
+        FPFW_DBGPRINT_INFO(FUSE_NAME "css_hs1r1wrf_memctl_wa CSR: 0x%08x -> 0x%08x\n", css_current_csr, css_new_csr);
     }
 }
 

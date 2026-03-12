@@ -74,6 +74,21 @@ static uint8_t mock_atu_csr_memory[0x200] = {0};
 /*------------- Functions ----------------*/
 
 //
+// MMIO mock wrappers for css_hs1r1wrf_memctl_wa CSR access
+//
+uint32_t __wrap_mmio_read32(volatile uint32_t* addr)
+{
+    check_expected_ptr(addr);
+    return mock_type(uint32_t);
+}
+
+void __wrap_mmio_write32(volatile uint32_t* addr, uint32_t data)
+{
+    check_expected_ptr(addr);
+    check_expected(data);
+}
+
+//
 // Mocks
 
 int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
@@ -1469,7 +1484,7 @@ TEST_FUNCTION(test_fuse_hardcoded_overrides_apply_pc_milestone, NULL, NULL)
     expect_value(__wrap_fuse_read, fuse_bit_size, CUSTOMER_SAMPLE_INFO_CUSTOMER_SAMPLE_MILESTONE_WIDTH);
     will_return(__wrap_fuse_read, 2); // PC milestone
 
-    // Expect ATU map call
+    // Expect ATU map call for cdedss_uhd1rwrf_memtrim_wa
     expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
     expect_function_call(__wrap_atu_map);
     will_return(__wrap_atu_map, SILIBS_SUCCESS);
@@ -1478,6 +1493,15 @@ TEST_FUNCTION(test_fuse_hardcoded_overrides_apply_pc_milestone, NULL, NULL)
     expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
     expect_function_call(__wrap_atu_unmap);
     will_return(__wrap_atu_unmap, SILIBS_SUCCESS);
+
+    // Expect MMIO_READ32 for css_hs1r1wrf_memctl_wa CSR at address 0x1500144
+    // Return current value with incorrect fused value (0x4 in bits [4:2]) = 0x10
+    expect_value(__wrap_mmio_read32, addr, 0x1500144U);
+    will_return(__wrap_mmio_read32, 0x10);
+
+    // Expect MMIO_WRITE32 with corrected value (bits [4:2] cleared to 0x0)
+    expect_value(__wrap_mmio_write32, addr, 0x1500144U);
+    expect_value(__wrap_mmio_write32, data, 0x00);
 
     fuse_hardcoded_overrides();
 }

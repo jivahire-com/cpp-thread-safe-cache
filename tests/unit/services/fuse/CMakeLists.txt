@@ -61,6 +61,8 @@ mock_target(${TARGET}
     idsw_get_die_id
     fuse_dma_copy_to_ram_blocking
     fuse_read
+    mmio_read32
+    mmio_write32
     read_core_defect_fuses
     fuse_override
     fuse_distribution

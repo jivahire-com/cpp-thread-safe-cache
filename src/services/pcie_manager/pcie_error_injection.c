@@ -22,12 +22,19 @@
 #include <pcie_ss.h>
 #include <pcie_sync_requests_i.h>
 #include <scp_pcie_manager.h>
+#include <silibs_common.h>
 #include <silibs_status.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
+
+/* Valid CRC injection types: 0-6, 8, 11 (gaps at 7, 9, 10) */
+#define PCIE_RASDES_INJ_CRC_VALID_MASK (BIT0 | BIT1 | BIT2 | BIT3 | BIT4 | BIT5 | BIT6 | BIT8 | BIT11)
+
+/* Valid FC injection types: 0-2, 4-6 (gap at 3) */
+#define PCIE_RASDES_INJ_FC_VALID_MASK (BIT0 | BIT1 | BIT2 | BIT4 | BIT5 | BIT6)
 
 /*------------- Typedefs -----------------*/
 
@@ -96,14 +103,16 @@ static bool validate_einj_payload(ras_einj_info_t* info)
         goto done;
     }
 
-    if (op->error_type == PCIE_ERROR_TYPE_AER && (pcie_params->error_data.aer > PCIE_SS_APP_ERR_HEADER_LOG_OVERFLOW))
+    if (op->error_type == PCIE_ERROR_TYPE_AER && (pcie_params->error_data.aer & ~(BIT28 - 1)) != 0)
     {
-        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid AER error data: %d\n", pcie_params->error_data.aer);
+        FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid AER error data: 0x%x\n", pcie_params->error_data.aer);
         PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_EINJ_INVALID_AER_DATA, pcie_params->error_data.aer);
         goto done;
     }
 
-    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_CRC && (pcie_params->error_data.crc > PCIE_RASDES_INJ_ECRC))
+    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_CRC &&
+        (pcie_params->error_data.crc > PCIE_RASDES_INJ_ECRC ||
+         ((BIT0 << pcie_params->error_data.crc) & PCIE_RASDES_INJ_CRC_VALID_MASK) == 0))
     {
         FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid CRC error data: %d\n", pcie_params->error_data.crc);
         PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_EINJ_INVALID_CRC_DATA, pcie_params->error_data.crc);
@@ -132,7 +141,9 @@ static bool validate_einj_payload(ras_einj_info_t* info)
         goto done;
     }
 
-    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_FC && (pcie_params->error_data.fc > PCIE_RASDES_INJ_CPL_TLP_DATA_CREDIT))
+    if (op->error_type == PCIE_ERROR_TYPE_RP_INTERNAL_FC &&
+        (pcie_params->error_data.fc > PCIE_RASDES_INJ_CPL_TLP_DATA_CREDIT ||
+         ((BIT0 << pcie_params->error_data.fc) & PCIE_RASDES_INJ_FC_VALID_MASK) == 0))
     {
         FPFW_DBGPRINT_ERROR("[PCIe EINJ]: Invalid FC error data: %d\n", pcie_params->error_data.fc);
         PCIE_MANAGER_ET_ERROR_PARAM(PCIE_MANAGER_ET_TYPE_EINJ_INVALID_FC_DATA, pcie_params->error_data.fc);

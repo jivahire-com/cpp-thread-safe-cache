@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
     ms::lib::boot_status
     silibs_platform
     fwlib.service.iccBase
+    ms::lib::utils
 )
 
 # Generic ports implmented within this project

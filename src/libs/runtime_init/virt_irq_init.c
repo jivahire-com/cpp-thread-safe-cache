@@ -16,6 +16,7 @@
 #include <idsw_kng.h>
 #include <interrupts.h>
 #include <nvic.h>
+#include <utils.h>
 #include <virt_irq.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -32,7 +33,7 @@ virt_irq_plat_cb_t* mscp_virt_irq_plat_info[TOTAL_VIRTUAL_IRQ_COUNT];
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(virt_irq, FPFW_INIT_DEPENDENCIES("nvic", "cfg_mgr", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(virt_irq, FPFW_INIT_DEPENDENCIES("nvic", "cfg_mgr", "boot_stat"))
 {
     virt_irq_plat_cb_t* accel_virt_irq_plat_info = NULL;
     uint32_t accel_virt_irq_cnt = accel_intr_get_virt_irq_plat_info(&accel_virt_irq_plat_info);

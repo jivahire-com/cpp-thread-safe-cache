@@ -41,6 +41,7 @@ target_link_libraries(${TARGET}
         silibs::platform
         silibs::kng_silibs_platform
         silibs::sdm_command_desc
+        ms::lib::utils
 )
 
 target_compile_definitions(

@@ -22,6 +22,7 @@ target_link_libraries(${TARGET}
         ms::lib::threadx
         ms::service::accel_intr_client
         ms::service::accel_intr_service
+        ms::lib::utils
 )
 
 # Defining platform APIs

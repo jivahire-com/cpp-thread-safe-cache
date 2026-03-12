@@ -15,6 +15,7 @@
 #include <ift_fw.h>
 #include <interrupts.h>
 #include <stdint.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -23,7 +24,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(ift, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "mpu"))
+PLACED_CODE FPFW_INIT_COMPONENT(ift, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "mpu"))
 {
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
 
@@ -34,7 +35,7 @@ FPFW_INIT_COMPONENT(ift, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "mpu"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(ift_drv, FPFW_INIT_DEPENDENCIES("ift", "dfwk"))
+PLACED_CODE FPFW_INIT_COMPONENT(ift_drv, FPFW_INIT_DEPENDENCIES("ift", "dfwk"))
 {
     static ift_device_t ift_device;
     static ift_interface_t ift_interface;

@@ -41,7 +41,7 @@ static etr_service_context_t* p_etr_service_context = NULL;
 
 /*----------------------------- Static Functions ----------------------------*/
 
-static FPFW_CLI_STATUS evt_tel_cli_get_ddr_buff_info(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS evt_tel_cli_get_ddr_buff_info(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -92,7 +92,7 @@ static FPFW_CLI_STATUS evt_tel_cli_get_ddr_buff_info(int argc, const char** pp_a
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS evt_tel_cli_set_all_buf_freef(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS evt_tel_cli_set_all_buf_freef(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -117,7 +117,7 @@ static FPFW_CLI_STATUS evt_tel_cli_set_all_buf_freef(int argc, const char** pp_a
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS evt_tel_cli_get_evt_health(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS evt_tel_cli_get_evt_health(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -133,7 +133,7 @@ static FPFW_CLI_STATUS evt_tel_cli_get_evt_health(int argc, const char** pp_argv
 
     return CLI_SUCCESS;
 }
-static FPFW_CLI_STATUS evt_tel_cli_set_client_state(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS evt_tel_cli_set_client_state(int argc, const char** pp_argv)
 {
     if (argc != 2)
     {
@@ -161,7 +161,7 @@ static FPFW_CLI_STATUS evt_tel_cli_set_client_state(int argc, const char** pp_ar
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS evt_tel_cli_get_client_state(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS evt_tel_cli_get_client_state(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -172,7 +172,7 @@ static FPFW_CLI_STATUS evt_tel_cli_get_client_state(int argc, const char** pp_ar
 
 /*----------------------------- Global Functions ----------------------------*/
 
-void evt_telemetry_cli_init(p_etr_service_context_t p_context)
+PLACED_CODE void evt_telemetry_cli_init(p_etr_service_context_t p_context)
 {
     p_etr_service_context = p_context;
 

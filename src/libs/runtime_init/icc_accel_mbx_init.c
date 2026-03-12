@@ -31,6 +31,7 @@
 #include <sdm_ext_cfg_regs.h>        // for SDM_EXT_CFG__ADDRESSBLOCK_0X100000_ADDRESS
 #include <stddef.h>                  // for NULL
 #include <stdio.h>                   // for printf
+#include <utils.h>
 
 /*-------------- Macros ------------------*/
 
@@ -78,7 +79,7 @@ const uint32_t accel_irq_num[NUM_VALID_ACCEL_ID] = {
  * 4. If the base init is successful, call fpfw_icc_dispatcher_start()
  * 5. Finally return the initialized icc base ctx to the user for invoking icc base APIs
  */
-static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
+static PLACED_CODE fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
 {
     uint32_t mbox_base_addr = atu_svc_accel_atu_addr(accel_type);
 
@@ -155,8 +156,8 @@ static fpfw_status_t accel_mbox_init(ACCEL_ID accel_type)
 }
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(icc_sdm_mbx,
-                    FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel", "debug_print", "virt_irq", "cfg_mgr", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(icc_sdm_mbx,
+                                FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel", "debug_print", "virt_irq", "cfg_mgr", "boot_stat"))
 {
     ACCEL_ID accel_type = ACCEL_ID_SDM;
 
@@ -185,7 +186,8 @@ FPFW_INIT_COMPONENT(icc_sdm_mbx,
     return (fpfw_init_result_t){status, &s_accel_mbx_icc_base_ctx[accel_type]};
 }
 
-FPFW_INIT_COMPONENT(icc_cded_mbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel", "debug_print", "virt_irq", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(icc_cded_mbx,
+                                FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "accel", "debug_print", "virt_irq", "cfg_mgr"))
 {
     ACCEL_ID accel_type = ACCEL_ID_CDED;
 

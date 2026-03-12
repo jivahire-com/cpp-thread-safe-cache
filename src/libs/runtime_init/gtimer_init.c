@@ -56,7 +56,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-void gtimer_init_internal(bool d2d_sync_point_required)
+PLACED_CODE void gtimer_init_internal(bool d2d_sync_point_required)
 {
     gtimer_prodfw_init_config_t config = {0};
     config.frequency_hz = SOC_GTIMER_TARGET_FREQUENCY_HZ;
@@ -110,14 +110,14 @@ void gtimer_init_internal(bool d2d_sync_point_required)
                                             : ((idsw_get_cpu_type() == CPU_SCP) ? SCP_SECONDARY : MCP_SECONDARY)));
 }
 
-FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("hw_ver", "spi_bridge", "systick_upd", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(gtimer, FPFW_INIT_DEPENDENCIES("hw_ver", "spi_bridge", "systick_upd", "boot_stat"))
 {
     gtimer_init_internal(false);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(gtimer_stg_2, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge", "systick_upd", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(gtimer_stg_2, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "spi_bridge", "systick_upd", "boot_stat"))
 {
     gtimer_init_internal(true);
 

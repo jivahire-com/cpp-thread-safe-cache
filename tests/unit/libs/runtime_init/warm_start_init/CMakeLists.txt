@@ -31,6 +31,7 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
         silibs::idsw
         silibs::idsw_kng
+        ms::lib::utils
 
 )
 

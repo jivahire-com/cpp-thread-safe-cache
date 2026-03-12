@@ -22,6 +22,7 @@ target_link_libraries(${TARGET}
         silibs::kng_silibs_platform
         silibs::cmsdk_wd
         register_headers
+        ms::lib::utils
 )
 
 # Generic ports implemented within this project

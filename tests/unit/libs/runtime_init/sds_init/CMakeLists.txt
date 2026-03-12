@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::threadx
         ms::service::sds_service
+        ms::lib::utils
 )
 
 lint_target(${TARGET})

@@ -18,6 +18,7 @@
 #include <mcp_top_regs.h>
 #include <scp_top_regs.h>
 #include <tx_api.h> // for tx_thread_sleep
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #if defined(SCP_RUNTIME_INIT)
@@ -36,14 +37,14 @@ typedef void (*mmu_fault_func_ptr)(void);
 
 /*-------------- Functions ---------------*/
 
-void trigger_bus_fault()
+PLACED_CODE void trigger_bus_fault()
 {
     // Accessing a reserved address in the MSCP_EXP memory map
     volatile uint32_t* reserved_addr = (volatile uint32_t*)MSCP_EXP_RESERVED_ADDRESS;
     MMIO_WRITE32(reserved_addr, 0xBADC0FFE);
 }
 
-void trigger_usage_fault()
+PLACED_CODE void trigger_usage_fault()
 {
 #ifndef _WIN32
     // Invoke undefined instruction in Thumb-2.
@@ -51,21 +52,21 @@ void trigger_usage_fault()
 #endif
 }
 
-void trigger_hard_fault()
+PLACED_CODE void trigger_hard_fault()
 {
     // Bus Fault handler itself causes another fault for Hard Fault
     NVIC_SetVector(UsageFault_IRQn, (uint32_t)trigger_usage_fault);
     trigger_usage_fault();
 }
 
-void trigger_mmu_fault()
+PLACED_CODE void trigger_mmu_fault()
 {
     // Execute code against DISABLE_EXEC attribute section, DTCM
     mmu_fault_func_ptr mmu_fault = (mmu_fault_func_ptr)DTCM_DISABLED_EXECUTION_ADDRESS;
     mmu_fault();
 }
 
-void trigger_mscp_watchdog_fault()
+PLACED_CODE void trigger_mscp_watchdog_fault()
 {
     // Disable the watchdog regardless of the current state and reenable
     // The minimum valid value for WDOGLOAD is 1
@@ -73,7 +74,7 @@ void trigger_mscp_watchdog_fault()
     wdog_cmsdk_apb_init(1, true);
 }
 
-void trigger_lockup(void)
+PLACED_CODE void trigger_lockup(void)
 {
     /* The processor enters a lockup state if a fault occurs when executing the NMI or HardFault handlers.*/
     // Set the usage and hardfault handlers to our fake ones
@@ -83,7 +84,7 @@ void trigger_lockup(void)
     trigger_usage_fault();
 }
 
-void trigger_atu_error(void)
+PLACED_CODE void trigger_atu_error(void)
 {
     uint64_t atu_error_addr = 0;
     uint32_t atu_translate_addr = 0;

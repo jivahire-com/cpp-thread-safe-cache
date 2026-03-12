@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
         fwlib.lib.utils
         ms::lib::system_info
         ms::cmocka::testrunner
+        ms::lib::utils
 )
 
 # Generic ports implmented within this project

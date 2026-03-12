@@ -19,6 +19,7 @@
 #include <kng_atu_mappings.h>
 #include <string.h>
 #include <system_info.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 // TODO: Silib should provide these
@@ -32,7 +33,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(shared_mem, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo", "debug_print", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(shared_mem, FPFW_INIT_DEPENDENCIES("atu_svc", "hw_ver", "sysinfo", "debug_print", "boot_stat"))
 {
     int32_t result = FPFW_INIT_STATUS_SUCCESS;
 

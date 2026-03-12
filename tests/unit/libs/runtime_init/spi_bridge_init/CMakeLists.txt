@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
     silibs_platform
     silibs::kng_silibs_platform
     ms::lib::spi
+    ms::lib::utils
 )
 
 target_compile_definitions(

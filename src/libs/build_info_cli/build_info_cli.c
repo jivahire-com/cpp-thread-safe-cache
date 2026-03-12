@@ -147,7 +147,7 @@ static PLACED_CODE FPFW_CLI_STATUS whoami(int Argc, const char** Argv)
 }
 
 /*----------------------------- Global Functions ----------------------------*/
-FPFW_CLI_STATUS build_info_cli_init(void)
+PLACED_CODE FPFW_CLI_STATUS build_info_cli_init(void)
 {
     FpFwCliRegister(&s_build_info_commands);
 

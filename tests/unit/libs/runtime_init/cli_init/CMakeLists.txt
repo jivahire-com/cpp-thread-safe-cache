@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         silibs::common::lib_uart_pl011
         silibs::platform
         silibs::kng_silibs_platform
+        ms::lib::utils
 )
 
 # Generic ports implmented within this project

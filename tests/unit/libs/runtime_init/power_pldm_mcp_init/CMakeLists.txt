@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::service::pwr_pldm_mcp
         silibs_platform
+        ms::lib::utils
 )
 
 # Defining platform APIs

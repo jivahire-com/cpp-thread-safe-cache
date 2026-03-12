@@ -24,6 +24,7 @@
 #include <stdint.h>                // for uintptr_t
 #include <stdio.h>                 // for NULL, printf
 #include <system_info.h>           // for system_info_is_warm_start
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -31,7 +32,7 @@
 static boot_status_req_t boot_status_req = {0};
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(sos_svc, FPFW_INIT_DEPENDENCIES("dfwk"))
+PLACED_CODE FPFW_INIT_COMPONENT(sos_svc, FPFW_INIT_DEPENDENCIES("dfwk"))
 {
     static sos_device_t sos_device;
     sos_init(&sos_device, fpfw_init_get_handle("dfwk"));
@@ -39,7 +40,7 @@ FPFW_INIT_COMPONENT(sos_svc, FPFW_INIT_DEPENDENCIES("dfwk"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &sos_device};
 }
 
-void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+PLACED_CODE void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
     FPFW_DBGPRINT_INFO("SOS boot completed (%x)\n", (uintptr_t)request);
@@ -49,7 +50,7 @@ void boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_cont
 
 #ifdef SCP_RUNTIME_INIT
 
-void ift_sos_completion_cb(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+PLACED_CODE void ift_sos_completion_cb(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(request);
     FPFW_UNUSED(p_completion_context);
@@ -57,8 +58,9 @@ void ift_sos_completion_cb(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completio
     ift_start_tests();
 }
 
-FPFW_INIT_COMPONENT(sos_int,
-                    FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift_drv", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(
+    sos_int,
+    FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "icc_die2die", "icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift_drv", "boot_stat"))
 {
     static sos_interface_t sos_interface;
     sos_interface_init(fpfw_init_get_handle("sos_svc"), &sos_interface, true);

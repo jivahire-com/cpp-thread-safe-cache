@@ -31,6 +31,7 @@
 #include <stddef.h>
 
 #include <silibs_mcp_top_regs.h>
+#include <utils.h>
 
 #include <DbgPrint.h>         // for FPFW_DBGPRINT_ALWAYS, FPFW_DBGPRINT_VE...
 
@@ -246,7 +247,7 @@ static fpfw_pldm_pdr_sensor_auxiliary_name_t s_##NAME##_pdr_aux_name =          
 /*------------- Functions ----------------*/
 
 
-FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
+PLACED_CODE FPFW_INIT_COMPONENT(pdr_repo, FPFW_INIT_NULL_NODE)
 {
     DEFINE_POWER_TLM_TEMPERATURE_SENSOR(SOC_TMP_MAX, 0.5);
     DEFINE_POWER_TLM_POWER_SENSOR(SOC_PWR, 0.5);

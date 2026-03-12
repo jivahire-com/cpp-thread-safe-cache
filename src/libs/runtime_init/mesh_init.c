@@ -15,6 +15,7 @@
 #include <mesh.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -23,8 +24,9 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(mesh_stg_1,
-                    FPFW_INIT_DEPENDENCIES("i3c_controller", "icc_hspmbx", "sysinfo", "icc_d2dmbx", "fuse_pre_mesh", "debug_print", "var_serv", "d2d_cntr_sync", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(
+    mesh_stg_1,
+    FPFW_INIT_DEPENDENCIES("i3c_controller", "icc_hspmbx", "sysinfo", "icc_d2dmbx", "fuse_pre_mesh", "debug_print", "var_serv", "d2d_cntr_sync", "boot_stat"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
     FPFW_DBGPRINT_INFO("Mesh init, die_num: [%u]\n", die_num);
@@ -37,7 +39,7 @@ FPFW_INIT_COMPONENT(mesh_stg_1,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(mesh_stg_2, FPFW_INIT_DEPENDENCIES("tower_cfg", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(mesh_stg_2, FPFW_INIT_DEPENDENCIES("tower_cfg", "boot_stat"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
     FPFW_DBGPRINT_INFO("D2D init, die_num: [%u]\n", die_num);

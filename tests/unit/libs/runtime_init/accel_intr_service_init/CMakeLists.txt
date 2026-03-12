@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         ms::lib::threadx
         ms::service::accel_intr_service
+        ms::lib::utils
 )
 
 # Defining platform APIs

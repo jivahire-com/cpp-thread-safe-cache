@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <tlm_fuses.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -38,12 +39,12 @@ static FPFW_CLI_COMMAND cli_tlm_fuses_commands[] = {
 
 /*------------- Functions ----------------*/
 
-void tlm_fuses_cli_svc_init(void)
+PLACED_CODE void tlm_fuses_cli_svc_init(void)
 {
     FpFwCliRegisterTable(&cli_tlm_fuses_commands[0], FPFW_ARRAY_SIZE(cli_tlm_fuses_commands));
 }
 
-static FPFW_CLI_STATUS read_ecid(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS read_ecid(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -73,7 +74,7 @@ static FPFW_CLI_STATUS read_ecid(int Argc, const char** Argv)
     return cli_status;
 }
 
-static FPFW_CLI_STATUS read_tile_dts_coeff(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS read_tile_dts_coeff(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);
@@ -102,7 +103,7 @@ static FPFW_CLI_STATUS read_tile_dts_coeff(int Argc, const char** Argv)
     return cli_status;
 }
 
-static FPFW_CLI_STATUS read_soc_dts_coeff(int Argc, const char** Argv)
+static PLACED_CODE FPFW_CLI_STATUS read_soc_dts_coeff(int Argc, const char** Argv)
 {
     FPFW_UNUSED(Argc);
     FPFW_UNUSED(Argv);

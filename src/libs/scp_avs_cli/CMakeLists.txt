@@ -24,6 +24,7 @@ target_link_libraries(
             fwlib.platform.dfwkhost.threadx
             fwlib.lib.interface.platform.threadx
             fwlib.lib.utils
+            ms::lib::utils
 )
 
 lint_target(${TARGET})

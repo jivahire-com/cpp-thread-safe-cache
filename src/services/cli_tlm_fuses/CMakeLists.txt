@@ -17,6 +17,7 @@ target_link_libraries(
         fwlib.service.cli
         silibs::kng_silibs_platform
         ms::lib::telemetry::fuses
+        ms::lib::utils
 )
 
 target_include_directories(${TARGET}

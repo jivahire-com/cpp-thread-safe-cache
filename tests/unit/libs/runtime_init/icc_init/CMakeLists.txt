@@ -42,6 +42,7 @@ set(LIBRARIES
     silibs::idsw_kng
     silibs::sdm_command_desc
     silibs::spi_bridge
+    ms::lib::utils
 )
 
 # Compile test

@@ -14,6 +14,7 @@
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <idhw.h>
 #include <stddef.h> // for NULL
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -24,7 +25,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(ws_init, FPFW_INIT_DEPENDENCIES("mpu", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(ws_init, FPFW_INIT_DEPENDENCIES("mpu", "boot_stat"))
 {
     warm_start_init();
 

@@ -12,6 +12,7 @@
 #include <build_info_cli.h>  // for build_info_cli_init
 #include <fpfw_init.h>       // for FPFW_INIT_COMPONENT, FPFW_INIT_DEPENDENCIES
 #include <stddef.h>          // for NULL
+#include <utils.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -24,7 +25,7 @@
 /*----------------------------- Static Functions ----------------------------*/
 
 /*----------------------------- Global Functions ----------------------------*/
-FPFW_INIT_COMPONENT(build_info_cli, FPFW_INIT_DEPENDENCIES("cli", "sysinfo"))
+PLACED_CODE FPFW_INIT_COMPONENT(build_info_cli, FPFW_INIT_DEPENDENCIES("cli", "sysinfo"))
 {
     FPFW_CLI_STATUS status = build_info_cli_init();
     return (fpfw_init_result_t){status, NULL};

@@ -25,6 +25,7 @@
 #include <startup_shutdown.h>
 #include <stdint.h> // for uint32_t
 #include <system_info.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define DEFAULT_BOOT_CORE_RVBARADDR (0x00010000ull)
@@ -42,8 +43,9 @@ static void setup_ap_loop_to_self(uint64_t rvbaraddr)
     *(volatile uint32_t*)translated_rvbar = ARM64_LOOP;
 }
 
-FPFW_INIT_COMPONENT(ap_core_svc,
-                    FPFW_INIT_DEPENDENCIES("dfwk", "mesh_stg_2", "icc_hspmbx", "atu_svc", "sysinfo", "pex_rng", "core_info", "hm_post_init", "ift"))
+PLACED_CODE FPFW_INIT_COMPONENT(
+    ap_core_svc,
+    FPFW_INIT_DEPENDENCIES("dfwk", "mesh_stg_2", "icc_hspmbx", "atu_svc", "sysinfo", "pex_rng", "core_info", "hm_post_init", "ift"))
 {
     // only call idsw_get_platform_sdv() once
     KNG_PLAT_ID platform_sdv = idsw_get_platform_sdv();
@@ -76,7 +78,7 @@ FPFW_INIT_COMPONENT(ap_core_svc,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &ap_core_service};
 }
 
-FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int", "mesh_stg_2", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc", "sos_int", "mesh_stg_2", "boot_stat"))
 {
     static ap_core_interface_t ap_core_interface;
     ap_core_interface_init(fpfw_init_get_handle("ap_core_svc"), &ap_core_interface);

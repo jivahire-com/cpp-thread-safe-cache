@@ -33,6 +33,7 @@ function(create_sos_init_test TARGET_NAME RUNTIME_INIT_DEFINE)
             silibs::kng_silibs_platform
             silibs::idhw
             silibs::idsw
+            ms::lib::utils
     )
 
     target_compile_definitions(${TARGET_NAME} PRIVATE ${RUNTIME_INIT_DEFINE})

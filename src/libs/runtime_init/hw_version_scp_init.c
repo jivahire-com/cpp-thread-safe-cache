@@ -15,6 +15,7 @@
 #include <silibs_scp_top_regs.h> // for SCP_TOP_SID_ADDRESS
 #include <stddef.h>              // for NULL
 #include <stdint.h>              // for uint32_t, uintptr_t
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -24,7 +25,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(hw_ver, FPFW_INIT_DEPENDENCIES("mpu"))
+PLACED_CODE FPFW_INIT_COMPONENT(hw_ver, FPFW_INIT_DEPENDENCIES("mpu"))
 {
 
     /* Set System ID Base Address*/

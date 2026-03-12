@@ -32,6 +32,7 @@
 #include <silibs_scp_top_regs.h> // for SCP_TOP_SCP_EXP_ADDRESS, SCP_TOP_SCP_INST_RAM_ADDRESS, SCP_TOP_SCP_INST_RAM_SIZE
 #include <startup_shutdown.h> // for sos_register_ssi
 #include <stddef.h>           // for NULL
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define SCP_SCF_RAM_ADDRESS  (SCP_TOP_SCP_EXP_ADDRESS + SCP_EXP_TOP_SCF_RAM_ADDRESS)
@@ -154,7 +155,7 @@ const core_register_mmio_t core_register_mmio[] = {
      FPFW_CD_DUMP_PRIORITY_CRITICAL}};
 
 /*------------- Functions ----------------*/
-bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
+PLACED_CODE bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
 {
     // limit to RAM regions to avoid holes in register space
     if ((end_addr < SCP_TOP_SCP_INST_RAM_ADDRESS + SCP_TOP_SCP_INST_RAM_SIZE) ||
@@ -169,7 +170,7 @@ bool in_memory(uintptr_t start_addr, uintptr_t end_addr)
     return false;
 }
 
-FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib", "boot_stat"))
 {
     static crash_dump_type_context_t mini_dump_ctx = {.type = CRASH_DUMP_TYPE_MINI,
                                                       .mem_pool_addr = CRASH_DUMP_MINI_SCP_ADDR,
@@ -230,7 +231,7 @@ FPFW_INIT_COMPONENT(cd_init, FPFW_INIT_DEPENDENCIES("hw_ver", "gpio_lib", "boot_
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk", "sos_int"))
+PLACED_CODE FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk", "sos_int"))
 {
     // Initialize the crash dump driver
     static crash_dump_device_t crash_dump_device;
@@ -249,14 +250,14 @@ FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk", "sos_int")
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &crash_dump_interface};
 }
 
-FPFW_INIT_COMPONENT(cd_mhu_loc, FPFW_INIT_DEPENDENCIES("cd_init", "icc_mscp2mscp"))
+PLACED_CODE FPFW_INIT_COMPONENT(cd_mhu_loc, FPFW_INIT_DEPENDENCIES("cd_init", "icc_mscp2mscp"))
 {
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_MHU_LOCAL, fpfw_init_get_handle("icc_mscp2mscp"));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cd_mhu_rem, FPFW_INIT_DEPENDENCIES("cd_init", "icc_die2die", "hw_ver"))
+PLACED_CODE FPFW_INIT_COMPONENT(cd_mhu_rem, FPFW_INIT_DEPENDENCIES("cd_init", "icc_die2die", "hw_ver"))
 {
     if (!idhw_is_single_die_boot_en())
     {
@@ -267,7 +268,7 @@ FPFW_INIT_COMPONENT(cd_mhu_rem, FPFW_INIT_DEPENDENCIES("cd_init", "icc_die2die",
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cd_spi_rem, FPFW_INIT_DEPENDENCIES("cd_init", "icc_d2dmbx", "hw_ver"))
+PLACED_CODE FPFW_INIT_COMPONENT(cd_spi_rem, FPFW_INIT_DEPENDENCIES("cd_init", "icc_d2dmbx", "hw_ver"))
 {
     if (!idhw_is_single_die_boot_en())
     {
@@ -278,14 +279,14 @@ FPFW_INIT_COMPONENT(cd_spi_rem, FPFW_INIT_DEPENDENCIES("cd_init", "icc_d2dmbx", 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cd_hsp, FPFW_INIT_DEPENDENCIES("cd_init", "icc_hspmbx"))
+PLACED_CODE FPFW_INIT_COMPONENT(cd_hsp, FPFW_INIT_DEPENDENCIES("cd_init", "icc_hspmbx"))
 {
     crash_dump_config_icc(CRASH_DUMP_ICC_CONFIG_HSP, fpfw_init_get_handle("icc_hspmbx"));
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cd_pomesh, FPFW_INIT_DEPENDENCIES("cd_init", "ddr", "hw_sem"))
+PLACED_CODE FPFW_INIT_COMPONENT(cd_pomesh, FPFW_INIT_DEPENDENCIES("cd_init", "ddr", "hw_sem"))
 {
     crash_dump_context_t* context = crash_dump_context();
 
@@ -307,8 +308,8 @@ FPFW_INIT_COMPONENT(cd_pomesh, FPFW_INIT_DEPENDENCIES("cd_init", "ddr", "hw_sem"
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cd_accel,
-                    FPFW_INIT_DEPENDENCIES("cd_init", "cd_pomesh", "icc_sdm_mbx", "icc_cded_mbx", "hm_sdm", "hm_cded", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(cd_accel,
+                                FPFW_INIT_DEPENDENCIES("cd_init", "cd_pomesh", "icc_sdm_mbx", "icc_cded_mbx", "hm_sdm", "hm_cded", "cfg_mgr"))
 {
     for (ACCEL_ID accel_type = ACCEL_ID_SDM; accel_type < NUM_VALID_ACCEL_ID; accel_type++)
     {

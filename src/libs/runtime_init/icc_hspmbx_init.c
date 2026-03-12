@@ -30,6 +30,7 @@
 #include <stdbool.h> // for true
 #include <stddef.h>  // for NULL
 #include <stdint.h>  // for uint32_t, uint8_t
+#include <utils.h>
 
 /*-------------- Macros ------------------*/
 
@@ -55,7 +56,7 @@
  * 4. If the base init is successful, call fpfw_icc_dispatcher_start()
  * 5. Finally return the initialized icc base ctx to the user for invoking icc base APIs
  */
-FPFW_INIT_COMPONENT(icc_hspmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
+PLACED_CODE FPFW_INIT_COMPONENT(icc_hspmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
 {
     //! Statics declarations required for mailbox primitive
     static struct _fpfw_timer_t timer[ICC_MAX_ASYNC_REQ_TYPE] = {};

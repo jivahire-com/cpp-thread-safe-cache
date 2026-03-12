@@ -274,7 +274,7 @@ static PLACED_CODE FPFW_CLI_STATUS gpio_cli_get_pin(int argc, const char** pp_ar
     return CLI_SUCCESS;
 }
 
-static void gpio_cli_isr_callback(PDFWK_ASYNC_REQUEST_HEADER request, void* completion_context)
+static PLACED_CODE void gpio_cli_isr_callback(PDFWK_ASYNC_REQUEST_HEADER request, void* completion_context)
 {
     pgpio_cli_isr_context_t isr_context = (pgpio_cli_isr_context_t)completion_context;
 
@@ -337,7 +337,7 @@ static PLACED_CODE FPFW_CLI_STATUS gpio_cli_register_isr(int argc, const char** 
 
 /*----------------------------- Global Functions ----------------------------*/
 
-FPFW_CLI_STATUS gpio_cli_init(pgpio_interface_t gpio_iface)
+PLACED_CODE FPFW_CLI_STATUS gpio_cli_init(pgpio_interface_t gpio_iface)
 {
     if (gpio_iface == NULL)
     {

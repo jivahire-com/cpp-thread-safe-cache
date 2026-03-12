@@ -14,6 +14,7 @@
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <pwr_tlm_service_scp.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -25,7 +26,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(pwr_tlm_svc_scp,
+PLACED_CODE FPFW_INIT_COMPONENT(pwr_tlm_svc_scp,
                     FPFW_INIT_DEPENDENCIES("mts_svc", "pwr_tlm_core_ex","hw_sem","cfg_mgr","core_info","pwr_svc", "boot_stat"))
 {
     pwr_tlm_svc_scp_init();

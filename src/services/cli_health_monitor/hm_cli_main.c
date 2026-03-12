@@ -608,12 +608,12 @@ void PLACED_CODE dump_ghes_error_record(acpi_ghes_error_record_dual_die_t* ghes_
     }
 }
 
-void hm_cli_init(void)
+PLACED_CODE void hm_cli_init(void)
 {
     FpFwCliRegisterTable(&cfg_mgr_cli_list[0], FPFW_ARRAY_SIZE(cfg_mgr_cli_list));
 }
 
-bool check_memory_corruption(void* start1, uint32_t size1, void* start2, uint32_t size2, void* start3, uint32_t size3)
+PLACED_CODE bool check_memory_corruption(void* start1, uint32_t size1, void* start2, uint32_t size2, void* start3, uint32_t size3)
 {
     uintptr_t end1 = (uintptr_t)start1 + size1;
     uintptr_t end2 = (uintptr_t)start2 + size2;
@@ -637,7 +637,7 @@ bool check_memory_corruption(void* start1, uint32_t size1, void* start2, uint32_
     return true;
 }
 
-void print_section_as_byte_view(const acpi_cper_section_t* section)
+PLACED_CODE void print_section_as_byte_view(const acpi_cper_section_t* section)
 {
     const uint8_t* section_data = (const uint8_t*)section;
     size_t section_size = sizeof(acpi_cper_section_t);
@@ -660,7 +660,7 @@ void print_section_as_byte_view(const acpi_cper_section_t* section)
     FpFwCliPrint("\n");
 }
 
-void PLACED_CODE print_einj_payload(ras_einj_info_t* payload)
+PLACED_CODE void print_einj_payload(ras_einj_info_t* payload)
 {
     if (payload == NULL)
     {
@@ -687,7 +687,7 @@ void PLACED_CODE print_einj_payload(ras_einj_info_t* payload)
     FpFwCliPrint(" einj value_type.data_32 0x%08x\n", payload->value_type.data_32);
 }
 
-const char* get_section_name(guid_t section_type)
+PLACED_CODE const char* get_section_name(guid_t section_type)
 {
     for (size_t i = 0; i < sizeof(guid_map) / sizeof(guid_name_map_t); i++)
     {
@@ -699,7 +699,7 @@ const char* get_section_name(guid_t section_type)
     return "unknown";
 }
 
-acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t* payload, void* ctx)
+PLACED_CODE acpi_einj_cmd_status_t hm_cli_error_injection_cb(ras_einj_info_t* payload, void* ctx)
 {
     FPFW_UNUSED(payload);
     FPFW_UNUSED(ctx);

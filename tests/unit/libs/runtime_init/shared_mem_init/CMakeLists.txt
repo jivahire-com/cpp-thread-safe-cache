@@ -23,6 +23,7 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::atu
         silibs::idsw_kng
+        ms::lib::utils
 )
 
 # Platform ports

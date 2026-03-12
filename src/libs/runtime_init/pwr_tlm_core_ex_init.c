@@ -13,6 +13,7 @@
 #include <idsw.h> // for idsw_get_platform_sdv, idsw...
 #include <idsw_kng.h>
 #include <pwr_tlm_core_exchange.h>
+#include <utils.h>
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*------------- Typedefs -----------------*/
@@ -23,7 +24,7 @@
 
 /*------------- Functions ----------------*/
 // initialize from SCP only
-FPFW_INIT_COMPONENT(pwr_tlm_core_ex, FPFW_INIT_DEPENDENCIES("boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(pwr_tlm_core_ex, FPFW_INIT_DEPENDENCIES("boot_stat"))
 {
     pwr_tlm_core_exch_init();
 

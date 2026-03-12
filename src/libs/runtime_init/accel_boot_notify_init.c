@@ -15,6 +15,7 @@
 #include <kng_error.h> // for KNG_SUCCESS
 #include <stddef.h>    // for NULL
 #include <system_info.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -25,7 +26,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(boot_notify, FPFW_INIT_DEPENDENCIES("icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift"))
+PLACED_CODE FPFW_INIT_COMPONENT(boot_notify, FPFW_INIT_DEPENDENCIES("icc_sdm_mbx", "icc_cded_mbx", "sysinfo", "ift"))
 {
 
     if (ift_is_enabled())

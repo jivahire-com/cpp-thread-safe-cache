@@ -14,6 +14,7 @@
 #include <idsw_kng.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -22,8 +23,9 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(i3c_controller,
-                    FPFW_INIT_DEPENDENCIES("css_prme", "cd_init", "icc_hspmbx", "hw_ver", "icc_d2dmbx", "cfg_mgr", "gtimer_stg_2", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(
+    i3c_controller,
+    FPFW_INIT_DEPENDENCIES("css_prme", "cd_init", "icc_hspmbx", "hw_ver", "icc_d2dmbx", "cfg_mgr", "gtimer_stg_2", "boot_stat"))
 {
     KNG_DIE_ID die_num = idsw_get_die_id();
     DEBUG_PRINT("I3C Controller init, die_num: [%u]\n", die_num);

@@ -17,6 +17,7 @@ target_link_libraries(
     ms::lib::icc_platform_defines
     silibs::icc_mhu
     silibs::idsw_kng
+    ms::lib::utils
 )
 
 target_include_directories(${TARGET}

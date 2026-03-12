@@ -31,6 +31,7 @@ target_link_libraries(${TARGET}
         silibs::idsw_kng
         silibs::kng_silibs_platform
         kng.lib.hsp_firmware_headers
+        ms::lib::utils
 )
 
 # Defining platform APIs

@@ -13,6 +13,7 @@
 #include <cli_power.h>   // for cli_power_init
 #include <fpfw_init.h>   // for fpfw_init_get_handle, FPFW_INIT_COMPONENT
 #include <stddef.h>      // for NULL
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -23,7 +24,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli_pwr, FPFW_INIT_DEPENDENCIES("cli", "pwr_int", "debug_print", "icc_d2dmbx"))
+PLACED_CODE FPFW_INIT_COMPONENT(cli_pwr, FPFW_INIT_DEPENDENCIES("cli", "pwr_int", "debug_print", "icc_d2dmbx"))
 {
     static power_service_interface_t* power_interface;
     static fpfw_icc_base_ctx_t* p_icc_base_ctx;

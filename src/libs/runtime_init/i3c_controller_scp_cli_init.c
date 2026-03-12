@@ -15,6 +15,7 @@
 #include <idhw.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -24,7 +25,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(i3c_cli, FPFW_INIT_DEPENDENCIES("hw_ver", "cli", "i3c_controller"))
+PLACED_CODE FPFW_INIT_COMPONENT(i3c_cli, FPFW_INIT_DEPENDENCIES("hw_ver", "cli", "i3c_controller"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
     FPFW_DBGPRINT_INFO("i3c_controller init, die_num: [%u]\n", die_num);

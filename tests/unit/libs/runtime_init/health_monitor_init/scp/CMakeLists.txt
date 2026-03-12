@@ -27,6 +27,7 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         ms::service::health_monitor
         ms::service::health_monitor::cli
+        ms::lib::utils
 )
 
 # Generic ports implmented within this project

@@ -30,6 +30,7 @@ target_link_libraries(${TARGET}
         ms::service::event_trace::relay::cli
         silibs::idsw
         silibs::idsw_kng
+        ms::lib::utils
 )
 
 lint_target(${TARGET})

@@ -13,6 +13,7 @@
 #include <mesh_cli.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -22,7 +23,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(mesh_cli, FPFW_INIT_DEPENDENCIES("hw_ver", "cli", "mesh_stg_2"))
+PLACED_CODE FPFW_INIT_COMPONENT(mesh_cli, FPFW_INIT_DEPENDENCIES("hw_ver", "cli", "mesh_stg_2"))
 {
 
     mesh_cli_initialize();

@@ -13,6 +13,7 @@
 #include <fpfw_icc_base.h>  // for fpfw_icc_base_send_recv_req_t, fpfw...
 #include <fpfw_init.h>      // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <idsw_kng.h>       // for idsw_get_cpu_type, CPU_SCP
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -21,7 +22,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(boot_stat, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver", "sysinfo"))
+PLACED_CODE FPFW_INIT_COMPONENT(boot_stat, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver", "sysinfo"))
 {
     static boot_status_icc_ctx_t boot_status_icc_ctx = {};
 
@@ -35,7 +36,7 @@ FPFW_INIT_COMPONENT(boot_stat, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver", "s
 }
 
 #ifdef SCP_RUNTIME_INIT
-FPFW_INIT_COMPONENT(bs_accel, FPFW_INIT_DEPENDENCIES("icc_sdm_mbx", "icc_cded_mbx", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(bs_accel, FPFW_INIT_DEPENDENCIES("icc_sdm_mbx", "icc_cded_mbx", "cfg_mgr"))
 {
     uint32_t status;
 

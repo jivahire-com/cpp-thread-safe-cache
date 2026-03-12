@@ -16,6 +16,7 @@
 #include <idsw_kng.h>             // for idsw_get_platform_sdv, PLATFORM_KINGS...
 #include <stdlib.h>               // for atoi
 #include <string.h>               // for memset
+#include <utils.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -134,7 +135,7 @@ static const e_cores_t uart_afm_d1_map_table[4][4] = {
     {E_CORE_NA, E_CORE_NA, E_CORE_NA, E_CORE_NA}       // UART3
 };
 
-static void print_uart_afm_config(const uart_afm_cfg_t* afm_knobs, uint8_t die_id, const char* note)
+static PLACED_CODE void print_uart_afm_config(const uart_afm_cfg_t* afm_knobs, uint8_t die_id, const char* note)
 {
     FpFwCliPrint("\nUART AFM Config Die %d", die_id);
     if (note != NULL)
@@ -159,7 +160,7 @@ static void print_uart_afm_config(const uart_afm_cfg_t* afm_knobs, uint8_t die_i
     }
 }
 
-static FPFW_CLI_STATUS print_uart_afm_mux_table(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS print_uart_afm_mux_table(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -193,7 +194,7 @@ static FPFW_CLI_STATUS print_uart_afm_mux_table(int argc, const char** pp_argv)
 }
 
 /* This command retrieves the current UART AFM settings for the particular Die */
-static FPFW_CLI_STATUS gpio_cli_get_uart_afm(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_get_uart_afm(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -220,7 +221,7 @@ static FPFW_CLI_STATUS gpio_cli_get_uart_afm(int argc, const char** pp_argv)
  * Meanwhile, the command uart_afm 1 0 1 0 will set UART0 to 1, UART1 to 0, UART2 to 1, and UART3 to 0.
  * Can be run from either MCP Die 0 or Die 1, takes into account any overrides performed via by T32)
  */
-static FPFW_CLI_STATUS gpio_set_uart_afm_local(uart_afm_cfg_t* p_afm_update_req)
+static PLACED_CODE FPFW_CLI_STATUS gpio_set_uart_afm_local(uart_afm_cfg_t* p_afm_update_req)
 {
     uart_afm_cfg_t afm_knobs = {0};
 
@@ -253,7 +254,7 @@ static FPFW_CLI_STATUS gpio_set_uart_afm_local(uart_afm_cfg_t* p_afm_update_req)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS gpio_set_uart_afm_remote(uart_afm_cfg_t* p_afm_update_req)
+static PLACED_CODE FPFW_CLI_STATUS gpio_set_uart_afm_remote(uart_afm_cfg_t* p_afm_update_req)
 {
 
     remote_gpio_cli_req_t d2d_request = {.header = {.msg_header = {.command = RMSS_D2D_MAILBOX_MSG_GPIO_CLI_CMD,
@@ -273,7 +274,7 @@ static FPFW_CLI_STATUS gpio_set_uart_afm_remote(uart_afm_cfg_t* p_afm_update_req
     return d2d_gpio_cli_msg_send(&d2d_request);
 }
 
-static FPFW_CLI_STATUS gpio_cli_set_uart_afm(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_set_uart_afm(int argc, const char** pp_argv)
 {
     /* Check that there are at 6 input arguments */
     ARGS_COUNT_CHECK(6);
@@ -331,7 +332,7 @@ static FPFW_CLI_STATUS gpio_cli_set_uart_afm(int argc, const char** pp_argv)
  * This command returns the UART die ownership for the current die.
  * It will indicate whether UART1 and UART2 are owned by this die.
  */
-static FPFW_CLI_STATUS gpio_cli_get_uart_ownership(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_get_uart_ownership(int argc, const char** pp_argv)
 {
     FPFW_UNUSED(argc);
     FPFW_UNUSED(pp_argv);
@@ -359,7 +360,7 @@ static FPFW_CLI_STATUS gpio_cli_get_uart_ownership(int argc, const char** pp_arg
  * This command also supports partial configuration. For example, the command
  * uart_die 0 x will set the Die ID for UART1 to 0 and leave the Die ID for UART2 unchanged.
  */
-static FPFW_CLI_STATUS gpio_cli_set_uart_die_config(int argc, const char** pp_argv)
+static PLACED_CODE FPFW_CLI_STATUS gpio_cli_set_uart_die_config(int argc, const char** pp_argv)
 {
     bool uart_ownership[2] = {false, false};
 
@@ -428,7 +429,7 @@ static FPFW_CLI_STATUS gpio_cli_set_uart_die_config(int argc, const char** pp_ar
 /* ------------------------------------------------------- */
 /* Setup Die2Die infra needed for remote GPIO UART CLI     */
 /* ------------------------------------------------------- */
-static void d2d_gpio_cli_msg_send_rsp(FPFW_CLI_STATUS cmd_status)
+static PLACED_CODE void d2d_gpio_cli_msg_send_rsp(FPFW_CLI_STATUS cmd_status)
 {
     remote_gpio_cli_req_t d2d_response = {.header = {.msg_header = {.command = RMSS_D2D_MAILBOX_MSG_GPIO_CLI_CMD,
                                                                     .payload_size = d2d_gpio_cli_msg_size}},
@@ -437,7 +438,7 @@ static void d2d_gpio_cli_msg_send_rsp(FPFW_CLI_STATUS cmd_status)
     d2d_gpio_cli_msg_send(&d2d_response);
 }
 
-static void gpio_cli_d2d_mbox_recv_subscribe()
+static PLACED_CODE void gpio_cli_d2d_mbox_recv_subscribe()
 {
     static remote_gpio_cli_req_t d2d_cli_recv_msg = {0};
     static fpfw_icc_base_recv_req_t d2d_recv_params = {0};
@@ -455,7 +456,7 @@ static void gpio_cli_d2d_mbox_recv_subscribe()
     BUG_ASSERT_PARAM(status == FPFW_STATUS_SUCCESS, status, 0);
 }
 
-static void gpio_cli_d2d_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
+static PLACED_CODE void gpio_cli_d2d_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status)
 {
     FPFW_UNUSED(output_size_bytes);
     BUG_ASSERT_PARAM(status == FPFW_STATUS_SUCCESS, status, 0);
@@ -498,7 +499,7 @@ static void gpio_cli_d2d_recv_cb(void* context, size_t output_size_bytes, fpfw_s
     gpio_cli_d2d_mbox_recv_subscribe();
 }
 
-static void gpio_cli_remote_cmd_send_cb(void* context, fpfw_status_t status)
+static PLACED_CODE void gpio_cli_remote_cmd_send_cb(void* context, fpfw_status_t status)
 {
     FPFW_UNUSED(context);
 
@@ -540,7 +541,7 @@ static FPFW_CLI_STATUS d2d_gpio_cli_msg_send(p_remote_gpio_cli_req_t p_payload)
 
 /*----------------------------- Global Functions ----------------------------*/
 
-void afm_cli_init(void)
+PLACED_CODE void afm_cli_init(void)
 {
     // Cache the die IDs
     this_die_id = idsw_get_die_id();

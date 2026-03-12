@@ -111,7 +111,7 @@ static PLACED_CODE FPFW_CLI_STATUS cli_get_platform_id(int argc, const char** ar
 }
 
 /*----------------------------- Global Functions ----------------------------*/
-FPFW_CLI_STATUS cli_sys_info_init(void)
+PLACED_CODE FPFW_CLI_STATUS cli_sys_info_init(void)
 {
     FpFwCliRegisterTable(s_sys_info_int_commands_table, FPFW_ARRAY_SIZE(s_sys_info_int_commands_table));
     FpFwCliPrint("cli_sys_info_init CLI complete\n");

@@ -31,6 +31,7 @@ target_link_libraries(${TARGET}
         ms::service::event_trace::et_mts_clnt
         ms::service::event_trace::relay
         silibs::idsw_kng
+        ms::lib::utils
 )
 
 lint_target(${TARGET})

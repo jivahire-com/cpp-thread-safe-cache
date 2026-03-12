@@ -105,7 +105,7 @@ PLACED_CODE void cli_power_accel_complete(PDFWK_ASYNC_REQUEST_HEADER p_request, 
     }
 }
 
-power_if_cmd_t cli_power_accel_cmd_id(const char* sub_command)
+PLACED_CODE power_if_cmd_t cli_power_accel_cmd_id(const char* sub_command)
 {
     if (sub_command == NULL)
     {

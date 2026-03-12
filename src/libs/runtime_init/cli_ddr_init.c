@@ -10,6 +10,7 @@
 #include <cli_ddr.h>   // for cli_ddr_init
 #include <fpfw_init.h> // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <stddef.h>    // for NULL
+#include <utils.h>
 
 /*------- Symbolic Constant Macros (defines) ----------*/
 
@@ -20,7 +21,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli_ddr, FPFW_INIT_DEPENDENCIES("cli", "ddr"))
+PLACED_CODE FPFW_INIT_COMPONENT(cli_ddr, FPFW_INIT_DEPENDENCIES("cli", "ddr"))
 {
     cli_ddr_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
         ms::lib::ddrss_init
         ms::lib::system_info
         silibs_platform
+        ms::lib::utils
 )
 
 # Defining platform APIs

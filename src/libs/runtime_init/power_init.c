@@ -30,27 +30,28 @@
 #include <stdbool.h> // for false, true
 #include <stdint.h>  // for uint32_t
 #include <system_info.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(pwr_svc,
-                    FPFW_INIT_DEPENDENCIES("dfwk",
-                                           "fuse_post_mesh",
-                                           "atu_svc",
-                                           "gpio_lib",
-                                           "icc_d2dmbx",
-                                           "icc_die2die",
-                                           "icc_mscp2mscp",
-                                           "avs0_int",
-                                           "avs1_int",
-                                           "avs2_int",
-                                           "avs3_int",
-                                           "hw_ver",
-                                           "cfg_mgr",
-                                           "core_info",
-                                           "ws_init"))
+PLACED_CODE FPFW_INIT_COMPONENT(pwr_svc,
+                                FPFW_INIT_DEPENDENCIES("dfwk",
+                                                       "fuse_post_mesh",
+                                                       "atu_svc",
+                                                       "gpio_lib",
+                                                       "icc_d2dmbx",
+                                                       "icc_die2die",
+                                                       "icc_mscp2mscp",
+                                                       "avs0_int",
+                                                       "avs1_int",
+                                                       "avs2_int",
+                                                       "avs3_int",
+                                                       "hw_ver",
+                                                       "cfg_mgr",
+                                                       "core_info",
+                                                       "ws_init"))
 {
     static power_service_t power_service;
     corebits_t* sys_cores_in_die1 = core_info_get_enable_cores_result();
@@ -214,7 +215,7 @@ FPFW_INIT_COMPONENT(pwr_svc,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &power_service};
 }
 
-FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc", "sos_int", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc", "sos_int", "boot_stat"))
 {
     static power_service_interface_t power_interface;
     power_interface_init(fpfw_init_get_handle("pwr_svc"), &power_interface);

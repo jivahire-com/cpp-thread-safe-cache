@@ -10,6 +10,7 @@
 #include <fpfw_icc_base.h> // for fpfw_icc_base_send_recv_req_t, fpfw...
 #include <fpfw_init.h>     // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <system_info.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -19,7 +20,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(sysinfo, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver"))
+PLACED_CODE FPFW_INIT_COMPONENT(sysinfo, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver"))
 {
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
     system_info_init(icc_ctx);

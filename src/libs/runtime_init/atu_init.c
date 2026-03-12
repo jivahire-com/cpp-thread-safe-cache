@@ -10,12 +10,13 @@
 /*------------- Includes -----------------*/
 #include <atu_init.h>
 #include <fpfw_init.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(atu_svc, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
+PLACED_CODE FPFW_INIT_COMPONENT(atu_svc, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
 {
     static atu_device_t atu_device;
     static atu_service_t atu_service;

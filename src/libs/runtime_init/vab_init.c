@@ -16,6 +16,7 @@
 #include <kng_soc_constants.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 #include <vab.h>
 #include <vab_irq.h>
 
@@ -29,7 +30,7 @@
 static const guid_t guid_vab = ACPI_ERROR_TYPE_VAB;
 
 /*------------- Functions ----------------*/
-static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
+static PLACED_CODE uint16_t vab_instances_to_be_enabled(uint8_t die_num)
 {
     uint16_t vab_instances_to_init = 0;
     KNG_PLAT_ID plat = idsw_get_platform_sdv();
@@ -98,7 +99,7 @@ static uint16_t vab_instances_to_be_enabled(uint8_t die_num)
     return vab_instances_to_init;
 }
 
-FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "css_pome"))
+PLACED_CODE FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "css_pome"))
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
     FPFW_DBGPRINT_INFO("VAB Initialization: Begin for die:0x%x\n", die_num);
@@ -124,7 +125,7 @@ FPFW_INIT_COMPONENT(vab, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(accel_vab_irq, FPFW_INIT_DEPENDENCIES("vab", "accel", "nvic"))
+PLACED_CODE FPFW_INIT_COMPONENT(accel_vab_irq, FPFW_INIT_DEPENDENCIES("vab", "accel", "nvic"))
 {
     uint16_t vab_instances_to_init = 0;
     uint8_t die_id = (uint8_t)idsw_get_die_id();

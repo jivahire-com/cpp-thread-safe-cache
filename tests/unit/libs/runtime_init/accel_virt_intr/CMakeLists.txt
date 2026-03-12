@@ -34,6 +34,7 @@ target_link_libraries(${TARGET}
         silibs::tower_vab
         silibs::idsw
         silibs::idsw_kng
+        ms::lib::utils
 )
 
 # Get private includes for module under test

@@ -16,6 +16,7 @@
 #include <idsw_kng.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <system_info.h>
+#include <utils.h>
 #include <variable_services.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -39,7 +40,7 @@
 /*--------- Function Prototypes ----------*/
 
 /*-------------- Functions ---------------*/
-static uint8_t get_profile_id()
+static PLACED_CODE uint8_t get_profile_id()
 {
     switch (system_info_get_bmc_profile())
     {
@@ -79,8 +80,9 @@ static uint8_t get_profile_id()
  */
 // TODO: The UART initialization component is now dependent on the configuration manager. To resolve
 //       early boot stage debugging via UART see ado: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2856417
-FPFW_INIT_COMPONENT(cfg_mgr,
-                    FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "var_serv", "hw_ver", "spi_bridge", "sysinfo", "icc_d2dmbx", "gtimer", "systick_upd", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(
+    cfg_mgr,
+    FPFW_INIT_DEPENDENCIES("dfwk", "atu_svc", "var_serv", "hw_ver", "spi_bridge", "sysinfo", "icc_d2dmbx", "gtimer", "systick_upd", "boot_stat"))
 {
     // This struct is only used to initialize a fpfw_cfg_mgr_db_t struct
     fpfw_cfg_mgr_config_t cfg_mgr_config = {.mission_mode = false,
@@ -113,7 +115,7 @@ FPFW_INIT_COMPONENT(cfg_mgr,
  * @brief Initialize cfg_mgr CLI.
  *
  */
-FPFW_INIT_COMPONENT(cfg_mgr_cli, FPFW_INIT_DEPENDENCIES("cfg_mgr", "cli"))
+PLACED_CODE FPFW_INIT_COMPONENT(cfg_mgr_cli, FPFW_INIT_DEPENDENCIES("cfg_mgr", "cli"))
 {
     cfg_mgr_cli_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

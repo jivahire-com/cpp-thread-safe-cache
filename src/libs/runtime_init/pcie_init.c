@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -33,7 +34,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "dfwk", "tower_cfg", "vab", "cfg_mgr", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "dfwk", "tower_cfg", "vab", "cfg_mgr", "boot_stat"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
     PDFWK_THREADX_HOST host = fpfw_init_get_handle(dfwk_id);
@@ -100,7 +101,7 @@ FPFW_INIT_COMPONENT(pcie, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "dfwk", "tower_cf
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, pcie_dev_handles};
 }
 
-FPFW_INIT_COMPONENT(pcie_config, FPFW_INIT_DEPENDENCIES("pcie", "atu_svc", "ddr", "var_serv"))
+PLACED_CODE FPFW_INIT_COMPONENT(pcie_config, FPFW_INIT_DEPENDENCIES("pcie", "atu_svc", "ddr", "var_serv"))
 {
     KNG_PLAT_ID plat = idsw_get_platform_sdv();
 
@@ -116,7 +117,7 @@ done:
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(pcie_cli, FPFW_INIT_DEPENDENCIES("pcie", "cli"))
+PLACED_CODE FPFW_INIT_COMPONENT(pcie_cli, FPFW_INIT_DEPENDENCIES("pcie", "cli"))
 {
     fpfw_init_component_id_t pcie_id = "pcie";
     void* pcie_dev_handles = fpfw_init_get_handle(pcie_id);
@@ -126,7 +127,7 @@ FPFW_INIT_COMPONENT(pcie_cli, FPFW_INIT_DEPENDENCIES("pcie", "cli"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(cxl_chbcr, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "cfg_mgr", "pcie", "ddr", "atu_svc"))
+PLACED_CODE FPFW_INIT_COMPONENT(cxl_chbcr, FPFW_INIT_DEPENDENCIES("mesh_stg_2", "cfg_mgr", "pcie", "ddr", "atu_svc"))
 {
     KNG_DIE_ID die_id = (KNG_DIE_ID)idsw_get_die_id();
 

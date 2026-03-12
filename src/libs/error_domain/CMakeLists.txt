@@ -54,6 +54,7 @@ target_link_libraries(
             silibs::idsw
             silibs::idsw_kng
             silibs::crypto::rng
+            ms::lib::utils
 )
 
 target_include_directories(${TARGET}
@@ -114,6 +115,7 @@ target_link_libraries(
             silibs::cmsdk_wd
             silibs::idhw
             silibs::idsw_kng
+            ms::lib::utils
 )
 
 target_include_directories(${TARGET}

@@ -30,6 +30,7 @@ silibs::atu
 silibs::crypto::rng
 silibs::idsw_kng
 silibs_platform
+ms::lib::utils
 )
 
 

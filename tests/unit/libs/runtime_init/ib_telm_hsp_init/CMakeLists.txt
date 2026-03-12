@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         ms::lib::interface::in_band_telemetry_ddr
         silibs::idsw
         silibs::idsw_kng
+        ms::lib::utils
 )
 
 # Generic threadx lock port provided by fwlibs

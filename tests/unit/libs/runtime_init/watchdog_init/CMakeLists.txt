@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::idsw_kng
         silibs::platform
+        ms::lib::utils
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")

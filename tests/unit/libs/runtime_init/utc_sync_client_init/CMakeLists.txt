@@ -27,6 +27,7 @@ target_link_libraries(${TARGET}
         ms::lib::gtimer
         ms::lib::hsp_firmware_headers
         silibs::idhw
+        ms::lib::utils
 )
 
 # Setup the MCP Runtime Init Flag as it covers all code paths.

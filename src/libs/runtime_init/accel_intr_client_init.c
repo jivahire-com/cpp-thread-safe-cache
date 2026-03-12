@@ -15,12 +15,13 @@
 #include <fpfw_init.h>         // for fpfw_init_get_handle, FPFW_INIT_STATU...
 #include <stddef.h>            // for NULL
 #include <stdio.h>             // for printf, NULL
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(accel_intr_clnt, FPFW_INIT_DEPENDENCIES("accel_intr_inf"))
+PLACED_CODE FPFW_INIT_COMPONENT(accel_intr_clnt, FPFW_INIT_DEPENDENCIES("accel_intr_inf"))
 {
     static accel_intr_service_interface_t* accel_intr_service_interface;
 

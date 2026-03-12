@@ -9,6 +9,7 @@
 /*------------- Includes -----------------*/
 #include <fpfw_init.h>
 #include <nvic.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -18,7 +19,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(nvic, FPFW_INIT_DEPENDENCIES("mpu"))
+PLACED_CODE FPFW_INIT_COMPONENT(nvic, FPFW_INIT_DEPENDENCIES("mpu"))
 {
     // Initialize the NVIC and reallocate the Vector Table
     nvic_init(true);

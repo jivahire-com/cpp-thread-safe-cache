@@ -14,6 +14,7 @@
 #include <idsw.h>      // for idsw_get_platform_sdv, idsw...
 #include <idsw_kng.h>
 #include <stddef.h> // for NULL
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -27,7 +28,7 @@ static etd_service_context_t s_etd_service_ctx = {0};
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(etd, FPFW_INIT_DEPENDENCIES("std_io", "debug_print"))
+PLACED_CODE FPFW_INIT_COMPONENT(etd, FPFW_INIT_DEPENDENCIES("std_io", "debug_print"))
 {
     etd_svc_init(&s_etd_service_ctx);
 
@@ -44,7 +45,7 @@ FPFW_INIT_COMPONENT(etd, FPFW_INIT_DEPENDENCIES("std_io", "debug_print"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &s_etd_service_ctx};
 }
 
-FPFW_INIT_COMPONENT(etc, FPFW_INIT_DEPENDENCIES("etd"))
+PLACED_CODE FPFW_INIT_COMPONENT(etc, FPFW_INIT_DEPENDENCIES("etd"))
 {
     etc_svc_init(&s_etc_service_ctx);
 

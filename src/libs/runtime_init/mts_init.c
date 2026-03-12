@@ -25,6 +25,7 @@
 #include <mscp_uefi_shared_ddrss.h>
 #include <mts_cli_service.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MTS_STACK_SIZE ((TX_MINIMUM_STACK) + ((2) * (FPFW_KB)))
@@ -50,8 +51,9 @@ static trp_route_t s_trp_routing_table[TRP_MAX_ROUTES];
 // icc_mhu_packet_t includes icc header
 static_assert(sizeof(icc_mhu_packet_t) + sizeof(trp_msg_t) <= ICC_MHU_DDR_PAYLOAD_SIZE, "MHU payload size too small");
 
-FPFW_INIT_COMPONENT(mts_svc,
-                    FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die", "icc_cded_mbx", "icc_sdm_mbx", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(
+    mts_svc,
+    FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die", "icc_cded_mbx", "icc_sdm_mbx", "boot_stat"))
 {
     KNG_DIE_ID die_num = idsw_get_die_id();
     boot_status_req_t boot_status_req = {0};

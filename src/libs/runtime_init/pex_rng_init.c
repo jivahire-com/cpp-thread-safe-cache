@@ -25,12 +25,14 @@
 #include <scp_top_regs.h>
 #undef __NO_CSR_TYPEDEFS__
 #include <system_info.h>
+#include <utils.h>
 
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(pex_rng, FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh_stg_2", "atu_svc", "core_info", "ift", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(pex_rng,
+                                FPFW_INIT_DEPENDENCIES("dfwk", "sysinfo", "mesh_stg_2", "atu_svc", "core_info", "ift", "boot_stat"))
 {
     if (ift_is_enabled())
     {

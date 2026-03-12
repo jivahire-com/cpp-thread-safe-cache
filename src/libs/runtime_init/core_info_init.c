@@ -19,6 +19,7 @@
 #if defined(SCP_RUNTIME_INIT)
     #include <fuse_client.h>
     #include <fuse_init.h>
+    #include <utils.h>
 #endif
 #include <fuse_utils.h>
 #include <idhw.h>
@@ -26,7 +27,7 @@
 #include <stdio.h> // for NULL, printf
 /*-------------- Functions ---------------*/
 #if defined(SCP_RUNTIME_INIT)
-FPFW_INIT_COMPONENT(core_info, FPFW_INIT_DEPENDENCIES("cfg_mgr", "fuse_post_mesh", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(core_info, FPFW_INIT_DEPENDENCIES("cfg_mgr", "fuse_post_mesh", "boot_stat"))
 #elif defined(MCP_RUNTIME_INIT)
 FPFW_INIT_COMPONENT(core_info, FPFW_INIT_DEPENDENCIES("cfg_mgr", "fuse_en", "boot_stat"))
 #endif

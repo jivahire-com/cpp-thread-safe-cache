@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <tower.h>
 #include <tower_isr.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -25,7 +26,7 @@
 static const guid_t guid_nitower = ACPI_ERROR_TYPE_NITOWER;
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh_stg_1", "atu_svc", "icc_hspmbx", "sysinfo"))
+PLACED_CODE FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh_stg_1", "atu_svc", "icc_hspmbx", "sysinfo"))
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
 

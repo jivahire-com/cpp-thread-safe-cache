@@ -13,6 +13,7 @@
 #include <fpfw_init.h>       // for FPFW_INIT_COMPONENT, fpfw_init_result_t
 #include <stdint.h>          // for uint32_t, uint8_t
 #include <tx_api.h>          // for TX_MINIMUM_STACK, TX_NO_TIME_SLICE
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -29,7 +30,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(dfwk, FPFW_INIT_DEPENDENCIES("mpu"))
+PLACED_CODE FPFW_INIT_COMPONENT(dfwk, FPFW_INIT_DEPENDENCIES("mpu"))
 {
     static DFWK_THREADX_HOST drvfwk;
     static uint8_t stack[DFWK_STACK_SIZE];

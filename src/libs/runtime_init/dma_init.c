@@ -13,6 +13,7 @@
 #include <fpfw_init.h>       // for FPFW_INIT_COMPONENT
 #include <interrupts.h>      // HW_INT_GPIO_CTRL_4_INT, HW_INT_GPIO_CTRL_6_INT
 #include <silibs_status.h>   // for SILIBS_SUCCESS
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -26,7 +27,7 @@
  * @brief Initialize DMA library and controller hardware
  *
  */
-FPFW_INIT_COMPONENT(dma_all, FPFW_INIT_DEPENDENCIES("atu_svc", "dfwk", "mpu"))
+PLACED_CODE FPFW_INIT_COMPONENT(dma_all, FPFW_INIT_DEPENDENCIES("atu_svc", "dfwk", "mpu"))
 {
     static dma_device_t dma_dev = {};
     static dma_interface_t driver_interface = {};

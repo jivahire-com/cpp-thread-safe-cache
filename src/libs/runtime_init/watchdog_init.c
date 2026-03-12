@@ -17,7 +17,8 @@
 #include <idsw_kng.h>     // for DIE_0, DIE_1
 #include <kng_error.h>    // for KNG_SUCCESS
 #include <stddef.h>       // for NULL
-#include <wdog.h>         // for wdog_service_init
+#include <utils.h>
+#include <wdog.h> // for wdog_service_init
 
 /*-- Symbolic Constant Macros (defines) --*/
 #ifndef MHz
@@ -30,7 +31,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(wdog, FPFW_INIT_DEPENDENCIES("hw_ver", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(wdog, FPFW_INIT_DEPENDENCIES("hw_ver", "cfg_mgr"))
 {
     if (config_get_wdog_en() && idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON)
     {

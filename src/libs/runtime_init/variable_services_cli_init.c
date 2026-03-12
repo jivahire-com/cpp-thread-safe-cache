@@ -14,6 +14,7 @@
 #include <mscp_exp_rmss_memory_map.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 #include <variable_services.h>
 #include <variable_services_cli.h>
 
@@ -29,7 +30,7 @@
  * Var Serv Cli only supported for SCP 0/1
  * For DIE1, DDR subsystem must be initialized prior to atu service
  */
-FPFW_INIT_COMPONENT(var_serv_cli, FPFW_INIT_DEPENDENCIES("var_serv", "ddr", "atu_svc", "sysinfo"))
+PLACED_CODE FPFW_INIT_COMPONENT(var_serv_cli, FPFW_INIT_DEPENDENCIES("var_serv", "ddr", "atu_svc", "sysinfo"))
 {
     var_service_shared_mem_t mem_ctx = {0};
     KNG_DIE_ID die_num = idhw_get_die_id();

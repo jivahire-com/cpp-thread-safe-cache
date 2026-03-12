@@ -33,7 +33,7 @@ static FPFW_CLI_COMMAND s_scmi_cmd_list[] = {
 
 /*------------- Functions ----------------*/
 
-void scmi_cli_init(void)
+PLACED_CODE void scmi_cli_init(void)
 {
     FpFwCliRegisterTable(s_scmi_cmd_list, FPFW_ARRAY_SIZE(s_scmi_cmd_list));
 }

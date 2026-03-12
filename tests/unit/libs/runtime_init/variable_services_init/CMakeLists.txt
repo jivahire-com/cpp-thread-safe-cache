@@ -22,6 +22,7 @@ target_link_libraries(${TARGET}
     ms::lib::variable_services
     ms::lib::hsp_firmware_headers
     fwlib.service.iccBase
+    ms::lib::utils
 )
 
 # Generic threadx lock port provided by fwlibs

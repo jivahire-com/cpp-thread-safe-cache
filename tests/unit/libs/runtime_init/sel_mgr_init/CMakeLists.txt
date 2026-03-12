@@ -34,6 +34,7 @@ target_link_libraries(${TARGET}
         ms::service::sel_mgr
         silibs::icc_mhu
         silibs::idhw
+        ms::lib::utils
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
@@ -100,6 +101,7 @@ target_link_libraries(${TARGET}
         ms::service::sel_mgr
         silibs::icc_mhu
         silibs::idhw
+        ms::lib::utils
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")

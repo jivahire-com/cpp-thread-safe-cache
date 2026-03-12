@@ -18,6 +18,7 @@
 #include <in_band_telemetry_ddr.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -29,7 +30,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(ib_telm_hsp, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver", "ddr", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(ib_telm_hsp, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "hw_ver", "ddr", "boot_stat"))
 {
     // Send the hsp where in DDR it can store logs now that DDR is initialized
     uint64_t hsp_ddr_mem_ap_address = IB_TLM_DDR_ATU_AP_ADDR_TRACE_HSP_BASE_ADDR(idsw_get_die_id());

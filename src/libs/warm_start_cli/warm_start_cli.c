@@ -252,28 +252,28 @@ static PLACED_CODE FPFW_CLI_STATUS ws_disp_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-void cold_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+PLACED_CODE void cold_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
     FPFW_UNUSED(request);
     printf("Cold boot completion\n");
 }
 
-void subsys_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+PLACED_CODE void subsys_boot_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
     printf("Request (%x) is completed\n", (uintptr_t)request);
     printf("Subsys Boot Completed\n");
 }
 
-void shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
+PLACED_CODE void shutdown_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
     FPFW_UNUSED(request);
     printf("Shutdown completion\n");
 }
 
-void quiesce_complete_notify_cli(DFWK_ASYNC_REQUEST_HEADER* request, void* p_completion_context)
+PLACED_CODE void quiesce_complete_notify_cli(DFWK_ASYNC_REQUEST_HEADER* request, void* p_completion_context)
 {
     FPFW_UNUSED(p_completion_context);
     FPFW_UNUSED(request);
@@ -340,7 +340,7 @@ static PLACED_CODE FPFW_CLI_STATUS ws_reset(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-void warm_start_cli_init(psos_device_t p_device)
+PLACED_CODE void warm_start_cli_init(psos_device_t p_device)
 {
     sos_interface_init(p_device, &sos_interface, true);
 

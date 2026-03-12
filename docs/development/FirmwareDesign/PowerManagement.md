@@ -62,7 +62,7 @@ This document is intended to describe the design detail for the module implement
 | Unallocated node pwr reduction ppt | [Link](https://microsoft.sharepoint.com/:p:/r/teams/EchoFalls/Shared%20Documents/General/Echo%20Falls%20Architecture/Echo%20Falls%20e2e%20Enabling/e2e%20reviews%20including%20template/2025_6_12_EF_e2e_Unallocated%20Node%20Power%20Reduction.pptx?d=w2032e48153084a3ea8b32e10a9b9506f&csf=1&web=1&e=uzBuQR) |
 
 
-## Requirements 
+## Requirements
 
 - Shall limit SOC power to the minimum of the provided power cap or the configured maximums (thermal/electrical limit)
   - Shall limit to provided power cap
@@ -73,8 +73,8 @@ This document is intended to describe the design detail for the module implement
 - Shall generate SCF telemetry packets (writes to sensor RAM) for SOC TOP (PVT) sensors and SOC VRs
 - Shall collect adaptive clocking droop counts and provide to telemetry service
 - Shall collect core aging monitor output on configured cadence (daily) and provide to telemetry service
- - Shall provide calculation of SOC power to BMC 
- - Shall provide (through PLDM) interface to BMC for power capping
+- Shall provide calculation of SOC power to BMC
+- Shall provide (through PLDM) interface to BMC for power capping
 
 ## Dependencies
 
@@ -87,15 +87,15 @@ Power management will have dependencies on the following via OS, pisoc libs, and
 - PVT (pisoc lib)
 - Sensor Fifo Driver/Service
 - Sensor Ram Bridge (pisoc lib)
-- ICC 
-- Fuse service 
-- Configuration service 
-- Warm start 
+- ICC
+- Fuse service
+- Configuration service
+- Warm start
 - Startup/shutdown
-- GPIO 
-- CLI 
-- PLDM 
-- SDS 
+- GPIO
+- CLI
+- PLDM
+- SDS
 
 ## Design
 
@@ -105,7 +105,7 @@ The power management service will present a driver framework interface for start
 
 ### **Configuration**
 
-The configuration of the power service comes from a mix of fuses and config knobs. 
+The configuration of the power service comes from a mix of fuses and config knobs.
 
 #### Fuses
 
@@ -228,7 +228,7 @@ These knobs are available for debug and test purposes. Once the project reaches 
 | power_control_loop_interval | Control loop interval in milliseconds | 1 | uint16_t |
 | power_pvt_loop_interval | PVT telemetry loop interval in milliseconds | 10 | uint16_t |
 | power_temp_telemetry_divider | Number of control loop intervals per 1 VR temperature telemetry | 10 | uint16_t |
-| power_pid | Power PID configuration (kpt, kit, kdt, setpoint_offset) | {15000, 2000000, 0, 5000} | power_pid_config_t |
+| power_pid | Power PID configuration (kpt, kit, kdt, setpoint_offset) | {15000, 2000000, 0, 0} | power_pid_config_t |
 | power_soc_maximum_thermal_watts_limit | SOC maximum power limit specific to thermal (W). 0 = use fused value | 0 | uint16_t |
 | power_soc_maximum_electrical_current_limit_vcpu0 | Vcpu0 current maximum value (A) for electrical power limit | 497 | uint16_t |
 | power_soc_maximum_electrical_current_limit_vcpu1 | Vcpu1 current maximum value (A) for electrical power limit | 497 | uint16_t |
@@ -504,17 +504,17 @@ The following flowchart shows basic power initialization sequence.
 
 ```mermaid
 flowchart TD
-    WarmStart1{"`Is 
+    WarmStart1{"`Is
     Warmstart?`"}
-    WarmStart2{"`Is 
+    WarmStart2{"`Is
     Warmstart?`"}
-    WarmStart3{"`Is 
+    WarmStart3{"`Is
     Warmstart?`"}
 
     Comm0["`Initialize Knob-based Config`"]
     Comm1["`Adjust any voltage rails included in forced_vrs knob`"]
 
-    Comm10["`*Cluster/core init start*; *Telemetry Init* 
+    Comm10["`*Cluster/core init start*; *Telemetry Init*
     (outside of Power Service)`"]
 
 
@@ -524,7 +524,7 @@ flowchart TD
     Comm10 -.-> Fuse1
 
     Fuse1[Initialize Fuse-based Config] --> WarmStart1
-    
+
     Comm2["`Store MPMM,
     Nominal Frequency
     To SDS`"]
@@ -532,27 +532,27 @@ flowchart TD
     and Telemetry Loops`"]
     Comm4["`Read Telemetry Config
     from Sensor Fifo Service`"]
-    
+
     Comm5["`Initialize Vcpu calculation (Pre-calc of Dynamic/Leakage Current)`"]
     Comm6["`Request Message Fifo Enable
     from Sensor Fifo Service`"]
-    Comm7["`*SCF trigger assert* 
+    Comm7["`*SCF trigger assert*
     (outside of Power Service)`"]
     Comm8["`Start Control and Telemetry Loops`"]
 
-    WsInit1["`Recover Saved 
+    WsInit1["`Recover Saved
     Warmstart Config`"]
-    
+
     WarmStart1 -->|Yes| WsInit1
     WarmStart1 -->|No| Comm2
-    
+
     WsInit1 --> Comm2
     Comm2 --> Comm3
     Comm3 --> Comm4
 
     Comm4 --> WarmStart2
 
-    WsInit2["`Update Core ODCM, DVFS 
+    WsInit2["`Update Core ODCM, DVFS
     and Tile PVT Telemetry Config`"]
     Cold1["Initialize SOC PVT"]
     Cold2["`Initialize Core
@@ -567,7 +567,7 @@ flowchart TD
     Cold3 --> Comm5
 
     WsInit2 ---> Comm5
-        
+
     WsInit3["`Signal *Warmstart Init* to Control Loop`"]
     Comm5 --> Comm6
     Comm6 --> WarmStart3
@@ -575,7 +575,7 @@ flowchart TD
     WarmStart3 -.->|No| Comm7
     WsInit3 -.-> Comm7
     Comm7 -.-> Comm8
-    
+
 ```
 
 Further detail about some of the above steps is covered below.
@@ -584,7 +584,7 @@ Further detail about some of the above steps is covered below.
 
 **VMAT**
 
-The voltage frequency table that will be programmed to DVFS VMATs must be calculated at boot.  Fused values will define 7 VF points each for every curve.  During power management init, 32 VF setpoints will be interpolated for use with DVFS initialization as well as for use with calculations within the power control loop.  Additionally, the fused memasst table is used to determine the memory assist values needed for each setpoint in each curve.  
+The voltage frequency table that will be programmed to DVFS VMATs must be calculated at boot.  Fused values will define 7 VF points each for every curve.  During power management init, 32 VF setpoints will be interpolated for use with DVFS initialization as well as for use with calculations within the power control loop.  Additionally, the fused memasst table is used to determine the memory assist values needed for each setpoint in each curve.
 
 When ITD is enabled (power_itd_cfg.enable), FW will also process curve assignments per-core for each ITD temperature range.
 
@@ -664,38 +664,38 @@ The beginning of loop activity is triggered by a periodic timer event.
 
 ```mermaid
 stateDiagram-v2
-    
+
     state "Exchange Input with Remote Die" as Remote_Die
     state "Exchange Completion with Remote Die" as Remote_Die2
     [*] --> Idle
-    
+
     state Idle
     {
         state "Clear error-induced force PMIN if previous state not Error" as idle1
     }
 
     Idle --> Sync_Dies: Timer Interval expired
-    
+
     Sync_Dies --> Collect_Inputs: Both Dies Synchronized
-    
+
     Collect_Inputs --> Remote_Die: VR currents final result event
-    
+
     Remote_Die --> Distribute_Available_Power: Remote State Received
-    
+
     Distribute_Available_Power --> Set_VR_before_PLIMIT: PLIMIT selections changed, VR setpoint increasing
     Distribute_Available_Power --> Set_PLIMIT_before_VR: PLIMIT selections changed, VR setpoint decreasing
-    
+
     Set_PLIMIT_before_VR --> Set_VR_after_PLIMIT: PLIMITs Complete
-    
+
     Set_VR_after_PLIMIT --> Remote_Die2: Vcpu result, VDone set
-    
+
     Set_VR_before_PLIMIT --> Set_PLIMIT_after_VR: Vcpu result, VDone set
-    
+
     Set_PLIMIT_after_VR --> Remote_Die2: PLIMITs Complete
-    
+
     Remote_Die2 --> [*]: Remote State Received
 
-    
+
     [*] --> Warmstart_Entry: Warmstart Init
     Warmstart_Entry --> Set_VR_before_PLIMIT: PLIMIT selections changed to P30, (previous P31) assume VR setpoint increasing
 
@@ -720,8 +720,8 @@ stateDiagram-v2
         Wait_Success --> Wait_Success:  Wait - PLIMITs Pending
         set_PLIMITS3 --> Wait_Success
     }
-    
-    state Set_VR_after_PLIMIT 
+
+    state Set_VR_after_PLIMIT
     {
         state "Set VR(Vcpu)" as set_VR3
         state "Read VR(Vcpu)" as read_VR3
@@ -729,7 +729,7 @@ stateDiagram-v2
         read_VR3 --> read_VR3: Result, VDone not set
     }
 
-    state Set_VR_before_PLIMIT 
+    state Set_VR_before_PLIMIT
     {
         state "Set VR(Vcpu)" as set_VR2
         state "Read VR(Vcpu)" as read_VR2
@@ -792,11 +792,11 @@ stateDiagram-v2
     }
 
     note left of Error
-        Any unexpected "Timer Interval expired" signal from a 
+        Any unexpected "Timer Interval expired" signal from a
         state other than idle will, after retry, result in error
         state entry.
 
-        Performance will be degraded this will only be corrected 
+        Performance will be degraded this will only be corrected
         after a complete, successful iteration of the control loop.
     end note
 
@@ -807,7 +807,7 @@ stateDiagram-v2
     %% Set_VR_after_PLIMIT --> Error: Timer Interval expired
     %% Set_VR_before_PLIMIT --> Error: Timer Interval expired
     %% Set_PLIMIT_after_VR --> Error: Timer Interval expired
-    
+
     Error --> [*]
 
 ```
@@ -839,35 +839,35 @@ sequenceDiagram
     participant Sensor Fifo
     participant SRB Lib
     participant AVS
-    
+
     Timer ISR -) Power Mgmt: signal()
-    
+
     activate Power Mgmt
     loop for each AVS
         Power Mgmt ->> Dfwk: DfwkInterfaceSendAsync(AVS, vr_read_multi, callback)
         Dfwk -->> Power Mgmt: -
-    end 
+    end
     deactivate Power Mgmt
-    
+
     loop for each AVS
         Dfwk -x AVS: dispatch
         AVS ->> AVS: Write to HW
-    end 
-    
+    end
+
     activate Power Mgmt
     loop while SUCCESS
         Power Mgmt ->> Sensor Fifo: poll_chunk()
         Sensor Fifo -->> Power Mgmt: SUCCESS/FAIL
         Note right of Power Mgmt: Looking for outstanding DVFS update messages.
         Power Mgmt ->> Power Mgmt: parse_chunk()
-    end 
+    end
     loop for each core
         Power Mgmt ->> SRB Lib: get_core_state()
         SRB Lib -->> Power Mgmt: SUCCESS
     end
     deactivate Power Mgmt
-    
-    
+
+
     loop for each AVS
         AVS ->>+ AVS: Process HW Response
         AVS -x- Dfwk:  DfwkAsyncRequestComplete()
@@ -894,7 +894,7 @@ For each AVS rail:
 
 P_cpu0 = I_cpu0 * V_cpu0
 P_cpu1 = I_cpu1 * V_cpu1
-P_cpu = P_cpu0 + P_cpu1 
+P_cpu = P_cpu0 + P_cpu1
 P_soc_notcpu = P_soc - P_cpu
 ```
 
@@ -935,7 +935,7 @@ flowchart TD
     Init1(PID Output <br> Power Budget) --> Init2{Resources for Nominal?}
     Init2 -->|No| Throttle1[Throttle]
     Init2 -->|Yes| Turbo1[Turbo/Velocity Boost]
-    
+
     Throttle1 -->|Start at Throttle Priority 0 - protected, allocated first| Throttle2{Last Throttle Priority? - reached 15?}
     Throttle2 --->|No| Throttle3{Nominal reached at this priority? - best affordable plimit?}
     Throttle2 ------>|Yes, all priorities processed| End
@@ -943,7 +943,7 @@ flowchart TD
     Throttle3 -->|No| Throttle4{Required Resources <= Available? - budget allows?}
     Throttle4 -->|Yes, Increase one Plimit Level toward nominal - allocate more| Throttle3
     Throttle4 -->|No - budget exhausted, this and remaining priorities get best affordable plimit| End
-    
+
     Turbo1 -->|Start at Boost Priority 15 - boosted first| Turbo2{Last Boost Priority? - reached 0?}
     Turbo2 --->|No| Turbo3{Max plimit boost at priority? - at max boost?}
     Turbo2 ------>|Yes, all priorities processed| End
@@ -982,7 +982,7 @@ V_in_LDO = MAX_CORES(V_plimit) + V_LDO_headroom
 I_peak = SUM_CORES(ActivityFactor * C_dyn * V_plimit * F_plimit + leakage(V_plimit, T))
 ```
 
-To simplify runtime I_peak calculation, FW pre-calculates dynamic and a reference leakage current for each pstate of each fused VF curve.  This is done using VCPU_LEAKAGE, VCPU_LDO_DYN, and CORE_CDYN fuses; lkg, dyn_ldo, and cdyn columns below show the full interpolation of those fused values (from a previous project) to the LDODAC of each pstate. 
+To simplify runtime I_peak calculation, FW pre-calculates dynamic and a reference leakage current for each pstate of each fused VF curve.  This is done using VCPU_LEAKAGE, VCPU_LDO_DYN, and CORE_CDYN fuses; lkg, dyn_ldo, and cdyn columns below show the full interpolation of those fused values (from a previous project) to the LDODAC of each pstate.
 
 ```
 SCP-CLI > pwr config vftpre 0
@@ -1019,7 +1019,7 @@ dynamic = AF_scaler_max_power * power_current_throttling_cfg.Iref_to_max_percent
 reflkg = lkg / f_T(fused_temp)
 ```
 
-> In the previous project, we scaled from dhrystone to max power workload with/without MPMM enabled.  For KNG we will scale to max power, but use power_current_throttling_cfg knob to limit current to some percentage of max.  
+> In the previous project, we scaled from dhrystone to max power workload with/without MPMM enabled.  For KNG we will scale to max power, but use power_current_throttling_cfg knob to limit current to some percentage of max.
 
 At runtime, the per-core, per-pstate dynamic current and the reference leakage scaled to temperature are summed to produce I_peak.
 
@@ -1071,17 +1071,17 @@ SocPowerModule::PowerAllLoopMetricsInUs: Ticks (724152) ctrl_loop_avg (535) vr_l
 
 ### **Telemetry Loops**
 
-The module generates SCF telemetry packets for each of 8 (for die0, 1 for die1) voltage rails (current & temperature), 18 PVT voltage (VM) sensors and 15 PVT temperature (DTS) sensors.  
+The module generates SCF telemetry packets for each of 8 (for die0, 1 for die1) voltage rails (current & temperature), 18 PVT voltage (VM) sensors and 15 PVT temperature (DTS) sensors.
 
 ```mermaid
 stateDiagram-v2
-    
+
     [*] --> Read_PVT_VM_Data: PVT Loop Timer interval expiry
     Read_PVT_VM_Data --> Read_PVT_DTS_Data
     Read_PVT_DTS_Data --> Send_SoC_Top_Voltage_Telemetry
     Send_SoC_Top_Voltage_Telemetry --> Send_SoC_Top_Temp_Telemetry
     Send_SoC_Top_Temp_Telemetry --> [*]
-    
+
     [*] --> adclk_droop: adclk Telemetry Timer interval expiry
     state "Collect adclk droop counter per core" as adclk_droop
     adclk_droop --> Send_Adclk_Telemetry
@@ -1095,7 +1095,7 @@ stateDiagram-v2
     State Current_Telemetry {
     Collect_Current --> Send_Current_Telemetry: Read Result
     Collect_Current --> Calculate_SOC_Power: Read Result
-    
+
     }
     State Temperature_Telemetry {
     state "Send_Temperature_Telemetry" as send_temp
@@ -1119,15 +1119,15 @@ stateDiagram-v2
 
 The voltage rails must be polled across the AVS bus and there is overlap here with reading rail currents for telemetry generation and the need to read VR currents for SOC power calculation for the power control loop.  The two reads are shown separately in the diagrams, but it is expected that these are the same.
 
-#### PVT Telemetry 
+#### PVT Telemetry
 
-The PVT for the SOC TOP voltage and temperature sensors will be initialized in continuous mode; an interval timer (power_pvt_loop_interval) interrupt will signal that data should be read from the PVTs to generate telemetry. 
+The PVT for the SOC TOP voltage and temperature sensors will be initialized in continuous mode; an interval timer (power_pvt_loop_interval) interrupt will signal that data should be read from the PVTs to generate telemetry.
 
 #### Adaptive Clocking Droop Telemetry
 
 Droop counts will be collected from all cores on the configured interval (power_adclk_throt.telemetry_interval).  These counts will be delivered from SCP to MCP (telemetry service) via ICC.  Droop count telemetry will not be a running count, but rather the number of droop events since the last telemetry was delivered.
 
-> In general, the module will not reinitialize HW on a warm reset.  To avoid having to track droop count deltas for telemetry over a warm start, FW will use the clear_droop_count bit in ADCLK_CR2 to reset the droop count after every read. 
+> In general, the module will not reinitialize HW on a warm reset.  To avoid having to track droop count deltas for telemetry over a warm start, FW will use the clear_droop_count bit in ADCLK_CR2 to reset the droop count after every read.
 
 #### Aging Monitor Telemetry
 
@@ -1377,7 +1377,7 @@ flowchart TD
         S3G{"desired_pstate_in_use ><br/>min_plimit?"}
         S3H["min_plimit = desired_pstate_in_use<br/>(OS wants lower perf)"]
         S3I["Keep current min_plimit"]
-        
+
         S3A --> S3B
         S3B -->|"Yes"| S3C
         S3B -->|"No"| S3D
@@ -1398,7 +1398,7 @@ flowchart TD
         S4C["Apply max_plimit_step_size_up<br/>step_min = current - step_up"]
         S4D["min_plimit = MIN(min_plimit, step_max)"]
         S4E["min_plimit = MAX(min_plimit, step_min)"]
-        
+
         S4A -->|"Yes"| S4B
         S4A -->|"No"| S4C
         S4B --> S4D
@@ -1592,7 +1592,7 @@ flowchart TD
     %% BMC → MCP → SCP FLOW
     %% =========================
 
-    A["BMC Computes SoC Power Cap<br/>(from Rack Manager input)"] 
+    A["BMC Computes SoC Power Cap<br/>(from Rack Manager input)"]
         --> B["BMC sends PLDM<br/>SetNumericEffecterValue<br/>Effecter ID = 100"]
 
     B --> C["MCP0 receives PLDM request<br/>(power_cap_on_effecter_set callback)"]
@@ -1664,7 +1664,7 @@ sequenceDiagram
     participant CtrlLoop as Power Control Loop
 
     BMC->>MCP0: PLDM GetStateSensorReading<br/>(Sensor ID: Power Throttling)
-    
+
     MCP0->>MCP0: pldm_perf_state_query()
     MCP0->>SCP0: ICC_COMMAND_PLDM_PERF_STATE
 
@@ -1678,7 +1678,7 @@ sequenceDiagram
 
     MCP0->>MCP0: pldm_get_perf_state callback
     MCP0->>MCP0: fpfw_pldm_service_state_sensor_set()
-    
+
     MCP0-->>BMC: PLDM Response<br/>(NORMAL/THROTTLED/DEGRADED)
 ```
 
@@ -1777,7 +1777,7 @@ The force pmin condition is cleared when the control loop completes a **successf
 
 ## API
 
-### Overview 
+### Overview
 
 There is no direct mission-mode API into the power module running on the SCP.  The BMC will send PLDM requests to sensors and an effecter exposed by a proxy power module on the MCP (die0).  The proxy power module will communicate with the power module on the SCP (die0) using ICC (command layer) over MHU/SMT.
 
@@ -1810,7 +1810,7 @@ Additionally, a Dfwk API for CLI usage will be implemented for debug and testing
 
 ### PLDM Details
 
-The power proxy on the MCP0 will create PDR records and register two sensors and one effecter.  
+The power proxy on the MCP0 will create PDR records and register two sensors and one effecter.
 |Name|Description|Type|Unit/States|
 |---------|--------------|-----|----
 |SOC Power Sensor|Used by BMC to read current SOC power|numeric sensor|Watts

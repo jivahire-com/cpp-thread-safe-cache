@@ -971,11 +971,9 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
 
-    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    // UTC timestamp conversion mocks (called four times: Start/End for the core buffer and start/end for the new asic buffer)
+    will_return_count(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200, 4);
+    will_return_count(__wrap_gtimer_get_timestamp_ms, (uint64_t)150, 4);
 
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
@@ -1034,11 +1032,9 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup_
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
 
-    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    // UTC timestamp conversion mocks (called four times: Start/End for the core buffer and start/end for the new asic buffer)
+    will_return_count(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200, 4);
+    will_return_count(__wrap_gtimer_get_timestamp_ms, (uint64_t)150, 4);
 
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
@@ -1114,11 +1110,9 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
 
-    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    // UTC timestamp conversion mocks (called four times: once for Start, once for End for the core buffer and start/end for the new asic buffer)
+    will_return_count(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200, 4);
+    will_return_count(__wrap_gtimer_get_timestamp_ms, (uint64_t)150, 4);
 
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);

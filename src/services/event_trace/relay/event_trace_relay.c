@@ -221,6 +221,9 @@ static void etr_get_new_asic_buffer(etr_service_context_t* p_context)
     p_context->p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_ACTIVE;
     p_context->p_active_asic_buffer->payload_management.size_bytes = sizeof(asic_buffer_info_t);
     p_context->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes = sizeof(FPFW_ET_ASIC_BUFFER_HEADER);
+    p_context->p_active_asic_buffer->buffer.asic.asic_header.StartUTCTimeStamp =
+        utc_sync_client_get_current_time_epoch_ms();
+    p_context->p_active_asic_buffer->buffer.asic.asic_header.StartAsicTimeStamp = gtimer_get_timestamp_ms();
 }
 
 /**
@@ -261,6 +264,10 @@ static void etr_complete_asic_buffer(etr_service_context_t* p_context)
     p_context->p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
 
     p_ddr_buffer_info_t p_buf_to_send = p_context->p_active_asic_buffer;
+
+    /* Set the end timestamps on the asic buffer*/
+    p_buf_to_send->buffer.asic.asic_header.EndAsicTimeStamp = gtimer_get_timestamp_ms();
+    p_buf_to_send->buffer.asic.asic_header.EndUTCTimeStamp = utc_sync_client_get_current_time_epoch_ms();
 
     /* Copy the diag header and asic header into ddr */
     void* src = (void*)&p_buf_to_send->buffer.asic;

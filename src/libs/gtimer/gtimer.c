@@ -119,6 +119,13 @@ void gtimer_add_periodic(fpfw_tmr_entry_t* tmr, uint64_t tick_interval, void (*c
     timer_rearm();
 }
 
+void gtimer_add_abs_init_periodic(fpfw_tmr_entry_t* tmr, uint64_t tick_interval, void (*cb)(void*, uint64_t, uint64_t), void* ctx)
+{
+    BUG_ASSERT(fpfw_tmr_queue_add_periodic(&s_timer_queue, tmr, 0, tick_interval, cb, ctx) == FPFW_STATUS_SUCCESS);
+
+    timer_rearm();
+}
+
 void gtimer_remove(fpfw_tmr_entry_t* tmr)
 {
     BUG_ASSERT(fpfw_tmr_queue_rmv(&s_timer_queue, tmr) == FPFW_STATUS_SUCCESS);

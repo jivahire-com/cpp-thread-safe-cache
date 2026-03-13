@@ -24,6 +24,7 @@ target_link_libraries(${TARGET}
         ms::lib::css
         silibs_platform
         tower_system_control
+        ms::lib::utils
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")

@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.service.cli
         ms::lib::crash_dump
         ms::cmocka::testrunner
+        ms::lib::utils
 )
 
 # Defining platform APIs

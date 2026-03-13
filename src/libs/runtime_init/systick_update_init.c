@@ -11,6 +11,7 @@
 #include <fpfw_init.h>      // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT...
 #include <stdint.h>         // for uint32_t, uintptr_t
 #include <systick_update.h> // for systick_update_init
+#include <utils.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -26,7 +27,7 @@
 
 /*----------------------------- Global Functions ----------------------------*/
 
-FPFW_INIT_COMPONENT(systick_upd, FPFW_INIT_DEPENDENCIES("hw_ver"))
+PLACED_CODE FPFW_INIT_COMPONENT(systick_upd, FPFW_INIT_DEPENDENCIES("hw_ver"))
 {
     return (fpfw_init_result_t){systick_update_init(), NULL};
 }

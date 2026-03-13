@@ -11,6 +11,7 @@
 #include <cli_accel_int.h>      // for cli_accel_int_init
 #include <fpfw_init.h>          // for fpfw_init_get_handle, FPFW_INIT_COMPONENT
 #include <stddef.h>             // for NULL
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -21,7 +22,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli_accel_intr, FPFW_INIT_DEPENDENCIES("cli", "accel"))
+PLACED_CODE FPFW_INIT_COMPONENT(cli_accel_intr, FPFW_INIT_DEPENDENCIES("cli", "accel"))
 {
     return (fpfw_init_result_t){cli_accel_int_init(), NULL};
 }

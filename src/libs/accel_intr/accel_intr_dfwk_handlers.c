@@ -159,8 +159,7 @@ static void accel_intr_delay_cb(void* ctx, fpfw_dur_t latency)
     // If CPER was skipped or not collected, generate a default CPER
     if ((timer_data->skip_cper) && (!timer_data->cper_collected))
     {
-        // TODO ADO: 2993136 Waiting for default cper definition to be created
-        // TODO ADO: 3041451 Generate default cper
+        hm_generate_default_cper(accel_type);
         timer_data->cper_collected = true;
     }
 

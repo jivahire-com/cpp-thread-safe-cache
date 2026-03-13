@@ -113,7 +113,7 @@ static PLACED_CODE void power_log_list(ppower_service_cli_request_t p_cli_reques
 }
 
 // "pwr log useddr" command
-void power_log_ddr(ppower_service_cli_request_t p_cli_request)
+PLACED_CODE void power_log_ddr(ppower_service_cli_request_t p_cli_request)
 {
     uint16_t value = p_cli_request->pwrset_sub_command_args.minupdate_val;
     int status = power_log_use_ddr((value != 0));
@@ -132,7 +132,7 @@ void power_log_ddr(ppower_service_cli_request_t p_cli_request)
 }
 
 // "pwr log mask" command
-void PLACED_CODE power_log_mask(ppower_service_cli_request_t p_cli_request)
+PLACED_CODE void power_log_mask(ppower_service_cli_request_t p_cli_request)
 {
     power_log_data_t *log = get_instance();
     printf("    Current Log Mask: %08" PRIx32 "\n", log->mask);

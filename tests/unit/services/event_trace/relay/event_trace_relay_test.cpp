@@ -19,7 +19,6 @@ extern "C" {
 #include <etr_init_config_i.h>
 #include <event_trace_relay.h>
 #include <event_trace_relay_i.h>
-#include <event_trace_relay_quiesce_i.h>
 #include <hsp_firmware_headers.h>
 #include <idsw_kng.h>
 #include <startup_shutdown.h>
@@ -87,10 +86,6 @@ static etr_service_config_t s_test_config = {
             .p_hsp_icc_ctx = (fpfw_icc_base_ctx_t*)&test_icc_base_ctx_hsp,
         },
 };
-
-extern DFWK_ASYNC_REQUEST_DISPATCH dfwk_cb;
-extern void* dfwk_cb_ctx;
-void event_trace_relay_quiesce_reset(void);
 
 /*------------- Functions ----------------*/
 
@@ -280,10 +275,47 @@ uint64_t __wrap_gtimer_get_timestamp_ms(void)
     return mock_type(uint64_t);
 }
 
+/* Mask applied to event flags returned by the mock. Default 0xFFFFFFFF passes all flags through.
+ * Tests can call set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER) to exclude HSP handler. */
+static ULONG s_event_flags_mask = 0xFFFFFFFF;
+
+void set_event_flags_mask(ULONG mask)
+{
+    s_event_flags_mask = mask;
+}
+
+/* Local override of the shared ThreadX event_flags_get mock.
+ * Applies s_event_flags_mask so that non-HSP tests can exclude
+ * ETR_EVENT_FLAG_PROCESS_HSP_BUFFER from the returned flags. */
+UINT __wrap__txe_event_flags_get(TX_EVENT_FLAGS_GROUP* group_ptr, ULONG requested_flags, UINT get_option, ULONG* actual_flags_ptr, ULONG wait_option)
+{
+    check_expected_ptr(group_ptr);
+    check_expected(requested_flags);
+    check_expected(get_option);
+    check_expected_ptr(actual_flags_ptr);
+    check_expected(wait_option);
+
+    static int count = 0x0;
+
+    if (count == 0)
+    {
+        *actual_flags_ptr = requested_flags & s_event_flags_mask;
+        count++;
+    }
+    else
+    {
+        *actual_flags_ptr = ~requested_flags;
+        count = 0x0;
+    }
+
+    return mock_type(UINT);
+}
+
 } // extern "C"
 
-// Forward declare fake_core_buffer so test_setup_common can reset it
+// Forward declare globals so test_setup_common can reset them
 extern FPFW_ET_CORE_BUFFER_HEADER fake_core_buffer;
+extern trp_msg_t trp_msg;
 
 static inline void test_setup_common()
 {
@@ -293,7 +325,6 @@ static inline void test_setup_common()
 
     // Reset cross-test globals/statics
     accel_isolation = false;
-    event_trace_relay_quiesce_reset();
 
     // Reset fake_core_buffer fields that may be modified by previous tests
     fake_core_buffer.StartAsicTimeStamp = 50;
@@ -301,6 +332,9 @@ static inline void test_setup_common()
     fake_core_buffer.StartUTCTimeStamp = 50;
     fake_core_buffer.EndUTCTimeStamp = 100;
     fake_core_buffer.UsedBytes = 1000;
+
+    // Reset trp_msg addr_offset - may be modified by SCP tests that use a different offset
+    trp_msg.payload.intercore_block_notification.addr_offset = (uintptr_t)&fake_core_buffer - SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
 
     // Setup the threadx expectations
     expect_any(__wrap__txe_block_pool_create, pool_ptr);
@@ -337,37 +371,8 @@ static inline void test_setup_common()
     expect_any(__wrap__txe_event_flags_create, event_control_block_size);
     will_return(__wrap__txe_event_flags_create, TX_SUCCESS);
 
-    // Expectations for driver framework and sos interface
-    expect_any(__wrap_DfwkDeviceInitialize, Device);
-    expect_any(__wrap_DfwkDeviceInitialize, Schedule);
-
-    expect_any(__wrap_DfwkQueueInitialize, Queue);
-    expect_any(__wrap_DfwkQueueInitialize, Device);
-    expect_any(__wrap_DfwkQueueInitialize, DispatchRoutine);
-    expect_any(__wrap_DfwkQueueInitialize, DispatchContext);
-    expect_any(__wrap_DfwkQueueInitialize, QueueType);
-
-    expect_any(__wrap_DfwkInterfaceInitialize, Interface);
-    expect_any(__wrap_DfwkInterfaceInitialize, Device);
-    expect_any(__wrap_DfwkInterfaceInitialize, DispatchQueue);
-    expect_any(__wrap_DfwkInterfaceInitialize, DispatchSync);
-
-    expect_any(__wrap_sos_register_ssi, p_interface);
-    expect_any(__wrap_sos_register_ssi, p_registration);
-    expect_any(__wrap_sos_register_ssi, p_ssi_interface);
-
-    will_return(__wrap_sos_register_ssi, FPFW_STATUS_SUCCESS);
-
     // Setup ICC expectations
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
-
-    // accel_isolation can be modified by the tests without needing code changes
-    will_return_always(__wrap_accel_is_isolation_enabled, accel_isolation);
-
-    expect_function_call(__wrap_FpFwLockInitialize);
-
-    // Expect quiesce timer creation during dfwk init
-    will_return(__wrap__txe_timer_create, TX_SUCCESS);
 
     etr_initialize(&s_test_context, &s_test_config);
 }
@@ -400,28 +405,10 @@ int test_teardown(void** ppContext)
 {
     FPFW_UNUSED(ppContext);
 
+    /* Reset event flags mask so subsequent tests get all flags by default */
+    set_event_flags_mask(0xFFFFFFFF);
+
     return TX_SUCCESS;
-}
-
-void setup_quiesce_acks()
-{
-    will_return(__wrap_FpFwLockAcquire, 0x1234);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
-    expect_function_call(__wrap_FpFwLockRelease);
-    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SDM);
-
-    will_return(__wrap_FpFwLockAcquire, 0x1234);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
-    expect_function_call(__wrap_FpFwLockRelease);
-    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_CDED_SDM);
-
-    will_return(__wrap_FpFwLockAcquire, 0x1234);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
-    expect_function_call(__wrap_FpFwLockRelease);
-    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SCP);
 }
 
 // TEST PUBLIC ETR FUNCTIONS
@@ -984,25 +971,17 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die0, test_setup_
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
 
-    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    // UTC timestamp conversion mocks (called four times: Start/End for the core buffer and start/end for the new asic buffer)
+    will_return_count(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200, 4);
+    will_return_count(__wrap_gtimer_get_timestamp_ms, (uint64_t)150, 4);
 
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
-
-    /* Expect event flag set from notify_ddr_buffer_available() */
-    expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
-    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
-    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
-
     expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -1053,21 +1032,23 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_space_maxed_die1, test_setup_
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
 
-    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    // UTC timestamp conversion mocks (called four times: Start/End for the core buffer and start/end for the new asic buffer)
+    will_return_count(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200, 4);
+    will_return_count(__wrap_gtimer_get_timestamp_ms, (uint64_t)150, 4);
 
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
-
-    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    /* Exclude HSP handler - this test covers the copy buffer path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
+
+    /* Expect mts_client_send_new_trp_msg from notify_ddr_buffer_available() via etr_complete_asic_buffer (die1) */
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -1129,27 +1110,19 @@ TEST_FUNCTION(test_etr_process_request_copy_buffer_no_free_asics, test_setup_die
     will_return(set_tx_queue_receive_value, &trp_msg);
     set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
 
-    // UTC timestamp conversion mocks (called twice: once for Start, once for End)
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
-    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200);
-    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)150);
+    // UTC timestamp conversion mocks (called four times: once for Start, once for End for the core buffer and start/end for the new asic buffer)
+    will_return_count(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)200, 4);
+    will_return_count(__wrap_gtimer_get_timestamp_ms, (uint64_t)150, 4);
 
     // Set up expectations for a successful tx_block_release
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
     // Since SCP, expect a Cache Invalidate call
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
-
-    /* Expect event flag set from notify_ddr_buffer_available() */
-    expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
-    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
-    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
-
-    expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
 
@@ -1247,6 +1220,9 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_buffer_pending_die1
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    /* Exclude HSP handler - this test covers the read package complete path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1339,6 +1315,9 @@ TEST_FUNCTION(test_etr_process_request_read_intercore_block_complete_invalid_blo
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    /* Exclude HSP handler - this test covers the intercore block complete path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1388,6 +1367,9 @@ TEST_FUNCTION(test_etr_process_request_read_package_complete_invalid_address_die
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
+    /* Exclude HSP handler - this test covers the read package complete path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1434,11 +1416,8 @@ TEST_FUNCTION(test_etr_process_request_read_package_notification, test_setup_die
     // Set both accelerators to be isolated for branch coverage
     accel_isolation = true;
 
-    /* Expect event flag set from notify_ddr_buffer_available() */
-    expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
-    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
-    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+    /* Exclude HSP handler - this test covers the package notification path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -1489,6 +1468,9 @@ TEST_FUNCTION(test_etr_process_request_read_package_no_pending_buffer, test_setu
 
     /* Override number of pending buffers to 0 */
     set_num_buffers_pending(0);
+
+    /* Exclude HSP handler - this test covers the read package path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -1541,8 +1523,11 @@ TEST_FUNCTION(test_etr_process_request_read_package_buffer_pending, test_setup_d
     expect_any_always(__wrap__txe_block_release, block_ptr);
     will_return(__wrap__txe_block_release, TX_SUCCESS);
 
-    /* Override number of pending buffers to 2 */
-    set_num_buffers_pending(2);
+    /* Override number of pending buffers to 1 */
+    set_num_buffers_pending(1);
+
+    /* Exclude HSP handler - this test covers the read package path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
@@ -1758,6 +1743,9 @@ TEST_FUNCTION(test_etr_process_request_host_read_data_complete_valid_address, te
     /* Override number of pending buffers to 2. After completing this buffer, there will be only one pending buffer */
     set_num_buffers_pending(2);
 
+    /* Exclude HSP handler - this test covers the read data complete path, not HSP */
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
     expect_function_call(__wrap_mts_client_send_dcp_notification);
 
     etr_worker_thread_func((ULONG)&s_test_context);
@@ -1842,9 +1830,9 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die, test_setup_die0, test_teardow
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
-    /* Expect event flag set from notify_ddr_buffer_available() since the dcp client is running */
+    /* Expect event flag set from set_etr_thread_event_flags() to process HSP buffer */
     expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
     expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
     will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
@@ -1873,9 +1861,9 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_primary_die_buffers_pending, test_setup_di
     expect_function_call(__wrap_SCB_InvalidateDCache_by_Addr);
     expect_function_call(__wrap_SCB_CleanDCache_by_Addr);
 
-    /* Expect event flag set from notify_ddr_buffer_available() even with buffers pending since the dcp client is running */
+    /* Expect event flag set from set_etr_thread_event_flags() to process HSP buffer */
     expect_any(__wrap__txe_event_flags_set, group_ptr);
-    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
     expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
     will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
@@ -1901,105 +1889,493 @@ TEST_FUNCTION(test_etr_icc_handle_hsp_secondary_die, test_setup_die1, test_teard
     will_return_always(__wrap_idsw_get_die_id, DIE_1);
     etr_set_override_atu_test_address(&test_payload);
 
-    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    /* Expect event flag set from set_etr_thread_event_flags() to process HSP buffer */
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     etr_icc_handle_hsp((void*)&s_test_context, 0, FPFW_ICC_BASE_STATUS_SUCCESS);
 }
 
-TEST_FUNCTION(test_etr_dfwk_cb, test_setup_die0, test_teardown)
+// TEST BUFFER METADATA TIMESTAMP VALIDATION
+
+TEST_FUNCTION(test_etr_copy_buffer_zero_asic_start_timestamp, test_setup_die0, test_teardown)
 {
-    DFWK_ASYNC_REQUEST_HEADER request;
-    request.RequestType = SSI_QUIESCE_ASYNC;
+    // Zero StartAsicTimeStamp should fail validation
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.StartAsicTimeStamp = 0;
 
-    will_return(__wrap_FpFwLockAcquire, 0x1234);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
-    expect_function_call(__wrap_FpFwLockRelease);
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
 
-    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
-    dfwk_cb(&request, dfwk_cb_ctx);
+    // Mask off HSP buffer flag and DCP notification flag - only process MTS messages
+    set_event_flags_mask(ETR_EVENT_FLAG_NEW_MTS_MSG);
+
+    // Set Expectations for successful tx_event_flags_get
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    // Set up expectations for a successful tx_queue_receive
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // Set up expectations for a successful tx_block_release
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Expect that the status of TRP Message status is set to TRP_STATUS_E_PARAM
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
-TEST_FUNCTION(test_etr_dfwk_completion, test_setup_die0, test_teardown)
+TEST_FUNCTION(test_etr_copy_buffer_zero_utc_timestamp, test_setup_die0, test_teardown)
 {
-    DFWK_ASYNC_REQUEST_HEADER request;
-    request.RequestType = SSI_QUIESCE_ASYNC;
+    // Zero StartUTCTimeStamp should fail validation
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.StartUTCTimeStamp = 0;
 
-    setup_quiesce_acks();
-    dfwk_cb(&request, dfwk_cb_ctx);
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
+
+    // Mask off HSP buffer flag to prevent notify_ddr_buffer_available from calling tx_event_flags_set
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
-TEST_FUNCTION(test_etr_dfwk_quiesce_deferred_then_satisfied, test_setup_die0, test_teardown)
+TEST_FUNCTION(test_etr_copy_buffer_end_before_start_asic_timestamp, test_setup_die0, test_teardown)
 {
-    DFWK_ASYNC_REQUEST_HEADER request = {0};
-    request.RequestType = SSI_QUIESCE_ASYNC;
+    // EndAsicTimeStamp < StartAsicTimeStamp should fail validation
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.StartAsicTimeStamp = 200;
+    fake_core_buffer.EndAsicTimeStamp = 100;
+    fake_core_buffer.StartUTCTimeStamp = 200;
+    fake_core_buffer.EndUTCTimeStamp = 300;
 
-    // Dispatch with flags not yet satisfied - timer should be activated
-    will_return(__wrap_FpFwLockAcquire, 0x1234);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
-    expect_function_call(__wrap_FpFwLockRelease);
-    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
-    dfwk_cb(&request, dfwk_cb_ctx);
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
 
-    // Now send all quiesce acks - timer should be deactivated and request completed
-    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
-    setup_quiesce_acks();
+    // Mask off HSP buffer flag to prevent notify_ddr_buffer_available from calling tx_event_flags_set
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
-TEST_FUNCTION(test_etr_dfwk_quiesce_immediate_completion, test_setup_die0, test_teardown)
+TEST_FUNCTION(test_etr_copy_buffer_end_before_start_utc_timestamp, test_setup_die0, test_teardown)
 {
-    DFWK_ASYNC_REQUEST_HEADER request = {0};
-    request.RequestType = SSI_QUIESCE_ASYNC;
+    // EndUTCTimeStamp < StartUTCTimeStamp should fail validation
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.StartAsicTimeStamp = 50;
+    fake_core_buffer.EndAsicTimeStamp = 100;
+    fake_core_buffer.StartUTCTimeStamp = 200;
+    fake_core_buffer.EndUTCTimeStamp = 100;
 
-    // Send all quiesce acks before dispatching the SSI request
-    setup_quiesce_acks();
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
 
-    // Flags already satisfied - request completes immediately without timer
-    dfwk_cb(&request, dfwk_cb_ctx);
+    // Mask off HSP buffer flag to prevent notify_ddr_buffer_available from calling tx_event_flags_set
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
-TEST_FUNCTION(test_etr_dfwk_quiesce_partial_acks_then_dispatch, test_setup_die0, test_teardown)
+TEST_FUNCTION(test_etr_copy_buffer_zero_used_bytes, test_setup_die0, test_teardown)
 {
-    DFWK_ASYNC_REQUEST_HEADER request = {0};
-    request.RequestType = SSI_QUIESCE_ASYNC;
+    // UsedBytes == 0 should fail validation
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.UsedBytes = 0;
 
-    // Send partial quiesce acks (only SDM and SCP, missing CDED_SDM)
-    will_return(__wrap_FpFwLockAcquire, 0x1234);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
-    expect_function_call(__wrap_FpFwLockRelease);
-    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SDM);
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
 
-    will_return(__wrap_FpFwLockAcquire, 0x1234);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
-    expect_function_call(__wrap_FpFwLockRelease);
-    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_SCP);
+    // Mask off HSP buffer flag to prevent notify_ddr_buffer_available from calling tx_event_flags_set
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 
-    // Dispatch with flags not yet fully satisfied - timer should be activated
-    will_return(__wrap_FpFwLockAcquire, 0x1234);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
-    expect_function_call(__wrap_FpFwLockRelease);
-    will_return(__wrap__txe_timer_activate, TX_SUCCESS);
-    dfwk_cb(&request, dfwk_cb_ctx);
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
 
-    // Send remaining ack - timer should be deactivated and request completed
-    will_return(__wrap_FpFwLockAcquire, 0x1234);
-    expect_function_call(__wrap_FpFwLockAcquire);
-    will_return(__wrap__txe_timer_deactivate, TX_SUCCESS);
-    expect_value(__wrap_FpFwLockRelease, OldState, 0x1234);
-    expect_function_call(__wrap_FpFwLockRelease);
-    event_trace_relay_external_core_quiesce_update(MTS_PLATFORM_CORE_CDED_SDM);
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
 }
 
-TEST_FUNCTION(test_etr_dfwk_quiesce_non_quiesce_request, test_setup_die0, test_teardown)
+TEST_FUNCTION(test_etr_copy_buffer_used_bytes_exceeds_buffer_size, test_setup_die0, test_teardown)
 {
-    DFWK_ASYNC_REQUEST_HEADER request = {0};
+    // UsedBytes > BufferSize should fail validation
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.UsedBytes = fake_core_buffer.BufferSize + 1;
 
-    // Use a non-quiesce request type - should complete immediately via default case
-    request.RequestType = SSI_QUIESCE_ASYNC + 1;
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
 
-    dfwk_cb(&request, dfwk_cb_ctx);
+    // Mask off HSP buffer flag to prevent notify_ddr_buffer_available from calling tx_event_flags_set
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    assert_int_equal(trp_msg.hdr.trp_msg_status, TRP_STATUS_E_PARAM);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+}
+
+// TEST UTC TIMESTAMP CONVERSION
+
+TEST_FUNCTION(test_etr_copy_buffer_utc_conversion_when_utc_equals_asic, test_setup_die0, test_teardown)
+{
+    // When StartUTCTimeStamp == StartAsicTimeStamp, UTC conversion should be triggered
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.StartAsicTimeStamp = 50;
+    fake_core_buffer.EndAsicTimeStamp = 100;
+    fake_core_buffer.StartUTCTimeStamp = 50; // Same as StartAsicTimeStamp - triggers conversion
+    fake_core_buffer.EndUTCTimeStamp = 100;  // Same as EndAsicTimeStamp - triggers conversion
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
+
+    // Mask off HSP buffer flag to prevent notify_ddr_buffer_available from calling tx_event_flags_set
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // UTC conversion mocks - called twice: once for Start, once for End
+    // current_utc_time = 1000, current_system_time_ms = 200
+    // Start: utc_converted = 1000 - (200 - 50) = 850
+    // End:   utc_converted = 1000 - (200 - 100) = 900
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)1000);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)200);
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)1000);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)200);
+
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Verify the timestamps were converted - check the buffer in DDR memory
+    void* asic_buffer_addr =
+        (void*)(s_test_context.p_active_asic_buffer->payload_management.base_addr + sizeof(asic_buffer_info_t));
+    PFPFW_ET_CORE_BUFFER_HEADER p_copied_header = (PFPFW_ET_CORE_BUFFER_HEADER)asic_buffer_addr;
+    assert_int_equal(p_copied_header->StartUTCTimeStamp, 850);
+    assert_int_equal(p_copied_header->EndUTCTimeStamp, 900);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+}
+
+TEST_FUNCTION(test_etr_copy_buffer_utc_conversion_skipped_when_utc_zero, test_setup_die0, test_teardown)
+{
+    // When UTC sync returns 0, conversion should be skipped (timestamp unchanged)
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.StartAsicTimeStamp = 50;
+    fake_core_buffer.EndAsicTimeStamp = 100;
+    fake_core_buffer.StartUTCTimeStamp = 50; // Same as ASIC - triggers conversion attempt
+    fake_core_buffer.EndUTCTimeStamp = 100;  // Same as ASIC - triggers conversion attempt
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
+
+    // Mask off HSP buffer flag to prevent notify_ddr_buffer_available from calling tx_event_flags_set
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // UTC sync returns 0 (not available) - conversion should be skipped
+    // Note: convert_system_timestamp_to_utc calls BOTH utc_sync and gtimer before checking utc == 0
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)0);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)100);
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)0);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)100);
+
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Timestamp should remain unchanged since UTC was not available
+    void* asic_buffer_addr =
+        (void*)(s_test_context.p_active_asic_buffer->payload_management.base_addr + sizeof(asic_buffer_info_t));
+    PFPFW_ET_CORE_BUFFER_HEADER p_copied_header = (PFPFW_ET_CORE_BUFFER_HEADER)asic_buffer_addr;
+    assert_int_equal(p_copied_header->StartUTCTimeStamp, 50);
+    assert_int_equal(p_copied_header->EndUTCTimeStamp, 100);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+}
+
+TEST_FUNCTION(test_etr_copy_buffer_utc_conversion_future_timestamp, test_setup_die0, test_teardown)
+{
+    // When system timestamp < buffer timestamp (time from the future), conversion should be skipped
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.StartAsicTimeStamp = 500;
+    fake_core_buffer.EndAsicTimeStamp = 600;
+    fake_core_buffer.StartUTCTimeStamp = 500; // Same as ASIC - triggers conversion attempt
+    fake_core_buffer.EndUTCTimeStamp = 600;   // Same as ASIC - triggers conversion attempt
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
+
+    // Mask off HSP buffer flag to prevent notify_ddr_buffer_available from calling tx_event_flags_set
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // current_system_time_ms (100) < buffer timestamp (500) - future timestamp
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)1000);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)100);
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, (uint64_t)1000);
+    will_return(__wrap_gtimer_get_timestamp_ms, (uint64_t)100);
+
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Timestamp should remain unchanged since conversion was aborted (future timestamp)
+    void* asic_buffer_addr =
+        (void*)(s_test_context.p_active_asic_buffer->payload_management.base_addr + sizeof(asic_buffer_info_t));
+    PFPFW_ET_CORE_BUFFER_HEADER p_copied_header = (PFPFW_ET_CORE_BUFFER_HEADER)asic_buffer_addr;
+    assert_int_equal(p_copied_header->StartUTCTimeStamp, 500);
+    assert_int_equal(p_copied_header->EndUTCTimeStamp, 600);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+}
+
+TEST_FUNCTION(test_etr_copy_buffer_no_utc_conversion_when_utc_differs_from_asic, test_setup_die0, test_teardown)
+{
+    // When StartUTCTimeStamp != StartAsicTimeStamp, no conversion should occur
+    trp_msg.hdr.src_node.core_id = CPU_SDM;
+    fake_core_buffer.CoreId = CPU_SDM;
+    fake_core_buffer.StartAsicTimeStamp = 50;
+    fake_core_buffer.EndAsicTimeStamp = 100;
+    fake_core_buffer.StartUTCTimeStamp = 5000; // Different from ASIC - no conversion
+    fake_core_buffer.EndUTCTimeStamp = 10000;  // Different from ASIC - no conversion
+
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_INTERCORE_BLOCK_NOTIFICATION;
+
+    // Mask off HSP buffer flag to prevent notify_ddr_buffer_available from calling tx_event_flags_set
+    set_event_flags_mask(~ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+
+    expect_any_always(__wrap__txe_event_flags_get, group_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, requested_flags);
+    expect_any_always(__wrap__txe_event_flags_get, get_option);
+    expect_any_always(__wrap__txe_event_flags_get, actual_flags_ptr);
+    expect_any_always(__wrap__txe_event_flags_get, wait_option);
+    will_return_always(__wrap__txe_event_flags_get, TX_SUCCESS);
+
+    expect_any_always(__wrap__txe_queue_receive, queue_ptr);
+    expect_any_always(__wrap__txe_queue_receive, destination_ptr);
+    expect_value(__wrap__txe_queue_receive, wait_option, TX_WAIT_FOREVER);
+    will_return(__wrap__txe_queue_receive, TX_SUCCESS);
+
+    will_return(set_tx_queue_receive_value, &trp_msg);
+    set_txe_queue_receive_callback_func(set_tx_queue_receive_value);
+
+    // No UTC conversion mocks needed - conversion should not be triggered
+
+    expect_any_always(__wrap__txe_block_release, block_ptr);
+    will_return(__wrap__txe_block_release, TX_SUCCESS);
+
+    expect_function_call(__wrap_mts_client_send_dcp_notification);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+
+    // Timestamps should remain as set (no conversion occurred)
+    void* asic_buffer_addr =
+        (void*)(s_test_context.p_active_asic_buffer->payload_management.base_addr + sizeof(asic_buffer_info_t));
+    PFPFW_ET_CORE_BUFFER_HEADER p_copied_header = (PFPFW_ET_CORE_BUFFER_HEADER)asic_buffer_addr;
+    assert_int_equal(p_copied_header->StartUTCTimeStamp, 5000);
+    assert_int_equal(p_copied_header->EndUTCTimeStamp, 10000);
+
+    etr_worker_thread_func((ULONG)&s_test_context);
+}
+
+// TEST SET_ETR_THREAD_EVENT_FLAGS
+
+TEST_FUNCTION(test_set_etr_thread_event_flags, test_setup_die0, test_teardown)
+{
+    // Verify set_etr_thread_event_flags sets the correct flags via tx_event_flags_set
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    set_etr_thread_event_flags(ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
+}
+
+TEST_FUNCTION(test_set_etr_thread_event_flags_hsp, test_setup_die0, test_teardown)
+{
+    // Verify set_etr_thread_event_flags works with HSP buffer flag
+    expect_any(__wrap__txe_event_flags_set, group_ptr);
+    expect_value(__wrap__txe_event_flags_set, flags_to_set, ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
+    expect_value(__wrap__txe_event_flags_set, set_option, TX_OR);
+    will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
+
+    set_etr_thread_event_flags(ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
 }

@@ -249,6 +249,21 @@ int32_t power_fuses_get_tdp_config(power_fuse_tdp_t* tdp_config);
 int32_t power_fuses_read_vf(power_fuse_vf_curveset_t* vf_curves, int8_t ldo_offset, bool apply_es1_overrides);
 
 /**
+ * @brief Applies RC0 VF recipe overrides for RC3 fused units (ES2/PC)
+ *
+ * Adjusts fused VF anchor pair LDO DAC codes by mV offsets from the RC3 override
+ * table when the part is identified as ES2 (customer_sample_milestone == 0x1 and
+ * sample_major_rev == 0x2) or PC (customer_sample_milestone == 0x2).
+ *
+ * @param[in,out] vf_curves - Pointer to the fused VF curveset data (modified in-place)
+ * @param[in]     slope     - Pointer to the fused LDO DAC to voltage slope
+ *
+ * @return FPFW_STATUS_SUCCESS on success, or error code on fuse read failure
+ */
+int32_t power_fuses_apply_rc3_vf_override(power_fuse_vf_curveset_t* vf_curves,
+                                          const dvfs_vf_slope_t* slope);
+
+/**
  * @brief Reads VSYS VID from fuses
  * 
  * @param[out] vsys_vid  - Pointer to vsys vid value
@@ -295,10 +310,21 @@ uint64_t power_timer_get_counter_ticks_us(uint32_t time_in_us);
 uint64_t power_timer_get_us_from_counter(uint32_t ticks);
 
 /**
- * @brief Start the loop timers
+ * @brief Start the loop timers (epoch-aligned for cross-die synchronization)
  *
  * \b Description:
- *      Use to start loop timers once all init is done
+ *      Use to start loop timers once all init is done.
+ *
+ *      Timers are created using gtimer_add_abs_init_periodic() which anchors the
+ *      periodic expiry grid to the system counter epoch (tick 0) rather than the
+ *      current counter value at call time. Because the system counters on SCP0 and
+ *      SCP1 are synchronized via d2d sync during gtimer_prodfw_init(), this ensures
+ *      both dies fire their power loop timers on the same absolute tick boundaries,
+ *      even if one die reaches this function thousands of ticks after the other.
+ *
+ *      Example: With a 1ms interval and SCP0 calling at tick 1,000,000 and SCP1 at
+ *      tick 1,020,000, both will compute the next expiry on the same grid point
+ *      (the next multiple of the interval after their respective "now").
  *
  */
 void power_timer_start_loop_timers();

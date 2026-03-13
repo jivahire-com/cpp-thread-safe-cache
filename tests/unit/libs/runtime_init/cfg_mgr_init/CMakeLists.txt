@@ -35,6 +35,7 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         fwlib.lib.interface.platform.dbgprint
         ms::lib::system_info
+        ms::lib::utils
 )
 
 # Provide compile time definition

@@ -26,6 +26,7 @@ set(SOURCES
     test_vm_core_power_integration.cpp
     test_inst_die_temp_sensors_integration.cpp
     test_core_aging_counter_data.cpp
+    test_mesh_telemetry_integration.cpp
     log_vm_throttling_integration_test.cpp
     log_memory_throttling_integration_test.cpp
     test_core_histogram_integration.cpp

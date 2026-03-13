@@ -71,7 +71,7 @@ static FPFW_CLI_COMMAND cli_power_commands[] = {
 //clang-format on
 
 /*-------------- Functions ---------------*/
-static power_if_cmd_t cli_power_get_cmd_id(e_cli_power_command_id_t command, char* subcommand)
+static PLACED_CODE power_if_cmd_t cli_power_get_cmd_id(e_cli_power_command_id_t command, char* subcommand)
 {
     switch (command) {
         case CLI_COMMANDS_POWER_CONFIG:

@@ -14,6 +14,7 @@
 #include "ddr_manager_i3c.h"
 
 #include <bug_check.h>
+#include <ddr_manager_events.h>
 #include <fpfw_cfg_mgr.h>
 #include <gtimer_prodfw.h>
 #include <idsw_kng.h>
@@ -226,6 +227,7 @@ void ddr_telemetry_report()
         if (ddr_manager_power_mw_read(dimm_idx, &power_mW) != DDR_MANAGER_I3C_SUCCESS)
         {
             DDR_LOG_WARN("Error reading DIMM %d power\n", dimm_idx);
+            DDR_MANAGER_ET_WARN(DDR_MANAGER_ET_TYPE_TELEMETRY_READ_DIMM_BY_I3C, __LINE__);
             power_mW = 0;
         };
         dimm_info.dimm_power_mW = power_mW;

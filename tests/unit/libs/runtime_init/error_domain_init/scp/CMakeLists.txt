@@ -28,6 +28,7 @@ target_link_libraries(${TARGET}
         ms::service::health_monitor::cli
         ms::lib::boot_status
         ms::lib::error_domain::scp
+        ms::lib::utils
 )
 
 # Generic ports implement within this project

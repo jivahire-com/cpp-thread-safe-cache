@@ -282,6 +282,8 @@ TEST_FUNCTION(test_accel_fatal_cb_cper_collect_fail, nullptr, nullptr)
 
     expect_any_always(__wrap_fpfw_timer_enable, timer);
     will_return_always(__wrap_fpfw_timer_enable, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_atu_svc_accel_atu_addr, 0x0);
+    will_return_count(__wrap_mmio_read32, 0x1, 8);
 
     cb(ctx, NULL);
 

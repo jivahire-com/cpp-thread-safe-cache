@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         ms::service::accel_boot_notify
         silibs::platform
         ms::lib::system_info
+        ms::lib::utils
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")

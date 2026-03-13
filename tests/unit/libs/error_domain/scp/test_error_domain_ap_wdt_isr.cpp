@@ -11,17 +11,21 @@
 #include <CMockaWrapper.h> // for assert_int_equal, assert_non_null, expect...
 
 extern "C" {
-#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <FPFwInterrupts.h> // for FPFwCoreInterruptRegisterCallback, FPFwCoreInterruptEnableVector
+#include <FpFwUtils.h>      // for FPFW_UNUSED
 #include <ap_fw_crashdump.h>
 #include <ap_watchdog_timer_control_registers_regs.h>
 #include <atu_api.h>
 #include <atu_lib.h> // for atu_map_entry_t
+#include <cper.h>
 #include <crash_dump.h>
 #include <error_domain_ap_wdt.h>
 #include <health_monitor.h>
 #include <idsw_kng.h> // for KNG_DIE_ID, idsw_get_die_id
+#include <interrupts.h>
 #include <mscp_error_domain.h>
 #include <nvic.h> // for nvic_status_t
+#include <startup_shutdown.h>
 #include <stdint.h>
 #include <warm_start.h>
 #include <warm_start_id.h>
@@ -36,6 +40,8 @@ extern "C" {
 // Mock FPFW_DBGPRINT_ERROR as empty macro
 #define FPFW_DBGPRINT_ERROR(...)
 #define FPFW_DBGPRINT_INFO(...)
+
+#define CRASH_DUMP_BUFFER_SIZE 256
 
 /*------------- Typedefs -----------------*/
 // Add missing typedef for ap_wdt_chunk_t
@@ -55,7 +61,9 @@ static crash_dump_type_context_t mock_type_ctx;
 static crash_dump_context_t mock_cd_context;
 
 // Mock AP FW crashdump header buffer
-static uint8_t mock_crashdump_buffer[256];
+static uint8_t mock_crashdump_buffer[CRASH_DUMP_BUFFER_SIZE];
+static FPFW_CD_CUSTOM_CHUNK_GET_SIZE_CALLBACK mock_ap_wdt_chunk_get_size = NULL;
+static FPFW_CD_CUSTOM_CHUNK_UPDATE_CALLBACK mock_ap_wdt_chunk_write = NULL;
 
 /*------------- Functions ----------------*/
 //
@@ -98,6 +106,17 @@ void* __wrap_ws_data_put(mod_ws_data_id_t id, void* data, uint32_t size)
 
     function_called();
     return data;
+}
+
+void* __wrap_ws_data_get(mod_ws_data_id_t id, uint32_t* p_size)
+{
+    check_expected(id);
+    assert_non_null(p_size);
+    *p_size = sizeof(bool);
+
+    function_called();
+
+    return mock_type(void*);
 }
 
 void __wrap_hm_submit_cper(uint16_t error_domain_idx, acpi_error_severity_t err_severity, void* err_record_section, uint32_t err_record_section_size)
@@ -174,8 +193,65 @@ bool __wrap_CdRegisterCustomChunk(FPFwCrashDumpCtx* ctx,
     assert_non_null(updateCallback);
     assert_int_equal(payloadSize, 0); // Size is determined by callback
     assert_int_equal(priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+
+    mock_ap_wdt_chunk_get_size = getSizeCallback;
+    mock_ap_wdt_chunk_write = updateCallback;
+
     function_called();
     return true;
+}
+
+void __wrap_DfwkAsyncRequestInitialize(PDFWK_ASYNC_REQUEST_HEADER Request, size_t RequestSize)
+{
+    assert_non_null(Request);
+    assert_int_equal(RequestSize, sizeof(startup_shutdown_request_t));
+
+    function_called();
+}
+
+void __wrap_hm_register_error_domain(uint16_t error_domain_idx,
+                                     const guid_t* error_domain_guid,
+                                     const char* error_domain_name,
+                                     hm_error_injection_cb_t err_inject_cb,
+                                     void* err_inject_ctx)
+{
+    assert_int_equal(error_domain_idx, ACPI_ERROR_DOMAIN_AP_WDT);
+    assert_non_null(error_domain_guid);
+    assert_string_equal(error_domain_name, "AP_WDT");
+    assert_non_null(err_inject_cb);
+    assert_null(err_inject_ctx);
+
+    function_called();
+}
+
+uint32_t __wrap_FPFwCoreInterruptRegisterCallback(uint32_t irqnum, FPFwCoreInterruptHandler handler, void* arg)
+{
+    check_expected(irqnum);
+    assert_non_null(handler);
+    assert_non_null(arg);
+    function_called();
+
+    return 0; // Return success
+}
+
+uint32_t __wrap_FPFwCoreInterruptEnableVector(uint32_t irqnum)
+{
+    check_expected(irqnum);
+    function_called();
+
+    return 0; // Return success
+}
+
+uint64_t mock_FPFwCDMemcpyLocalToGlobal(struct FpFwCDMemoryAPIs* memAPIs, uint64_t dest, void* src, size_t n)
+{
+    assert_non_null(memAPIs);
+    check_expected(dest);
+    assert_non_null(src);
+    check_expected(n);
+
+    function_called();
+
+    return 0;
 }
 }
 /*------------- Test Functions -----------*/
@@ -188,6 +264,7 @@ TEST_FUNCTION(test_hm_ap_wdt_isr_success, nullptr, nullptr)
     memset(&mock_crash_dump_ctx, 0, sizeof(mock_crash_dump_ctx));
     memset(&mock_type_ctx, 0, sizeof(mock_type_ctx));
     memset(&mock_cd_context, 0, sizeof(mock_cd_context));
+    mock_crash_dump_ctx.memAPIs.FPFwCDMemcpyLocalToGlobal = mock_FPFwCDMemcpyLocalToGlobal;
     mock_type_ctx.crash_dump_ctx = mock_crash_dump_ctx;
     mock_cd_context.type_ctx[CRASH_DUMP_TYPE_FULL] = &mock_type_ctx;
 
@@ -286,4 +363,42 @@ TEST_FUNCTION(test_hm_ap_wdt_isr_success, nullptr, nullptr)
 
     // Verify warm start data was set
     assert_true(test_ap_wdt_occurred);
+
+    // Set up mock callbacks for custom chunk
+    mock_ap_wdt_chunk_get_size(mock_fw_hdr);
+    expect_value(mock_FPFwCDMemcpyLocalToGlobal, dest, 0x1234);
+    expect_value(mock_FPFwCDMemcpyLocalToGlobal, n, CRASH_DUMP_BUFFER_SIZE);
+    expect_function_call(mock_FPFwCDMemcpyLocalToGlobal);
+    mock_ap_wdt_chunk_write(&mock_cd_context.type_ctx[CRASH_DUMP_TYPE_FULL]->crash_dump_ctx, 0x1234, mock_fw_hdr, 0);
+}
+
+TEST_FUNCTION(test_register_ap_wdt_error_domain_cold_boot, nullptr, nullptr)
+{
+    expect_function_call(__wrap_DfwkAsyncRequestInitialize);
+    expect_value(__wrap_ws_data_get, id, WARM_START_ID_AP_WDT);
+    will_return(__wrap_ws_data_get, NULL); // No previous AP WDT occurrence
+    expect_function_call(__wrap_ws_data_get);
+    expect_function_call(__wrap_hm_register_error_domain);
+    expect_value(__wrap_FPFwCoreInterruptRegisterCallback, irqnum, HW_INT_AP_NS_WDOG_WS1_INT);
+    expect_function_call(__wrap_FPFwCoreInterruptRegisterCallback);
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, HW_INT_AP_NS_WDOG_WS1_INT);
+    expect_function_call(__wrap_FPFwCoreInterruptEnableVector);
+    expect_value(__wrap_FPFwCoreInterruptRegisterCallback, irqnum, HW_INT_AP_S_WDOG_WS0_INT);
+    expect_function_call(__wrap_FPFwCoreInterruptRegisterCallback);
+    expect_value(__wrap_FPFwCoreInterruptEnableVector, irqnum, HW_INT_AP_S_WDOG_WS0_INT);
+    expect_function_call(__wrap_FPFwCoreInterruptEnableVector);
+
+    register_ap_wdt_error_domain();
+}
+
+TEST_FUNCTION(test_register_ap_wdt_error_domain_warm_boot_prev_ap_wdt, nullptr, nullptr)
+{
+    test_ap_wdt_occurred = true; // Simulate previous AP WDT occurrence
+
+    expect_function_call(__wrap_DfwkAsyncRequestInitialize);
+    expect_value(__wrap_ws_data_get, id, WARM_START_ID_AP_WDT);
+    will_return(__wrap_ws_data_get, &test_ap_wdt_occurred); // Previous AP WDT occurrence
+    expect_function_call(__wrap_ws_data_get);
+
+    register_ap_wdt_error_domain();
 }

@@ -81,15 +81,15 @@ static void setup_mock_core_current_with_mpam(core_current_t* mock_current_data,
                                               uint32_t pstate)    // Performance state
 {
     // Convert from common units to raw sensor FIFO values (This is inverse of firmware conversion)
-    // In Firmware: current_mA = raw_value * 26.5F
-    // So Inverse applied in below values to get raw values: raw_value = current_mA / 26.5F
-    uint32_t raw_avg = (uint32_t)(avg_mA / 26.5F);
-    uint32_t raw_min = (uint32_t)(min_mA / 26.5F);
-    uint32_t raw_max = (uint32_t)(max_mA / 26.5F);
+    // In Firmware: current_mA = raw_value * 32.2F
+    // So Inverse applied in below values to get raw values: raw_value = current_mA / 32.2F
+    uint32_t raw_avg = (uint32_t)(avg_mA / 32.2F);
+    uint32_t raw_min = (uint32_t)(min_mA / 32.2F);
+    uint32_t raw_max = (uint32_t)(max_mA / 32.2F);
 
-    // In Firmware: power_mW = raw_value * 22
-    // So Inverse: raw_value = power_mW / 22
-    uint32_t raw_pwr = pwr_mW / 22U;
+    // In Firmware: power_mW = raw_value * 32
+    // So Inverse: raw_value = power_mW / 32
+    uint32_t raw_pwr = pwr_mW / 32U;
 
     // Fill in the core current data with raw sensor values
     mock_current_data->timestamp = timestamp;

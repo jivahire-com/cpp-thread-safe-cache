@@ -20,6 +20,7 @@
 #include <idsw.h>
 #include <mscp_exp_rmss_memory_map.h>
 #include <semaphore_lib.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 // Ascii of 'H''M'
@@ -28,7 +29,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc"))
+PLACED_CODE FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc"))
 {
     uintptr_t mscp_ghes_base =
         MSCP_ATU_AP_WINDOW_ARSM_DIE_1_NS_BASE_ADDR + ARSM_GET_DIE1_NS_REGION_OFFSET(RAS_GHES_TABLE_BLOCK_BASE);
@@ -60,8 +61,8 @@ FPFW_INIT_COMPONENT(hm_svc, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc"
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &hm_config};
 }
 
-FPFW_INIT_COMPONENT(hm_post_init,
-                    FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "mesh_stg_2", "ddr", "gpio_dev", "hw_sem", "cfg_mgr", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(hm_post_init,
+                                FPFW_INIT_DEPENDENCIES("hm_svc", "atu_svc", "mesh_stg_2", "ddr", "gpio_dev", "hw_sem", "cfg_mgr", "boot_stat"))
 {
     if (hm_allow_ras_reporting())
     {
@@ -81,7 +82,7 @@ FPFW_INIT_COMPONENT(hm_post_init,
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_scp, FPFW_INIT_DEPENDENCIES("hm_svc", "icc_die2die"))
+PLACED_CODE FPFW_INIT_COMPONENT(hm_scp, FPFW_INIT_DEPENDENCIES("hm_svc", "icc_die2die"))
 {
     if (!idhw_is_single_die_boot_en())
     {
@@ -91,13 +92,13 @@ FPFW_INIT_COMPONENT(hm_scp, FPFW_INIT_DEPENDENCIES("hm_svc", "icc_die2die"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_mcp, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_mscp2mscp"))
+PLACED_CODE FPFW_INIT_COMPONENT(hm_mcp, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_mscp2mscp"))
 {
     hm_post_intercore_init(HM_INTERCORE_REMOTE, fpfw_init_get_handle("icc_mscp2mscp"));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_sdm, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_sdm_mbx", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(hm_sdm, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_sdm_mbx", "cfg_mgr"))
 {
     /* Incase of SDM isolation skip HMM */
     if (!accel_is_isolation_enabled(ACCEL_ID_SDM))
@@ -108,7 +109,7 @@ FPFW_INIT_COMPONENT(hm_sdm, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_sdm_mbx"
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_cded, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_cded_mbx", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(hm_cded, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_cded_mbx", "cfg_mgr"))
 {
     /* Incase of CDED isolation skip HMM */
     if (!accel_is_isolation_enabled(ACCEL_ID_CDED))
@@ -119,19 +120,19 @@ FPFW_INIT_COMPONENT(hm_cded, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_cded_mb
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_hsp, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_hspmbx"))
+PLACED_CODE FPFW_INIT_COMPONENT(hm_hsp, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_hspmbx"))
 {
     hm_post_intercore_init(HM_INTERCORE_HSP, fpfw_init_get_handle("icc_hspmbx"));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_ap, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_mscp2apns"))
+PLACED_CODE FPFW_INIT_COMPONENT(hm_ap, FPFW_INIT_DEPENDENCIES("hm_post_init", "icc_mscp2apns"))
 {
     hm_post_intercore_init(HM_INTERCORE_APCORE, fpfw_init_get_handle("icc_mscp2apns"));
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(hm_cli_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "hm_scp"))
+PLACED_CODE FPFW_INIT_COMPONENT(hm_cli_init, FPFW_INIT_DEPENDENCIES("hm_post_init", "hm_scp"))
 {
     if (hm_allow_ras_reporting())
     {

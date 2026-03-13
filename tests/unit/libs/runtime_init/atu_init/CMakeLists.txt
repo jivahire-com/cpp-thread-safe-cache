@@ -26,6 +26,7 @@ target_link_libraries(${TARGET}
         silibs_platform
         ms::service::atu_service
         ms::lib::threadx
+        ms::lib::utils
 )
 
 # Defining platform APIs

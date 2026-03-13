@@ -16,6 +16,7 @@
 #include <idsw_kng.h>
 #include <scp_avs_cli.h>    // for avs_client_init_completion_routine, pavs...
 #include <scp_avs_driver.h> // for scp_avs_request_t
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MAX_CLI_VOLTAGE 1200 // mV
@@ -51,7 +52,7 @@ static FPFW_CLI_COMMAND scp_avs_cli_list[] = {
 };
 
 /*------------- Functions ----------------*/
-bool check_not_in_use(void)
+PLACED_CODE bool check_not_in_use(void)
 {
     if (cli_avs_request.in_use)
     {
@@ -62,7 +63,7 @@ bool check_not_in_use(void)
     return true;
 }
 
-void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
+PLACED_CODE void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* CompletionContext)
 {
     FPFW_UNUSED(Request);
 
@@ -156,7 +157,7 @@ void AVSCLIRequestCompletion(PDFWK_ASYNC_REQUEST_HEADER Request, void* Completio
     FpFwCliPrint(" avs_cli_comp\n");
 }
 
-static FPFW_CLI_STATUS scp_avs_read_data_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS scp_avs_read_data_cli(int argc, const char** argv)
 {
     FpFwCliPrint("\nscp_avs_read_data_cli func. call\n");
 
@@ -194,7 +195,7 @@ static FPFW_CLI_STATUS scp_avs_read_data_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv)
 {
     FpFwCliPrint("\nscp_avs_write_data_cli func. call\n");
 
@@ -241,7 +242,7 @@ static FPFW_CLI_STATUS scp_avs_write_data_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv)
 {
     FpFwCliPrint("\nscp_avs_read_vct_cli func. call\n");
 
@@ -280,7 +281,7 @@ static FPFW_CLI_STATUS scp_avs_read_vct_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS scp_avs_read_multi_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS scp_avs_read_multi_cli(int argc, const char** argv)
 {
     FpFwCliPrint("\nscp_avs_read_multi_cli func. call\n");
 
@@ -335,7 +336,7 @@ static FPFW_CLI_STATUS scp_avs_read_multi_cli(int argc, const char** argv)
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS scp_avs_write_multi_cli(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS scp_avs_write_multi_cli(int argc, const char** argv)
 {
     FpFwCliPrint("\nscp_avs_write_multi_cli func. call\n");
 

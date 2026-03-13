@@ -35,7 +35,7 @@ class pldm_base(pldm_common):
 
     def __init__(
         self,
-        name: str = "pdlm_base_test",
+        name: str = "pldm_base_test",
         number: str = "NaN",
         workspace_config: Path | str = None,
         default_log_home: str = None,
@@ -57,7 +57,10 @@ class pldm_base(pldm_common):
         )
 
     def setup(self):
-        return super().setup()
+        """Perform an initial reset and boot so subsequent PLDM test suites can
+        start from a clean system state without repeating these steps.
+        """
+        return super().setup(perform_reset_boot=True)
 
     def teardown(self):
         return super().teardown()
@@ -85,6 +88,12 @@ class pldm_base(pldm_common):
         return match.group(1)
 
     def testcase1_pldm_get_mctp_id(self):
+        """
+        Test that at least one MCTP endpoint ID is discovered.
+
+        Returns:
+            bool: True if one or more MCTP endpoint IDs are present in mctp_eids, False otherwise.
+        """
         return len(self.mctp_eids) != 0
 
     def testcase2_get_pldm_tid(self):
@@ -129,7 +138,7 @@ class pldm_base(pldm_common):
             tid_previous = None
             tid_test_actual = None
 
-            self.log.info(f"MCP ID: {mctp_id}")
+            self.log.info(f"MCTP ID: {mctp_id}")
 
             result, stdout, _ = self._bmc_execute_command(
                 command=f"pldmtool base GetTID -m {mctp_id} -v"

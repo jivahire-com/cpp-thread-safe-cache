@@ -323,6 +323,12 @@ void __wrap_boot_status_notify_extd(boot_status_req_t* p_req_mem, uint32_t boot_
     function_called();
 }
 
+void __wrap_crash_dump_default_accel_cd_init(ACCEL_ID accel_type)
+{
+    check_expected(accel_type);
+    function_called();
+}
+
 //
 // Tests
 //
@@ -600,6 +606,9 @@ TEST_FUNCTION(test_cd_accel, nullptr, nullptr)
     will_return(__wrap_accel_is_isolation_enabled, false);
     expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_SDM);
     expect_function_call(__wrap_crash_dump_config_icc);
+    expect_any(__wrap_crash_dump_default_accel_cd_init, accel_type);
+    expect_function_call(__wrap_crash_dump_default_accel_cd_init);
+    // will_return(__wrap_idsw_get_die_id, DIE_0);
 
     // will_return_always(__wrap_crash_dump_context, &context);
     // will_return_always(__wrap_atu_svc_accel_atu_addr, 0x12345678);
@@ -613,6 +622,8 @@ TEST_FUNCTION(test_cd_accel, nullptr, nullptr)
     will_return(__wrap_accel_is_isolation_enabled, false);
     expect_value(__wrap_crash_dump_config_icc, type, CRASH_DUMP_ICC_CONFIG_CDED);
     expect_function_call(__wrap_crash_dump_config_icc);
+    expect_any(__wrap_crash_dump_default_accel_cd_init, accel_type);
+    expect_function_call(__wrap_crash_dump_default_accel_cd_init);
 
     // Call API under test
     _fpfw_component_cd_accel.init_fn();

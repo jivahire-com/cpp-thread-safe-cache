@@ -134,8 +134,8 @@
     <Knob name="a1_mesh_hnf_pocq_alloc_class_max_allowed" type="uint64_t" default="0x8203E3F" />
     <Knob name="mesh_hnf_pocq_alloc_class_contended_min" type="uint64_t" default="0x10101010" help=" Controls Contended minimum entries in POCQ for each class" />
     <Knob name="a1_mesh_hnf_pocq_alloc_class_contended_min" type="uint64_t" default="0x10101010" help=" Controls Contended minimum entries in POCQ for each class" />
-    <Knob name="mesh_hnf_pocq_alloc_misc_max_allowed" type="uint64_t" default="0x204" help="Controls Maximum allowed entries in POCQ for SNP, SEQ, and other misc req" />
-    <Knob name="a1_mesh_hnf_pocq_alloc_misc_max_allowed" type="uint64_t" default="0x204" help="Controls Maximum allowed entries in POCQ for SNP, SEQ, and other misc req" />
+    <Knob name="mesh_hnf_pocq_alloc_misc_max_allowed" type="uint64_t" default="0x208" help="Controls Maximum allowed entries in POCQ for SNP, SEQ, and other misc req" />
+    <Knob name="a1_mesh_hnf_pocq_alloc_misc_max_allowed" type="uint64_t" default="0x208" help="Controls Maximum allowed entries in POCQ for SNP, SEQ, and other misc req" />
     <Knob name="mesh_hnf_class_ctl" type="uint64_t" default="0x0" help="Class misc controls" />
     <Knob name="mesh_hnf_pocq_qos_class_ctl" type="uint64_t" default="0x70B8ECFF" help="QoS bases class identification controls" />
     <Knob name="a1_mesh_hnf_pocq_qos_class_ctl" type="uint64_t" default="0x70B8ECFF" help="QoS bases class identification controls" />

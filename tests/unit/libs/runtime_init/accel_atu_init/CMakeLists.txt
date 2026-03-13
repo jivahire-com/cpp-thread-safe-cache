@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
         ms::service::atu_service
         ms::lib::accelerator_ip
         ms::lib::scp_interrupts
+        ms::lib::utils
 )
 
 target_compile_definitions(

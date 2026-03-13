@@ -160,4 +160,5 @@ typedef struct _hm_accel_fatal_cper_s
     uint32_t cper_buffer_offset;
     uint32_t cper_magic_nr_offset;
     bool is_valid;
+    bool send_default_cper;
 } hm_accel_fatal_cper_t;

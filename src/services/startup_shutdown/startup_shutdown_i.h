@@ -39,6 +39,7 @@
 #define SOS_LOG_WARN(fmt, ...) FPFW_DBGPRINT_VERBOSE(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define SOS_LOG_CRIT(fmt, ...) FPFW_DBGPRINT_ERROR(MODULE_NAME fmt NEWLINE, ##__VA_ARGS__)
 #define DEFAULT_SOS_TIMEOUT_MS 120000
+#define SOS_SSI_ID_TO_EVENT_FLAG(id) (1 << (id))
 
 /*-------------- Typedefs ----------------*/
 // struct for queue entry
@@ -70,6 +71,7 @@ typedef struct
 {
     FPFW_LIST_HANDLE ssi_registrations;
     uint32_t registration_count;
+    uint32_t registered_ssi_mask;
 } sos_service_context_t, *psos_service_context_t;
 
 /**

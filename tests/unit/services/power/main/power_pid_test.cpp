@@ -53,7 +53,7 @@ POWER_TEST(pid_resource, NULL, NULL)
         .ki = 2000,
         .kd = 0,
         .setpoint = 200,
-        .setpoint_offset = 5,
+        .setpoint_offset = 0,
         .max = 5000,
     };
 
@@ -165,7 +165,7 @@ POWER_TEST(pid_resource__get_config, NULL, NULL)
         .ki = 2000,
         .kd = 0,
         .setpoint = 200,
-        .setpoint_offset = 5,
+        .setpoint_offset = 0,
         .max = 5000,
     };
 

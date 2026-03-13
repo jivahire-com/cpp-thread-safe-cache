@@ -106,6 +106,7 @@ void ddr_worker_thread_func(ULONG pddr_service_ctx)
                 if (config_get_ras_init_en())
                 {
                     DDR_LOG_CRIT("Enabling ECC CE polling timer\n");
+                    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_TOP_ENABLED_ECC_CE_POLLING_TIMER, __LINE__);
                     enable_ecc_ce_polling_timer();
                 }
 
@@ -408,6 +409,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     ddr_manager_i3c_init();
 
     DDR_LOG_CRIT("DDR init, die_num: [%u]\n", die_id);
+    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_TOP_DDR_INIT, die_id);
     // Record start timestamp
     uint64_t start_timestamp = gtimer_prodfw_get_counter();
 
@@ -422,7 +424,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
     uint64_t ddr_training_time_ms =
         ((gtimer_prodfw_get_counter() - start_timestamp) * 1000) / gtimer_prodfw_get_frequency();
     DDR_LOG_CRIT("DDR training time: %llu ms\n", ddr_training_time_ms);
-    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DDR_TRAINING_TIME_MS, (int)ddr_training_time_ms);
+    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_TOP_DDR_TRAINING_TIME_MS, (int)ddr_training_time_ms);
 
     boot_status_notify_extd(
         &boot_status_req,
@@ -471,7 +473,7 @@ void ddr_manager_init(ddr_service_context_t* pddr_service_ctx, ddr_service_confi
 
     DDR_LOG_CRIT("DDR init, die_num: [%u] Done\n", die_id);
     DDR_LOG_CRIT("DDR init duration: %llu ms\n", duration_ms);
-    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_DDR_INIT_DURATION_MS, (int)duration_ms);
+    DDR_MANAGER_ET_STATUS_PARAM(DDR_MANAGER_ET_TYPE_TOP_DDR_INIT_DURATION_MS, duration_ms);
 }
 
 static void crash_dump_predump_cb(void* ctx)

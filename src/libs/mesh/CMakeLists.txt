@@ -6,6 +6,7 @@ add_library(${TARGET}
     STATIC
         src/mesh.c
         src/mesh_error_handler.c
+        src/mesh_events.c
 )
 
 target_link_libraries(${TARGET}

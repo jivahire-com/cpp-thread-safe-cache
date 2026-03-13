@@ -14,6 +14,7 @@
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <sel_init.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -21,7 +22,7 @@
 /**
  * @brief Initialize SEL manager queue to accept SEL events
  */
-FPFW_INIT_COMPONENT(sel_mgr, FPFW_INIT_DEPENDENCIES("boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(sel_mgr, FPFW_INIT_DEPENDENCIES("boot_stat"))
 {
     KNG_DIE_ID die_num = idsw_get_die_id();
     boot_status_req_t boot_status_req = {0};
@@ -53,7 +54,7 @@ FPFW_INIT_COMPONENT(sel_mgr, FPFW_INIT_DEPENDENCIES("boot_stat"))
  * @brief Register MSCP2MSCP ICC channel for SEL manager
  *
  */
-FPFW_INIT_COMPONENT(sel_m2m, FPFW_INIT_DEPENDENCIES("sel_mgr", "icc_mscp2mscp"))
+PLACED_CODE FPFW_INIT_COMPONENT(sel_m2m, FPFW_INIT_DEPENDENCIES("sel_mgr", "icc_mscp2mscp"))
 {
     KNG_STATUS status = sel_register_icc(SEL_ICC_MSCP2MSCP, fpfw_init_get_handle((void*)"icc_mscp2mscp"));
 
@@ -70,7 +71,7 @@ FPFW_INIT_COMPONENT(sel_m2m, FPFW_INIT_DEPENDENCIES("sel_mgr", "icc_mscp2mscp"))
  * @brief Register DIE2DIE ICC channel for SEL manager
  *
  */
-FPFW_INIT_COMPONENT(sel_d2d, FPFW_INIT_DEPENDENCIES("sel_mgr", "icc_die2die"))
+PLACED_CODE FPFW_INIT_COMPONENT(sel_d2d, FPFW_INIT_DEPENDENCIES("sel_mgr", "icc_die2die"))
 {
     if (!idhw_is_single_die_boot_en())
     {

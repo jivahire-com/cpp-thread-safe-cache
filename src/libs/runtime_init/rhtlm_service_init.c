@@ -13,6 +13,7 @@
 #include <fpfw_init.h>
 #include <idhw.h>
 #include <mu_public.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -20,7 +21,7 @@
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(rhtlm_svc, FPFW_INIT_DEPENDENCIES("std_io"))
+PLACED_CODE FPFW_INIT_COMPONENT(rhtlm_svc, FPFW_INIT_DEPENDENCIES("std_io"))
 {
     cli_rhtlm_initialize();
 

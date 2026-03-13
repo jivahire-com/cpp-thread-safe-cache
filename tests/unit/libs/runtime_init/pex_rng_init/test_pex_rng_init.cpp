@@ -51,9 +51,10 @@ void __wrap_register_pex_error_domain(const pex_rng_config_t* rng_config)
     check_expected(rng_config);
 }
 
-void __wrap_init_pex_rng(const pex_rng_config_t* rng_config)
+void __wrap_init_pex_rng(const pex_rng_config_t* rng_config, bool is_warm_start)
 {
     check_expected(rng_config);
+    check_expected(is_warm_start);
 }
 
 bool __wrap_ift_is_enabled(void)
@@ -155,6 +156,7 @@ TEST_FUNCTION(test_pex_rng_init_cold_start, nullptr, nullptr)
     will_return(__wrap_core_info_get_enable_cores_result, &test_platform_cores);
     will_return(__wrap_system_info_is_warm_start, false); // cold start
     expect_any(__wrap_init_pex_rng, rng_config);
+    expect_value(__wrap_init_pex_rng, is_warm_start, false);
     expect_any(__wrap_register_pex_error_domain, rng_config);
 
     const auto test_die = (KNG_DIE_ID)0;
@@ -184,7 +186,9 @@ TEST_FUNCTION(test_pex_rng_init_warm_start, nullptr, nullptr)
     will_return(__wrap_ift_is_enabled, false); // IFT disabled
     will_return(__wrap_core_info_get_enable_cores_result, &test_platform_cores);
     will_return(__wrap_system_info_is_warm_start, true); // warm start
-    // On warm start, skip init_pex_rng
+    // On warm start, init_pex_rng is still called but skips HW RNG enable
+    expect_any(__wrap_init_pex_rng, rng_config);
+    expect_value(__wrap_init_pex_rng, is_warm_start, true);
     expect_any(__wrap_register_pex_error_domain, rng_config);
 
     const auto test_die = (KNG_DIE_ID)0;

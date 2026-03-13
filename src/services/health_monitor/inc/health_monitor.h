@@ -134,5 +134,6 @@ void hm_update_accel_fatal_cper_info(uint32_t accel_id, uint32_t cper_buffer_off
 bool hm_read_cper_magic_valid(uint32_t accel_id);
 bool hm_collect_accel_fatal_cper(uint32_t accel_id);
 void hm_send_accel_error_cper(uint32_t accel_id);
+void hm_generate_default_cper(uint32_t accel_id);
 bool hm_allow_ras_reporting(void);
 

@@ -35,6 +35,9 @@
 
 /*-- Symbolic Constant Macros (defines) --*/
 
+//! Number of bounded polling iterations in the sync barrier before falling back to the interval-based retry.
+#define SYNC_BARRIER_POLL_ITERATIONS 100
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -228,8 +231,6 @@ static void power_remote_die_exchange(power_runconfig_t* p_runconfig, power_d2d_
     if (cmd_code == ICC_COMMAND_PWR_D2D_EX_INPUT_MSG)
     {
         POWER_LOG_TRACE("ICC_COMMAND_PWR_D2D_EX_INPUT_MSG\n");
-        //! clean out the entire arsm region for the die & cmd including sync flag
-        memset(p_arsm_data, 0, D2D_PWR_MESG_INPUT_EXCHANGE_SIZE);
         //! Populate the arsm metadata
         p_arsm_data->pwr_data_size = sizeof(power_d2d_data_ex_input_t);
         //! Populate the power event data to be sent to the remote die
@@ -248,16 +249,12 @@ static void power_remote_die_exchange(power_runconfig_t* p_runconfig, power_d2d_
     else // cmd_code == ICC_COMMAND_PWR_D2D_EX_COMPLETE_MSG
     {
         POWER_LOG_TRACE("ICC_COMMAND_PWR_D2D_EX_COMPLETE_MSG\n");
-        //! clean out the entire arsm region for the die & cmd
-        memset(p_arsm_data, 0, D2D_PWR_MESG_COMPLETE_EXCHANGE_SIZE);
         //! Populate the arsm metadata
         p_arsm_data->pwr_data_size = sizeof(power_d2d_data_ex_complete_t);
         //! Populate the power event data to be sent to the remote die
         power_d2d_data_ex_complete_t* p_complete_data = (power_d2d_data_ex_complete_t*)p_arsm_data->pwr_data_addr;
         //! Populate the pid context from the control loop
         pid_get_context(&p_complete_data->pid_context);
-        //! Populate the plimit selection stats from the control loop
-        memcpy((uint8_t*)&p_complete_data->plimit_stats, (uint8_t*)&ctrl_loop_ctx->plimit, sizeof(power_loop_plimit_stats_t));
         //! Populate the throttling status from the control loop
         p_complete_data->is_currently_throttling = ctrl_loop_ctx->throttling;
     }
@@ -269,6 +266,7 @@ static void power_remote_die_exchange(power_runconfig_t* p_runconfig, power_d2d_
 
     //! Set the shared memory sync flag to indicate data is ready
     p_arsm_data->d2d_pwr_data_sync = true;
+
     //! Add barrier here to ensure all writes to the shared memory is completed before raising icc send
     cortex_m7_atomic_call_data_synchronization_barrier();
 
@@ -488,20 +486,24 @@ void power_remote_die_sync_barrier(power_runconfig_t* p_runconfig)
     *(volatile uint64_t*)my_slot_addr = sync_value;
     cortex_m7_atomic_call_data_synchronization_barrier();
 
-    // Check if peer has arrived at the barrier (at least at our sync value)
-    uint64_t peer_val = *(volatile uint64_t*)peer_slot_addr;
-    cortex_m7_atomic_call_data_synchronization_barrier();
+    // Bounded polling: spin briefly to wait for the peer die to arrive at the barrier, checking the peer's slot for the expected sync value
+    for (uint32_t poll = 0; poll < SYNC_BARRIER_POLL_ITERATIONS; poll++)
+    {
+        SLEEP_US(1);
+        cortex_m7_atomic_call_data_synchronization_barrier();
+        uint64_t peer_val = *(volatile uint64_t*)peer_slot_addr;
+        cortex_m7_atomic_call_data_synchronization_barrier();
 
-    if (peer_val >= sync_value)
-    {
-        // Both dies are synchronized, signal completion
-        POWER_LOG_TRACE("[POWER D2D SYNC] Barrier complete: local=%u peer=%u\n", sync_value, peer_val);
-        power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_SYNC_COMPLETE, NULL);
+        if (peer_val >= sync_value)
+        {
+            // Both dies are synchronized, signal completion
+            POWER_LOG_TRACE("[POWER D2D SYNC] Barrier complete (poll %u): local=%u peer=%u\n", poll, sync_value, peer_val);
+            power_loops_control_handle_event(POWER_CTRL_LOOP_SIGNAL_SYNC_COMPLETE, NULL);
+            return;
+        }
     }
-    else
-    {
-        // Peer hasn't arrived yet - the control loop will retry via INTERVAL signal
-        POWER_LOG_TRACE("[POWER D2D SYNC] Waiting for peer: local=%u peer=%u\n", sync_value, peer_val);
-        POWER_ET_LOG_TRACE_PARAM(POWER_ET_D2D_SYNC_WAITING, peer_val);
-    }
+
+    // Peer hasn't arrived after polling -- fall through to interval retry path
+    POWER_LOG_TRACE("[POWER D2D SYNC] Waiting for peer after %u polls: local=%u\n", SYNC_BARRIER_POLL_ITERATIONS, sync_value);
+    POWER_ET_LOG_TRACE_PARAM(POWER_ET_D2D_SYNC_WAITING, sync_value);
 }

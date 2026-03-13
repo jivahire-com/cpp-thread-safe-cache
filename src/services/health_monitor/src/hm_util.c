@@ -18,6 +18,8 @@
 #include <memory_map/ddrss_reserved_regions.h>
 #include <ras.h>
 #include <silibs_platform.h>
+#include <time.h>
+#include <utc_sync_client_service.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define MSCP_ATU_AP_WINDOW_ERROR_INJECTION_SIZE \
@@ -34,6 +36,20 @@ static atu_map_entry_t error_injection_atu_entry = {
     .attribute = {ATU_BUS_ATTR_NS},
 };
 /*------------- Functions ----------------*/
+
+static uint8_t decimal_to_bcd(uint8_t v)
+{
+    return (uint8_t)(((v / 10) << 4) | (v % 10));
+}
+
+static int gmtime_utc(const time_t* seconds, struct tm* utc_time)
+{
+#if defined(_WIN32)
+    return gmtime_s(utc_time, seconds);
+#else
+    return (gmtime_r(seconds, utc_time) != NULL) ? 0 : -1;
+#endif
+}
 
 const char* get_error_domain_name(acpi_error_domain_t domain)
 {
@@ -112,4 +128,34 @@ bool is_standard_error_section_used(int error_domain_idx)
     return (error_domain_idx == ACPI_ERROR_DOMAIN_STD_PROCESSOR ||
             error_domain_idx == ACPI_ERROR_DOMAIN_STD_MEMORY || error_domain_idx == ACPI_ERROR_DOMAIN_STD_PCIE ||
             error_domain_idx == ACPI_ERROR_DOMAIN_STD_PLATFORM || error_domain_idx == ACPI_ERROR_DOMAIN_DDR);
+}
+
+uint64_t get_cper_timestamp(void)
+{
+    if (crash_dump_is_utc_ready() == false)
+    {
+        return 0;
+    }
+
+    uint64_t current_utc = utc_sync_client_get_current_time_epoch_ms();
+    time_t seconds = (time_t)(current_utc / 1000);
+
+    struct tm utc_time = {0};
+    if (gmtime_utc(&seconds, &utc_time) != 0)
+    {
+        return 0;
+    }
+
+    acpi_ghes_timestamp_t cper_ts = {0};
+    cper_ts.sec = decimal_to_bcd(utc_time.tm_sec);
+    cper_ts.minute = decimal_to_bcd(utc_time.tm_min);
+    cper_ts.hour = decimal_to_bcd(utc_time.tm_hour);
+    cper_ts.precise = 0x01;
+    cper_ts.day = decimal_to_bcd(utc_time.tm_mday);
+    cper_ts.month = decimal_to_bcd(utc_time.tm_mon + 1);
+    int year = utc_time.tm_year + 1900;
+    cper_ts.year = decimal_to_bcd(year % 100);
+    cper_ts.century = decimal_to_bcd(year / 100);
+
+    return cper_ts.as_uint64;
 }

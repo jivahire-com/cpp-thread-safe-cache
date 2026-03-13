@@ -19,6 +19,7 @@
 #include <silibs_scp_top_regs.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -28,7 +29,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(avs0, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(avs0, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "cfg_mgr"))
 {
     static scp_avs_device_t avs_device = {
         .config = {
@@ -48,7 +49,7 @@ FPFW_INIT_COMPONENT(avs0, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "cfg_
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_device};
 }
 
-FPFW_INIT_COMPONENT(avs0_int, FPFW_INIT_DEPENDENCIES("avs0"))
+PLACED_CODE FPFW_INIT_COMPONENT(avs0_int, FPFW_INIT_DEPENDENCIES("avs0"))
 {
     static scp_avs_interface_t avs_interface = {};
     fpfw_init_component_id_t avs_id = "avs0";
@@ -59,7 +60,7 @@ FPFW_INIT_COMPONENT(avs0_int, FPFW_INIT_DEPENDENCIES("avs0"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
 
-FPFW_INIT_COMPONENT(avs1, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_ver", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(avs1, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_ver", "cfg_mgr"))
 {
     if (idsw_get_die_id() == DIE_1)
     { // DIE_1 only has one AVSBus.
@@ -85,7 +86,7 @@ FPFW_INIT_COMPONENT(avs1, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_v
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_device};
 }
 
-FPFW_INIT_COMPONENT(avs1_int, FPFW_INIT_DEPENDENCIES("avs1"))
+PLACED_CODE FPFW_INIT_COMPONENT(avs1_int, FPFW_INIT_DEPENDENCIES("avs1"))
 {
     if (idsw_get_die_id() == DIE_1)
     {
@@ -101,7 +102,7 @@ FPFW_INIT_COMPONENT(avs1_int, FPFW_INIT_DEPENDENCIES("avs1"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
 
-FPFW_INIT_COMPONENT(avs2, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_ver", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(avs2, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_ver", "cfg_mgr"))
 {
     if (idsw_get_die_id() == DIE_1)
     {
@@ -127,7 +128,7 @@ FPFW_INIT_COMPONENT(avs2, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_v
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_device};
 }
 
-FPFW_INIT_COMPONENT(avs2_int, FPFW_INIT_DEPENDENCIES("avs2"))
+PLACED_CODE FPFW_INIT_COMPONENT(avs2_int, FPFW_INIT_DEPENDENCIES("avs2"))
 {
     if (idsw_get_die_id() == DIE_1)
     {
@@ -143,7 +144,7 @@ FPFW_INIT_COMPONENT(avs2_int, FPFW_INIT_DEPENDENCIES("avs2"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_interface};
 }
 
-FPFW_INIT_COMPONENT(avs3, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_ver", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(avs3, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_ver", "cfg_mgr"))
 {
     if (idsw_get_die_id() == DIE_1)
     {
@@ -169,7 +170,7 @@ FPFW_INIT_COMPONENT(avs3, FPFW_INIT_DEPENDENCIES("dfwk", "std_io", "nvic", "hw_v
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &avs_device};
 }
 
-FPFW_INIT_COMPONENT(avs3_int, FPFW_INIT_DEPENDENCIES("avs3"))
+PLACED_CODE FPFW_INIT_COMPONENT(avs3_int, FPFW_INIT_DEPENDENCIES("avs3"))
 {
     if (idsw_get_die_id() == DIE_1)
     {

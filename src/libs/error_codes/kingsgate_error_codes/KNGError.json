@@ -142,6 +142,41 @@
           "Name": "KNG_CD_THREAD_STACK_ERROR",
           "Value": 8,
           "Description": "Crash dump caused by TX thread stack error Bug Check"
+        },
+        {
+          "Name": "KNG_CD_SDM_CP_FATAL",
+          "Value": 9,
+          "Description": "Crash dump caused by fatal error from co-processor"
+        },
+        {
+          "Name": "KNG_CD_SDM_UE_ECC",
+          "Value": 10,
+          "Description": "Crash dump caused by un-correctable ECC error"
+        },
+        {
+          "Name": "KNG_CD_SDM_CSR_PARITY",
+          "Value": 11,
+          "Description": "Crash dump caused by CSR parity error"
+        },
+        {
+          "Name": "KNG_CD_SDM_WDT_TIMEOUT",
+          "Value": 12,
+          "Description": "Crash dump caused by SDM IP WDT timeout"
+        },
+        {
+          "Name": "KNG_CD_SDM_FAB_WDT_TIMEOUT",
+          "Value": 13,
+          "Description": "Crash dump caused by SDM IP Fabric WDT timeout"
+        },
+        {
+          "Name": "KNG_CD_SDM_AXI_TRANS",
+          "Value": 14,
+          "Description": "Crash dump caused by error during AXI transfer"
+        },
+        {
+          "Name": "KNG_CD_ACCEL_DEFAULT_CD",
+          "Value": 15,
+          "Description": "Default crash generated as accelerator failed to generate a crash dump"
         }
       ]
     },

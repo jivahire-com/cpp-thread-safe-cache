@@ -119,6 +119,14 @@ void fuse_register_remote_die_cfg_completion_cb(ap_core_die_cfg_cb cb, void* ctx
 bool fuse_has_remote_die_config(void);
 
 /**
+ * Apply hardcoded fuse overrides based on customer sample milestone.
+ *
+ * For pre-PR samples (ES0, ES1, ES2, PC), applies the cdedss_uhd1rwrf_memtrim_wa
+ * override of 0x4 to the CSR. PR and beyond use the correctly fused value.
+ */
+void fuse_hardcoded_overrides(void);
+
+/**
  * Print fuse artifacts version used in the FW code
  *
  * @return none

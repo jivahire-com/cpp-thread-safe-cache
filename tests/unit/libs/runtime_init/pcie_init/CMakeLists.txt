@@ -30,6 +30,7 @@ target_link_libraries(${TARGET}
     silibs::idsw_kng
     silibs::kng_silibs_platform
     silibs::pcie
+    ms::lib::utils
 )
 
 if(i386-pc-windows-msvc)

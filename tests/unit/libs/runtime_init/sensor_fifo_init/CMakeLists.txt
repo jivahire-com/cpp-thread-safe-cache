@@ -39,6 +39,7 @@ target_link_libraries(${TARGET}
         ms::service::scp_startup_shutdown
         silibs::kng_silibs_platform
         silibs::sensor_ram_bridge
+        ms::lib::utils
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
@@ -104,6 +105,7 @@ target_link_libraries(${TARGET}
         ms::service::mcp_startup_shutdown
         silibs::kng_silibs_platform
         silibs::sensor_ram_bridge
+        ms::lib::utils
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")

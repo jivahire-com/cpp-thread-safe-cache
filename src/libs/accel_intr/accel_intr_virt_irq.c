@@ -148,6 +148,7 @@ static nvic_status_t accel_intr_virt_irq_register(uint32_t virt_irq_num, isr_cal
 
     if (irq_offset >= SDM_EXT_SDM_MAX_CNT)
     {
+        FPFW_ET_LOG(AccelIntrInvalidParam, irq_offset, __LINE__);
         return NVIC_STATUS_INVALID_PARAM;
     }
 
@@ -173,6 +174,7 @@ static nvic_status_t accel_intr_virt_irq_enable(uint32_t virt_irq_num)
 
     if (irq_offset >= SDM_EXT_SDM_MAX_CNT)
     {
+        FPFW_ET_LOG(AccelIntrInvalidParam, irq_offset, __LINE__);
         return NVIC_STATUS_INVALID_PARAM;
     }
 
@@ -196,6 +198,7 @@ static nvic_status_t accel_intr_virt_irq_disable(uint32_t virt_irq_num)
 
     if (irq_offset >= SDM_EXT_SDM_MAX_CNT)
     {
+        FPFW_ET_LOG(AccelIntrInvalidParam, irq_offset, __LINE__);
         return NVIC_STATUS_INVALID_PARAM;
     }
 
@@ -222,6 +225,7 @@ static nvic_status_t accel_intr_virt_irq_is_enabled(uint32_t virt_irq_num, bool*
     uint32_t interrupt_mask_addr = sdm_ext_get_category_mask_reg_addr(ext_cfg_addr, SDM_EXT_CATEGORY_ID_EXT_INTR);
     if (interrupt_mask_addr == SDM_EXT_INVALID_INTERRUPT_INPUT)
     {
+        FPFW_ET_LOG(AccelIntrInvalidParam, interrupt_mask_addr, __LINE__);
         return NVIC_STATUS_INVALID_PARAM;
     }
 

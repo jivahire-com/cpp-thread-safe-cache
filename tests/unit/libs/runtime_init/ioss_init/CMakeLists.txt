@@ -32,6 +32,7 @@ target_link_libraries(${TARGET}
         ms::lib::error_codes
         ms::service::atu_service
         ms::lib::crash_dump
+        ms::lib::utils
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")

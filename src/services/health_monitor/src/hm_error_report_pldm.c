@@ -126,6 +126,10 @@ void hm_transfer_cper_to_bmc_internal(bool is_ue)
     if (pldm_stack_ready == false)
     {
         HM_LOG_INFO("PLDM stack not ready, abort OOB transfer\n");
+        hm_config_t* cfg = get_hm_config();
+        wait_for_semaphore(cfg->semaphore_id, cfg->semaphore_key);
+        hm_set_pldm_transfer_status(HM_PLDM_TRANSFER_STATUS_IDLE, is_ue);
+        release_semaphore(cfg->semaphore_id);
         return;
     }
 
@@ -166,6 +170,10 @@ void hm_transfer_cper_to_bmc_internal(bool is_ue)
         {
             HM_LOG_INFO("CPER OOB transfer request failed (status=0x%x)\n", status);
             pldm_cper_transfer_ongoing = false;
+            hm_config_t* cfg = get_hm_config();
+            wait_for_semaphore(cfg->semaphore_id, cfg->semaphore_key);
+            hm_set_pldm_transfer_status(HM_PLDM_TRANSFER_STATUS_IDLE, is_ue);
+            release_semaphore(cfg->semaphore_id);
         }
     }
 }

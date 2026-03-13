@@ -16,6 +16,7 @@
 #include <idsw_kng.h>
 #include <interrupts.h>
 #include <stdio.h> // for printf, NULL
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -32,7 +33,7 @@
  * the `fpfw_init()` path as `NULL`. Hence as a fix, we are just calling out the
  * `css_pome` which in-turn depends on the `std_io`, `hw_ver` and `mesh`.
  */
-FPFW_INIT_COMPONENT(
+PLACED_CODE FPFW_INIT_COMPONENT(
     accel,
     FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "accel_iso_cfg", "accel_intr_clnt", "nvic", "ddr", "accel_atu", "cd_pomesh", "virt_irq", "cfg_mgr", "boot_stat", "sysinfo"))
 {
@@ -46,7 +47,7 @@ FPFW_INIT_COMPONENT(
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(accel_atu, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "atu_svc", "nvic", "ddr", "cfg_mgr"))
+PLACED_CODE FPFW_INIT_COMPONENT(accel_atu, FPFW_INIT_DEPENDENCIES("vab", "hw_ver", "atu_svc", "nvic", "ddr", "cfg_mgr"))
 {
     // Initialize the Accelerators
     for (ACCEL_ID accel_type = ACCEL_ID_SDM; accel_type < NUM_VALID_ACCEL_ID; accel_type++)

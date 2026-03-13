@@ -41,6 +41,7 @@ target_link_libraries(${TARGET}
         silibs::platform
         silibs::kng_silibs_platform
         silibs::sdm_command_desc
+        ms::lib::utils
 )
 
 target_compile_definitions(
@@ -70,6 +71,7 @@ mock_target(${TARGET}
     sos_register_ssi
     crash_dump_context
     crash_dump_init
+    crash_dump_default_accel_cd_init
     crash_dump_register_dump
     crash_dump_config_icc
     exception_handler_init

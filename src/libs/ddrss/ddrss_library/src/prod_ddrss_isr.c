@@ -18,6 +18,7 @@
 #include <arm_intrinsic.h>
 #include <bug_check.h>
 #include <cper.h>
+#include <ddr_manager_events.h>
 #include <ddrss.h>
 #include <ddrss_intu.h>
 #include <ddrss_lib.h>
@@ -30,6 +31,8 @@
 #include <stdio.h>
 
 volatile uint8_t prod_ddrss_mc_ras_ce_en[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_RAS_NODE_ID_MC_ERG_MAX];
+
+extern uint16_t prod_ddrss_ecc_ce_th;
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -83,9 +86,9 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
         DDRSS_RAS_NODE_ID erg_id = DDRSS_IS_RAS_ERG(record.reporting_agent, DDRSS_RAS_NODE_ID_MC_ERG0)
                                        ? DDRSS_RAS_NODE_ID_MC_ERG0
                                        : DDRSS_RAS_NODE_ID_MC_ERG1;
-        if ((erg_id == DDRSS_RAS_NODE_ID_MC_ERG0) && record.ce_count_valid && (record.ce_count > 0))
+        if ((erg_id == DDRSS_RAS_NODE_ID_MC_ERG0) && record.ce_count_valid && ((record.ce_count > 0) || record.ce_count_overflow))
         {
-            ddrss_ras_update_ce_threshold(mc, 1 << record.position, true);
+            ddrss_ras_update_ce_threshold(mc, 1 << record.position, prod_ddrss_ecc_ce_th ? false : true);
         }
 
         if (record.handler)
@@ -93,6 +96,7 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
             if (record.handler(&record))
             {
                 DDRSS_ISR_DEBUG_PRINT("Error encountered while handling record!\n");
+                DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_RAS_RECORD_ERROR, __LINE__);
             }
         }
         else
@@ -108,6 +112,7 @@ static int ddrss_get_and_probe_ras_agent(uint32_t mc,
             if (sub_sts != SILIBS_SUCCESS)
             {
                 DDRSS_ISR_DEBUG_PRINT("Error in disabling CE RAS interrupt!\n");
+                DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_ENABLED_RAS_ERG_CE_INTERRUPT, __LINE__);
             }
         }
     }
@@ -481,6 +486,7 @@ void prod_ddrss_interrupt_handler(void* context)
     {
         sts = SILIBS_E_DEVICE;
         DDRSS_ISR_DEBUG_PRINT("DDR int handler failed for INTU mask 0x%08x\n", (unsigned int)ddr_intu_err);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_DDR_INTU_ERROR, __LINE__);
     }
 
     // If DDR RAS CRI is active, trigger crash dump since it is fatal.
@@ -489,6 +495,7 @@ void prod_ddrss_interrupt_handler(void* context)
     {
         uint32_t mc_cri = mc + ((ddr_intu_clr_sts & (1 << DDRSS_INTU_MC0_CRI_INT)) ? 0 : 1);
         DDRSS_ISR_CRITICAL_PRINT("Force CD due to fatal DDR CRI from MC%d\n", (unsigned int)mc_cri);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_IS_CRI_ACTIVE, __LINE__);
         BUG_CHECK(KNG_DDR_RAS_CRI_FATAL, mc_cri, ddr_intu_sts);
     }
 
@@ -496,6 +503,7 @@ void prod_ddrss_interrupt_handler(void* context)
     if (has_ueu)
     {
         DDRSS_ISR_CRITICAL_PRINT("Force CD due to DDR RAS UEU from MC%d\n", (unsigned int)mc_ueu);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_HAS_UEU, __LINE__);
         BUG_CHECK(KNG_DDR_RAS_UEU_FATAL, mc_ueu, ddr_intu_sts);
     }
 
@@ -527,6 +535,7 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
     if (sts != SILIBS_SUCCESS)
     {
         DDRSS_ISR_CRITICAL_PRINT("Failed to get INTU enable status.  Retval = %d\n", sts);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_PHY_INTERRUPT_ERROR, __LINE__);
     }
     else
     {
@@ -627,6 +636,7 @@ int prod_ddrss_phy_interrupt_handler(uint32_t mc)
     if (sts != SILIBS_SUCCESS)
     {
         DDRSS_ISR_CRITICAL_PRINT("Failed to clear PHY interrupt status.  Retval = %d\n", sts);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_PHY_INTERRUPT_ERROR, __LINE__);
     }
     BUG_ASSERT_PARAM(sts == SILIBS_SUCCESS, sts, 0);
 
@@ -650,6 +660,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     if (sub_sts != SILIBS_SUCCESS)
     {
         DDRSS_ISR_CRITICAL_PRINT("Failed to get INTU enable status.  Retval = %d\n", sub_sts);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_DDR_INTU_ERROR, __LINE__);
         return sub_sts;
     }
 
@@ -678,6 +689,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
         if (sub_sts != SILIBS_SUCCESS)
         {
             DDRSS_ISR_DEBUG_PRINT("sub_sts res %d\n", sub_sts);
+            DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_GET_TELEMETRY_RECORD, __LINE__);
             mc_intu_err |= int_mask;
         }
         else
@@ -788,6 +800,7 @@ int prod_ddrss_mc_interrupt_handler(uint32_t mc)
     {
         sts = SILIBS_E_DEVICE;
         DDRSS_ISR_CRITICAL_PRINT("MC int handler failed for INTU mask 0x%08x\n", (unsigned int)mc_intu_err);
+        DDR_MANAGER_ET_ERROR(DDR_MANAGER_ET_TYPE_PROD_DDRSS_ISR_DDR_INTU_ERROR, __LINE__);
     }
 
     return sts;
@@ -872,6 +885,13 @@ int prod_ddrss_set_ras_erg_ce_interrupt_enable(uint32_t mc, DDRSS_RAS_NODE_ID er
     }
 
     uint32_t local_mc = DDRSS_GET_LOCAL_MC(mc);
+    if (prod_ddrss_ecc_ce_th > 0)
+    {
+        // Use ECC CE thresthold, skip the rate limiting flow.
+        prod_ddrss_mc_ras_ce_en[local_mc][erg_id] = 1;
+        return SILIBS_SUCCESS;
+    }
+
     sts = ddrss_get_ras_agent(mc, erg_id, &ddrss_ras_agent);
     if (sts == SILIBS_SUCCESS)
     {

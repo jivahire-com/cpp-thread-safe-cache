@@ -24,6 +24,7 @@
 #include <stdio_textio.h>        // for stdio_textio_init
 #include <textio_pl011.h>        // for textio_pl011_device_t, textio_pl011_dev...
 #include <uart_pl011.h>          // for UART_PL011_PARITY_NONE, UART_PL011_STOP...
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 #define SVP_UART_APB_FREQUENCY  125000000U
@@ -53,7 +54,7 @@ static uint32_t get_uart_apb_frequency(idsw_plat_id_t sdv_id)
     }
 }
 
-static bool platform_supports_oob(idsw_plat_id_t sdv_id)
+static PLACED_CODE bool platform_supports_oob(idsw_plat_id_t sdv_id)
 {
     switch (sdv_id)
     {
@@ -66,7 +67,7 @@ static bool platform_supports_oob(idsw_plat_id_t sdv_id)
     }
 }
 
-static void print_build_info()
+static PLACED_CODE void print_build_info()
 {
 
     for (int i = 0; i < 64; i++)
@@ -101,7 +102,7 @@ static void print_build_info()
 
 // TODO: The UART initialization component is now dependent on the configuration manager. To resolve
 //       early boot stage debugging via UART see ado: https://azurecsi.visualstudio.com/Dev/_workitems/edit/2856417
-FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd", "atu_svc", "cfg_mgr", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd", "atu_svc", "cfg_mgr", "boot_stat"))
 {
     fpfw_init_component_id_t dfwk_id = "dfwk";
     static textio_pl011_config_t pl011_config = {
@@ -166,7 +167,7 @@ FPFW_INIT_COMPONENT(uart, FPFW_INIT_DEPENDENCIES("dfwk", "nvic", "systick_upd", 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &pl011_device};
 }
 
-FPFW_INIT_COMPONENT(std_io, FPFW_INIT_DEPENDENCIES("uart", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(std_io, FPFW_INIT_DEPENDENCIES("uart", "boot_stat"))
 {
 
     // Pl011 TextIo Interfaces

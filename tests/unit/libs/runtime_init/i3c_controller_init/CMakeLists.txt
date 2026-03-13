@@ -29,6 +29,7 @@ target_link_libraries(${TARGET}
         ms::lib::i3c_controller
         silibs_platform
         ms::lib::boot_status
+        ms::lib::utils
 )
 
 # Defining platform APIs

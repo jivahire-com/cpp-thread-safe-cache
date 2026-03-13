@@ -54,7 +54,7 @@ static FPFW_CLI_COMMAND cli_pwr_tlm_commands[] = {
 
 /*------------- Functions ----------------*/
 
-void pwr_tlm_cli_svc_init(void)
+PLACED_CODE void pwr_tlm_cli_svc_init(void)
 {
     FpFwCliRegisterTable(&cli_pwr_tlm_commands[0], FPFW_ARRAY_SIZE(cli_pwr_tlm_commands));
 }

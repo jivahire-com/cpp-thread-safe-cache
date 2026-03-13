@@ -21,6 +21,7 @@ target_link_libraries(${TARGET}
         silibs::platform
         silibs::idsw
         silibs::idsw_kng
+        ms::lib::utils
 )
 
 # Defining platform APIs

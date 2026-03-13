@@ -39,6 +39,7 @@ target_link_libraries(${TARGET}
         ms::service::gpio::cli
         silibs::idsw
         silibs::idsw_kng
+        ms::lib::utils
 )
 
 target_compile_definitions(

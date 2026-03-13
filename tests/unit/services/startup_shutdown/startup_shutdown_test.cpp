@@ -315,6 +315,7 @@ SOS_TEST(dispatch_sync_STARTUP_REGISTER_SSI_SYNC, NULL, NULL)
     test_interface.header.OwningDevice = &test_device.header;
     test_interface.p_device = &test_device;
     test_registration.p_ssi_interface = &test_interface.header;
+    test_registration.registration_id = SOS_SSI_ID_AP_CORE;
 
     test_request.header.RequestType = STARTUP_REGISTER_SSI_SYNC;
     test_request.header.OwningInterface = &test_interface.header;
@@ -341,7 +342,7 @@ SOS_TEST(dispatch_sync_STARTUP_REGISTER_SSI_SYNC, NULL, NULL)
         }
         assert_int_equal(sp_sos_service_context->registration_count, TEST_STARTING_REG_COUNT + 1);
     }
-    assert_int_equal(test_request.p_registration->interface_unique_flag, 1 << TEST_STARTING_REG_COUNT);
+    assert_int_equal(test_request.p_registration->interface_unique_flag, 1 << SOS_SSI_ID_AP_CORE);
 }
 
 SOS_TEST(dispatch_sync_STARTUP_RESET_TIMEOUT_SYNC, NULL, NULL)

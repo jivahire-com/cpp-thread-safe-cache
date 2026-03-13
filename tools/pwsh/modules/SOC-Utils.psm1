@@ -28,7 +28,8 @@ function Get-SOCSshIp {
         @{ "PC Name" = "C41431157B0209A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.45";  "RM IP" = "172.29.131.24"; "Node ID" = "12"},
         @{ "PC Name" = "C41431157B0209B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.141";  "RM IP" = "172.29.131.24"; "Node ID" = "36"},
         @{ "PC Name" = "C41431157B0439A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.41";  "RM IP" = "10.199.88.18"; "Node ID" = "11"},
-        @{ "PC Name" = "C41431157B0439B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.137";  "RM IP" = "10.199.88.18"; "Node ID" = "35"}
+        @{ "PC Name" = "C41431157B0439B";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.137";  "RM IP" = "10.199.88.18"; "Node ID" = "35"},
+        @{ "PC Name" = "C41431157B0235A";  "IsRM" = $true; "DC-SCM IP" = "172.17.0.17";  "RM IP" = "172.29.131.23"; "Node ID" = "5"}
     )
 
     # Find the matching PC Name and return both IsRM and IP
@@ -76,7 +77,7 @@ createifwitar -version 1.2.3-4
 Function Invoke-CreateIfwiTar(
     [Parameter(Mandatory=$false)] [string] $dat_loc = "${env:REPO_APP_ROOT}/.build/Debug/arm-eabi-aarch/bin/flash",
     [Parameter(Mandatory=$false)] [string] $dat_file = "kingsgate.ifwi.soc.debug.custom.dat",
-    [Parameter(Mandatory=$false)] [string] $tar_loc = "${env:REPO_APP_ROOT}/.build/Debug/arm-eabi-aarch/bin/flash/kingsgate.ifwi.soc.debug.custom.tar.gz",
+    [Parameter(Mandatory=$false)] [string] $tar_loc = "${env:REPO_APP_ROOT}/.build/Debug/arm-eabi-aarch/bin/flash/kingsgate.ifwi.soc.debug.custom-$nodeid.tar.gz",
     [Parameter(Mandatory=$false)] [string] $version = "0.0.0-0"
 )
 {
@@ -177,7 +178,7 @@ Function Write-SOCFlash(
             Write-Host -ForegroundColor Red "                    \;;|              - Use the right system name!!!"
             Write-Host -ForegroundColor Red "                     \/                     "
 
-            $tar_file = ($file -replace '\.dat$', '') + '.tar.gz'
+            $tar_file = ($file -replace '\.dat$', '') + "-$nodeid.tar.gz"
             $tar_loc = Join-Path -Path $loc -ChildPath $tar_file
         
             Write-Host -ForegroundColor Blue "------------------------------------------------------------------"
@@ -216,7 +217,7 @@ Function Write-SOCFlash(
                 }
             }
 
-            Import-Module Posh-SSH
+            Import-Module Posh-SSH -Force
 
             # Create the SFTP and SSH sessions to the RM
             $RmSecurePassword = ConvertTo-SecureString $rmpw -AsPlainText -Force
@@ -238,7 +239,7 @@ Function Write-SOCFlash(
 
             # Flash Ifwi tar file
 			Write-Title -Title "Flash Ifwi tar file" -Color Cyan
-            $Command = "set system bios update -i $nodeid -f kingsgate.ifwi.soc.debug.custom.tar.gz"
+            $Command = "set system bios update -i $nodeid -f kingsgate.ifwi.soc.debug.custom-$nodeid.tar.gz"
             $maxRetries = 4
             $retryCount = 0
             $success = $false
@@ -266,7 +267,17 @@ Function Write-SOCFlash(
                 throw "Failed to flash Ifwi tar after $maxRetries attempts."
             }
             else {
-                Write-Host -ForegroundColor Green "Ifwi tar successfully flashed."
+                # Check for FW update success message
+                $stdout = $output.Output | Out-String
+                if ($stdout -match "FW Status: FW update completed successfully") {
+                    Write-Host -ForegroundColor Green "Ifwi tar successfully flashed."
+                }
+                else {
+                    Write-Host -ForegroundColor Yellow "Flash command completed, but success message not detected."
+                    Write-Host -ForegroundColor Yellow "Output was:"
+                    Write-Host $stdout
+                    throw "FW update did not report successful completion."
+                }
             }
 
             Remove-SFTPSession -SFTPSession $RmSFTPSession | Out-Null

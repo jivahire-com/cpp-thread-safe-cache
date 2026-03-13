@@ -60,7 +60,7 @@ static PLACED_CODE FPFW_CLI_STATUS cli_ap_advlog(int argc, const char** argv)
 }
 
 /*----------------------------- Global Functions ----------------------------*/
-FPFW_CLI_STATUS cli_ap_advlog_pldm_init(void)
+PLACED_CODE FPFW_CLI_STATUS cli_ap_advlog_pldm_init(void)
 {
     FpFwCliRegisterTable(s_ap_advlog_int_commands_table, FPFW_ARRAY_SIZE(s_ap_advlog_int_commands_table));
     FPFW_DBGPRINT_INFO("CLI AP Adv Logger PLDM initialized\n");

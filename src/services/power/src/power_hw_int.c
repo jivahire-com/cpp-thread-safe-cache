@@ -170,7 +170,7 @@ void setup_forced_pstate(uintptr_t cluster_pex_base_addr, dvfs_config_t* dvfs_cf
  * @return None
  *
  */
-static void power_init_update_odcm_cfg_common(odcm_config_t* odcm_cfg, const power_knobs_t* p_knobs)
+static PLACED_CODE void power_init_update_odcm_cfg_common(odcm_config_t* odcm_cfg, const power_knobs_t* p_knobs)
 {
     FPFW_RUNTIME_ASSERT(odcm_cfg != NULL);
     FPFW_RUNTIME_ASSERT(p_knobs != NULL);
@@ -196,9 +196,9 @@ static void power_init_update_odcm_cfg_common(odcm_config_t* odcm_cfg, const pow
  * @return None
  *
  */
-static void power_init_update_odcm_cfg_core(odcm_telem_config_t* odcm_telem_cfg,
-                                            const power_telcfg_t* p_telemetry_config,
-                                            unsigned int core)
+static PLACED_CODE void power_init_update_odcm_cfg_core(odcm_telem_config_t* odcm_telem_cfg,
+                                                        const power_telcfg_t* p_telemetry_config,
+                                                        unsigned int core)
 {
     FPFW_RUNTIME_ASSERT(odcm_telem_cfg != NULL);
     FPFW_RUNTIME_ASSERT(p_telemetry_config != NULL);
@@ -239,9 +239,9 @@ static void power_init_update_dvfs_cfg_disable(dvfs_config_t* dvfs_cfg)
  * @return None
  *
  */
-static void power_init_update_dvfs_cfg_common(const power_runconfig_t* p_runconfig,
-                                              dvfs_config_t* p_dvfs_cfg,
-                                              const power_telcfg_t* p_telemetry_config)
+static PLACED_CODE void power_init_update_dvfs_cfg_common(const power_runconfig_t* p_runconfig,
+                                                          dvfs_config_t* p_dvfs_cfg,
+                                                          const power_telcfg_t* p_telemetry_config)
 {
     FPFW_RUNTIME_ASSERT(p_dvfs_cfg != NULL);
     FPFW_RUNTIME_ASSERT(p_telemetry_config != NULL);
@@ -344,7 +344,9 @@ static unsigned find_lowest_nonlin_pstate_idx(const power_runconfig_t* p_runconf
  * @return FWK_SUCCESS or FWK_E_DEVICE
  *
  */
-static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig, dvfs_config_t* p_dvfs_cfg, unsigned int core)
+static PLACED_CODE void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig,
+                                                        dvfs_config_t* p_dvfs_cfg,
+                                                        unsigned int core)
 {
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
     FPFW_RUNTIME_ASSERT(p_dvfs_cfg != NULL);
@@ -430,7 +432,7 @@ static void power_init_update_dvfs_cfg_core(const power_runconfig_t* p_runconfig
  * @return None
  *
  */
-static void power_init_update_tilepvt_cfg(const power_runconfig_t* p_runconfig, pvt_setting_config_t* pvt_cfg)
+static PLACED_CODE void power_init_update_tilepvt_cfg(const power_runconfig_t* p_runconfig, pvt_setting_config_t* pvt_cfg)
 {
     FPFW_RUNTIME_ASSERT(pvt_cfg != NULL);
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
@@ -474,7 +476,9 @@ static void power_init_update_tilepvt_cfg(const power_runconfig_t* p_runconfig, 
  * @return None
  *
  */
-static void power_init_update_tilepvt_tile_cfg(const power_runconfig_t* p_runconfig, pvt_setting_config_t* pvt_cfg, unsigned int tile)
+static PLACED_CODE void power_init_update_tilepvt_tile_cfg(const power_runconfig_t* p_runconfig,
+                                                           pvt_setting_config_t* pvt_cfg,
+                                                           unsigned int tile)
 {
     FPFW_RUNTIME_ASSERT(pvt_cfg != NULL);
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
@@ -528,9 +532,9 @@ uint16_t power_hw_dts_pvt_raw_to_temp_dC(uint16_t raw, dts_coeff_t fused_coeff)
  * @return None
  *
  */
-static void power_init_update_tilepvt_telemetry_cfg(tile_pvt_telem_setting_config_t* pvt_telem_cfg,
-                                                    const power_telcfg_t* p_telemetry_config,
-                                                    unsigned int tile)
+static PLACED_CODE void power_init_update_tilepvt_telemetry_cfg(tile_pvt_telem_setting_config_t* pvt_telem_cfg,
+                                                                const power_telcfg_t* p_telemetry_config,
+                                                                unsigned int tile)
 {
     FPFW_RUNTIME_ASSERT(pvt_telem_cfg != NULL);
     FPFW_RUNTIME_ASSERT(p_telemetry_config != NULL);
@@ -545,7 +549,7 @@ static void power_init_update_tilepvt_telemetry_cfg(tile_pvt_telem_setting_confi
     pvt_telem_cfg->volt_dma_settings.buffer_stride = p_telemetry_config->volt_telem_stride_size;
 }
 
-static uint16_t power_init_find_sochot_safe_temp_hyst(uint16_t config_hyst, dts_coeff_t fused_coeff)
+static PLACED_CODE uint16_t power_init_find_sochot_safe_temp_hyst(uint16_t config_hyst, dts_coeff_t fused_coeff)
 {
     uint16_t raw_hyst = TEMPTHRESHOLD2DOUT(config_hyst, fused_coeff);
     while ((raw_hyst < UINT16_MAX) && (power_hw_dts_pvt_raw_to_temp_dC(raw_hyst, fused_coeff) < config_hyst))
@@ -570,7 +574,7 @@ static uint16_t power_init_find_sochot_safe_temp_hyst(uint16_t config_hyst, dts_
  * @return None
  *
  */
-static void power_init_update_socpvt_cfg(const power_runconfig_t* p_runconfig, pvt_setting_config_t* pvt_cfg)
+static PLACED_CODE void power_init_update_socpvt_cfg(const power_runconfig_t* p_runconfig, pvt_setting_config_t* pvt_cfg)
 {
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
     FPFW_RUNTIME_ASSERT(pvt_cfg != NULL);
@@ -639,7 +643,7 @@ static void power_init_update_socpvt_cfg(const power_runconfig_t* p_runconfig, p
  *
  */
 
-void power_warm_init_core_reset_pvt(const power_runconfig_t* p_runconfig)
+PLACED_CODE void power_warm_init_core_reset_pvt(const power_runconfig_t* p_runconfig)
 {
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);
 
@@ -700,7 +704,7 @@ void power_warm_init_core_reset_pvt(const power_runconfig_t* p_runconfig)
     }
 }
 
-void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg_t* p_telemetry_config)
+PLACED_CODE void power_init_ws_core(const power_runconfig_t* p_runconfig, const power_telcfg_t* p_telemetry_config)
 {
     FPFW_RUNTIME_ASSERT(p_telemetry_config != NULL);
     FPFW_RUNTIME_ASSERT(p_runconfig != NULL);

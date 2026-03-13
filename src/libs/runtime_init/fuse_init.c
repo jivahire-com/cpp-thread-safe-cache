@@ -22,6 +22,7 @@
 #include <idsw.h>
 #include <stdio.h> // for NULL, printf
 #include <system_info.h>
+#include <utils.h>
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -40,7 +41,7 @@
 //
 
 #if defined(SCP_RUNTIME_INIT)
-FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(fuse_pre_mesh, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "boot_stat"))
 {
     fpfw_icc_base_ctx_t* icc_hspmbx_ctx = fpfw_init_get_handle("icc_hspmbx");
     if (icc_hspmbx_ctx == NULL)
@@ -84,6 +85,9 @@ FPFW_INIT_COMPONENT(fuse_post_mesh,
 
     fuse_post_mesh_init(icc_die2die_ctx);
 
+    // Apply hardcoded overrides based on sample milestone
+    fuse_hardcoded_overrides();
+
     boot_status_req_t boot_status_req = {0};
     boot_status_notify_extd(
         &boot_status_req,
@@ -98,10 +102,20 @@ FPFW_INIT_COMPONENT(fuse_post_mesh,
 }
 
 //
+// Apply hardcoded fuse overrides after DDR init is complete
+//
+
+PLACED_CODE FPFW_INIT_COMPONENT(fuse_override, FPFW_INIT_DEPENDENCIES("fuse_post_mesh", "ddr"))
+{
+    fuse_hardcoded_overrides();
+    return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
+}
+
+//
 // Enable the Fuse CLI
 //
 
-FPFW_INIT_COMPONENT(cli_fuse, FPFW_INIT_DEPENDENCIES("fuse_post_mesh"))
+PLACED_CODE FPFW_INIT_COMPONENT(cli_fuse, FPFW_INIT_DEPENDENCIES("fuse_post_mesh"))
 {
     FPFW_CLI_STATUS status = platform_fuse_init_cli();
     return (fpfw_init_result_t){status, NULL};
@@ -113,7 +127,7 @@ FPFW_INIT_COMPONENT(cli_fuse, FPFW_INIT_DEPENDENCIES("fuse_post_mesh"))
 //
 
 #if defined(SCP_RUNTIME_INIT)
-FPFW_INIT_COMPONENT(fuse_en, FPFW_INIT_DEPENDENCIES("fuse_post_mesh"))
+PLACED_CODE FPFW_INIT_COMPONENT(fuse_en, FPFW_INIT_DEPENDENCIES("fuse_post_mesh"))
 #elif defined(MCP_RUNTIME_INIT)
 FPFW_INIT_COMPONENT(fuse_en, FPFW_INIT_NULL_NODE)
 #endif

@@ -23,6 +23,8 @@ target_link_libraries(${TARGET}
     PRIVATE
     ms::cmocka::testrunner
     ms::boot_loader::interface
+    silibs::cmsdk_wd
+    silibs::kng_silibs_platform
 )
 
 lint_target(${TARGET})
@@ -33,4 +35,6 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     _start
+    wdog_cmsdk_apb_disable
+    wdog_cmsdk_apb_lock_unlock
 )

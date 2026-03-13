@@ -20,6 +20,7 @@ target_include_directories(${TARGET}
 
 target_link_libraries(${TARGET}
     PRIVATE
+    ms::cmsis::interface
     fwlib.dfwk
     fwlib.platform.dfwkhost.threadx
     fwlib.lib.cfg_mgr
@@ -29,6 +30,7 @@ target_link_libraries(${TARGET}
     fwlib.service.iccBase
     fwlib.service.cli
     ms::boot_loader::interface
+    ms::lib::arm_intrinsic
     ms::lib::crash_dump
     ms::lib::error_codes
     ms::lib::error_codes

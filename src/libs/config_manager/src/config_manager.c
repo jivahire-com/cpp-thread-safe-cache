@@ -8,6 +8,8 @@
  */
 
 /*------------- Includes -----------------*/
+#include "config_manager_events.h"
+
 #include <FpFwSpinLock.h>
 #include <FpFwUtils.h>
 #include <bug_check.h>
@@ -180,6 +182,7 @@ PLACED_CODE bool update_knob_data(cached_knob_data_t* current_entry,
     if ((idsw_get_platform_sdv() == PLATFORM_RVP_EVT_SILICON) && system_info_get_mission_mode())
     {
         CFG_ERR("Knob override not allowed in mission mode\n");
+        FPFW_ET_LOG(ConfigManagerPlatformNotSupport, __LINE__);
         return false;
     }
 

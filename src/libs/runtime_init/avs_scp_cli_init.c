@@ -16,6 +16,7 @@
 #include <scp_avs_driver.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -25,7 +26,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(avs_cli, FPFW_INIT_DEPENDENCIES("cli", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver"))
+PLACED_CODE FPFW_INIT_COMPONENT(avs_cli, FPFW_INIT_DEPENDENCIES("cli", "avs0_int", "avs1_int", "avs2_int", "avs3_int", "hw_ver"))
 {
     scp_avs_interface_t* cli_array[MAX_AVS_INST] = {0};
 

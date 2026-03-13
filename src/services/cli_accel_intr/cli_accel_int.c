@@ -144,7 +144,7 @@ reg_data_t accel_interrupt_handler_registers[] = {
  *  On success, 0x0
  *  On failure, -1
  * */
-static int cli_accel_int_get_register_idx(uint32_t address)
+static PLACED_CODE int cli_accel_int_get_register_idx(uint32_t address)
 {
     for (int i = 0; i < (int)SDM_INTERRUPT_HANDLER_REGISTERS_COUNT; i++)
     {
@@ -261,7 +261,7 @@ static PLACED_CODE int cli_accel_int_read_write_reg(uint32_t reg_offset, uint32_
  * @retval
  *  void
  * */
-static void cli_accel_int_perform_reg_update(int argc, const char** argv, uint8_t oper)
+static PLACED_CODE void cli_accel_int_perform_reg_update(int argc, const char** argv, uint8_t oper)
 {
     // Now loop through all addresses and read value
     for (int i = 1; i < argc; i += 2)
@@ -311,7 +311,7 @@ static void cli_accel_int_perform_reg_update(int argc, const char** argv, uint8_
  *  On success, CLI_SUCCESS
  *  On failure, CLI_ERROR
  * */
-static FPFW_CLI_STATUS cli_accel_int_reg_rd(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cli_accel_int_reg_rd(int argc, const char** argv)
 {
     if (argc <= 1)
     {
@@ -363,7 +363,7 @@ static FPFW_CLI_STATUS cli_accel_int_reg_rd(int argc, const char** argv)
  *  On success, CLI_SUCCESS
  *  On failure, CLI_ERROR
  * */
-static FPFW_CLI_STATUS cli_accel_int_reg_wr(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cli_accel_int_reg_wr(int argc, const char** argv)
 {
     if (argc <= 2)
     {
@@ -391,7 +391,7 @@ static FPFW_CLI_STATUS cli_accel_int_reg_wr(int argc, const char** argv)
  *  On success, CLI_SUCCESS
  *  On failure, CLI_ERROR
  * */
-static FPFW_CLI_STATUS cli_accel_int_reg_set(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cli_accel_int_reg_set(int argc, const char** argv)
 {
     if (argc <= 2)
     {
@@ -419,7 +419,7 @@ static FPFW_CLI_STATUS cli_accel_int_reg_set(int argc, const char** argv)
  *  On success, CLI_SUCCESS
  *  On failure, CLI_ERROR
  * */
-static FPFW_CLI_STATUS cli_accel_int_reg_clr(int argc, const char** argv)
+static PLACED_CODE FPFW_CLI_STATUS cli_accel_int_reg_clr(int argc, const char** argv)
 {
     if (argc <= 2)
     {
@@ -434,7 +434,7 @@ static FPFW_CLI_STATUS cli_accel_int_reg_clr(int argc, const char** argv)
 }
 
 /*----------------------------- Global Functions ----------------------------*/
-FPFW_CLI_STATUS cli_accel_int_init(void)
+PLACED_CODE FPFW_CLI_STATUS cli_accel_int_init(void)
 {
     FpFwCliRegisterTable(s_accel_int_commands_table, FPFW_ARRAY_SIZE(s_accel_int_commands_table));
 

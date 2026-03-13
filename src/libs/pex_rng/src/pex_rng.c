@@ -74,7 +74,7 @@ void pex_async_dispatch(PDFWK_ASYNC_REQUEST_HEADER request, void* context)
     }
 }
 
-void init_pex_rng(pex_rng_config_t* rng_config)
+void init_pex_rng(pex_rng_config_t* rng_config, bool is_warm_start)
 {
     BUG_ASSERT(rng_config != NULL);
 
@@ -82,20 +82,24 @@ void init_pex_rng(pex_rng_config_t* rng_config)
     memset(&g_pex_interface, 0, sizeof(pex_rng_interface_t));
     memset(&g_pex_request, 0, sizeof(pex_rng_request_t));
 
-    for (unsigned int core = 0; core < rng_config->core_count; ++core)
+    if (!is_warm_start)
     {
-        const corebits_t* enabled_cores = rng_config->platform_cores_in_die;
-        if (!corebits_is_bit_set(enabled_cores, core))
+        for (unsigned int core = 0; core < rng_config->core_count; ++core)
         {
-            continue;
-        }
-        FPFW_DBGPRINT_INFO("Enabling RNG for core %d\n", core);
+            const corebits_t* enabled_cores = rng_config->platform_cores_in_die;
+            if (!corebits_is_bit_set(enabled_cores, core))
+            {
+                continue;
+            }
+            FPFW_DBGPRINT_INFO("Enabling RNG for core %d\n", core);
 
-        const uintptr_t cluster_pex_base_addr = (rng_config->cluster_pex_base + (rng_config->cluster_stride * core));
-        uint32_t ap_rng_base = cluster_pex_base_addr + PEX_RNG_ADDRESS;
-        // Clk divider initially set to 1 with CPU at 50MHz was too fast for Si TODO: div value still needs to be optimized based on characterization
-        rng_enable_r(ap_rng_base, 0xC0);
-        BUG_ASSERT_PARAM(rng_wait_for_rng_complete_r(ap_rng_base) == 0x0, ap_rng_base, 0);
+            const uintptr_t cluster_pex_base_addr =
+                (rng_config->cluster_pex_base + (rng_config->cluster_stride * core));
+            uint32_t ap_rng_base = cluster_pex_base_addr + PEX_RNG_ADDRESS;
+            // Clk divider initially set to 1 with CPU at 50MHz was too fast for Si TODO: div value still needs to be optimized based on characterization
+            rng_enable_r(ap_rng_base, 0xC0);
+            BUG_ASSERT_PARAM(rng_wait_for_rng_complete_r(ap_rng_base) == 0x0, ap_rng_base, 0);
+        }
     }
     // Initialize DFWK structures
     DfwkDeviceInitialize(&g_pex_device.header, &((PDFWK_THREADX_HOST)fpfw_init_get_handle("dfwk"))->Schedule);

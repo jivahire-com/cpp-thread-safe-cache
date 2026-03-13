@@ -18,7 +18,8 @@ extern "C" {
 #include <CMockaWrapper.h> // for check_expected, check_expected_ptr
 #include <DfwkCommon.h>    // for DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE
 #include <FpFwLinkedList.h>
-#include <FpFwUtils.h>            // for FPFW_ARRAY_SIZE
+#include <FpFwUtils.h> // for FPFW_ARRAY_SIZE
+#include <crash_dump.h>
 #include <startup_shutdown.h>     // for sos_queue_start_phase, sos_thread_...
 #include <startup_shutdown_i.h>   // for sos_queue_start_phase, sos_thread_...
 #include <startup_shutdown_ssi.h> // for _ssi_startup_stage, _startup_type
@@ -28,6 +29,8 @@ extern "C" {
 } // extern "C"
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define MS_TO_TX_TICKS(ms) (((ms) * TX_TIMER_TICKS_PER_SECOND) / 1000)
+
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
@@ -179,6 +182,12 @@ const startup_shutdown_boot_stage_t* __wrap_sos_core_boot_stages()
     return mock_type(const startup_shutdown_boot_stage_t*);
 }
 
+bool __wrap_crash_dump_get_is_dump_transferring(void* type_context)
+{
+    FPFW_UNUSED(type_context);
+    return mock_type(bool);
+}
+
 extern void __real_sos_thread_init(psos_service_context_t p_context);
 extern void __real_sos_queue_start_phase(ssi_startup_type_t boot_type, ssi_startup_stage_t phase, PDFWK_ASYNC_REQUEST_HEADER p_request);
 extern void __real_sos_queue_shutdown(ssi_shutdown_type_t shutdown_type, PDFWK_ASYNC_REQUEST_HEADER p_request);
@@ -222,16 +231,17 @@ SOS_TEST(sos_queue_find_phase__not_found, NULL, NULL)
 SOS_TEST(sos_completion, NULL, NULL)
 {
     DFWK_ASYNC_REQUEST_HEADER test_request = {};
-    void* test_completion_context = (void*)0x5678;
+    startup_ssi_registration_t test_registration = {};
+    test_registration.interface_unique_flag = 1 << SOS_SSI_ID_CRASHDUMP;
 
     // expectations for ThreadX APIs
-    expect_value(__wrap__txe_event_flags_set, flags, (uint32_t)test_completion_context);
+    expect_value(__wrap__txe_event_flags_set, flags, (uint32_t)test_registration.interface_unique_flag);
     expect_value(__wrap__txe_event_flags_set, options, TX_OR);
     expect_not_value(__wrap__txe_event_flags_set, event_flags_group_ptr, NULL);
     will_return(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     // call the function
-    sos_completion(&test_request, test_completion_context);
+    sos_completion(&test_request, (void*)&test_registration);
 }
 
 void setup_registrations()
@@ -261,14 +271,15 @@ SOS_TEST(sos_notify_ssi_boot_stage, NULL, NULL)
         expect_value(__wrap_ssi_startup_stage_start, stage, test_stage);
         expect_value(__wrap_ssi_startup_stage_start, boot_type, test_boot_type);
         expect_any(__wrap_ssi_startup_stage_start, completion_routine);
-        expect_value(__wrap_ssi_startup_stage_start, p_completion_context, s_test_registrations[i].interface_unique_flag);
+        // expect_value(__wrap_ssi_startup_stage_start, p_completion_context, s_test_registrations[i].interface_unique_flag);
+        expect_value(__wrap_ssi_startup_stage_start, p_completion_context, (uintptr_t)&s_test_registrations[i]);
     }
 
     // call the function
     sos_notify_ssi_boot_stage(&s_test_service_ctx, test_stage, test_boot_type, true);
 }
 
-void setup_expectations_for_boot_stage_complete(ssi_startup_stage_t test_stage, ssi_startup_type_t test_boot_type)
+void setup_expectations_for_sos_stage_complete(ssi_startup_stage_t test_stage, ssi_startup_type_t test_boot_type)
 {
     setup_registrations();
 
@@ -281,7 +292,7 @@ void setup_expectations_for_boot_stage_complete(ssi_startup_stage_t test_stage, 
         expect_value(__wrap_ssi_startup_stage_complete, stage, test_stage);
         expect_value(__wrap_ssi_startup_stage_complete, boot_type, test_boot_type);
         expect_any(__wrap_ssi_startup_stage_complete, completion_routine);
-        expect_value(__wrap_ssi_startup_stage_complete, p_completion_context, s_test_registrations[i].interface_unique_flag);
+        expect_value(__wrap_ssi_startup_stage_complete, p_completion_context, (uintptr_t)&s_test_registrations[i]);
     }
 }
 
@@ -290,7 +301,7 @@ SOS_TEST(sos_notify_ssi_boot_stage_complete, NULL, NULL)
     ssi_startup_stage_t test_stage = STARTUP_MCP_LOAD;
     ssi_startup_type_t test_boot_type = COLD_BOOT;
 
-    setup_expectations_for_boot_stage_complete(test_stage, test_boot_type);
+    setup_expectations_for_sos_stage_complete(test_stage, test_boot_type);
 
     // call the function
     sos_notify_ssi_boot_stage(&s_test_service_ctx, test_stage, test_boot_type, false);
@@ -310,7 +321,7 @@ SOS_TEST(sos_notify_ssi_shutdown, NULL, NULL)
             expect_value(__wrap_ssi_shutdown, p_request, (uintptr_t)&s_test_registrations[i].ssi_request);
             expect_value(__wrap_ssi_shutdown, shutdown_type, (ssi_shutdown_type_t)current_shutdown);
             expect_any(__wrap_ssi_shutdown, completion_routine);
-            expect_value(__wrap_ssi_shutdown, p_completion_context, s_test_registrations[i].interface_unique_flag);
+            expect_value(__wrap_ssi_shutdown, p_completion_context, (uintptr_t)&s_test_registrations[i]);
         }
 
         // call the function
@@ -332,7 +343,7 @@ SOS_TEST(sos_notify_ssi_quiesce, NULL, NULL)
             expect_value(__wrap_ssi_quiesce, p_request, (uintptr_t)&s_test_registrations[i].ssi_request);
             expect_value(__wrap_ssi_quiesce, shutdown_type, (ssi_shutdown_type_t)current_shutdown);
             expect_any(__wrap_ssi_quiesce, completion_routine);
-            expect_value(__wrap_ssi_quiesce, p_completion_context, s_test_registrations[i].interface_unique_flag);
+            expect_value(__wrap_ssi_quiesce, p_completion_context, (uintptr_t)&s_test_registrations[i]);
         }
 
         // call the function
@@ -342,8 +353,6 @@ SOS_TEST(sos_notify_ssi_quiesce, NULL, NULL)
 
 void setup_wait_ssi_complete_expectations(ssi_startup_stage_t test_stage)
 {
-#define MS_TO_TX_TICKS(ms) (((ms) * TX_TIMER_TICKS_PER_SECOND) / 1000)
-
     sos_stage_timeout_t boot_timeout = {.stage_category = BOOT_STAGE, .operation_stage.boot = test_stage};
     unsigned timeout = 0;
 
@@ -365,18 +374,67 @@ SOS_TEST(sos_notify_ssi_boot_stage_and_wait, NULL, NULL)
     ssi_startup_type_t test_boot_type = COLD_BOOT;
 
     will_return_always(__wrap_sos_core_boot_stage_count, __real_sos_core_boot_stage_count());
+    will_return_always(__wrap_crash_dump_get_is_dump_transferring, false);
 
     sos_stage_timeout_t timeout = {.stage_category = BOOT_STAGE, .operation_stage.boot = test_stage, .timeout_ms = 4321};
     sos_boot_timeout_override(&timeout);
 
     // setup expectations for complete notification
-    setup_expectations_for_boot_stage_complete(test_stage, test_boot_type);
+    setup_expectations_for_sos_stage_complete(test_stage, test_boot_type);
 
     // setup expectations for wait
     setup_wait_ssi_complete_expectations(test_stage);
 
     // call the function
     sos_notify_ssi_boot_stage_and_wait(&s_test_service_ctx, test_stage, test_boot_type, false);
+}
+
+SOS_TEST(sos_notify_ssi_shutdown_stage_and_failed, NULL, NULL)
+{
+    sos_stage_timeout_t shutdown_timeout = {.stage_category = SHUTDOWN_STAGE};
+
+    expect_not_value(__wrap__txe_event_flags_get, group_ptr, NULL);
+    expect_any(__wrap__txe_event_flags_get, requested_flags);
+    expect_value(__wrap__txe_event_flags_get, get_option, TX_AND_CLEAR);
+    expect_not_value(__wrap__txe_event_flags_get, actual_flags_ptr, NULL);
+    expect_not_value(__wrap__txe_event_flags_get, wait_option, 0);
+    will_return(__wrap__txe_event_flags_get, TX_TIMER_ERROR);
+    will_return_always(__wrap_crash_dump_get_is_dump_transferring, false);
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    wait_ssi_complete(&shutdown_timeout);
+}
+
+SOS_TEST(sos_notify_ssi_shutdown_stage_and_cd_timeout_override, NULL, NULL)
+{
+    sos_stage_timeout_t shutdown_timeout = {.stage_category = SHUTDOWN_STAGE};
+
+    expect_not_value(__wrap__txe_event_flags_get, group_ptr, NULL);
+    expect_any(__wrap__txe_event_flags_get, requested_flags);
+    expect_value(__wrap__txe_event_flags_get, get_option, TX_AND_CLEAR);
+    expect_not_value(__wrap__txe_event_flags_get, actual_flags_ptr, NULL);
+    expect_not_value(__wrap__txe_event_flags_get, wait_option, 0);
+    will_return(__wrap__txe_event_flags_get, TX_SUCCESS);
+    will_return_always(__wrap_crash_dump_get_is_dump_transferring, true);
+
+    wait_ssi_complete(&shutdown_timeout);
+    assert_int_equal(shutdown_timeout.timeout_ms, FULL_CD_TRANSFER_TIMEOUT_MS);
+}
+
+SOS_TEST(sos_notify_ssi_shutdown_stage_and_cd_timeout_no_event, NULL, NULL)
+{
+    sos_stage_timeout_t shutdown_timeout = {.stage_category = SHUTDOWN_STAGE};
+
+    expect_not_value(__wrap__txe_event_flags_get, group_ptr, NULL);
+    expect_any(__wrap__txe_event_flags_get, requested_flags);
+    expect_value(__wrap__txe_event_flags_get, get_option, TX_AND_CLEAR);
+    expect_not_value(__wrap__txe_event_flags_get, actual_flags_ptr, NULL);
+    expect_not_value(__wrap__txe_event_flags_get, wait_option, 0);
+    will_return(__wrap__txe_event_flags_get, TX_NO_EVENTS);
+    will_return_always(__wrap_crash_dump_get_is_dump_transferring, false);
+
+    expect_function_call(__wrap_crash_dump_bug_check);
+    wait_ssi_complete(&shutdown_timeout);
 }
 
 // test for sos_thread_init

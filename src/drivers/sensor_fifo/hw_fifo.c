@@ -39,6 +39,8 @@ void hw_fifo_init(psensor_fifo_device_properties_t hw_fifo_prop_table, psensor_f
 
 void hw_fifo_disable(DEVICE_FIFO_ID fifo_id)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
+
     if (fifo_id <= LAST_HW_PROD_FIFO_ID)
     {
         MMIO_UPDATE32(s_hw_fifo_control[fifo_id].enable_reg_address, 0x0, s_hw_fifo_control[fifo_id].enable_mask);
@@ -49,6 +51,8 @@ void hw_fifo_disable(DEVICE_FIFO_ID fifo_id)
 
 void hw_fifo_enable(DEVICE_FIFO_ID fifo_id)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
+
     if (hw_fifo_is_enabled(fifo_id) == false)
     {
         // clear fifo on disabled-to-enabled transition
@@ -74,6 +78,8 @@ void hw_fifo_enable(DEVICE_FIFO_ID fifo_id)
 
 bool hw_fifo_is_enabled(DEVICE_FIFO_ID fifo_id)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
+
     bool enabled = false;
     if (fifo_id <= LAST_HW_PROD_FIFO_ID)
     {
@@ -98,6 +104,7 @@ void hw_fifo_get_enabled_from_hw(void)
 
 fpfw_status_t hw_fifo_write_entry(DEVICE_FIFO_ID fifo_id, uint8_t* src_data, size_t entry_size, uint16_t num_entries, uint16_t stride_index)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
     BUG_ASSERT_PARAM(src_data != NULL, src_data, 0);
     BUG_ASSERT_PARAM((entry_size % QUADWORD_ADDRESS_SIZE) == 0, entry_size, 0);
     BUG_ASSERT_PARAM(entry_size == s_hw_fifo_prop_table[fifo_id].entry_size_bytes, entry_size, 0);
@@ -179,6 +186,8 @@ fpfw_status_t hw_fifo_write_helper(uintptr_t curr_write_addr, uint8_t* src_data,
 
 void hw_fifo_update_write_ptr_by_size(DEVICE_FIFO_ID fifo_id, size_t element_size, uint16_t num_elements)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
+
     uint32_t actual_read_addr = hw_fifo_get_read_address(fifo_id);
     uint32_t actual_write_addr = hw_fifo_get_write_address(fifo_id);
     uint32_t actual_start_addr = s_hw_fifo_prop_table[fifo_id].start_address_incl;
@@ -211,6 +220,8 @@ void hw_fifo_update_write_ptr_by_size(DEVICE_FIFO_ID fifo_id, size_t element_siz
 
 void hw_fifo_update_write_ptr_by_stride_size(DEVICE_FIFO_ID fifo_id)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
+
     hw_fifo_update_write_ptr_by_size(fifo_id, s_hw_fifo_prop_table[fifo_id].stride_size_bytes, 1);
 }
 
@@ -221,6 +232,7 @@ fpfw_status_t hw_fifo_read_entry(DEVICE_FIFO_ID fifo_id,
                                  uint16_t* num_entries_remaining,
                                  uint16_t* stride_index)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
     BUG_ASSERT_PARAM(dest_loc != NULL, dest_loc, 0);
     BUG_ASSERT_PARAM((entry_size % QUADWORD_ADDRESS_SIZE) == 0, entry_size, 0);
     BUG_ASSERT_PARAM(entry_size == s_hw_fifo_prop_table[fifo_id].entry_size_bytes, entry_size, 0);
@@ -267,6 +279,8 @@ fpfw_status_t hw_fifo_read_entry(DEVICE_FIFO_ID fifo_id,
 
 void hw_fifo_update_read_ptr_by_entry_size(DEVICE_FIFO_ID fifo_id, uint16_t num_entries)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
+
     uint32_t actual_start_addr = s_hw_fifo_prop_table[fifo_id].start_address_incl;
     uint32_t next_read_addr = hw_fifo_get_read_address(fifo_id);
 
@@ -282,6 +296,8 @@ void hw_fifo_update_read_ptr_by_entry_size(DEVICE_FIFO_ID fifo_id, uint16_t num_
 
 bool hw_fifo_is_empty(DEVICE_FIFO_ID fifo_id)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
+
     bool empty = true;
     if (hw_fifo_is_enabled(fifo_id))
     {
@@ -292,6 +308,8 @@ bool hw_fifo_is_empty(DEVICE_FIFO_ID fifo_id)
 
 size_t hw_fifo_get_remaining_latched_entries(DEVICE_FIFO_ID fifo_id)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
+
     // Calculate the total number of bytes in the buffer
     size_t entries = 0;
     if (s_hw_fifo_control[fifo_id].latched_write_address != UINT32_MAX)
@@ -323,6 +341,8 @@ size_t hw_fifo_get_remaining_latched_entries(DEVICE_FIFO_ID fifo_id)
 
 uint16_t hw_fifo_get_stride_index(DEVICE_FIFO_ID fifo_id, uint32_t fifo_read_addr)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
+
     uint16_t stride_index = STRIDE_INDEX_UNUSED;
 
     uint32_t number_of_entries_per_stride =
@@ -339,20 +359,24 @@ uint16_t hw_fifo_get_stride_index(DEVICE_FIFO_ID fifo_id, uint32_t fifo_read_add
 
 uint32_t hw_fifo_get_read_address(DEVICE_FIFO_ID fifo_id)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
     return MMIO_READ32(s_hw_fifo_control[fifo_id].read_pointer_reg_address) - FIFO_TIMESTAMP_SIZE;
 }
 
 uint32_t hw_fifo_get_write_address(DEVICE_FIFO_ID fifo_id)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
     return MMIO_READ32(s_hw_fifo_control[fifo_id].write_pointer_reg_address) - FIFO_TIMESTAMP_SIZE;
 }
 
 void hw_fifo_update_read_ptr(DEVICE_FIFO_ID fifo_id, uint32_t address)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
     MMIO_WRITE32(s_hw_fifo_control[fifo_id].read_pointer_reg_address, address + FIFO_TIMESTAMP_SIZE);
 }
 
 void hw_fifo_update_write_ptr(DEVICE_FIFO_ID fifo_id, uint32_t address)
 {
+    BUG_ASSERT_PARAM(fifo_id < DEVICE_FIFO_MAX_ID, fifo_id, 0);
     MMIO_WRITE32(s_hw_fifo_control[fifo_id].write_pointer_reg_address, address + FIFO_TIMESTAMP_SIZE);
 }

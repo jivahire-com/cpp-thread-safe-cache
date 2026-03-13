@@ -49,8 +49,9 @@ typedef struct {
 /**
  * Initialize/Enable the RNG instances in each core in normal mode by setting the control reg enable field to 1
  *  @param rng_config config structure is used to get the base address of the RNG instance and iterate through clusters
+ *  @param is_warm_start if true, skip RNG hardware enable (already configured) and only initialize DFWK structures
  */
-void init_pex_rng(pex_rng_config_t* rng_config);
+void init_pex_rng(pex_rng_config_t* rng_config, bool is_warm_start);
 void reset_pex_rng(uintptr_t ap_rng_base);
 
 void schedule_pex_error_handling_dfwk(void* context);

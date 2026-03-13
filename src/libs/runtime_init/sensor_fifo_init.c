@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <telemetry_defines.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -319,7 +320,7 @@ static sensor_fifo_device_properties_t s_fifo_properties[SENSOR_FIFO_MAX_ID] = {
         },
 };
 
-static void sensor_fifo_get_tile_mask(uint64_t* tile_mask_p)
+static PLACED_CODE void sensor_fifo_get_tile_mask(uint64_t* tile_mask_p)
 {
     uint32_t tile_mask[2] = {0};
     uint8_t tile_id = 0;
@@ -390,7 +391,8 @@ static void sensor_fifo_get_core_mask(uint64_t* core_mask_lo, uint64_t* core_mas
 }
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(sensor_fifo, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "std_io", "icc_mscp2mscp", "core_info", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(sensor_fifo,
+                                FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver", "std_io", "icc_mscp2mscp", "core_info", "boot_stat"))
 {
     KNG_DIE_ID die_num = idsw_get_die_id();
     boot_status_req_t boot_status_req = {0};
@@ -497,7 +499,10 @@ FPFW_INIT_COMPONENT(sensor_fifo_ssi, FPFW_INIT_DEPENDENCIES("sensor_fifo", "sos_
     FPFW_RUNTIME_ASSERT(snsr_fifo_drv_interface != NULL);
 
     // static data for SSI registration
-    static startup_ssi_registration_t snsr_fifo_ssi_registration;
+    static startup_ssi_registration_t snsr_fifo_ssi_registration = {
+        .registration_id = SOS_SSI_ID_SENSOR_FIFO,
+    };
+
     int32_t status = sos_register_ssi(fpfw_init_get_handle("sos_int"),
                                       &snsr_fifo_ssi_registration,
                                       &(snsr_fifo_drv_interface->base_interface));

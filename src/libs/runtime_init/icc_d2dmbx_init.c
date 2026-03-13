@@ -34,6 +34,7 @@
 #include <stdbool.h> // for true
 #include <stddef.h>  // for NULL
 #include <stdint.h>  // for uint32_t, uint8_t
+#include <utils.h>
 
 /*-------------- Macros ------------------*/
 #define D2D_MBOX_SPI_CTRL_BASE_ADDR      (MSCP_TOP_MSCP_EXP_ADDRESS + MSCP_EXP_TOP_SPI_CTRL_ADDRESS)
@@ -59,7 +60,7 @@
  * @param regOffset offset of the desired register
  * @param value 2-bit data value to write
  */
-static void SpiControllerWrite32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regOffset, uint32_t value)
+static PLACED_CODE void SpiControllerWrite32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regOffset, uint32_t value)
 {
     uint32_t mbx_reg_addr = baseAddr + regOffset;
     int status = spi_controller_write_direct_instruction((uintptr_t)D2D_MBOX_SPI_CTRL_BASE_ADDR, mbx_reg_addr, 9, value);
@@ -77,7 +78,7 @@ static void SpiControllerWrite32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regOffs
  * @param regOffset offset of the desired register
  * @return uint32_t 2-bit data value read
  */
-static uint32_t SpiControllerRead32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regOffset)
+static PLACED_CODE uint32_t SpiControllerRead32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regOffset)
 {
     uint32_t readData = 0;
     uint32_t mbx_reg_addr = baseAddr + regOffset;
@@ -92,7 +93,7 @@ static uint32_t SpiControllerRead32(uintptr_t baseAddr, FPFW_MBX_REG_OFFSET regO
  * Remote die scp can send, current die scp or mcp can recv.
  *
  */
-FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
+PLACED_CODE FPFW_INIT_COMPONENT(icc_d2dmbx, FPFW_INIT_DEPENDENCIES("dfwk", "hw_ver"))
 {
     //! Statics declarations required for mailbox primitive
     static struct _fpfw_timer_t d2d_timer[ICC_MAX_ASYNC_REQ_TYPE] = {};

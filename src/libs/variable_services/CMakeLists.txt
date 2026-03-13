@@ -6,6 +6,7 @@ set (SOURCES
     variable_services_sync.c
     variable_services_async.c
     variable_services_helper.c
+    variable_services_events.c
 )
 add_library(${TARGET}  STATIC ${SOURCES})
 

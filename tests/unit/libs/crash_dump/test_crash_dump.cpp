@@ -73,6 +73,8 @@ extern VOID (*static_timer_cb)(ULONG id);
 extern bool transfer_completed;
 extern DFWK_ASYNC_REQUEST_COMPLETION_ROUTINE static_cd_dfwk_CompletionRoutine;
 
+extern core_crash_context_t g_accel_core_crash_context[NUM_VALID_ACCEL_ID];
+
 bool __real_crash_dump_get_is_dump_complete(crash_dump_type_context_t* type_context);
 bool __use_real_crash_dump_get_is_dump_complete = false;
 
@@ -370,6 +372,11 @@ void set_expectations_crash_dump_register_accel_cd()
 idsw_cpu_type_t __wrap_idsw_get_cpu_type()
 {
     return mock_type(idsw_cpu_type_t);
+}
+
+idsw_die_id_t __wrap_idsw_get_die_id(void)
+{
+    return mock_type(idsw_die_id_t);
 }
 
 //
@@ -1717,6 +1724,19 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_null_ctx, nullptr, nullptr)
     will_return_count(__wrap_crash_dump_context, NULL, 3);
     will_return(__wrap_crash_dump_context, &context);
 
+    expect_any(__wrap_FPFwCDCrashDumpHandler, ctx);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, coreInfo);
+
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Code);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[0]);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[1]);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[2]);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[3]);
+
+    expect_function_call(__wrap_FPFwCDCrashDumpHandler);
+
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
     // crash_dump_update_accel_state()
     expect_any(__wrap_wait_for_semaphore, id);
     expect_any(__wrap_wait_for_semaphore, key);
@@ -1725,7 +1745,7 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_null_ctx, nullptr, nullptr)
     expect_function_call(__wrap_release_semaphore);
 
     crash_dump_copy_accel_cd_file((void*)accel_type);
-    assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_NOT_AVAILABLE);
+    assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_COMPLETED);
 }
 
 TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_inval_magic_off, nullptr, nullptr)
@@ -1742,6 +1762,17 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_inval_magic_off, nullptr, nullp
 
     will_return_always(__wrap_crash_dump_context, &context);
 
+    expect_any(__wrap_FPFwCDCrashDumpHandler, ctx);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, coreInfo);
+
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Code);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[0]);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[1]);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[2]);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[3]);
+
+    expect_function_call(__wrap_FPFwCDCrashDumpHandler);
+
     // crash_dump_update_accel_state()
     expect_any(__wrap_wait_for_semaphore, id);
     expect_any(__wrap_wait_for_semaphore, key);
@@ -1749,8 +1780,10 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_inval_magic_off, nullptr, nullp
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
 
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
     crash_dump_copy_accel_cd_file((void*)accel_type);
-    assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_NOT_AVAILABLE);
+    assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_COMPLETED);
 }
 
 TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_inval_magic_val, nullptr, nullptr)
@@ -1779,6 +1812,17 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_inval_magic_val, nullptr, nullp
     expect_value(__wrap_mmio_read32, addr, magic_number_addr);
     will_return_always(__wrap_mmio_read32, 0x0);
 
+    expect_any(__wrap_FPFwCDCrashDumpHandler, ctx);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, coreInfo);
+
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Code);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[0]);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[1]);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[2]);
+    expect_any(__wrap_FPFwCDCrashDumpHandler, CdBugCheckInfo->data.Parameter[3]);
+
+    expect_function_call(__wrap_FPFwCDCrashDumpHandler);
+
     // crash_dump_update_accel_state()
     expect_any(__wrap_wait_for_semaphore, id);
     expect_any(__wrap_wait_for_semaphore, key);
@@ -1786,8 +1830,94 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_inval_magic_val, nullptr, nullp
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
 
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
     crash_dump_copy_accel_cd_file((void*)accel_type);
-    assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_NOT_AVAILABLE);
+    assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_COMPLETED);
+}
+
+TEST_FUNCTION(crash_dump_accel_default_cd_init_sdm_die0, nullptr, nullptr)
+{
+    set_expectations_init_dump_desc(true);
+
+    set_expectations_init_mem_pool(CRASH_DUMP_FULL_SDM0_ADDR, CRASH_DUMP_FULL_SIZE_PER_CORE);
+
+    set_expectations_init_dump_file();
+
+    set_expectations_init_dump_manager(CRASH_DUMP_FULL_SIZE_PER_CORE);
+
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    expect_function_call(__wrap_CdRegisterRegisterSet);
+    expect_value(__wrap_CdRegisterRegisterSet, address, &g_accel_core_crash_context[ACCEL_ID_SDM]);
+    expect_value(__wrap_CdRegisterRegisterSet, regIndex, 0); // CORE_BUILTIN_REG_INDEX
+    expect_value(__wrap_CdRegisterRegisterSet, regCount, 17); // sizeof(g_accel_core_crash_context[ACCEL_ID_SDM]) / sizeof(uint32_t)
+    expect_value(__wrap_CdRegisterRegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+
+    crash_dump_default_accel_cd_init(ACCEL_ID_SDM);
+}
+
+TEST_FUNCTION(crash_dump_accel_default_cd_init_sdm_die1, nullptr, nullptr)
+{
+    set_expectations_init_dump_desc(true);
+
+    set_expectations_init_mem_pool(CRASH_DUMP_FULL_SDM1_ADDR, CRASH_DUMP_FULL_SIZE_PER_CORE);
+
+    set_expectations_init_dump_file();
+
+    set_expectations_init_dump_manager(CRASH_DUMP_FULL_SIZE_PER_CORE);
+
+    will_return(__wrap_idsw_get_die_id, DIE_1);
+
+    expect_function_call(__wrap_CdRegisterRegisterSet);
+    expect_value(__wrap_CdRegisterRegisterSet, address, &g_accel_core_crash_context[ACCEL_ID_SDM]);
+    expect_value(__wrap_CdRegisterRegisterSet, regIndex, 0); // CORE_BUILTIN_REG_INDEX
+    expect_value(__wrap_CdRegisterRegisterSet, regCount, 17); // sizeof(g_accel_core_crash_context[ACCEL_ID_SDM]) / sizeof(uint32_t)
+    expect_value(__wrap_CdRegisterRegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+
+    crash_dump_default_accel_cd_init(ACCEL_ID_SDM);
+}
+
+TEST_FUNCTION(crash_dump_accel_default_cd_init_cded_die0, nullptr, nullptr)
+{
+    set_expectations_init_dump_desc(true);
+
+    set_expectations_init_mem_pool(CRASH_DUMP_FULL_CDED0_ADDR, CRASH_DUMP_FULL_SIZE_PER_CORE);
+
+    set_expectations_init_dump_file();
+
+    set_expectations_init_dump_manager(CRASH_DUMP_FULL_SIZE_PER_CORE);
+
+    will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    expect_function_call(__wrap_CdRegisterRegisterSet);
+    expect_value(__wrap_CdRegisterRegisterSet, address, &g_accel_core_crash_context[ACCEL_ID_CDED]);
+    expect_value(__wrap_CdRegisterRegisterSet, regIndex, 0); // CORE_BUILTIN_REG_INDEX
+    expect_value(__wrap_CdRegisterRegisterSet, regCount, 17); // sizeof(g_accel_core_crash_context[ACCEL_ID_CDED]) / sizeof(uint32_t)
+    expect_value(__wrap_CdRegisterRegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+
+    crash_dump_default_accel_cd_init(ACCEL_ID_CDED);
+}
+
+TEST_FUNCTION(crash_dump_accel_default_cd_init_cded_die1, nullptr, nullptr)
+{
+    set_expectations_init_dump_desc(true);
+
+    set_expectations_init_mem_pool(CRASH_DUMP_FULL_CDED1_ADDR, CRASH_DUMP_FULL_SIZE_PER_CORE);
+
+    set_expectations_init_dump_file();
+
+    set_expectations_init_dump_manager(CRASH_DUMP_FULL_SIZE_PER_CORE);
+
+    will_return(__wrap_idsw_get_die_id, DIE_1);
+
+    expect_function_call(__wrap_CdRegisterRegisterSet);
+    expect_value(__wrap_CdRegisterRegisterSet, address, &g_accel_core_crash_context[ACCEL_ID_CDED]);
+    expect_value(__wrap_CdRegisterRegisterSet, regIndex, 0); // CORE_BUILTIN_REG_INDEX
+    expect_value(__wrap_CdRegisterRegisterSet, regCount, 17); // sizeof(g_accel_core_crash_context[ACCEL_ID_CDED]) / sizeof(uint32_t)
+    expect_value(__wrap_CdRegisterRegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+
+    crash_dump_default_accel_cd_init(ACCEL_ID_CDED);
 }
 
 TEST_FUNCTION(test_crash_dump_check_completion, nullptr, nullptr)

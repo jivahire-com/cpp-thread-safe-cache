@@ -1467,6 +1467,19 @@ TEST_FUNCTION(test_pcie_error_injection_cb_aer, NULL, NULL)
         status = pcie_error_injection_cb(&mock_einj_info, nullptr);
         assert_int_equal(status, ACPI_EINJ_SUCCESS);
     }
+
+    /* AER with OR'd advisory non-fatal (BIT25 | BIT27) combined with another error */
+    pcie_params->error_data.aer =
+        (PCIE_SS_RP_APP_ERROR)(PCIE_SS_APP_ERR_BUS_ADVISORY_NONFATAL | PCIE_SS_APP_ERR_MALFORMED_TLP);
+    pcie_params->sbdf.bus = 15;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    will_return(__wrap_scp_pcie_get_manager_context, &ctx);
+    expect_value(__wrap_DfwkInterfaceSendSync, Request->RequestType, INJECT_PCIE_ERROR);
+    will_return(__wrap_DfwkInterfaceSendSync, nullptr);
+    will_return(__wrap_DfwkInterfaceSendSync, SILIBS_SUCCESS);
+    will_return(__wrap_DfwkInterfaceSendSync, DFWK_SUCCESS);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_SUCCESS);
 }
 
 TEST_FUNCTION(test_pcie_error_injection_cb_internal, NULL, NULL)
@@ -1581,19 +1594,25 @@ TEST_FUNCTION(test_pcie_error_injection_cb_bad_einj_buffer, NULL, NULL)
     status = pcie_error_injection_cb(&mock_einj_info, nullptr);
     assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
 
-    /* Bad AER type */
+    /* Bad AER type (bit above valid range) */
     mock_einj_info.component_instance = 0;
     mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
     pcie_params->sbdf.segment = 0;
     pcie_params->sbdf.bus = 247;
     op->error_type = PCIE_ERROR_TYPE_AER;
-    pcie_params->error_data.aer = (PCIE_SS_RP_APP_ERROR)0x8000000;
+    pcie_params->error_data.aer = (PCIE_SS_RP_APP_ERROR)0x10000000;
     op->error_count = 10;
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     status = pcie_error_injection_cb(&mock_einj_info, nullptr);
     assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
 
-    /* Bad internal CRC error type  */
+    /* Bad AER type (invalid bit set above BIT27) */
+    pcie_params->error_data.aer = (PCIE_SS_RP_APP_ERROR)(PCIE_SS_APP_ERR_MALFORMED_TLP | 0x10000000);
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal CRC error type (out of range) */
     mock_einj_info.component_instance = 0;
     mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
     pcie_params->sbdf.segment = 0;
@@ -1601,6 +1620,24 @@ TEST_FUNCTION(test_pcie_error_injection_cb_bad_einj_buffer, NULL, NULL)
     op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_CRC;
     pcie_params->error_data.crc = (PCIE_RASDES_INJ_CRC_TYPE)0x8000000;
     op->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal CRC error type (gap value 7) */
+    pcie_params->error_data.crc = (PCIE_RASDES_INJ_CRC_TYPE)7;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal CRC error type (gap value 9) */
+    pcie_params->error_data.crc = (PCIE_RASDES_INJ_CRC_TYPE)9;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal CRC error type (gap value 10) */
+    pcie_params->error_data.crc = (PCIE_RASDES_INJ_CRC_TYPE)10;
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     status = pcie_error_injection_cb(&mock_einj_info, nullptr);
     assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
@@ -1641,7 +1678,7 @@ TEST_FUNCTION(test_pcie_error_injection_cb_bad_einj_buffer, NULL, NULL)
     status = pcie_error_injection_cb(&mock_einj_info, nullptr);
     assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
 
-    /* Bad internal fc error type  */
+    /* Bad internal fc error type (out of range) */
     mock_einj_info.component_instance = 0;
     mock_einj_info.component_group = ACPI_ERROR_DOMAIN_PCIE;
     pcie_params->sbdf.segment = 0;
@@ -1649,6 +1686,12 @@ TEST_FUNCTION(test_pcie_error_injection_cb_bad_einj_buffer, NULL, NULL)
     op->error_type = PCIE_ERROR_TYPE_RP_INTERNAL_FC;
     pcie_params->error_data.fc = (PCIE_RASDES_INJ_FC_TYPE)0x8000000;
     op->error_count = 10;
+    will_return(__wrap_idsw_get_die_id, SOC_D0);
+    status = pcie_error_injection_cb(&mock_einj_info, nullptr);
+    assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);
+
+    /* Bad internal fc error type (gap value 3) */
+    pcie_params->error_data.fc = (PCIE_RASDES_INJ_FC_TYPE)3;
     will_return(__wrap_idsw_get_die_id, SOC_D0);
     status = pcie_error_injection_cb(&mock_einj_info, nullptr);
     assert_int_equal(status, ACPI_EINJ_INVALID_ACCESS);

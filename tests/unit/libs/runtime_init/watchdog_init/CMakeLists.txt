@@ -25,6 +25,7 @@ target_link_libraries(${TARGET}
         silibs::idsw
         silibs::idsw_kng
         silibs::platform
+        ms::lib::utils
 )
 
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ERROR_HANDLER "ms::lib::error_handler")
@@ -39,9 +40,7 @@ unit_test_target(${TARGET})
 
 #mock the functions needed
 mock_target(${TARGET}
-    _txe_timer_create
-    wdog_cmsdk_apb_init
-    wdog_cmsdk_apb_reload
     config_get_wdog_en
     idsw_get_platform_sdv
+    wdog_service_init
 )

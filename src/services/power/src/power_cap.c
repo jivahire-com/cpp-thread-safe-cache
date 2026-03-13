@@ -129,6 +129,13 @@ void power_cap_finalize()
 
 int power_cap_update(power_cap_completed_callback_t callback, uint16_t new_power_cap, bool source_is_cli)
 {
+    // if requested new cap is invalid, fail immediately.
+    if (new_power_cap < POWER_CAP_MIN)
+    {
+        POWER_LOG_WARN("Invalid power cap request: %u, Minimum is %u", new_power_cap, POWER_CAP_MIN);
+        return MP_POWER_CAP_FAIL_INVALID_REQUEST;
+    }
+
     // if callback is pending, it means current request still in flight
     if (s_power_cap_callback)
     {
@@ -141,6 +148,7 @@ int power_cap_update(power_cap_completed_callback_t callback, uint16_t new_power
         // cap
         s_power_cap_callback(MP_POWER_CAP_FAIL_PREVIOUS_UPDATED, new_power_cap, s_requested_soc_power_cap_watts);
     }
+
     // store off details related to this power cap request
     s_previous_power_cap_watts = s_requested_soc_power_cap_watts;
     s_requested_soc_power_cap_watts = new_power_cap;

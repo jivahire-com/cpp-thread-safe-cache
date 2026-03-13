@@ -166,7 +166,7 @@ void etr_icc_handle_hsp(void* context, size_t output_size_bytes, fpfw_status_t s
     /* Send a notification to that a HSP Buffer is available */
     if (status_copy_hsp_buffer == FPFW_STATUS_SUCCESS)
     {
-        notify_ddr_buffer_available();
+        set_etr_thread_event_flags(ETR_EVENT_FLAG_PROCESS_HSP_BUFFER);
     }
 }
 

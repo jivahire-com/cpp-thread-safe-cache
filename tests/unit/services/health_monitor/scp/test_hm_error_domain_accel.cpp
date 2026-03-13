@@ -417,6 +417,8 @@ TEST_FUNCTION(hm_sdm_err_submission_cb_all_path, post_ddr_setup, nullptr)
     will_return(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return_always(__wrap_atu_svc_accel_atu_addr, 0x0);
+    will_return_always(__wrap_crash_dump_is_utc_ready, true);
+    will_return_always(__wrap_utc_sync_client_get_current_time_epoch_ms, 1);
 
     // First cper run
     custom_invoke_callback(ICC_HM_ERROR_RECORD_SUBMIT_ACCEL(ACCEL_ID_CDED), FPFW_STATUS_SUCCESS);
@@ -471,6 +473,8 @@ TEST_FUNCTION(hm_send_fatal_cper, post_ddr_setup, nullptr)
     expect_value_count(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, -1);
     expect_value_count(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT, -1);
     expect_function_call_any(__wrap_mmio_write32);
+    will_return_always(__wrap_crash_dump_is_utc_ready, true);
+    will_return_always(__wrap_utc_sync_client_get_current_time_epoch_ms, 1);
 
     hm_send_accel_error_cper(ACCEL_ID_SDM);
     // CPER not collected for cded, will not trigger the send path

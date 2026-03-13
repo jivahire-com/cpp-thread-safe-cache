@@ -1473,12 +1473,6 @@ TEST_FUNCTION(ddr_create_smbios_tables_test_die_1, NULL, NULL)
     expect_function_call(__wrap_mmio_read32);
     will_return(__wrap_mmio_read32, 0);
 
-    // Write Type16 table to memory (Die 1 also creates its own Type 16 table)
-    expect_function_calls(__wrap_mmio_write8, sizeof(SMBIOS_PHYS_MEM_ARRAY_16));
-
-    // Write double-null terminator
-    expect_function_calls(__wrap_mmio_write8, 2);
-
     for (int dimm_idx = 0; dimm_idx < NUM_DIMM_PER_DIE; dimm_idx++)
     {
         expect_function_call(__wrap_ddr_i3c_interface_read_spd_nvm_data);

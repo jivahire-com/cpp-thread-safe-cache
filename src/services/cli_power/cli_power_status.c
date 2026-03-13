@@ -597,7 +597,7 @@ static PLACED_CODE void print_voltage(uint16_t voltage)
     print_padding(voltage, 4);
     printf("%dmV", voltage);
 }
-static void print_temp(uint16_t temp)
+static PLACED_CODE void print_temp(uint16_t temp)
 {
     uint16_t tenths = temp % 10;
     temp            = temp / 10;

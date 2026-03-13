@@ -25,7 +25,8 @@
 #include <stdint.h>            // for uint16_t, uint8_t, uintptr_t
 #include <stdio.h>             // for printf
 #include <system_info.h>
-#include <tower.h>          // for tower_init
+#include <tower.h> // for tower_init
+#include <tower_events.h>
 #include <tower_sequence.h> // for tower_sequence_soc_init_params_t, tow....
 
 /*-- Symbolic Constant Macros (defines) --*/
@@ -91,6 +92,7 @@ static uint16_t tower_vab_instances_to_be_enabled(uint8_t die_num)
 
     default:
         printf("not supported platform id: %d\n", plat);
+        FPFW_ET_LOG(TowerPlatformNotSupport, __LINE__);
         break;
     }
 
@@ -145,6 +147,7 @@ static uint16_t tower_rpss_instances_to_be_enabled(uint8_t die_num)
 
     default:
         printf("not supported platform id: %d\n", plat);
+        FPFW_ET_LOG(TowerPlatformNotSupport, __LINE__);
         break;
     }
 
@@ -321,11 +324,13 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
     if (accel_is_isolation_enabled(ACCEL_ID_SDM))
     {
         printf("Configure SDMSS tower for isolation enabled\n");
+        FPFW_ET_LOG(TowerSdmssIsolationEn, __LINE__);
         tower_sequence_params.tower_sdmss_isolation_enabled = true;
     }
     else
     {
         printf("Configure SDMSS tower for isolation disabled\n");
+        FPFW_ET_LOG(TowerSdmssIsolationDisable, __LINE__);
         tower_sequence_params.tower_sdmss_isolation_enabled = false;
     }
 
@@ -336,11 +341,13 @@ void tower_init(uint8_t die_num, fpfw_icc_base_ctx_t* icc_ctx)
         if (accel_is_isolation_enabled(ACCEL_ID_CDED))
         {
             printf("Configure CDEDSS tower for isolation enabled\n");
+            FPFW_ET_LOG(TowerCdedssIsolationEn, __LINE__);
             hsp_send_recv_post_scp_init_tower_config(icc_ctx, 0);
         }
         else
         {
             printf("Configure CDEDSS tower for isolation disabled\n");
+            FPFW_ET_LOG(TowerCdedssIsolationDisable, __LINE__);
             hsp_send_recv_post_scp_init_tower_config(icc_ctx, HSP_MAILBOX_FLAGS_ACCL_ISOLATION_DISABLED);
         }
 

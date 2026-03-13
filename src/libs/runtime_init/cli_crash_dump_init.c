@@ -10,6 +10,7 @@
 #include <crash_dump.h> // for crash_dump_cli_init
 #include <fpfw_init.h>  // for FPFW_INIT_STATUS_SUCCESS, FPFW_INIT_COMPONENT
 #include <stddef.h>     // for NULL
+#include <utils.h>
 
 /*------- Symbolic Constant Macros (defines) ----------*/
 
@@ -20,7 +21,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli_cd, FPFW_INIT_DEPENDENCIES("cli", "cd_init"))
+PLACED_CODE FPFW_INIT_COMPONENT(cli_cd, FPFW_INIT_DEPENDENCIES("cli", "cd_init"))
 {
     crash_dump_cli_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

@@ -48,7 +48,7 @@ bool ddr_subsystem_enabled();
 void hm_register_cached_error_domain();
 void hm_submit_cached_cper();
 void hm_report_error_event(hm_error_report_type_t type, bool trigger);
-void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_t err_severity, acpi_cper_section_t *err_record_section, uint32_t err_record_section_size);
+void update_error_record_section(uint16_t error_domain_idx, acpi_error_severity_t err_severity, acpi_cper_section_t *err_record_section, uint32_t err_record_section_size, uint64_t cper_timestamp);
 void hm_prepare_error_injection_listener(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_prepare_mscp_listener(fpfw_icc_base_ctx_t* icc_ctx);
 void hm_prepare_sdm_listener(fpfw_icc_base_ctx_t* icc_ctx);
@@ -71,6 +71,7 @@ void create_full_mscp_cper_record(acpi_error_domain_t err_domain_idx,
     acpi_error_severity_t severity,
     acpi_cper_section_t* err_record_section,
     uint32_t err_record_section_size,
+    uint64_t cper_timestamp,
     acpi_cper_record_t* cper_record);
 void hm_set_pldm_transfer_status(hm_pldm_transfer_status status, bool is_ue);
 hm_pldm_transfer_status hm_get_pldm_transfer_status(bool is_ue);
@@ -78,3 +79,4 @@ bool hm_is_fatal_error(uint32_t err_severity);
 void hm_copy_cper_record(volatile uint8_t* dest, const uint8_t* src, size_t size);
 void hm_flush_GHES_until_OS_boot();
 bool is_standard_error_section_used(int error_domain_idx);
+uint64_t get_cper_timestamp(void);

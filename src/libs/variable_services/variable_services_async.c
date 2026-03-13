@@ -17,10 +17,13 @@
 #include <fpfw_icc_base.h> // for FPFW_ICC_BASE
 #include <hsp_firmware_headers.h>
 #include <kng_error.h> // for KNG_E_INVALIDARG, KNG_E_NOTIMPL
+#include <limits.h>
 #include <mpu.h>
 #include <silibs_common.h>
+#include <stdbool.h>
 #include <stddef.h> // for NULL
 #include <string.h> // for memcpy
+#include <variable_services_events.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -108,12 +111,29 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     BUG_ASSERT(variable_service_set_shared_mem_in_use(var_serv_ctx) != false) //! Verify if the shared memory is free to use, must be free!
 
     //! Calculate the total size of the payload to be copied into shared memory & verify it is within the max payload size
-    uint32_t total_size =
-        sizeof(variable_service_shared_mem_format_t) + req_params->variable_name_size + req_params->data_size;
-    uint32_t total_payload_size = total_size - sizeof(variable_service_mem_metadata_t);
-    BUG_ASSERT_PARAM(total_size <= var_serv_ctx->shared_mem.max_payload_size,
-                     total_size,
-                     var_serv_ctx->shared_mem.max_payload_size);
+
+    const uint32_t max_payload = var_serv_ctx->shared_mem.max_payload_size;
+
+    const uint32_t overhead = (uint32_t)sizeof(variable_service_shared_mem_format_t);
+    const uint32_t meta = (uint32_t)sizeof(variable_service_mem_metadata_t);
+
+    /* Validate individual sizes to prevent unreasonable inputs */
+    BUG_ASSERT(req_params->variable_name_size <= max_payload);
+    BUG_ASSERT(req_params->data_size <= max_payload);
+
+    /* Overflow-safe bounds checks via subtraction (prevents wraparound bypass) */
+    BUG_ASSERT(overhead <= max_payload);
+
+    uint32_t remaining = max_payload - overhead;
+    BUG_ASSERT(req_params->variable_name_size <= remaining);
+    remaining -= req_params->variable_name_size;
+    BUG_ASSERT(req_params->data_size <= remaining);
+
+    /* Safe to add after bounds proven */
+    uint32_t total_raw = overhead + req_params->variable_name_size + req_params->data_size;
+    BUG_ASSERT(total_raw >= meta);
+
+    uint32_t total_size = total_raw - meta;
 
     //! Assumption, this shared memory address is accessible by MSCP
     volatile variable_service_shared_mem_format_t* shared_mem =
@@ -154,7 +174,7 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
     //! populate upper 32 bits of the variable payload address in the 2nd word of the hsp mbox message struct, get/set_variable_address_high field
     shared_mem->metadata.msg.as_uint32[2] = (uint32_t)((variable_address >> 32U) & 0xFFFFFFFFUL);
     //! populate the rest of the metadata
-    shared_mem->metadata.actual_payload_size = total_payload_size;
+    shared_mem->metadata.actual_payload_size = total_size;
     shared_mem->variable_name_size = req_params->variable_name_size / sizeof(uint16_t); //! No of 16-bit characters
     //! copy over the vendor namespace guid into the shared memory
     for (uint32_t i = 0; i < sizeof(guid_t) / sizeof(uint32_t); i++)
@@ -183,16 +203,24 @@ static int32_t variable_service_async_common_handler(variable_service_operation_
 
     //! Debug prints pre mailbox communication testing
     debug_print_pre_mbox_send(var_serv_ctx);
+    //! bug check for the int overflow
+
+    BUG_ASSERT_PARAM(var_serv_ctx->shared_mem.max_payload_size <= (uint32_t)INT32_MAX,
+                     var_serv_ctx->shared_mem.max_payload_size,
+                     (uint32_t)INT32_MAX);
 
     //! Flush the cache for the shared memory region to ensure the data is visible to HSP
-    SCB_CleanInvalidateDCache_by_Addr((void*)ALIGN_DOWN(var_serv_ctx->shared_mem.payload_base, 32),
-                                      var_serv_ctx->shared_mem.max_payload_size);
 
+    uintptr_t aligned_base = ALIGN_DOWN(var_serv_ctx->shared_mem.payload_base, 32);
+    int32_t alignment_offset = var_serv_ctx->shared_mem.payload_base - aligned_base;
+    SCB_CleanInvalidateDCache_by_Addr((uint32_t*)aligned_base,
+                                      (int32_t)(var_serv_ctx->shared_mem.max_payload_size + alignment_offset));
     //! Send the payload & wait for response
     fpfw_status_t icc_status = fpfw_icc_base_send_recv(hsp_icc_ctx, &var_serv_ctx->icc_req);
     if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
     {
         DEBUG_PRINT("Error!! ICC send recv failed\n");
+        FPFW_ET_LOG(VariableServicesAsyncIccSendError, icc_status, __LINE__);
         return KNG_E_FAIL;
     }
     DEBUG_PRINT("----End of Async %s Variable----\n", var_serv_ctx->operation_type == ASYNC_SET_VARIABLE ? "Set" : "Get");

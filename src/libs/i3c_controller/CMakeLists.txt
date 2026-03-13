@@ -5,6 +5,7 @@ set(TARGET kng.lib.i3c_controller)
 add_library(${TARGET}
     STATIC
         src/i3c_controller.c
+        src/i3c_controller_events.c
 )
 
 target_link_libraries(${TARGET}

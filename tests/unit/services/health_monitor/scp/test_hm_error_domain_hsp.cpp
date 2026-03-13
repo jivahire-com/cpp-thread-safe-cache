@@ -48,6 +48,8 @@ TEST_FUNCTION(hm_hsp_error_record_submit_listener, post_ddr_setup, nullptr)
     expect_function_call_any(__wrap_wait_for_semaphore);
     expect_function_call_any(__wrap_release_semaphore);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    will_return_always(__wrap_crash_dump_is_utc_ready, true);
+    will_return_always(__wrap_utc_sync_client_get_current_time_epoch_ms, 1);
     hm_hsp_error_record_submit_listener((fpfw_icc_base_ctx_t*)HSP_MAILBOX_CMD_RAS_ERROR_REPORT_REQ);
 }
 

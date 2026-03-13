@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         fwlib.service.cli
         ms::lib::ddr::cli
         ms::cmocka::testrunner
+        ms::lib::utils
 )
 
 # Generic ports implmented within this project

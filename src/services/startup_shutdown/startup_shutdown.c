@@ -19,6 +19,7 @@
 #include <DfwkHost.h>
 #include <FpFwAssert.h>
 #include <FpFwUtils.h>
+#include <bug_check.h>
 #include <debug.h>
 #include <fpfw_cfg_mgr.h>
 #include <fpfw_icc_base.h>
@@ -126,10 +127,22 @@ int32_t sos_dispatch_sync(PDFWK_SYNC_REQUEST_HEADER p_request)
         // add registration to registrations list
         FpFwListInsertTail(&s_sos_ctx.ssi_registrations, &p_registration->list_entry);
         // generate a unique bitmask for this registration
-        p_registration->interface_unique_flag = 1 << s_sos_ctx.registration_count;
-        SOS_LOG_INFO("SSI registration - identifier assigned: %x", (unsigned)p_registration->interface_unique_flag);
+        uint32_t flag = SOS_SSI_ID_TO_EVENT_FLAG(p_registration->registration_id);
+        // check that this ID has not already been registered
+        BUG_ASSERT_PARAM((s_sos_ctx.registered_ssi_mask & flag) == 0,
+                         p_registration->registration_id,
+                         s_sos_ctx.registered_ssi_mask);
+        p_registration->interface_unique_flag = flag;
+        // update the event completion mask of registered SSIs
+        s_sos_ctx.registered_ssi_mask |= flag;
+
+        SOS_LOG_INFO("SSI registered: id=%u, unique_flag=0x%08x, registered_completion_mask=0x%08x",
+                     p_registration->registration_id,
+                     p_registration->interface_unique_flag,
+                     s_sos_ctx.registered_ssi_mask);
+
         s_sos_ctx.registration_count++;
-        FPFW_RUNTIME_ASSERT(s_sos_ctx.registration_count < SOS_MAX_SSI_REGISTRATIONS);
+        BUG_ASSERT_PARAM(s_sos_ctx.registration_count <= SOS_MAX_SSI_REGISTRATIONS, s_sos_ctx.registration_count, SOS_MAX_SSI_REGISTRATIONS);
     }
     break;
     case STARTUP_RESET_TIMEOUT_SYNC: {

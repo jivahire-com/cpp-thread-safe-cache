@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
         ms::lib::boot_status
         ms::lib::d2d_cntr_sync
         silibs_platform
+        ms::lib::utils
 )
 
 lint_target(${TARGET})

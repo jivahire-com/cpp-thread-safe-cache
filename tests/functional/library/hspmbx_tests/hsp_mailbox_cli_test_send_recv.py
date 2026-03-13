@@ -13,6 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'kng_pythia_libs')
 from kng_pythia_test_if import KngPythiaTestIF
 from kng_pythia_test_setup import KngPythiaTestSetup
 from RscmHelperLibrary import RscmHelperLibrary
+from library.utilities.bmc_utils import set_bmc_uart_mux
 from pythia.tdk.echofalls.constants.dut_types import DeviceType
 from pythia.tdk.echofalls.echofalls_base_test import EchoFallsBaseTest
 import re
@@ -72,6 +73,7 @@ class hsp_mailbox_cli_test_send_recv(EchoFallsBaseTest):
             creds = KngPythiaTestSetup.load_credentials_from_yaml(cred_path)
             rscm_helper = RscmHelperLibrary(rm_host=self.host_config.rack_scm.host, bmc_host=self.dut.mb.node_0.dcscm.bmc.ip, rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'], node=self.host_config.node_id)
             rscm_helper.rscm_soc_reset()
+            set_bmc_uart_mux(self.dut, self.log, "SCP")
             hsp_channel=self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
             hsp_channel.open()
             assert hsp_channel.is_open()

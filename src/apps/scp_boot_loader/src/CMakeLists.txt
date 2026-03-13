@@ -39,6 +39,7 @@ target_link_libraries(
             ms::cmsis::interface
             ms::lib::cortex_m7::mpu
             register_headers
+            silibs::cmsdk_wd
 )
 
 target_include_directories(

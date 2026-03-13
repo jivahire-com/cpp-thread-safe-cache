@@ -33,7 +33,7 @@ typedef enum {
 /**
  * @brief Register the SMC TLM MCP event trace provider
  */
-FPFW_ET_DEFINE_PROVIDER_EX(EVENT_TRACE_PROVIDER_ID_MCP_SMC_TLM_MCP,
+FPFW_ET_DEFINE_PROVIDER_EX(EVENT_TRACE_PROVIDER_FPFW_SMC_TLM,
                            ApSmcTelemetrySvc,
                            FPFW_ET_LEVEL_MASK_INFO | FPFW_ET_LEVEL_MASK_WARNING |
                                FPFW_ET_LEVEL_MASK_ERROR | FPFW_ET_LEVEL_MASK_FATAL |
@@ -42,7 +42,7 @@ FPFW_ET_DEFINE_PROVIDER_EX(EVENT_TRACE_PROVIDER_ID_MCP_SMC_TLM_MCP,
 /**
  * @brief Event trace for SMC telemetry - logs SMC FID, core ID, and execution time
  */
-FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_MCP_SMC_TLM_MCP,           // Provider ID
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_FPFW_SMC_TLM,           // Provider ID
                      AP_SMC_TLM_EVENT,                                  // Event ID
                      ApSmcTelemetry,                                    // Event Name
                      FPFW_ET_LEVEL_INFO,                                // Log Level

@@ -12,12 +12,13 @@
 #include <fpfw_init.h>
 #include <stddef.h>
 #include <tlm_fuses.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(tlm_fuses, FPFW_INIT_DEPENDENCIES("fuse_en"))
+PLACED_CODE FPFW_INIT_COMPONENT(tlm_fuses, FPFW_INIT_DEPENDENCIES("fuse_en"))
 {
     // Initialize the telemetry fuses library
     tlm_fuses_init();

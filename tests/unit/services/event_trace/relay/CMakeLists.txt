@@ -39,6 +39,12 @@ format_target(${TARGET})
 coverage_target(${TARGET})
 unit_test_target(${TARGET})
 
+# Allow local __wrap__txe_event_flags_get to override the one from mock.threadx.lib.
+# The mock library compiles all ThreadX mocks in a single object, so extracting any
+# mock symbol (e.g. __wrap__txe_queue_receive) pulls in all mocks including
+# __wrap__txe_event_flags_get, which conflicts with the local test override.
+target_link_options(${TARGET} PRIVATE "LINKER:/FORCE:MULTIPLE")
+
 mock_target(${TARGET}
     _txe_block_pool_create
     _txe_block_release

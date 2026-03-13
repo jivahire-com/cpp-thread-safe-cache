@@ -47,7 +47,7 @@ static FPFW_CLI_COMMAND s_variable_serv_cmd_list[] = {
 };
 
 /*--------- Function Prototypes ----------*/
-void variable_services_cli_init(var_service_shared_mem_t* mem_ctx)
+PLACED_CODE void variable_services_cli_init(var_service_shared_mem_t* mem_ctx)
 {
     if (mem_ctx == NULL)
     {

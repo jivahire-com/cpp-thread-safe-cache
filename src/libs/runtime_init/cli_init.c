@@ -15,6 +15,7 @@
 #include <stdio.h>        // for printf, NULL, stdout
 #include <system_info.h>  // for system_info_get_cli_enable
 #include <textio_pl011.h> // for textio_pl011_device_interface_initialize
+#include <utils.h>
 
 /*------- Symbolic Constant Macros (defines) ----------*/
 #define CLI_ARGS_COUNT           (255)
@@ -29,7 +30,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io", "debug_print", "sysinfo"))
+PLACED_CODE FPFW_INIT_COMPONENT(cli, FPFW_INIT_DEPENDENCIES("uart", "std_io", "debug_print", "sysinfo"))
 {
     fpfw_init_component_id_t uart_id = "uart";
     static uint8_t cli_cmd_history[CLI_COMMAND_HISTORY_SIZE];

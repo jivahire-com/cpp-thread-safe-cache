@@ -27,7 +27,6 @@
 /*-------------------------------- Includes ---------------------------------*/
 #include "etr_init_config_i.h"
 #include "event_trace_relay_i.h"
-#include "event_trace_relay_quiesce_i.h"
 
 #include <DbgPrint.h>
 #include <ErrorHandler.h>
@@ -222,6 +221,9 @@ static void etr_get_new_asic_buffer(etr_service_context_t* p_context)
     p_context->p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_ACTIVE;
     p_context->p_active_asic_buffer->payload_management.size_bytes = sizeof(asic_buffer_info_t);
     p_context->p_active_asic_buffer->buffer.asic.asic_header.UsedBytes = sizeof(FPFW_ET_ASIC_BUFFER_HEADER);
+    p_context->p_active_asic_buffer->buffer.asic.asic_header.StartUTCTimeStamp =
+        utc_sync_client_get_current_time_epoch_ms();
+    p_context->p_active_asic_buffer->buffer.asic.asic_header.StartAsicTimeStamp = gtimer_get_timestamp_ms();
 }
 
 /**
@@ -262,6 +264,10 @@ static void etr_complete_asic_buffer(etr_service_context_t* p_context)
     p_context->p_active_asic_buffer->state = ETR_DDR_BUFFER_STATE_PENDING;
 
     p_ddr_buffer_info_t p_buf_to_send = p_context->p_active_asic_buffer;
+
+    /* Set the end timestamps on the asic buffer*/
+    p_buf_to_send->buffer.asic.asic_header.EndAsicTimeStamp = gtimer_get_timestamp_ms();
+    p_buf_to_send->buffer.asic.asic_header.EndUTCTimeStamp = utc_sync_client_get_current_time_epoch_ms();
 
     /* Copy the diag header and asic header into ddr */
     void* src = (void*)&p_buf_to_send->buffer.asic;
@@ -942,6 +948,19 @@ static void etr_mts_client_init(void)
     mts_client_register(MTS_CLIENT_ID_EVENT_TRACE, &s_etr_mts_client);
 }
 
+/**
+ * @brief Driver Framework Callback to handle incoming MTS messages.
+ *
+ * @param None
+ * @return None
+ */
+static void etr_mts_rx_msg_handler(void)
+{
+    /* Set the event flag to indicate a new MTS message is available */
+    UINT tx_status = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_NEW_MTS_MSG, TX_OR);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
+}
+
 /*----------------------------- Global Functions ----------------------------*/
 
 void notify_ddr_buffer_available()
@@ -953,10 +972,9 @@ void notify_ddr_buffer_available()
      */
     if (primary_instance)
     {
-        if (evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING)
+        if ((evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING) && (num_buffers_pending == 0))
         {
-            UINT tx_status = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION, TX_OR);
-            BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
+            set_etr_thread_event_flags(ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
         }
     }
     else
@@ -988,9 +1006,6 @@ void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t
     /* Initialize the MTS client for the Event Trace Relay */
     etr_mts_client_init();
 
-    /* Register with the SOS service */
-    event_trace_relay_dfwk_init();
-
     /* Cache MTS client information and core/die data for future use */
     primary_instance = mts_is_primary_instance();
     this_die = mts_get_this_die_id();
@@ -999,24 +1014,10 @@ void etr_initialize(etr_service_context_t* p_context, const etr_service_config_t
     FPFW_ET_LOG_ETR_ASCII_INFO("ETR Svc Init Done");
 }
 
-/**
- * @brief Driver Framework Callback to handle incoming MTS messages.
- *
- * @param None
- * @return None
- */
-static void etr_mts_rx_msg_handler(void)
-{
-    /* Set the event flag to indicate a new MTS message is available */
-    UINT tx_status = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_NEW_MTS_MSG, TX_OR);
-    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
-}
-
 void etr_worker_thread_func(ULONG thread_input)
 {
     etr_service_context_t* p_context = (etr_service_context_t*)thread_input;
     etr_service_request_t etr_request = {0};
-    mts_platform_core_id_t src_core_id;
 
     /* Infinite loop that will decode and recycle buffers marked as completed */
     while (true)
@@ -1028,12 +1029,24 @@ void etr_worker_thread_func(ULONG thread_input)
             tx_event_flags_get(&s_etr_mts_flags, ETR_EVENT_FLAG_ANY_VALID, TX_OR_CLEAR, &event_flags, TX_WAIT_FOREVER);
         BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
 
+        /* If process HSP buffer event flag is set, notify that a DDR Buffer is available
+         * We're using a flag since HSP ICC callback is called from a different context.
+         * This safeguards against race conditions for notify_ddr_buffer_available */
+        if ((event_flags & ETR_EVENT_FLAG_PROCESS_HSP_BUFFER) == ETR_EVENT_FLAG_PROCESS_HSP_BUFFER)
+        {
+            notify_ddr_buffer_available();
+        }
+
+        /* If send DCP notification event flag is set */
+        if ((event_flags & ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION) == ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION)
+        {
+            mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
+        }
+
         /* If new MTS message event flag is set */
         if ((event_flags & ETR_EVENT_FLAG_NEW_MTS_MSG) == ETR_EVENT_FLAG_NEW_MTS_MSG)
         {
             tx_status = tx_queue_receive(&s_etr_mts_client.rx_queue, &etr_request.p_trp_msg, TX_WAIT_FOREVER);
-            // etr_handle_copy_buffer_request will modify the core_id hence caching it
-            src_core_id = etr_request.p_trp_msg->hdr.src_node.core_id;
 
             // Assert if the queue status is not TX_SUCCESS or TX_QUEUE_EMPTY
             BUG_ASSERT_PARAM((tx_status == TX_SUCCESS), tx_status, 0);
@@ -1068,13 +1081,6 @@ void etr_worker_thread_func(ULONG thread_input)
 
                 /* Handle the copy buffer request */
                 etr_handle_copy_buffer_request(p_context, &etr_request);
-
-                if (etr_request.p_trp_msg->hdr.trp_msg_status == TRP_STATUS_RD_DATA_NONE)
-                {
-                    // This is the indication that the message source core has quiesced
-                    // Need to update the quiesce status here
-                    event_trace_relay_external_core_quiesce_update(src_core_id);
-                }
                 break;
 
             case TRP_MSG_ID_PACKAGE_NOTIFICATION:
@@ -1117,12 +1123,6 @@ void etr_worker_thread_func(ULONG thread_input)
             BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
         }
 
-        /* If send DCP notification event flag is set */
-        if ((event_flags & ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION) == ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION)
-        {
-            mts_client_send_dcp_notification(MTS_CLIENT_ID_EVENT_TRACE, DCP_NOTIFICATION_TYPE_DATA_AVAILABLE);
-        }
-
 /* For unit tests - break out of the loop */
 #ifdef _WIN32
         break;
@@ -1138,14 +1138,19 @@ void set_evt_dcp_client_state(dcp_client_state_t state)
     /* If the Client is running and there are pending buffers, send out a DCP notification */
     if ((num_buffers_pending > 0) && (evt_dcp_clnt_state == DCP_CLIENT_STATE_RUNNING))
     {
-        UINT txStatus = tx_event_flags_set(&s_etr_mts_flags, ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION, TX_OR);
-        BUG_ASSERT_PARAM(txStatus == TX_SUCCESS, txStatus, 0);
+        set_etr_thread_event_flags(ETR_EVENT_FLAG_SEND_DCP_NOTIFICATION);
     }
 }
 
 dcp_client_state_t get_evt_dcp_client_state(void)
 {
     return evt_dcp_clnt_state;
+}
+
+void set_etr_thread_event_flags(ULONG flags)
+{
+    UINT tx_status = tx_event_flags_set(&s_etr_mts_flags, flags, TX_OR);
+    BUG_ASSERT_PARAM(tx_status == TX_SUCCESS, tx_status, 0);
 }
 
 /************************************************************************

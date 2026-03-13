@@ -12,6 +12,7 @@
 #include <fpfw_init.h>
 #include <stddef.h>
 #include <tlm_fuses_cli_service.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -22,7 +23,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(cli_tlm_fuses, FPFW_INIT_DEPENDENCIES("cli", "tlm_fuses"))
+PLACED_CODE FPFW_INIT_COMPONENT(cli_tlm_fuses, FPFW_INIT_DEPENDENCIES("cli", "tlm_fuses"))
 {
 
     // Initialize the telemetry fuses CLI service

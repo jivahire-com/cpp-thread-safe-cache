@@ -35,6 +35,12 @@ extern "C" {
 #define CUSTOMER_SAMPLE_MILESTONE_PC      2
 #define CUSTOMER_SAMPLE_MILESTONE_PR      3
 
+#define SAMPLE_MAJOR_REV_ES1 1
+#define SAMPLE_MAJOR_REV_ES2 2
+
+// Fuse bit offset for sample_major_rev (from kingsgate_fuse_defines.h)
+#define GENERAL_SAMPLE_INFO_SAMPLE_MAJOR_REV_BIT_OFFSET_VAL 0x220UL
+
 #define FUSE_MOCK_VALUE_FF   0xFF
 #define FUSE_MOCK_VALUE_ZERO 0x0
 #define FUSE_MOCK_VALUE_ONE  0x1
@@ -49,6 +55,7 @@ extern "C" {
 
 static power_runconfig_t test_power_runconfig = {};
 static uint64_t fuse_data = FUSE_MOCK_VALUE_FF;
+static uint64_t fuse_data_major_rev = 0;
 
 /*------------- Functions ----------------*/
 //
@@ -62,7 +69,16 @@ uint64_t __wrap_platform_read_fuse(const uintptr_t target_addr, const unsigned f
     check_expected(fuse_bit_size);
 
     size_t fuse_size = ((fuse_bit_size + (BITS_PER_BYTE - 1)) / BITS_PER_BYTE);
-    memcpy((void*)target_addr, (void*)&fuse_data, fuse_size);
+
+    // Use dedicated major_rev data when reading the sample_major_rev fuse
+    if (fuse_bit_offset == GENERAL_SAMPLE_INFO_SAMPLE_MAJOR_REV_BIT_OFFSET_VAL)
+    {
+        memcpy((void*)target_addr, (void*)&fuse_data_major_rev, fuse_size);
+    }
+    else
+    {
+        memcpy((void*)target_addr, (void*)&fuse_data, fuse_size);
+    }
 
     return mock_type(uint64_t);
 }
@@ -993,4 +1009,357 @@ POWER_TEST(read_curve_temp_read_fail, set_fuse_data_to_zero, set_fuse_data_to_de
     will_return_always(__wrap_platform_read_fuse, FPFW_STATUS_FAIL);
 
     assert_true((power_fuses_get_curve_temp(curve_max_temp, NUM_DVFS_ITD_TEMPERATURE_LOOKUP_COLUMNS - 1) == FPFW_STATUS_FAIL));
+}
+
+//
+// RC3 VF override tests (power_fuses_apply_rc3_vf_override)
+//
+
+#define RC3_TEST_SLOPE_UVOLT 2000 // default slope: 2000 uV per LDO code (1 mV = 0.5 LDO codes)
+
+// Helper to set up a VF curveset with known anchor frequencies and LDO values
+static void setup_vf_curveset_with_known_anchors(power_fuse_vf_curveset_t* vf)
+{
+    memset(vf, 0, sizeof(*vf));
+
+    // Set all pairs across all curvesets and temp curves to a known freq/ldo_dac
+    // Use the override table frequencies for pair indices 0-5, and a non-matching freq for pair 6
+    static const uint16_t test_freqs[] = {1200, 2100, 2800, 3300, 3500, 3600, 1800};
+    static const uint16_t test_ldo[] = {200, 300, 400, 350, 450, 500, 250};
+
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        for (unsigned t = 0; t < VFT_CURVE_COUNT_PER_CURVESET; ++t)
+        {
+            for (unsigned p = 0; p < DVFS_FUSED_PAIRS_COUNT; ++p)
+            {
+                vf->curveset[cs].curve[t].pair[p].freq_Mhz = test_freqs[p];
+                vf->curveset[cs].curve[t].pair[p].ldo_dac_in = test_ldo[p];
+            }
+        }
+    }
+}
+
+POWER_TEST(rc3_override_null_vf_curves, NULL, NULL)
+{
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+
+    assert_true((power_fuses_apply_rc3_vf_override(NULL, &slope) == FPFW_STATUS_NULL_POINTER));
+}
+
+POWER_TEST(rc3_override_null_slope, NULL, NULL)
+{
+    power_fuse_vf_curveset_t vf = {};
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, NULL) == FPFW_STATUS_NULL_POINTER));
+}
+
+POWER_TEST(rc3_override_zero_slope, NULL, NULL)
+{
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = 0, .offset_uvolt = 0};
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_INVALID_ARGS));
+}
+
+POWER_TEST(rc3_override_fuse_read_fail, NULL, NULL)
+{
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_FAIL);
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_FAIL));
+}
+
+POWER_TEST(rc3_override_skipped_for_es1, set_fuse_data_to_one, set_fuse_data_to_default)
+{
+    // fuse_data = 1 (ES milestone), major_rev = 1 (ES1) => should skip override
+    fuse_data_major_rev = SAMPLE_MAJOR_REV_ES1;
+
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+    setup_vf_curveset_with_known_anchors(&vf);
+
+    // Save original values for comparison
+    power_fuse_vf_curveset_t vf_original = {};
+    setup_vf_curveset_with_known_anchors(&vf_original);
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    // Two fuse reads: milestone + major_rev
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_SUCCESS));
+
+    // Verify no modifications were made (ES1, not ES2)
+    assert_memory_equal(&vf, &vf_original, sizeof(vf));
+
+    fuse_data_major_rev = 0;
+}
+
+POWER_TEST(rc3_override_major_rev_fuse_read_fail, set_fuse_data_to_one, set_fuse_data_to_default)
+{
+    // fuse_data = 1 (ES milestone), but major_rev fuse read fails
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    // First read (milestone) succeeds, second read (major_rev) fails
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_FAIL);
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_FAIL));
+}
+
+POWER_TEST(rc3_override_skipped_for_unknown, set_fuse_data_to_zero, set_fuse_data_to_default)
+{
+    // fuse_data = 0 (unknown milestone), not ES (0x1) or PC (0x2)
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+    setup_vf_curveset_with_known_anchors(&vf);
+
+    power_fuse_vf_curveset_t vf_original = {};
+    setup_vf_curveset_with_known_anchors(&vf_original);
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_SUCCESS));
+
+    // Verify no modifications were made
+    assert_memory_equal(&vf, &vf_original, sizeof(vf));
+}
+
+// Helper to set fuse_data to a specific milestone value for RC3 tests
+static uint64_t rc3_test_milestone = 0;
+
+static int set_fuse_data_to_rc3_milestone(void** state)
+{
+    UNUSED(state);
+    fuse_data = rc3_test_milestone;
+    return 0;
+}
+
+POWER_TEST(rc3_override_applied_for_es2, set_fuse_data_to_rc3_milestone, set_fuse_data_to_default)
+{
+    // ES2: milestone 0x1, major_rev 0x2 => should apply override
+    rc3_test_milestone = CUSTOMER_SAMPLE_MILESTONE_ES;
+    fuse_data = CUSTOMER_SAMPLE_MILESTONE_ES;
+    fuse_data_major_rev = SAMPLE_MAJOR_REV_ES2;
+
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+    setup_vf_curveset_with_known_anchors(&vf);
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    // Two fuse reads: milestone + major_rev
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_SUCCESS));
+
+    // Verify the override was applied to pair index 0 (freq 1200 MHz)
+    // Override for 1200 MHz: mv_offset = {-60, -50, -40, -40}
+    // delta_ldo = mv_offset * 1000 / 2000 = {-30, -25, -20, -20}
+    // original ldo_dac_in = 200, so expected = {170, 175, 180, 180}
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        assert_int_equal(vf.curveset[cs].curve[0].pair[0].ldo_dac_in, 170); // 200 + (-30)
+        assert_int_equal(vf.curveset[cs].curve[1].pair[0].ldo_dac_in, 175); // 200 + (-25)
+        assert_int_equal(vf.curveset[cs].curve[2].pair[0].ldo_dac_in, 180); // 200 + (-20)
+        assert_int_equal(vf.curveset[cs].curve[3].pair[0].ldo_dac_in, 180); // 200 + (-20)
+    }
+
+    // Verify pair index 1 (freq 2100 MHz): mv_offset = {-60, -50, -40, -40}
+    // delta_ldo = {-30, -25, -20, -20}, original ldo = 300
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        assert_int_equal(vf.curveset[cs].curve[0].pair[1].ldo_dac_in, 270); // 300 + (-30)
+        assert_int_equal(vf.curveset[cs].curve[1].pair[1].ldo_dac_in, 275); // 300 + (-25)
+        assert_int_equal(vf.curveset[cs].curve[2].pair[1].ldo_dac_in, 280); // 300 + (-20)
+        assert_int_equal(vf.curveset[cs].curve[3].pair[1].ldo_dac_in, 280); // 300 + (-20)
+    }
+
+    // Verify pair index 2 (freq 2800 MHz): mv_offset = {-80, -70, -50, -50}
+    // delta_ldo = {-40, -35, -25, -25}, original ldo = 400
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        assert_int_equal(vf.curveset[cs].curve[0].pair[2].ldo_dac_in, 360); // 400 + (-40)
+        assert_int_equal(vf.curveset[cs].curve[1].pair[2].ldo_dac_in, 365); // 400 + (-35)
+        assert_int_equal(vf.curveset[cs].curve[2].pair[2].ldo_dac_in, 375); // 400 + (-25)
+        assert_int_equal(vf.curveset[cs].curve[3].pair[2].ldo_dac_in, 375); // 400 + (-25)
+    }
+
+    // Verify pair index 3 (freq 3300 MHz): mv_offset = {-20, -20, -20, -20}
+    // delta_ldo = {-10, -10, -10, -10}, original ldo = 350
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        for (unsigned t = 0; t < VFT_CURVE_COUNT_PER_CURVESET; ++t)
+        {
+            assert_int_equal(vf.curveset[cs].curve[t].pair[3].ldo_dac_in, 340); // 350 + (-10)
+        }
+    }
+
+    // Verify pair index 4 (freq 3500 MHz): mv_offset = {-6, 0, 0, 0}
+    // delta_ldo = {-3, 0, 0, 0}, original ldo = 450
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        assert_int_equal(vf.curveset[cs].curve[0].pair[4].ldo_dac_in, 447); // 450 + (-3)
+        assert_int_equal(vf.curveset[cs].curve[1].pair[4].ldo_dac_in, 450); // 0 offset
+        assert_int_equal(vf.curveset[cs].curve[2].pair[4].ldo_dac_in, 450); // 0 offset
+        assert_int_equal(vf.curveset[cs].curve[3].pair[4].ldo_dac_in, 450); // 0 offset
+    }
+
+    // Verify pair index 5 (freq 3600 MHz): mv_offset = {10, -4, 0, 0}
+    // delta_ldo = {5, -2, 0, 0}, original ldo = 500
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        assert_int_equal(vf.curveset[cs].curve[0].pair[5].ldo_dac_in, 505); // 500 + 5
+        assert_int_equal(vf.curveset[cs].curve[1].pair[5].ldo_dac_in, 498); // 500 + (-2)
+        assert_int_equal(vf.curveset[cs].curve[2].pair[5].ldo_dac_in, 500); // 0 offset
+        assert_int_equal(vf.curveset[cs].curve[3].pair[5].ldo_dac_in, 500); // 0 offset
+    }
+
+    // Verify pair index 6 (freq 1800 MHz, non-matching): unchanged
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        for (unsigned t = 0; t < VFT_CURVE_COUNT_PER_CURVESET; ++t)
+        {
+            assert_int_equal(vf.curveset[cs].curve[t].pair[6].ldo_dac_in, 250); // unchanged
+            assert_int_equal(vf.curveset[cs].curve[t].pair[6].freq_Mhz, 1800);  // unchanged
+        }
+    }
+
+    fuse_data_major_rev = 0;
+}
+
+POWER_TEST(rc3_override_applied_for_pc, set_fuse_data_to_rc3_milestone, set_fuse_data_to_default)
+{
+    // PC: milestone 0x2 => should apply override (no major_rev check needed)
+    rc3_test_milestone = CUSTOMER_SAMPLE_MILESTONE_PC;
+    fuse_data = CUSTOMER_SAMPLE_MILESTONE_PC;
+
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+    setup_vf_curveset_with_known_anchors(&vf);
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    // Single fuse read: milestone only (PC path doesn't read major_rev)
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_SUCCESS));
+
+    // Verify a representative anchor is correctly modified (1200 MHz, temp range 0)
+    // delta_ldo = -60 * 1000 / 2000 = -30, original = 200
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        assert_int_equal(vf.curveset[cs].curve[0].pair[0].ldo_dac_in, 170);
+    }
+}
+
+POWER_TEST(rc3_override_skipped_for_pr, set_fuse_data_to_rc3_milestone, set_fuse_data_to_default)
+{
+    // PR: milestone 0x3 => should NOT apply override (not ES2 or PC)
+    rc3_test_milestone = CUSTOMER_SAMPLE_MILESTONE_PR;
+    fuse_data = CUSTOMER_SAMPLE_MILESTONE_PR;
+
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+    setup_vf_curveset_with_known_anchors(&vf);
+
+    power_fuse_vf_curveset_t vf_original = {};
+    setup_vf_curveset_with_known_anchors(&vf_original);
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_SUCCESS));
+
+    // Verify no modifications were made (PR is not ES2 or PC)
+    assert_memory_equal(&vf, &vf_original, sizeof(vf));
+}
+
+POWER_TEST(rc3_override_clamp_to_zero, set_fuse_data_to_rc3_milestone, set_fuse_data_to_default)
+{
+    // Test that LDO DAC clamps to 0 when override would make it negative
+    rc3_test_milestone = CUSTOMER_SAMPLE_MILESTONE_PC; // 0x2
+    fuse_data = CUSTOMER_SAMPLE_MILESTONE_PC;
+
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+    memset(&vf, 0, sizeof(vf));
+
+    // Set a very low LDO value at a frequency that gets a large negative offset
+    // 2800 MHz at temp range 0 has -80 mV => delta_ldo = -40
+    // With ldo_dac_in = 10, new_ldo = 10 + (-40) = -30, should clamp to 0
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        for (unsigned t = 0; t < VFT_CURVE_COUNT_PER_CURVESET; ++t)
+        {
+            vf.curveset[cs].curve[t].pair[0].freq_Mhz = 2800;
+            vf.curveset[cs].curve[t].pair[0].ldo_dac_in = 10;
+        }
+    }
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_SUCCESS));
+
+    // Verify clamped to 0
+    for (unsigned cs = 0; cs < VFT_CURVESET_COUNT; ++cs)
+    {
+        assert_int_equal(vf.curveset[cs].curve[0].pair[0].ldo_dac_in, 0); // clamped from -30 to 0
+    }
+}
+
+POWER_TEST(rc3_override_skipped_above_max_milestone, set_fuse_data_to_rc3_milestone, set_fuse_data_to_default)
+{
+    // Milestone 0x5 is not ES (0x1) or PC (0x2), should skip override
+    rc3_test_milestone = 0x5;
+    fuse_data = 0x5;
+
+    power_fuse_vf_curveset_t vf = {};
+    dvfs_vf_slope_t slope = {.slope_uvolt = RC3_TEST_SLOPE_UVOLT, .offset_uvolt = 0};
+    setup_vf_curveset_with_known_anchors(&vf);
+
+    power_fuse_vf_curveset_t vf_original = {};
+    setup_vf_curveset_with_known_anchors(&vf_original);
+
+    expect_any_always(__wrap_platform_read_fuse, target_addr);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_offset);
+    expect_any_always(__wrap_platform_read_fuse, fuse_bit_size);
+
+    will_return(__wrap_platform_read_fuse, FPFW_STATUS_SUCCESS);
+
+    assert_true((power_fuses_apply_rc3_vf_override(&vf, &slope) == FPFW_STATUS_SUCCESS));
+
+    // Verify no modifications
+    assert_memory_equal(&vf, &vf_original, sizeof(vf));
 }

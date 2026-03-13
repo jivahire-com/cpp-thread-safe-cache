@@ -158,7 +158,7 @@ static PLACED_CODE FPFW_CLI_STATUS ap_mem_write(int argc, const char* argv[])
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS local_mem_read(int argc, const char* argv[])
+static PLACED_CODE FPFW_CLI_STATUS local_mem_read(int argc, const char* argv[])
 {
     /* Checking for the correct number of arguments. */
     if (argc != 3)
@@ -227,7 +227,7 @@ static FPFW_CLI_STATUS local_mem_read(int argc, const char* argv[])
     return CLI_SUCCESS;
 }
 
-static FPFW_CLI_STATUS local_mem_write(int argc, const char* argv[])
+static PLACED_CODE FPFW_CLI_STATUS local_mem_write(int argc, const char* argv[])
 {
     /* Checking for the correct number of arguments. */
     if (argc != 4)
@@ -293,7 +293,7 @@ static FPFW_CLI_STATUS local_mem_write(int argc, const char* argv[])
     return CLI_SUCCESS;
 }
 
-static void invalidate_cacheable_address(uint32_t addr, uint32_t width)
+static PLACED_CODE void invalidate_cacheable_address(uint32_t addr, uint32_t width)
 {
     __DSB();
 
@@ -307,7 +307,7 @@ static void invalidate_cacheable_address(uint32_t addr, uint32_t width)
 }
 
 // Register commands
-void cli_mem_init(void)
+PLACED_CODE void cli_mem_init(void)
 {
     FpFwCliRegisterTable(s_mem_cmd_list, FPFW_ARRAY_SIZE(s_mem_cmd_list));
     FPFW_DBGPRINT_INFO("CLI Memory commands initialized\n");

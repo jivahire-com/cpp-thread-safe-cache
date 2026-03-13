@@ -6,6 +6,7 @@ add_library(${TARGET}
     STATIC
         tower.c
         tower_isr.c
+        tower_events.c
 )
 
 target_link_libraries(${TARGET}

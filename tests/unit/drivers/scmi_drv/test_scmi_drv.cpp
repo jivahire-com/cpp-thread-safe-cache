@@ -174,6 +174,37 @@ TEST_FUNCTION(test_scmi_check_message, test_setup, test_teardown)
     assert_int_equal(status, SCMI_PROTOCOL_NOT_SUPPORTED);
 }
 
+TEST_FUNCTION(test_scmi_check_message_bounds, test_setup, test_teardown)
+{
+    scmi_icc_packet_t packet;
+    packet.header.cmd_code = SCMI_PROTOCOL_VERSION;
+    packet.header.protocol_id = SCMI_PWR_DMN_PROTO_ID;
+
+    packet.smt_header.payload_size = 0;
+    int status = __real_scmi_check_message(&packet);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_UKNOWN);
+
+    packet.smt_header.payload_size = 3;
+    status = __real_scmi_check_message(&packet);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_UKNOWN);
+
+    packet.smt_header.payload_size = 53;
+    status = __real_scmi_check_message(&packet);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_UKNOWN);
+
+    packet.smt_header.payload_size = 0xFFFFFFFFU;
+    status = __real_scmi_check_message(&packet);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_UKNOWN);
+
+    test_scmi_local_packet_t large_packet = {{}};
+    large_packet.smt_header.payload_size = 52;
+    large_packet.header.cmd_code = SCMI_PROTOCOL_VERSION;
+    large_packet.header.protocol_id = SCMI_PWR_DMN_PROTO_ID;
+    will_return(__wrap_scmi_power_protocol_cmds, SCMI_PROTOCOL_CMD_SUCCESS);
+    status = __real_scmi_check_message((scmi_icc_packet_t*)&large_packet);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+}
+
 TEST_FUNCTION(test_ap_core_power_completion, test_setup, test_teardown)
 {
     _DFWK_ASYNC_REQUEST_HEADER req = {0};
@@ -349,4 +380,46 @@ TEST_FUNCTION(test_scmi_power_protocol_cmds, test_setup, test_teardown)
 
     status = __real_scmi_power_protocol_cmds(0xFF, data, 0);
     assert_int_equal(status, SCMI_PROTOCOL_CMD_UKNOWN);
+}
+
+TEST_FUNCTION(test_scmi_power_protocol_cmds_invalid_payload_size, test_setup, test_teardown)
+{
+    // Test SCMI_PROTO_MSG_ATTR_MSG with invalid (too small) payload size
+    uint8_t small_data[] = {1, 2};
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    int status = __real_scmi_power_protocol_cmds(SCMI_PROTO_MSG_ATTR_MSG, small_data, 1);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Test SCMI_PWR_STATE_SET_MSG with invalid (too small) payload size
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    status = __real_scmi_power_protocol_cmds(SCMI_PWR_STATE_SET_MSG, small_data, 1);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+}
+
+TEST_FUNCTION(test_scmi_sys_pwr_protocol_cmds_invalid_payload_size, test_setup, test_teardown)
+{
+    // Test SCMI_PROTO_MSG_ATTR_MSG with invalid (too small) payload size
+    uint8_t small_data[] = {1, 2};
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    int status = __real_scmi_sys_pwr_protocol_cmds(SCMI_PROTO_MSG_ATTR_MSG, small_data, 1);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Test SCMI_SYS_PWR_STATE_SET_MSG with invalid (too small) payload size
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    status = __real_scmi_sys_pwr_protocol_cmds(SCMI_SYS_PWR_STATE_SET_MSG, small_data, 1);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+}
+
+TEST_FUNCTION(test_scmi_ap_core_protocol_cmds_invalid_payload_size, test_setup, test_teardown)
+{
+    // Test SCMI_PROTO_MSG_ATTR_MSG with invalid (too small) payload size
+    uint8_t small_data[] = {1, 2};
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    int status = __real_scmi_ap_core_protocol_cmds(SCMI_PROTO_MSG_ATTR_MSG, small_data, 1);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
+
+    // Test SCMI_AP_CORE_RESET_ADDR_SET_MSG with invalid (too small) payload size
+    will_return(__wrap_scmi_send_resp, ICC_MHU_STATUS_SUCCESS);
+    status = __real_scmi_ap_core_protocol_cmds(SCMI_AP_CORE_RESET_ADDR_SET_MSG, small_data, 1);
+    assert_int_equal(status, SCMI_PROTOCOL_CMD_SUCCESS);
 }

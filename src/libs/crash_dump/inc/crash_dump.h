@@ -32,6 +32,7 @@ extern "C" {
 
 #define PRE_DUMP_CB_MAX  8
 #define POST_DUMP_CB_MAX 8
+#define FULL_CD_TRANSFER_TIMEOUT_MS 300000
 
 /*-------------- Typedefs ----------------*/
 typedef enum
@@ -389,6 +390,18 @@ bool crash_dump_is_UE(void);
  * @brief Register variables to collect minimal info for accelerator crash dump
  */
 void crash_dump_register_accel_cd();
+
+/**
+ * @brief This function initializes the CD framework for accel default CD
+ * @param accel_type SDM/CDED
+ */
+void crash_dump_default_accel_cd_init(ACCEL_ID accel_type);
+
+/**
+ * @brief This function invokes the CD framework to generate the accel defautl CD
+ * @paragraph accel_type SDM/CDED
+ */
+void crash_dump_generate_default_accel_cd(ACCEL_ID accel_type);
 
 #ifdef __cplusplus
 }

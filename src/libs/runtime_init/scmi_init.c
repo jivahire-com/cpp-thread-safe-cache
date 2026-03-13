@@ -16,9 +16,10 @@
 #include <idsw_kng.h>
 #include <scmi_init.h>
 #include <stdio.h> // for printf
+#include <utils.h>
 
 // pass ap_core svc interface to SCMI driver
-FPFW_INIT_COMPONENT(scmi_drv, FPFW_INIT_DEPENDENCIES("icc_mscp2tfa_if", "ap_core_int", "std_io", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(scmi_drv, FPFW_INIT_DEPENDENCIES("icc_mscp2tfa_if", "ap_core_int", "std_io", "boot_stat"))
 {
     scmi_drv_init(fpfw_init_get_handle("icc_mscp2tfa_if"));
     scmi_set_apcore_interface(fpfw_init_get_handle("ap_core_int"));

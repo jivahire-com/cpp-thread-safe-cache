@@ -17,12 +17,15 @@
 #include <cmsis_m7.h>          // for __WFI
 #include <crash_dump.h>        // for crash_dump_handler
 #include <crash_dump_events.h> // for CRASH_DUMP_ET
+#include <crash_dump_memory.h> // for crash dump memory layout
 #include <fpfw_cfg_mgr.h>      // for knobs
 #include <idsw_kng.h>          // for IS_PLATFORM_SVP
 #include <nvic.h>              // for nvic_get_current_irq
 #include <stdint.h>            // for uint32_t
 
 /*-- Symbolic Constant Macros (defines) --*/
+#define CRASH_DUMP_MAX_WAIT_FOR_MCP_MINI_COUNT 20
+#define CRASH_DUMP_WAIT_FOR_MCP_MINI_DELAY_US  100000 // 100 ms
 
 /*-------------- Typedefs ----------------*/
 
@@ -31,7 +34,7 @@ core_crash_context_t g_core_crash_context;
 static volatile bool s_bug_check_initiated_crash = false;
 static volatile bool s_is_ue = false;
 static bool g_utc_ready = false;
-uint32_t cd_origin_core_id = 0;
+static uint32_t cd_origin_core_id = 0;
 
 /*------------- Functions ----------------*/
 void crash_dump_svp_probe(uint32_t die_index, uint32_t core_index, bool is_full, uint64_t dump_address, uint64_t dump_size)
@@ -162,6 +165,39 @@ __attribute__((__weak__)) FPFW_NORETURN void crash_dump_wait_forever()
     }
 }
 
+static void finalize_SCP_mini_dump(crash_dump_context_t* ctx, uint32_t errorCode)
+{
+    if (errorCode == 0 && (cd_origin_core_id & 0xFFFF) == CRASH_DUMP_CORE_MCP)
+    {
+        uint32_t retry_count = 0;
+
+        // CTI triggerred SCP crash.
+        // Wait until MCP mini dump is completed and switch to MCP mini dump if valid.
+        crash_dump_core_state_t mcp_state =
+            crash_dump_core_state(CRASH_DUMP_TYPE_MINI, ctx->die_index, CRASH_DUMP_CORE_MCP);
+
+        while (mcp_state == CRASH_DUMP_STATE_IN_PROGRESS && retry_count < CRASH_DUMP_MAX_WAIT_FOR_MCP_MINI_COUNT)
+        {
+            // Wait for MCP mini dump to complete
+            SLEEP_US(CRASH_DUMP_WAIT_FOR_MCP_MINI_DELAY_US); // Sleep for 100ms before checking again
+            mcp_state = crash_dump_core_state(CRASH_DUMP_TYPE_MINI, ctx->die_index, CRASH_DUMP_CORE_MCP);
+            retry_count++;
+        }
+
+        if (mcp_state == CRASH_DUMP_STATE_COMPLETED)
+        {
+            FPFwCDPrintf("MCP mini dump completed, finalize SCP mini dump with MCP mini dump.\n");
+            memcpy((void*)CRASH_DUMP_MINI_SCP_ADDR, (void*)CRASH_DUMP_MINI_MCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE);
+        }
+        else
+        {
+            FPFwCDPrintf("MCP mini dump is not completed or not available, finalize SCP mini dump.\n");
+        }
+    }
+
+    crash_dump_update_core_state(ctx->type_ctx[CRASH_DUMP_TYPE_MINI], CRASH_DUMP_STATE_COMPLETED);
+}
+
 void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
 {
     bool should_generate_crash_dump = config_get_crash_dump_enable();
@@ -170,6 +206,7 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
     if (should_generate_crash_dump)
     {
         crash_dump_context_t* ctx = crash_dump_context();
+        bool finalize_scp_mini_dump = false;
 
         for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
         {
@@ -183,10 +220,10 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
         // Assert GPIO_CD_IN_PROGRESS
         cd_gpio_assert_cd_in_progress(true);
 
+        cd_origin_core_id = errorCode == 0 ? cd_origin_core_id : CRASH_DUMP_PROCESSOR_ID(ctx->die_index, ctx->core_index);
+
         // Trigger remote entities to indicate this core has crashed if needed
-        crash_dump_remote_trigger(s_is_ue,
-                                  errorCode == 0 ? cd_origin_core_id
-                                                 : CRASH_DUMP_PROCESSOR_ID(ctx->die_index, ctx->core_index));
+        crash_dump_remote_trigger(s_is_ue, cd_origin_core_id);
 
         // Generate dumps
         FPFwCdBugCheckInfo bug_check_info = {};
@@ -204,8 +241,16 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
                 // Dump the crash dump
                 FPFwCDCrashDumpHandler(&ctx->type_ctx[i]->crash_dump_ctx, &g_core_crash_context, &bug_check_info);
 
-                // Update the crash dump state
-                crash_dump_update_core_state(ctx->type_ctx[i], CRASH_DUMP_STATE_COMPLETED);
+                // Update the full crash dump state
+                if (ctx->type_ctx[i]->type == CRASH_DUMP_TYPE_MINI && ctx->core_index == CRASH_DUMP_CORE_SCP && errorCode == 0)
+                {
+                    // For SCP CTI initiated mini dump, the state will be updated in finalize_SCP_mini_dump.
+                    finalize_scp_mini_dump = true;
+                }
+                else
+                {
+                    crash_dump_update_core_state(ctx->type_ctx[i], CRASH_DUMP_STATE_COMPLETED);
+                }
 
                 if (IS_PLATFORM_SVP())
                 {
@@ -216,8 +261,14 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
                                          ctx->type_ctx[i]->mem_ctx.nextAddr - ctx->type_ctx[i]->mem_ctx.baseAddr);
                 }
 
-                CRASH_DUMP_ET_INFO(CRASH_DUMP_ET_TYPE_CD_CRASH);
+                CRASH_DUMP_ET_INFO_PARAM(CRASH_DUMP_ET_TYPE_CD_CRASH, __LINE__);
             }
+        }
+
+        if (finalize_scp_mini_dump)
+        {
+            // Finalize SCP mini dump after all dumps are generated.
+            finalize_SCP_mini_dump(ctx, errorCode);
         }
     }
 }

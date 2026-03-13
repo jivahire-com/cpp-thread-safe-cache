@@ -171,5 +171,10 @@ mock_target(${AP_WDT_TARGET}
     nvic_get_current_irq
     nvic_irq_clear_pending
     ws_data_put
+    ws_data_get
     CdRegisterCustomChunk
+    DfwkAsyncRequestInitialize
+    hm_register_error_domain
+    FPFwCoreInterruptRegisterCallback
+    FPFwCoreInterruptEnableVector
 )

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <tlm_fuses.h>
 #include <tx_api.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -32,7 +33,7 @@ static uint8_t s_etr_stack[ETR_STACK_SIZE];
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(etr, FPFW_INIT_DEPENDENCIES("etc", "icc_hspmbx", "atu_svc", "hw_ver", "mts_svc", "tlm_fuses"))
+PLACED_CODE FPFW_INIT_COMPONENT(etr, FPFW_INIT_DEPENDENCIES("etc", "icc_hspmbx", "atu_svc", "hw_ver", "mts_svc", "tlm_fuses"))
 {
 
     etr_service_config_t config = {

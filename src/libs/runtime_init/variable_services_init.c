@@ -12,6 +12,7 @@
 #include <idhw.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 #include <variable_services.h>
 
 /*------------- Typedefs -----------------*/
@@ -21,7 +22,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(var_serv, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "sysinfo"))
+PLACED_CODE FPFW_INIT_COMPONENT(var_serv, FPFW_INIT_DEPENDENCIES("icc_hspmbx", "sysinfo"))
 {
     fpfw_icc_base_ctx_t* icc_ctx = fpfw_init_get_handle("icc_hspmbx");
     variable_service_init(icc_ctx);

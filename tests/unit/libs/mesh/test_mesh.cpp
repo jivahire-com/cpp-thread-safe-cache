@@ -644,7 +644,7 @@ uint64_t __wrap_config_get_a1_mesh_hnf_pocq_alloc_class_contended_min(void)
 
 uint64_t __wrap_config_get_a1_mesh_hnf_pocq_alloc_misc_max_allowed(void)
 {
-    return 0x204ULL; // XML default value
+    return 0x208ULL; // XML default value
 }
 
 uint64_t __wrap_config_get_a1_mesh_hnf_pocq_qos_class_ctl(void)
@@ -768,7 +768,7 @@ uint64_t __wrap_config_get_mesh_hnf_pocq_alloc_class_contended_min(void)
 }
 uint64_t __wrap_config_get_mesh_hnf_pocq_alloc_misc_max_allowed(void)
 {
-    return 0x204ULL; // XML default value
+    return 0x208ULL; // XML default value
 }
 uint64_t __wrap_config_get_mesh_hnf_class_ctl(void)
 {
@@ -2081,7 +2081,7 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_dedicated, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_max_allowed, 0x8203E3F);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_contended_min, 0x10101010);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_misc_max_allowed, 0x204);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_misc_max_allowed, 0x208);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_class_ctl, 0x0);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_qos_class_ctl, 0x70B8ECFF);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_class_pocq_arb_weight_ctl, 0x0);
@@ -2192,7 +2192,7 @@ void verify_mesh_config_knobs_a1_stepping(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_dedicated, 0x0ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_max_allowed, 0x8203E3FULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_contended_min, 0x10101010ULL);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_misc_max_allowed, 0x204ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_misc_max_allowed, 0x208ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_qos_class_ctl, 0x70B8ECFFULL);
 
     // Verify knobs that should remain unchanged (A0 values)

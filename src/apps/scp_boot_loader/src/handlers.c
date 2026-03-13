@@ -8,6 +8,7 @@
  */
 
 /*------------- Includes -----------------*/
+#include <cmsdk_wd.h>
 #include <kingsgate_boot.h> // for kingsgate_boot_metadata_t, BITMASK_WARM_...
 #ifdef UNIT_TEST
     #include <mock_scp_mmap.h>
@@ -30,6 +31,7 @@
 /*-------- Function Prototypes -----------*/
 
 extern NORETURN void _start(void);
+void disable_mscp_watchdog(void);
 
 /*------------- Functions ----------------*/
 
@@ -74,4 +76,11 @@ NORETURN void arch_exception_reset(void)
 
     // Invoke _start from crt0.S which will finally invoke main
     _start();
+}
+
+__attribute__((used)) void disable_mscp_watchdog(void)
+{
+    wdog_cmsdk_apb_lock_unlock(false);
+    wdog_cmsdk_apb_disable();
+    wdog_cmsdk_apb_lock_unlock(true);
 }

@@ -16,15 +16,17 @@
 #include <stdio.h>
 #include <tower.h>
 #include <tower_isr.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static const guid_t guid_nitower = ACPI_ERROR_TYPE_NITOWER;
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh_stg_1", "atu_svc", "icc_hspmbx", "sysinfo"))
+PLACED_CODE FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh_stg_1", "atu_svc", "icc_hspmbx", "sysinfo"))
 {
     uint8_t die_num = (uint8_t)idsw_get_die_id();
 
@@ -39,7 +41,7 @@ FPFW_INIT_COMPONENT(tower_cfg, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "mesh_
     FPFW_DBGPRINT_INFO("Tower init done, die_num [%d]\n", die_num);
 
     /* Register the error domain for NITower in Health Monitor */
-    hm_register_error_domain(ACPI_ERROR_DOMAIN_NITOWER, NULL, "Tower Error Domain", tower_error_injection_cb, NULL);
+    hm_register_error_domain(ACPI_ERROR_DOMAIN_NITOWER, &guid_nitower, "Tower Error Domain", tower_error_injection_cb, NULL);
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }

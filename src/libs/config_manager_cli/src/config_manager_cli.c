@@ -357,7 +357,7 @@ static PLACED_CODE FPFW_CLI_STATUS cfg_mgr_reset_knob_cli(int argc, const char**
     return CLI_SUCCESS;
 }
 
-void cfg_mgr_cli_init(void)
+PLACED_CODE void cfg_mgr_cli_init(void)
 {
     FpFwCliRegisterTable(cfg_mgr_cli_list, FPFW_ARRAY_SIZE(cfg_mgr_cli_list));
 }

@@ -13,6 +13,7 @@
 #include <idhw.h>
 #include <idsw.h>
 #include <stddef.h> // for NULL
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -22,8 +23,9 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(icc_cli,
-                    FPFW_INIT_DEPENDENCIES("cli", "icc_hspmbx", "icc_d2dmbx", "icc_sdm_mbx", "icc_cded_mbx", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die", "icc_mscp2aprt"))
+PLACED_CODE FPFW_INIT_COMPONENT(
+    icc_cli,
+    FPFW_INIT_DEPENDENCIES("cli", "icc_hspmbx", "icc_d2dmbx", "icc_sdm_mbx", "icc_cded_mbx", "icc_mscp2mscp", "icc_mscp2apns", "icc_die2die", "icc_mscp2aprt"))
 {
     static icc_cli_init_params_t icc_cli_params;
     //! set the available transport interfaces

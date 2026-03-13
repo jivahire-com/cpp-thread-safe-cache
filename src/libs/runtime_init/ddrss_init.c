@@ -19,6 +19,7 @@
 #include <idsw_kng.h>
 #include <stdio.h>
 #include <system_info.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define UNUSED(x) (void)(x)
@@ -29,7 +30,7 @@
 
 /*-------------- Functions ---------------*/
 // Todo: Add "ddr_training" to dependencies when available
-FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_ver", "debug_print", "sysinfo", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_ver", "debug_print", "sysinfo", "boot_stat"))
 {
     if (system_info_is_warm_start())
     {
@@ -56,7 +57,7 @@ FPFW_INIT_COMPONENT(ddr_pcr, FPFW_INIT_DEPENDENCIES("css_pome", "atu_svc", "hw_v
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(
+PLACED_CODE FPFW_INIT_COMPONENT(
     ddr,
     FPFW_INIT_DEPENDENCIES("sds_int", "std_io", "ddr_pcr", "mesh_stg_2", "hw_ver", "icc_hspmbx", "cfg_mgr", "css_pome", "atu_svc", "fuse_post_mesh", "sysinfo", "core_info", "boot_stat"))
 {
@@ -100,7 +101,7 @@ FPFW_INIT_COMPONENT(
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(ddr_dfwk, FPFW_INIT_DEPENDENCIES("ddr", "dfwk", "sos_int"))
+PLACED_CODE FPFW_INIT_COMPONENT(ddr_dfwk, FPFW_INIT_DEPENDENCIES("ddr", "dfwk", "sos_int"))
 {
     ddr_manager_dfwk_init();
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};

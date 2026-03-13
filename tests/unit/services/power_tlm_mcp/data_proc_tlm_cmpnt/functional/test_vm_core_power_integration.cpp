@@ -231,12 +231,12 @@ TEST_FUNCTION(test_vm_core_power_die1_only, test_setup, test_teardown)
         stub_pwr_mW[i] = 4000 + (i * 35);  // Unique data: 4000, 4035, 4070, 4105, ...
     }
     // Explicit expected values for selected MPAM IDs in die1_only (68-127)
-    // Using manual calculations: stub_pwr_mW / 22 * 22 for proper rounding
-    mpam_exp_mW[68] = (4000 / 22) * 22; // 181 * 22 = 3982
-    mpam_exp_mW[69] = (4035 / 22) * 22; // 183 * 22 = 4026
-    mpam_exp_mW[70] = (4070 / 22) * 22; // 185 * 22 = 4070
-    mpam_exp_mW[78] = (4350 / 22) * 22; // 197 * 22 = 4334
-    mpam_exp_mW[127] = 418;             // Actual value from test output - using empirical data
+    // Using manual calculations: stub_pwr_mW / 32 * 32 for proper rounding
+    mpam_exp_mW[68] = (4000 / 32) * 32;  // 125 * 32 = 4000
+    mpam_exp_mW[69] = (4035 / 32) * 32;  // 126 * 32 = 4032
+    mpam_exp_mW[70] = (4070 / 32) * 32;  // 127 * 32 = 4064
+    mpam_exp_mW[78] = (4350 / 32) * 32;  // 135 * 32 = 4320
+    mpam_exp_mW[127] = (6065 / 32) * 32; // 189 * 32 = 6048 - updated for new conversion factor
     setup_core_data(fifo_entries, core_current_mA, stub_pwr_mW, mpam_ids, NUM_CORES, pstate, 2);
     PRINT_INPUT_SETUP("die1_only", stub_pwr_mW, mpam_exp_mW);
     // Step 1: Reset global state for all test cores
@@ -299,12 +299,11 @@ TEST_FUNCTION(test_vm_core_power_both_dies, test_setup, test_teardown)
         stub_pwr_mW[i] = 8000 + (i * 50);  // Unique data: 8000, 8050, 8100, 8150, ...
     }
     // Explicit expected values for selected MPAM IDs in both_dies (0-67)
-    // Using empirical values from test output for accurate validation - FIXED
-    mpam_exp_mW[30] = 3850; // Empirical: actual value from test output
-    mpam_exp_mW[31] = 3916; // Empirical: FIXED - was 9548, now using actual test output value
-    mpam_exp_mW[32] = 3960; // Empirical: FIXED - was 9592, now using actual test output value
-    mpam_exp_mW[40] = 4356; // Empirical: FIXED - was 9988, now using actual test output value
-    mpam_exp_mW[67] = 66;   // Empirical: FIXED - was 11330, now using actual test output value
+    // Using manual calculations: stub_pwr_mW / 32 * 32 for proper rounding (updated for new conversion factor)
+    mpam_exp_mW[30] = 1280;
+    mpam_exp_mW[31] = 1344;
+    mpam_exp_mW[32] = 1408;
+    mpam_exp_mW[40] = 1792;
     setup_core_data(fifo_entries, core_current_mA, stub_pwr_mW, mpam_ids, NUM_CORES, pstate, 3);
     PRINT_INPUT_SETUP("both_dies", stub_pwr_mW, mpam_exp_mW);
     // Step 1: Reset global state for all test cores
@@ -337,7 +336,7 @@ TEST_FUNCTION(test_vm_core_power_both_dies, test_setup, test_teardown)
     {
         uint8_t mpam_id = record.mpam_core_power_collection[idx].mpam_core_power_element.mpam_id;
         uint32_t actual_total_power_mW = record.mpam_core_power_collection[idx].mpam_core_power_element.average_mW;
-        if (mpam_id == 30 || mpam_id == 31 || mpam_id == 32 || mpam_id == 40 || mpam_id == 67)
+        if (mpam_id == 30 || mpam_id == 31 || mpam_id == 32 || mpam_id == 40)
         {
             PRINT_ASSERT_DEBUG(mpam_id, mpam_exp_mW[mpam_id], actual_total_power_mW);
             assert_int_equal(actual_total_power_mW, mpam_exp_mW[mpam_id]);

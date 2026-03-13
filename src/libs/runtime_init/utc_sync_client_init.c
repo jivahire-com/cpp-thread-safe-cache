@@ -22,6 +22,7 @@
 #include <tx_api.h>
 #include <tx_port.h>
 #include <utc_sync_client_service.h>
+#include <utils.h>
 
 /*------------------- Symbolic Constant Macros (defines) --------------------*/
 
@@ -109,7 +110,7 @@ static void hsp_utc_timestamp_cb(utc_timestamp_bundle_t* p_utc_timestamp, void* 
 #ifdef MCP_RUNTIME_INIT
 FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "icc_hspmbx", "mts_svc", "boot_stat"))
 #else
-FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "mts_svc", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(utc_client_svc, FPFW_INIT_DEPENDENCIES("gtimer_stg_2", "mts_svc", "boot_stat"))
 #endif
 {
     KNG_DIE_ID die_num = idsw_get_die_id();

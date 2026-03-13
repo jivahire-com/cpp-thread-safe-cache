@@ -22,6 +22,7 @@ extern "C" {
 
 /*-------- Function Prototypes -----------*/
 extern void arch_exception_reset(void);
+extern void disable_mscp_watchdog(void);
 
 /*-- Declarations (Statics and globals) --*/
 kingsgate_boot_metadata_t test_meta_data_t;
@@ -47,6 +48,17 @@ uint8_t* MCP_TOP_MCP_DATA_RAM_ADDRESS = &test_dtc_ram[0];
 void __wrap__start()
 {
     return;
+}
+
+void __wrap_wdog_cmsdk_apb_disable()
+{
+    function_called();
+}
+
+void __wrap_wdog_cmsdk_apb_lock_unlock(bool lock)
+{
+    check_expected(lock);
+    function_called();
 }
 //
 // Tests
@@ -86,5 +98,16 @@ TEST_FUNCTION(test_arch_exception_reset_warm_boot, nullptr, nullptr)
     // Only ITC RAM should be cleared and not DTC RAM
     assert_true(memcmp(test_itc_ram, cmp_itc_ram, MCP_TOP_MCP_INST_RAM_SIZE) == 0);
     assert_true(memcmp(test_dtc_ram, cmp_dtc_ram, MCP_TOP_MCP_DATA_RAM_SIZE) == 0);
+}
+
+TEST_FUNCTION(test_nmi_disables_watchdog, nullptr, nullptr)
+{
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, false);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+    expect_function_call(__wrap_wdog_cmsdk_apb_disable);
+    expect_value(__wrap_wdog_cmsdk_apb_lock_unlock, lock, true);
+    expect_function_call(__wrap_wdog_cmsdk_apb_lock_unlock);
+
+    disable_mscp_watchdog();
 }
 }

@@ -18,6 +18,7 @@
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <rtosmon_service.h>    // rtosmon_service_init
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -29,7 +30,7 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(rtosmon, FPFW_INIT_DEPENDENCIES("etc", "systick_upd","boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(rtosmon, FPFW_INIT_DEPENDENCIES("etc", "systick_upd","boot_stat"))
 {
     BUG_ASSERT(rtosmon_service_init() == FPFW_STATUS_SUCCESS);
     

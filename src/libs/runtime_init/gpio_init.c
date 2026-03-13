@@ -29,6 +29,7 @@
 #include <kng_soc_constants.h> // for SOC_D0, D1
 #include <silibs_status.h>     // for SILIBS_SUCCESS
 #include <stdio.h>
+#include <utils.h>
 #include <variable_services.h>
 
 /*------------- Typedefs -----------------*/
@@ -73,7 +74,7 @@ static const gpio_afm_entry_t fpga_config_gpio_table_afm[] = {
  * @brief Initialize and configure GPIO registers.
  *
  */
-FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_print", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_print", "boot_stat"))
 {
     int status = SILIBS_SUCCESS;
     static gpio_init_config_t gpio_init_config;
@@ -156,7 +157,7 @@ FPFW_INIT_COMPONENT(gpio_lib, FPFW_INIT_DEPENDENCIES("mpu", "hw_ver", "debug_pri
  * @brief Initialize GPIO device instance.
  *
  */
-FPFW_INIT_COMPONENT(gpio_dev, FPFW_INIT_DEPENDENCIES("gpio_lib", "dfwk", "nvic"))
+PLACED_CODE FPFW_INIT_COMPONENT(gpio_dev, FPFW_INIT_DEPENDENCIES("gpio_lib", "dfwk", "nvic"))
 {
     static gpio_irq_config_t gpio_irq_config[] = {
 #if defined(SCP_RUNTIME_INIT)
@@ -180,7 +181,7 @@ FPFW_INIT_COMPONENT(gpio_dev, FPFW_INIT_DEPENDENCIES("gpio_lib", "dfwk", "nvic")
  * @brief Initialize GPIO CLI.
  *
  */
-FPFW_INIT_COMPONENT(gpio_cli, FPFW_INIT_DEPENDENCIES("gpio_dev", "cli"))
+PLACED_CODE FPFW_INIT_COMPONENT(gpio_cli, FPFW_INIT_DEPENDENCIES("gpio_dev", "cli"))
 {
     // Create and initialize GPIO interface for CLI.
     static gpio_interface_t gpio_interface;

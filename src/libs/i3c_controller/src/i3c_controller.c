@@ -15,6 +15,7 @@
 #include <ddr_i3c.h>
 #include <fpfw_cfg_mgr.h>
 #include <i3c_controller.h>
+#include <i3c_controller_events.h>
 #include <idhw.h>     // for idhw_is_single_die_boot_en
 #include <idsw.h>     // for idsw_get_platform_sdv,
 #include <idsw_kng.h> // for PLATFORM_FPGA_LARGE
@@ -198,6 +199,7 @@ int i3c_controller_verify_dimm_on_current_die(uint32_t ddrss_en)
     if (idsw_get_platform_sdv() != PLATFORM_RVP_EVT_SILICON)
     {
         FPFW_DBGPRINT_ALWAYS(MOD_NAME "Not verifying DIMM match on non-SoC platforms");
+        FPFW_ET_LOG(I3cControllerPlatformNotSupport, __LINE__);
         return SILIBS_SUCCESS;
     }
     FPFW_DBGPRINT_ALWAYS(MOD_NAME "i3c_controller_verify_dimm_on_current_die ddrss_en 0x%x Start", ddrss_en);
@@ -218,6 +220,7 @@ int i3c_controller_verify_dimm_on_current_die(uint32_t ddrss_en)
                     MOD_NAME "ddr_i3c_interface_read_dimm_capacity failed for ddrss_index %d, status %d",
                     ddrss_index,
                     status);
+                FPFW_ET_LOG(I3cControllerReadError, __LINE__);
                 i3c_send_error_boot_status();
                 BUG_ASSERT(false);
             }
@@ -238,6 +241,7 @@ int i3c_controller_verify_dimm_on_current_die(uint32_t ddrss_en)
                     dimm_cap_per_ch[ddrss_index],
                     first_dimm_in_local,
                     dimm_cap_per_ch[first_dimm_in_local]);
+                FPFW_ET_LOG(I3cControllerDimmVerificationError, __LINE__);
                 status = SILIBS_E_NOMEM;
                 i3c_send_error_boot_status();
                 BUG_ASSERT(false);
@@ -251,6 +255,7 @@ int i3c_controller_verify_dimm_on_current_die(uint32_t ddrss_en)
                                      dimm_sku[ddrss_index],
                                      first_dimm_in_local,
                                      dimm_sku[first_dimm_in_local]);
+                FPFW_ET_LOG(I3cControllerDimmVerificationError, __LINE__);
                 status = SILIBS_E_NOMEM;
                 i3c_send_error_boot_status();
                 BUG_ASSERT(false);
@@ -378,6 +383,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "I3C%d Master Init Error\n", i);
+                FPFW_ET_LOG(I3cControllerInitError, i, __LINE__);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -398,6 +404,7 @@ int i3c_controller(uint8_t die_num)
             {
                 // Error in configuring DAT
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "I3C%d Device Addr Table Init Error\n", i);
+                FPFW_ET_LOG(I3cControllerInitError, i, __LINE__);
                 // Error or BUGCHECK
                 goto exit;
             }
@@ -433,6 +440,7 @@ int i3c_controller(uint8_t die_num)
                 {
                     // Error in sending PMIC ON
                     FPFW_DBGPRINT_ALWAYS(MOD_NAME "Error in sending PMIC ON, I3C 0x%x\n", i);
+                    FPFW_ET_LOG(I3cControllerPowerUpPmicError, __LINE__);
                     // Error or BUGCHECK
                     goto exit;
                 }
@@ -442,6 +450,7 @@ int i3c_controller(uint8_t die_num)
                 {
                     // Error in setting all addresses to static addresses
                     FPFW_DBGPRINT_ALWAYS(MOD_NAME "Err to set static addresses, I3C 0x%x\n", i);
+                    FPFW_ET_LOG(I3cControllerSetAASAError, __LINE__);
                     // Error or BUGCHECK
                     goto exit;
                 }
@@ -460,6 +469,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMMs Read Err, status 0x%x\n", status);
+                FPFW_ET_LOG(I3cControllerReadError, __LINE__);
                 i3c_send_error_boot_status();
                 // Error or BUGCHECK
                 BUG_ASSERT(false);
@@ -470,6 +480,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMMs Verify Err, status 0x%x\n", status);
+                FPFW_ET_LOG(I3cControllerReadError, __LINE__);
                 i3c_send_error_boot_status();
                 // Error or BUGCHECK
                 BUG_ASSERT(false);
@@ -482,6 +493,7 @@ int i3c_controller(uint8_t die_num)
             if (status != SILIBS_SUCCESS)
             {
                 FPFW_DBGPRINT_ALWAYS(MOD_NAME "DDR DIMM Capacity/SKU Read Err, status 0x%x\n", status);
+                FPFW_ET_LOG(I3cControllerReadError, __LINE__);
                 i3c_send_error_boot_status();
                 // Error or BUGCHECK
                 BUG_ASSERT(false);
@@ -545,6 +557,7 @@ int i3c_controller(uint8_t die_num)
     else
     {
         FPFW_DBGPRINT_ALWAYS(MOD_NAME "Not supported platform\n");
+        FPFW_ET_LOG(I3cControllerPlatformNotSupport, __LINE__);
     }
 
 exit:

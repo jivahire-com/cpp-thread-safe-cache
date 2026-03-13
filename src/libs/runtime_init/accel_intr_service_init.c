@@ -15,12 +15,13 @@
 #include <fpfw_init.h>          // for fpfw_init_get_handle, FPFW_INIT_STATU...
 #include <stddef.h>             // for NULL
 #include <stdio.h>              // for printf, NULL
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Functions ---------------*/
 
-FPFW_INIT_COMPONENT(accel_intr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
+PLACED_CODE FPFW_INIT_COMPONENT(accel_intr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
 {
     static accel_intr_service_t accel_intr_service;
 
@@ -29,7 +30,7 @@ FPFW_INIT_COMPONENT(accel_intr_svc, FPFW_INIT_DEPENDENCIES("dfwk", "std_io"))
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, &accel_intr_service};
 }
 
-FPFW_INIT_COMPONENT(accel_intr_inf, FPFW_INIT_DEPENDENCIES("accel_intr_svc"))
+PLACED_CODE FPFW_INIT_COMPONENT(accel_intr_inf, FPFW_INIT_DEPENDENCIES("accel_intr_svc"))
 {
     static accel_intr_service_interface_t accel_intr_service_interface;
 

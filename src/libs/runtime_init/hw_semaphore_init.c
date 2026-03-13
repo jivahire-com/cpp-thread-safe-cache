@@ -14,6 +14,7 @@
 #include <idsw.h>         // for idsw_get_platform_sdv, idsw...
 #include <idsw_kng.h>
 #include <silibs_platform.h> // for DEBUG_PRINT
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -23,7 +24,7 @@
 
 /*------------- Functions ----------------*/
 #if defined(SCP_RUNTIME_INIT)
-FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "mesh_stg_2", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "mesh_stg_2", "boot_stat"))
 #elif defined(MCP_RUNTIME_INIT)
 FPFW_INIT_COMPONENT(hw_sem, FPFW_INIT_DEPENDENCIES("hw_ver", "atu_svc", "boot_stat"))
 #endif

@@ -16,6 +16,7 @@
 #include <idsw_kng.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <utils.h>
 
 /*------------- Typedefs -----------------*/
 
@@ -24,7 +25,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "cfg_mgr", "debug_print", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_svc", "cfg_mgr", "debug_print", "boot_stat"))
 {
     uint8_t die_num = (uint8_t)idhw_get_die_id();
     FPFW_DBGPRINT_INFO("CSS Pre Mesh init on die[%d]\n", die_num);
@@ -52,7 +53,7 @@ FPFW_INIT_COMPONENT(css_prme, FPFW_INIT_DEPENDENCIES("std_io", "hw_ver", "atu_sv
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(css_pome, FPFW_INIT_DEPENDENCIES("std_io", "accel_iso_cfg", "debug_print", "ift", "boot_stat"))
+PLACED_CODE FPFW_INIT_COMPONENT(css_pome, FPFW_INIT_DEPENDENCIES("std_io", "accel_iso_cfg", "debug_print", "ift", "boot_stat"))
 {
     FPFW_DBGPRINT_INFO("CSS Post Mesh init\n");
 

@@ -30,6 +30,7 @@ target_link_libraries(${TARGET}
         ms::service::scp_startup_shutdown
         ms::lib::icc_platform_defines
         fwlib.dfwk
+        ms::lib::utils
 )
 
 # Generic ports implmented within this project

@@ -147,6 +147,8 @@ void basic_knobs_setup(power_knobs_t* p_knobs)
     memset(p_knobs, 0, sizeof(power_knobs_t));
 
     // default knobs
+    p_knobs->enable_vsys_vboot_override = true;
+    p_knobs->nominal_pstate = 8;
 }
 
 void basic_fuse_setup(power_fuse_data_t* p_fuses)
@@ -259,10 +261,25 @@ POWER_TEST(runconfig_fuses, setup, NULL)
     assert_memory_equal(&s_expected_fuses, (uintptr_t)&power_runconfig_get()->fuses, sizeof(power_fuse_data_t));
 }
 
-// ensure happy path for derived tdp configuration
+// ensure happy path for derived tdp configuration with default nominal_pstate knob
 POWER_TEST(runconfig_derived, setup, NULL)
 {
     set_default_expectations(TEST_MIN_VALID_PLIMIT);
+
+    power_runconfig_init(&s_test_config);
+
+    // default nominal_pstate is 8 (3200 MHz), so derived pnominal should use knob value
+    assert_int_equal(8, power_runconfig_get()->derived.pnominal);
+    assert_int_equal(s_expected_fuses.tdp_config.power_A, power_runconfig_get()->derived.soc_maximum_thermal_watts_limit);
+}
+
+// ensure fuse-based nominal pstate is used when knob is explicitly zero
+POWER_TEST(runconfig_derived_tdp_fuse_fallback, setup, NULL)
+{
+    set_default_expectations(TEST_MIN_VALID_PLIMIT);
+
+    // override default knob to zero to trigger fuse-based fallback
+    s_expected_knobs.nominal_pstate = 0;
 
     power_runconfig_init(&s_test_config);
 

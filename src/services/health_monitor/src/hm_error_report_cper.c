@@ -107,12 +107,14 @@ static void save_last_cper_record(volatile hm_arsm_cper_backup_t* backup, uint8_
 
     if (hm_get_pldm_transfer_status(false) == HM_PLDM_TRANSFER_STATUS_IDLE)
     {
+        memset((void*)base[0], 0, sizeof(acpi_cper_record_t));
         hm_copy_cper_record(base[0], new_cper_record, sizeof(acpi_cper_record_t));
         hm_set_pldm_transfer_status(HM_PLDM_TRANSFER_STATUS_REQUESTED, false);
     }
 
     if (hm_is_fatal_error(severity) && hm_get_pldm_transfer_status(true) == HM_PLDM_TRANSFER_STATUS_IDLE)
     {
+        memset((void*)base[1], 0, sizeof(acpi_cper_record_t));
         hm_copy_cper_record(base[1], new_cper_record, sizeof(acpi_cper_record_t));
         hm_set_pldm_transfer_status(HM_PLDM_TRANSFER_STATUS_REQUESTED, true);
     }
@@ -133,6 +135,8 @@ void hm_submit_cper_internal(uint16_t error_domain_idx,
     if ((error_domain_idx < ACPI_ERROR_DOMAIN_COUNT) && (err_record_section_size <= sizeof(acpi_cper_section_t)) &&
         err_record_section != NULL && err_record_section_size > 0)
     {
+        uint64_t cper_timestamp = get_cper_timestamp();
+
         hm_config_t* hm_config = get_hm_config();
         if (hm_config != NULL)
         {
@@ -142,11 +146,12 @@ void hm_submit_cper_internal(uint16_t error_domain_idx,
             {
                 cper_common_section_header_t* common_header = (cper_common_section_header_t*)err_record_section;
                 common_header->instance = hm_config->is_primary ? 0 : 1;
+                common_header->timestamp = cper_timestamp;
             }
 
             // Generate full CPER record
             acpi_cper_record_t cper_record = {0};
-            create_full_mscp_cper_record(error_domain_idx, err_severity, err_record_section, err_record_section_size, &cper_record);
+            create_full_mscp_cper_record(error_domain_idx, err_severity, err_record_section, err_record_section_size, cper_timestamp, &cper_record);
 
             static_assert(sizeof(hm_arsm_cper_backup_t) <= RAS_LAST_CPER_SIZE, "hm_arsm_cper_backup_t > RAS_LAST_CPER_SIZE");
 
@@ -186,7 +191,7 @@ void hm_submit_cper_internal(uint16_t error_domain_idx,
         // GHES error record update as needed
         if (ddr_subsystem_enabled())
         {
-            update_error_record_section(error_domain_idx, err_severity, err_record_section, err_record_section_size);
+            update_error_record_section(error_domain_idx, err_severity, err_record_section, err_record_section_size, cper_timestamp);
 
             if (err_severity == ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
             {
@@ -264,6 +269,7 @@ void create_full_mscp_cper_record(acpi_error_domain_t err_domain_idx,
                                   acpi_error_severity_t severity,
                                   acpi_cper_section_t* err_record_section,
                                   uint32_t err_record_section_size,
+                                  uint64_t cper_timestamp,
                                   acpi_cper_record_t* cper_record)
 {
     uint8_t CPER_NAME[] = {'C', 'P', 'E', 'R'};
@@ -286,12 +292,12 @@ void create_full_mscp_cper_record(acpi_error_domain_t err_domain_idx,
     cper_record->record_header.section_count = 1;
     cper_record->record_header.error_severity = severity;
     cper_record->record_header.valid_platform_id = 1;
-    cper_record->record_header.valid_time_stamp = 0;
     cper_record->record_header.valid_partition_id = 0;
     cper_record->record_header.valid_reserved1 = 0;
     cper_record->record_header.record_length =
         sizeof(acpi_cper_record_header_t) + sizeof(acpi_cper_sec_desc_t) + err_record_section_size;
-    cper_record->record_header.time_stamp = 0;
+    cper_record->record_header.valid_time_stamp = (cper_timestamp != 0U);
+    cper_record->record_header.time_stamp = cper_timestamp;
     memcpy(&cper_record->record_header.platform_id, &PLATFORM_ID, sizeof(guid_t));
     memset(&cper_record->record_header.partition_id, 0, sizeof(guid_t));
     memcpy(&cper_record->record_header.creator_id, &CREATOR_ID, sizeof(guid_t));

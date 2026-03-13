@@ -15,6 +15,7 @@
 #include <gtimer_prodfw.h>
 #include <stddef.h> // for NULL
 #include <system_info.h>
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 #define US_PER_S (1000 * 1000)
@@ -27,14 +28,14 @@
 
 /*------------- Functions ----------------*/
 
-FPFW_INIT_COMPONENT(debug, FPFW_INIT_DEPENDENCIES("std_io"))
+PLACED_CODE FPFW_INIT_COMPONENT(debug, FPFW_INIT_DEPENDENCIES("std_io"))
 {
     debug_init();
 
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(debug_print, FPFW_INIT_DEPENDENCIES("std_io", "gtimer_stg_2", "sysinfo"))
+PLACED_CODE FPFW_INIT_COMPONENT(debug_print, FPFW_INIT_DEPENDENCIES("std_io", "gtimer_stg_2", "sysinfo"))
 {
     fpfw_debug_print_config_t config = {
         // Set the default debug print level based on whether CLI is enabled or not
@@ -46,7 +47,7 @@ FPFW_INIT_COMPONENT(debug_print, FPFW_INIT_DEPENDENCIES("std_io", "gtimer_stg_2"
     return (fpfw_init_result_t){FPFW_INIT_STATUS_SUCCESS, NULL};
 }
 
-FPFW_INIT_COMPONENT(mem_cli, FPFW_INIT_DEPENDENCIES("cli"))
+PLACED_CODE FPFW_INIT_COMPONENT(mem_cli, FPFW_INIT_DEPENDENCIES("cli"))
 {
     cli_mem_init();
 

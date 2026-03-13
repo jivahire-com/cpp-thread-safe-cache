@@ -21,6 +21,7 @@
 #include <silibs_status.h>
 #include <stdint.h> // for uint8_t
 #include <stdio.h>  // for printf, NULL
+#include <utils.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -31,7 +32,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-FPFW_INIT_COMPONENT(ioss, FPFW_INIT_DEPENDENCIES("vab", "mesh_stg_2", "cfg_mgr", "var_serv", "atu_svc"))
+PLACED_CODE FPFW_INIT_COMPONENT(ioss, FPFW_INIT_DEPENDENCIES("vab", "mesh_stg_2", "cfg_mgr", "var_serv", "atu_svc"))
 {
 
     if (idsw_get_die_id() == SOC_D1)

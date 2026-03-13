@@ -47,12 +47,27 @@ typedef enum _sos_stage_category_t
     QUIESCE_STAGE,
 } sos_stage_category_t;
 
+typedef enum _sos_ssi_id_t
+{
+    SOS_SSI_ID_SOS = 0,
+    SOS_SSI_ID_AP_CORE,
+    SOS_SSI_ID_POWER,
+    SOS_SSI_ID_DDR,
+    SOS_SSI_ID_CRASHDUMP,
+    SOS_SSI_ID_SENSOR_FIFO,
+    SOS_SSI_ID_ETR,
+    SOS_SSI_ID_SDM,
+    SOS_SSI_ID_CDED,
+    SOS_SSI_ID_MAX
+} sos_ssi_id_t;
+
 typedef struct _startup_ssi_registration_t
 {
     FPFW_LIST_ENTRY list_entry;
     ssi_request_t ssi_request; // we need a request per-registration, so define it here
     PDFWK_INTERFACE_HEADER p_ssi_interface;
     uint32_t interface_unique_flag;
+    sos_ssi_id_t registration_id;
 } startup_ssi_registration_t, *pstartup_ssi_registration_t;
 
 typedef struct _startup_register_ssi_request
@@ -179,5 +194,5 @@ void d2d_shutdown_req_complete_notify(DFWK_ASYNC_REQUEST_HEADER* request, void* 
 void d2d_shutdown_recv_cb(void* context, size_t output_size_bytes, fpfw_status_t status);
 void reset_complete_notify(void* context, fpfw_status_t status);
 void reset_complete_wait_forever();
-uint32_t execute_accel_quiesce_flow(uint32_t ssi_interface_reg_cnt);
+uint32_t execute_accel_quiesce_flow();
 void sos_accel_quiesce_complete(uint32_t accel_id, uint32_t event_flag);

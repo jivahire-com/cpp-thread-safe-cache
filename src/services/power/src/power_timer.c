@@ -4,7 +4,13 @@
 
 /**
  * @file power_timer.c
- * Implements the timer/counter requirements of the power service
+ * Implements the timer/counter requirements of the power service.
+ *
+ * Loop timers (control, PVT telemetry, ADCLK telemetry) are started using
+ * gtimer_add_abs_init_periodic() to ensure cross-die synchronization.
+ * This anchors the periodic timer grid to the system counter epoch (tick 0)
+ * so that both SCP0 and SCP1 fire on identical absolute tick boundaries,
+ * regardless of software scheduling jitter between the two dies.
  */
 
 /*------------- Includes -----------------*/
@@ -152,21 +158,21 @@ void power_timer_start_loop_timers()
     power_runconfig_t* p_runconfig = power_runconfig_get();
 
     const uint32_t ticks_per_ms = gtimer_prodfw_get_frequency() / 1000;
-    gtimer_add_periodic(&s_power_timer_ctx.control_loop_timer,
-                        p_runconfig->knobs.control_loop_interval * ticks_per_ms,
-                        ctrl_loop_timer_cb,
-                        p_runconfig);
+    gtimer_add_abs_init_periodic(&s_power_timer_ctx.control_loop_timer,
+                                 p_runconfig->knobs.control_loop_interval * ticks_per_ms,
+                                 ctrl_loop_timer_cb,
+                                 p_runconfig);
 
-    gtimer_add_periodic(&s_power_timer_ctx.pvt_telem_loop_timer,
-                        p_runconfig->knobs.pvt_loop_interval * ticks_per_ms,
-                        pvt_telem_loop_timer_cb,
-                        p_runconfig);
+    gtimer_add_abs_init_periodic(&s_power_timer_ctx.pvt_telem_loop_timer,
+                                 p_runconfig->knobs.pvt_loop_interval * ticks_per_ms,
+                                 pvt_telem_loop_timer_cb,
+                                 p_runconfig);
 
     if ((p_runconfig->knobs.adclk_throt.enable) && (p_runconfig->knobs.adclk_throt.telemetry_interval > 0))
     {
-        gtimer_add_periodic(&s_power_timer_ctx.adclk_telem_timer,
-                            p_runconfig->knobs.adclk_throt.telemetry_interval * ticks_per_ms,
-                            adclk_telem_timer_cb,
-                            p_runconfig);
+        gtimer_add_abs_init_periodic(&s_power_timer_ctx.adclk_telem_timer,
+                                     p_runconfig->knobs.adclk_throt.telemetry_interval * ticks_per_ms,
+                                     adclk_telem_timer_cb,
+                                     p_runconfig);
     }
 }

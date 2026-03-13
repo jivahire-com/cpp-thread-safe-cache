@@ -19,6 +19,7 @@ target_link_libraries(${TARGET}
         ms::cmocka::testrunner
         silibs::idsw
         silibs::idsw_kng
+        ms::lib::utils
 )
 
 # Defining platform APIs

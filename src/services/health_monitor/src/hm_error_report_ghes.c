@@ -281,7 +281,8 @@ void activate_error_domain(uint16_t error_domain_idx, const guid_t* error_domain
 void update_error_record_section(uint16_t error_domain_idx,
                                  acpi_error_severity_t err_severity,
                                  acpi_cper_section_t* err_record_section,
-                                 uint32_t err_record_section_size)
+                                 uint32_t err_record_section_size,
+                                 uint64_t cper_timestamp)
 {
     if ((error_domain_idx < ACPI_ERROR_DOMAIN_COUNT) && (err_record_section_size <= sizeof(acpi_cper_section_t)))
     {
@@ -328,6 +329,13 @@ void update_error_record_section(uint16_t error_domain_idx,
             // update severity on error data entry
             current_domain_error_record_base->data[idx].error_severity = adjusted_severity;
 
+            // update utc if possible
+            current_domain_error_record_base->data[idx].valid_fru_timestamp = (cper_timestamp != 0U);
+            current_domain_error_record_base->data[idx].timestamp = cper_timestamp;
+
+            // clear the section data
+            memset((void*)&current_domain_error_record_base->data[idx].section, 0, sizeof(acpi_cper_section_t));
+
             // copy cper section into error data entry
             hm_copy_cper_record((volatile uint8_t*)&current_domain_error_record_base->data[idx].section,
                                 (const uint8_t*)err_record_section,
@@ -345,6 +353,10 @@ void update_error_record_section(uint16_t error_domain_idx,
                     if (current_domain_error_record_base->data[i].error_severity != ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL)
                     {
                         current_domain_error_record_base->data[i].error_severity = adjusted_severity;
+
+                        // update utc if possible
+                        current_domain_error_record_base->data[i].valid_fru_timestamp = (cper_timestamp != 0U);
+                        current_domain_error_record_base->data[i].timestamp = cper_timestamp;
 
                         hm_copy_cper_record((volatile uint8_t*)&current_domain_error_record_base->data[i].section,
                                             (const uint8_t*)err_record_section,

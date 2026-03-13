@@ -94,4 +94,6 @@ mock_target(${TARGET}
     _txe_timer_deactivate
     system_info_get_mission_mode
     config_get_ras_disable_single_die
+    utc_sync_client_get_current_time_epoch_ms
+    crash_dump_is_utc_ready
 )

@@ -109,6 +109,8 @@ TEST_FUNCTION(hm_mcp_error_record_submit_listener, post_ddr_setup, nullptr)
     expect_value_count(__wrap_mmio_write32, addr, (uint32_t)MSCP_ATU_AP_WINDOW_GIC_GICD_BASE_ADDR + GICD_GICD_SETSPI_NSR_ADDRESS, -1);
     expect_value_count(__wrap_mmio_write32, data, OS_CPER_ERROR_DEVICE_EVT, -1);
     expect_function_call_any(__wrap_mmio_write32);
+    will_return_always(__wrap_crash_dump_is_utc_ready, true);
+    will_return_always(__wrap_utc_sync_client_get_current_time_epoch_ms, 1);
 
     hm_mcp_error_record_submit_listener((fpfw_icc_base_ctx_t*)ICC_HM_ERROR_RECORD_SUBMIT_MCP);
 }

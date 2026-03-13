@@ -61,6 +61,16 @@ int __wrap_mscp_exp_spi_synchronize_dies(mscp_exp_spi_sync_point_t sync_point, i
     FPFW_UNUSED(die_id);
     return (mock_type(int));
 }
+
+uint64_t __wrap_utc_sync_client_get_current_time_epoch_ms(void)
+{
+    return mock_type(uint64_t);
+}
+
+bool __wrap_crash_dump_is_utc_ready(void)
+{
+    return mock_type(bool);
+}
 }
 
 //
@@ -185,4 +195,28 @@ TEST_FUNCTION(test_hm_post_intercore_init_apcore, pre_ddr_setup, nullptr)
     expect_function_calls(__wrap_fpfw_icc_base_recv, 1);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     hm_post_intercore_init(HM_INTERCORE_APCORE, (fpfw_icc_base_ctx_t*)1234);
+}
+
+TEST_FUNCTION(test_get_cper_timestamp, pre_ddr_setup, nullptr)
+{
+    const uint64_t EXPECTED_EPOCH_MS = 1772622671000ULL; // 2026‑03‑03 11:11:11
+    will_return(__wrap_crash_dump_is_utc_ready, true);
+    will_return(__wrap_utc_sync_client_get_current_time_epoch_ms, EXPECTED_EPOCH_MS);
+    uint64_t cper_timestamp = get_cper_timestamp();
+
+    acpi_ghes_timestamp_t expected = {
+        .sec = 0x11,
+        .minute = 0x11,
+        .hour = 0x11,
+        .precise = 0x01,
+        .day = 0x04,
+        .month = 0x03,
+        .year = 0x26,
+        .century = 0x20,
+    };
+
+    uint64_t expected_packed;
+    memcpy(&expected_packed, &expected, sizeof(expected));
+
+    assert_int_equal(cper_timestamp, expected_packed);
 }

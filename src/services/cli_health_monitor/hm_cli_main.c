@@ -22,19 +22,6 @@
 /*-- Symbolic Constant Macros (defines) --*/
 
 /*-------------- Typedefs ----------------*/
-#pragma pack(push, 1)
-typedef struct _hm_timestamp_t
-{
-    uint8_t sec;
-    uint8_t minute;
-    uint8_t hour;
-    uint8_t precise;
-    uint8_t day;
-    uint8_t month;
-    uint8_t year;
-    uint8_t century;
-} hm_timestamp_t;
-#pragma pack(pop)
 
 /*--------- Function Prototypes ----------*/
 static FPFW_CLI_STATUS hm_dump_ghes_cli(int argc, const char** argv);
@@ -311,6 +298,31 @@ static PLACED_CODE void dump_cper_contents(acpi_cper_record_t* record_addr)
     FpFwCliPrint("  Section Count: %u\n", hdr->section_count);
     FpFwCliPrint("  Error Severity: 0x%08x\n", hdr->error_severity);
     FpFwCliPrint("  Record Length: %u\n", hdr->record_length);
+
+    if (hdr->valid_time_stamp)
+    {
+        FpFwCliPrint("  Timestamp: ");
+        acpi_ghes_timestamp_t* p_timestamp = (acpi_ghes_timestamp_t*)(&hdr->time_stamp);
+        if (p_timestamp->precise != 0)
+        {
+            FpFwCliPrint("precise,");
+        }
+
+        FpFwCliPrint(" cen:yr:mn:dd:hh:mn:sec (BCD) : "
+                     "0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\n",
+                     p_timestamp->century,
+                     p_timestamp->year,
+                     p_timestamp->month,
+                     p_timestamp->day,
+                     p_timestamp->hour,
+                     p_timestamp->minute,
+                     p_timestamp->sec);
+    }
+    else
+    {
+        FpFwCliPrint("  Timestamp: not valid\n");
+    }
+
     PrintOutGuid("  Platform_id", hdr->platform_id);
     PrintOutGuid("  Creator_id", hdr->creator_id);
     PrintOutGuid("  Notification_type", hdr->notification_type);
@@ -586,15 +598,17 @@ void PLACED_CODE dump_ghes_error_record(acpi_ghes_error_record_dual_die_t* ghes_
 
         if (ghes_error_record_base->data[section_count].valid_fru_timestamp)
         {
-            FpFwCliPrint(" timestamp:\n");
-            hm_timestamp_t* p_timestamp = (hm_timestamp_t*)(&ghes_error_record_base->data[section_count].timestamp);
+            FpFwCliPrint(" timestamp: ");
+            acpi_ghes_timestamp_t* p_timestamp =
+                (acpi_ghes_timestamp_t*)(&ghes_error_record_base->data[section_count].timestamp);
 
             if (p_timestamp->precise != 0)
             {
-                FpFwCliPrint("Precise ");
+                FpFwCliPrint("precise,");
             }
 
-            FpFwCliPrint(" cen:yr:mn:dd:hh:mn:sec : %d:%d:%d:%d:%d:%d:%d:\n",
+            FpFwCliPrint(" cen:yr:mn:dd:hh:mn:sec (BCD) : "
+                         "0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X:0x%02X\n",
                          p_timestamp->century,
                          p_timestamp->year,
                          p_timestamp->month,

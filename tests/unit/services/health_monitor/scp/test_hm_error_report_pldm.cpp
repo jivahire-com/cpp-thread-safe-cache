@@ -123,6 +123,13 @@ TEST_FUNCTION(test_pldm_not_ready, post_ddr_setup, nullptr)
     hm_config->is_primary = true;
     hm_config->is_mcp = true;
 
+    void* last_cper_base = (void*)hm_config->mscp_full_cper_record_base;
+    memset(last_cper_base, 0, RAS_LAST_CPER_SIZE);
+
+    // dummy CPER record requested state
+    hm_arsm_cper_backup_t* backup_cper = (hm_arsm_cper_backup_t*)last_cper_base;
+    backup_cper->last_cper_record.transfer_status = HM_PLDM_TRANSFER_STATUS_REQUESTED;
+
     will_return_always(__wrap_idhw_is_single_die_boot_en, false);
     will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     expect_function_call_any(__wrap_fpfw_icc_base_recv);
@@ -133,8 +140,11 @@ TEST_FUNCTION(test_pldm_not_ready, post_ddr_setup, nullptr)
     expect_any(__wrap__txe_timer_create, reschedule_ticks);
     expect_value(__wrap__txe_timer_create, auto_activate, TX_AUTO_ACTIVATE);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
 
     hm_cper_transfer_listener_from_scp((fpfw_icc_base_ctx_t*)ICC_HM_CPER_TRANSFER_REQ_MCP);
+    assert_int_equal(backup_cper->last_cper_record.transfer_status, HM_PLDM_TRANSFER_STATUS_IDLE);
 }
 
 TEST_FUNCTION(test_pldm_from_primary_scp, post_ddr_setup, nullptr)
@@ -173,6 +183,46 @@ TEST_FUNCTION(test_pldm_from_primary_scp, post_ddr_setup, nullptr)
     expect_value(__wrap__txe_timer_create, auto_activate, TX_AUTO_ACTIVATE);
     will_return(__wrap__txe_timer_create, TX_SUCCESS);
     hm_cper_transfer_listener_from_scp((fpfw_icc_base_ctx_t*)ICC_HM_CPER_TRANSFER_REQ_MCP);
+}
+
+TEST_FUNCTION(test_pldm_from_primary_scp_failed, post_ddr_setup, nullptr)
+{
+    hm_config_t* hm_config = get_hm_config();
+    hm_config->is_primary = true;
+    hm_config->is_mcp = true;
+
+    // Clear last CPER record
+    void* last_cper_base = (void*)hm_config->mscp_full_cper_record_base;
+    memset(last_cper_base, 0, RAS_LAST_CPER_SIZE);
+
+    hm_set_pldm_ready_status();
+
+    // dummy CPER record requested state
+    hm_arsm_cper_backup_t* backup_cper = (hm_arsm_cper_backup_t*)last_cper_base;
+    backup_cper->last_cper_record.transfer_status = HM_PLDM_TRANSFER_STATUS_REQUESTED;
+
+    will_return_always(__wrap_idhw_is_single_die_boot_en, false);
+    will_return_always(__wrap_fpfw_icc_base_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
+    expect_function_call_any(__wrap_fpfw_icc_base_recv);
+    expect_function_call_any(__wrap_wait_for_semaphore);
+    expect_function_call_any(__wrap_release_semaphore);
+#ifdef PLDM_DRV_WORKAROUND
+    will_return(__wrap_pldm_drv_raise_platform_event, FPFW_STATUS_FAIL);
+    expect_function_call(__wrap_pldm_drv_raise_platform_event);
+#else
+    will_return(__wrap_fpfw_pldm_service_raise_platform_event, FPFW_STATUS_FAIL);
+    expect_function_call(__wrap_fpfw_pldm_service_raise_platform_event);
+#endif
+
+    expect_string(__wrap__txe_timer_create, name_ptr, "hm_flush");
+    expect_any(__wrap__txe_timer_create, expiration_input);
+    expect_any(__wrap__txe_timer_create, initial_ticks);
+    expect_any(__wrap__txe_timer_create, reschedule_ticks);
+    expect_value(__wrap__txe_timer_create, auto_activate, TX_AUTO_ACTIVATE);
+    will_return(__wrap__txe_timer_create, TX_SUCCESS);
+    hm_cper_transfer_listener_from_scp((fpfw_icc_base_ctx_t*)ICC_HM_CPER_TRANSFER_REQ_MCP);
+
+    assert_int_equal(backup_cper->last_cper_record.transfer_status, HM_PLDM_TRANSFER_STATUS_IDLE);
 }
 
 TEST_FUNCTION(test_pldm_from_primary_scp_no_pending, post_ddr_setup, nullptr)

@@ -68,6 +68,7 @@ target_link_libraries(${TARGET}
         kng.lib.hsp_firmware_headers
         fwlib.lib.pldm.protocol
         fwlib.service.pldm
+        fwlib.service.utc_sync.client
         ms::lib::cortex_m7::atomics
 )
 

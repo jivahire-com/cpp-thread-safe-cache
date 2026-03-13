@@ -24,6 +24,7 @@
 #define TCM_TGT_RAM_DTCM0RAM (0x80)
 #define MASK_CE              0x20
 #define MASK_UE              0x40
+#define MSCP_DMAC_TRANSFER_TIMEOUT (1000)
 
 /*------------- Typedefs -----------------*/
 typedef void (*ecc_entry_getter_fn)(int type, atu_map_entry_t* entry);

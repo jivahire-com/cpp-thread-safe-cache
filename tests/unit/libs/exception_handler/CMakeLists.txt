@@ -61,4 +61,5 @@ mock_target(${TARGET}
     mmio_read32
     mmio_write32
     mmio_update32
+    clear_poison_memory
 )

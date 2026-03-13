@@ -103,6 +103,8 @@ mock_target(${TARGET}
     mmio_write32
     wdog_cmsdk_apb_disable
     wdog_cmsdk_apb_lock_unlock
+    crash_dump_bug_check
+    crash_dump_get_is_dump_transferring
 )
 
 target_compile_options(${TARGET} PRIVATE -Wno-address-of-temporary -Wno-c99-designator -Wno-missing-field-initializers)

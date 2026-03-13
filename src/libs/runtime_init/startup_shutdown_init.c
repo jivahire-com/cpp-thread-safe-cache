@@ -69,7 +69,10 @@ PLACED_CODE FPFW_INIT_COMPONENT(
     static sos_interface_t ssi_interface;
     sos_interface_init(fpfw_init_get_handle("sos_svc"), &ssi_interface, false);
     // static data for SSI registration
-    static startup_ssi_registration_t ssi_registration;
+    static startup_ssi_registration_t ssi_registration = {
+        .registration_id = SOS_SSI_ID_SOS,
+    };
+
     int32_t status = sos_register_ssi((void*)&sos_interface, &ssi_registration, &ssi_interface.header);
     BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
 
@@ -131,7 +134,9 @@ FPFW_INIT_COMPONENT(sos_int, FPFW_INIT_DEPENDENCIES("sos_svc", "icc_hspmbx", "bo
     mcp_sos_icc_init(fpfw_init_get_handle("icc_hspmbx"));
 
     // Register the against the private interface
-    static startup_ssi_registration_t ssi_registration;
+    static startup_ssi_registration_t ssi_registration = {
+        .registration_id = SOS_SSI_ID_SOS,
+    };
     int32_t status = sos_register_ssi((void*)&sos_interface, &ssi_registration, &ssi_interface.header);
     BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
 

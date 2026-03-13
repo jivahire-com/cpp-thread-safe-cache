@@ -34,7 +34,6 @@
 #include <stdint.h>
 
 /*-- Symbolic Constant Macros (defines) --*/
-
 // TODO: Add the below cmd code in silibs shared ICC header file
 
 #define ICC_MODULE_STARTUP_SHUTDOWN (0x0009)
@@ -56,8 +55,14 @@
 #define ACCEL_GENERATE_CONTEXT(accel_id, sos_event_mask) ((sos_event_mask << 16) | (accel_id & 0xFFFF))
 #define ACCEL_EXTRACT_ACCEL_ID_FROM_CONTEXT(context)     ((ACCEL_ID)((context) & 0xFFFF))
 #define ACCEL_EXTRACT_EVENT_MASK_FROM_CONTEXT(context)   ((uint32_t)((context) >> 16))
+#define SOS_D2D_SHUTDOWN_MAX_RETRY                       3
 
 /*------------- Typedefs -----------------*/
+typedef struct
+{
+    fpfw_icc_base_send_req_t send_req;
+    uint8_t retry_cnt;
+} sos_d2d_shutdown_ctx_t;
 
 /*-------- Function Prototypes -----------*/
 
@@ -281,27 +286,44 @@ void send_accel_quiesce_request(ACCEL_ID accel_id)
 }
 
 // We need to account for isolation of accels here
-uint32_t execute_accel_quiesce_flow(uint32_t ssi_interface_reg_cnt)
+uint32_t execute_accel_quiesce_flow(void)
 {
-    uint32_t accel_mask = 0x0;
+    uint32_t accel_mask = 0;
 
     for (ACCEL_ID accel_id = 0; accel_id < NUM_VALID_ACCEL_ID; accel_id++)
     {
-        if (!accel_is_isolation_enabled(accel_id))
-        {
-            // TODO ADO: 2516167 Disable all accel interrupts except for mailbox at this point
-            accel_quiesce_request_receive(accel_id, (1 << ssi_interface_reg_cnt));
-            send_accel_quiesce_request(accel_id);
-            accel_mask |= (1 << ssi_interface_reg_cnt);
-            ssi_interface_reg_cnt += 1;
-        }
-        else
+        if (accel_is_isolation_enabled(accel_id))
         {
             SOS_LOG_TRACE("Skipping accel quiesce for accel_id: %d as it is isolated.\n", (int)accel_id);
+            continue;
         }
+
+        uint32_t flag = 0;
+
+        switch (accel_id)
+        {
+        case ACCEL_ID_SDM:
+            flag = 1 << SOS_SSI_ID_SDM;
+            break;
+
+        case ACCEL_ID_CDED:
+            flag = 1 << SOS_SSI_ID_CDED;
+            break;
+
+        default:
+            break;
+        }
+
+        if (flag != 0)
+        {
+            accel_quiesce_request_receive(accel_id, flag);
+            accel_mask |= flag;
+        }
+
+        send_accel_quiesce_request(accel_id);
     }
 
-    return accel_mask; // Return mask bits to be appended to the sos_event_mask
+    return accel_mask;
 }
 
 // Callback function for the asynchronous PrepareForCoreReset receive operation
@@ -372,44 +394,63 @@ void mcp_sos_icc_init(fpfw_icc_base_ctx_t* icc_ctx)
 
 void sos_d2d_shutdown_send_cb(void* context, fpfw_status_t status)
 {
-    FPFW_UNUSED(context);
+    BUG_ASSERT(context != NULL);
+    sos_d2d_shutdown_ctx_t* ctx = (sos_d2d_shutdown_ctx_t*)context;
 
-    if (status != FPFW_ICC_BASE_STATUS_SUCCESS)
-    {
-        SOS_LOG_CRIT("PPU shutdown request failed to send: 0x%08x", (int)status);
-    }
-    else
+    // On success, reset retry count and return.
+    if (status == FPFW_ICC_BASE_STATUS_SUCCESS)
     {
         SOS_LOG_INFO("PPU shutdown request sent successfully.");
+        ctx->retry_cnt = 0;
+        return;
     }
+
+    // On failure, if the status is BUSY, retry up to max retry count.
+    if (status == FPFW_ICC_TRANSPORT_STATUS_BUSY)
+    {
+        if (ctx->retry_cnt < SOS_D2D_SHUTDOWN_MAX_RETRY)
+        {
+            ctx->retry_cnt++;
+            SOS_LOG_WARN("ICC busy, retry shutdown request (%u/%u)", ctx->retry_cnt, SOS_D2D_SHUTDOWN_MAX_RETRY);
+
+            fpfw_status_t retry_status = fpfw_icc_base_send(icc_die2die_ctx, &ctx->send_req);
+            BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(retry_status), retry_status, ctx->retry_cnt);
+
+            SOS_LOG_INFO("PPU shutdown request sent successfully on retry %u", ctx->retry_cnt);
+            return;
+        }
+
+        SOS_LOG_CRIT("Shutdown request failed after %u retries", SOS_D2D_SHUTDOWN_MAX_RETRY);
+        BUG_ASSERT_PARAM(false, status, ctx->retry_cnt);
+        return;
+    }
+
+    // For other types of errors, log and assert immediately.
+    SOS_LOG_CRIT("PPU shutdown request send failed: 0x%08x", (int)status);
+    BUG_ASSERT_PARAM(false, status, ctx->retry_cnt);
 }
 
-void sos_send_d2d_shutdown_request()
+void sos_send_d2d_shutdown_request(void)
 {
+    static sos_d2d_shutdown_ctx_t shutdown_ctx;
+    static uint8_t icc_mhu_send_d2d_shutdown_payload[sizeof(icc_mhu_header_t) + 1];
+
+    memset(&shutdown_ctx, 0, sizeof(shutdown_ctx));
+    memset(icc_mhu_send_d2d_shutdown_payload, 0, sizeof(icc_mhu_send_d2d_shutdown_payload));
+
     SOS_LOG_INFO("Sending PPU shutdown request to remote die");
-    static uint8_t icc_mhu_send_d2d_shutdown_payload[sizeof(icc_mhu_header_t) + 1] = {0};
-    icc_mhu_packet_t* icc_send_req = (icc_mhu_packet_t*)icc_mhu_send_d2d_shutdown_payload;
 
-    icc_send_req->header.msg_header.command = ICC_D2D_SHUTDOWN_REQUEST;
-    icc_send_req->header.msg_header.payload_size = 1;
+    icc_mhu_packet_t* pkt = (icc_mhu_packet_t*)icc_mhu_send_d2d_shutdown_payload;
+    pkt->header.msg_header.command = ICC_D2D_SHUTDOWN_REQUEST;
+    pkt->header.msg_header.payload_size = 1;
 
-    static fpfw_icc_base_send_req_t ppu_shutdown_send_params;
+    shutdown_ctx.send_req.payload_buffer = icc_mhu_send_d2d_shutdown_payload;
+    shutdown_ctx.send_req.buffer_size = sizeof(icc_mhu_send_d2d_shutdown_payload);
+    shutdown_ctx.send_req.cb = sos_d2d_shutdown_send_cb;
+    shutdown_ctx.send_req.cb_ctx = &shutdown_ctx;
 
-    ppu_shutdown_send_params.payload_buffer = icc_mhu_send_d2d_shutdown_payload; // Buffer containing the message to send
-    ppu_shutdown_send_params.buffer_size = sizeof(icc_mhu_send_d2d_shutdown_payload); // Size of the buffer
-    ppu_shutdown_send_params.cb = sos_d2d_shutdown_send_cb; // Callback function for handling the send completion
-    ppu_shutdown_send_params.cb_ctx = NULL;                 // Context for the callback
-
-    // Send the message to the remote die
-    fpfw_status_t icc_status = fpfw_icc_base_send(icc_die2die_ctx, &ppu_shutdown_send_params);
-    if (icc_status != FPFW_ICC_BASE_STATUS_SUCCESS)
-    {
-        SOS_LOG_CRIT("Failed to send shutdown request to remote die");
-    }
-    else
-    {
-        SOS_LOG_INFO("Shutdown request sent successfully to remote die");
-    }
+    fpfw_status_t icc_status = fpfw_icc_base_send(icc_die2die_ctx, &shutdown_ctx.send_req);
+    BUG_ASSERT_PARAM(FPFW_STATUS_SUCCEEDED(icc_status), icc_status, shutdown_ctx.retry_cnt);
 }
 
 // Callback function for the completion of the reset notification

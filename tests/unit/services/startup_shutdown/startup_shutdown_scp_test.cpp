@@ -14,7 +14,8 @@
 
 extern "C" {
 
-#include <CMockaWrapper.h>                // for check_expected, check_expected_ptr
+#include <CMockaWrapper.h> // for check_expected, check_expected_ptr
+#include <crash_dump.h>
 #include <fpfw_icc_transport_interface.h> // Leverage the transport library interrface
 #include <hsp_firmware_headers.h>         // for HSP_FIRMWARE_ID
 #include <hsp_firmware_headers.h>
@@ -37,6 +38,11 @@ extern "C" {
 #define TEST_SHARED_MEM_SIZE (sizeof(icc_mhu_header_t) + (8))
 
 /*------------- Typedefs -----------------*/
+typedef struct
+{
+    fpfw_icc_base_send_req_t send_req;
+    uint8_t retry_cnt;
+} sos_d2d_shutdown_ctx_t;
 
 /*-------- Function Prototypes -----------*/
 
@@ -151,6 +157,17 @@ void __wrap_wdog_cmsdk_apb_lock_unlock(bool lock)
 
 void __wrap_wdog_cmsdk_apb_disable()
 {
+    function_called();
+}
+
+void __wrap_crash_dump_bug_check(uint32_t p0, uint32_t p1, uint32_t p2, uint32_t p3, uint32_t p4)
+{
+    FPFW_UNUSED(p0);
+    FPFW_UNUSED(p1);
+    FPFW_UNUSED(p2);
+    FPFW_UNUSED(p3);
+    FPFW_UNUSED(p4);
+
     function_called();
 }
 
@@ -478,6 +495,7 @@ SOS_TEST(sos_send_d2d_shutdown_request_fail, NULL, NULL)
 
     will_return(__wrap_fpfw_icc_base_send, FPFW_ICC_BASE_STATUS_ASYNC_SEND_REQ_ERR);
     expect_value(__wrap_fpfw_icc_base_send, icc_ctx, test_icc_d2dctx);
+    expect_function_call(__wrap_crash_dump_bug_check);
 
     sos_send_d2d_shutdown_request();
 }
@@ -535,49 +553,38 @@ SOS_TEST(recv_d2d_shutdown_request_fail, NULL, NULL)
 // test for d2d_shutdown_send_cb
 SOS_TEST(sos_d2d_shutdown_send_cb, NULL, NULL)
 {
-    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
-    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
-    fpfw_icc_base_ctx_t* test_icc_sdm_ctx = (fpfw_icc_base_ctx_t*)0xFEEDBEEF;
-    fpfw_icc_base_ctx_t* test_icc_cded_ctx = (fpfw_icc_base_ctx_t*)0xCAFEBABE;
-
-    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
-    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
-    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
-
-    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
-    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
-    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
-
-    sos_icc_init(test_icc_ctx, test_icc_d2dctx, test_icc_sdm_ctx, test_icc_cded_ctx);
-    startup_shutdown_request_t test_shutdown_request;
-    test_shutdown_request.shutdown_type = REMOTE_SCP_SHUTDOWN;
-    test_shutdown_request.header.AllocatedSize = sizeof(startup_shutdown_request_t);
-
-    sos_d2d_shutdown_send_cb(&test_shutdown_request, FPFW_ICC_BASE_STATUS_SUCCESS);
+    sos_d2d_shutdown_ctx_t test_ctx = {};
+    sos_d2d_shutdown_send_cb(&test_ctx, FPFW_ICC_BASE_STATUS_SUCCESS);
 }
 
-// test for d2d_shutdown_send_cb
+// test for d2d_shutdown_send_cb retry
+SOS_TEST(sos_d2d_shutdown_send_cb_retry, NULL, NULL)
+{
+    static uint8_t s_test_send_buffer[TEST_SHARED_MEM_SIZE];
+    static icc_mhu_packet_t* s_test_send_packet = (icc_mhu_packet_t*)s_test_send_buffer;
+
+    static fpfw_icc_base_send_req_t test_shutdown_send_params;
+
+    test_shutdown_send_params.payload_buffer = (void*)s_test_send_packet; // Buffer containing the message to send
+    test_shutdown_send_params.buffer_size = TEST_SHARED_MEM_SIZE;
+    test_shutdown_send_params.cb = NULL;
+    test_shutdown_send_params.cb_ctx = NULL;
+
+    sos_d2d_shutdown_ctx_t test_ctx = {};
+    test_ctx.send_req = test_shutdown_send_params;
+    will_return(__wrap_fpfw_icc_base_send, FPFW_STATUS_SUCCESS);
+    expect_any(__wrap_fpfw_icc_base_send, icc_ctx);
+
+    sos_d2d_shutdown_send_cb(&test_ctx, FPFW_ICC_TRANSPORT_STATUS_BUSY);
+}
+
+// test for sos_d2d_shutdown_send_cb_fail
 SOS_TEST(sos_d2d_shutdown_send_cb_fail, NULL, NULL)
 {
-    fpfw_icc_base_ctx_t* test_icc_ctx = (fpfw_icc_base_ctx_t*)0xBADDBEEF;
-    fpfw_icc_base_ctx_t* test_icc_d2dctx = (fpfw_icc_base_ctx_t*)0xDEADBEEF;
-    fpfw_icc_base_ctx_t* test_icc_sdm_ctx = (fpfw_icc_base_ctx_t*)0xFEEDBEEF;
-    fpfw_icc_base_ctx_t* test_icc_cded_ctx = (fpfw_icc_base_ctx_t*)0xCAFEBABE;
+    sos_d2d_shutdown_ctx_t test_ctx = {};
 
-    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xBADDBEEF);
-    expect_value(__wrap_fpfw_icc_base_recv, params->recv_cmd_code, HSP_MAILBOX_CMD_PREPARE_FOR_CORE_RESET_REQ);
-    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
-
-    expect_value(__wrap_fpfw_icc_base_recv, icc_ctx, (fpfw_icc_base_ctx_t*)0xDEADBEEF);
-    expect_any(__wrap_fpfw_icc_base_recv, params->recv_cmd_code);
-    will_return(__wrap_fpfw_icc_base_recv, DFWK_SUCCESS);
-
-    sos_icc_init(test_icc_ctx, test_icc_d2dctx, test_icc_sdm_ctx, test_icc_cded_ctx);
-    startup_shutdown_request_t test_shutdown_request;
-    test_shutdown_request.shutdown_type = REMOTE_SCP_SHUTDOWN;
-    test_shutdown_request.header.AllocatedSize = sizeof(startup_shutdown_request_t);
-
-    sos_d2d_shutdown_send_cb(&test_shutdown_request, FPFW_ICC_BASE_STATUS_ASYNC_SEND_REQ_ERR);
+    expect_function_call(__wrap_crash_dump_bug_check);
+    sos_d2d_shutdown_send_cb(&test_ctx, FPFW_ICC_BASE_STATUS_ASYNC_SEND_REQ_ERR);
 }
 
 // test for sos_core_shutdown_handler COLD_RESET case
@@ -638,8 +645,10 @@ SOS_TEST(execute_accel_quiesce_flow_register_and_send_and_cb, NULL, NULL)
     will_return_always(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     // Execute and validate mask (two accels -> bits 0 and 1 set)
-    uint32_t mask = execute_accel_quiesce_flow(0);
-    assert_int_equal(mask, 0x3);
+    uint32_t mask = execute_accel_quiesce_flow();
+    uint32_t expected_mask = 1 << SOS_SSI_ID_SDM;
+    expected_mask |= 1 << SOS_SSI_ID_CDED;
+    assert_int_equal(mask, expected_mask);
 
     // Simulate response callback and ensure accel_core_suspend is invoked
     assert_non_null(fw_load_cb);
@@ -658,7 +667,7 @@ SOS_TEST(execute_accel_quiesce_flow_all_isolated_noop, NULL, NULL)
     will_return(__wrap_accel_is_isolation_enabled, true);
 
     // Execute and validate mask is 0 and no callback registered
-    uint32_t mask = execute_accel_quiesce_flow(0);
+    uint32_t mask = execute_accel_quiesce_flow();
     assert_int_equal(mask, 0x0);
     assert_null(fw_load_cb);
 }
@@ -692,9 +701,8 @@ SOS_TEST(execute_accel_quiesce_flow_one_isolated_offset_and_cb, NULL, NULL)
     will_return_always(__wrap__txe_event_flags_set, TX_SUCCESS);
 
     // Start with a non-zero offset so mask reflects correct bit position
-    uint32_t start_offset = 5; // expect 1 << 5
-    uint32_t mask = execute_accel_quiesce_flow(start_offset);
-    assert_int_equal(mask, (1u << start_offset));
+    uint32_t mask = execute_accel_quiesce_flow();
+    assert_int_equal(mask, (1u << SOS_SSI_ID_CDED));
 
     // A callback should have been registered; invoke and verify suspend is called
     assert_non_null(fw_load_cb);
@@ -729,8 +737,10 @@ SOS_TEST(execute_accel_quiesce_flow_send_recv_errors_and_cb_fail, NULL, NULL)
     expect_any(__wrap_fpfw_icc_base_send, icc_ctx);
 
     // Execute and validate mask for two active accels
-    uint32_t mask = execute_accel_quiesce_flow(0);
-    assert_int_equal(mask, 0x3);
+    uint32_t mask = execute_accel_quiesce_flow();
+    uint32_t expected_mask = 1 << SOS_SSI_ID_SDM;
+    expected_mask |= 1 << SOS_SSI_ID_CDED;
+    assert_int_equal(mask, expected_mask);
 
     // Callback should be registered; simulate failure status path, still should suspend
     assert_non_null(fw_load_cb);

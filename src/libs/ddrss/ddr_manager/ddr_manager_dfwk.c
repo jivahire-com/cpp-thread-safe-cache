@@ -27,8 +27,6 @@
 
 static ddr_device_t ddr_device;
 static ddr_interface_t ddr_interface;
-// static data for SSI registration
-static startup_ssi_registration_t ddr_ssi_registration;
 
 /*------------- Functions ----------------*/
 
@@ -108,6 +106,10 @@ void ddr_manager_dfwk_init()
     ddr_interface.Device = &ddr_device;
     DfwkInterfaceInitialize(&ddr_interface.Header, &ddr_interface.Device->Header, &ddr_interface.Device->Queue, NULL); // Synchonous request is not supported.
 
+    // static data for SSI registration
+    static startup_ssi_registration_t ddr_ssi_registration = {
+        .registration_id = SOS_SSI_ID_DDR,
+    };
     int32_t status = sos_register_ssi(fpfw_init_get_handle("sos_int"), &ddr_ssi_registration, &ddr_interface.Header);
     BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
 }

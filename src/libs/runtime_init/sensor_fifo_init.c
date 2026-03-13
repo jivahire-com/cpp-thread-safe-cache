@@ -499,7 +499,10 @@ FPFW_INIT_COMPONENT(sensor_fifo_ssi, FPFW_INIT_DEPENDENCIES("sensor_fifo", "sos_
     FPFW_RUNTIME_ASSERT(snsr_fifo_drv_interface != NULL);
 
     // static data for SSI registration
-    static startup_ssi_registration_t snsr_fifo_ssi_registration;
+    static startup_ssi_registration_t snsr_fifo_ssi_registration = {
+        .registration_id = SOS_SSI_ID_SENSOR_FIFO,
+    };
+
     int32_t status = sos_register_ssi(fpfw_init_get_handle("sos_int"),
                                       &snsr_fifo_ssi_registration,
                                       &(snsr_fifo_drv_interface->base_interface));

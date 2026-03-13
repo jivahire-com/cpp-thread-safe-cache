@@ -242,7 +242,10 @@ PLACED_CODE FPFW_INIT_COMPONENT(cd_drv, FPFW_INIT_DEPENDENCIES("cd_init", "dfwk"
     crash_dump_interface_initialize(&crash_dump_interface, &crash_dump_device);
 
     // static data for SSI registration
-    static startup_ssi_registration_t ssi_registration;
+    static startup_ssi_registration_t ssi_registration = {
+        .registration_id = SOS_SSI_ID_CRASHDUMP,
+    };
+
     int32_t status =
         sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &crash_dump_interface.Header);
     BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);

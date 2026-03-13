@@ -88,7 +88,9 @@ PLACED_CODE FPFW_INIT_COMPONENT(ap_core_int, FPFW_INIT_DEPENDENCIES("ap_core_svc
     static ap_core_interface_t ap_core_ssi_interface;
     ap_core_interface_init(fpfw_init_get_handle("ap_core_svc"), &ap_core_ssi_interface);
     // static data for SSI registration
-    static startup_ssi_registration_t ssi_registration;
+    static startup_ssi_registration_t ssi_registration = {
+        .registration_id = SOS_SSI_ID_AP_CORE,
+    };
     int32_t status =
         sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &ap_core_ssi_interface.header);
     BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);

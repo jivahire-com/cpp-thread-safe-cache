@@ -226,7 +226,9 @@ PLACED_CODE FPFW_INIT_COMPONENT(pwr_int, FPFW_INIT_DEPENDENCIES("pwr_svc", "sos_
     power_interface_init(fpfw_init_get_handle("pwr_svc"), &power_ssi_interface);
 
     // static data for SSI registration
-    static startup_ssi_registration_t ssi_registration;
+    static startup_ssi_registration_t ssi_registration = {
+        .registration_id = SOS_SSI_ID_POWER,
+    };
     int32_t status = sos_register_ssi(fpfw_init_get_handle("sos_int"), &ssi_registration, &power_ssi_interface.header);
     BUG_ASSERT_PARAM(status == FPFW_INIT_STATUS_SUCCESS, status, 0);
     /*=========== End code for SSI registration ==========*/

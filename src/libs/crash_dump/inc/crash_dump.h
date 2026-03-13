@@ -32,6 +32,7 @@ extern "C" {
 
 #define PRE_DUMP_CB_MAX  8
 #define POST_DUMP_CB_MAX 8
+#define FULL_CD_TRANSFER_TIMEOUT_MS 300000
 
 /*-------------- Typedefs ----------------*/
 typedef enum

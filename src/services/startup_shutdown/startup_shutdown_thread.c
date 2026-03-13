@@ -89,17 +89,21 @@ void sos_accel_quiesce_complete(uint32_t accel_id, uint32_t event_flag)
 
 void sos_quiesce_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
-    uint32_t interface_unique_flag = (uint32_t)p_completion_context;
-    SOS_LOG_INFO("Quiesce Request to an SSI %08lx completed (%x)", (unsigned long)interface_unique_flag, (uintptr_t)request);
-    sos_signal_flags_and_assert(interface_unique_flag);
+    pstartup_ssi_registration_t ssi_registration = (pstartup_ssi_registration_t)p_completion_context;
+    SOS_LOG_INFO("Quiesce Request to an SSI ID : %08lx completed (%x)",
+                 (unsigned long)ssi_registration->registration_id,
+                 (uintptr_t)request);
+    sos_signal_flags_and_assert(ssi_registration->interface_unique_flag);
 }
 
 void sos_completion(PDFWK_ASYNC_REQUEST_HEADER request, void* p_completion_context)
 {
     FPFW_UNUSED(request);
-    uint32_t interface_unique_flag = (uint32_t)p_completion_context;
-    SOS_LOG_TRACE("Request to an SSI %08lx completed (%x)\n", (unsigned long)interface_unique_flag, (uintptr_t)request);
-    sos_signal_flags_and_assert(interface_unique_flag);
+    pstartup_ssi_registration_t ssi_registration = (pstartup_ssi_registration_t)p_completion_context;
+    SOS_LOG_TRACE("Request to an SSI ID : %08lx completed (%x)\n",
+                  (unsigned long)ssi_registration->registration_id,
+                  (uintptr_t)request);
+    sos_signal_flags_and_assert(ssi_registration->interface_unique_flag);
 }
 
 void sos_notify_ssi_boot_stage(psos_service_context_t p_context, ssi_startup_stage_t stage, ssi_startup_type_t startup_type, bool start)
@@ -123,7 +127,7 @@ void sos_notify_ssi_boot_stage(psos_service_context_t p_context, ssi_startup_sta
                                     stage,
                                     startup_type,
                                     sos_completion,
-                                    (void*)p_registration->interface_unique_flag);
+                                    (void*)p_registration);
         }
         else
         {
@@ -132,7 +136,7 @@ void sos_notify_ssi_boot_stage(psos_service_context_t p_context, ssi_startup_sta
                                        stage,
                                        startup_type,
                                        sos_completion,
-                                       (void*)p_registration->interface_unique_flag);
+                                       (void*)p_registration);
         }
     }
 }
@@ -150,11 +154,7 @@ void sos_notify_ssi_shutdown(psos_service_context_t p_context, ssi_shutdown_type
         pstartup_ssi_registration_t p_registration = CONTAINING_RECORD(iterator, startup_ssi_registration_t, list_entry);
 
         // call the appropriate SSI function, passing in the request object registered at boot time
-        ssi_shutdown(p_registration->p_ssi_interface,
-                     &p_registration->ssi_request,
-                     shutdown_type,
-                     sos_completion,
-                     (void*)p_registration->interface_unique_flag);
+        ssi_shutdown(p_registration->p_ssi_interface, &p_registration->ssi_request, shutdown_type, sos_completion, (void*)p_registration);
     }
 }
 
@@ -175,7 +175,7 @@ void sos_notify_ssi_quiesce(psos_service_context_t p_context, ssi_shutdown_type_
                     &p_registration->ssi_request,
                     shutdown_type,
                     sos_quiesce_completion,
-                    (void*)p_registration->interface_unique_flag);
+                    (void*)p_registration);
     }
 }
 
@@ -183,13 +183,18 @@ void wait_ssi_complete(sos_stage_timeout_t* current_stage)
 {
     ULONG flags = 0;
 
+    // check crashdump in progress
+    bool crash_dump_in_progress = crash_dump_get_is_dump_transferring(NULL);
+
     if (current_stage->stage_category == BOOT_STAGE)
     {
         current_stage->timeout_ms = sos_boot_timeout(current_stage);
     }
     else if (current_stage->stage_category == SHUTDOWN_STAGE)
     {
-        current_stage->timeout_ms = sos_shutdown_timeout(current_stage);
+        current_stage->timeout_ms =
+            crash_dump_in_progress ? FULL_CD_TRANSFER_TIMEOUT_MS : sos_shutdown_timeout(current_stage);
+        SOS_LOG_INFO("Shutdown ssi stage timeout: %lu ms\n", current_stage->timeout_ms);
     }
     else
     {
@@ -202,13 +207,49 @@ void wait_ssi_complete(sos_stage_timeout_t* current_stage)
                                     TX_AND_CLEAR,
                                     &flags,
                                     MS_TO_TX_TICKS(current_stage->timeout_ms));
-    SOS_LOG_TRACE("Received flags: %lx\n", flags);
 
-    BUG_ASSERT_PARAM((status == TX_SUCCESS),
-                     status,
-                     (current_stage->stage_category == BOOT_STAGE)
-                         ? ((current_stage->stage_category << 16) | (current_stage->operation_stage.boot & 0xFFFF))
-                         : ((current_stage->stage_category << 16) | (current_stage->operation_stage.shutdown & 0xFFFF)));
+    if (status == TX_SUCCESS)
+    {
+        SOS_LOG_TRACE("SSI completion - All flags received: 0x%08lx", (unsigned long)flags);
+        return;
+    }
+
+    if (status == TX_NO_EVENTS)
+    {
+        ULONG current_set_flags = 0;
+        tx_event_flags_info_get(&s_sos_thread_ctx.ssi_flags, TX_NULL, &current_set_flags, TX_NULL, TX_NULL, TX_NULL);
+
+        uint32_t missing_flags = s_sos_thread_ctx.expected_complete_flags & ~current_set_flags;
+
+        const uint32_t crashdump_event_flag = SOS_SSI_ID_TO_EVENT_FLAG(SOS_SSI_ID_CRASHDUMP);
+        if (crash_dump_in_progress && (missing_flags == crashdump_event_flag))
+        {
+            SOS_LOG_CRIT("SSI completion timeout occurred while CD transfer");
+        }
+        else
+        {
+            SOS_LOG_CRIT("SSI completion - Timeout occurred waiting for flags: %lx, missing flags: %lx\n",
+                         (unsigned long)s_sos_thread_ctx.expected_complete_flags,
+                         (unsigned long)missing_flags);
+
+            BUG_ASSERT_PARAM(
+                false,
+                missing_flags,
+                (current_stage->stage_category == BOOT_STAGE)
+                    ? ((current_stage->stage_category << 16) | (current_stage->operation_stage.boot & 0xFFFF))
+                    : ((current_stage->stage_category << 16) | (current_stage->operation_stage.shutdown & 0xFFFF)));
+        }
+    }
+    else
+    {
+        SOS_LOG_CRIT("SSI completion - Error occurred waiting for flags: %d\n", status);
+        BUG_ASSERT_PARAM(
+            false,
+            status,
+            (current_stage->stage_category == BOOT_STAGE)
+                ? ((current_stage->stage_category << 16) | (current_stage->operation_stage.boot & 0xFFFF))
+                : ((current_stage->stage_category << 16) | (current_stage->operation_stage.shutdown & 0xFFFF)));
+    }
 }
 
 void sos_notify_ssi_boot_stage_and_wait(psos_service_context_t p_context,
@@ -239,7 +280,7 @@ void sos_worker_thread_function(ULONG service_ctx)
         FPFW_RUNTIME_ASSERT(status == TX_SUCCESS);
 
         // store the flags expected to be set when all SSI notifications are complete
-        s_sos_thread_ctx.expected_complete_flags = (1 << p_sos_ctx->registration_count) - 1;
+        s_sos_thread_ctx.expected_complete_flags = p_sos_ctx->registered_ssi_mask;
 
         switch (message.type)
         {
@@ -344,7 +385,7 @@ void sos_worker_thread_function(ULONG service_ctx)
             if (idsw_get_cpu_type() == CPU_SCP)
             {
                 SOS_LOG_INFO("Invoking Accel Quiesce Flow\n");
-                uint32_t accel_event_mask = execute_accel_quiesce_flow(p_sos_ctx->registration_count);
+                uint32_t accel_event_mask = execute_accel_quiesce_flow();
                 // Update the flags to include accel events
                 s_sos_thread_ctx.expected_complete_flags |= accel_event_mask;
             }

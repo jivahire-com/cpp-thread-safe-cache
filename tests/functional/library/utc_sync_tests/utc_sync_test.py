@@ -328,9 +328,11 @@ class utc_sync_test(pldm_common):
                 )
                 return result
 
-            # Capture BMC timedatectl
-            self.log.info(f"Capturing BMC 'timedatectl' (sample {sample_num})...")
-            bmc_time = self._get_bmc_timedatectl()
+            # Capture BMC timedatectl using fast path (no MCP health check)
+            self.log.info(
+                f"Capturing BMC 'timedatectl' (sample {sample_num}, fast path)..."
+            )
+            bmc_time = self._get_bmc_time_no_health_check()
             result[f"bmc_time_{sample_num}"] = bmc_time
             if not bmc_time:
                 self.log.error(
@@ -448,7 +450,7 @@ class utc_sync_test(pldm_common):
 
     # ── Parallel Capture Helpers ──
 
-    def _get_bmc_time_no_health_check(self) -> str:
+    def _get_bmc_time_no_health_check(self, close_after_command: bool = True) -> str:
         """
         Execute 'timedatectl' on BMC WITHOUT the post-command MCP health check.
 
@@ -457,6 +459,10 @@ class utc_sync_test(pldm_common):
         _get_mcp_utc_time() on the same UART would corrupt the data stream.
 
         This helper uses bmc_cli directly (open/execute/close) to avoid that.
+
+        Args:
+            close_after_command: When True, closes bmc_cli after command.
+                For parallel optimization, keep False to reuse SSH session.
 
         Returns:
             Raw BMC timedatectl output string, or empty string on failure.
@@ -498,7 +504,8 @@ class utc_sync_test(pldm_common):
                 f"exit={result}, stdout='{stdout.strip()[:200]}', "
                 f"stderr='{stderr}'"
             )
-            self.bmc_cli.close()
+            if close_after_command:
+                self.bmc_cli.close()
             if result != 0:
                 self.log.error(
                     f"BMC 'timedatectl' failed: exit={result}, stderr='{stderr}'"
@@ -509,13 +516,14 @@ class utc_sync_test(pldm_common):
             return stripped
         except Exception as e:
             self.log.error(f"BMC 'timedatectl' exception: {e}")
-            try:
-                self.bmc_cli.close()
-            except Exception:
-                pass
+            if close_after_command:
+                try:
+                    self.bmc_cli.close()
+                except Exception:
+                    pass
             return ""
 
-    def _capture_times_parallel(self) -> dict:
+    def _capture_times_parallel(self, close_bmc_after_command: bool = True) -> dict:
         """
         Capture MCP and BMC timestamps in parallel using threads.
 
@@ -550,7 +558,9 @@ class utc_sync_test(pldm_common):
 
         def _fetch_bmc():
             capture["bmc_wall_before"] = time.time()
-            capture["bmc_output"] = self._get_bmc_time_no_health_check()
+            capture["bmc_output"] = self._get_bmc_time_no_health_check(
+                close_after_command=close_bmc_after_command
+            )
             capture["bmc_wall_after"] = time.time()
 
         t_mcp = Thread(target=_fetch_mcp, daemon=True)
@@ -636,13 +646,18 @@ class utc_sync_test(pldm_common):
             return result
         self.log.info("[PASS] PLDM service is active")
 
+        # Keep BMC SSH session open across all parallel samples (faster path)
+        if not self.bmc_cli.is_open():
+            self.bmc_cli.open()
+            self.log.info("BMC fast path session opened (reused across samples)")
+
         # Capture 5 samples with 40-second intervals
         for sample_num in range(1, 6):
             self.log.info("")
             self.log.info(f"--- SAMPLE {sample_num}/5 (parallel) ---")
 
             # Launch parallel capture
-            cap = self._capture_times_parallel()
+            cap = self._capture_times_parallel(close_bmc_after_command=False)
 
             mcp_time = cap["mcp_output"]
             bmc_time = cap["bmc_output"]
@@ -685,11 +700,15 @@ class utc_sync_test(pldm_common):
                 self.log.error(
                     f"[FAIL] MCP 'utc time' returned empty (sample {sample_num})"
                 )
+                if self.bmc_cli.is_open():
+                    self.bmc_cli.close()
                 return result
             if not bmc_time:
                 self.log.error(
                     f"[FAIL] BMC 'timedatectl' returned empty (sample {sample_num})"
                 )
+                if self.bmc_cli.is_open():
+                    self.bmc_cli.close()
                 return result
 
             # Parse timestamps
@@ -704,6 +723,8 @@ class utc_sync_test(pldm_common):
                     f"mcp_ms={mcp_ms}, bmc_sec={bmc_sec}"
                 )
                 result[f"time_match_{sample_num}"] = False
+                if self.bmc_cli.is_open():
+                    self.bmc_cli.close()
                 return result
 
             # Compute diffs
@@ -711,8 +732,8 @@ class utc_sync_test(pldm_common):
             raw_diff = mcp_sec_f - float(bmc_sec)
             result[f"raw_diff_{sample_num}_sec"] = raw_diff
 
-            # Corrected diff: subtract midpoint gap (small for parallel capture)
-            corrected_diff = raw_diff - capture_gap
+            # Corrected diff: add midpoint gap for raw=(MCP-BMC)
+            corrected_diff = raw_diff + capture_gap
             result[f"corrected_diff_{sample_num}_sec"] = corrected_diff
 
             match_ok = abs(corrected_diff) <= tolerance_sec
@@ -724,7 +745,7 @@ class utc_sync_test(pldm_common):
             self.log.info(f"  MCP (as seconds)     : {mcp_sec_f:.3f}")
             self.log.info(f"  BMC (seconds)        : {bmc_sec}")
             self.log.info(f"  Raw diff (MCP - BMC) : {raw_diff:+.3f} s")
-            self.log.info(f"  Midpoint correction  : {capture_gap:+.3f} s")
+            self.log.info(f"  Midpoint gap added   : {capture_gap:+.3f} s")
             self.log.info(f"  Corrected diff       : {corrected_diff:+.3f} s")
             self.log.info(
                 f"  {status} Sample {sample_num}: "
@@ -774,5 +795,9 @@ class utc_sync_test(pldm_common):
                         f"{abs(corr):.3f} s exceeds {tolerance_sec:.1f} s"
                     )
         self.log.info("=" * 60)
+
+        if self.bmc_cli.is_open():
+            self.bmc_cli.close()
+            self.log.info("BMC fast path session closed")
 
         return result

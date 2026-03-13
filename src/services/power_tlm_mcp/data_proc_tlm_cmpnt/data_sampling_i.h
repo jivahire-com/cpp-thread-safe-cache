@@ -45,6 +45,11 @@
     #define CORE_POWER_MW_PER_BIT 32
 #endif
 
+// The voltage conversion factor is set by default as 2mV per bit.
+#ifndef CORE_VOLTAGE_MV_PER_BIT
+    #define CORE_VOLTAGE_MV_PER_BIT 2
+#endif
+
 #define ROUND_USEC_TO_MSEC(usec) ((usec + 500) / 1000)
 #define ROUND_NSEC_TO_USEC(nsec) ((nsec + 500) / 1000)//nano to micro second rounding
 

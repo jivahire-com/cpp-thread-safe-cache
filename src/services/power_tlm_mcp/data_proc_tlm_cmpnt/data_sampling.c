@@ -964,7 +964,11 @@ bool data_smpl_parse_core_current_entry(core_current_t* core_current_entry, uint
     }
 
     core_rt[core_id].latest_current_mA = (uint16_t)(core_current_entry->data.avg * CORE_CURRENT_CONVERSION_FACTOR);
-    core_rt[core_id].latest_power_mW = (uint16_t)(core_current_entry->data.pwr * CORE_POWER_MW_PER_BIT);
+
+    uint32_t power_mW = ((uint32_t)core_rt[core_id].latest_current_mA * core_rt[core_id].latest_voltage_mV) / 1000;
+
+    core_rt[core_id].latest_power_mW = power_mW; // power in mW = current in mA * voltage in V
+
     core_rt[core_id].latest_mpam_id = core_current_entry->data.mpam_id_low;
 
     if (!core_rt[core_id].status_flags.throttle_is_active)

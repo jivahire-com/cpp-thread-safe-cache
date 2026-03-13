@@ -45,16 +45,16 @@
  * Step 1: reset_pwr_tlm_data() → enable cores → package_create_enable_disable_inst_record()
  * Step 2: Process Sensors (CRITICAL ORDER):
  *    a) data_smpl_process_pstate_sensor_fifo() [data_sampling.c] - Sets throttling_status
- *    b) data_smpl_process_core_current_sensor_fifo() [data_sampling.c] - Updates pstate_from_current_pkt if throttling
- *    c) data_smpl_process_tile_temperature_sensor_fifo() [data_sampling.c] - Temperature telemetry
- *    d) data_smpl_process_tile_voltage_sensor_fifo() [data_sampling.c] - Voltage telemetry
+ *    b) data_smpl_process_tile_voltage_sensor_fifo() [data_sampling.c] - Voltage telemetry (MUST be before current)
+ *    c) data_smpl_process_core_current_sensor_fifo() [data_sampling.c] - Updates pstate_from_current_pkt if throttling, calculates power using P=V×I
+ *    d) data_smpl_process_tile_temperature_sensor_fifo() [data_sampling.c] - Temperature telemetry
  * Step 3: data_proc_tlm_cmpnt_get_inst_soc_core_summary_data() [in_band_package_interface.c]
  *    - Validates conditional pstate logic: if throttling → use pstate_from_current_pkt, else → use latest_pstate
  *    → package_create_inst_core_summary_record() - Creates final telemetry structure
  * Step 4: Assert calculations:
  *    - Current: avg * CORE_CURRENT_CONVERSION_FACTOR
  *    - Voltage: DOUT2MILLIVOLTS(vcore0)
- *    - Power: pwr_field * 32 (CORE_POWER_MW_PER_BIT)
+ *    - Power: (current_mA * voltage_mV) / 1000 (P = V × I formula)
  *    - Pstate/Cstate: Direct from sensor data (validates throttling-dependent logic)
  *    - Throttling Rack Priority: From configuration (config->throttling_rack_priority)
  *    - Frequency: From DVFS table (Just printing it and not doing assertion)
@@ -249,7 +249,16 @@ TEST_FUNCTION(test_core_instantaneous_data_integration, test_setup, test_teardow
         data_smpl_process_pstate_sensor_fifo();
         g_enable_mock_pstate = 0; // Disable pstate mocking
 
-        // Process core current sensor data SECOND - to update pstate_from_current_pkt if throttling
+        // Process tile voltage sensor data SECOND - MUST be before current to calculate power correctly
+        if (g_print_logs)
+            printf("  - Processing tile voltage sensor data\n");
+        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, target_core);
+        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, true);  // curr_data_is_valid
+        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, false); // more_entries
+        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, &mock_voltage_data);
+        data_smpl_process_tile_voltage_sensor_fifo();
+
+        // Process core current sensor data THIRD - uses voltage to calculate power (P=V*I)
         if (g_print_logs)
             printf("  - Processing core current sensor data\n");
         will_return(__wrap_sensor_fifo_svc_poll_core_current, target_core);
@@ -266,15 +275,6 @@ TEST_FUNCTION(test_core_instantaneous_data_integration, test_setup, test_teardow
         will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, false); // more_entries
         will_return(__wrap_sensor_fifo_svc_poll_tile_temperature, &mock_temp_data);
         data_smpl_process_tile_temperature_sensor_fifo();
-
-        // Process tile voltage sensor data
-        if (g_print_logs)
-            printf("  - Processing tile voltage sensor data\n");
-        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, target_core);
-        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, true);  // curr_data_is_valid
-        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, false); // more_entries
-        will_return(__wrap_sensor_fifo_svc_poll_tile_voltage, &mock_voltage_data);
-        data_smpl_process_tile_voltage_sensor_fifo();
 
         // Get instantaneous core summary data
         inst_core_element_summary_t core_summary_data;
@@ -298,9 +298,9 @@ TEST_FUNCTION(test_core_instantaneous_data_integration, test_setup, test_teardow
         int32_t expected_voltage_mV = DOUT2MILLIVOLTS(config->tile_voltage_avg_mV);
         // Temperature: core_rt[core_id].latest_max_value_dC (appears to be 0 for instantaneous data)
         int32_t expected_temp_dC = 0;
-        // Power: Account for conversion rounding (power_mW → raw → power_mW)
-        // Raw value: (config->power_mW + 16) / 32, then back: raw * 32
-        uint16_t expected_power_mW = ((config->power_mW + 16) / 32) * CORE_POWER_MW_PER_BIT;
+        // Power: Now calculated using P = V × I formula
+        // Power (mW) = (current_mA * voltage_mV) / 1000
+        uint16_t expected_power_mW = ((uint32_t)expected_current_mA * expected_voltage_mV) / 1000;
         // Frequency: dvfs_get_freq_from_plimit(current_pstate) - calls external DVFS function
         // So skipping exact frequency assertion against expected value.
         // Pstate: Conditional logic based on throttling status

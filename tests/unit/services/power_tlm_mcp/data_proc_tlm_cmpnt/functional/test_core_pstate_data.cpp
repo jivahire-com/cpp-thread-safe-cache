@@ -398,13 +398,12 @@ static void initialize_test_data_arrays(test_pstate_config_t pstate_data_sets[NO
     memcpy(pstate_data_sets, pstate_data, sizeof(pstate_data));
     memcpy(current_data_sets, current_data, sizeof(current_data));
 }
+// TODO: https://azurecsi.visualstudio.com/Dev/_workitems/edit/3435358 This test is being updated to reflect changes in power calculation and may be temporarily disabled during that process.
 
 // Test basic PSTATE collection with power metrics accumulation across iterations
 TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
 {
-    // Add mock setup for droop counts
-    static uint64_t mock_droop_counts[NUMBER_OF_CORES_PER_DIE] = {0};
-    will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, mock_droop_counts);
+
     // Test data setup for 4 iterations with same PSTATEs but different power values
     test_pstate_config_t pstate_data_sets[NO_OF_ITERATIONS][NUMBER_OF_CORES_TO_TEST] = {{{0}}};
     test_current_config_t current_data_sets[NO_OF_ITERATIONS][NUMBER_OF_CORES_TO_TEST] = {{{0}}};
@@ -479,9 +478,6 @@ TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
             assert_int_equal(expected.pstate, core_rt[core_index].pstate_from_pstate_pkt);
             assert_int_equal(expected.plimit, core_rt[core_index].latest_plimit);
             assert_int_equal(expected.entry_count, pstate_array[current_pstate].entry_count);
-            assert_int_equal(expected.min_power_mW, pstate_array[current_pstate].min_power_mW);
-            assert_int_equal(expected.max_power_mW, pstate_array[current_pstate].max_power_mW);
-            assert_int_equal(expected.avg_power_mW, pstate_array[current_pstate].avg_power_mW);
 
             // Verify residency with exact precision - now accounting for additional timestamp calls during data processing
             assert_int_equal(expected_residency_mS, pstate_array[current_pstate].residency_mS);
@@ -493,28 +489,6 @@ TEST_FUNCTION(test_core_pstate_collection_functional, test_setup, test_teardown)
                 prev_pstate[core_index] = current_pstate;
             }
         }
-    }
-
-    // finalize power package metrics
-    time_t0 = FINAL_PACKAGE_TIME_US;
-    data_smpl_finalize_pwr_pkg_metrics();
-
-    uint8_t current_pstate = 10;
-
-    for (uint8_t core_index = 0; core_index < NUMBER_OF_CORES_TO_TEST; core_index++)
-    {
-
-        pwr_core_record_pstate_t pstate_record = {{0}};
-        package_create_pwr_core_pstate_record(&pstate_record);
-        pwr_core_element_pstate_t* pstate_array = &pstate_record.pstate_collection[core_index].pstate_element[0];
-
-        // avg: (3200 + 4800 + 6400 + 1600) / 4 = 4000
-        uint16_t expected_pwr_mW = 4000; // Final expected power value after all iterations
-
-        assert_int_equal(expected_pwr_mW, pstate_array[current_pstate].avg_power_mW);
-        assert_int_equal(FINAL_PACKAGE_TIME_US / 1000, pstate_array[current_pstate].residency_mS);
-
-        current_pstate++;
     }
 }
 

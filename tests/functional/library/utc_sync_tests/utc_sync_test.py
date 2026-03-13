@@ -252,202 +252,6 @@ class utc_sync_test(pldm_common):
 
         return match_ok, desc
 
-    # ── Test Case ──
-
-    def testcase1_capture_utc_times(self) -> dict:
-        """
-        Capture UTC time from MCP and BMC two times with 40-second delays.
-
-        Steps:
-        1. Confirm PLDM service is running
-        2. Capture MCP 'utc time' and BMC 'timedatectl' (Sample 1)
-        3. Wait 40 seconds
-        4. Capture MCP 'utc time' and BMC 'timedatectl' (Sample 2)
-        5. Compare timestamps from all captures
-        6. Return all captured outputs and comparison results for validation
-
-        Returns:
-            dict with keys:
-                - pldm_active: bool
-                - tolerance_sec: float (tolerance range used for comparisons)
-                - mcp_time_[1-2]: str (MCP utc time outputs)
-                - bmc_time_[1-2]: str (BMC timedatectl outputs)
-                - mcp_timestamp_[1-2]_ms: int or None (parsed MCP timestamps)
-                - bmc_timestamp_[1-2]_sec: int or None (parsed BMC timestamps)
-                - time_match_[1-2]: bool (sample matches within tolerance)
-                - success: bool (True if all captures and comparisons succeeded)
-        """
-        tolerance_sec = 10.0
-
-        self.log.info("=" * 60)
-        self.log.info("UTC TIME CAPTURE TEST (2 SAMPLES)")
-        self.log.info("=" * 60)
-        self.log.info(f"Tolerance Range: +/- {tolerance_sec:.1f} seconds")
-        self.log.info("=" * 60)
-
-        result = {
-            "pldm_active": False,
-            "tolerance_sec": tolerance_sec,
-            "success": False,
-        }
-
-        # Initialize result dictionaries for 2 samples
-        for i in range(1, 3):
-            result[f"mcp_time_{i}"] = ""
-            result[f"bmc_time_{i}"] = ""
-            result[f"mcp_timestamp_{i}_ms"] = None
-            result[f"bmc_timestamp_{i}_sec"] = None
-            result[f"mcp_cmd_exec_{i}_sec"] = None
-            result[f"bmc_cmd_exec_{i}_sec"] = None
-            result[f"capture_end_gap_{i}_sec"] = None
-            result[f"raw_time_diff_{i}_sec"] = None
-            result[f"delay_added_{i}_sec"] = None
-            result[f"delay_adjusted_diff_{i}_sec"] = None
-            result[f"time_match_{i}"] = False
-
-        # Step 1: Confirm PLDM is running
-        self.log.info("Step 1: Checking PLDM service status...")
-        pldm_active = self._check_pldm_service_active()
-        result["pldm_active"] = pldm_active
-        if not pldm_active:
-            self.log.error("[FAIL] PLDM service is not active")
-            return result
-        self.log.info("[PASS] PLDM service is active")
-
-        # Capture 2 samples with 40-second intervals
-        for sample_num in range(1, 3):
-            self.log.info(f"\n--- SAMPLE {sample_num}/2 ---")
-
-            # Capture MCP UTC time
-            self.log.info(f"Capturing MCP 'utc time' (sample {sample_num})...")
-            mcp_time = self._get_mcp_utc_time()
-            result[f"mcp_time_{sample_num}"] = mcp_time
-            if not mcp_time:
-                self.log.error(
-                    f"[FAIL] Failed to get MCP UTC time (sample {sample_num})"
-                )
-                return result
-
-            # Capture BMC timedatectl using fast path (no MCP health check)
-            self.log.info(
-                f"Capturing BMC 'timedatectl' (sample {sample_num}, fast path)..."
-            )
-            bmc_time = self._get_bmc_time_no_health_check()
-            result[f"bmc_time_{sample_num}"] = bmc_time
-            if not bmc_time:
-                self.log.error(
-                    f"[FAIL] Failed to get BMC timedatectl (sample {sample_num})"
-                )
-                return result
-
-            # Command execution timing breakdown (sequential path)
-            mcp_cmd = self._last_mcp_cmd_timing
-            bmc_cmd = self._last_bmc_cmd_timing
-            mcp_exec = mcp_cmd.get("elapsed_sec")
-            bmc_exec = bmc_cmd.get("elapsed_sec")
-            if mcp_exec is not None and bmc_exec is not None:
-                end_gap = bmc_cmd.get("end_wall", 0.0) - mcp_cmd.get("end_wall", 0.0)
-                result[f"mcp_cmd_exec_{sample_num}_sec"] = mcp_exec
-                result[f"bmc_cmd_exec_{sample_num}_sec"] = bmc_exec
-                result[f"capture_end_gap_{sample_num}_sec"] = end_gap
-
-                self.log.info("[CMD_TIMING][SAMPLE_BREAKDOWN]")
-                self.log.info(f"  MCP execution time        : {mcp_exec:.3f} s")
-                self.log.info(f"  BMC execution time        : {bmc_exec:.3f} s")
-                self.log.info(f"  End-time gap (BMC-MCP)    : {end_gap:+.3f} s")
-
-            # Parse timestamps
-            mcp_ts = self._parse_mcp_timestamp(mcp_time)
-            bmc_ts = self._parse_bmc_timestamp(bmc_time)
-            result[f"mcp_timestamp_{sample_num}_ms"] = mcp_ts
-            result[f"bmc_timestamp_{sample_num}_sec"] = bmc_ts
-
-            # Compare timestamps
-            if mcp_ts is not None and bmc_ts is not None:
-                raw_time_diff = (mcp_ts / 1000.0) - float(bmc_ts)
-                delay_added = result.get(f"capture_end_gap_{sample_num}_sec")
-                delay_adjusted_diff = None
-                if delay_added is not None:
-                    delay_adjusted_diff = raw_time_diff + delay_added
-
-                result[f"raw_time_diff_{sample_num}_sec"] = raw_time_diff
-                result[f"delay_added_{sample_num}_sec"] = delay_added
-                result[f"delay_adjusted_diff_{sample_num}_sec"] = delay_adjusted_diff
-
-                match, desc = self._compare_times(mcp_ts, bmc_ts, tolerance_sec)
-                result[f"time_match_{sample_num}"] = match
-                status = "[PASS]" if match else "[FAIL]"
-                self.log.info(f"  {status} Sample {sample_num}: {desc}")
-                self.log.info("[TIME_DIFF_ANALYSIS]")
-                self.log.info(f"  Raw time diff (MCP-BMC)   : {raw_time_diff:+.3f} s")
-                if delay_added is not None:
-                    self.log.info(
-                        f"  Estimated delay added      : {delay_added:+.3f} s"
-                    )
-                    self.log.info(
-                        f"  Delay-adjusted diff        : {delay_adjusted_diff:+.3f} s"
-                    )
-            else:
-                self.log.error(
-                    f"  [FAIL] Could not parse sample {sample_num}: "
-                    f"mcp={mcp_ts}, bmc={bmc_ts}"
-                )
-                result[f"time_match_{sample_num}"] = False
-                return result
-
-            # Wait 40 seconds before next sample (except after last sample)
-            if sample_num < 2:
-                self.log.info(f"Waiting 40 seconds before sample {sample_num + 1}...")
-                time.sleep(40)
-
-        # Determine overall success - all 2 samples must match
-        all_matches = all(result[f"time_match_{i}"] for i in range(1, 3))
-        result["success"] = all_matches
-
-        self.log.info("\n" + "=" * 60)
-        self.log.info("TEST SUMMARY")
-        self.log.info("=" * 60)
-        for i in range(1, 3):
-            status = "PASS" if result[f"time_match_{i}"] else "FAIL"
-            raw_diff = result.get(f"raw_time_diff_{i}_sec")
-            delay_added = result.get(f"delay_added_{i}_sec")
-            adjusted = result.get(f"delay_adjusted_diff_{i}_sec")
-            end_gap = result.get(f"capture_end_gap_{i}_sec")
-            raw_diff_str = f"{raw_diff:+.3f}s" if raw_diff is not None else "N/A"
-            delay_added_str = (
-                f"{delay_added:+.3f}s" if delay_added is not None else "N/A"
-            )
-            adjusted_str = f"{adjusted:+.3f}s" if adjusted is not None else "N/A"
-            end_gap_str = f"{end_gap:+.3f}s" if end_gap is not None else "N/A"
-            self.log.info(
-                f"  Sample {i}: {status}  raw(M-B)={raw_diff_str}  "
-                f"delay_added={delay_added_str}  adjusted={adjusted_str}  "
-                f"end_gap(B-M)={end_gap_str}"
-            )
-
-        all_delay_added = [
-            result.get(f"delay_added_{i}_sec")
-            for i in range(1, 3)
-            if result.get(f"delay_added_{i}_sec") is not None
-        ]
-        if all_delay_added:
-            avg_delay_added = sum(all_delay_added) / len(all_delay_added)
-            self.log.info(f"  End difference avg delay_added: {avg_delay_added:+.3f}s")
-        self.log.info("=" * 60)
-
-        if result["success"]:
-            self.log.info("[PASS] UTC times are synchronized (all 2 samples matched)")
-        else:
-            self.log.error("[FAIL] UTC time synchronization failed")
-            for i in range(1, 3):
-                if not result[f"time_match_{i}"]:
-                    self.log.error(
-                        f"  - Sample {i}: times do not match within tolerance"
-                    )
-        self.log.info("=" * 60)
-
-        return result
-
     # ── Parallel Capture Helpers ──
 
     def _get_bmc_time_no_health_check(self, close_after_command: bool = True) -> str:
@@ -578,7 +382,7 @@ class utc_sync_test(pldm_common):
 
     def testcase2_parallel_capture_utc_times(self) -> dict:
         """
-        Capture UTC time from MCP and BMC in true parallel five times,
+        Capture UTC time from MCP and BMC in true parallel ten times,
         with debug instrumentation.
 
         Both queries run on separate threads using independent I/O channels:
@@ -595,22 +399,23 @@ class utc_sync_test(pldm_common):
             dict with keys:
                 - pldm_active: bool
                 - tolerance_sec: float
-                - mcp_time_[1-5]: str        (raw MCP output)
-                - bmc_time_[1-5]: str        (raw BMC output)
-                - mcp_timestamp_[1-5]_ms: int | None
-                - bmc_timestamp_[1-5]_sec: int | None
-                - time_match_[1-5]: bool
-                - mcp_capture_latency_[1-5]_sec: float
-                - bmc_capture_latency_[1-5]_sec: float
-                - capture_overlap_[1-5]_sec: float
-                - raw_diff_[1-5]_sec: float
-                - corrected_diff_[1-5]_sec: float
+                - mcp_time_[1-10]: str        (raw MCP output)
+                - bmc_time_[1-10]: str        (raw BMC output)
+                - mcp_timestamp_[1-10]_ms: int | None
+                - bmc_timestamp_[1-10]_sec: int | None
+                - time_match_[1-10]: bool
+                - mcp_capture_latency_[1-10]_sec: float
+                - bmc_capture_latency_[1-10]_sec: float
+                - capture_overlap_[1-10]_sec: float
+                - raw_diff_[1-10]_sec: float
+                - corrected_diff_[1-10]_sec: float
                 - success: bool
         """
         tolerance_sec = 5.0
+        sample_count = 10
 
         self.log.info("=" * 60)
-        self.log.info("UTC TIME PARALLEL CAPTURE TEST (5 SAMPLES)")
+        self.log.info("UTC TIME PARALLEL CAPTURE TEST (10 SAMPLES)")
         self.log.info("=" * 60)
         self.log.info(f"Tolerance: +/- {tolerance_sec:.1f} seconds")
         self.log.info("MCP: UART 'utc time' (ms since epoch)")
@@ -625,7 +430,7 @@ class utc_sync_test(pldm_common):
         }
 
         # Initialize per-sample result keys
-        for i in range(1, 6):
+        for i in range(1, sample_count + 1):
             result[f"mcp_time_{i}"] = ""
             result[f"bmc_time_{i}"] = ""
             result[f"mcp_timestamp_{i}_ms"] = None
@@ -651,10 +456,10 @@ class utc_sync_test(pldm_common):
             self.bmc_cli.open()
             self.log.info("BMC fast path session opened (reused across samples)")
 
-        # Capture 5 samples with 40-second intervals
-        for sample_num in range(1, 6):
+        # Capture 10 samples with 40-second intervals
+        for sample_num in range(1, sample_count + 1):
             self.log.info("")
-            self.log.info(f"--- SAMPLE {sample_num}/5 (parallel) ---")
+            self.log.info(f"--- SAMPLE {sample_num}/{sample_count} (parallel) ---")
 
             # Launch parallel capture
             cap = self._capture_times_parallel(close_bmc_after_command=False)
@@ -684,8 +489,6 @@ class utc_sync_test(pldm_common):
             self.log.info("[DEBUG TIMING]")
             self.log.info(f"  MCP capture latency  : {mcp_latency:.3f} s")
             self.log.info(f"  BMC capture latency  : {bmc_latency:.3f} s")
-            self.log.info(f"  Capture overlap      : {overlap:.3f} s")
-            self.log.info(f"  Capture midpoint gap : {capture_gap:+.3f} s")
             self.log.info(
                 f"  MCP wall window      : "
                 f"{cap['mcp_wall_before']:.3f} -> {cap['mcp_wall_after']:.3f}"
@@ -744,9 +547,17 @@ class utc_sync_test(pldm_common):
             self.log.info(f"  MCP (ms since epoch) : {mcp_ms}")
             self.log.info(f"  MCP (as seconds)     : {mcp_sec_f:.3f}")
             self.log.info(f"  BMC (seconds)        : {bmc_sec}")
+
+            command_latency = capture_gap
+
             self.log.info(f"  Raw diff (MCP - BMC) : {raw_diff:+.3f} s")
-            self.log.info(f"  Midpoint gap added   : {capture_gap:+.3f} s")
-            self.log.info(f"  Corrected diff       : {corrected_diff:+.3f} s")
+            self.log.info(
+                f"  Latency added by running commands : {command_latency:+.3f} s"
+            )
+            self.log.info(
+                f"  Corrected diff       : {raw_diff:+.3f} "
+                f"+ {command_latency:+.3f} = {corrected_diff:+.3f} s"
+            )
             self.log.info(
                 f"  {status} Sample {sample_num}: "
                 f"|corrected_diff|={abs(corrected_diff):.3f} s "
@@ -754,40 +565,37 @@ class utc_sync_test(pldm_common):
             )
 
             # Wait 40 seconds before next sample (except after last)
-            if sample_num < 5:
+            if sample_num < sample_count:
                 self.log.info(f"Waiting 40 seconds before sample {sample_num + 1}...")
                 time.sleep(40)
 
         # Overall result
-        all_matches = all(result[f"time_match_{i}"] for i in range(1, 6))
+        all_matches = all(result[f"time_match_{i}"] for i in range(1, sample_count + 1))
         result["success"] = all_matches
 
         self.log.info("")
         self.log.info("=" * 60)
         self.log.info("PARALLEL CAPTURE TEST SUMMARY")
         self.log.info("=" * 60)
-        for i in range(1, 6):
+        for i in range(1, sample_count + 1):
             status = "PASS" if result[f"time_match_{i}"] else "FAIL"
             raw = result.get(f"raw_diff_{i}_sec")
             corr = result.get(f"corrected_diff_{i}_sec")
-            ovlp = result.get(f"capture_overlap_{i}_sec")
             raw_str = f"{raw:+.3f} s" if raw is not None else "N/A"
             corr_str = f"{corr:+.3f} s" if corr is not None else "N/A"
-            ovlp_str = f"{ovlp:.3f} s" if ovlp is not None else "N/A"
             self.log.info(
-                f"  Sample {i}: {status}  "
-                f"raw={raw_str}  overlap={ovlp_str}  corrected={corr_str}"
+                f"  Sample {i}: {status}  " f"raw={raw_str}  corrected={corr_str}"
             )
         self.log.info("=" * 60)
 
         if result["success"]:
             self.log.info(
                 "[PASS] UTC times are synchronized "
-                "(all 5 parallel samples within tolerance)"
+                "(all 10 parallel samples within tolerance)"
             )
         else:
             self.log.error("[FAIL] UTC time synchronization failed")
-            for i in range(1, 6):
+            for i in range(1, sample_count + 1):
                 if not result[f"time_match_{i}"]:
                     corr = result.get(f"corrected_diff_{i}_sec")
                     self.log.error(

@@ -421,6 +421,57 @@ Function Invoke-Executable($exe, $exeArgs)
 
 <#
 .SYNOPSIS
+Saves the current repo environment variables to a snapshot file for fast restoration.
+
+.PARAMETER SnapshotPath
+Full path to the snapshot JSON file.
+#>
+Function Export-RepoEnvSnapshot($SnapshotPath)
+{
+    $Snapshot = @{}
+
+    # Capture all REPO_APP_* environment variables (includes PATH_*, GIT_*, CACHED_PATH, etc.)
+    Get-ChildItem Env: | Where-Object { $_.Name -match '^REPO_APP_' } | ForEach-Object {
+        $Snapshot[$_.Name] = $_.Value
+    }
+
+    # Capture PATH and other relevant variables set during environment setup
+    @('PATH', 'LM_LICENSE_FILE', 'MajorVersion', 'MinorVersion', 'PatchVersion', 'NUGET_PACKAGES') | ForEach-Object {
+        $val = [System.Environment]::GetEnvironmentVariable($_)
+        if ($null -ne $val) { $Snapshot[$_] = $val }
+    }
+
+    $SnapshotDir = Split-Path $SnapshotPath -Parent
+    if (-not (Test-Path $SnapshotDir)) {
+        New-Item -Path $SnapshotDir -ItemType Directory -Force | Out-Null
+    }
+
+    $Snapshot | ConvertTo-Json -Depth 1 | Set-Content -Path $SnapshotPath -Encoding UTF8 -Force
+    Write-Host "Environment snapshot saved for future -Fast use." -ForegroundColor DarkGray
+}
+
+<#
+.SYNOPSIS
+Restores repo environment variables from a previously saved snapshot file.
+
+.PARAMETER SnapshotPath
+Full path to the snapshot JSON file.
+#>
+Function Import-RepoEnvSnapshot($SnapshotPath)
+{
+    $Snapshot = Get-Content -Path $SnapshotPath -Raw | ConvertFrom-Json
+
+    $Count = 0
+    $Snapshot.PSObject.Properties | ForEach-Object {
+        Set-Item "Env:$($_.Name)" $_.Value
+        $Count++
+    }
+
+    Write-Host "Restored $Count environment variables from snapshot." -ForegroundColor Green
+}
+
+<#
+.SYNOPSIS
 Downloads prerequisites and sets up the cmake structure for a given toolchain
 
 .PARAMETER Toolchain
@@ -429,15 +480,23 @@ Toolchain to initialize the repo with
 .PARAMETER Configuration
 Artifact configuration debug/release
 
+.PARAMETER Fast
+Skip package manager checks and restore environment from a previously saved snapshot.
+Requires a prior run of setenv without -Fast to create the snapshot.
+
 .EXAMPLE
 Set-RepoEnv -Toolchain i386-pc-windows-msvc -Configuration debug
+
+.EXAMPLE
+Set-RepoEnv -Toolchain i386-pc-windows-msvc -Configuration debug -Fast
 #>
 Function Set-RepoEnv()
 {
     [CmdletBinding()]
     param(
         [ValidateSet("Debug", "Release")] [string] $Configuration = "Debug",
-        [boolean] $MSCP_vUART = $false
+        [boolean] $MSCP_vUART = $false,
+        [switch] $Fast = $false
     )
     DynamicParam
     {
@@ -472,6 +531,8 @@ Function Set-RepoEnv()
 
     process
     {
+        $Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
         # Clean path
         if ($env:REPO_APP_CACHED_PATH)
         {
@@ -485,6 +546,56 @@ Function Set-RepoEnv()
         $Toolchain = $PSBoundParameters.Toolchain
 
         $MSCP_vUART = $PSBoundParameters.MSCP_vUART
+
+        # Fast path: restore environment from a previously saved snapshot
+        if ($Fast)
+        {
+            $RepoRoot = (Get-Item "$PSScriptRoot\..\..\..\" ).FullName.Replace("\","/")
+            $SnapshotPath = "$RepoRoot/.build/.envstate/$Toolchain-$Configuration.env.json"
+
+            if (Test-Path $SnapshotPath)
+            {
+                Write-Title -Title "Configuration (Fast)" -Color Green
+                Write-Host "Toolchain:     $Toolchain"
+                Write-Host "Configuration: $Configuration"
+                Write-Host ""
+                Write-Host "Skipping package installs and package manager checks." -ForegroundColor DarkCyan
+                Write-Host "Loading environment snapshot from: $SnapshotPath" -ForegroundColor DarkCyan
+
+                Import-RepoEnvSnapshot -SnapshotPath $SnapshotPath
+
+                $host.ui.RawUI.WindowTitle = $Name
+
+                Write-Title "Welcome to the $Name repo" -Color Yellow
+
+                $Links = @{
+                    "[Getting Started]" = "https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP?path=/docs/GettingStarted.md"
+                    "[Guidelines]" = "https://azurecsi.visualstudio.com/Woodinville/_git/Kingsgate.MSCP?path=/docs/guidelines/GeneralGuidelines.md"
+                }
+
+                $ConcatString = ""
+                $Length = 0
+                $Links.GetEnumerator() | %{$ConcatString += " " + (Format-Url -Label $_.key -Url $_.value)}
+                $Links.GetEnumerator() | %{$Length += $_.key.Length}
+                $DecoratorSize = ($Host.UI.RawUI.WindowSize.Width - $Length - 5)/2
+                Write-Host ((' ' * $DecoratorSize) + $ConcatString) -ForegroundColor Blue
+
+                Write-Host "`nAvailable commands:`n"
+                Get-RepoHelp
+
+                $Stopwatch.Stop()
+                Write-Host "`nEnvironment setup completed in $([math]::Round($Stopwatch.Elapsed.TotalSeconds, 2)) seconds (fast)." -ForegroundColor DarkGray
+                return
+            }
+            else
+            {
+                Write-Host ""
+                Write-Host "No environment snapshot found for $Toolchain/$Configuration." -ForegroundColor Yellow
+                Write-Host "Falling back to full environment setup..." -ForegroundColor Yellow
+                Write-Host "A snapshot will be saved after setup completes for future -Fast use." -ForegroundColor Yellow
+                Write-Host ""
+            }
+        }
 
         # Config
         Write-Title -Title "Configuration" -Color Cyan
@@ -546,6 +657,10 @@ Function Set-RepoEnv()
         Write-Title -Title "Setting Cmake" -Color Cyan
         Set-Cmake -Toolchain $Toolchain -Configuration $Configuration
 
+        # Save environment snapshot for future -Fast use
+        $SnapshotPath = "$env:REPO_APP_ROOT/.build/.envstate/$Toolchain-$Configuration.env.json"
+        Export-RepoEnvSnapshot -SnapshotPath $SnapshotPath
+
         $host.ui.RawUI.WindowTitle = $Name
 
         Write-Title "Welcome to the $Name repo" -Color Yellow
@@ -564,6 +679,9 @@ Function Set-RepoEnv()
 
         Write-Host "`nAvailable commands:`n"
         Get-RepoHelp
+
+        $Stopwatch.Stop()
+        Write-Host "`nEnvironment setup completed in $([math]::Round($Stopwatch.Elapsed.TotalSeconds, 2)) seconds." -ForegroundColor DarkGray
     }
 }
 
@@ -694,6 +812,14 @@ Invoke-Clean
 Function Invoke-Clean()
 {
     ninja -C $env:REPO_APP_TARGET_BUILD_DIR clean
+
+    # Remove the environment snapshot for the current toolchain/configuration
+    $SnapshotPath = "$env:REPO_APP_ROOT/.build/.envstate/$env:REPO_APP_TOOLCHAIN-$env:REPO_APP_BUILD_CONFIG.env.json"
+    if (Test-Path $SnapshotPath)
+    {
+        Remove-Item -Path $SnapshotPath -Force
+        Write-Host "Removed environment snapshot: $SnapshotPath" -ForegroundColor DarkGray
+    }
 }
 
 <#

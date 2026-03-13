@@ -48,16 +48,10 @@ PLACED_CODE FPFW_INIT_COMPONENT(pex_rng,
     rng_config.core_count = NUM_AP_CORES_PER_DIE;
     rng_config.cluster_stride = (CORE_CLUSTER_TOP_CORE_CLUSTER1_ADDRESS - CORE_CLUSTER_TOP_CORE_CLUSTER0_ADDRESS);
 
-    if (!system_info_is_warm_start())
-    {
-        FPFW_DBGPRINT_INFO("RNG init start\n");
-        init_pex_rng(&rng_config);
-        FPFW_DBGPRINT_INFO("RNG init done\n");
-    }
-    else
-    {
-        FPFW_DBGPRINT_INFO("RNG init skipping on warm start\n");
-    }
+    bool is_warm_start = system_info_is_warm_start();
+    FPFW_DBGPRINT_INFO("RNG init start (warm_start=%d)\n", is_warm_start);
+    init_pex_rng(&rng_config, is_warm_start);
+    FPFW_DBGPRINT_INFO("RNG init done\n");
     register_pex_error_domain(&rng_config);
     FPFW_DBGPRINT_INFO("PEX error domain registration done\n");
 

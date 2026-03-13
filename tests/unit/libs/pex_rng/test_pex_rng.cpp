@@ -144,7 +144,7 @@ TEST_FUNCTION(test_init_pex_rng_success, nullptr, nullptr)
     expect_any(__wrap_DfwkAsyncRequestInitialize, request_header);
     expect_value(__wrap_DfwkAsyncRequestInitialize, size, sizeof(pex_rng_request_t));
 
-    init_pex_rng(&test_config);
+    init_pex_rng(&test_config, false);
 }
 
 TEST_FUNCTION(test_reset_pex_rng, nullptr, nullptr)

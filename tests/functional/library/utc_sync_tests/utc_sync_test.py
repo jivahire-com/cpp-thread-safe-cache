@@ -45,8 +45,6 @@ class utc_sync_test(pldm_common):
             host_config=host_config,
             host_name=host_name,
         )
-        self._last_mcp_cmd_timing: dict = {}
-        self._last_bmc_cmd_timing: dict = {}
 
     # ── Setup / Teardown ──
 
@@ -104,14 +102,6 @@ class utc_sync_test(pldm_common):
         end_wall = time.time()
         end_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
         elapsed = end_wall - start_wall
-        self._last_mcp_cmd_timing = {
-            "cmd": cmd,
-            "start_wall": start_wall,
-            "end_wall": end_wall,
-            "elapsed_sec": elapsed,
-            "start_utc": start_utc,
-            "end_utc": end_utc,
-        }
         self.log.info(
             f"[CMD_TIMING][MCP] END cmd='{cmd}' utc='{end_utc}' "
             f"wall={end_wall:.6f} elapsed={elapsed:.3f}s"
@@ -130,55 +120,6 @@ class utc_sync_test(pldm_common):
             return ""
         stripped = stdout.strip()
         self.log.info(f"[PARSED_OUTPUT] MCP utc time: '{stripped}'")
-        return stripped
-
-    def _get_bmc_timedatectl(self) -> str:
-        """
-        Execute 'timedatectl' on BMC and return raw output.
-
-        Returns:
-            Raw BMC timedatectl output string, or empty string on failure.
-        """
-        cmd = "timedatectl"
-
-        start_wall = time.time()
-        start_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
-        self.log.info(
-            f"[CMD_TIMING][BMC] START cmd='{cmd}' utc='{start_utc}' "
-            f"wall={start_wall:.6f}"
-        )
-
-        result, stdout, stderr = self._bmc_execute_command(command=cmd)
-
-        end_wall = time.time()
-        end_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
-        elapsed = end_wall - start_wall
-        self._last_bmc_cmd_timing = {
-            "cmd": cmd,
-            "start_wall": start_wall,
-            "end_wall": end_wall,
-            "elapsed_sec": elapsed,
-            "start_utc": start_utc,
-            "end_utc": end_utc,
-        }
-        self.log.info(
-            f"[CMD_TIMING][BMC] END cmd='{cmd}' utc='{end_utc}' "
-            f"wall={end_wall:.6f} elapsed={elapsed:.3f}s"
-        )
-
-        self.log.info(f"[RAW_COMMAND_OUTPUT] cmd='{cmd}'")
-        self.log.info(
-            f"[RAW_COMMAND_OUTPUT] exit={result}, "
-            f"stdout='{stdout}', stderr='{stderr}'"
-        )
-        if result != 0:
-            self.log.error(
-                f"[PARSED_OUTPUT] timedatectl failed: "
-                f"exit={result}, stderr='{stderr}'"
-            )
-            return ""
-        stripped = stdout.strip()
-        self.log.info(f"[PARSED_OUTPUT] BMC timedatectl:\n{stripped}")
         return stripped
 
     def _check_pldm_service_active(self) -> bool:
@@ -230,28 +171,6 @@ class utc_sync_test(pldm_common):
             return int(dt.timestamp())
         return None
 
-    def _compare_times(
-        self, mcp_ms: int, bmc_sec: int, tolerance_sec: float = 10.0
-    ) -> tuple[bool, str]:
-        """
-        Compare MCP and BMC timestamps with tolerance for command execution delay.
-
-        Args:
-            mcp_ms: MCP timestamp in milliseconds since epoch
-            bmc_sec: BMC timestamp in seconds since epoch
-            tolerance_sec: Maximum allowed difference in seconds (default 10.0)
-
-        Returns:
-            Tuple of (match_ok: bool, description: str)
-        """
-        mcp_sec = mcp_ms / 1000.0
-        diff_sec = abs(mcp_sec - bmc_sec)
-
-        match_ok = diff_sec <= tolerance_sec
-        desc = f"MCP={mcp_sec:.3f}s, BMC={bmc_sec:.3f}s, Diff={diff_sec:.3f}s (Tolerance={tolerance_sec:.3f}s)"
-
-        return match_ok, desc
-
     # ── Parallel Capture Helpers ──
 
     def _get_bmc_time_no_health_check(self, close_after_command: bool = True) -> str:
@@ -290,14 +209,6 @@ class utc_sync_test(pldm_common):
             end_wall = time.time()
             end_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
             elapsed = end_wall - start_wall
-            self._last_bmc_cmd_timing = {
-                "cmd": cmd,
-                "start_wall": start_wall,
-                "end_wall": end_wall,
-                "elapsed_sec": elapsed,
-                "start_utc": start_utc,
-                "end_utc": end_utc,
-            }
             self.log.info(
                 f"[CMD_TIMING][BMC_NO_HEALTH] END cmd='{cmd}' utc='{end_utc}' "
                 f"wall={end_wall:.6f} elapsed={elapsed:.3f}s"
@@ -406,12 +317,11 @@ class utc_sync_test(pldm_common):
                 - time_match_[1-10]: bool
                 - mcp_capture_latency_[1-10]_sec: float
                 - bmc_capture_latency_[1-10]_sec: float
-                - capture_overlap_[1-10]_sec: float
                 - raw_diff_[1-10]_sec: float
                 - corrected_diff_[1-10]_sec: float
                 - success: bool
         """
-        tolerance_sec = 5.0
+        tolerance_sec = 4.0
         sample_count = 10
 
         self.log.info("=" * 60)
@@ -438,7 +348,6 @@ class utc_sync_test(pldm_common):
             result[f"time_match_{i}"] = False
             result[f"mcp_capture_latency_{i}_sec"] = None
             result[f"bmc_capture_latency_{i}_sec"] = None
-            result[f"capture_overlap_{i}_sec"] = None
             result[f"raw_diff_{i}_sec"] = None
             result[f"corrected_diff_{i}_sec"] = None
 
@@ -474,12 +383,6 @@ class utc_sync_test(pldm_common):
             bmc_latency = cap["bmc_wall_after"] - cap["bmc_wall_before"]
             result[f"mcp_capture_latency_{sample_num}_sec"] = mcp_latency
             result[f"bmc_capture_latency_{sample_num}_sec"] = bmc_latency
-
-            # Overlap = time both commands were concurrently in-flight
-            overlap_start = max(cap["mcp_wall_before"], cap["bmc_wall_before"])
-            overlap_end = min(cap["mcp_wall_after"], cap["bmc_wall_after"])
-            overlap = max(0.0, overlap_end - overlap_start)
-            result[f"capture_overlap_{sample_num}_sec"] = overlap
 
             # Capture gap between midpoints (should be small for parallel)
             mcp_midpoint = (cap["mcp_wall_before"] + cap["mcp_wall_after"]) / 2

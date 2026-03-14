@@ -53,7 +53,8 @@ typedef union
     struct {
         uint16_t drop_count_en:1;
         uint16_t vm_memory_pwr_en:1;
-        uint16_t reserved:14;
+        uint16_t core_aging_en:1;
+        uint16_t reserved:13;
     }record;
     uint16_t as_uint16;
 }tlm_scp_record_enables_t, *p_tlm_scp_record_enables_t;

@@ -470,6 +470,11 @@ void mts_manager_handle_record_enable_disable(p_trp_msg_t trp_msg)
                 scp_enables.record.vm_memory_pwr_en = enable_record ? 1 : 0;
                 update_scp_records = true;
             }
+            else if (event_id == POWER_TELEMETRY_ELEMENT_CORE_AGING)
+            {
+                scp_enables.record.core_aging_en = enable_record ? 1 : 0;
+                update_scp_records = true;
+            }
 
             package_create_enable_disable_pwr_record(event_id, enable_record);
         }

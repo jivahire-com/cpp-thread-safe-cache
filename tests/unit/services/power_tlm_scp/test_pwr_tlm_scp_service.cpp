@@ -171,14 +171,7 @@ TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_sync_enables_disabled, test_se
     will_return_count(__wrap_ddrss_pmu_enable, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
     expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
 
-    // Mocks for data_proc_scp_tlm_cmpnt_init_core_vmin (called after handle_enables)
-    // Mock all cores as disabled for simplicity
-    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
-    {
-        will_return(__wrap_core_info_get_enable_cores_result, 0x00000000);
-    }
-    expect_any(__wrap_pwr_tlm_core_exch_scp_write_vmin, vmin_array);
-    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_vmin, 1);
+    // Since core_aging_en is not set, data_proc_scp_tlm_cmpnt_init_core_vmin should NOT be called
 
     mts_manager_scp_handle_trp_msg(&trp_msg);
 
@@ -208,19 +201,52 @@ TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_sync_enables_vm_memory_enabled
     will_return_count(__wrap_ddrss_pmu_enable, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
     expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
 
-    // Mocks for data_proc_scp_tlm_cmpnt_init_core_vmin (called after handle_enables)
-    // Mock all cores as disabled for simplicity
-    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
-    {
-        will_return(__wrap_core_info_get_enable_cores_result, 0x00000000);
-    }
-    expect_any(__wrap_pwr_tlm_core_exch_scp_write_vmin, vmin_array);
-    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_vmin, 1);
+    // Since core_aging_en is not set, data_proc_scp_tlm_cmpnt_init_core_vmin should NOT be called
 
     mts_manager_scp_handle_trp_msg(&trp_msg);
 
     assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0002);
     assert_int_equal(pwr_tlm_scp_record_enables.record.vm_memory_pwr_en, 1);
+}
+
+TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_sync_enables_core_aging_enabled, test_setup, nullptr)
+{
+    trp_msg_t trp_msg = {{{{0}}}};
+
+    // Test TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH with core_aging_en enabled
+    trp_msg.hdr.trp_msg_id = TRP_MSG_ID_CLIENT_DEFINED;
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH;
+    tlm_client_msg->payload.scp_records.as_uint16 = 0x0004; // core_aging_en only
+
+    // Mocks for data_proc_scp_tlm_cmpnt_handle_enables_from_mcp with core_aging_en enabled
+    will_return(__wrap_mts_get_this_die_id, 0);
+    will_return_count(__wrap_ddrss_pmu_enable, 0, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+    expect_function_calls(__wrap_FpFwAssertWithArgs, DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT);
+
+    // Since core_aging_en is set, data_proc_scp_tlm_cmpnt_init_core_vmin SHOULD be called
+    // Mock all cores as enabled for this test
+    for (uint32_t i = 0; i < BITTYPE_COUNT; i++)
+    {
+        will_return(__wrap_core_info_get_enable_cores_result, 0xFFFFFFFF);
+    }
+    // Mock power_runconfig_get_core_vmin_mv for each core
+    for (uint32_t core_id = 0; core_id < NUM_AP_CORES_PER_DIE; core_id++)
+    {
+        expect_value(__wrap_power_runconfig_get_core_vmin_mv, core_id, core_id);
+        will_return(__wrap_power_runconfig_get_core_vmin_mv, 800 + core_id); // Unique Vmin per core
+        will_return(__wrap_power_runconfig_get_core_vmin_mv, 0);             // Success status
+    }
+    // Expect FPFW_RUNTIME_ASSERT_EXT calls for each core
+    expect_function_calls(__wrap_FpFwAssertWithArgs, NUM_AP_CORES_PER_DIE);
+
+    expect_any(__wrap_pwr_tlm_core_exch_scp_write_vmin, vmin_array);
+    expect_function_calls(__wrap_pwr_tlm_core_exch_scp_write_vmin, 1);
+
+    mts_manager_scp_handle_trp_msg(&trp_msg);
+
+    assert_int_equal(pwr_tlm_scp_record_enables.as_uint16, 0x0004);
+    assert_int_equal(pwr_tlm_scp_record_enables.record.core_aging_en, 1);
 }
 
 TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_gen_pwr_package_both_disabled, test_setup, nullptr)

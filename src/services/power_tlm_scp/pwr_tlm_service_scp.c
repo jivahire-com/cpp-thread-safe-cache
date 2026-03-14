@@ -135,8 +135,11 @@ void mts_manager_scp_handle_trp_msg(p_trp_msg_t trp_msg)
         {
         case TLM_CLIENT_CMD_SYNC_REC_ENABLES_MCP_2_SCP_PUSH:
             data_proc_scp_tlm_cmpnt_handle_enables_from_mcp(tlm_client_msg->payload.scp_records);
-            // Initialize and write core Vmin values to core exchange
-            data_proc_scp_tlm_cmpnt_init_core_vmin();
+            // Initialize and write core Vmin values to core exchange if aging counter is enabled
+            if (pwr_tlm_scp_record_enables.record.core_aging_en)
+            {
+                data_proc_scp_tlm_cmpnt_init_core_vmin();
+            }
             break;
 
         case TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH:

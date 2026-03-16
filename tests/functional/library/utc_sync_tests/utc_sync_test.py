@@ -435,11 +435,11 @@ class utc_sync_test(pldm_common):
 
             # Compute diffs
             mcp_sec_f = mcp_ms / 1000.0
-            raw_diff = mcp_sec_f - float(bmc_sec)
+            raw_diff = float(bmc_sec) - mcp_sec_f
             result[f"raw_diff_{sample_num}_sec"] = raw_diff
 
-            # Corrected diff: add midpoint gap for raw=(MCP-BMC)
-            corrected_diff = raw_diff + capture_gap
+            # Corrected diff: subtract midpoint gap for raw=(BMC-MCP)
+            corrected_diff = raw_diff - capture_gap
             result[f"corrected_diff_{sample_num}_sec"] = corrected_diff
 
             match_ok = abs(corrected_diff) <= tolerance_sec
@@ -453,13 +453,14 @@ class utc_sync_test(pldm_common):
 
             command_latency = capture_gap
 
-            self.log.info(f"  Raw diff (MCP - BMC) : {raw_diff:+.3f} s")
+            self.log.info(f"  Raw diff (BMC - MCP) : {raw_diff:+.3f} s")
             self.log.info(
-                f"  Latency added by running commands : {command_latency:+.3f} s"
+                "  Latency correction from capture timing "
+                f"(midpoint gap): {command_latency:+.3f} s"
             )
             self.log.info(
-                f"  Corrected diff       : {raw_diff:+.3f} "
-                f"+ {command_latency:+.3f} = {corrected_diff:+.3f} s"
+                f"  Corrected diff (BMC - MCP): {raw_diff:+.3f} "
+                f"- ({command_latency:+.3f}) = {corrected_diff:+.3f} s"
             )
             self.log.info(
                 f"  {status} Sample {sample_num}: "

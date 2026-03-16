@@ -277,6 +277,9 @@ fpfw_status_t adv_logger_compress(size_t* dst_size)
 
     do
     {
+        // Sleep briefly to allow other threads to run since compression can be time-consuming
+        tx_thread_sleep(1);
+
         if (strm.avail_out == 0)
         {
             size_t have = OUT_CHUNK_BUFFER_SIZE - strm.avail_out;

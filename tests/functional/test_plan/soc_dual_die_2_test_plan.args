@@ -17,3 +17,8 @@
 
 ## CPER Functional Tests
 ./../../../tests/functional/test_suites/cper_tests/cper_functional_test_soc.robot
+
+## SMMU Error Injection Tests
+./../../../tests/functional/test_suites/smmu_error_injection/smmu_ce_error_injection.robot
+./../../../tests/functional/test_suites/smmu_error_injection/smmu_ue_error_injection.robot
+

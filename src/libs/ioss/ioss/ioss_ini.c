@@ -22,6 +22,7 @@
 #include <silibs_status.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <system_info.h>
 #include <usb_config_variable.h>
 #include <usb_knobs.h>
 #include <usb_struct_defaults.h>
@@ -47,6 +48,11 @@ static ioss_cfg_t ioss_init_knobs = {
 void ioss_ini()
 {
     silibs_status_t sts = SILIBS_SUCCESS;
+
+    if (system_info_is_warm_start())
+    {
+        return;
+    }
 
     uint32_t resolved_ioss_base_addr = MSCP_ATU_AP_WINDOW_IOSS_D0_BASE_ADDR;
 

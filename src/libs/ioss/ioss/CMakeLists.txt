@@ -18,6 +18,7 @@ target_link_libraries(${TARGET}
         ms::lib::crash_dump
         ms::lib::variable_services
         ms::lib::error_codes
+        ms::lib::system_info
 )
 
 target_include_directories(${TARGET}

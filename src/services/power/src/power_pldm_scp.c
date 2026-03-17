@@ -10,6 +10,7 @@
 /*------------- Includes -----------------*/
 #include "power_pldm_scp.h"
 
+#include "power_events.h"
 #include "power_i.h"
 #include "power_runconfig.h"
 #include "power_runconfig_i.h"
@@ -102,11 +103,13 @@ static pwr_pldm_icc_req_ctx_t req_ctx[PWR_PLDM_MAX_REQUEST] = {
 static void power_cap_completed_callback(int result, uint16_t current_cap, uint16_t previous_cap_watts)
 {
     uint16_t resolved_prev_cap = (previous_cap_watts == UINT16_MAX) ? pwr_cap_upper_limit : previous_cap_watts;
+    uint16_t display_current = (current_cap == NO_POWER_CAP) ? pwr_cap_upper_limit : current_cap;
+    uint16_t display_previous = (resolved_prev_cap == NO_POWER_CAP) ? pwr_cap_upper_limit : resolved_prev_cap;
+    uint8_t status_code = (MP_POWER_CAP_SUCCESS == result) ? 0 : 1;
 
-    POWER_LOG_INFO("[PLDM POWER CAP UPDATE] Result %d Current %s Previous %s\n",
-                   result,
-                   (current_cap == NO_POWER_CAP) ? "NO CAPPING" : UINT16_TO_STR(current_cap),
-                   (resolved_prev_cap == NO_POWER_CAP) ? "NO CAPPING" : UINT16_TO_STR(resolved_prev_cap));
+    //! Event trace: Power cap set completion with status, current cap, and previous cap in watts
+    POWER_ET_CAP_UPDATE(status_code, display_current, display_previous);
+    POWER_LOG_TRACE("[PWR PLDM] Cap Set Complete: status=%d, current=%u W, previous=%u W\n", status_code, display_current, display_previous);
     //! At this point the power cap has been finalized, send mcp the response for power cap complete
     //! fill in the response
     pwr_cap_payload.soc_output.status = (MP_POWER_CAP_SUCCESS == result) ? 0 : 1; //! 0 ->success, 1 -> failure
@@ -124,9 +127,9 @@ uint16_t handle_power_cap_request(icc_pwr_cap_request_t* p_cap_request)
     uint16_t current_power_cap = get_current_soc_power_cap();
 
     // Log the received power cap request using the UINT16_TO_STR macro for formatting
-    POWER_LOG_INFO("[PWR PLDM] Received Power Cap Request: Requested %s, Current %s\n",
-                   (requested_pwr_cap == NO_POWER_CAP) ? "NO_POWER_CAP" : UINT16_TO_STR(requested_pwr_cap),
-                   (current_power_cap == NO_POWER_CAP) ? "NO_POWER_CAP" : UINT16_TO_STR(current_power_cap));
+    POWER_LOG_TRACE("[PWR PLDM] Received Power Cap Request: Requested %s, Current %s\n",
+                    (requested_pwr_cap == NO_POWER_CAP) ? "NO_POWER_CAP" : UINT16_TO_STR(requested_pwr_cap),
+                    (current_power_cap == NO_POWER_CAP) ? "NO_POWER_CAP" : UINT16_TO_STR(current_power_cap));
 
     //! Print the contents of p_cap_request
     POWER_LOG_TRACE("[PWR PLDM] p_cap_request contents:\n");
@@ -155,14 +158,15 @@ uint16_t handle_power_cap_request(icc_pwr_cap_request_t* p_cap_request)
         else
         {
             //! response will be sent to bmc post power cap finalize
-            POWER_LOG_INFO("[PWR PLDM] Power cap update pending, new cap %s\n",
-                           (requested_pwr_cap == NO_POWER_CAP) ? "NO_POWER_CAP" : UINT16_TO_STR(requested_pwr_cap));
+            POWER_ET_CAP_PENDING(requested_pwr_cap == NO_POWER_CAP ? pwr_cap_upper_limit : requested_pwr_cap);
+            POWER_LOG_TRACE("[PWR PLDM] Power cap update pending, new cap %s\n",
+                            (requested_pwr_cap == NO_POWER_CAP) ? "NO_POWER_CAP" : UINT16_TO_STR(requested_pwr_cap));
         }
     }
     else
     {
         //! 2b. else Nothing to update, Send response back to BMC
-        POWER_LOG_INFO("[PWR PLDM] Power cap update not required, current cap = requested cap\n");
+        POWER_LOG_TRACE("[PWR PLDM] Power cap update not required, current cap = requested cap\n");
         power_cap_completed_callback(MP_POWER_CAP_SUCCESS, requested_pwr_cap, current_power_cap);
     }
     return requested_pwr_cap;
@@ -245,7 +249,7 @@ static void pwr_pldm_icc_send_cb(void* context, fpfw_status_t status)
     switch (send_payload->msg_header.command)
     {
     case ICC_COMMAND_PLDM_PWR_CAP:
-        POWER_LOG_INFO("[PWR PLDM] Power Cap Request Response Send Completion\n");
+        POWER_LOG_TRACE("[PWR PLDM] Power Cap Request Response Send Completion\n");
         icc_status = fpfw_icc_base_recv(p_icc_base_ctx, &req_ctx[PWR_PLDM_CAP_REQUEST].recv_param);
         FPFW_RUNTIME_ASSERT_EXT(icc_status == FPFW_ICC_BASE_STATUS_SUCCESS, icc_status, 0, 0, 0);
         break;

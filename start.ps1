@@ -7,7 +7,8 @@ param (
     [string] $Configuration = "Debug",
     [switch] $SkipEnv = $false,
     [switch] $MSCP_vUART = $false,
-    [switch] $Localtest = $false
+    [switch] $Localtest = $false,
+    [switch] $Fast = $false
 )
 
 $Name = (Get-Item "$PSScriptRoot").Name
@@ -19,7 +20,7 @@ foreach ($Module in $Modules) {
 
 # Call the environment setup with input
 if (-not $SkipEnv) {
-    Set-RepoEnv -Toolchain $Toolchain -Configuration $Configuration -MSCP_vUART $MSCP_vUART
+    Set-RepoEnv -Toolchain $Toolchain -Configuration $Configuration -MSCP_vUART $MSCP_vUART -Fast:$Fast
 }
 
 if ($Localtest) {

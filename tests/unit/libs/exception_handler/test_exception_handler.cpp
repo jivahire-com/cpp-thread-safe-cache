@@ -193,6 +193,14 @@ void __wrap_mmio_update32(volatile uint32_t* addr, uint32_t data, uint32_t mask)
     check_expected(mask);
     function_called();
 }
+
+int __wrap_clear_poison_memory(uintptr_t poison_addr)
+{
+    FPFW_UNUSED(poison_addr);
+    function_called();
+    return 0;
+}
+
 //
 // Tests
 //
@@ -368,6 +376,9 @@ TEST_FUNCTION(test_bus_fault_handler_d0_arsm_UE, nullptr, nullptr)
                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK));
     expect_function_call(__wrap_mmio_write32);
+    will_return(__wrap_atu_find_map, 0);
+    will_return(__wrap_atu_find_map, 0);
+    expect_function_call(__wrap_clear_poison_memory);
     expect_function_call(__wrap_atu_unmap);
 
     expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
@@ -434,6 +445,9 @@ TEST_FUNCTION(test_bus_fault_handler_d1_arsm_UE, nullptr, nullptr)
                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK));
     expect_function_call(__wrap_mmio_write32);
+    will_return(__wrap_atu_find_map, 0);
+    will_return(__wrap_atu_find_map, 0);
+    expect_function_call(__wrap_clear_poison_memory);
     expect_function_call(__wrap_atu_unmap);
 
     expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
@@ -500,6 +514,9 @@ TEST_FUNCTION(test_bus_fault_handler_d0_rsm_UE, nullptr, nullptr)
                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK));
     expect_function_call(__wrap_mmio_write32);
+    will_return(__wrap_atu_find_map, 0);
+    will_return(__wrap_atu_find_map, 0);
+    expect_function_call(__wrap_clear_poison_memory);
     expect_function_call(__wrap_atu_unmap);
 
     expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
@@ -566,6 +583,9 @@ TEST_FUNCTION(test_bus_fault_handler_d1_rsm_UE, nullptr, nullptr)
                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ER_MASK | SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_AV_MASK |
                   SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_SERR_MASK));
     expect_function_call(__wrap_mmio_write32);
+    will_return(__wrap_atu_find_map, 0);
+    will_return(__wrap_atu_find_map, 0);
+    expect_function_call(__wrap_clear_poison_memory);
     expect_function_call(__wrap_atu_unmap);
 
     expect_value(__wrap_hm_submit_cper_cd_state, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);

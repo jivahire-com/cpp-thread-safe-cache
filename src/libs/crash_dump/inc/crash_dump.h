@@ -388,8 +388,10 @@ bool crash_dump_is_UE(void);
 
 /**
  * @brief Register variables to collect minimal info for accelerator crash dump
+ * 
+ * @param dump_type: MINI_DUMP/FULL_DUMP
  */
-void crash_dump_register_accel_cd();
+void crash_dump_register_accel_cd(crash_dump_type_t dump_type);
 
 /**
  * @brief This function initializes the CD framework for accel default CD

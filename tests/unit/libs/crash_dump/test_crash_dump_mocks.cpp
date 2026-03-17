@@ -14,8 +14,9 @@
 extern "C" {
 #include "test_crash_dump_i.h"
 
-#include <CrashDump.h>                // for FPFW_CD_DUMP_CALLBACK
-#include <FpFwUtils.h>                // for FPFW_UNUSED
+#include <CrashDump.h> // for FPFW_CD_DUMP_CALLBACK
+#include <FpFwUtils.h> // for FPFW_UNUSED
+#include <accelerator_ip.h>
 #include <crash_dump.h>               // for crash_dump_config_t, GetCrashDu...
 #include <crash_dump_dfwk.h>          // for crash_dump_interface_t
 #include <fpfw_icc_base.h>            // for icc_base_recv_complete_notify
@@ -700,6 +701,13 @@ uint64_t __wrap_utc_sync_client_get_current_time_epoch_ms()
 uint64_t __wrap_gtimer_get_timestamp_ms()
 {
     return 0x123456789ABCDEF;
+}
+
+unsigned int __wrap_accel_boot_status_get_sem(ACCEL_ID accel_type)
+{
+    check_expected(accel_type);
+
+    return mock_type(unsigned int);
 }
 
 } // extern "C"

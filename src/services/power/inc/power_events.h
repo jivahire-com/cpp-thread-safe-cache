@@ -41,6 +41,13 @@
                                     (wait_fll_lock_timer_exp), (wait_fll_cal_timer_exp), \
                                     (wait_freq_change_timer_exp), (pllrawlockerror), \
                                     (fllrawlockerror), (pll_error_mask_cr))
+#define POWER_ET_ALL_LOOP_METRICS(c_avg, vr_avg, pvt_avg) \
+    EventWritePowerAllLoopMetricsInUs(c_avg, vr_avg, pvt_avg)
+#define POWER_ET_CAP_UPDATE(status, current_w, previous_w) \
+    EventWritePowerCapUpdateComplete((current_w), (previous_w), (status))
+#define POWER_ET_CAP_PENDING(new_cap_w) \
+    EventWritePowerCapUpdatePending((new_cap_w))
+
 #ifdef COREBITS_FMT_DATA
     #define POWER_ET_AFFECTED_CORES(type, cores) EventWritePowerWarnParamAffectedCores(COREBITS_FMT_DATA(cores), (type))
 #endif
@@ -109,7 +116,6 @@ typedef enum
     POWER_ET_TYPE_PVT_TELEM_TIMER_CB,
     POWER_ET_D2D_SYNC_WAITING,
     POWER_ET_TYPE_DTS_TEMP_OUT_OF_RANGE,
-    POWER_ET_TYPE_ALL_LOOPS_ITERATION_METRICS,
 
     POWER_ET_TYPE_COUNT
 }   E_POWER_ET_TYPE_T;
@@ -129,6 +135,8 @@ typedef enum {
     POWER_ET_ID_TYPE_SIGNAL_EVT,
     POWER_ET_ID_TYPE_PLL_ERROR,
     POWER_ET_ID_TYPE_ALL_LOOP_METRICS,
+    POWER_ET_ID_TYPE_CAP_UPDATE_COMPLETE,
+    POWER_ET_ID_TYPE_CAP_UPDATE_PENDING,
 
     POWER_ET_ID_TYPE_COUNT
 } E_POWER_ET_ID_TYPES_T;
@@ -256,7 +264,20 @@ FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID f
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, ctrl_loop_avg),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, vr_loop_avg),
                      FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT32, pvt_loop_avg))
-#define POWER_ET_ALL_LOOP_METRICS(c_avg, vr_avg, pvt_avg) \
-    EventWritePowerAllLoopMetricsInUs(c_avg, vr_avg, pvt_avg)
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
+                     POWER_ET_ID_TYPE_CAP_UPDATE_COMPLETE,      // Event ID, for this provider
+                     PowerCapUpdateComplete,                    // Event Name
+                     FPFW_ET_LEVEL_INFO,                        // Event Log Level, filterable by provider mask
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, current_cap_w),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, previous_cap_w),
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT8, status))
+
+FPFW_ET_DEFINE_EVENT(EVENT_TRACE_PROVIDER_ID_SCP_POWER,         // Provider ID for this event
+                     POWER_ET_ID_TYPE_CAP_UPDATE_PENDING,       // Event ID, for this provider
+                     PowerCapUpdatePending,                     // Event Name
+                     FPFW_ET_LEVEL_INFO,                        // Event Log Level, filterable by provider mask
+                     FPFW_ET_DEFINE_FIELD(FPFW_ET_UINT16, new_cap_w))
+
 
 /*--------- Function Prototypes ----------*/

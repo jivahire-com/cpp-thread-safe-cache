@@ -64,6 +64,14 @@ static crash_dump_context_t mock_cd_context;
 static uint8_t mock_crashdump_buffer[CRASH_DUMP_BUFFER_SIZE];
 static FPFW_CD_CUSTOM_CHUNK_GET_SIZE_CALLBACK mock_ap_wdt_chunk_get_size = NULL;
 static FPFW_CD_CUSTOM_CHUNK_UPDATE_CALLBACK mock_ap_wdt_chunk_write = NULL;
+static uint32_t mock_ap_wdt_payload_size = 0;
+
+/* Allow tests to control NVIC status so we can cover both branches in hm_ap_wdt_isr() */
+static nvic_status_t g_nvic_get_current_irq_status = NVIC_STATUS_SUCCESS;
+
+/* Optional: used to assert payloadSize passed to CdRegisterCustomChunk */
+static uint32_t g_expected_chunk_payload_size = 0;
+static void* mock_ap_wdt_client_ctx = NULL;
 
 /*------------- Functions ----------------*/
 //
@@ -82,7 +90,7 @@ nvic_status_t __wrap_nvic_get_current_irq(uint32_t* irq_num)
     *irq_num = mock_type(uint32_t);
     function_called();
 
-    return NVIC_STATUS_SUCCESS;
+    return g_nvic_get_current_irq_status;
 }
 
 nvic_status_t __wrap_nvic_irq_clear_pending(uint32_t irq_num)
@@ -191,7 +199,16 @@ bool __wrap_CdRegisterCustomChunk(FPFwCrashDumpCtx* ctx,
     assert_non_null(clientContext);
     assert_non_null(getSizeCallback);
     assert_non_null(updateCallback);
-    assert_int_equal(payloadSize, 0); // Size is determined by callback
+
+    /* After COB-99 fix, hm_ap_wdt_isr may pass a validated fixed payload size */
+    if (g_expected_chunk_payload_size != 0)
+    {
+        assert_int_equal(payloadSize, g_expected_chunk_payload_size);
+    }
+
+    mock_ap_wdt_payload_size = payloadSize;
+    mock_ap_wdt_client_ctx = clientContext;
+
     assert_int_equal(priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 
     mock_ap_wdt_chunk_get_size = getSizeCallback;
@@ -258,7 +275,9 @@ uint64_t mock_FPFwCDMemcpyLocalToGlobal(struct FpFwCDMemoryAPIs* memAPIs, uint64
 
 TEST_FUNCTION(test_hm_ap_wdt_isr_success, nullptr, nullptr)
 {
+    g_nvic_get_current_irq_status = NVIC_STATUS_SUCCESS;
     test_ap_wdt_occurred = false;
+    g_expected_chunk_payload_size = 0;
 
     // Initialize mock crash dump context
     memset(&mock_crash_dump_ctx, 0, sizeof(mock_crash_dump_ctx));
@@ -361,15 +380,268 @@ TEST_FUNCTION(test_hm_ap_wdt_isr_success, nullptr, nullptr)
     // Call the ISR
     hm_ap_wdt_isr();
 
+    /* Ensure callbacks were registered and we captured the client context */
+    assert_non_null(mock_ap_wdt_chunk_get_size);
+    assert_non_null(mock_ap_wdt_chunk_write);
+    assert_non_null(mock_ap_wdt_client_ctx);
+
     // Verify warm start data was set
     assert_true(test_ap_wdt_occurred);
 
     // Set up mock callbacks for custom chunk
-    mock_ap_wdt_chunk_get_size(mock_fw_hdr);
+
+    // After COB-99 fix, callbacks expect the opaque clientContext, not kng_ap_fw_hdr* */
+    uint32_t payload_size = mock_ap_wdt_chunk_get_size(mock_ap_wdt_client_ctx);
+
     expect_value(mock_FPFwCDMemcpyLocalToGlobal, dest, 0x1234);
-    expect_value(mock_FPFwCDMemcpyLocalToGlobal, n, CRASH_DUMP_BUFFER_SIZE);
+    expect_value(mock_FPFwCDMemcpyLocalToGlobal, n, payload_size);
     expect_function_call(mock_FPFwCDMemcpyLocalToGlobal);
-    mock_ap_wdt_chunk_write(&mock_cd_context.type_ctx[CRASH_DUMP_TYPE_FULL]->crash_dump_ctx, 0x1234, mock_fw_hdr, 0);
+
+    // IMPORTANT: pass clientContext (opaque) and payload_size (even if production ignores payloadSize)
+    mock_ap_wdt_chunk_write(&mock_cd_context.type_ctx[CRASH_DUMP_TYPE_FULL]->crash_dump_ctx, 0x1234, mock_ap_wdt_client_ctx, payload_size);
+}
+
+TEST_FUNCTION(test_hm_ap_wdt_isr_cd_not_completed, nullptr, nullptr)
+{
+    test_ap_wdt_occurred = false;
+    g_expected_chunk_payload_size = 0;
+
+    memset(&mock_crash_dump_ctx, 0, sizeof(mock_crash_dump_ctx));
+    memset(&mock_type_ctx, 0, sizeof(mock_type_ctx));
+    memset(&mock_cd_context, 0, sizeof(mock_cd_context));
+    mock_crash_dump_ctx.memAPIs.FPFwCDMemcpyLocalToGlobal = mock_FPFwCDMemcpyLocalToGlobal;
+    mock_type_ctx.crash_dump_ctx = mock_crash_dump_ctx;
+    mock_cd_context.type_ctx[CRASH_DUMP_TYPE_FULL] = &mock_type_ctx;
+
+    memset(mock_crashdump_buffer, 0, sizeof(mock_crashdump_buffer));
+    kng_ap_fw_hdr* fw_hdr = (kng_ap_fw_hdr*)mock_crashdump_buffer;
+    fw_hdr->size = 0x80;
+    fw_hdr->cd_status = 0U; // NOT completed
+
+    /* NVIC */
+    expect_function_call(__wrap_nvic_get_current_irq);
+    will_return(__wrap_nvic_get_current_irq, TEST_IRQ_NUM);
+
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, TEST_IRQ_NUM);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    /* Warm start */
+    expect_value(__wrap_ws_data_put, id, WARM_START_ID_AP_WDT);
+    expect_value(__wrap_ws_data_put, size, sizeof(bool));
+    expect_function_call(__wrap_ws_data_put);
+
+    /* CPER */
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_AP_WDT);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
+    /* Map NS watchdog */
+    will_return(__wrap_idsw_get_die_id, 0);
+    expect_function_call(__wrap_idsw_get_die_id);
+
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, TEST_NS_BASE_ADDR);
+    expect_function_call(__wrap_atu_map);
+
+    expect_value(__wrap_mmio_read32, addr, TEST_NS_BASE_ADDR + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS);
+    will_return(__wrap_mmio_read32, TEST_WCS_VALUE);
+    expect_function_call(__wrap_mmio_read32);
+
+    /* Map S watchdog */
+    will_return(__wrap_idsw_get_die_id, 0);
+    expect_function_call(__wrap_idsw_get_die_id);
+
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, TEST_S_BASE_ADDR);
+    expect_function_call(__wrap_atu_map);
+
+    expect_value(__wrap_mmio_read32, addr, TEST_S_BASE_ADDR + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS);
+    will_return(__wrap_mmio_read32, TEST_WCS_VALUE);
+    expect_function_call(__wrap_mmio_read32);
+
+    /* crash_dump_register_address32 ×2 */
+    expect_value(__wrap_crash_dump_register_address32, size, sizeof(ap_watchdog_timer_control_registers_wcs));
+    expect_value(__wrap_crash_dump_register_address32, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    expect_function_call(__wrap_crash_dump_register_address32);
+
+    expect_value(__wrap_crash_dump_register_address32, size, sizeof(ap_watchdog_timer_control_registers_wcs));
+    expect_value(__wrap_crash_dump_register_address32, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    expect_function_call(__wrap_crash_dump_register_address32);
+
+    /* Unmap NS + S */
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+
+    /* Map AP FW crashdump header */
+    will_return(__wrap_idsw_get_die_id, 0);
+    expect_function_call(__wrap_idsw_get_die_id);
+
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, (uint32_t)mock_crashdump_buffer);
+    expect_function_call(__wrap_atu_map);
+
+    /* crash_dump_context */
+    expect_function_call(__wrap_crash_dump_context);
+
+    /* CdRegisterCustomChunk IS still called even if cd_status != COMPLETED */
+    expect_function_call(__wrap_CdRegisterCustomChunk);
+
+    /* Bug check still happens */
+    expect_function_call(__wrap_crash_dump_bug_check);
+
+    /* Unmap crashdump */
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+
+    hm_ap_wdt_isr();
+
+    assert_true(test_ap_wdt_occurred);
+}
+
+TEST_FUNCTION(test_hm_ap_wdt_isr_nvic_failure, nullptr, nullptr)
+{
+
+    /*
+     * NOTE:
+     * In hm_ap_wdt_isr(), NVIC status only gates nvic_irq_clear_pending().
+     * ws_data_put(), CPER submission, watchdog register reads, crash_dump_register_address32,
+     * and unmap are unconditional. The crashdump/BUG_CHECK path is only executed when die_id == 0.
+     * To keep this test minimal and deterministic, force die_id != 0 so BUG_CHECK is skipped.
+     */
+
+    /* NVIC: return an IRQ number; wrapper returns SUCCESS so clear_pending will be called */
+    g_nvic_get_current_irq_status = NVIC_STATUS_SUCCESS;
+    expect_function_call(__wrap_nvic_get_current_irq);
+    will_return(__wrap_nvic_get_current_irq, 0); // irq value unused
+
+    expect_value(__wrap_nvic_irq_clear_pending, irq_num, 0);
+    expect_function_call(__wrap_nvic_irq_clear_pending);
+
+    /* Warm start: unconditional */
+    expect_value(__wrap_ws_data_put, id, WARM_START_ID_AP_WDT);
+    expect_value(__wrap_ws_data_put, size, sizeof(bool));
+    expect_function_call(__wrap_ws_data_put);
+
+    /* CPER: unconditional */
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_AP_WDT);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
+    /* Map NS watchdog: idsw_get_die_id then atu_map + mmio_read32 */
+    will_return(__wrap_idsw_get_die_id, 1); /* die_id != 0 to skip crashdump/BUG_CHECK later */
+    expect_function_call(__wrap_idsw_get_die_id);
+
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, TEST_NS_BASE_ADDR);
+    expect_function_call(__wrap_atu_map);
+
+    expect_value(__wrap_mmio_read32, addr, TEST_NS_BASE_ADDR + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS);
+    will_return(__wrap_mmio_read32, TEST_WCS_VALUE);
+    expect_function_call(__wrap_mmio_read32);
+
+    /* Map S watchdog: idsw_get_die_id then atu_map + mmio_read32 */
+    will_return(__wrap_idsw_get_die_id, 1);
+    expect_function_call(__wrap_idsw_get_die_id);
+
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, TEST_S_BASE_ADDR);
+    expect_function_call(__wrap_atu_map);
+
+    expect_value(__wrap_mmio_read32, addr, TEST_S_BASE_ADDR + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS);
+    will_return(__wrap_mmio_read32, TEST_WCS_VALUE);
+    expect_function_call(__wrap_mmio_read32);
+
+    /* crash_dump_register_address32 x2: unconditional */
+    expect_value(__wrap_crash_dump_register_address32, size, sizeof(ap_watchdog_timer_control_registers_wcs));
+    expect_value(__wrap_crash_dump_register_address32, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    expect_function_call(__wrap_crash_dump_register_address32);
+
+    expect_value(__wrap_crash_dump_register_address32, size, sizeof(ap_watchdog_timer_control_registers_wcs));
+    expect_value(__wrap_crash_dump_register_address32, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    expect_function_call(__wrap_crash_dump_register_address32);
+
+    /* Unmap NS + S: unconditional */
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+
+    /* Final idsw_get_die_id inside hm_ap_wdt_isr(): keep die_id != 0 so crashdump/BUG_CHECK is skipped */
+    will_return(__wrap_idsw_get_die_id, 1);
+    expect_function_call(__wrap_idsw_get_die_id);
+
+    hm_ap_wdt_isr();
+}
+
+/*
+ * NEW: Cover nvic_status != NVIC_STATUS_SUCCESS branch.
+ * Only nvic_irq_clear_pending is gated; the rest of hm_ap_wdt_isr() is unconditional.
+ * Force die_id != 0 to avoid the crashdump/BUG_CHECK block and keep expectations minimal.
+ */
+TEST_FUNCTION(test_hm_ap_wdt_isr_nvic_error_no_clear_pending, nullptr, nullptr)
+{
+    g_nvic_get_current_irq_status = NVIC_STATUS_ERROR;
+    test_ap_wdt_occurred = false;
+
+    /* NVIC called, but clear_pending must NOT be called */
+    expect_function_call(__wrap_nvic_get_current_irq);
+    will_return(__wrap_nvic_get_current_irq, TEST_IRQ_NUM);
+
+    /* Warm start is unconditional */
+    expect_value(__wrap_ws_data_put, id, WARM_START_ID_AP_WDT);
+    expect_value(__wrap_ws_data_put, size, sizeof(bool));
+    expect_function_call(__wrap_ws_data_put);
+
+    /* CPER is unconditional */
+    expect_value(__wrap_hm_submit_cper, error_domain_idx, ACPI_ERROR_DOMAIN_AP_WDT);
+    expect_value(__wrap_hm_submit_cper, err_severity, ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL);
+    expect_value(__wrap_hm_submit_cper, err_record_section_size, sizeof(acpi_cper_section_t));
+    expect_function_call(__wrap_hm_submit_cper);
+
+    /* Map NS watchdog */
+    will_return(__wrap_idsw_get_die_id, 1);
+    expect_function_call(__wrap_idsw_get_die_id);
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, TEST_NS_BASE_ADDR);
+    expect_function_call(__wrap_atu_map);
+    expect_value(__wrap_mmio_read32, addr, TEST_NS_BASE_ADDR + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS);
+    will_return(__wrap_mmio_read32, TEST_WCS_VALUE);
+    expect_function_call(__wrap_mmio_read32);
+
+    /* Map S watchdog */
+    will_return(__wrap_idsw_get_die_id, 1);
+    expect_function_call(__wrap_idsw_get_die_id);
+    expect_value(__wrap_atu_map, atu_id, ATU_ID_MSCP);
+    will_return(__wrap_atu_map, TEST_S_BASE_ADDR);
+    expect_function_call(__wrap_atu_map);
+    expect_value(__wrap_mmio_read32, addr, TEST_S_BASE_ADDR + AP_WATCHDOG_TIMER_CONTROL_REGISTERS_WCS_ADDRESS);
+    will_return(__wrap_mmio_read32, TEST_WCS_VALUE);
+    expect_function_call(__wrap_mmio_read32);
+
+    /* crash_dump_register_address32 x2 */
+    expect_value(__wrap_crash_dump_register_address32, size, sizeof(ap_watchdog_timer_control_registers_wcs));
+    expect_value(__wrap_crash_dump_register_address32, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    expect_function_call(__wrap_crash_dump_register_address32);
+    expect_value(__wrap_crash_dump_register_address32, size, sizeof(ap_watchdog_timer_control_registers_wcs));
+    expect_value(__wrap_crash_dump_register_address32, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    expect_function_call(__wrap_crash_dump_register_address32);
+
+    /* Unmap NS + S */
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+    expect_value(__wrap_atu_unmap, atu_id, ATU_ID_MSCP);
+    expect_function_call(__wrap_atu_unmap);
+
+    /* Final die_id check (skip crashdump/BUG_CHECK) */
+    will_return(__wrap_idsw_get_die_id, 1);
+    expect_function_call(__wrap_idsw_get_die_id);
+
+    hm_ap_wdt_isr();
+    assert_true(test_ap_wdt_occurred);
 }
 
 TEST_FUNCTION(test_register_ap_wdt_error_domain_cold_boot, nullptr, nullptr)

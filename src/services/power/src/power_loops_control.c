@@ -650,8 +650,17 @@ static void set_plimit_after_handler(int event, const void* event_data)
 
 static void power_cap_completed_callback(int result, uint16_t current_cap, uint16_t previous_cap_watts)
 {
-    //! Do we need this callback for anything else?
-    POWER_LOG_INFO("[POWER CAP UPDATE] result %d Current %d Previous %d\n", result, current_cap, previous_cap_watts);
+    uint16_t resolved_prev_cap = (previous_cap_watts == UINT16_MAX) ? power_runconfig_get()->derived.soc_maximum_thermal_watts_limit
+                                                                    : previous_cap_watts;
+    uint16_t display_current =
+        (current_cap == UINT16_MAX) ? power_runconfig_get()->derived.soc_maximum_thermal_watts_limit : current_cap;
+    uint16_t display_previous = (resolved_prev_cap == UINT16_MAX) ? power_runconfig_get()->derived.soc_maximum_thermal_watts_limit
+                                                                  : resolved_prev_cap;
+    uint8_t status_code = (result == 0) ? 0 : 1;
+
+    //! Event trace: Power cap update completion with status, current cap, and previous cap in watts
+    POWER_ET_CAP_UPDATE(status_code, display_current, display_previous);
+    POWER_LOG_TRACE("[POWER CAP UPDATE] status=%d, current=%u W, previous=%u W\n", status_code, display_current, display_previous);
 }
 
 static void exchange_inputs_handler(int event, const void* event_data)
@@ -709,7 +718,8 @@ static void exchange_inputs_handler(int event, const void* event_data)
                 }
                 else
                 {
-                    POWER_LOG_INFO("[POWER CAP UPDATE] Power cap update pending, new cap %d\n", new_vrcpu_cap_die0);
+                    POWER_ET_CAP_PENDING(new_vrcpu_cap_die0);
+                    POWER_LOG_TRACE("[POWER CAP UPDATE] Power cap update pending, new cap %d\n", new_vrcpu_cap_die0);
                     //! track prev received power cap from die 0
                     prev_vrcpu_cap_die0 = new_vrcpu_cap_die0;
                 }

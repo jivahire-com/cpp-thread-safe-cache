@@ -73,13 +73,25 @@ static guid_t AP_WDT_GUID = ACPI_ERROR_TYPE_VENDOR_AP_WDT;
 // {4E4E2C2B-5416-4800-B1D1-59B2C87B3614}
 static const GUID CD_AP_WDT_CHUNK_GUID = {0x4e4e2c2b, 0x5416, 0x4800, {0xb1, 0xd1, 0x59, 0xb2, 0xc8, 0x7b, 0x36, 0x14}};
 
+// Context to avoid double-fetch of size from shared memory across callbacks (COB-99).
+typedef struct ap_wdt_cd_ctx
+{
+    volatile kng_ap_fw_hdr* shared_hdr; // mapped shared memory header
+    uint32_t captured_size;             // captured once in size callback, reused in write callback
+    uint8_t size_captured;              // 0/1 flag
+} ap_wdt_cd_ctx_t;
+
+static ap_wdt_cd_ctx_t s_ap_wdt_cd_ctx;
+
 /*-------------- Functions ---------------*/
 
 // Callback to get payload size
 static uint32_t ap_wdt_chunk_get_size(void* userContext)
 {
     uint32_t retry_count = 0;
-    volatile kng_ap_fw_hdr* fw_hdr = (volatile kng_ap_fw_hdr*)userContext;
+
+    ap_wdt_cd_ctx_t* cd_ctx = (ap_wdt_cd_ctx_t*)userContext;
+    volatile kng_ap_fw_hdr* fw_hdr = cd_ctx->shared_hdr;
 
     // Check cd_status before getting size.
     while (fw_hdr->cd_status != KNG_CD_STATUS_COMPLETED && retry_count < CRASH_DUMP_MAX_RETRY_COUNT)
@@ -97,8 +109,15 @@ static uint32_t ap_wdt_chunk_get_size(void* userContext)
         FPFW_DBGPRINT_WARNING("AP crashdump transfer not complete.\n");
     }
 
-    // Return the size from the mapped header, rounded up to natural alignment
-    return DUMP_ROUND_UP(fw_hdr->size, DUMP_NATURAL_ALIGNMENT);
+    // Capture size exactly once and reuse across callbacks to avoid double-fetch/TOCTOU (COB-99).
+    if (cd_ctx->size_captured == 0)
+    {
+        cd_ctx->captured_size = fw_hdr->size;
+        cd_ctx->size_captured = 1;
+    }
+
+    // Return captured size, rounded up to natural alignment
+    return DUMP_ROUND_UP(cd_ctx->captured_size, DUMP_NATURAL_ALIGNMENT);
 }
 
 // Callback to write payload
@@ -106,7 +125,9 @@ static void ap_wdt_chunk_write(FPFwCrashDumpCtx* ctx, uint64_t dumpOffset, void*
 {
     FPFW_UNUSED(payloadSize);
     uint32_t retry_count = 0;
-    volatile kng_ap_fw_hdr* fw_hdr = (volatile kng_ap_fw_hdr*)userContext;
+
+    ap_wdt_cd_ctx_t* cd_ctx = (ap_wdt_cd_ctx_t*)userContext;
+    volatile kng_ap_fw_hdr* fw_hdr = cd_ctx->shared_hdr;
 
     // Check cd_status before memcpy.
     while (fw_hdr->cd_status != KNG_CD_STATUS_COMPLETED && retry_count < CRASH_DUMP_MAX_RETRY_COUNT)
@@ -121,11 +142,11 @@ static void ap_wdt_chunk_write(FPFwCrashDumpCtx* ctx, uint64_t dumpOffset, void*
 
     if (fw_hdr->cd_status == KNG_CD_STATUS_COMPLETED)
     {
-        FPFW_DBGPRINT_INFO("AP crashdump transfer complete (size=%d).\n", fw_hdr->size);
+        FPFW_DBGPRINT_INFO("AP crashdump transfer complete (size=%u).\n", cd_ctx->captured_size);
     }
 
     // Copy the entire payload from the mapped AP_FW_CRASHDUMP_LOCATION
-    ctx->memAPIs.FPFwCDMemcpyLocalToGlobal(&ctx->memAPIs, dumpOffset, (void*)fw_hdr, fw_hdr->size);
+    ctx->memAPIs.FPFwCDMemcpyLocalToGlobal(&ctx->memAPIs, dumpOffset, (void*)fw_hdr, cd_ctx->captured_size);
 }
 
 uint32_t map_ap_wdog_address(atu_map_entry_t* atu_entry, bool secure)
@@ -228,11 +249,15 @@ void hm_ap_wdt_isr()
 
         kng_ap_fw_hdr* fw_hdr = (kng_ap_fw_hdr*)crashdump_atu_entry.mscp_start_address;
 
-        // Register custom chunk with mapped crashdump address as userContext
+        // Register custom chunk with opaque context to avoid double-fetch of size (COB-99).
+        s_ap_wdt_cd_ctx.shared_hdr = (volatile kng_ap_fw_hdr*)fw_hdr;
+        s_ap_wdt_cd_ctx.captured_size = 0;
+        s_ap_wdt_cd_ctx.size_captured = 0;
+
         CdRegisterCustomChunk(&crash_dump_context()->type_ctx[CRASH_DUMP_TYPE_FULL]->crash_dump_ctx,
                               (GUID)CD_AP_WDT_CHUNK_GUID,
-                              fw_hdr,
-                              0,
+                              &s_ap_wdt_cd_ctx,
+                              AP_FW_CRASHDUMP_REGION_SIZE,
                               ap_wdt_chunk_get_size,
                               ap_wdt_chunk_write,
                               FPFW_CD_DUMP_PRIORITY_CRITICAL);

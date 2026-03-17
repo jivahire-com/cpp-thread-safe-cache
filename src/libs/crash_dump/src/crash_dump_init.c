@@ -112,7 +112,7 @@ KNG_STATUS crash_dump_register_dump(crash_dump_type_context_t* type_context)
     crash_dump_register_threadx(type_context);
 
     // Register accel irq info
-    crash_dump_register_accel_cd();
+    crash_dump_register_accel_cd(type_context->type);
 
     // Register serial output capture callback
     crash_dump_register_serial_output(type_context);

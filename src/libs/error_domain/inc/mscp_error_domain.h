@@ -90,6 +90,12 @@ fpfw_icc_base_ctx_t* get_mhu_handle(void);
  */
 void set_mhu_handle(fpfw_icc_base_ctx_t* icc_ctx);
 
+/**
+ * @brief Clear poison memory, 8b clear is performed for the given address range.
+ *  
+ */
+int clear_poison_memory(uintptr_t poison_addr);
+
 #if defined (SCP_RUNTIME_INIT)
 /**
  * @brief Register the SCP error domain.

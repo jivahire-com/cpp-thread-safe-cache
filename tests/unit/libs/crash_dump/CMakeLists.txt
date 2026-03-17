@@ -38,6 +38,7 @@ target_link_libraries(${TARGET}
     ms::cmocka::testrunner
     ms::cmsis::interface
     ms::driver::pldm    # PLDM_DRV_WORKAROUND
+    ms::lib::accelerator_ip
     ms::lib::cortex_m7::nvic
     ms::lib::crash_dump
     ms::lib::icc_platform_defines
@@ -99,6 +100,7 @@ mock_target(${TARGET}
     CdRegisterCallback
     CdRegisterRegisterSet
     CdRegisterCustomChunk
+    accel_boot_status_get_sem
     atu_svc_accel_atu_addr
     fpfw_icc_base_recv
     fpfw_icc_base_recv_sync
@@ -135,4 +137,5 @@ mock_target(${TARGET}
     update_timestamp_in_cd
     utc_sync_client_get_current_time_epoch_ms
     gtimer_get_timestamp_ms
+    accel_boot_status_get_sem
 )

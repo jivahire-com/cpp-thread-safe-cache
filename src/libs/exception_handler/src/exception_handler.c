@@ -262,6 +262,19 @@ static bool check_shared_sram_ecc_ras_fault_internal(bool is_arsm,
                                        SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_PN_MASK));
 
         MMIO_WRITE32(atu_entry->mscp_start_address + SHARED_SRAM_ECC_RAS_REGISTERS_SRAMECC_ERRSTATUS_ADDRESS, err_clr_mask);
+
+        atu_map_entry_t fault_addr_map_entry = {
+            .ap_base_address = err_addr,
+            .mscp_start_address = 0,
+            .mscp_end_address = 0,
+            .attribute.as_uint32 = atu_entry->attribute.as_uint32,
+        };
+
+        if (atu_find_map(ATU_ID_MSCP, &fault_addr_map_entry) == SILIBS_SUCCESS)
+        {
+            clear_poison_memory(fault_addr_map_entry.mscp_start_address);
+        }
+
         ret = true;
     }
 

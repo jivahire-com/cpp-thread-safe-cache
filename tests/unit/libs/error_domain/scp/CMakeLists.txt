@@ -4,6 +4,7 @@ set(TARGET scp_error_domain.test)
 
 set(SOURCES
     test_error_domain_register_scp.cpp
+    test_error_domain_common.cpp
     ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_domain_scp.c
     ${CMAKE_SOURCE_DIR}/src/libs/error_domain/src/error_injection_scp.c
     # Include silibs_platform.c directly so mmio_read32/mmio_write32 calls from mmio_update32 can be wrapped
@@ -37,6 +38,7 @@ target_link_libraries(${TARGET}
         ms::lib::pex_rng
         ms::lib::scp_interrupts
         ms::cmsis::interface
+        silibs::dmac
 )
 
 # Get private includes for module under test
@@ -98,6 +100,10 @@ mock_target(${TARGET}
     _txe_timer_create
     fpfw_init_get_handle
     crash_dump_register_pre_dump_callback
+    idsw_get_cpu_type
+    dmac_init
+    dmac_start_single_block_transfer
+    dmac_wait_for_transfer_complete
 )
 
 # AP Watchdog ISR Test

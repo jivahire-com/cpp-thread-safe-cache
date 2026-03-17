@@ -152,6 +152,25 @@ TEST_FUNCTION(test_mts_manager_handle_record_enable_disable, test_setup, test_te
 
     // Reset the MPAM VM memory reporting knob
     mpam_vm_mem_reporting_knob_enable = false;
+
+    // Test enabling POWER_TELEMETRY_ELEMENT_CORE_AGING - should send to SCP
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].event_id = POWER_TELEMETRY_ELEMENT_CORE_AGING;
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].state = DCP_EVENTS_ENABLE_STATE_ENABLE;
+
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    mts_manager_handle_record_enable_disable(&trp_msg);
+
+    assert_true(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_AGING]);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
+
+    // Test disabling POWER_TELEMETRY_ELEMENT_CORE_AGING - should send to SCP
+    trp_msg.payload.dcp_msg.payload.events_enable_disable.events[0].state = DCP_EVENTS_ENABLE_STATE_DISABLE;
+
+    expect_function_call(__wrap_mts_client_send_new_trp_msg);
+    mts_manager_handle_record_enable_disable(&trp_msg);
+
+    assert_false(power_pkg_element_enable[POWER_TELEMETRY_ELEMENT_CORE_AGING]);
+    assert_int_equal(trp_msg.payload.dcp_msg.hdr.msg_status, DCP_STATUS_SUCCESS);
 }
 
 TEST_FUNCTION(test_mts_manager_handle_record_enable_disable_fail, test_setup, test_teardown)
@@ -997,6 +1016,7 @@ TEST_FUNCTION(test_mts_manager_send_record_enables_to_scp, test_setup, test_tear
     tlm_scp_record_enables_t enables = {{0}};
     enables.record.drop_count_en = 1;
     enables.record.vm_memory_pwr_en = 1;
+    enables.record.core_aging_en = 1;
 
     expect_function_call(__wrap_mts_client_send_new_trp_msg);
 

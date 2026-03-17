@@ -19,6 +19,7 @@ set (SOURCES
         src/error_injection_gic.c
         src/error_domain_ap_wdt.c
         src/error_injection_ap_wdt.c
+        src/error_domain_util.c
 )
 
 add_library(${TARGET}
@@ -54,6 +55,7 @@ target_link_libraries(
             silibs::idsw
             silibs::idsw_kng
             silibs::crypto::rng
+            silibs::dmac
             ms::lib::utils
 )
 
@@ -87,6 +89,7 @@ set (SOURCES
         src/error_domain_shared.c
         src/error_injection_mcp.c
         src/exception_trigger.c
+        src/error_domain_util.c
 )
 
 add_library(${TARGET}
@@ -115,6 +118,7 @@ target_link_libraries(
             silibs::cmsdk_wd
             silibs::idhw
             silibs::idsw_kng
+            silibs::dmac
             ms::lib::utils
 )
 

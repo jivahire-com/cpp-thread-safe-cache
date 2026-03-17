@@ -20,6 +20,7 @@
 #include <FpFwUtils.h>           // for FPFW_MIN
 #include <accel_intr.h>          // for accel_intr_has_accel_crashed
 #include <accel_intr_virt_irq.h> // for accel_intr_get_isr_value
+#include <accelerator_ip.h>      // for accel_is_isolation_enabled
 #include <atu_init.h>            // for atu_svc_accel_atu_addr
 #include <bug_check.h>           // for BUG_ASSERT_PARAM
 #include <cded_regs_regs.h>      // for CDED_REGS_CCMP_CFG_ADDRESS
@@ -375,6 +376,11 @@ void crash_dump_accel_core_register_reg(crash_dump_accel_ctx_t* type_context, AC
 
 void crash_dump_generate_default_accel_cd(ACCEL_ID accel_type)
 {
+    if (accel_boot_status_get_sem(accel_type) != TX_SUCCESS)
+    {
+        return;
+    }
+
     FPFwCdBugCheckInfo bug_check_info = {0};
     uint32_t prid = CRASH_DUMP_PROCESSOR_ID(idsw_get_die_id(),
                                             (accel_type == ACCEL_ID_SDM) ? CRASH_DUMP_CORE_SDM : CRASH_DUMP_CORE_CDED);
@@ -454,6 +460,11 @@ void crash_dump_copy_accel_cd_file(void* ctx)
         return;
     }
 
+    if (accel_boot_status_get_sem(accel_type) != TX_SUCCESS)
+    {
+        return;
+    }
+
     /* Copy accel crashdump file from accel DTCM to DDR */
     copy_cd_file_dtcm_to_ddr(cd_ctx, accel_type);
 }
@@ -510,25 +521,47 @@ void update_timestamp_in_cd(DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info, uin
     p_dump_crash_info->Tcon[1] = (uint32_t)((utc_crash_time_ms >> 32) & 0xFFFFFFFFUL); // NOLINT
 }
 
-void crash_dump_register_accel_cd()
+void crash_dump_setup_accel_descriptors(void* context)
 {
     uint32_t irq_th_val = 0;
     uint32_t irq_th_mask = 0;
     uint32_t irq_bh_val = 0;
 
-    if (idsw_get_cpu_type() == CPU_MCP)
-    {
-        // This API is not needed for MCP as only SCP co-ordinates accel CD-flow
-        return;
-    }
+    (void)context;
 
     for (ACCEL_ID id = 0; id < NUM_VALID_ACCEL_ID; id++)
     {
+        if (accel_is_isolation_enabled(id))
+        {
+            continue;
+        }
+
         accel_intr_virt_irq_cd_reg(id, &irq_th_val, &irq_th_mask);
         irq_bh_val = (uint32_t)accel_intr_get_bh_irq_val_addr(id);
 
         crash_dump_register_address32((void*)irq_th_val, sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
         crash_dump_register_address32((void*)irq_th_mask, sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
         crash_dump_register_address32((void*)irq_bh_val, sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    }
+}
+
+void crash_dump_register_accel_cd(crash_dump_type_t dump_type)
+{
+    if (idsw_get_cpu_type() == CPU_MCP)
+    {
+        // This API is not needed for MCP as only SCP co-ordinates accel CD-flow
+        return;
+    }
+
+    if (dump_type == CRASH_DUMP_TYPE_FULL)
+    {
+        crash_dump_setup_accel_descriptors(NULL);
+    }
+    else
+    {
+        CdRegisterCallback(&(crash_dump_context()->type_ctx[CRASH_DUMP_TYPE_MINI]->crash_dump_ctx),
+                           crash_dump_setup_accel_descriptors,
+                           NULL,
+                           FPFW_CD_DUMP_PRIORITY_CRITICAL);
     }
 }

@@ -59,6 +59,7 @@ target_link_libraries(${TARGET}
         ms::cmsis::interface
         ms::driver::pldm    # PLDM_DRV_WORKAROUND
         ms::lib::accel_intr
+        ms::lib::accelerator_ip
         ms::lib::cortex_m7::nvic
         ms::lib::cortex_m7::virt_irq
         ms::lib::gtimer

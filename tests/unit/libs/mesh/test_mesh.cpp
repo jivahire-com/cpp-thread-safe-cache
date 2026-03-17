@@ -85,7 +85,7 @@ ccg_cfg_t unit_test_default_ccg_cfg = {.por_ccg_ha_aux_ctl = 0x3C0008ULL,
                                        .por_ccg_ra_cfg_ctl = 0x7C4407ULL,
                                        .por_ccg_ra_aux_ctl = 0x1B1F343CC3846ULL,
                                        .por_ccg_ra_ccprtcl_link0_ctl = 0x2C00000ULL,
-                                       .por_ccg_ra_cbusy_limit_ctl = 0x181008ULL,
+                                       .por_ccg_ra_cbusy_limit_ctl = 0xC08040ULL,
                                        .por_ccla_aux_ctl = 0x1220000000004ULL};
 
 /*------------- Functions ----------------*/
@@ -624,7 +624,7 @@ uint64_t __wrap_config_get_a1_mesh_hnf_lbt_aux_ctl(void)
 
 uint64_t __wrap_config_get_a1_mesh_hnf_lbt_cbusy_ctl(void)
 {
-    return 0x0ULL; // XML default value
+    return 0x2ULL; // XML default value
 }
 
 uint64_t __wrap_config_get_a1_mesh_hnf_pocq_alloc_class_dedicated(void)
@@ -680,7 +680,7 @@ uint64_t __wrap_config_get_a1_por_ccg_ra_ccprtcl_link0_ctl(void)
 
 uint64_t __wrap_config_get_a1_por_ccg_ra_cbusy_limit_ctl(void)
 {
-    return 0x181008ULL; // XML default value
+    return 0xC08040ULL; // XML default value
 }
 
 cmn800_sam_cfg_t* __wrap_cmn800_get_mesh_sam_cfg_knob(void)
@@ -750,7 +750,7 @@ uint64_t __wrap_config_get_mesh_hnf_lbt_aux_ctl(void)
 }
 uint64_t __wrap_config_get_mesh_hnf_lbt_cbusy_ctl(void)
 {
-    return 0x0ULL;
+    return 0x2ULL;
 }
 
 // POCQ allocation knobs A0
@@ -909,7 +909,7 @@ uint64_t __wrap_config_get_por_ccg_ra_ccprtcl_link0_ctl(void)
 }
 uint64_t __wrap_config_get_por_ccg_ra_cbusy_limit_ctl(void)
 {
-    return 0x181008ULL;
+    return 0xC08040ULL;
 }
 uint64_t __wrap_config_get_por_ccla_aux_ctl(void)
 {
@@ -2026,7 +2026,7 @@ void verify_mesh_config_knobs(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738921000);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F09);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x0);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x2);
 
     assert_int_equal(default_sam_cfg_knb.mesh_hni_cfg_ctl[0], 0x1);
     assert_int_equal(default_sam_cfg_knb.mesh_hni_cfg_ctl[1], 0x1);
@@ -2155,7 +2155,7 @@ void verify_ccg_config_knobs(void)
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C4407ULL);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_aux_ctl, 0x1B1F343CC3846ULL);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_ccprtcl_link0_ctl, 0x2C00000ULL);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0x181008ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0xC08040ULL);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccla_aux_ctl, 0x1220000000004ULL);
 }
 
@@ -2186,7 +2186,7 @@ void verify_mesh_config_knobs_a1_stepping(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738921000ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F09ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006ULL);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x0ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x2ULL);
 
     // Verify A1-specific POCQ allocation knobs (XML default values)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_pocq_alloc_class_dedicated, 0x0ULL);
@@ -2208,7 +2208,7 @@ void verify_ccg_config_knobs_a1_stepping(void)
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cfg_ctl, 0x7C4407ULL);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_aux_ctl, 0x1B1F343CC3846ULL);
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_ccprtcl_link0_ctl, 0x2C00000ULL);
-    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0x181008ULL);
+    assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ra_cbusy_limit_ctl, 0xC08040ULL);
 
     // Verify knobs that should remain unchanged (A0 values)
     assert_int_equal(unit_test_default_ccg_cfg.por_ccg_ha_cxprtcl_link0_ctl, 0x1C0000ULL);

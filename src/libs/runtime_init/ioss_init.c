@@ -32,7 +32,7 @@
 /*-- Declarations (Statics and globals) --*/
 
 /*------------- Functions ----------------*/
-PLACED_CODE FPFW_INIT_COMPONENT(ioss, FPFW_INIT_DEPENDENCIES("vab", "mesh_stg_2", "cfg_mgr", "var_serv", "atu_svc"))
+PLACED_CODE FPFW_INIT_COMPONENT(ioss, FPFW_INIT_DEPENDENCIES("vab", "mesh_stg_2", "cfg_mgr", "var_serv", "atu_svc", "sysinfo"))
 {
 
     if (idsw_get_die_id() == SOC_D1)

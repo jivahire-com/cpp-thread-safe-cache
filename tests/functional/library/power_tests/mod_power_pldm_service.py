@@ -62,6 +62,7 @@ class mod_power_pldm_service(EchoFallsBaseTest):
         self.core_mcp_channel = None
         self.rscm_helper = None
         self.utility = None
+        self.current_scp_die = 0  # Track which die the SCP UART is currently routed to
         self.mcp_throttle_state_sensor_id = 8193
         self.mcp_pwrcap_effector_id = 1
         self.delay_15_minutes = 900
@@ -126,45 +127,42 @@ class mod_power_pldm_service(EchoFallsBaseTest):
             self.rscm_helper.set_bmc_uart_mux_scp(self.bmc_cli)
         self.core_scp_channel.read_until(key="ScpHeartBeat", timeout_seconds=300)
 
-        # Step 6 : Verify PLDM service is active
-        pldm_status = self.__wait_for_pldm_active()
-        if pldm_status is False:
-            self.log.info("Fail : PLDM service is not active after waiting period")
-            return False
         time.sleep(60)
         return True
 
     def teardown(self):
-        # Start PLDM service (restore service state)
-        self.__pldm_service_state(True)
-        
+        # Restore SCP UART to die 0 if it was switched
+        try:
+            if self.current_scp_die != 0:
+                self.__switch_scp_uart_to_die(0)
+        except Exception as e:
+            self.log.warning(f"Failed to restore SCP UART to die 0: {e}")
+
         # Close SCP channel if open
-        if self.core_scp_channel and self.core_scp_channel.is_open():
-            self.core_scp_channel.close()
+        try:
+            if self.core_scp_channel and self.core_scp_channel.is_open():
+                self.core_scp_channel.close()
+        except Exception as e:
+            self.log.warning(f"Failed to close SCP channel: {e}")
         
         # Close MCP channel if open  
-        if self.core_mcp_channel and self.core_mcp_channel.is_open():
-            self.core_mcp_channel.close()
+        try:
+            if self.core_mcp_channel and self.core_mcp_channel.is_open():
+                self.core_mcp_channel.close()
+        except Exception as e:
+            self.log.warning(f"Failed to close MCP channel: {e}")
         
         # Close BMC CLI if open
-        if self.bmc_cli and self.bmc_cli.is_open():
-           self.bmc_cli.close()
+        self.__close_bmc_safe()
         
-        self.dut.teardown()
+        try:
+            self.dut.teardown()
+        except Exception as e:
+            self.log.warning(f"Failed DUT teardown: {e}")
+        
         time.sleep(10)
         return True
 
-    def __wait_for_pldm_active(self):
-        _, stdout, _ = self.__bmc_execute_command(
-            command="systemctl is-active xyz.openbmc_project.pldmd.service",
-            sudo_mode=True,
-        )
-        if stdout.strip() == "active":
-            self.log.info("PLDM service is active.")
-            return True
-        self.log.info(f"Current PLDM state: {stdout.strip()}. Waiting...")
-        return False
-    
     def __check_mcp_boot_complete(self, timeout):
         try:
             self.core_mcp_channel.read_until(
@@ -183,18 +181,17 @@ class mod_power_pldm_service(EchoFallsBaseTest):
         self, command, timeout=180, sudo_mode=False, max_retries=10, retry_delay=10
     ):
         """
-        Execute a command on BMC with retry logic (fixed delay).
+        Execute a command on BMC with retry logic.
+        Keeps the SSH tunnel alive across commands to avoid exhausting the rack
+        manager's SSH session limit. Reconnects only when the channel is dead.
 
         :param command: Command to execute
-        :param timeout: Timeout per attempt in seconds (default: 120s)
+        :param timeout: Timeout per attempt in seconds (default: 180s)
         :param sudo_mode: Whether to run command with sudo
-        :param max_retries: Maximum retry attempts (default: 5)
+        :param max_retries: Maximum retry attempts (default: 10)
         :param retry_delay: Delay between retries in seconds (default: 10s)
         """
         cmd_str = command
-        if not self.bmc_cli.is_open():
-            self.bmc_cli.open()
-            assert self.bmc_cli.is_open()
 
         if sudo_mode:
             try:
@@ -202,18 +199,26 @@ class mod_power_pldm_service(EchoFallsBaseTest):
                 cmd_str = f"echo {sudo_password} | sudo -S su -c '{command}'"
             except (TypeError, KeyError) as e:
                 self.log.info(f"Failed to get BMC sudo password: {e}")
-                self.bmc_cli.close()
                 raise AssertionError("Missing or invalid BMC password") from e
 
         attempt = 0
         while attempt < max_retries:
             try:
+                # Ensure BMC connection is alive before each attempt
+                self.__ensure_bmc_connection()
+
                 self.log.info(
                     f"Executing BMC command (Attempt {attempt+1}/{max_retries}): {cmd_str}"
                 )
                 result, stdout, stderr = self.bmc_cli.execute_command(
                     command=cmd_str, command_args=[], timeout_secs=timeout
                 )
+
+                # result == -1 with stderr containing "Password:" means the SSH
+                # channel is stale (sudo prompt couldn't be satisfied). Treat as
+                # retriable by forcing a reconnect.
+                if result == -1 and stderr and "Password" in stderr:
+                    raise RuntimeError(f"Stale SSH session (sudo prompt failed): stderr={stderr}")
 
                 if result == 0:
                     self.log.info("Command executed successfully.")
@@ -224,117 +229,116 @@ class mod_power_pldm_service(EchoFallsBaseTest):
                     )
                     break
 
-            except TimeoutError as e:
+            except (TimeoutError, Exception) as e:
                 attempt += 1
+                # Close the stale connection so next retry gets a fresh one
+                self.__close_bmc_safe()
                 self.log.warning(
-                    f"TimeoutError on attempt {attempt}/{max_retries}: {e}"
+                    f"Error on attempt {attempt}/{max_retries} ({type(e).__name__}): {e}"
                 )
                 if attempt == max_retries:
                     self.log.error("Max retries reached. Command failed permanently.")
-                    self.bmc_cli.close()
                     raise
                 self.log.info(f"Retrying after {retry_delay} seconds...")
                 time.sleep(retry_delay)
 
-        self.bmc_cli.close()
+        # Keep the connection open — reuse across subsequent commands.
+        # Only close on error (above) or in teardown().
         return result, stdout, stderr
-    
-    def __pldm_service_state(self, start_service=None):
-        """
-        Control PLDM service state based on start_service parameter.
-        :param start_service: True to start service, False to stop service, None to toggle
-        Returns True if operation successful, False otherwise.
-        """
-        # Check current service status
-        result, stdout, _ = self.__bmc_execute_command(
-            command="systemctl is-active xyz.openbmc_project.pldmd.service",
-            sudo_mode=True,
-        )
-        
-        service_active = stdout.strip() == "active"
-        
-        if start_service is None:
-            # Toggle behavior (original functionality)
-            if service_active:
-                # Service is running, stop it
-                self.log.info("PLDM service is active, stopping it...")
-                result, _, _ = self.__bmc_execute_command(
-                    command="systemctl stop xyz.openbmc_project.pldmd.service",
-                    sudo_mode=True,
-                )
-                if result != 0:
-                    self.log.info("Fail : Failed to stop pldmd service on BMC")
-                    return False
-                self.log.info("PLDM service stopped successfully")
-            else:
-                # Service is not running, start it
-                self.log.info("PLDM service is not active, starting it...")
-                result, _, _ = self.__bmc_execute_command(
-                    command="systemctl start xyz.openbmc_project.pldmd.service",
-                    sudo_mode=True,
-                )
-                if result != 0:
-                    self.log.info("Fail : Failed to start pldmd service on BMC")
-                    return False
-                self.log.info("PLDM service started successfully")
-        elif start_service:
-            # Start service if not already active
-            if not service_active:
-                self.log.info("PLDM service is not active, starting it...")
-                result, _, _ = self.__bmc_execute_command(
-                    command="systemctl start xyz.openbmc_project.pldmd.service",
-                    sudo_mode=True,
-                )
-                if result != 0:
-                    self.log.info("Fail : Failed to start pldmd service on BMC")
-                    return False
-                self.log.info("PLDM service started successfully")
-            else:
-                self.log.info("PLDM service is already active")
-        else:
-            # Stop service if active
-            if service_active:
-                self.log.info("PLDM service is active, stopping it...")
-                result, _, _ = self.__bmc_execute_command(
-                    command="systemctl stop xyz.openbmc_project.pldmd.service",
-                    sudo_mode=True,
-                )
-                if result != 0:
-                    self.log.info("Fail : Failed to stop pldmd service on BMC")
-                    return False
-                self.log.info("PLDM service stopped successfully")
-            else:
-                self.log.info("PLDM service is already stopped")
-        
-        time.sleep(5)
-        return True
-    
 
+    def __ensure_bmc_connection(self):
+        """
+        Ensure the BMC CLI SSH connection is alive and usable.
+        If the connection is closed or stale, close it cleanly and reopen.
+        This prevents cascading failures from a dead SSH tunnel poisoning
+        subsequent tests.
+        """
+        try:
+            if self.bmc_cli.is_open():
+                # Connection appears open — verify it's actually alive
+                # by checking if the underlying transport is active
+                transport = getattr(self.bmc_cli, '_ssh_client', None)
+                if transport:
+                    inner = getattr(transport, '_transport', None) or getattr(transport, 'get_transport', lambda: None)()
+                    if inner and not inner.is_active():
+                        self.log.warning("BMC CLI transport is dead. Reconnecting...")
+                        self.__close_bmc_safe()
+                        self.bmc_cli.open()
+                        assert self.bmc_cli.is_open()
+                        self.log.info("BMC CLI reconnected successfully.")
+                # else: transport looks fine, no action needed
+            else:
+                # Connection is closed — open it
+                self.log.info("BMC CLI is closed. Opening connection...")
+                self.bmc_cli.open()
+                assert self.bmc_cli.is_open()
+                self.log.info("BMC CLI opened successfully.")
+        except Exception as e:
+            # If anything goes wrong during the check, force close and reopen
+            self.log.warning(f"BMC connection health check failed ({type(e).__name__}): {e}. Force reconnecting...")
+            self.__close_bmc_safe()
+            try:
+                self.bmc_cli.open()
+                assert self.bmc_cli.is_open()
+                self.log.info("BMC CLI force-reconnected successfully.")
+            except Exception as e2:
+                self.log.error(f"BMC CLI force-reconnect failed: {e2}")
+                raise
+
+    def __close_bmc_safe(self):
+        """
+        Safely close the BMC CLI connection, suppressing any errors.
+        """
+        try:
+            if self.bmc_cli and self.bmc_cli.is_open():
+                self.bmc_cli.close()
+        except Exception:
+            pass
+    
     # Verify MCP enumeration on BMC using mctptool
     def prerequisite_get_mctp_id(self):
         self.log.info("Getting MCTP EID from BMC")
-        result, stdout, _ = self.__bmc_execute_command(command="mctptool list")
-        if result != 0:
-            return False
-        lines = stdout.strip().split("\n")
 
-        # Example output of mctptool list:
-        # 12  | Pa-RoT Cerberus on BMC TIP | I2C Bus: 0 Addr: 0x82 | MctpControl SPDM VDPCI
-        # 16  | HSP                  | I2C Bus: 9 Addr: 0xaa | MctpControl SPDM VDPCI
-        # 17  | MCP                  | I3C Bus: 1 Addr: 0x596434f0200 | MctpControl PLDM
-        # 64  | Cerberus on LION     | I2C Bus: 16 Addr: 0x82 | MctpControl SPDM VDPCI
-        for line in lines:
-            parts = line.split("|")
-            if len(parts) > 1 and "MCP" in parts[1]:
-                mcp_id = int(parts[0].strip())
-                self.mctp_eids.append(mcp_id)
-                self.mctp_eid = mcp_id  # Store the single EID value
-                break
-        if self.mctp_eids == []:
-            self.log.info("Fail : MCTP ID not found")
-            return False
-        self.log.info(f"Found MCTP EID: {self.mctp_eid}")
-        return True
+        # MCP MCTP enumeration can take additional time after boot completes.
+        # Retry mctptool list with a delay to allow MCP to register on the BMC.
+        max_attempts = 6
+        retry_delay = 30  # seconds between retries
+
+        for attempt in range(max_attempts):
+            result, stdout, _ = self.__bmc_execute_command(command="mctptool list")
+            if result != 0:
+                self.log.info(f"mctptool list failed on attempt {attempt + 1}/{max_attempts}")
+                if attempt < max_attempts - 1:
+                    self.log.info(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                continue
+
+            lines = stdout.strip().split("\n")
+
+            # Example output of mctptool list:
+            # 12  | Pa-RoT Cerberus on BMC TIP | I2C Bus: 0 Addr: 0x82 | MctpControl SPDM VDPCI
+            # 16  | HSP                  | I2C Bus: 9 Addr: 0xaa | MctpControl SPDM VDPCI
+            # 17  | MCP                  | I3C Bus: 1 Addr: 0x596434f0200 | MctpControl PLDM
+            # 64  | Cerberus on LION     | I2C Bus: 16 Addr: 0x82 | MctpControl SPDM VDPCI
+            for line in lines:
+                parts = line.split("|")
+                if len(parts) > 1 and "MCP" in parts[1]:
+                    mcp_id = int(parts[0].strip())
+                    self.mctp_eids.append(mcp_id)
+                    self.mctp_eid = mcp_id  # Store the single EID value
+                    break
+
+            if self.mctp_eid:
+                self.log.info(f"Found MCTP EID: {self.mctp_eid} (attempt {attempt + 1}/{max_attempts})")
+                return True
+
+            self.log.info(f"MCP not found in MCTP enumeration (attempt {attempt + 1}/{max_attempts})")
+            if attempt < max_attempts - 1:
+                self.log.info(f"MCP may still be registering. Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+
+        self.log.info(f"Fail : MCP MCTP ID not found after {max_attempts} attempts ({max_attempts * retry_delay}s)")
+        return False
 
     def prerequisite_verify_sensor_effector_registration(self):
         self.log.info("***** Verifying sensor/effector Listed on BMC *****")
@@ -369,13 +373,9 @@ class mod_power_pldm_service(EchoFallsBaseTest):
                 self.log.info("Only MCP_PWRCAP_LIMIT found.")
             else:
                 self.log.info("Only MCP_THROTTLING_STATE found.")
-            # Stop PLDM service to allow direct tool access
-            self.__pldm_service_state(False)
             return True
         else:
             self.log.info("Neither MCP_PWRCAP_LIMIT nor MCP_THROTTLING_STATE found.")
-            # Stop PLDM service even on failure
-            self.__pldm_service_state(False)
             return False
     
     def get_state_sensor_event_state(self, sensor_id):
@@ -427,32 +427,151 @@ class mod_power_pldm_service(EchoFallsBaseTest):
         self.log.info(f"SetNumericEffecterValue output: {stdout}")
         return True
 
-    def run_cli_cmd_on_scp0_until_comp(self, command, timeout=10):
+    def __run_cli_cmd_on_scp_until_comp(self, channel, command, timeout=10, die_label="SCP0"):
         """
-        Runs a command on SCP and returns output string until 'pwr_cli_comp' is found.
-        If 'pwr_cli_comp' is not found, logs error and returns False.
+        Runs a command on a given SCP channel and returns output until 'pwr_cli_comp' is found.
+        :param channel: The SCP channel object to use
+        :param command: CLI command to send
+        :param timeout: Timeout in seconds for read_until
+        :param die_label: Label for log messages (e.g., "SCP0" or "SCP1")
+        :return: Output string if 'pwr_cli_comp' found, False otherwise
         """
-        # Check if SCP channel is open, if not open it
-        channel_was_open = self.core_scp_channel.is_open()
+        channel_was_open = channel.is_open()
         if not channel_was_open:
-            self.core_scp_channel.open()
-            assert self.core_scp_channel.is_open()
+            channel.open()
+            assert channel.is_open()
 
-        self.core_scp_channel.write_line(write_string=command)
+        channel.write_line(write_string=command)
         try:
-            output = self.core_scp_channel.read_until(key="pwr_cli_comp", timeout_seconds=timeout)
-            self.log.info(f"'pwr_cli_comp' found in SCP output for command: {command}")
+            output = channel.read_until(key="pwr_cli_comp", timeout_seconds=timeout)
+            self.log.info(f"'pwr_cli_comp' found in {die_label} output for command: {command}")
             success = True
         except TimeoutError as e:
-            self.log.error(f"'pwr_cli_comp' NOT found in SCP output for command: {command} {e}")
+            self.log.error(f"'pwr_cli_comp' NOT found in {die_label} output for command: {command} {e}")
             output = ""
             success = False
 
-        # Close SCP channel if it wasn't open when we started
         if not channel_was_open:
-            self.core_scp_channel.close()
+            channel.close()
 
         return output if success else False
+
+    def run_cli_cmd_on_scp0_until_comp(self, command, timeout=10):
+        """
+        Runs a command on SCP0 (primary die) and returns output until 'pwr_cli_comp' is found.
+        If 'pwr_cli_comp' is not found, logs error and returns False.
+        """
+        if self.current_scp_die != 0:
+            self.__switch_scp_uart_to_die(0)
+        return self.__run_cli_cmd_on_scp_until_comp(self.core_scp_channel, command, timeout, die_label="SCP0")
+
+    def run_cli_cmd_on_scp1_until_comp(self, command, timeout=10):
+        """
+        Runs a command on SCP1 (secondary die) via UART mux switching.
+        Switches UART to die 1, runs the command, then switches back to die 0.
+        If 'pwr_cli_comp' is not found, logs error and returns False.
+        """
+        if self.current_scp_die != 1:
+            self.__switch_scp_uart_to_die(1)
+        result = self.__run_cli_cmd_on_scp_until_comp(self.core_scp_channel, command, timeout, die_label="SCP1")
+        # Switch back to die 0 so other tests/commands default to SCP0
+        self.__switch_scp_uart_to_die(0)
+        return result
+
+    def __switch_scp_uart_to_die(self, die_id):
+        """
+        Switch the SCP UART to the specified die by toggling via MCP.
+        Uses BMC GPIO to mux between SCP/MCP, and MCP 'afm uart_die' to select the die.
+
+        Steps:
+          1. BMC: gpioset gpiochip3 5=1  (route UART to MCP)
+          2. Verify 'MCP_MAIN' appears on channel
+          3. MCP CLI: afm uart_die <die_id> 0, wait for 'Ok'
+          4. BMC: gpioset gpiochip3 5=0  (route UART back to SCP)
+          5. Verify 'SCP_MAIN' appears on channel
+          6. SCP CLI: build_info whoami, verify 'SoC Die ID: <die_id>'
+
+        :param die_id: 0 for primary die, 1 for secondary die
+        :raises RuntimeError: If any step fails or die ID doesn't match
+        """
+        if die_id == self.current_scp_die:
+            self.log.info(f"SCP UART already on die {die_id}, no switch needed.")
+            return
+
+        self.log.info(f"Switching SCP UART from die {self.current_scp_die} to die {die_id}...")
+
+        # Step 1: Switch UART mux to MCP
+        self.log.info("Setting BMC GPIO to route UART to MCP (gpioset gpiochip3 5=1)")
+        result, _, _ = self.__bmc_execute_command(command="gpioset gpiochip3 5=1")
+        if result != 0:
+            raise RuntimeError("Failed to set BMC GPIO for MCP UART mux")
+
+        # Step 2: Verify MCP_MAIN appears on the channel
+        try:
+            self.core_scp_channel.read_until(key="MCP_MAIN", timeout_seconds=15)
+            self.log.info("MCP_MAIN detected on UART - MCP is now active on channel.")
+        except TimeoutError as e:
+            raise RuntimeError(f"MCP_MAIN not detected after GPIO switch: {e}")
+
+        # Step 3: Send afm uart_die command via MCP to select the target die
+        self.log.info(f"Sending 'afm uart_die {die_id} 0' on MCP CLI")
+        self.core_scp_channel.write_line(write_string=f"afm uart_die {die_id} 0")
+        try:
+            self.core_scp_channel.read_until(key="Ok", timeout_seconds=15)
+            self.log.info(f"afm uart_die {die_id} 0 acknowledged with 'Ok'.")
+        except TimeoutError as e:
+            raise RuntimeError(f"'Ok' not received for 'afm uart_die {die_id} 0': {e}")
+
+        # Step 4: Switch UART mux back to SCP
+        self.log.info("Setting BMC GPIO to route UART to SCP (gpioset gpiochip3 5=0)")
+        result, _, _ = self.__bmc_execute_command(command="gpioset gpiochip3 5=0")
+        if result != 0:
+            raise RuntimeError("Failed to set BMC GPIO for SCP UART mux")
+
+        # Step 5: Verify SCP_MAIN appears on the channel
+        try:
+            self.core_scp_channel.read_until(key="SCP_MAIN", timeout_seconds=15)
+            self.log.info("SCP_MAIN detected on UART - SCP is now active on channel.")
+        except TimeoutError as e:
+            raise RuntimeError(f"SCP_MAIN not detected after GPIO switch: {e}")
+
+        # Step 6: Verify correct die with build_info whoami
+        self.log.info("Verifying die ID with 'build_info whoami'")
+        self.core_scp_channel.write_line(write_string="build_info whoami")
+        try:
+            output = self.core_scp_channel.read_until(key="Ok", timeout_seconds=15)
+        except TimeoutError as e:
+            raise RuntimeError(f"'Ok' not received for 'build_info whoami': {e}")
+
+        expected_die_str = f"SoC Die ID: {die_id}"
+        if expected_die_str not in output:
+            raise RuntimeError(f"Die ID mismatch: expected '{expected_die_str}' in whoami output but not found")
+
+        self.current_scp_die = die_id
+        self.log.info(f"SCP UART successfully switched to die {die_id}.")
+
+    def __get_current_soc_power(self):
+        """
+        Queries the current SoC power consumption from SCP0 CLI via 'pwr status power'.
+        :return: Current SoC power in watts (int), or None if unable to read.
+        """
+        result = self.run_cli_cmd_on_scp0_until_comp("pwr status power", timeout=5)
+        if not result:
+            self.log.info("Failed to get power status from SCP0")
+            return None
+        # Parse output for SoC power line, e.g.: "SoC Power       : 185 W"
+        for line in result.splitlines():
+            if "SoC Power" in line or "Soc Power" in line or "SOC Power" in line:
+                # Skip lines about cap/limit
+                if "Cap" in line or "Limit" in line:
+                    continue
+                match = re.search(r':\s*(\d+)', line)
+                if match:
+                    power = int(match.group(1))
+                    self.log.info(f"Current SoC Power: {power} W")
+                    return power
+        self.log.info("Could not parse SoC power from 'pwr status power' output")
+        return None
 
     def get_power_cap_values(self):
         """
@@ -488,50 +607,116 @@ class mod_power_pldm_service(EchoFallsBaseTest):
                     self.log.info(f"Using Soc Max Thermal Limit as SOC Power Cap: {soc_power_cap} W")
         return vcpu_power_cap, soc_power_cap
     
+    def __check_prerequisites(self):
+        """
+        Verify that prerequisites (Test 1) have been completed.
+        Also ensures the BMC CLI connection is alive.
+        :return: True if prerequisites are met, False otherwise
+        """
+        if not self.mctp_eid:
+            self.log.info("Fail : MCTP EID not available. Test 1 prerequisite must pass first.")
+            return False
+        if not self.bmc_cli:
+            self.log.info("Fail : BMC CLI not available. Suite setup must pass first.")
+            return False
+        # Ensure BMC connection is alive before starting test
+        self.__ensure_bmc_connection()
+        return True
+
+    def __poll_sensor_state(self, sensor_id, expected_state, max_retries=6, retry_delay=10):
+        """
+        Poll a state sensor until it reaches the expected state or retries are exhausted.
+        :param sensor_id: Sensor ID to query
+        :param expected_state: Expected event state string (e.g., "Sensor Normal", "Sensor Critical")
+        :param max_retries: Maximum number of polling attempts (default: 6)
+        :param retry_delay: Delay between retries in seconds (default: 10)
+        :return: The final event state string
+        """
+        for attempt in range(max_retries):
+            event_state = self.get_state_sensor_event_state(sensor_id)
+            if event_state == expected_state:
+                self.log.info(f"Sensor reached expected state '{expected_state}' on attempt {attempt + 1}/{max_retries}")
+                return event_state
+            self.log.info(f"Polling attempt {attempt + 1}/{max_retries}: eventState='{event_state}', expected='{expected_state}'")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+        self.log.info(f"Sensor did not reach expected state '{expected_state}' after {max_retries} attempts. Last state: '{event_state}'")
+        return event_state
+
     def test_mcp_throttle_state_sensor(self):
         self.log.info("***** Verifying MCP_THROTTLING_STATE sensor functionality on BMC *****")
 
-        # Step 1: Get initial sensor reading
-        event_state = self.get_state_sensor_event_state(self.mcp_throttle_state_sensor_id)
-        if event_state == "Sensor Critical":
-            self.log.info(f"System state Degraded, skipping current test. Event state: {event_state} Expected: Sensor Normal")
+        # Guard: verify prerequisites
+        if not self.__check_prerequisites():
+            return False
+
+        try:
+            # Step 1: Get initial sensor reading
+            event_state = self.get_state_sensor_event_state(self.mcp_throttle_state_sensor_id)
+            if event_state == "Sensor Critical":
+                self.log.info(f"System state Degraded, skipping current test. Event state: {event_state} Expected: Sensor Normal")
+                return True
+            elif event_state != "Sensor Normal":
+                self.log.info(f"Initial eventState is not 'Sensor Normal': {event_state}")
+                return False
+            self.log.info(f"Initial eventState is 'Sensor Normal': {event_state}")
+
+            # Step 2: Disable power loop on SCP1 to induce degraded state
+            result = self.run_cli_cmd_on_scp1_until_comp("pwr set loopdis 1", timeout=5)
+            if not result:
+                self.log.info("Fail : Failed to disable power loop on SCP1")
+                return False
+            time.sleep(10)
+
+            # Step 3: Get updated sensor reading with retry polling
+            event_state = self.__poll_sensor_state(
+                self.mcp_throttle_state_sensor_id, "Sensor Critical", max_retries=6, retry_delay=10
+            )
+            if event_state != "Sensor Critical":
+                self.log.info(f"Fail : After inducing failure, eventState is not 'Sensor Critical': {event_state}")
+                return False
+            self.log.info(f"After inducing failure, eventState is 'Sensor Critical': {event_state}")
+
+            # Step 4: Re-enable power loop on SCP1 to restore normal state
+            result = self.run_cli_cmd_on_scp1_until_comp("pwr set loopdis 0", timeout=5)
+            if not result:
+                self.log.info("Fail : Failed to re-enable power loop on SCP1")
+                return False
+            time.sleep(10)
+
+            # Step 5: Get final sensor reading with retry polling
+            event_state = self.__poll_sensor_state(
+                self.mcp_throttle_state_sensor_id, "Sensor Normal", max_retries=6, retry_delay=10
+            )
+            if event_state != "Sensor Normal":
+                self.log.info(f"Fail : After restoring, eventState is not 'Sensor Normal': {event_state}")
+                return False
+            self.log.info(f"After restoring, eventState is 'Sensor Normal': {event_state}")
             return True
-        elif event_state != "Sensor Normal":
-            self.log.info(f"Initial eventState is not 'Sensor Normal': {event_state}")
-            return False
-        self.log.info(f"Initial eventState is 'Sensor Normal': {event_state}")
 
-        # Step 2: Disable power loop on SCP0 to induce degraded state
-        result = self.run_cli_cmd_on_scp0_until_comp("pwr set loopdis 1", timeout=5)
-        if not result:
-            self.log.info("Fail : Failed to disable power loop on SCP0")
-            return False
-        time.sleep(5)
-
-        # Step 3: Get updated sensor reading
-        event_state = self.get_state_sensor_event_state(self.mcp_throttle_state_sensor_id)
-        if event_state != "Sensor Critical":
-            self.log.info(f"Fail : After inducing failure, eventState is not 'Sensor Critical': {event_state}")
-            return False
-        self.log.info(f"After inducing failure, eventState is 'Sensor Critical': {event_state}")
-
-        # Step 4: Re-enable power loop on SCP0 to restore normal state
-        result = self.run_cli_cmd_on_scp0_until_comp("pwr set loopdis 0", timeout=5)
-        if not result:
-            self.log.info("Fail : Failed to re-enable power loop on SCP0")
-            return False
-        time.sleep(5)
-
-        # Step 5: Get final sensor reading
-        event_state = self.get_state_sensor_event_state(self.mcp_throttle_state_sensor_id)
-        if event_state != "Sensor Normal":
-            self.log.info(f"Fail : After restoring, eventState is not 'Sensor Normal': {event_state}")
-            return False
-        self.log.info(f"After restoring, eventState is 'Sensor Normal': {event_state}")
-        return True
+        finally:
+            # Always restore power loop on SCP1 so next test starts clean
+            for attempt in range(3):
+                try:
+                    if self.current_scp_die != 1:
+                        self.__switch_scp_uart_to_die(1)
+                    self.__run_cli_cmd_on_scp_until_comp(self.core_scp_channel, "pwr set loopdis 0", timeout=5, die_label="SCP1")
+                    self.log.info("Power loop re-enabled on SCP1 (cleanup).")
+                    break
+                except Exception as e:
+                    self.log.warning(f"Failed to re-enable power loop on SCP1 (attempt {attempt + 1}/3): {e}")
+            # Always restore UART back to die 0
+            try:
+                self.__switch_scp_uart_to_die(0)
+            except Exception as e:
+                self.log.warning(f"Failed to restore SCP UART to die 0: {e}")
     
     def test_mcp_power_cap_effector(self):
         self.log.info("***** Verifying MCP_PWRCAP_LIMIT effector functionality on BMC *****")
+
+        # Guard: verify prerequisites
+        if not self.__check_prerequisites():
+            return False
 
         # Step 1: Get initial power cap values on scp0
         vcpu_power_cap, soc_power_cap = self.get_power_cap_values()
@@ -547,7 +732,7 @@ class mod_power_pldm_service(EchoFallsBaseTest):
             self.log.info("Fail : Failed to set new power cap via PLDM effector.")
             return False
         self.log.info(f"Successfully set new power cap via PLDM effector: {soc_power_cap_bmc}")
-        time.sleep(5)
+        time.sleep(15)
 
         # Step 3: Verify new power cap on SCP0
         new_vcpu_power_cap, new_soc_power_cap = self.get_power_cap_values()
@@ -562,7 +747,7 @@ class mod_power_pldm_service(EchoFallsBaseTest):
             self.log.info("Fail : Failed to restore original power cap via PLDM effector.")
             return False
         self.log.info(f"Successfully restored original power cap via PLDM effector: {soc_power_cap}")
-        time.sleep(5)
+        time.sleep(15)
 
         # Step 5: Verify restored power cap on SCP0
         final_vcpu_power_cap, final_soc_power_cap = self.get_power_cap_values()
@@ -576,9 +761,16 @@ class mod_power_pldm_service(EchoFallsBaseTest):
     def test_induce_pwr_throttle_via_bmc_pwr_capping(self):
         self.log.info("***** Inducing power throttle via BMC power capping *****")
 
-        # Step 1: Check the state sensor status to event state is normal
+        # Guard: verify prerequisites
+        if not self.__check_prerequisites():
+            return False
+
+        # Step 1: Get initial power cap values so we can restore later
+        _, soc_power_cap = self.get_power_cap_values()
+        self.log.info(f"Initial SOC Power Cap for restore: {soc_power_cap}")
+
+        # Step 2: Check the state sensor status to event state is normal
         event_state = self.get_state_sensor_event_state(self.mcp_throttle_state_sensor_id)
-        # Add clause to prevent flaky tests until scp power err message spamming bug fix
         if event_state == "Sensor Critical":
             self.log.info(f"System state Degraded, skipping current test. Event state: {event_state} Expected: Sensor Normal")
             return True
@@ -588,36 +780,41 @@ class mod_power_pldm_service(EchoFallsBaseTest):
         self.log.info(f"Initial eventState is as expected : {event_state}")
         time.sleep(5)
 
-        # Step 2: Set a low power cap via PLDM effector to induce throttling
-        low_soc_power_cap_bmc = 50  # Example low value to induce throttling, maybe confirm this post querying `pwr status power` on scp0
+        # Step 3: Set power cap to 50W (POWER_CAP_MIN) to induce throttling
+        # This should cause the power control loop to throttle cores below nominal,
+        # resulting in Sensor Warning (PLDM_PERFORMANCE_THROTTLED).
+        # Sensor Critical (PLDM_PERFORMANCE_DEGRADED) only occurs on loop failure (error state 12).
+        low_soc_power_cap_bmc = 50  # POWER_CAP_MIN from firmware power_i.h
+        self.log.info(f"Setting power cap to {low_soc_power_cap_bmc} W to induce throttling")
         success = self.set_numeric_effector_value(self.mcp_pwrcap_effector_id, low_soc_power_cap_bmc)
         if not success:
             self.log.info("Fail : Failed to set low power cap via PLDM effector.")
             return False
         self.log.info(f"Successfully set low power cap via PLDM effector: {low_soc_power_cap_bmc}")
-        time.sleep(5)  # Wait for system to react to new power cap
+        time.sleep(10)  # Wait for system to react to new power cap
 
-        # Step 3: Verify power throttle state sensor changes to warning
-        event_state = self.get_state_sensor_event_state(self.mcp_throttle_state_sensor_id)
-        if event_state == "Sensor Critical":
-            self.log.info(f"System state Degraded, skipping current test. Event state: {event_state} Expected: Sensor Warning")
-            return True
-        elif event_state != "Sensor Warning":
-            self.log.info(f"Fail : Power throttle state sensor did not change as expected: {event_state}")
+        # Step 4: Poll sensor until Sensor Warning (throttled) is detected
+        event_state = self.__poll_sensor_state(
+            self.mcp_throttle_state_sensor_id, "Sensor Warning", max_retries=6, retry_delay=5
+        )
+        if event_state != "Sensor Warning":
+            self.log.info(f"Fail : Power throttle state sensor did not report 'Sensor Warning': {event_state}")
             return False
-        self.log.info(f"Power throttle state sensor changed as expected: {event_state}")
+        self.log.info(f"Power throttle state sensor reported throttling as expected: {event_state}")
         time.sleep(5)
 
-        # Step 4: Restore original power cap via PLDM effector
+        # Step 5: Restore original power cap via PLDM effector
         success = self.set_numeric_effector_value(self.mcp_pwrcap_effector_id, soc_power_cap)
         if not success:
             self.log.info("Fail : Failed to restore original power cap via PLDM effector.")
             return False
         self.log.info(f"Successfully restored original power cap via PLDM effector: {soc_power_cap}")
-        time.sleep(5)
+        time.sleep(10)
 
-        # Step 5: Verify power throttle state sensor returns to normal
-        event_state = self.get_state_sensor_event_state(self.mcp_throttle_state_sensor_id)
+        # Step 6: Verify power throttle state sensor returns to normal with retry polling
+        event_state = self.__poll_sensor_state(
+            self.mcp_throttle_state_sensor_id, "Sensor Normal", max_retries=6, retry_delay=10
+        )
         if event_state == "Sensor Critical":
             self.log.info(f"System state Degraded, skipping current test. Event state: {event_state} Expected: Sensor Normal")
             return True

@@ -561,12 +561,14 @@ static void scmi_async_recv_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void*
 
     PFPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST request = (PFPFW_ICC_TRANSPORT_ASYNC_RECV_REQUEST)Request;
     volatile scmi_transport_message_t* recv_msg = (volatile scmi_transport_message_t*)request->Input.PayloadBuffer;
-    volatile scmi_local_packet_t* local_packet = (volatile scmi_local_packet_t*)recv_msg->data;
+    volatile scmi_local_packet_t* shared_memory_packet = (volatile scmi_local_packet_t*)recv_msg->data;
 
     SCMI_LOG_INFO("SCMI Async Recv Completion Raised!\n");
     //! Ensure that the channel is busy here, tfa marks the scmi channel busy
     //! before it sends icc message to scp
-    BUG_ASSERT_PARAM(!SCMI_SMT_IS_CHANNEL_FREE(local_packet->smt_header.status), local_packet->smt_header.status, 0);
+    BUG_ASSERT_PARAM(!SCMI_SMT_IS_CHANNEL_FREE(shared_memory_packet->smt_header.status),
+                     shared_memory_packet->smt_header.status,
+                     0);
 
     //! Check if the request was successful & received some bytes
     if ((request->Output.Status == FPFW_ICC_TRANSPORT_STATUS_SUCCESS) && (request->Output.ReceivedBytes > 0))
@@ -574,12 +576,16 @@ static void scmi_async_recv_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void*
         //! Check if the message is a SCMI message
         if (recv_msg->header.msg_header.command == ICC_SCMI_HOST_MODULE_SEND)
         {
+            //! Copy shared-memory packet to a private stack buffer
+            scmi_local_packet_t local_packet;
+            memcpy(&local_packet, (const void*)shared_memory_packet, sizeof(local_packet));
+
             //! Update the scmi status bit to free channel, pseudo ack to the tfa
             //! tfa will spin until the channel is free before it proceeds to loop until mesg received
-            SET_SCMI_SMT_CHANNEL_FREE(local_packet->smt_header.status);
+            SET_SCMI_SMT_CHANNEL_FREE(shared_memory_packet->smt_header.status);
             __DSB();
 
-            //! spew the messages if debug is enabled
+            //! spew the messages if debug is enabled (reads from local_packet, not shared memory)
             if ((scmi_debug & 2) != 0)
             {
                 SCMI_LOG_INFO("SCMI ICC Message: %x\n", (int)scmi_recv_message->header.msg_header.command);
@@ -591,12 +597,16 @@ static void scmi_async_recv_completion(PDFWK_ASYNC_REQUEST_HEADER Request, void*
                 {
                     for (size_t data_count = 0; data_count < scmi_recv_message->header.msg_header.payload_size; data_count++)
                     {
-                        SCMI_LOG_INFO("  scmi_message data[%zu]: %x\n", data_count, scmi_recv_message->data[data_count]);
+                        SCMI_LOG_INFO("  scmi_message data[%zu]: %x\n", data_count, ((const uint8_t*)&local_packet)[data_count]);
                     }
                 }
             }
+            BUG_ASSERT_PARAM(scmi_recv_message->header.msg_header.payload_size <=
+                                 sizeof(((scmi_local_packet_t*)0)->payload),
+                             scmi_recv_message->header.msg_header.payload_size,
+                             sizeof(((scmi_local_packet_t*)0)->payload));
             //! Parse the message as per SCMI protocol
-            scmi_check_message((scmi_icc_packet_t*)&(recv_msg->data));
+            scmi_check_message((scmi_icc_packet_t*)&local_packet);
         }
         else
         {

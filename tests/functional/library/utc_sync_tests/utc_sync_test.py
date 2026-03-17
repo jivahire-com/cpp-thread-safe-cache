@@ -80,28 +80,33 @@ class utc_sync_test(pldm_common):
 
     # ── Helper Methods ──
 
-    def _get_mcp_utc_time(self) -> str:
+    def _get_mcp_utc_time(self, include_timing: bool = False):
         """
         Execute 'utc time' on MCP CLI via inherited _mcp_execute_command_until.
 
         Returns:
             MCP output string, or empty string on failure.
+            If include_timing=True, returns tuple:
+                (output: str, cmd_start_wall: float, cmd_end_wall: float)
         """
         cmd = "utc time"
         key = "Ok"
 
         start_wall = time.time()
-        start_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+        result, stdout, stderr = self._mcp_execute_command_until(command=cmd, key=key)
+        end_wall = time.time()
+
+        start_utc = datetime.fromtimestamp(start_wall, timezone.utc).isoformat(
+            timespec="milliseconds"
+        )
+        end_utc = datetime.fromtimestamp(end_wall, timezone.utc).isoformat(
+            timespec="milliseconds"
+        )
+        elapsed = end_wall - start_wall
         self.log.info(
             f"[CMD_TIMING][MCP] START cmd='{cmd}' utc='{start_utc}' "
             f"wall={start_wall:.6f}"
         )
-
-        result, stdout, stderr = self._mcp_execute_command_until(command=cmd, key=key)
-
-        end_wall = time.time()
-        end_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
-        elapsed = end_wall - start_wall
         self.log.info(
             f"[CMD_TIMING][MCP] END cmd='{cmd}' utc='{end_utc}' "
             f"wall={end_wall:.6f} elapsed={elapsed:.3f}s"
@@ -117,10 +122,10 @@ class utc_sync_test(pldm_common):
                 f"[PARSED_OUTPUT] MCP 'utc time' failed: "
                 f"exit={result}, stderr='{stderr}'"
             )
-            return ""
+            return ("", start_wall, end_wall) if include_timing else ""
         stripped = stdout.strip()
         self.log.info(f"[PARSED_OUTPUT] MCP utc time: '{stripped}'")
-        return stripped
+        return (stripped, start_wall, end_wall) if include_timing else stripped
 
     def _check_pldm_service_active(self) -> bool:
         """
@@ -134,6 +139,14 @@ class utc_sync_test(pldm_common):
             expect_active=True,
             timeout=10,
         )
+
+    def _close_bmc_cli_if_open(self) -> None:
+        """Close BMC CLI connection when open; ignore close errors."""
+        try:
+            if self.bmc_cli.is_open():
+                self.bmc_cli.close()
+        except Exception:
+            pass
 
     def _parse_mcp_timestamp(self, mcp_output: str) -> int | None:
         """
@@ -173,7 +186,9 @@ class utc_sync_test(pldm_common):
 
     # ── Parallel Capture Helpers ──
 
-    def _get_bmc_time_no_health_check(self, close_after_command: bool = True) -> str:
+    def _get_bmc_time_no_health_check(
+        self, close_after_command: bool = True, include_timing: bool = False
+    ):
         """
         Execute 'timedatectl' on BMC WITHOUT the post-command MCP health check.
 
@@ -189,26 +204,32 @@ class utc_sync_test(pldm_common):
 
         Returns:
             Raw BMC timedatectl output string, or empty string on failure.
+            If include_timing=True, returns tuple:
+                (output: str, cmd_start_wall: float, cmd_end_wall: float)
         """
         cmd = "timedatectl"
         try:
+            if not self.bmc_cli.is_open():
+                self.bmc_cli.open()
+            self.log.info(f"[BMC CMD (no health check)] {cmd}")
+
             start_wall = time.time()
-            start_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+            result, stdout, stderr = self.bmc_cli.execute_command(
+                command=cmd, command_args=[], timeout_secs=30
+            )
+            end_wall = time.time()
+
+            start_utc = datetime.fromtimestamp(start_wall, timezone.utc).isoformat(
+                timespec="milliseconds"
+            )
+            end_utc = datetime.fromtimestamp(end_wall, timezone.utc).isoformat(
+                timespec="milliseconds"
+            )
+            elapsed = end_wall - start_wall
             self.log.info(
                 f"[CMD_TIMING][BMC_NO_HEALTH] START cmd='{cmd}' utc='{start_utc}' "
                 f"wall={start_wall:.6f}"
             )
-
-            if not self.bmc_cli.is_open():
-                self.bmc_cli.open()
-            self.log.info(f"[BMC CMD (no health check)] {cmd}")
-            result, stdout, stderr = self.bmc_cli.execute_command(
-                command=cmd, command_args=[], timeout_secs=30
-            )
-
-            end_wall = time.time()
-            end_utc = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
-            elapsed = end_wall - start_wall
             self.log.info(
                 f"[CMD_TIMING][BMC_NO_HEALTH] END cmd='{cmd}' utc='{end_utc}' "
                 f"wall={end_wall:.6f} elapsed={elapsed:.3f}s"
@@ -220,23 +241,20 @@ class utc_sync_test(pldm_common):
                 f"stderr='{stderr}'"
             )
             if close_after_command:
-                self.bmc_cli.close()
+                self._close_bmc_cli_if_open()
             if result != 0:
                 self.log.error(
                     f"BMC 'timedatectl' failed: exit={result}, stderr='{stderr}'"
                 )
-                return ""
+                return ("", start_wall, end_wall) if include_timing else ""
             stripped = stdout.strip()
             self.log.info(f"[PARSED_OUTPUT] BMC timedatectl:\n{stripped}")
-            return stripped
+            return (stripped, start_wall, end_wall) if include_timing else stripped
         except Exception as e:
             self.log.error(f"BMC 'timedatectl' exception: {e}")
             if close_after_command:
-                try:
-                    self.bmc_cli.close()
-                except Exception:
-                    pass
-            return ""
+                self._close_bmc_cli_if_open()
+            return ("", 0.0, 0.0) if include_timing else ""
 
     def _capture_times_parallel(self, close_bmc_after_command: bool = True) -> dict:
         """
@@ -254,29 +272,34 @@ class utc_sync_test(pldm_common):
             dict with keys:
                 - mcp_output: str
                 - bmc_output: str
-                - mcp_wall_before / mcp_wall_after: float
-                - bmc_wall_before / bmc_wall_after: float
+                - mcp_cmd_wall_before / mcp_cmd_wall_after: float
+                - bmc_cmd_wall_before / bmc_cmd_wall_after: float
         """
         capture = {
             "mcp_output": "",
             "bmc_output": "",
-            "mcp_wall_before": 0.0,
-            "mcp_wall_after": 0.0,
-            "bmc_wall_before": 0.0,
-            "bmc_wall_after": 0.0,
+            "mcp_cmd_wall_before": 0.0,
+            "mcp_cmd_wall_after": 0.0,
+            "bmc_cmd_wall_before": 0.0,
+            "bmc_cmd_wall_after": 0.0,
         }
 
         def _fetch_mcp():
-            capture["mcp_wall_before"] = time.time()
-            capture["mcp_output"] = self._get_mcp_utc_time()
-            capture["mcp_wall_after"] = time.time()
+            (
+                capture["mcp_output"],
+                capture["mcp_cmd_wall_before"],
+                capture["mcp_cmd_wall_after"],
+            ) = self._get_mcp_utc_time(include_timing=True)
 
         def _fetch_bmc():
-            capture["bmc_wall_before"] = time.time()
-            capture["bmc_output"] = self._get_bmc_time_no_health_check(
-                close_after_command=close_bmc_after_command
+            (
+                capture["bmc_output"],
+                capture["bmc_cmd_wall_before"],
+                capture["bmc_cmd_wall_after"],
+            ) = self._get_bmc_time_no_health_check(
+                close_after_command=close_bmc_after_command,
+                include_timing=True,
             )
-            capture["bmc_wall_after"] = time.time()
 
         t_mcp = Thread(target=_fetch_mcp, daemon=True)
         t_bmc = Thread(target=_fetch_bmc, daemon=True)
@@ -378,27 +401,22 @@ class utc_sync_test(pldm_common):
             result[f"mcp_time_{sample_num}"] = mcp_time
             result[f"bmc_time_{sample_num}"] = bmc_time
 
-            # Compute capture latencies
-            mcp_latency = cap["mcp_wall_after"] - cap["mcp_wall_before"]
-            bmc_latency = cap["bmc_wall_after"] - cap["bmc_wall_before"]
+            # Compute command capture latencies (command-only windows)
+            mcp_latency = cap["mcp_cmd_wall_after"] - cap["mcp_cmd_wall_before"]
+            bmc_latency = cap["bmc_cmd_wall_after"] - cap["bmc_cmd_wall_before"]
             result[f"mcp_capture_latency_{sample_num}_sec"] = mcp_latency
             result[f"bmc_capture_latency_{sample_num}_sec"] = bmc_latency
-
-            # Capture gap between midpoints (should be small for parallel)
-            mcp_midpoint = (cap["mcp_wall_before"] + cap["mcp_wall_after"]) / 2
-            bmc_midpoint = (cap["bmc_wall_before"] + cap["bmc_wall_after"]) / 2
-            capture_gap = bmc_midpoint - mcp_midpoint
 
             self.log.info("[DEBUG TIMING]")
             self.log.info(f"  MCP capture latency  : {mcp_latency:.3f} s")
             self.log.info(f"  BMC capture latency  : {bmc_latency:.3f} s")
             self.log.info(
-                f"  MCP wall window      : "
-                f"{cap['mcp_wall_before']:.3f} -> {cap['mcp_wall_after']:.3f}"
+                f"  MCP cmd window       : "
+                f"{cap['mcp_cmd_wall_before']:.3f} -> {cap['mcp_cmd_wall_after']:.3f}"
             )
             self.log.info(
-                f"  BMC wall window      : "
-                f"{cap['bmc_wall_before']:.3f} -> {cap['bmc_wall_after']:.3f}"
+                f"  BMC cmd window       : "
+                f"{cap['bmc_cmd_wall_before']:.3f} -> {cap['bmc_cmd_wall_after']:.3f}"
             )
 
             # Validate raw outputs
@@ -406,15 +424,13 @@ class utc_sync_test(pldm_common):
                 self.log.error(
                     f"[FAIL] MCP 'utc time' returned empty (sample {sample_num})"
                 )
-                if self.bmc_cli.is_open():
-                    self.bmc_cli.close()
+                self._close_bmc_cli_if_open()
                 return result
             if not bmc_time:
                 self.log.error(
                     f"[FAIL] BMC 'timedatectl' returned empty (sample {sample_num})"
                 )
-                if self.bmc_cli.is_open():
-                    self.bmc_cli.close()
+                self._close_bmc_cli_if_open()
                 return result
 
             # Parse timestamps
@@ -429,8 +445,7 @@ class utc_sync_test(pldm_common):
                     f"mcp_ms={mcp_ms}, bmc_sec={bmc_sec}"
                 )
                 result[f"time_match_{sample_num}"] = False
-                if self.bmc_cli.is_open():
-                    self.bmc_cli.close()
+                self._close_bmc_cli_if_open()
                 return result
 
             # Compute diffs
@@ -438,8 +453,13 @@ class utc_sync_test(pldm_common):
             raw_diff = float(bmc_sec) - mcp_sec_f
             result[f"raw_diff_{sample_num}_sec"] = raw_diff
 
-            # Corrected diff: subtract midpoint gap for raw=(BMC-MCP)
-            corrected_diff = raw_diff - capture_gap
+            # Manager-requested correction:
+            # corrected = (BMC + bmc_elapsed/2) - (MCP + mcp_elapsed/2)
+            bmc_half_elapsed = bmc_latency / 2.0
+            mcp_half_elapsed = mcp_latency / 2.0
+            corrected_bmc_sec = float(bmc_sec) + bmc_half_elapsed
+            corrected_mcp_sec = mcp_sec_f + mcp_half_elapsed
+            corrected_diff = corrected_bmc_sec - corrected_mcp_sec
             result[f"corrected_diff_{sample_num}_sec"] = corrected_diff
 
             match_ok = abs(corrected_diff) <= tolerance_sec
@@ -451,16 +471,16 @@ class utc_sync_test(pldm_common):
             self.log.info(f"  MCP (as seconds)     : {mcp_sec_f:.3f}")
             self.log.info(f"  BMC (seconds)        : {bmc_sec}")
 
-            command_latency = capture_gap
-
             self.log.info(f"  Raw diff (BMC - MCP) : {raw_diff:+.3f} s")
             self.log.info(
-                "  Latency correction from capture timing "
-                f"(midpoint gap): {command_latency:+.3f} s"
+                "  Half elapsed used     : "
+                f"BMC={bmc_half_elapsed:+.3f}s, MCP={mcp_half_elapsed:+.3f}s"
             )
             self.log.info(
-                f"  Corrected diff (BMC - MCP): {raw_diff:+.3f} "
-                f"- ({command_latency:+.3f}) = {corrected_diff:+.3f} s"
+                "  Corrected diff (BMC - MCP): "
+                f"({bmc_sec:.3f} + {bmc_half_elapsed:+.3f}) - "
+                f"({mcp_sec_f:.3f} + {mcp_half_elapsed:+.3f}) = "
+                f"{corrected_diff:+.3f} s"
             )
             self.log.info(
                 f"  {status} Sample {sample_num}: "
@@ -509,7 +529,7 @@ class utc_sync_test(pldm_common):
         self.log.info("=" * 60)
 
         if self.bmc_cli.is_open():
-            self.bmc_cli.close()
+            self._close_bmc_cli_if_open()
             self.log.info("BMC fast path session closed")
 
         return result

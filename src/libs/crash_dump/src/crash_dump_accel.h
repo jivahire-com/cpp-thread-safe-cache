@@ -41,3 +41,10 @@ uint64_t get_timestamp_from_cd(DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info);
  * @param utc_crash_time_ms Timestamp to be updated
  */
 void update_timestamp_in_cd(DUMP_CHUNK_CRASH_INFORMATION* p_dump_crash_info, uint64_t utc_crash_time_ms);
+
+/**
+ * @brief Sets up accel crash dump descriptors for each non-isolated accelerator
+ *
+ * @param context Unused context pointer (for callback compatibility)
+ */
+void crash_dump_setup_accel_descriptors(void* context);

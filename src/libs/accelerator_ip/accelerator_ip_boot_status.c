@@ -74,14 +74,6 @@ static void accel_boot_status_put_sem(ACCEL_ID accel_type)
     BUG_ASSERT_PARAM(status == TX_SUCCESS, status, accel_type);
 }
 
-static unsigned int accel_boot_status_get_sem(ACCEL_ID accel_type)
-{
-    unsigned int status = tx_semaphore_get(&s_accel_boot_sem[accel_type], TX_NO_WAIT);
-    BUG_ASSERT_PARAM(status == TX_SUCCESS || status == TX_NO_INSTANCE, status, accel_type);
-
-    return status;
-}
-
 static void accel_log_boot_time(ACCEL_ID accel_type)
 {
     uint64_t boot_time = gtimer_get_timestamp_us() - boot_start_ts_us[accel_type];
@@ -208,15 +200,10 @@ static void accel_recv_boot_status_msg_icc_cb(void* context, size_t output_size_
         DfwkAsyncRequestComplete(s_sos_dfwk_boot_sync_req[accel_type]);
         s_sos_dfwk_boot_sync_req[accel_type] = NULL;
     }
-    else
-    {
-        /**
-         * Availability of accel boot status semaphore indicates that it has been booted.
-         * So once you get a boot status notification from accel core put this semaphore.
-         * This semaphore will be later read by SOS service to sync for accel boot complete.
-         */
-        accel_boot_status_put_sem(accel_type);
-    }
+
+    // Always put the semaphore - this will be used in CD path to identify
+    // If the accel core has booted
+    accel_boot_status_put_sem(accel_type);
 
     accel_boot_status_msg* msg = (accel_boot_status_msg*)recv_params->params.payload_buffer;
 
@@ -343,4 +330,12 @@ void accel_boot_status_wait_boot_complete(ACCEL_ID accel_type, PDFWK_ASYNC_REQUE
         /* Store the request and complete it later when the accel core boot status is received */
         s_sos_dfwk_boot_sync_req[accel_type] = p_request;
     }
+}
+
+unsigned int accel_boot_status_get_sem(ACCEL_ID accel_type)
+{
+    unsigned int status = tx_semaphore_get(&s_accel_boot_sem[accel_type], TX_NO_WAIT);
+    BUG_ASSERT_PARAM(status == TX_SUCCESS || status == TX_NO_INSTANCE, status, accel_type);
+
+    return status;
 }

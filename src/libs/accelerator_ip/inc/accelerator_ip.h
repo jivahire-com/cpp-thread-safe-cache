@@ -249,3 +249,12 @@ void notify_accelerators_uefi_boot_cb(void* context, fpfw_status_t status);
  * @return none
  */
 void accel_boot_status_wait_boot_complete(ACCEL_ID accel_type, PDFWK_ASYNC_REQUEST_HEADER p_request);
+
+/**
+ * @brief - Tries to obtain a TX semaphore which will only work if 
+ * the core has already booted
+ * 
+ * @param[in] Accel_type - SDM/CDED
+ * @return Return value from tx_semaphore_get
+ */
+unsigned int accel_boot_status_get_sem(ACCEL_ID accel_type);

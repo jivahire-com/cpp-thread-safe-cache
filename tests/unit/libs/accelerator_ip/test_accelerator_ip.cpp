@@ -1264,6 +1264,7 @@ TEST_FUNCTION(test_accel_boot_status_delayed_accel_boot, nullptr, nullptr)
     should_return = false;
     expect_any_always(__wrap_crash_dump_bug_check, errorCode);
 
+    will_return(__wrap__txe_semaphore_put, TX_SUCCESS);
     // Unit test for accel_setup_boot_status_code API for SDM
     will_return_always(__wrap_fpfw_init_get_handle, 0xDEADDEED);
     will_return(__wrap_fpfw_icc_base_recv, BOOT_STATUS_CODE_SDM0_OK);

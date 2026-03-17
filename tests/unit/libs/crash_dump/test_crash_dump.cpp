@@ -28,11 +28,12 @@ extern "C" {
 #include <../src/crash_dump_overrides.h> // for inMemoryOverride
 #include <../src/crash_dump_payload.h>   // for CD_THREADX_DATA, crash_dump_capture_threadx
 #include <../src/crash_dump_status.h>    // for crash_dump_dump_status
-#include <cmsis_m7.h>                    // for SCB
-#include <crash_dump.h>                  // for crash_dump_init
-#include <crash_dump_dfwk.h>             // for crash_dump_device_t, crash_dump_interface_t
-#include <crash_dump_memory.h>           // for CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE...
-#include <icc_platform_defines.h>        // for accel_cd_addr_msg
+#include <accelerator_ip.h>
+#include <cmsis_m7.h>             // for SCB
+#include <crash_dump.h>           // for crash_dump_init
+#include <crash_dump_dfwk.h>      // for crash_dump_device_t, crash_dump_interface_t
+#include <crash_dump_memory.h>    // for CRASH_DUMP_MINI_SCP_ADDR, CRASH_DUMP_MINI_SCP_SIZE...
+#include <icc_platform_defines.h> // for accel_cd_addr_msg
 #include <idsw.h>
 #include <idsw_kng.h>
 #include <kng_icc_shared.h>       // for ICC_SIGNAL_CRASH_DUMP_COLLECT
@@ -358,15 +359,25 @@ void set_expectations_crash_dump_register_default_registers(const core_register_
     expect_value(__wrap_CdRegisterMMIORegisterSet, priority, FPFW_CD_DUMP_PRIORITY_CRITICAL);
 }
 
-void set_expectations_crash_dump_register_accel_cd()
+void set_expectations_crash_dump_register_accel_cd(bool is_mini_dump)
 {
-    // 3 expectations for sdm and 3 cded
-    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
-    set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    if (!is_mini_dump)
+    {
+        // 3 expectations for sdm and 3 cded
+        set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+        set_expectations_crash_dump_register_address32_no_address(sizeof(uint32_t), FPFW_CD_DUMP_PRIORITY_CRITICAL);
+    }
+    else
+    {
+        expect_function_call(__wrap_CdRegisterCallback); // crash_dump_capture_threadx
+        expect_any(__wrap_CdRegisterCallback, callback);
+        expect_any(__wrap_CdRegisterCallback, context);
+        expect_any(__wrap_CdRegisterCallback, priority);
+    }
 }
 
 idsw_cpu_type_t __wrap_idsw_get_cpu_type()
@@ -559,6 +570,7 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
     will_return_always(__wrap_system_info_is_warm_start, false);
 
     will_return(__wrap_idsw_get_cpu_type, CPU_SCP);
+    will_return_count(__wrap_idsw_get_die_id, DIE_0, 2);
 
     set_expectations_initialize_crash_dump_header(SEM_ID_DIE0_IOSS_0, 2);
 
@@ -593,7 +605,8 @@ TEST_FUNCTION(test_crash_dump_register_full_dump_scp, nullptr, nullptr)
     set_expectations_crash_dump_register_threadx(&type_context);
 
     // crash_dump_register_accel_cd()
-    set_expectations_crash_dump_register_accel_cd();
+    // For minidump we just need to mock CdRegisterCallback
+    set_expectations_crash_dump_register_accel_cd(false);
 
     // crash_dump_register_serial_output()
     set_expectations_crash_dump_register_serial_output();
@@ -664,7 +677,7 @@ TEST_FUNCTION(test_crash_dump_register_mini_dump, nullptr, nullptr)
     set_expectations_crash_dump_register_threadx(&type_context);
 
     // crash_dump_register_accel_cd()
-    set_expectations_crash_dump_register_accel_cd();
+    set_expectations_crash_dump_register_accel_cd(true);
 
     // crash_dump_register_serial_output()
     set_expectations_crash_dump_register_serial_output();
@@ -1582,11 +1595,29 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_sdm, nullptr, nullptr)
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
 
+    // accel_boot_status_get_sem()
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
+
     memcpy_mock = true;
     crash_dump_copy_accel_cd_file((void*)accel_type);
     memcpy_mock = false;
 
     assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_COMPLETED);
+}
+
+TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_sdm_sem_get_fail, nullptr, nullptr)
+{
+    crash_dump_context_t context = {};
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
+
+    will_return(__wrap_crash_dump_context, &context);
+
+    // accel_boot_status_get_sem()
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_DELETED);
+
+    crash_dump_copy_accel_cd_file((void*)accel_type);
 }
 
 TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_cded, nullptr, nullptr)
@@ -1621,6 +1652,10 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_cded, nullptr, nullptr)
     expect_function_call(__wrap_wait_for_semaphore);
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
+
+    // accel_boot_status_get_sem()
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
 
     memcpy_mock = true;
     crash_dump_copy_accel_cd_file((void*)accel_type);
@@ -1659,6 +1694,10 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_null_type_ctx, nullptr, nullptr
 
     will_return_always(__wrap_crash_dump_context, &context);
 
+    // accel_boot_status_get_sem()
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
+
     crash_dump_copy_accel_cd_file((void*)accel_type);
 }
 
@@ -1680,6 +1719,10 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_invalid_size, nullptr, nullptr)
     expect_function_call(__wrap_wait_for_semaphore);
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
+
+    // accel_boot_status_get_sem()
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
 
     crash_dump_copy_accel_cd_file((void*)accel_type);
     assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_NOT_AVAILABLE);
@@ -1704,6 +1747,10 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_invalid_offset, nullptr, nullpt
     expect_function_call(__wrap_wait_for_semaphore);
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
+
+    // accel_boot_status_get_sem()
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
 
     crash_dump_copy_accel_cd_file((void*)accel_type);
     assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_NOT_AVAILABLE);
@@ -1744,6 +1791,12 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_null_ctx, nullptr, nullptr)
     expect_any(__wrap_release_semaphore, id);
     expect_function_call(__wrap_release_semaphore);
 
+    // accel_boot_status_get_sem() - called in crash_dump_copy_accel_cd_file and crash_dump_generate_default_accel_cd
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
+
     crash_dump_copy_accel_cd_file((void*)accel_type);
     assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_COMPLETED);
 }
@@ -1781,6 +1834,12 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_inval_magic_off, nullptr, nullp
     expect_function_call(__wrap_release_semaphore);
 
     will_return(__wrap_idsw_get_die_id, DIE_0);
+
+    // accel_boot_status_get_sem() - called in crash_dump_copy_accel_cd_file and crash_dump_generate_default_accel_cd
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
 
     crash_dump_copy_accel_cd_file((void*)accel_type);
     assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_COMPLETED);
@@ -1832,8 +1891,45 @@ TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_inval_magic_val, nullptr, nullp
 
     will_return(__wrap_idsw_get_die_id, DIE_0);
 
+    // accel_boot_status_get_sem() - called in crash_dump_copy_accel_cd_file and crash_dump_generate_default_accel_cd
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_SUCCESS);
+
     crash_dump_copy_accel_cd_file((void*)accel_type);
     assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_COMPLETED);
+}
+
+TEST_FUNCTION(test_crash_dump_copy_accel_cd_file_accel_get_sem_fail, nullptr, nullptr)
+{
+    crash_dump_header_t full_header = {.status = CRASH_DUMP_IN_USE};
+    crash_dump_type_context_t type_context = {.type = CRASH_DUMP_TYPE_FULL, .header = &full_header};
+    crash_dump_context_t context = {.type_ctx = {NULL, &type_context}};
+
+    ACCEL_ID accel_type = ACCEL_ID_SDM;
+    uint32_t atu_addr = 0xABCD;
+    uint32_t dtcm_offset = SDM_EXT_CFG_EMCPU_TCM_DTCM_ADDRESS;
+    uint32_t magic_number_off = 0x1000;
+    uint32_t magic_number_addr = atu_addr + dtcm_offset + magic_number_off;
+    uint32_t magic_number_value = 0xFFFFFFF;
+
+    // Setup the magic number
+    mmio_set_mock_data(magic_number_addr, magic_number_value);
+
+    context.type_ctx[CRASH_DUMP_TYPE_FULL] = &type_context;
+    context.accel_cd_ctx[accel_type].cd_file_offset = 0xCAFE;
+    context.accel_cd_ctx[accel_type].cd_file_size = 0x1000;
+    context.accel_cd_ctx[accel_type].cd_magic_nr_offset = magic_number_off;
+
+    will_return_always(__wrap_crash_dump_context, &context);
+
+    // accel_boot_status_get_sem() - called in crash_dump_copy_accel_cd_file and crash_dump_generate_default_accel_cd
+    expect_any(__wrap_accel_boot_status_get_sem, accel_type);
+    will_return(__wrap_accel_boot_status_get_sem, TX_DELETED);
+
+    crash_dump_copy_accel_cd_file((void*)accel_type);
+    assert_true(full_header.cores[CRASH_DUMP_CORE_SDM] == CRASH_DUMP_STATE_NOT_AVAILABLE);
 }
 
 TEST_FUNCTION(crash_dump_accel_default_cd_init_sdm_die0, nullptr, nullptr)

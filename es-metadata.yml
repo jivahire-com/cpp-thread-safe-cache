@@ -1,0 +1,12 @@
+schemaVersion: 1.0.0
+providers:
+- provider: InventoryAsCode
+  version: 1.0.0
+  metadata:
+    isProduction: true
+    accountableOwners:
+      service: 8855b5b1-1acf-4004-b79b-9a0887ecc728
+    routing:
+      defaultAreaPath:
+        org: azurecsi
+        path: Dev\1PSFW\Cascade Range\Echo Falls\SoC FW\MSCP

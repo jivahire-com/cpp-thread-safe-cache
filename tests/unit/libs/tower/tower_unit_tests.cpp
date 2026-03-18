@@ -35,6 +35,7 @@ extern "C" {
 /*-------- Function Prototypes -----------*/
 
 tower_knobs_t __real_config_get_tower_knobs(void);
+void tower_mocks_set_ras_agent_probe_fields(bool misc_0_valid, uint32_t misc_0, uint32_t err_type);
 
 /*-- Declarations (Statics and globals) --*/
 static jmp_buf mock_jump_buf;
@@ -1386,6 +1387,35 @@ TEST_FUNCTION(test_tower_fmu_corrected_handler, nullptr, nullptr)
     will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_CORRECTED);
     will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
     tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+}
+
+TEST_FUNCTION(test_tower_fmu_pmni_deferred_errata, nullptr, nullptr)
+{
+    ras_agent_entity_t mock_ras_entity;
+
+    will_return_always(__wrap_atu_map, SILIBS_SUCCESS);
+    will_return(__wrap_tower_get_ras_agent_entity, &mock_ras_entity);
+    will_return(__wrap_ras_arm_fmu_agent_set_base, SILIBS_SUCCESS);
+
+    tower_mocks_set_ras_agent_probe_fields(true, (0x1 << 16) | TOWER_PMNI, RAS_ARM_DEFERRED_ERROR);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, 0x1201);
+    will_return(__wrap_ras_agent_probe, true);
+    will_return(__wrap_ras_agent_probe, mock_ras_generic_handler);
+    will_return(__wrap_ras_agent_probe, false);
+    will_return(__wrap_ras_agent_probe, 0);
+    will_return(__wrap_ras_agent_probe, false);
+
+    expect_function_call(__wrap_ras_print_record);
+    will_return(__wrap_ras_agent_record_to_cper, ACPI_ERROR_SEVERITY_UNCORRECTED_NON_FATAL);
+    will_return(__wrap_ras_agent_record_to_cper, SILIBS_SUCCESS);
+
+    expect_function_call(__wrap_crash_dump_bug_check);
+    if (!bugcheck_mock_return())
+    {
+        tower_fmu_handler(TOWER_VAB_RPSS0, SOC_D0, 0);
+    }
 }
 
 TEST_FUNCTION(test_tower_fmu_fatal_handler, nullptr, nullptr)

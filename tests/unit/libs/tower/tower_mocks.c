@@ -35,8 +35,20 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
+static bool g_ras_agent_probe_misc_0_valid;
+static uint32_t g_ras_agent_probe_misc_0;
+static uint32_t g_ras_agent_probe_err_type;
+static bool g_ras_agent_probe_fields_override_set;
 
 /*------------- Functions ----------------*/
+
+void tower_mocks_set_ras_agent_probe_fields(bool misc_0_valid, uint32_t misc_0, uint32_t err_type)
+{
+    g_ras_agent_probe_misc_0_valid = misc_0_valid;
+    g_ras_agent_probe_misc_0 = misc_0;
+    g_ras_agent_probe_err_type = err_type;
+    g_ras_agent_probe_fields_override_set = true;
+}
 
 int __wrap_atu_map(atu_id_t atu_id, atu_map_entry_t* atu_map_entry)
 {
@@ -170,6 +182,13 @@ bool __wrap_ras_agent_probe(ras_agent_entity_t* agent, ras_error_record_t* recor
     assert_non_null(agent);
     assert_non_null(record);
 
+    if (g_ras_agent_probe_fields_override_set)
+    {
+        record->misc_0_valid = g_ras_agent_probe_misc_0_valid;
+        record->misc_0 = g_ras_agent_probe_misc_0;
+        record->err_type = g_ras_agent_probe_err_type;
+        g_ras_agent_probe_fields_override_set = false;
+    }
     record->handler = mock_ptr_type(ras_generic_handler_t);
     record->err_code_valid = mock_type(bool);
     record->err_code = mock_type(uint32_t);

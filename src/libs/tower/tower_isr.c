@@ -173,6 +173,16 @@ silibs_status_t tower_fmu_handler(TOWER_INSTANCE tower_id, DIE_INSTANCE die, uin
         }
         else
         {
+            // ARM Errata: Uplevel PMNI Nodes reporting DE|ACPI_ERROR_SEVERITY_UNCORRECTABLE_NON_FATAL to
+            //             UE|ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL
+            if (record.misc_0_valid && ((TOWER_NODE_TYPE)(record.misc_0 & 0xFFFF)) == TOWER_PMNI)
+            {
+                if (record.err_type & RAS_ARM_DEFERRED_ERROR)
+                {
+                    FPFW_DBGPRINT_ALWAYS("ARM PMNI SMINJ Errata: Upleveling DE to UE in ACPI severity\n");
+                    severity = ACPI_ERROR_SEVERITY_UNCORRECTABLE_FATAL;
+                }
+            }
             hm_submit_cper(ACPI_ERROR_DOMAIN_NITOWER, severity, &cper_section, sizeof(cper_section));
         }
 

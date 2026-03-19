@@ -85,10 +85,12 @@ class smmu_ue_error_injection(EchoFallsBaseTest):
 
         scp_channel = self.dut.mb.node_0.soc.primary_die.scp.channel_manager.get_current_channel()
         apns_channel = self.dut.mb.node_0.soc.primary_die.apns.channel_manager.get_current_channel()
+        hsp_channel=self.dut.mb.node_0.soc.primary_die.hsp.channel_manager.get_current_channel()
 
         # Ensure the host config file used alongside this test has SCP, MCP, and APNS connections defined
         assert scp_channel is not None
         assert apns_channel is not None
+        assert hsp_channel is not None
 
         # Open SCP channel
         scp_channel.open()
@@ -111,6 +113,18 @@ class smmu_ue_error_injection(EchoFallsBaseTest):
             time.sleep(30)
             return False
 
+        # Open HSP channel
+        hsp_channel.open()
+
+        if not hsp_channel.is_open():
+            self.log.error("Failed to open HSP channel")
+            scp_channel.clos()
+            apns_channel.clos()
+            self.test_notify(step="Open_HSP_Channel", msg="Test Fail", _is_error=True)
+            self.dut.teardown()
+            time.sleep(30)
+            return False
+
         # Perform SOC reset
         self.log.warning("Device type is SOC. Performing SOC reset ...")
         cred_path = os.environ.get('SECURE_FILE_PATH')
@@ -118,12 +132,7 @@ class smmu_ue_error_injection(EchoFallsBaseTest):
         rscm_helper = RscmHelperLibrary(rm_host=self.host_config.rack_scm.host, bmc_host=self.dut.mb.node_0.dcscm.bmc.ip, rm_user=creds['RM_USER'], rm_password=creds['RM_PASSWORD'], bmc_user=creds['BMC_USER'], bmc_password=creds['BMC_PASSWORD'], node=self.host_config.node_id)
         rscm_helper.rscm_soc_reset()
 
-        #self.log.info("Executing i2ctransfer command on BMC...")
-        #self._bmc_execute_command("i2ctransfer -f -y 3 w2@0x09 0x61 0x80")
-
-        #self.log.info("Restarting C4143-MCTP-over-UART service on BMC...")
-        #self._bmc_execute_command("systemctl restart C4143-MCTP-over-UART@ttyS3.service")
-
+       
         self.log.info("Executing mctptool list on BMC...")
         pldm_found = False
         for mctp_attempt in range(1, 4):
@@ -139,6 +148,7 @@ class smmu_ue_error_injection(EchoFallsBaseTest):
             self.log.error("PLDM not found in mctptool list output after 3 attempts")
             scp_channel.close()
             apns_channel.close()
+            hsp_channel.close()
             self.test_notify(step="PLDM_MCTP_Check", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             time.sleep(30)
@@ -153,10 +163,12 @@ class smmu_ue_error_injection(EchoFallsBaseTest):
         try:
             scp_channel.read_until(key="Primary AP core power on", timeout_seconds=1200)
             apns_channel.read_until(key="SAC>", timeout_seconds=1200)
+            apns_channel.read_until(key="CMD command is now available", timeout_seconds=250)
         except Exception as e:
             self.log.error(f"Error waiting for SAC CMD: {e}")
             scp_channel.close()
             apns_channel.close()
+            hsp_channel.close()
             self.test_notify(step="SAC_CMD", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             time.sleep(30)
@@ -181,6 +193,7 @@ class smmu_ue_error_injection(EchoFallsBaseTest):
             self.log.error(f"Error in injecting smmu ue error: {e}")
             scp_channel.close()
             apns_channel.close()
+            hsp_channel.close()
             self.test_notify(step="UE_Injection", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             return False
@@ -193,6 +206,7 @@ class smmu_ue_error_injection(EchoFallsBaseTest):
             self.log.error("CPER dump file was not created on BMC")
             scp_channel.close()
             apns_channel.close()
+            hsp_channel.close()
             self.test_notify(step="CPER_Dump_Verification", msg="Test Fail", _is_error=True)
             self.dut.teardown()
             time.sleep(30)
@@ -204,6 +218,7 @@ class smmu_ue_error_injection(EchoFallsBaseTest):
         self.log.info("SMMU UE Error Injection test completed successfully")
         scp_channel.close()
         apns_channel.close()
+        hsp_channel.close()
         self.test_notify(step="SMMU_UE_Error_Injection", msg="Test Done", _is_error=False)
         self.dut.teardown()
         time.sleep(30)

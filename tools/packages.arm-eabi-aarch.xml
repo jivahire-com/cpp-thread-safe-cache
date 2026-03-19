@@ -27,7 +27,7 @@
         <package name="echofalls.rp_data.build" version="2.0.0.52" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.ApCoreFw/nuget/v3/index.json"/>
         <package name="pcie.phy.bin" version="1.95.1.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
         <package name="IFTVectors" version="1.0.0.7" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.PhyBins@Local/nuget/v3/index.json"/>
-        <package name="1psfw.diagnosticdecoder.windows" version="1.1.271" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.Dependency/nuget/v3/index.json"/>
+        <package name="1psfw.diagnosticdecoder.windows" version="1.1.277" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/EchoFalls.Dependency/nuget/v3/index.json"/>
     </nuget_packages>
 
     <pip_packages>
@@ -36,7 +36,7 @@
         <package name="pythia-tdk-common" version="0.5.28" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
         <!-- /// @TODO: click 8.3.0 breaks diagtool, remove once fixed https://azurecsi.visualstudio.com/Dev/_workitems/edit/2943104 -->
         <package name="click" version="8.2.1" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
-        <package name="diagtool" version="1.1.271" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
+        <package name="diagtool" version="1.1.277" source="https://azurecsi.pkgs.visualstudio.com/Woodinville/_packaging/echofalls.fw.deps/pypi/simple/"/>
     </pip_packages>
 
 </packages>

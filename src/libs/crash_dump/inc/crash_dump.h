@@ -79,6 +79,7 @@ typedef struct __attribute__((__packed__)) {
     uint32_t lr;
     uint32_t pc;
     uint32_t xpsr;
+    uint32_t crash_core_id;
 } core_crash_context_t;
 
 typedef struct {

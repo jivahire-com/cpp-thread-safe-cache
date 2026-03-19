@@ -234,6 +234,9 @@ void crash_dump_handler(uint32_t errorCode, uint32_t p1, uint32_t p2, uint32_t p
         bug_check_info.data.Parameter[2] = p3;
         bug_check_info.data.Parameter[3] = p4;
 
+        // Save the core ID which initiated the crash to global context.
+        g_core_crash_context.crash_core_id = cd_origin_core_id;
+
         for (int i = 0; i < CRASH_DUMP_TYPE_NUM; i++)
         {
             if (ctx->type_ctx[i] != NULL)

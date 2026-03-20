@@ -114,7 +114,7 @@
     <Knob name="mesh_hnf_aux_ctl_1" type="uint64_t" default="0x10001005A900" help="Set value for por_hnf_aux_ctl_1"/>
     <Knob name="a1_mesh_hnf_aux_ctl_1" type="uint64_t" default="0x10001005A900" help="Set value for por_hnf_aux_ctl_1"/>
     <Knob name="mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C01738921000" help="Set value for por_hnf_cfg_ctl"/>
-    <Knob name="a1_mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C01738921000" help="Set value for por_hnf_cfg_ctl"/>
+    <Knob name="a1_mesh_hnf_cfg_ctl" type="uint64_t" default="0x2000C01738923000" help="Set value for por_hnf_cfg_ctl"/>
     <Knob name="mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F09" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
     <Knob name="a1_mesh_hnf_lbt_cfg_ctl" type="uint64_t" default="0x7F7F09" help="Functions as the configuration control register for HN-F. Only applicable to LBT transactions"/>
     <Knob name="mesh_hnf_lbt_aux_ctl" type="uint64_t" default="0x440000000000006" help="Functions as the auxiliary control register for HN-F. Only applicable to LBT transactions"/>

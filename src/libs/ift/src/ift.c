@@ -48,6 +48,8 @@ static uint32_t s_ift_intent_type = 0;              // IFT intent type
 static uint16_t s_ift_fw_idx = 0;
 static uint32_t s_ift_current_fw_size = 0;
 static uint32_t s_ift_skip_irq_num = 0; // IRQ number to skip during IFT
+static uint32_t s_core_defect_mfg_mask[CORE_DEFECT_MFG_MASK_ARRAY_SIZE] = {0};
+static uint32_t s_hns_defect_mfg_mask[HNS_DEFECT_MFG_MASK_ARRAY_SIZE] = {0};
 
 /*--------------------- Global Declarations ------------------*/
 
@@ -70,17 +72,29 @@ static uint32_t ift_get_pattern_version()
     return IFT_PATTERN_VERSION;
 }
 
-static void ift_get_core_defect_mfg_mask(uint32_t* core_defect_mfg_mask)
+static void ift_update_defect_mfg_mask()
 {
-    core_defect_mfg_mask[0] = (uint32_t)fuse_read_data((uintptr_t)SYSTEM_FUSE_RAM_BASE_ADDR,
-                                                       CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET,
-                                                       CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_WIDTH);
-    core_defect_mfg_mask[1] = (uint32_t)fuse_read_data((uintptr_t)SYSTEM_FUSE_RAM_BASE_ADDR,
-                                                       CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_BIT_OFFSET,
-                                                       CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_WIDTH);
-    core_defect_mfg_mask[2] = (uint32_t)fuse_read_data((uintptr_t)SYSTEM_FUSE_RAM_BASE_ADDR,
-                                                       CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_BIT_OFFSET,
-                                                       CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_WIDTH);
+    s_core_defect_mfg_mask[0] = (uint32_t)fuse_read_data((uintptr_t)SYSTEM_FUSE_RAM_BASE_ADDR,
+                                                         CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET,
+                                                         CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_WIDTH);
+    s_core_defect_mfg_mask[1] = (uint32_t)fuse_read_data((uintptr_t)SYSTEM_FUSE_RAM_BASE_ADDR,
+                                                         CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_BIT_OFFSET,
+                                                         CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_63_32_WIDTH);
+    s_core_defect_mfg_mask[2] = (uint32_t)fuse_read_data((uintptr_t)SYSTEM_FUSE_RAM_BASE_ADDR,
+                                                         CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_BIT_OFFSET,
+                                                         CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_67_64_WIDTH);
+    s_hns_defect_mfg_mask[0] = (uint32_t)fuse_read_data((uintptr_t)SYSTEM_FUSE_RAM_BASE_ADDR,
+                                                        HNS_DEFECT_MFG_MASK_HNS_DEFECT_MFG_31_0_BIT_OFFSET,
+                                                        HNS_DEFECT_MFG_MASK_HNS_DEFECT_MFG_31_0_WIDTH);
+    s_hns_defect_mfg_mask[1] = (uint32_t)fuse_read_data((uintptr_t)SYSTEM_FUSE_RAM_BASE_ADDR,
+                                                        HNS_DEFECT_MFG_MASK_HNS_DEFECT_MFG_33_32_BIT_OFFSET,
+                                                        HNS_DEFECT_MFG_MASK_HNS_DEFECT_MFG_33_32_WIDTH);
+
+    FPFW_DBGPRINT_INFO("IFT Core Defect MFG Mask: 0x%08x 0x%08x 0x%08x\n",
+                       s_core_defect_mfg_mask[0],
+                       s_core_defect_mfg_mask[1],
+                       s_core_defect_mfg_mask[2]);
+    FPFW_DBGPRINT_INFO("IFT HNS Defect MFG Mask: 0x%08x 0x%08x\n", s_hns_defect_mfg_mask[0], s_hns_defect_mfg_mask[1]);
 }
 
 static void ift_inc_test_fw_idx(void)
@@ -283,6 +297,7 @@ void ift_init(fpfw_icc_base_ctx_t* hsp_icc_ctx)
     if (ift_is_enabled())
     {
         ift_mpu_update();
+        ift_update_defect_mfg_mask();
     }
 
     g_hsp_icc_ctx = hsp_icc_ctx;
@@ -293,8 +308,7 @@ void ift_init(fpfw_icc_base_ctx_t* hsp_icc_ctx)
 void ift_execute_test(PDFWK_ASYNC_REQUEST_HEADER request)
 {
     idsw_die_id_t die_id = idsw_get_die_id();
-
-    uint32_t core_defect_mfg_mask[CORE_DEFECT_MFG_MASK_ARRAY_SIZE] = {0};
+    ift_execute_cfg_t execute_cfg = {0};
 
     FPFW_DBGPRINT_INFO("IFT Execute Test: DieID=%d, FWIdx=%ld, CurrentFWSize=0x%lx\n",
                        die_id,
@@ -307,19 +321,25 @@ void ift_execute_test(PDFWK_ASYNC_REQUEST_HEADER request)
     /* Disabled Interrupts */
     ift_disable_irq();
 
+    execute_cfg.pattern_version = ift_get_pattern_version();
+    execute_cfg.fail_limit = SCP_EXP_IFT_RESULT_MAX - (g_ift_result_offset >> 1);
+    execute_cfg.fail_buffer = (uint32_t*)SCP_EXP_IFT_RESULT_BASE;
+    execute_cfg.fail_index = &g_ift_result_offset;
+    execute_cfg.bin_dword_count = BYTES_TO_WORDS(ift_get_current_fw_size());
+    execute_cfg.core_defect_mfg_mask = s_core_defect_mfg_mask;
+    execute_cfg.hns_defect_mfg_mask = s_hns_defect_mfg_mask;
+    execute_cfg.num_core_defect_mfg_mask_regs = CORE_DEFECT_MFG_MASK_ARRAY_SIZE;
+    execute_cfg.num_hns_defect_mfg_mask_regs = HNS_DEFECT_MFG_MASK_ARRAY_SIZE;
+
+    FPFW_DBGPRINT_INFO("IFT Result index 0x%lu, Result limit %lu\n", *execute_cfg.fail_index, execute_cfg.fail_limit);
+
     /* Run the IFT core test */
-    g_ift_execute_status = ift_execute_ist(SCP_TOP_DBGR_IFT_ADDRESS,
-                                           (void*)ift_get_fw_addr(),
-                                           ift_get_pattern_version(),
-                                           SCP_EXP_IFT_RESULT_MAX - (g_ift_result_offset >> 1),
-                                           (uint32_t*)SCP_EXP_IFT_RESULT_BASE,
-                                           &g_ift_result_offset,
-                                           BYTES_TO_WORDS(ift_get_current_fw_size()));
+    g_ift_execute_status = ift_execute_ist_ext(SCP_TOP_DBGR_IFT_ADDRESS, (void*)ift_get_fw_addr(), &execute_cfg);
 
     FPFW_DBGPRINT_INFO("IFT Execute Test: ExecuteStatus=%d, ResultOffset=%ld\n", g_ift_execute_status, g_ift_result_offset);
 
     /**
-     * `ift_execute_ist()` can generate multiple results and each result is size two word(32-bit)
+     * `ift_execute_ist_ext()` can generate multiple results and each result is size two word(32-bit)
      * `g_ift_result_offset` represents index for array of uint32_t(one word) and this array stores
      * the IFT test results. So the maximum valid value for `g_ift_result_offset` is
      * `SCP_EXP_IFT_RESULT_MAX << 1`
@@ -338,22 +358,6 @@ void ift_execute_test(PDFWK_ASYNC_REQUEST_HEADER request)
      */
     if (g_ift_execute_status != SILIBS_SUCCESS || ift_is_test_done())
     {
-        /**
-         * Currently we are ignoring the core defect manufacturing mask. Later
-         * we will use this mask to filter out any defective cores from the
-         * test results.
-         *
-         * Core defect MFG fuse contains information regarding faulty cores.
-         * Since this cores are know to be faulty in future we need filter them
-         * out of test results before sending them to HSP.
-         *
-         * Since currently parsing the test results logic is still in development.
-         * Just read this fuses for now and use them in future.
-
-         * TODO: 2820614 - SCP processes IFT errors
-         */
-        ift_get_core_defect_mfg_mask(core_defect_mfg_mask);
-
         /**
          * Send the IFT core test results to HSP. HSP will further pushout this
          * logs to BMC as SEL logs and at last send the IFT core test status to HSP

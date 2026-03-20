@@ -52,11 +52,17 @@ idsw_plat_id_t __wrap_idsw_get_platform_sdv(void)
     return mock_type(idsw_plat_id_t);
 }
 
+bool __wrap_ift_is_enabled(void)
+{
+    return mock_type(bool);
+}
+
 //
 // Tests
 //
 TEST_FUNCTION(test_watchdog_init_non_rvp, nullptr, nullptr)
 {
+    will_return(__wrap_ift_is_enabled, false); // IFT disabled
     will_return(__wrap_config_get_wdog_en, true);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON - 1);
     fpfw_init_result_t result = _fpfw_component_wdog.init_fn();
@@ -65,6 +71,7 @@ TEST_FUNCTION(test_watchdog_init_non_rvp, nullptr, nullptr)
 
 TEST_FUNCTION(test_watchdog_init_disabled, nullptr, nullptr)
 {
+    will_return(__wrap_ift_is_enabled, false); // IFT disabled
     will_return(__wrap_config_get_wdog_en, false);
     fpfw_init_result_t result = _fpfw_component_wdog.init_fn();
     assert_int_equal(result.status, FPFW_INIT_STATUS_SUCCESS);
@@ -72,6 +79,7 @@ TEST_FUNCTION(test_watchdog_init_disabled, nullptr, nullptr)
 
 TEST_FUNCTION(test_watchdog_init_rvp, nullptr, nullptr)
 {
+    will_return(__wrap_ift_is_enabled, false); // IFT disabled
     will_return(__wrap_config_get_wdog_en, true);
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
@@ -82,6 +90,18 @@ TEST_FUNCTION(test_watchdog_init_rvp, nullptr, nullptr)
     will_return(__wrap_wdog_service_init, TX_SUCCESS);
 
     fpfw_init_result_t result = _fpfw_component_wdog.init_fn();
+    assert_int_equal(result.status, FPFW_INIT_STATUS_SUCCESS);
+}
+
+TEST_FUNCTION(test_watchdog_init_ift_enabled, nullptr, nullptr)
+{
+
+    will_return(__wrap_ift_is_enabled, true); // IFT enabled
+
+    // Call API under test
+    fpfw_init_result_t result = _fpfw_component_wdog.init_fn();
+
+    // Check expected return value
     assert_int_equal(result.status, FPFW_INIT_STATUS_SUCCESS);
 }
 }

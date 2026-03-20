@@ -20,6 +20,7 @@ target_link_libraries(${TARGET}
         ms::service::wdog
         ms::lib::crash_dump
         ms::lib::config_manager
+        ms::lib::ift
         ms::lib::threadx
         silibs::idhw
         silibs::idsw
@@ -33,6 +34,12 @@ set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_THREADX "extern.th
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_INTERRUPTS "ms::lib::interrupts")
 set_target_properties(${TARGET} PROPERTIES FPFW_PLATFORM_IMPL_ATOMIC "ms::lib::atomics")
 
+target_compile_definitions(
+    ${TARGET}
+    PRIVATE
+       SCP_RUNTIME_INIT
+)
+
 lint_target(${TARGET})
 format_target(${TARGET})
 coverage_target(${TARGET})
@@ -42,5 +49,6 @@ unit_test_target(${TARGET})
 mock_target(${TARGET}
     config_get_wdog_en
     idsw_get_platform_sdv
+    ift_is_enabled
     wdog_service_init
 )

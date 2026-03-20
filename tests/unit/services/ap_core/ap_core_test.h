@@ -32,4 +32,5 @@ extern bool should_mock_ap_core_ppu_init;
 extern "C" {
 void __real_ap_core_ppu_clusters_on(ap_core_service_context_t* p_context, uint32_t timeout_ms);
 void __real_ap_core_ppu_clusters_on_off(ap_core_service_context_t* p_context, uint32_t timeout_ms);
+void __real_ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsigned core_idx, bool power_state_on, uint32_t timeout_ms);
 }

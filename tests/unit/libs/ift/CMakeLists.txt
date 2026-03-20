@@ -70,6 +70,7 @@ mock_target(${TARGET}
 
     idsw_get_die_id
     ift_execute_ist
+    ift_execute_ist_ext
 
     fpfw_icc_base_send_sync
     fpfw_icc_base_recv

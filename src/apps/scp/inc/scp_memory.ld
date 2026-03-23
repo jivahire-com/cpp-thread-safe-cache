@@ -25,11 +25,7 @@ __RMSSDATAEND__      = 0x013B3FFF;
 __ARM_EX_START__ = 0xF0000000;
 __ARM_EX_SIZE__  = 0x00FFFFFF;
 
-/*
- * ADO 2809728 - Rollback original reserved space
- * after create a new section in RMSS ro region for functions,
- */
-__RESERVED_CODE_SIZE = 0;
+__RESERVED_CODE_SIZE = 0x8000;
 
 /*
  * CODE and DATA sizes map directly to the sizes of the respective TCM (plus one for size).

@@ -753,20 +753,18 @@ void mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps(void)
 
 void mts_manager_send_prep_pwr_pkg_notification_to_scp(void)
 {
-    if (mts_is_primary_instance() == true)
-    {
-        trp_msg_t trp_msg = {0};
-        mts_manager_init_trp_header_for_broadcast(&trp_msg, MEMBER_SIZE(tlm_client_msg_t, cmd));
-        trp_msg.hdr.dest_node.die_id = mts_get_this_die_id();
-        trp_msg.hdr.dest_node.core_id = CPU_SCP;
-        trp_msg.hdr.broadcast_type = TRP_BROADCAST_NONE;
+    // this is sent from both primary and secondary MCP, but only needs to be handled by SCPs
+    trp_msg_t trp_msg = {0};
+    mts_manager_init_trp_header_for_broadcast(&trp_msg, MEMBER_SIZE(tlm_client_msg_t, cmd));
+    trp_msg.hdr.dest_node.die_id = mts_get_this_die_id();
+    trp_msg.hdr.dest_node.core_id = CPU_SCP;
+    trp_msg.hdr.broadcast_type = TRP_BROADCAST_NONE;
 
-        p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
-        tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH;
+    p_tlm_client_msg_t tlm_client_msg = (p_tlm_client_msg_t)trp_msg.payload.client_msg;
+    tlm_client_msg->cmd = TLM_CLIENT_CMD_GEN_PWR_PACKAGE_MCP_2_SCP_PUSH;
 
-        // api copies message, ok to use stack memory
-        mts_client_send_new_trp_msg(&trp_msg);
-    }
+    // api copies message, ok to use stack memory
+    mts_client_send_new_trp_msg(&trp_msg);
 }
 
 void mts_manager_send_record_enables_to_scp(p_tlm_scp_record_enables_t enables)

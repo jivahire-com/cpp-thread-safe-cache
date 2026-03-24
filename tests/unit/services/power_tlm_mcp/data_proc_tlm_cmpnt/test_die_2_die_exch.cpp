@@ -1033,3 +1033,111 @@ TEST_FUNCTION(test_die_2_die_exch_ib_read_total_memory_power_mW_combined_invalid
     uint32_t read_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
     assert_int_equal(read_power_mW, 5500);
 }
+
+// Test for die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters - multi-die accumulation
+TEST_FUNCTION(test_die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters_multi_die_accumulation, test_setup, test_teardown)
+{
+    // Test that writes from die 1 replace the data in shared memory (last write wins)
+
+    // Initialize die 0 first to clear the shared memory
+    die_2_die_exch_init(0);
+
+    // Write from die 0 (primary die) - using [12][8] array to match production code
+    uint64_t write_counters_die0[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR] = {{0}};
+    uint64_t write_unallocated_die0 = 100;
+
+    for (size_t i = 0; i < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; i++)
+    {
+        for (size_t j = 0; j < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; j++)
+        {
+            write_counters_die0[i][j] = (i * 10) + j;
+        }
+    }
+    die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters(&write_counters_die0[0][0], &write_unallocated_die0);
+
+    // Write from die 1 (secondary die) - should replace die 0 values
+    die_2_die_exch_init(1);
+
+    uint64_t write_counters_die1[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR] = {{0}};
+    uint64_t write_unallocated_die1 = 200;
+
+    for (size_t i = 0; i < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; i++)
+    {
+        for (size_t j = 0; j < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; j++)
+        {
+            write_counters_die1[i][j] = (i * 5) + (j * 2);
+        }
+    }
+    die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters(&write_counters_die1[0][0], &write_unallocated_die1);
+
+    // Read and verify values from die 1 (last write)
+    uint64_t read_counters[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR] = {{0}};
+    uint64_t read_unallocated = 0;
+
+    die_2_die_exch_ib_read_pwr_pkg_mpam_mem_counters(&read_counters[0][0], &read_unallocated);
+
+    // Verify: Should have values from die 1 only (last write wins)
+    for (size_t i = 0; i < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; i++)
+    {
+        for (size_t j = 0; j < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; j++)
+        {
+            uint64_t expected = (i * 5) + (j * 2);
+            assert_int_equal(read_counters[i][j], expected);
+        }
+    }
+    assert_int_equal(read_unallocated, 200); // Only die 1 value
+
+    // Verify data is cleared after read
+    uint64_t read_counters2[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR] = {{0}};
+    uint64_t read_unallocated2 = 999;
+
+    die_2_die_exch_ib_read_pwr_pkg_mpam_mem_counters(&read_counters2[0][0], &read_unallocated2);
+
+    for (size_t i = 0; i < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; i++)
+    {
+        for (size_t j = 0; j < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; j++)
+        {
+            assert_int_equal(read_counters2[i][j], 0);
+        }
+    }
+    assert_int_equal(read_unallocated2, 0);
+}
+
+// Test for die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters and read - negative cases
+TEST_FUNCTION(test_die_2_die_exch_ib_read_write_pwr_pkg_mpam_mem_counters_negative, test_setup, test_teardown)
+{
+    // Test 1: NULL pointer for read - counters
+    die_2_die_exch_init(1);
+
+    uint64_t write_counters[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR] = {{0}};
+    uint64_t write_unallocated = 5000;
+    uint64_t read_unallocated = 9999;
+
+    for (size_t i = 0; i < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; i++)
+    {
+        for (size_t j = 0; j < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; j++)
+        {
+            write_counters[i][j] = 42;
+        }
+    }
+
+    die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters(&write_counters[0][0], &write_unallocated);
+    die_2_die_exch_ib_read_pwr_pkg_mpam_mem_counters(nullptr, &read_unallocated); // Should not crash
+
+    // Test 2: NULL pointer for read - unallocated
+    uint64_t read_counters[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR] = {{0}};
+    die_2_die_exch_ib_read_pwr_pkg_mpam_mem_counters(&read_counters[0][0], nullptr); // Should not crash
+
+    // Test 3: Both NULL pointers for read
+    die_2_die_exch_ib_read_pwr_pkg_mpam_mem_counters(nullptr, nullptr); // Should not crash
+
+    // Test 4: NULL pointer for write - counters
+    die_2_die_exch_init(1);
+    die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters(nullptr, &write_unallocated); // Should not crash
+
+    // Test 5: NULL pointer for write - unallocated
+    die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters(&write_counters[0][0], nullptr); // Should not crash
+
+    // Test 6: Both NULL pointers for write
+    die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters(nullptr, nullptr); // Should not crash
+}

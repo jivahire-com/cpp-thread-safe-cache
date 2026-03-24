@@ -23,6 +23,7 @@
 #include <power_runconfig.h>
 #include <pwr_tlm_core_exchange.h>
 #include <stdint.h>
+#include <stdio.h> // for printf
 
 /*-- Symbolic Constant Macros (defines) --*/
 
@@ -44,7 +45,9 @@ static_assert(sizeof(power_adclk_tel_t) == sizeof(uint64_t) * NUM_AP_CORES_PER_D
 p_trp_msg_t pwr_tlm_client_queue_mem[PWR_TLM_MAX_TRP_MESSAGES];
 uint8_t pwr_tlm_client_pool_mem[PWR_TLM_CLIENT_BLOCK_POOL_SIZE];
 // This will accumulate all allocated and unallocated counts across all memory controllers on this die
-uint64_t pmu_cnt_all[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_MAX_PWR_TEL_EVT];
+uint64_t current_pmu_cnt_all[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_MAX_PWR_TEL_EVT];
+// This will store the previous snapshot of PMU counts for each memory controller
+uint64_t previous_pmu_cnt_all[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_MAX_PWR_TEL_EVT];
 
 static mts_client_t s_pwr_tlm_mts_client_scp = {
     .notify_from_drv_frmwk = pwr_tlm_scp_handle_incoming_mts_msgs,
@@ -304,11 +307,12 @@ void data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp(void)
 
     int silibs_status = SILIBS_SUCCESS;
     uint64_t pmn_cnt = 0;
+    uint64_t pmu_counter_diff = 0;
     uint8_t die_id = mts_get_this_die_id();
     uint16_t mc_start = die_id * DDRSS_MAX_MC_NUM_PER_DIE;
     uint16_t mc_end = mc_start + DDRSS_MAX_MC_NUM_PER_DIE;
     // clear the pmu_cnt_all buffer before accumulation, in case there are stale values from previous collections
-    memset(pmu_cnt_all, 0, sizeof(pmu_cnt_all));
+    memset(current_pmu_cnt_all, 0, sizeof(current_pmu_cnt_all));
 
     if (IS_PLATFORM_SVP())
     {
@@ -318,17 +322,24 @@ void data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp(void)
 
     for (uint16_t mc = mc_start; mc < mc_end; mc++)
     {
+        // Capture a snapshot of the PMU counters for this memory controller before reading, to ensure consistency of the counts read across all PMU's for this memory controller.
+        // This is important because the counters are continuously updating
+        ddrss_pmu_capture_counter_snapshot(mc);
         // Calculate mc and local buffer index.
         uint16_t mc_local_index = mc - mc_start;
         for (uint16_t pmu_idx = 0; pmu_idx < DDRSS_MAX_PWR_TEL_EVT; pmu_idx++)
         {
             silibs_status = ddrss_pmu_read_counter_snapshot(mc, pmu_idx, &pmn_cnt);
             FPFW_RUNTIME_ASSERT_EXT(silibs_status == SILIBS_SUCCESS, silibs_status, mc, pmu_idx, 0);
-            pmu_cnt_all[mc_local_index][pmu_idx] = pmn_cnt;
+            pmu_counter_diff = pmn_cnt - previous_pmu_cnt_all[mc_local_index][pmu_idx];
+            // update previous count with the new snapshot value for the next collection period
+            previous_pmu_cnt_all[mc_local_index][pmu_idx] = pmn_cnt;
+            // Store the counter diff in the current_pmu_cnt_all buffer which will be written to telemetry exchange for die0 to read and calculate memory power for MPAM.
+            current_pmu_cnt_all[mc_local_index][pmu_idx] = pmu_counter_diff;
         }
     }
     // Write VM memory power telemetry to SCP telemetry exchange
-    pwr_tlm_core_exch_scp_write_mpam_pmu_counts((uint64_t*)pmu_cnt_all);
+    pwr_tlm_core_exch_scp_write_mpam_pmu_counts((uint64_t*)current_pmu_cnt_all);
 }
 
 void data_proc_scp_tlm_cmpnt_init_core_vmin(void)

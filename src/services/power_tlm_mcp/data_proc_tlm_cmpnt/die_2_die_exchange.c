@@ -47,6 +47,8 @@ typedef struct
 typedef struct
 {
     secondary_mcp_to_die0_mcp_t sec_mcp_to_die0_mcp[NUMBER_OF_SECONDARY_DIES]; // die number - 1 to access
+    uint64_t mpam_mem_counters[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR]; // MPAM memory counters
+    uint64_t unallocated_mem_counter; // can track 84 mpams, if more than 84 mpams, this counter account for the res
 } die_2_die_exch_t;
 
 /*-------- Function Prototypes -----------*/
@@ -335,6 +337,52 @@ void die_2_die_exch_oob_write_window_max_die_temp(uint32_t summation_dC, uint16_
         d2d_exch_wait_for_sem();
         window_ptr->sum = summation_dC;
         window_ptr->num_samples = num_samples;
+        d2d_exch_release_sem();
+    }
+}
+
+void die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters(uint64_t* mpam_counters, uint64_t* unallocated)
+{
+    if ((mpam_counters != NULL) && (unallocated != NULL))
+    {
+        d2d_exch_wait_for_sem();
+
+        // Write all counter values from the input [12][8] array
+        for (size_t i = 0; i < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; i++)
+        {
+            for (size_t j = 0; j < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; j++)
+            {
+                s_die_2_die_exch->mpam_mem_counters[i][j] =
+                    mpam_counters[i * NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR + j];
+            }
+        }
+        s_die_2_die_exch->unallocated_mem_counter = *unallocated;
+
+        d2d_exch_release_sem();
+    }
+}
+
+void die_2_die_exch_ib_read_pwr_pkg_mpam_mem_counters(uint64_t* mpam_counters, uint64_t* unallocated)
+{
+    if ((mpam_counters != NULL) && (unallocated != NULL))
+    {
+        d2d_exch_wait_for_sem();
+        *unallocated = s_die_2_die_exch->unallocated_mem_counter;
+        s_die_2_die_exch->unallocated_mem_counter = 0;
+
+        // Copy all counter values to the output [12][8] array
+        for (size_t i = 0; i < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; i++)
+        {
+            for (size_t j = 0; j < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; j++)
+            {
+                mpam_counters[i * NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR + j] =
+                    s_die_2_die_exch->mpam_mem_counters[i][j];
+            }
+        }
+
+        // Clear the counters after reading for next collection window
+        memset(s_die_2_die_exch->mpam_mem_counters, 0, sizeof(s_die_2_die_exch->mpam_mem_counters));
+
         d2d_exch_release_sem();
     }
 }

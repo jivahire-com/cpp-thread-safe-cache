@@ -31,15 +31,12 @@
 /*-------- Function Prototypes -----------*/
 
 /*-- Declarations (Statics and globals) --*/
-uint32_t local_mpam_vm_mem_fixed_pwr_mW;
 bool local_all_zero_filtering_enable = true;
 
 /*------------- Functions ----------------*/
 
-void package_inf_init(uint32_t mpam_vm_mem_fixed_pwr_mW, bool all_zero_filtering_enable)
+void package_inf_init(bool all_zero_filtering_enable)
 {
-    // todo will be used in https://azurecsi.visualstudio.com/Dev/_workitems/edit/2941640
-    local_mpam_vm_mem_fixed_pwr_mW = mpam_vm_mem_fixed_pwr_mW;
     local_all_zero_filtering_enable = all_zero_filtering_enable;
 }
 
@@ -550,10 +547,9 @@ void data_proc_tlm_cmpnt_get_pwr_soc_mpam_throttle_data(uint16_t mpam_id, p_pwr_
 
 void data_proc_tlm_cmpnt_get_pwr_soc_mpam_memory_power_data(uint16_t mpam_id, p_pwr_soc_element_mpam_memory_power_t mpam_memory_power_data)
 {
-    // TODO: Implement the rest of the record once computed metrics are available for mpam memory power
-    //       https://azurecsi.visualstudio.com/Dev/_workitems/edit/2584713/?view=edit
-    FPFW_UNUSED(mpam_id);
-    memset(mpam_memory_power_data, 0, sizeof(pwr_soc_element_mpam_memory_power_t));
+    mpam_memory_power_data->average_mW = computed_metrics_2_mins.mpam[mpam_id].average_memory_pwr_mW;
+    mpam_memory_power_data->max_mW = computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW;
+    mpam_memory_power_data->mpam_id = mpam_id;
 }
 
 void data_proc_tlm_cmpnt_get_pwr_soc_memory_throttle_data(uint16_t dimm_idx, p_pwr_soc_element_memory_throttle_t memory_throttle_data)

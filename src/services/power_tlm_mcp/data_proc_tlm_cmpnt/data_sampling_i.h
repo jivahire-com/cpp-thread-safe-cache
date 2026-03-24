@@ -278,10 +278,15 @@ extern mpam_data_t mpam_staging[NUMBER_OF_MPAMS];
 /*--------- Function Prototypes ----------*/
 /**
  * @brief Initialize power telemetry data.
- *
+ * @param[in] mpam_vm_mem_fixed_pwr_mW, The fixed power is in mW for MPAM VM memory reporting.
+ * It is a combination of Memory controller power and PHY power which are the two components 
+ * of memory power that MPAM VM memory reporting accounts for. The value is expected to be provided by the Knob 
+ * based on the platform characteristics and calculated for per -VM based on debug PMU counters, 
+ * and included in the calculation to determine the MPAM VM memory power .
+ * 
  * @return none
  */
-void data_smpl_init(void);
+void data_smpl_init(uint32_t mpam_vm_mem_fixed_pwr_mW);
 
 /**
  * @brief Initialize the dts coeff data structure.
@@ -714,8 +719,9 @@ void data_smpl_update_mpam_mem_power(void);
 void data_smpl_read_and_populate_core_vmin(void);
 
 /**
- * @brief Calculate memory power based on total memory power in mW and update MPAM data.
+ * @brief Update MPAM die1 PMU counters for memory power calculation.
+ * This function reads the necessary PMU counters from die1 to calculate memory power for MPAM and 
+ * write on d2d exchange for die0 to read, since die0 is responsible for MPAM data population and telemetry.
  *
- * @param[in] total_memory_power_mW - The total memory power in milliwatts.
  */
-void data_sample_calculate_vm_memory_power(uint32_t total_memory_power_mW);
+void data_smpl_update_mpam_die1_pmu_counters(void);

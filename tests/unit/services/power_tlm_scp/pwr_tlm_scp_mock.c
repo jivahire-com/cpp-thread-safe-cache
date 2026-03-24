@@ -14,6 +14,7 @@
 #include <corebits.h>
 #include <data_proc_tlm_cmpnt.h>
 #include <fpfw_cfg_mgr.h>
+#include <idsw_kng.h> // for KNG_PLAT_ID
 #include <in_band_tlm_cmpnt_i.h>
 #include <kng_soc_constants.h>
 #include <message_transfer_service.h>
@@ -245,6 +246,12 @@ void __wrap_pwr_tlm_core_exch_scp_write_mpam_pmu_counts(uint64_t* mpam_pmu_count
     function_called();
 }
 
+void __wrap_ddrss_pmu_capture_counter_snapshot(uint32_t mc)
+{
+    FPFW_UNUSED(mc);
+    // Don't use function_called() to avoid strict ordering checks
+}
+
 int __wrap_ddrss_pmu_read_counter_snapshot(uint32_t mc, uint16_t pmu_idx, uint64_t* pmn_cnt)
 {
     FPFW_UNUSED(mc);
@@ -256,6 +263,11 @@ int __wrap_ddrss_pmu_read_counter_snapshot(uint32_t mc, uint16_t pmu_idx, uint64
     }
 
     return mock_type(int);
+}
+
+KNG_PLAT_ID __wrap_idsw_get_platform_sdv(void)
+{
+    return mock_type(KNG_PLAT_ID);
 }
 
 corebits_t mock_cores_in_die;

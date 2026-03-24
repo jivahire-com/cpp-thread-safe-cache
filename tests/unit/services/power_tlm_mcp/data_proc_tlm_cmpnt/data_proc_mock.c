@@ -234,6 +234,21 @@ uint8_t __wrap_pwr_tlm_core_exch_mcp_read_vmin(uint16_t* vmin_array)
     return mock_type(uint8_t);
 }
 
+uint8_t __wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts(uint64_t* mpam_pmu_count_array)
+{
+    assert_non_null(mpam_pmu_count_array);
+
+    // Get the mock data pointer passed in the test
+    uint64_t* mock_data = mock_ptr_type(uint64_t*);
+    assert_non_null(mock_data);
+
+    // Copy the MPAM counter data: [12 mem controllers][8 MPAMs per controller] = 96 uint64_t values
+    memcpy(mpam_pmu_count_array, mock_data, sizeof(uint64_t) * 12 * 8);
+
+    // Return mock sequence number
+    return mock_type(uint8_t);
+}
+
 corebits_t mock_cores_in_die;
 corebits_t* __wrap_core_info_get_enable_cores_result()
 {

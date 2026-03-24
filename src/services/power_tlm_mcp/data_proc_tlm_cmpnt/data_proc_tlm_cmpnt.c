@@ -34,11 +34,11 @@ void data_proc_tlm_cmpnt_init(uint8_t die_id, bool is_single_die_system, uint32_
 {
     die_2_die_exch_init(die_id);
 
-    data_smpl_init();
+    data_smpl_init(mpam_vm_mem_fixed_pwr_mW);
 
     comp_metrics_init(is_single_die_system);
 
-    package_inf_init(mpam_vm_mem_fixed_pwr_mW, all_zero_filtering_enable);
+    package_inf_init(all_zero_filtering_enable);
 
     oob_inf_init();
 }
@@ -77,12 +77,12 @@ void data_proc_tlm_cmpnt_prepare_data_for_inst_sample(void)
 
 void data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg(void)
 {
+    in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg();
+
     if (die_2_die_exch_get_this_die_id() == PRIMARY_DIE_ID)
     {
         in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg();
     }
-
-    in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg();
 
     // read and update cores aging counters data
 

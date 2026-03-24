@@ -18,6 +18,11 @@
 #define NUMBER_OF_SECONDARY_DIES (1)
 #define FIRST_SECONDARY_DIE_ID   (1)
 
+#define NUMBER_OF_MEM_CONTROLLERS_PER_DIE (12)
+//All the counters including untracked.
+#define NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR (8)
+#define NUMBER_OF_MPAMS_PER_MEM_CTRLR (7)
+
 #define NUMBER_OF_DIMMS (6 )
 
 /*-------------- Typedefs ----------------*/
@@ -190,6 +195,25 @@ void die_2_die_exch_ib_write_pwr_pkg_mon_data(p_pkg_mon_data_t pkg_mon_data);
  * @param[out] pkg_mon_data Pointer to a structure to store the package monitor data.
  */
 void die_2_die_exch_ib_read_pwr_pkg_mon_data(uint8_t die_id, p_pkg_mon_data_t pkg_mon_data);
+
+/**
+ * @brief Write the MPAM memory counters to the die to die exchange.
+ * This function writes (replaces) the MPAM memory counters in the die to die exchange. 
+ * The read API will clear the values for the next package write.
+ *
+ * @param[in] mpam_counters Pointer to a flattened array of MPAM memory counters [12][8].
+ * @param[in] unallocated Pointer to the unallocated mpam counter value.
+ */
+void die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters(uint64_t *mpam_counters, uint64_t* unallocated);
+
+/**
+ * @brief Read the MPAM memory counters from the die to die exchange.
+ * This function reads the MPAM memory counters and clears the values for the next package write.
+ *
+ * @param[out] mpam_counters Pointer to a flattened array to store the MPAM memory counters [12][8].
+ * @param[out] unallocated Pointer to the unallocated mpam counter value.
+ */
+void die_2_die_exch_ib_read_pwr_pkg_mpam_mem_counters(uint64_t *mpam_counters, uint64_t* unallocated);
 
 /**
  * @brief Write the maximum die temperature window to the die to die exchange.

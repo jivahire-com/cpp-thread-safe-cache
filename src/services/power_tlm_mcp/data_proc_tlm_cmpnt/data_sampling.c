@@ -1040,7 +1040,9 @@ bool data_smpl_parse_core_current_entry(core_current_t* core_current_entry, uint
 
     core_rt[core_id].latest_current_mA = (uint16_t)(core_current_entry->data.avg * CORE_CURRENT_CONVERSION_FACTOR);
 
-    uint32_t power_mW = ((uint32_t)core_rt[core_id].latest_current_mA * core_rt[core_id].latest_voltage_mV) / 1000;
+    // Use voltage from current sensor FIFO instead of voltage telemetry packet
+    uint16_t voltage_mV = core_current_entry->data.volt * CURRENT_PACKET_CORE_MV_PER_BIT;
+    uint32_t power_mW = ((uint32_t)core_rt[core_id].latest_current_mA * voltage_mV) / 1000;
 
     core_rt[core_id].latest_power_mW = power_mW; // power in mW = current in mA * voltage in V
 

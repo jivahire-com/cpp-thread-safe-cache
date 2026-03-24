@@ -45,9 +45,9 @@
     #define CORE_POWER_MW_PER_BIT 32
 #endif
 
-// The voltage conversion factor is set by default as 2mV per bit.
-#ifndef CORE_VOLTAGE_MV_PER_BIT
-    #define CORE_VOLTAGE_MV_PER_BIT 2
+// The voltage conversion factor is set by default as 4mV per bit. 
+#ifndef CURRENT_PACKET_CORE_MV_PER_BIT
+    #define CURRENT_PACKET_CORE_MV_PER_BIT 4
 #endif
 
 #define ROUND_USEC_TO_MSEC(usec) ((usec + 500) / 1000)

@@ -485,18 +485,19 @@ TEST_FUNCTION(test_data_smpl_parse_core_current_entry, test_setup, test_teardown
     // Test case 2: Valid entry with throttling active (pstate from current packet)
     current_data.timestamp = 1000; // Valid timestamp
     current_data.data.avg = 120;
+    current_data.data.volt = 155; // 155 * 4mV = 620mV
     current_data.data.pwr = 75;
     current_data.data.pstate = 13;
     current_data.data.mpam_id_low = 8;
-    // Set voltage for P=V×I calculation: (3864 mA * 621 mV) / 1000 ≈ 2399 mW
-    core_rt[core_id].latest_voltage_mV = 621;
+    // Voltage from volt field: 155 * 4 = 620 mV
+    // P=V×I calculation: (3864 mA * 620 mV) / 1000 = 2395 mW
 
     valid_entry = data_smpl_parse_core_current_entry(&current_data, core_id);
     assert_true(valid_entry);
 
     // Verify current, power, and MPAM ID were updated
     assert_int_equal(core_rt[core_id].latest_current_mA, (uint16_t)(120 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id].latest_power_mW, 2399);
+    assert_int_equal(core_rt[core_id].latest_power_mW, 2395);
     assert_int_equal(core_rt[core_id].latest_mpam_id, 8);
 
     // Verify pstate handling during throttling
@@ -509,18 +510,19 @@ TEST_FUNCTION(test_data_smpl_parse_core_current_entry, test_setup, test_teardown
     core_rt[core_id].status_flags.throttle_is_active = false; // No throttling
 
     current_data.data.avg = 80;
+    current_data.data.volt = 124; // 124 * 4mV = 496mV
     current_data.data.pwr = 40;
     current_data.data.pstate = 15; // This should not update latest_pstate when not throttling
     current_data.data.mpam_id_low = 3;
-    // Set voltage for P=V×I calculation: (2576 mA * 497 mV) / 1000 ≈ 1280 mW
-    core_rt[core_id].latest_voltage_mV = 497;
+    // Voltage from volt field: 124 * 4 = 496 mV
+    // P=V×I calculation: (2576 mA * 496 mV) / 1000 = 1277 mW
 
     valid_entry = data_smpl_parse_core_current_entry(&current_data, core_id);
     assert_true(valid_entry);
 
     // Verify current, power, and MPAM ID were updated
     assert_int_equal(core_rt[core_id].latest_current_mA, (uint16_t)(80 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id].latest_power_mW, 1280);
+    assert_int_equal(core_rt[core_id].latest_power_mW, 1277);
     assert_int_equal(core_rt[core_id].latest_mpam_id, 3);
 
     // Verify pstate is NOT updated from current packet when not throttling
@@ -547,16 +549,17 @@ TEST_FUNCTION(test_data_smpl_parse_core_current_entry, test_setup, test_teardown
     core_id = NUMBER_OF_CORES_PER_DIE - 1; // Last valid core ID
 
     current_data.data.avg = 200;
+    current_data.data.volt = 125; // 125 * 4mV = 500mV
     current_data.data.pwr = 100;
-    // Set voltage for P=V×I calculation: (6440 mA * 497 mV) / 1000 ≈ 3200 mW
-    core_rt[core_id].latest_voltage_mV = 497;
+    // Voltage from volt field: 125 * 4 = 500 mV
+    // P=V×I calculation: (6440 mA * 500 mV) / 1000 = 3220 mW
 
     valid_entry = data_smpl_parse_core_current_entry(&current_data, core_id);
     assert_true(valid_entry);
 
     // Verify it works with maximum valid core ID
     assert_int_equal(core_rt[core_id].latest_current_mA, (uint16_t)(200 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id].latest_power_mW, 3200);
+    assert_int_equal(core_rt[core_id].latest_power_mW, 3220);
 
     // Test case 6: Invalid core ID (out of range) should return false
     core_id = NUMBER_OF_CORES_PER_DIE; // Out of range
@@ -587,6 +590,7 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
         .data =
             {
                 .avg = 100,
+                .volt = 124, // 124 * 4mV = 496mV
                 .pwr = 50,
                 .pstate = 12,
                 .mpam_id_low = 5,
@@ -599,8 +603,8 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
     core_rt[core_id_1].status_flags.pkt_pstate_is_valid = true;
     core_rt[core_id_1].throttle_source_tracker[THROTTLE_SOURCE_CURRENT] = true;
     core_rt[core_id_1].throttle_source_tracker[THROTTLE_SOURCE_TEMPERATURE] = true;
-    // Set voltage for P=V×I calculation: (3220 mA * 497 mV) / 1000 ≈ 1600 mW
-    core_rt[core_id_1].latest_voltage_mV = 497;
+    // Voltage from volt field: 124 * 4 = 496 mV
+    // P=V×I calculation: (3220 mA * 496 mV) / 1000 = 1597 mW
 
     // Second entry: Valid entry with throttling inactive (simpler metric path)
     core_current_t valid_current_entry_2 = {
@@ -608,6 +612,7 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
         .data =
             {
                 .avg = 80,
+                .volt = 124, // 124 * 4mV = 496mV
                 .pwr = 40,
                 .pstate = 15,
                 .mpam_id_low = 3,
@@ -618,8 +623,8 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
     // Set up core state for second entry (no throttling, pstate valid)
     core_rt[core_id_2].status_flags.throttle_is_active = false;
     core_rt[core_id_2].status_flags.pkt_pstate_is_valid = true;
-    // Set voltage for P=V×I calculation: (2576 mA * 497 mV) / 1000 ≈ 1280 mW
-    core_rt[core_id_2].latest_voltage_mV = 497;
+    // Voltage from volt field: 124 * 4 = 496 mV
+    // P=V×I calculation: (2576 mA * 496 mV) / 1000 = 1277 mW
 
     // Third entry: Invalid entry (invalid timestamp) - should be skipped
     core_current_t invalid_current_entry = {
@@ -659,13 +664,13 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
 
     // Verify first entry was processed correctly (throttling active path)
     assert_int_equal(core_rt[core_id_1].latest_current_mA, (uint16_t)(100 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id_1].latest_power_mW, 1600);
+    assert_int_equal(core_rt[core_id_1].latest_power_mW, 1597);
     assert_int_equal(core_rt[core_id_1].latest_mpam_id, 5);
     assert_int_equal(core_rt[core_id_1].latest_pstate, 12); // Should be updated from current packet
 
     // Verify second entry was processed correctly (no throttling path)
     assert_int_equal(core_rt[core_id_2].latest_current_mA, (uint16_t)(80 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id_2].latest_power_mW, 1280);
+    assert_int_equal(core_rt[core_id_2].latest_power_mW, 1277);
     assert_int_equal(core_rt[core_id_2].latest_mpam_id, 3);
     assert_int_equal(core_rt[core_id_2].latest_pstate, 0); // Should NOT be updated (no throttling)
 

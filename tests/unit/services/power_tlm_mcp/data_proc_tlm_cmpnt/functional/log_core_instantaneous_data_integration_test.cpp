@@ -204,7 +204,7 @@ TEST_FUNCTION(test_core_instantaneous_data_integration, test_setup, test_teardow
         mock_current_data.data.avg = config->current_avg_mA;
         mock_current_data.data.min = config->current_min_mA;
         mock_current_data.data.max = config->current_max_mA;
-        mock_current_data.data.volt = config->voltage_mV;
+        mock_current_data.data.volt = config->voltage_mV / 4;                  // Convert mV to 4mV per bit
         mock_current_data.data.pwr = (uint16_t)((config->power_mW + 16) / 32); // Round to nearest integer for conversion
         // Current sensor pstate - used when throttling is active
         mock_current_data.data.pstate = config->current_sensor_pstate;
@@ -294,13 +294,16 @@ TEST_FUNCTION(test_core_instantaneous_data_integration, test_setup, test_teardow
         // Calculate expected values based on actual implementation in in_band_package_interface.c
         // Current: core_rt[core_id].latest_current_mA = (uint16_t)(core_current_entry->data.avg * CORE_CURRENT_CONVERSION_FACTOR)
         int32_t expected_current_mA = config->current_avg_mA * CORE_CURRENT_CONVERSION_FACTOR;
-        // Voltage: core_rt[core_id].latest_voltage_mV = DOUT2MILLIVOLTS(tile_voltage_entry->data.vcore0)
+        // Voltage: Still comes from tile voltage sensor (core_rt not updated by current sensor)
+        // core_rt[core_id].latest_voltage_mV = DOUT2MILLIVOLTS(tile_voltage_entry->data.vcore0)
         int32_t expected_voltage_mV = DOUT2MILLIVOLTS(config->tile_voltage_avg_mV);
         // Temperature: core_rt[core_id].latest_max_value_dC (appears to be 0 for instantaneous data)
         int32_t expected_temp_dC = 0;
-        // Power: Now calculated using P = V × I formula
-        // Power (mW) = (current_mA * voltage_mV) / 1000
-        uint16_t expected_power_mW = ((uint32_t)expected_current_mA * expected_voltage_mV) / 1000;
+        // Power: Calculated in current sensor using volt field, but voltage_mV in telemetry is from tile sensor
+        // Power (mW) = (current_mA * voltage_from_current_sensor) / 1000
+        // voltage_from_current_sensor = (config->voltage_mV / 4) * 4
+        uint16_t voltage_from_current_sensor = (config->voltage_mV / 4) * 4;
+        uint16_t expected_power_mW = ((uint32_t)expected_current_mA * voltage_from_current_sensor) / 1000;
         // Frequency: dvfs_get_freq_from_plimit(current_pstate) - calls external DVFS function
         // So skipping exact frequency assertion against expected value.
         // Pstate: Conditional logic based on throttling status

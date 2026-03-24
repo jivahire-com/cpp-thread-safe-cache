@@ -139,8 +139,8 @@
     <Knob name="be_cmd_exec_opt" type="uint32_t" default="0x1" help="The command execution options for the back end. (0x0 ~ 0xffffffff)" />
     <Knob name="be_cmd_select_weight" type="uint32_t" default="0x10234" help="The weight of each DRAM command type that is used in the back end command arbitration. (0x0 ~ 0xffffffff)" />
     <Knob name="bump_priority_level" type="uint32_t" default="0xb2020" help="Priority Bump Configuration. (0x0 ~ 0xffffffff)" />
-    <Knob name="busif_chi_qos_to_prio_rd" type="uint32_t" default="0x55550000" help="The mapping from CHI QOS field to the command priority for the read, prefetch and cache maintenance operations used in the Bus Interface logic. (0x0 ~ 0xffffffff)" />
-    <Knob name="busif_chi_qos_to_prio_wr" type="uint32_t" default="0x55550000" help="The mapping from CHI QOS field to the command priority for the write operations used in the Bus Interface logic. (0x0 ~ 0xffffffff)" />
+    <Knob name="busif_chi_qos_to_prio_rd" type="uint32_t" default="0xEA550000" help="The mapping from CHI QOS field to the command priority for the read, prefetch and cache maintenance operations used in the Bus Interface logic. (0x0 ~ 0xffffffff)" />
+    <Knob name="busif_chi_qos_to_prio_wr" type="uint32_t" default="0xEA550000" help="The mapping from CHI QOS field to the command priority for the write operations used in the Bus Interface logic. (0x0 ~ 0xffffffff)" />
     <Knob name="busif_cob_skip_cnt" type="uint32_t" default="0x20300104" help="The FECQ enqueue skip counts for each command priority, at and above which the command in the COB slice is considered starved. (0x0 ~ 0xffffffff)" />
     <Knob name="busif_drop_pftgt_fecq_occ" type="uint32_t" default="0x40c0c" help="The occupancy level at and above which a PrefetchTarget command will be dropped in the Bus Interface logic, for each command priority. (0x0 ~ 0xffffffff)" />
     <Knob name="a1_busif_drop_pftgt_fecq_occ" type="uint32_t" default="0x40c0c" help="The occupancy level at and above which a PrefetchTarget command will be dropped in the Bus Interface logic, for each command priority. (0x0 ~ 0xffffffff)" />
@@ -172,22 +172,22 @@
     <Knob name="chi_cbusy_map_mpam_4" type="uint32_t" default="0xe4e4e4e4" help="The mapping for CHI CBusy field from the FECQ congestion level and MPAM bandwidth for command priority 3. (0x0 ~ 0xffffffff)" />
     <Knob name="cob_occ_limit_prio0" type="uint32_t" default="0x1a190702" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 0. (0x0 ~ 0xffffffff)" />
     <Knob name="a1_cob_occ_limit_prio0" type="uint32_t" default="0x1a190702" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 0. (0x0 ~ 0xffffffff)" />
-    <Knob name="cob_occ_limit_prio1" type="uint32_t" default="0x1a1e1900" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 1. (0x0 ~ 0xffffffff)" />
-    <Knob name="a1_cob_occ_limit_prio1" type="uint32_t" default="0x1a1e1900" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 1. (0x0 ~ 0xffffffff)" />
-    <Knob name="cob_occ_limit_prio2" type="uint32_t" default="0x18201002" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 2. (0x0 ~ 0xffffffff)" />
-    <Knob name="cob_occ_limit_prio3" type="uint32_t" default="0x18201001" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 3. (0x0 ~ 0xffffffff)" />
+    <Knob name="cob_occ_limit_prio1" type="uint32_t" default="0x1a1e0c00" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 1. (0x0 ~ 0xffffffff)" />
+    <Knob name="a1_cob_occ_limit_prio1" type="uint32_t" default="0x1a1e0c00" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 1. (0x0 ~ 0xffffffff)" />
+    <Knob name="cob_occ_limit_prio2" type="uint32_t" default="0x1A1E1900" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 2. (0x0 ~ 0xffffffff)" />
+    <Knob name="cob_occ_limit_prio3" type="uint32_t" default="0x1A1A1A00" help="The criteria to determine the Bus Interface COB occupancy levels for command priority 3. (0x0 ~ 0xffffffff)" />
     <Knob name="dp_busrdfifo_depth" type="uint8_t" default="15" help="BusRd Async FIFO depth CSR for DP to busif to throttle tokens 0 - invalid, 4 - 4 entries, 5 - 5 entries, ... ..., 15 - 15 entries. (1 ~ 15)" />
     <Knob name="fedb_busrdfifo_depth" type="uint8_t" default="7" help="FEDB to BusRd deferred read FIFO depth CSR to throttle tokens 0 - invalid, 4 - 4 entries, 5 - 5 entries, ... ..., 7 - 7 entries. (1 ~ 7)" />
     <Knob name="self_refresh_with_ck_stop" type="uint8_t" default="1" help="Specify whether DRAM clock can be stopped during self-refresh mode 0 - DRAM clock continues to run during self-refresh 1 - DRAM clock can be stopped during self-refresh. (0 ~ 1)" />
     <Knob name="fecq_bandwidth_limiter_config" type="uint32_t" default="4" help="FECQ Bandwidth Limiter for Thermal Throttling. (0x0 ~ 0xffffffff)" />
     <Knob name="fecq_becq_pri_map_config" type="uint32_t" default="0x0" help="FECQ BECQ Command Priority Mapping 2'b00: BECQ Priority 0 2'b01: BECQ Priority 1 2'b10: BECQ Priority 2. (0x0 ~ 0xffffffff)" />
     <Knob name="fecq_cmd_dispatch_limit_config" type="uint32_t" default="0x808200A" help="FECQ Command Dispatch Limit Threshold. (0x0 ~ 0xffffffff)" />
-    <Knob name="fecq_congest_lvl_0" type="uint32_t" default="0x604020" help="The thresholds to determine the FECQ occupancy congestion level for command priority 0. (0x0 ~ 0xffffffff)" />
-    <Knob name="a1_fecq_congest_lvl_0" type="uint32_t" default="0x604020" help="The thresholds to determine the FECQ occupancy congestion level for command priority 0. (0x0 ~ 0xffffffff)" />
-    <Knob name="fecq_congest_lvl_1" type="uint32_t" default="0x604020" help="The thresholds to determine the FECQ occupancy congestion level for command priority 1. (0x0 ~ 0xffffffff)" />
-    <Knob name="fecq_congest_lvl_2" type="uint32_t" default="0x000c0804" help="The thresholds to determine the FECQ occupancy congestion level for command priority 2. (0x0 ~ 0xffffffff)" />
-    <Knob name="fecq_congest_lvl_3" type="uint32_t" default="0x000c0804" help="The thresholds to determine the FECQ occupancy congestion level for command priority 3. (0x0 ~ 0xffffffff)" />
-    <Knob name="fecq_congest_lvl_alt" type="uint32_t" default="0x000c0804" help="The alternate thresholds to determine the FECQ occupancy congestion level for command priority 0. (0x0 ~ 0xffffffff)" />
+    <Knob name="fecq_congest_lvl_0" type="uint32_t" default="0x705440" help="The thresholds to determine the FECQ occupancy congestion level for command priority 0. (0x0 ~ 0xffffffff)" />
+    <Knob name="a1_fecq_congest_lvl_0" type="uint32_t" default="0x705440" help="The thresholds to determine the FECQ occupancy congestion level for command priority 0. (0x0 ~ 0xffffffff)" />
+    <Knob name="fecq_congest_lvl_1" type="uint32_t" default="0x705440" help="The thresholds to determine the FECQ occupancy congestion level for command priority 1. (0x0 ~ 0xffffffff)" />
+    <Knob name="fecq_congest_lvl_2" type="uint32_t" default="0x705440" help="The thresholds to determine the FECQ occupancy congestion level for command priority 2. (0x0 ~ 0xffffffff)" />
+    <Knob name="fecq_congest_lvl_3" type="uint32_t" default="0x705440" help="The thresholds to determine the FECQ occupancy congestion level for command priority 3. (0x0 ~ 0xffffffff)" />
+    <Knob name="fecq_congest_lvl_alt" type="uint32_t" default="0x705440" help="The alternate thresholds to determine the FECQ occupancy congestion level for command priority 0. (0x0 ~ 0xffffffff)" />
     <Knob name="fecq_occ_limit_prio0" type="uint32_t" default="0x10101000" help="The criteria to determine the FECQ occupancy levels for command priority 0. (0x0 ~ 0xffffffff)" />
     <Knob name="a1_fecq_occ_limit_prio0" type="uint32_t" default="0x10101000" help="The criteria to determine the FECQ occupancy levels for command priority 0. (0x0 ~ 0xffffffff)" />
     <Knob name="fecq_occ_limit_prio1" type="uint32_t" default="0x10101000" help="The criteria to determine the FECQ occupancy levels for command priority 1. (0x0 ~ 0xffffffff)" />
@@ -243,13 +243,13 @@
     <Knob name="mpam_mbw_ns_min" type="uint16_t" default="0" help="Non-secure state memory minimum bandwidth allocated to the partition selected by MPAMCFG_PART_SEL. (0x0 ~ 0xffff)" />
     <Knob name="mpam_mbw_s_min" type="uint16_t" default="0" help="Secure state memory minimum bandwidth allocated to the partition selected by MPAMCFG_PART_SEL. (0x0 ~ 0xffff)" />
     <Knob name="patrol_scrub_urgency_qos" type="uint8_t" default="0" help="QOS Priority Level. (0 ~ 15)" />
-    <Knob name="prio_map_to_fecq" type="uint32_t" default="0xe0e0" help="The mapping from the Bus Interface command priority to the FECQ priority. (0x0 ~ 0xffffffff)" />
+    <Knob name="prio_map_to_fecq" type="uint32_t" default="0x0" help="The mapping from the Bus Interface command priority to the FECQ priority. (0x0 ~ 0xffffffff)" />
     <Knob name="rcb_occ_limit_prio0" type="uint32_t" default="0x34340c04" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 0. (0x0 ~ 0xffffffff)" />
     <Knob name="a1_rcb_occ_limit_prio0" type="uint32_t" default="0x34340c04" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 0. (0x0 ~ 0xffffffff)" />
-    <Knob name="rcb_occ_limit_prio1" type="uint32_t" default="0x34342e00" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 1. (0x0 ~ 0xffffffff)" />
-    <Knob name="a1_rcb_occ_limit_prio1" type="uint32_t" default="0x34342e00" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 1. (0x0 ~ 0xffffffff)" />
-    <Knob name="rcb_occ_limit_prio2" type="uint32_t" default="0x30402004" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 2. (0x0 ~ 0xffffffff)" />
-    <Knob name="rcb_occ_limit_prio3" type="uint32_t" default="0x30402002" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 3. (0x0 ~ 0xffffffff)" />
+    <Knob name="rcb_occ_limit_prio1" type="uint32_t" default="0x34281800" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 1. (0x0 ~ 0xffffffff)" />
+    <Knob name="a1_rcb_occ_limit_prio1" type="uint32_t" default="0x34281800" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 1. (0x0 ~ 0xffffffff)" />
+    <Knob name="rcb_occ_limit_prio2" type="uint32_t" default="0x00034342" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 2. (0x0 ~ 0xffffffff)" />
+    <Knob name="rcb_occ_limit_prio3" type="uint32_t" default="0x34343000" help="The criteria to determine the Bus Interface RCB occupancy levels for command priority 3. (0x0 ~ 0xffffffff)" />
     <Knob name="semi_cmd_resp_limit" type="uint8_t" default="8" help="Total commands that can have all responses outstanding. (0x0 ~ 0x1f)" />
     <Knob name="self_refresh_threshold" type="uint16_t" default="0x64" help="SEMI will take media out of self-refresh if deficit goes over this threshold. (0x0 ~ 0xffff)" />
     <Knob name="ecc_ce_th" type="uint16_t" default="0" help="ECC threshold count after which any per-rank CE counter creates an appropriate RAS error record. (0x0 ~ 0x7ff)" />

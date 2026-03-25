@@ -70,8 +70,8 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg, test_setup, tes
         core_aging[i].measurement_armed = false;
     }
     die_2_die_exch_init(0);
-    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg);
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
+    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg);
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 1000);
 
     data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg();
@@ -85,12 +85,14 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg, test_setup, tes
 
 TEST_FUNCTION(test_data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg, test_setup, test_teardown)
 {
-
+    static uint64_t test_mpam_counters[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
     static uint64_t expected_droop_counts[NUMBER_OF_CORES_PER_DIE];
     for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
     {
         expected_droop_counts[i] = i * 10;
     }
+
+    memset(test_mpam_counters, 0, sizeof(test_mpam_counters));
 
     for (uint8_t i = 0; i < SENSOR_FIFO_MAX_ID; i++)
     {
@@ -99,6 +101,8 @@ TEST_FUNCTION(test_data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg, test_setup, te
     will_return(__wrap_sensor_fifo_svc_is_empty, data_proc_snsr_fifo_is_empty);
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 10);
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1);
     will_return(__wrap_in_band_tlm_cmpnt_is_power_record_enabled, false);
     data_proc_tlm_cmpnt_finalize_data_for_pwr_pkg();
 }

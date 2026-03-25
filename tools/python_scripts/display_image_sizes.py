@@ -16,10 +16,18 @@ import os
 import re
 import subprocess
 
-READELF_FORMAT = "\.{}[\s]+[a-zA-Z]+[\s]+[0-9a-f]+[\s]+[0-9a-f]+[\s]+([0-9a-f]+)"
+def to_kb(value: int) -> str:
+    return f"{value / 1024:.1f}"
+
+READELF_FORMAT = r"\.{}[\s]+[a-zA-Z]+[\s]+[0-9a-f]+[\s]+[0-9a-f]+[\s]+([0-9a-f]+)"
 READELF_PATH = f"{os.environ['REPO_APP_PATH_gcc.arm.eabi.aarch-win64']}/bin/arm-none-eabi-readelf.exe"
 FW_PATH_FORMAT = os.environ["REPO_APP_TARGET_BUILD_DIR"] + "/bin/{core}/"
 FW_CORES = ["scp", "mcp"]
+
+# Memory limits (bytes)
+DTCM_LIMIT = 512 * 1024
+ITCM_LIMIT = 512 * 1024
+
 ELF_SECTIONS = [
     "text",
     "rodata.itcm",
@@ -55,68 +63,85 @@ for core in FW_CORES:
     dtcm_compressed_size = os.path.getsize(dtcm_gz_path)
     itcm_compressed_size = os.path.getsize(itcm_gz_path)
 
+    available_dtcm = DTCM_LIMIT - dtcm_size
+    available_itcm = ITCM_LIMIT - itcm_size
+
+    # Section sizes
     readelf_output = subprocess.run(
-        [f"{READELF_PATH}", "-S", elf_path], stdout=subprocess.PIPE
-    ).stdout.decode("utf-8")
+        [READELF_PATH, "-S", elf_path],
+        stdout=subprocess.PIPE,
+        text=True
+    ).stdout
 
     section_sizes = {}
     for section in ELF_SECTIONS:
-        section_desc = re.search(READELF_FORMAT.format(section), readelf_output)
-        if not section_desc:
-            continue
+        match = re.search(READELF_FORMAT.format(section), readelf_output)
+        if match:
+            section_sizes[section] = int(match.group(1), 16)
 
-        section_size = section_desc.groups()[0]
-        section_size = int(section_size, 16)
-        section_sizes[section] = section_size
-
+    # Linker variables
     variable_values = {}
     for variable in LINKER_VARS:
-        print({READELF_PATH}, "-s", {elf_path}, "| Select-String", {variable})
-        command = (
-            f'powershell "{READELF_PATH} -s {elf_path} | Select-String {variable}"'
-        )
-        readelf_var_string = subprocess.run(
-            command, capture_output=True, text=True, shell=True
-        )
+        command = f'powershell "{READELF_PATH} -s {elf_path} | Select-String {variable}"'
+        result = subprocess.run(command, capture_output=True, text=True, shell=True)
+        if result.stdout.strip():
+            hex_value = result.stdout.strip().split()[1]
+            variable_values[variable] = int(hex_value, 16)
 
-        if not readelf_var_string.stdout.strip():
-            continue
+    available_rmss = (
+        variable_values.get("ro_total_size", 0)
+        - variable_values.get("ro_total_used_size", 0)
+    )
 
-        hex_value = readelf_var_string.stdout.strip().split()[1]
-        decimal_value = int(hex_value, 16)
-        variable_values[variable] = decimal_value
-
-    # Define the widths for the columns
-    image_column_width = 25
-    size_column_width = 10
+    # Table formatting
+    name_w = 30
+    bytes_w = 14
+    kb_w = 10
 
     comment_string += f"""
 ## {core.upper()}
-| {'Image'.ljust(image_column_width)} | {'Size'.rjust(size_column_width)} |
-|{'-' * (image_column_width+2)}|{'-' * (size_column_width+2)}|
-| {'Main Image(compressed)'.ljust(image_column_width)} | {str(compressed_size).rjust(size_column_width)} |
-| {'DTCM (**Must be < 512k**)'.ljust(image_column_width)} | {str(dtcm_size).rjust(size_column_width)} |
-| {'ITCM (**Must be < 512k**)'.ljust(image_column_width)} | {str(itcm_size).rjust(size_column_width)} |
-| {'DTCM (compressed)'.ljust(image_column_width)} | {str(dtcm_compressed_size).rjust(size_column_width)} |
-| {'ITCM (compressed)'.ljust(image_column_width)} | {str(itcm_compressed_size).rjust(size_column_width)} |
+| {'Image'.ljust(name_w)} | {'Size (bytes)'.rjust(bytes_w)} | {'Size (KB)'.rjust(kb_w)} |
+|{'-' * (name_w+2)}|{'-' * (bytes_w+2)}|{'-' * (kb_w+2)}|
+| {'Main Image(compressed)'.ljust(name_w)} | {str(compressed_size).rjust(bytes_w)} | {to_kb(compressed_size).rjust(kb_w)} |
+| {'DTCM (**Must be < 512k**)'.ljust(name_w)} | {str(dtcm_size).rjust(bytes_w)} | {to_kb(dtcm_size).rjust(kb_w)} |
+| {'Available DTCM'.ljust(name_w)} | {str(available_dtcm).rjust(bytes_w)} | {to_kb(available_dtcm).rjust(kb_w)} |
+| {'ITCM (**Must be < 512k**)'.ljust(name_w)} | {str(itcm_size).rjust(bytes_w)} | {to_kb(itcm_size).rjust(kb_w)} |
+| {'Available ITCM'.ljust(name_w)} | {str(available_itcm).rjust(bytes_w)} | {to_kb(available_itcm).rjust(kb_w)} |
+| {'DTCM (compressed)'.ljust(name_w)} | {str(dtcm_compressed_size).rjust(bytes_w)} | {to_kb(dtcm_compressed_size).rjust(kb_w)} |
+| {'ITCM (compressed)'.ljust(name_w)} | {str(itcm_compressed_size).rjust(bytes_w)} | {to_kb(itcm_compressed_size).rjust(kb_w)} |
 
-| {'Section'.ljust(image_column_width)} | {'Size'.rjust(size_column_width)} |
-|{'-' * (image_column_width+2)}|{'-' * (size_column_width+2)}|
+| {'Section'.ljust(name_w)} | {'Size (bytes)'.rjust(bytes_w)} | {'Size (KB)'.rjust(kb_w)} |
+|{'-' * (name_w+2)}|{'-' * (bytes_w+2)}|{'-' * (kb_w+2)}|
 """
-    for section in section_sizes.keys():
-        comment_string += f"| {section.ljust(image_column_width)} | {str(section_sizes[section]).rjust(size_column_width)} |\n"
 
-    # display linker variables
+    for section, size in section_sizes.items():
+        comment_string += (
+            f"| {section.ljust(name_w)} | "
+            f"{str(size).rjust(bytes_w)} | "
+            f"{to_kb(size).rjust(kb_w)} |\n"
+        )
+
     comment_string += f"""
-| {'Variables'.ljust(image_column_width)} | {'Value'.rjust(size_column_width)} |
-|{'-' * (image_column_width+2)}|{'-' * (size_column_width+2)}|
+| {'Variables'.ljust(name_w)} | {'Value (bytes)'.rjust(bytes_w)} | {'Value (KB)'.rjust(kb_w)} |
+|{'-' * (name_w+2)}|{'-' * (bytes_w+2)}|{'-' * (kb_w+2)}|
 """
-    for var in variable_values.keys():
-        comment_string += f"| {var.ljust(image_column_width)} | {str(variable_values[var]).rjust(size_column_width)} |\n"
+
+    for var, value in variable_values.items():
+        comment_string += (
+            f"| {var.ljust(name_w)} | "
+            f"{str(value).rjust(bytes_w)} | "
+            f"{to_kb(value).rjust(kb_w)} |\n"
+        )
+
+    comment_string += (
+        f"| {'Available RMSS Data'.ljust(name_w)} | "
+        f"{str(available_rmss).rjust(bytes_w)} | "
+        f"{to_kb(available_rmss).rjust(kb_w)} |\n"
+    )
 
 print(comment_string)
 
-# If running in a pipeline, post comment
+# Post to PR if running in pipeline
 if os.getenv("TF_BUILD") and os.getenv("SYSTEM_PULLREQUEST_PULLREQUESTID"):
     try:
         subprocess.run(
@@ -130,7 +155,8 @@ if os.getenv("TF_BUILD") and os.getenv("SYSTEM_PULLREQUEST_PULLREQUESTID"):
                 comment_string,
                 "--status",
                 "closed",
-            ]
+            ],
+            check=True
         )
     except Exception as e:
-        print(f"adoutil failed to publish comment [{str(e)}]")
+        print(f"adoutil failed to publish comment [{e}]")

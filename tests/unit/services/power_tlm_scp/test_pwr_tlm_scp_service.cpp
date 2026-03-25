@@ -16,6 +16,7 @@ extern "C" {
 #include <FpFwUtils.h>  // for FPFW_UNUSED
 #include <corebits.h>
 #include <ddrss_runtime_api.h> // for DDRSS_MAX_MC_NUM_PER_DIE, DDRSS_MAX_PWR_TEL_EVT
+#include <idsw_kng.h>          // for PLATFORM_RVP_EVT_SILICON
 #include <kng_soc_constants.h>
 #include <message_transfer_service.h> // for mts_client_flush_incoming_queue
 #include <mts_client.h>               // for MTS_CLIENT_ID_PWR_INST_TELEM
@@ -297,6 +298,11 @@ TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_gen_pwr_package_vm_memory_only
     // Mocks for data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp
     will_return(__wrap_mts_get_this_die_id, 0);
 
+    // Mock idsw_get_platform_sdv to return RVP platform (not SVP)
+    // IS_PLATFORM_SVP() macro calls idsw_get_platform_sdv() twice
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
     // Each ddrss_pmu_read_counter_snapshot call needs 2 return values: counter value and status
     for (uint16_t i = 0; i < DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT; i++)
     {
@@ -329,6 +335,11 @@ TEST_FUNCTION(test_mts_manager_scp_handle_trp_msg_gen_pwr_package_both_enabled, 
 
     // Mocks for data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp
     will_return(__wrap_mts_get_this_die_id, 0);
+
+    // Mock idsw_get_platform_sdv to return RVP platform (not SVP)
+    // IS_PLATFORM_SVP() macro calls idsw_get_platform_sdv() twice
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     // Each ddrss_pmu_read_counter_snapshot call needs 2 return values: counter value and status
     for (uint16_t i = 0; i < DDRSS_MAX_MC_NUM_PER_DIE * DDRSS_MAX_PWR_TEL_EVT; i++)
@@ -372,6 +383,11 @@ TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp_die
     // Test for die 0 (mc 0-11)
     will_return(__wrap_mts_get_this_die_id, 0);
 
+    // Mock idsw_get_platform_sdv to return RVP platform (not SVP)
+    // IS_PLATFORM_SVP() macro calls idsw_get_platform_sdv() twice
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
     // Expect PMU counter reads for all MCs (0-11) and all PMU indices (0-7)
     for (uint16_t mc = 0; mc < DDRSS_MAX_MC_NUM_PER_DIE; mc++)
     {
@@ -400,6 +416,11 @@ TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp_die
     // Test for die 1 (mc 12-23)
     will_return(__wrap_mts_get_this_die_id, 1);
 
+    // Mock idsw_get_platform_sdv to return RVP platform (not SVP)
+    // IS_PLATFORM_SVP() macro calls idsw_get_platform_sdv() twice
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
     // Expect PMU counter reads for all MCs on die 1 and all PMU indices
     for (uint16_t mc = 0; mc < DDRSS_MAX_MC_NUM_PER_DIE; mc++)
     {
@@ -427,6 +448,11 @@ TEST_FUNCTION(test_data_proc_scp_tlm_cmpnt_received_prep_vm_mem_pwr_from_mcp_cou
 {
     // Test that counter values are properly accumulated in local array
     will_return(__wrap_mts_get_this_die_id, 0);
+
+    // Mock idsw_get_platform_sdv to return RVP platform (not SVP)
+    // IS_PLATFORM_SVP() macro calls idsw_get_platform_sdv() twice
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 
     // Set specific counter values to verify proper indexing
     uint64_t expected_counters[DDRSS_MAX_MC_NUM_PER_DIE][DDRSS_MAX_PWR_TEL_EVT];

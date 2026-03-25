@@ -1720,3 +1720,132 @@ TEST_FUNCTION(test_comp_metrics_for_soc_package_cstate_disabled, test_setup_sing
 
     // No assertions needed - if we reach here without crashing, test passed
 }
+
+// Unit test for comp_metrics_for_mpam_memory_pwr - normal case
+TEST_FUNCTION(test_comp_metrics_for_mpam_memory_pwr_normal, test_setup, test_teardown)
+{
+    // Test with valid MPAM ID and in_band_publishing_active = true
+    uint8_t mpam_id = 5;
+    uint32_t average_power_mW = 1000;
+
+    // Verify initial state
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].average_memory_pwr_mW, 0);
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW, 0);
+
+    // Call the function
+    comp_metrics_for_mpam_memory_pwr(mpam_id, average_power_mW);
+
+    // Verify results
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].average_memory_pwr_mW, average_power_mW);
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW, average_power_mW);
+}
+
+// Unit test for comp_metrics_for_mpam_memory_pwr - max tracking
+TEST_FUNCTION(test_comp_metrics_for_mpam_memory_pwr_max_tracking, test_setup, test_teardown)
+{
+    // Test that max power is properly tracked across multiple calls
+    uint8_t mpam_id = 10;
+    uint32_t power_values_mW[] = {500, 1200, 800, 1500, 900};
+    uint32_t expected_max_mW = 1500;
+
+    // Call function with varying power values
+    for (uint8_t i = 0; i < 5; i++)
+    {
+        comp_metrics_for_mpam_memory_pwr(mpam_id, power_values_mW[i]);
+
+        // Verify average is always set to the latest value
+        assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].average_memory_pwr_mW, power_values_mW[i]);
+
+        // Verify max is correctly tracked
+        uint32_t current_expected_max = power_values_mW[0];
+        for (uint8_t j = 1; j <= i; j++)
+        {
+            if (power_values_mW[j] > current_expected_max)
+            {
+                current_expected_max = power_values_mW[j];
+            }
+        }
+        assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW, current_expected_max);
+    }
+
+    // Final verification
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].average_memory_pwr_mW, 900);
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW, expected_max_mW);
+}
+
+// Unit test for comp_metrics_for_mpam_memory_pwr - in_band_publishing_active false
+TEST_FUNCTION(test_comp_metrics_for_mpam_memory_pwr_publishing_inactive, test_setup, test_teardown)
+{
+    // Test that metrics are not updated when in_band_publishing_active is false
+    uint8_t mpam_id = 20;
+    uint32_t average_power_mW = 1500;
+
+    // Set in_band_publishing_active to false
+    in_band_publishing_active = false;
+
+    // Call the function
+    comp_metrics_for_mpam_memory_pwr(mpam_id, average_power_mW);
+
+    // Verify that metrics were not updated
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].average_memory_pwr_mW, 0);
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW, 0);
+}
+
+// Unit test for comp_metrics_for_mpam_memory_pwr - invalid MPAM ID (boundary)
+TEST_FUNCTION(test_comp_metrics_for_mpam_memory_pwr_invalid_id_boundary, test_setup, test_teardown)
+{
+    // Test with MPAM ID at the boundary (NUMBER_OF_MPAMS)
+    uint8_t invalid_mpam_id = NUMBER_OF_MPAMS;
+    uint32_t average_power_mW = 1000;
+
+    // Call the function with invalid ID - should return early without updating
+    comp_metrics_for_mpam_memory_pwr(invalid_mpam_id, average_power_mW);
+
+    // No crash should occur, function should return early
+    // Cannot verify the last valid MPAM wasn't updated without knowing its previous state
+    // The test passes if no crash occurs
+}
+
+// Unit test for comp_metrics_for_mpam_memory_pwr - invalid MPAM ID (above boundary)
+TEST_FUNCTION(test_comp_metrics_for_mpam_memory_pwr_invalid_id_high, test_setup, test_teardown)
+{
+    // Test with MPAM ID well above the valid range
+    uint8_t invalid_mpam_id = 200;
+    uint32_t average_power_mW = 1000;
+
+    // Call the function with invalid ID - should return early without crashing
+    comp_metrics_for_mpam_memory_pwr(invalid_mpam_id, average_power_mW);
+
+    // No crash should occur, function should return early
+    // The test passes if no crash occurs
+}
+
+// Unit test for comp_metrics_for_mpam_memory_pwr - edge case with MPAM ID 0
+TEST_FUNCTION(test_comp_metrics_for_mpam_memory_pwr_mpam_id_zero, test_setup, test_teardown)
+{
+    // Test with MPAM ID 0 (valid edge case)
+    uint8_t mpam_id = 0;
+    uint32_t average_power_mW = 750;
+
+    // Call the function
+    comp_metrics_for_mpam_memory_pwr(mpam_id, average_power_mW);
+
+    // Verify results
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].average_memory_pwr_mW, average_power_mW);
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW, average_power_mW);
+}
+
+// Unit test for comp_metrics_for_mpam_memory_pwr - edge case with last valid MPAM ID
+TEST_FUNCTION(test_comp_metrics_for_mpam_memory_pwr_last_valid_id, test_setup, test_teardown)
+{
+    // Test with last valid MPAM ID (NUMBER_OF_MPAMS - 1)
+    uint8_t mpam_id = NUMBER_OF_MPAMS - 1;
+    uint32_t average_power_mW = 1250;
+
+    // Call the function
+    comp_metrics_for_mpam_memory_pwr(mpam_id, average_power_mW);
+
+    // Verify results
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].average_memory_pwr_mW, average_power_mW);
+    assert_int_equal(computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW, average_power_mW);
+}

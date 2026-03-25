@@ -908,7 +908,6 @@ TEST_FUNCTION(test_mts_manager_send_prep_pwr_pkg_notification_to_sec_mcps, test_
 
 TEST_FUNCTION(test_mts_manager_send_prep_pwr_pkg_notification_to_scp, test_setup, test_teardown)
 {
-    will_return(__wrap_mts_is_primary_instance, true);
     expect_function_call(__wrap_mts_client_send_new_trp_msg);
     mts_manager_send_prep_pwr_pkg_notification_to_scp();
 }

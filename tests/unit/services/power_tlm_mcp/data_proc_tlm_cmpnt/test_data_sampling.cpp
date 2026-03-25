@@ -53,6 +53,8 @@ extern computed_metrics_d2d_2_min_t computed_metrics_d2d_2mins;
 extern mpam_data_t mpam_staging[NUMBER_OF_MPAMS];
 extern d2dss_runtime_info_t d2dss_rt[NUMBER_OF_D2D_INTERFACES];
 extern bool core_is_active[NUMBER_OF_CORES_PER_DIE];
+extern uint64_t mpam_counters[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+extern uint64_t mpam_counters1[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
 bool test_snsr_fifo_is_empty[SENSOR_FIFO_MAX_ID] = {0};
 }
 
@@ -483,18 +485,19 @@ TEST_FUNCTION(test_data_smpl_parse_core_current_entry, test_setup, test_teardown
     // Test case 2: Valid entry with throttling active (pstate from current packet)
     current_data.timestamp = 1000; // Valid timestamp
     current_data.data.avg = 120;
+    current_data.data.volt = 155; // 155 * 4mV = 620mV
     current_data.data.pwr = 75;
     current_data.data.pstate = 13;
     current_data.data.mpam_id_low = 8;
-    // Set voltage for P=V×I calculation: (3864 mA * 621 mV) / 1000 ≈ 2399 mW
-    core_rt[core_id].latest_voltage_mV = 621;
+    // Voltage from volt field: 155 * 4 = 620 mV
+    // P=V×I calculation: (3864 mA * 620 mV) / 1000 = 2395 mW
 
     valid_entry = data_smpl_parse_core_current_entry(&current_data, core_id);
     assert_true(valid_entry);
 
     // Verify current, power, and MPAM ID were updated
     assert_int_equal(core_rt[core_id].latest_current_mA, (uint16_t)(120 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id].latest_power_mW, 2399);
+    assert_int_equal(core_rt[core_id].latest_power_mW, 2395);
     assert_int_equal(core_rt[core_id].latest_mpam_id, 8);
 
     // Verify pstate handling during throttling
@@ -507,18 +510,19 @@ TEST_FUNCTION(test_data_smpl_parse_core_current_entry, test_setup, test_teardown
     core_rt[core_id].status_flags.throttle_is_active = false; // No throttling
 
     current_data.data.avg = 80;
+    current_data.data.volt = 124; // 124 * 4mV = 496mV
     current_data.data.pwr = 40;
     current_data.data.pstate = 15; // This should not update latest_pstate when not throttling
     current_data.data.mpam_id_low = 3;
-    // Set voltage for P=V×I calculation: (2576 mA * 497 mV) / 1000 ≈ 1280 mW
-    core_rt[core_id].latest_voltage_mV = 497;
+    // Voltage from volt field: 124 * 4 = 496 mV
+    // P=V×I calculation: (2576 mA * 496 mV) / 1000 = 1277 mW
 
     valid_entry = data_smpl_parse_core_current_entry(&current_data, core_id);
     assert_true(valid_entry);
 
     // Verify current, power, and MPAM ID were updated
     assert_int_equal(core_rt[core_id].latest_current_mA, (uint16_t)(80 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id].latest_power_mW, 1280);
+    assert_int_equal(core_rt[core_id].latest_power_mW, 1277);
     assert_int_equal(core_rt[core_id].latest_mpam_id, 3);
 
     // Verify pstate is NOT updated from current packet when not throttling
@@ -545,16 +549,17 @@ TEST_FUNCTION(test_data_smpl_parse_core_current_entry, test_setup, test_teardown
     core_id = NUMBER_OF_CORES_PER_DIE - 1; // Last valid core ID
 
     current_data.data.avg = 200;
+    current_data.data.volt = 125; // 125 * 4mV = 500mV
     current_data.data.pwr = 100;
-    // Set voltage for P=V×I calculation: (6440 mA * 497 mV) / 1000 ≈ 3200 mW
-    core_rt[core_id].latest_voltage_mV = 497;
+    // Voltage from volt field: 125 * 4 = 500 mV
+    // P=V×I calculation: (6440 mA * 500 mV) / 1000 = 3220 mW
 
     valid_entry = data_smpl_parse_core_current_entry(&current_data, core_id);
     assert_true(valid_entry);
 
     // Verify it works with maximum valid core ID
     assert_int_equal(core_rt[core_id].latest_current_mA, (uint16_t)(200 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id].latest_power_mW, 3200);
+    assert_int_equal(core_rt[core_id].latest_power_mW, 3220);
 
     // Test case 6: Invalid core ID (out of range) should return false
     core_id = NUMBER_OF_CORES_PER_DIE; // Out of range
@@ -585,6 +590,7 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
         .data =
             {
                 .avg = 100,
+                .volt = 124, // 124 * 4mV = 496mV
                 .pwr = 50,
                 .pstate = 12,
                 .mpam_id_low = 5,
@@ -597,8 +603,8 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
     core_rt[core_id_1].status_flags.pkt_pstate_is_valid = true;
     core_rt[core_id_1].throttle_source_tracker[THROTTLE_SOURCE_CURRENT] = true;
     core_rt[core_id_1].throttle_source_tracker[THROTTLE_SOURCE_TEMPERATURE] = true;
-    // Set voltage for P=V×I calculation: (3220 mA * 497 mV) / 1000 ≈ 1600 mW
-    core_rt[core_id_1].latest_voltage_mV = 497;
+    // Voltage from volt field: 124 * 4 = 496 mV
+    // P=V×I calculation: (3220 mA * 496 mV) / 1000 = 1597 mW
 
     // Second entry: Valid entry with throttling inactive (simpler metric path)
     core_current_t valid_current_entry_2 = {
@@ -606,6 +612,7 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
         .data =
             {
                 .avg = 80,
+                .volt = 124, // 124 * 4mV = 496mV
                 .pwr = 40,
                 .pstate = 15,
                 .mpam_id_low = 3,
@@ -616,8 +623,8 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
     // Set up core state for second entry (no throttling, pstate valid)
     core_rt[core_id_2].status_flags.throttle_is_active = false;
     core_rt[core_id_2].status_flags.pkt_pstate_is_valid = true;
-    // Set voltage for P=V×I calculation: (2576 mA * 497 mV) / 1000 ≈ 1280 mW
-    core_rt[core_id_2].latest_voltage_mV = 497;
+    // Voltage from volt field: 124 * 4 = 496 mV
+    // P=V×I calculation: (2576 mA * 496 mV) / 1000 = 1277 mW
 
     // Third entry: Invalid entry (invalid timestamp) - should be skipped
     core_current_t invalid_current_entry = {
@@ -657,13 +664,13 @@ TEST_FUNCTION(test_data_smpl_process_core_current_sensor_fifo, test_setup, test_
 
     // Verify first entry was processed correctly (throttling active path)
     assert_int_equal(core_rt[core_id_1].latest_current_mA, (uint16_t)(100 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id_1].latest_power_mW, 1600);
+    assert_int_equal(core_rt[core_id_1].latest_power_mW, 1597);
     assert_int_equal(core_rt[core_id_1].latest_mpam_id, 5);
     assert_int_equal(core_rt[core_id_1].latest_pstate, 12); // Should be updated from current packet
 
     // Verify second entry was processed correctly (no throttling path)
     assert_int_equal(core_rt[core_id_2].latest_current_mA, (uint16_t)(80 * CORE_CURRENT_CONVERSION_FACTOR));
-    assert_int_equal(core_rt[core_id_2].latest_power_mW, 1280);
+    assert_int_equal(core_rt[core_id_2].latest_power_mW, 1277);
     assert_int_equal(core_rt[core_id_2].latest_mpam_id, 3);
     assert_int_equal(core_rt[core_id_2].latest_pstate, 0); // Should NOT be updated (no throttling)
 
@@ -1891,11 +1898,14 @@ TEST_FUNCTION(test_data_smpl_update_metrics_for_cores_aging_counters, test_setup
 TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown)
 {
     static uint64_t expected_droop_counts[NUMBER_OF_CORES_PER_DIE];
+    static uint64_t test_mpam_counters[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
 
     for (uint8_t i = 0; i < NUMBER_OF_CORES_PER_DIE; ++i)
     {
         expected_droop_counts[i] = i * 10;
     }
+
+    memset(test_mpam_counters, 0, sizeof(test_mpam_counters));
 
     // Test Case 1: No valid states (all flags false) - should only call timestamp function
     memset(core_rt, 0, sizeof(core_rt));
@@ -1904,6 +1914,8 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
     // Set up mock return values for tlm_get_timestamp_microseconds
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 1000);
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1);
     // Call the function to be tested
 
     data_smpl_finalize_pwr_pkg_metrics();
@@ -1931,6 +1943,8 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 2000);
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -1954,6 +1968,8 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 3000);
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -1979,6 +1995,8 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 4000);
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -2017,6 +2035,8 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 5000);
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -2047,6 +2067,8 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 6000);
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -2095,6 +2117,8 @@ TEST_FUNCTION(test_data_smpl_finalize_pwr_pkg_metrics, test_setup, test_teardown
 
     will_return(__wrap_exec_tlm_cmpnt_get_timestamp_microseconds, 7000);
     will_return(__wrap_pwr_tlm_core_exch_mcp_read_droop_counts, expected_droop_counts);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1);
 
     data_smpl_finalize_pwr_pkg_metrics();
 
@@ -5152,9 +5176,21 @@ TEST_FUNCTION(test_data_smpl_update_mpam_mem_power_primary_die, test_setup, test
     // Reset computed_metrics_2_mins to ensure clean state
     comp_metrics_reset_local_2_min_metrics();
 
+    // Prepare test data for MPAM counters (all zeros for simple test)
+    static uint64_t test_mpam_counters_basic[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+    memset(test_mpam_counters_basic, 0, sizeof(test_mpam_counters_basic));
+
+    // Setup mock for pwr_tlm_core_exch_mcp_read_mpam_pmu_counts
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters_basic);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1); // sequence number
+
     // Set up secondary die (die 1) memory power
     die_2_die_exch_init(1);
     die_2_die_exch_ib_write_total_memory_power_mW(1500); // Secondary die memory power = 1500 mW
+
+    // Write die 1 counters (zeros)
+    uint64_t untracked_die1 = 0;
+    die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters((uint64_t*)test_mpam_counters_basic, &untracked_die1);
 
     // Switch back to primary die
     die_2_die_exch_init(0);
@@ -5201,6 +5237,163 @@ TEST_FUNCTION(test_data_smpl_update_mpam_mem_power_secondary_die, test_setup, te
     // This test verifies the die ID check works correctly
 }
 
+// Unit test for data_smpl_update_mpam_mem_power - with non-zero transactions
+TEST_FUNCTION(test_data_smpl_update_mpam_mem_power_with_transactions, test_setup, test_teardown)
+{
+    // Test: Verify MPAM memory power calculation when total_memory_transactions > 0
+    // This test covers the main calculation path inside the if (total_memory_transactions > 0) block
+
+    // Setup: Initialize as primary die (die 0)
+    die_2_die_exch_init(0);
+
+    // Reset computed_metrics_2_mins to ensure clean state
+    comp_metrics_reset_local_2_min_metrics();
+
+    // Prepare test data for die 0 MPAM counters
+    // The function will call pwr_tlm_core_exch_mcp_read_mpam_pmu_counts twice:
+    // 1. First call for die 0 counters (when on primary die)
+    // 2. Data for die 1 comes from die_2_die_exch_ib_read_pwr_pkg_mpam_mem_counters
+
+    // Set up die 0 (local) MPAM counters with test values
+    // Array size: [12 memory controllers][8 MPAMs per controller]
+    static uint64_t test_mpam_counters_die0[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+    memset(test_mpam_counters_die0, 0, sizeof(test_mpam_counters_die0));
+
+    // Memory controller 0, MPAM 0-6 (tracked MPAMs) + 7 (untracked)
+    test_mpam_counters_die0[0][0] = 1000;  // MPAM 0: 1000 transactions
+    test_mpam_counters_die0[0][1] = 2000;  // MPAM 1: 2000 transactions
+    test_mpam_counters_die0[0][2] = 1500;  // MPAM 2: 1500 transactions
+    test_mpam_counters_die0[0][3] = 500;   // MPAM 3: 500 transactions
+    test_mpam_counters_die0[0][4] = 800;   // MPAM 4: 800 transactions
+    test_mpam_counters_die0[0][5] = 1200;  // MPAM 5: 1200 transactions
+    test_mpam_counters_die0[0][6] = 3000;  // MPAM 6: 3000 transactions
+    test_mpam_counters_die0[0][7] = 10000; // MPAM 7: 10000 transactions (untracked/unallocated)
+
+    // Memory controller 1, MPAM 0-6 + 7 (untracked)
+    test_mpam_counters_die0[1][0] = 500;  // MPAM 7: 500 transactions
+    test_mpam_counters_die0[1][1] = 1500; // MPAM 8: 1500 transactions
+    test_mpam_counters_die0[1][2] = 2500; // MPAM 9: 2500 transactions
+    test_mpam_counters_die0[1][3] = 800;  // MPAM 10: 800 transactions
+    test_mpam_counters_die0[1][4] = 600;  // MPAM 11: 600 transactions
+    test_mpam_counters_die0[1][5] = 1000; // MPAM 12: 1000 transactions
+    test_mpam_counters_die0[1][6] = 2000; // MPAM 13: 2000 transactions
+    test_mpam_counters_die0[1][7] = 5000; // Untracked counter
+
+    // Set up die 1 (remote) MPAM counters with test values
+    static uint64_t test_mpam_counters_die1[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+    memset(test_mpam_counters_die1, 0, sizeof(test_mpam_counters_die1));
+
+    // Memory controller 0, MPAM 0-6
+    test_mpam_counters_die1[0][0] = 2000; // MPAM 0: 2000 transactions
+    test_mpam_counters_die1[0][1] = 1000; // MPAM 1: 1000 transactions
+    test_mpam_counters_die1[0][2] = 1500; // MPAM 2: 1500 transactions
+    test_mpam_counters_die1[0][3] = 3000; // MPAM 3: 3000 transactions
+    test_mpam_counters_die1[0][4] = 500;  // MPAM 4: 500 transactions
+    test_mpam_counters_die1[0][5] = 2500; // MPAM 5: 2500 transactions
+    test_mpam_counters_die1[0][6] = 1800; // MPAM 6: 1800 transactions
+    test_mpam_counters_die1[0][7] = 8000; // Untracked
+
+    // Memory controller 1, MPAM 0-6
+    test_mpam_counters_die1[1][0] = 1200; // MPAM 7: 1200 transactions
+    test_mpam_counters_die1[1][1] = 800;  // MPAM 8: 800 transactions
+    test_mpam_counters_die1[1][2] = 2200; // MPAM 9: 2200 transactions
+    test_mpam_counters_die1[1][3] = 1500; // MPAM 10: 1500 transactions
+    test_mpam_counters_die1[1][4] = 900;  // MPAM 11: 900 transactions
+    test_mpam_counters_die1[1][5] = 1100; // MPAM 12: 1100 transactions
+    test_mpam_counters_die1[1][6] = 3000; // MPAM 13: 3000 transactions
+    test_mpam_counters_die1[1][7] = 6000; // Untracked
+
+    // Setup mock for pwr_tlm_core_exch_mcp_read_mpam_pmu_counts
+    // This will be called once by data_smpl_update_mpam_mem_power to read die 0 counters
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters_die0);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1); // sequence number
+
+    // Set up memory power values
+    // Die 1 memory power
+    die_2_die_exch_init(1);
+    die_2_die_exch_ib_write_total_memory_power_mW(3000); // 3000 mW from die 1
+
+    // Switch back to primary die
+    die_2_die_exch_init(0);
+
+    // Local die 0 memory power
+    data_util_running_avg_u32_add_sample(&computed_metrics_2_mins.soc.memory_avg_pwr_mW, 2000);
+    data_util_running_avg_u32_add_sample(&computed_metrics_2_mins.soc.memory_avg_pwr_mW, 4000);
+    // Local average = (2000 + 4000) / 2 = 3000 mW
+
+    // Total memory power = 3000 (die1) + 3000 (local) + 0 (fixed) = 6000 mW
+
+    // Manually write die 1 counters to die-to-die exchange (simulate die 1 writing)
+    die_2_die_exch_init(1);
+    uint64_t untracked_die1 = test_mpam_counters_die1[0][7] + test_mpam_counters_die1[1][7]; // 8000 + 6000 = 14000
+    die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters((uint64_t*)test_mpam_counters_die1, &untracked_die1);
+
+    // Switch back to primary die for the test
+    die_2_die_exch_init(0);
+
+    // Call the function under test
+    data_smpl_update_mpam_mem_power();
+
+    // Verify: The function executed the calculation path successfully
+    // Calculate expected total transactions:
+    // Die 0 tracked: (1000+2000+1500+500+800+1200+3000) + (500+1500+2500+800+600+1000+2000) = 10000 + 8900 =
+    // 18900 Die 0 untracked: 10000 + 5000 = 15000 Die 0 total: 18900 + 15000 = 33900 Die 1 tracked:
+    // (2000+1000+1500+3000+500+2500+1800) + (1200+800+2200+1500+900+1100+3000) = 12300 + 10700 = 23000 Die 1
+    // untracked: 14000 (passed separately) Total: 33900 + 23000 + 14000 = 70900
+
+    // With total_memory_power_mW = 6000 mW and total_memory_transactions = 70900:
+    // MPAM 0 transactions: 1000 (die0) + 2000 (die1) = 3000
+    // MPAM 0 power: (3000 / 70900) * 6000 ≈ 254 mW
+
+    // Since we can't easily verify exact MPAM power values without accessing internal state,
+    // the test primarily verifies that:
+    // 1. The function doesn't crash with non-zero transactions
+    // 2. The calculation loop executes without division by zero
+    // 3. MPAM memory power calculation completes successfully
+    // 4. The if (total_memory_transactions > 0) block is entered and executed
+}
+
+// Unit test for data_smpl_update_mpam_mem_power - zero transactions
+TEST_FUNCTION(test_data_smpl_update_mpam_mem_power_zero_transactions, test_setup, test_teardown)
+{
+    // Test: Verify behavior when total_memory_transactions == 0 (no calculation should occur)
+    // Setup: Initialize as primary die (die 0)
+    die_2_die_exch_init(0);
+
+    // Reset computed_metrics_2_mins to ensure clean state
+    comp_metrics_reset_local_2_min_metrics();
+
+    // Prepare test data with all zeros - no transactions
+    static uint64_t test_mpam_counters_zero[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+    memset(test_mpam_counters_zero, 0, sizeof(test_mpam_counters_zero));
+
+    // Setup mock for pwr_tlm_core_exch_mcp_read_mpam_pmu_counts to return all zeros
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters_zero);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1); // sequence number
+
+    // Set up memory power values
+    die_2_die_exch_init(1);
+    die_2_die_exch_ib_write_total_memory_power_mW(1500);
+
+    die_2_die_exch_init(0);
+    data_util_running_avg_u32_add_sample(&computed_metrics_2_mins.soc.memory_avg_pwr_mW, 1000);
+
+    // Manually write zero die 1 counters
+    die_2_die_exch_init(1);
+    uint64_t untracked_zero = 0;
+    die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters((uint64_t*)test_mpam_counters_zero, &untracked_zero);
+
+    die_2_die_exch_init(0);
+
+    // Call the function under test
+    data_smpl_update_mpam_mem_power();
+
+    // Verify: Function completes without error
+    // The if (total_memory_transactions > 0) block should NOT execute
+    // This prevents division by zero
+    // Test passes if no crash occurs
+}
+
 TEST_FUNCTION(test_data_smpl_read_and_populate_core_vmin, test_setup, test_teardown)
 {
     // Test: Verify that data_smpl_read_and_populate_core_vmin correctly reads Vmin values
@@ -5228,4 +5421,52 @@ TEST_FUNCTION(test_data_smpl_read_and_populate_core_vmin, test_setup, test_teard
     {
         assert_int_equal(core_rt[core_id].latest_vmin_mV, (600 + core_id));
     }
+}
+
+// Unit test for data_smpl_update_mpam_die1_pmu_counters - secondary die normal case
+TEST_FUNCTION(test_data_smpl_update_mpam_die1_pmu_counters_secondary_die, test_setup, test_teardown)
+{
+    // Test: Verify that secondary die (die 1) properly processes MPAM PMU counters
+    // Setup: Initialize as secondary die (die 1)
+    die_2_die_exch_init(1);
+
+    // Prepare test data for MPAM counters
+    static uint64_t test_mpam_counters_die1[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR];
+    memset(test_mpam_counters_die1, 0, sizeof(test_mpam_counters_die1));
+
+    // Add some test values for verification
+    test_mpam_counters_die1[0][7] = 1000; // Untracked counter for controller 0
+    test_mpam_counters_die1[1][7] = 2000; // Untracked counter for controller 1
+
+    // Setup mock for pwr_tlm_core_exch_mcp_read_mpam_pmu_counts
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, test_mpam_counters_die1);
+    will_return(__wrap_pwr_tlm_core_exch_mcp_read_mpam_pmu_counts, 1); // sequence number
+
+    // Call the function under test
+    // This should read MPAM PMU counters, sum untracked counters, and write to die-to-die exchange
+    data_smpl_update_mpam_die1_pmu_counters();
+
+    // Verify: Function executes without error
+    // The function should:
+    // 1. Clear mpam_counters buffer
+    // 2. Call pwr_tlm_core_exch_mcp_read_mpam_pmu_counts to read counters
+    // 3. Sum up the untracked counters (last element) from each memory controller
+    // 4. Write to die-to-die exchange via die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters
+    // Since we're using real implementations, we verify the function completes without crashing
+}
+
+// Unit test for data_smpl_update_mpam_die1_pmu_counters - primary die early return
+TEST_FUNCTION(test_data_smpl_update_mpam_die1_pmu_counters_primary_die, test_setup, test_teardown)
+{
+    // Test: Verify that primary die (die 0) returns early without processing
+    // Setup: Initialize as primary die (die 0)
+    die_2_die_exch_init(0);
+
+    // Call the function under test
+    // Should return early since this is the primary die
+    data_smpl_update_mpam_die1_pmu_counters();
+
+    // Verify: Function returns early without error
+    // On primary die, the function should exit early at the die ID check
+    // This test verifies the die ID check works correctly and prevents unnecessary processing
 }

@@ -63,6 +63,7 @@ mock_target(${TARGET}
     release_semaphore
     pwr_tlm_core_exch_mcp_read_droop_counts
     pwr_tlm_core_exch_mcp_read_vmin
+    pwr_tlm_core_exch_mcp_read_mpam_pmu_counts
     core_info_get_enable_cores_result
     dvfs_c2_pcm_enable_aging_sensor_measurement
     dvfs_c2_pcm_aging_get_sensor_status

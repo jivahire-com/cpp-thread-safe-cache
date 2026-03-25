@@ -74,7 +74,6 @@ void ap_core_ppu_init(ap_core_service_context_t* p_context)
 // function to set the power state of a single cluster
 static void cluster_set_power_state(ap_core_service_context_t* p_context, unsigned cluster_idx, bool power_state_on, uint32_t timeout_ms)
 {
-
     // TODO: timeout_ms is now being interpreted as us - Need to update and also provide an appropriate timeout in us
     uintptr_t cluster_ppu_addr =
         (p_context->p_config->cluster_pex_base + (cluster_idx * p_context->p_config->cluster_stride) +
@@ -196,7 +195,7 @@ void ap_core_ppu_cores_off(ap_core_service_context_t* p_context, uint32_t timeou
 void ap_core_ppu_core_set_power_state(ap_core_service_context_t* p_context, unsigned core_idx, bool power_state_on, uint32_t timeout_ms)
 {
 
-    // Skip cluster PPU ON transition if IFT is enabled
+    // Skip core PPU ON/OFF transition if IFT is enabled since IFT will manage the core power state
     if (ift_is_enabled())
     {
         return;
@@ -328,12 +327,16 @@ void ap_core_ppu_clusters_on_off(ap_core_service_context_t* p_context, uint32_t 
         cluster_set_power_state(p_context, core_idx, true, timeout_ms);
     }
 
-    for (unsigned int core_idx = 0; core_idx < num_cores_per_die; ++core_idx)
+    // In case of IFT we want all PPUs to be ON
+    if (!ift_is_enabled())
     {
-        // Transition cluster PPU from ON->OFF that have disabled cores
-        if (!corebits_is_bit_set(&p_context->enabled_cores, core_idx))
+        for (unsigned int core_idx = 0; core_idx < num_cores_per_die; ++core_idx)
         {
-            cluster_set_power_state(p_context, core_idx, false, timeout_ms);
+            // Transition cluster PPU from ON->OFF that have disabled cores
+            if (!corebits_is_bit_set(&p_context->enabled_cores, core_idx))
+            {
+                cluster_set_power_state(p_context, core_idx, false, timeout_ms);
+            }
         }
     }
 }

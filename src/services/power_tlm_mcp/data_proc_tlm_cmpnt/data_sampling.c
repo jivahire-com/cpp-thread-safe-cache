@@ -66,11 +66,19 @@ dts_tlm_coeff_t tileDtsCoefficients[NUMBER_OF_TILES_PER_DIE] = {0};
 cstate_instr_timestamp_t* cstate_tfa_timestamp_base =
     (cstate_instr_timestamp_t*)MSCP_ATU_AP_WINDOW_CSTATE_TIMESTAMP_DIE_BASE_ADDR;
 
+// MPAM DDRSS PMU counters staging buffer for die 0 and 1 to write and die 0 to read for memory power calculation
+uint64_t mpam_counters[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR] = {0};
+// Die1 PMU counters read by die 0 for memory power calculation, stored separately to avoid being overwritten by die 0 counter reads
+uint64_t mpam_counters1[NUMBER_OF_MEM_CONTROLLERS_PER_DIE][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR] = {0};
+// VM memory fixed power in mW for MPAM reporting, initialized from data_smpl_init() input parameter, it is Memory controller power + PHY power.
+uint32_t local_mpam_vm_mem_fixed_pwr_mW;
+
 /*------------- Functions ----------------*/
-void data_smpl_init(void)
+void data_smpl_init(uint32_t mpam_vm_mem_fixed_pwr_mW)
 {
     // Initialize dts coeff data at startup
     data_smpl_init_dts_coefficients();
+    local_mpam_vm_mem_fixed_pwr_mW = mpam_vm_mem_fixed_pwr_mW;
 }
 
 void data_smpl_init_dts_coefficients(void)
@@ -625,30 +633,97 @@ void data_smpl_finalize_pwr_pkg_metrics(void)
     // read and update cores droop counts data
     comp_metrics_for_cores_droop_counts();
 
+    data_smpl_update_mpam_die1_pmu_counters();
     data_smpl_update_mpam_mem_power();
 }
 
-void data_sample_calculate_vm_memory_power(uint32_t total_memory_power_mW)
+void data_smpl_update_mpam_die1_pmu_counters(void)
 {
-    // TODO: Add memory power calculation when data is available, this is a placeholder function
-    // to show where the memory power calculation should be done and how it should be used in data_smpl_update_mpam_mem_power()
-    FPFW_UNUSED(total_memory_power_mW);
+    // update die 2 die exchange with die 1 mpam pmu counters so it can be read by primary die for mpam memory power calculation.
+    if (die_2_die_exch_get_this_die_id() != PRIMARY_DIE_ID)
+    {
+        uint64_t untracked_counter = 0;
+        // Clear the buffer before reading counters to avoid any stale data from previous poll period.
+        memset(&mpam_counters, 0, sizeof(mpam_counters));
+        pwr_tlm_core_exch_mcp_read_mpam_pmu_counts((uint64_t*)mpam_counters);
+
+        for (uint8_t mem_ctrl = 0; mem_ctrl < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; mem_ctrl++)
+        {
+            untracked_counter += mpam_counters[mem_ctrl][NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR - 1];
+        }
+        // write to die to die exchange
+        die_2_die_exch_ib_write_pwr_pkg_mpam_mem_counters((uint64_t*)mpam_counters, &untracked_counter);
+    }
 }
 
 void data_smpl_update_mpam_mem_power(void)
 {
-    // constant/fix  MC power + PHY power for MPAM memory power calculation, should be used from Knobs
-    uint32_t local_mpam_vm_mem_fixed_pwr_mW = 0;
-
-    // update the mpam memory power metrics
-    // TODO: Add memory power calculation when data is available
 
     if (die_2_die_exch_get_this_die_id() == PRIMARY_DIE_ID)
     {
-        uint32_t total_memory_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
+        uint64_t total_memory_transactions = 0;
+        uint32_t total_memory_power_mW = 0;
+
+        uint64_t unallocated_counter = 0;
+        // Clear the buffer before reading die 0 counters to avoid any stale data from previous poll period.
+        memset(&mpam_counters, 0, sizeof(mpam_counters));
+
+        // read die 0 counters from coe exchange and add with remote die 1 counters.
+        pwr_tlm_core_exch_mcp_read_mpam_pmu_counts((uint64_t*)mpam_counters);
+
+        for (uint8_t mem_ctrl = 0; mem_ctrl < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; mem_ctrl++)
+        {
+            for (uint8_t mpam = 0; mpam < NUMBER_OF_MPAMS_PER_MEM_AND_UNTRACK_CTRLR; mpam++)
+            {
+                total_memory_transactions += mpam_counters[mem_ctrl][mpam];
+            }
+        }
+
+        die_2_die_exch_ib_read_pwr_pkg_mpam_mem_counters((uint64_t*)mpam_counters1, &unallocated_counter);
+
+        // Sum all mpam_counters
+        for (uint8_t mem_ctrl = 0; mem_ctrl < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; mem_ctrl++)
+        {
+            for (uint8_t mpam = 0; mpam < NUMBER_OF_MPAMS_PER_MEM_CTRLR; mpam++)
+            {
+
+                total_memory_transactions += mpam_counters1[mem_ctrl][mpam];
+            }
+        }
+
+        // Add unallocated_counter of remote die 1
+        total_memory_transactions += unallocated_counter;
+
+        total_memory_power_mW = die_2_die_exch_ib_read_total_memory_power_mW(1);
         total_memory_power_mW += comp_metrics_get_memory_avg_pwr_mW();
         total_memory_power_mW += local_mpam_vm_mem_fixed_pwr_mW;
-        data_sample_calculate_vm_memory_power(total_memory_power_mW);
+
+        // Calculate per-MPAM memory power using fixed-point arithmetic
+        // Formula: mpam_power = (mpam_counter * total_memory_power_mW) / total_memory_transactions
+        if (total_memory_transactions > 0)
+        {
+            uint8_t mpam_id = 0;
+            for (uint8_t mem_ctrl = 0; mem_ctrl < NUMBER_OF_MEM_CONTROLLERS_PER_DIE; mem_ctrl++)
+            {
+                for (uint8_t mpam = 0; mpam < NUMBER_OF_MPAMS_PER_MEM_CTRLR; mpam++)
+                {
+                    if (mpam_id < NUMBER_OF_MPAMS)
+                    {
+                        // Use 64-bit arithmetic to prevent overflow during multiplication
+                        // mpam_counter (uint64_t) * total_memory_power_mW (uint32_t) fits in uint64_t
+                        uint64_t mpam_power_calc = (mpam_counters[mem_ctrl][mpam] + mpam_counters1[mem_ctrl][mpam]) *
+                                                   (uint64_t)total_memory_power_mW / total_memory_transactions;
+
+                        // Result should fit in 32-bit since it's a fraction of total_memory_power_mW
+                        uint32_t mpam_power_mW = (uint32_t)mpam_power_calc;
+
+                        comp_metrics_for_mpam_memory_pwr(mpam_id, mpam_power_mW);
+
+                        mpam_id++;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -965,7 +1040,9 @@ bool data_smpl_parse_core_current_entry(core_current_t* core_current_entry, uint
 
     core_rt[core_id].latest_current_mA = (uint16_t)(core_current_entry->data.avg * CORE_CURRENT_CONVERSION_FACTOR);
 
-    uint32_t power_mW = ((uint32_t)core_rt[core_id].latest_current_mA * core_rt[core_id].latest_voltage_mV) / 1000;
+    // Use voltage from current sensor FIFO instead of voltage telemetry packet
+    uint16_t voltage_mV = core_current_entry->data.volt * CURRENT_PACKET_CORE_MV_PER_BIT;
+    uint32_t power_mW = ((uint32_t)core_rt[core_id].latest_current_mA * voltage_mV) / 1000;
 
     core_rt[core_id].latest_power_mW = power_mW; // power in mW = current in mA * voltage in V
 

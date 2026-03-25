@@ -164,9 +164,10 @@ TEST_FUNCTION(test_single_core_aging_counter_complete, test_setup, test_teardown
 
     // Setup mocks for data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg() infrastructure calls (executed first)
     // Mock multi-die communication and SCP telemetry service notifications
+    // Note: Order matches actual implementation - SCP notified first, then secondary MCPs
+    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
     will_return(__wrap_die_2_die_exch_get_this_die_id, 0); // PRIMARY_DIE_ID
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg);
-    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
 
     // Setup mock aging counter register operations (executed after infrastructure calls)
     // Cores 1 and 2 have measurements ready, cores 0 and 3 not ready
@@ -351,9 +352,9 @@ TEST_FUNCTION(test_aging_counter_last_pair_boundary, test_setup, test_teardown)
         printf("\n--- Step 1: Reading counter pair 6 ---\n");
 
     // Setup mocks for infrastructure calls
+    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
     will_return(__wrap_die_2_die_exch_get_this_die_id, 0); // PRIMARY_DIE_ID
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg);
-    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
 
     // Setup mock for counter pair 6 read (cores 1 and 2 ready, cores 0 and 3 not ready)
     // At measurement_index=6, after read it becomes 7 (still valid), so expect enable call
@@ -370,9 +371,9 @@ TEST_FUNCTION(test_aging_counter_last_pair_boundary, test_setup, test_teardown)
         printf("\n--- Step 2: Reading counter pair 7 (LAST) ---\n");
 
     // Setup mocks for infrastructure calls
+    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
     will_return(__wrap_die_2_die_exch_get_this_die_id, 0); // PRIMARY_DIE_ID
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg);
-    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
 
     // Setup mock for last counter pair read (cores 1 and 2 ready, cores 0 and 3 not ready)
     setup_mock_aging_counter_not_ready(); // core 0: not ready
@@ -537,9 +538,9 @@ TEST_FUNCTION(test_all_cores_aging_counter_complete, test_setup, test_teardown)
     }
 
     // Setup mocks for data_proc_tlm_cmpnt_prepare_data_for_pwr_pkg() infrastructure calls
+    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
     will_return(__wrap_die_2_die_exch_get_this_die_id, 0); // PRIMARY_DIE_ID
     expect_function_call(__wrap_in_band_tlm_cmpnt_notify_sec_mcps_prepare_pwr_pkg);
-    expect_function_call(__wrap_in_band_tlm_cmpnt_notify_scp_tlm_svc_prepare_pwr_pkg);
 
     // Setup mock aging counter register operations for all cores
     // All cores have measurements ready with unique values

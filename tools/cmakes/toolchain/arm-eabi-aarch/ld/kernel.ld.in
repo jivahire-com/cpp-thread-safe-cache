@@ -36,9 +36,22 @@ SECTIONS
     {
         KEEP(*(.vectors .vectors.*))
     } > CODE
+    
+    @RODATA_SECTION@ :
+    {
+        __placed_rodata_start__ = ALIGN(4);
+        *(.rodata*)
+        __placed_code_start__ = ALIGN(4);
+        KEEP(*(.placed.code))
+        /* One-time init code (treated as placed code) */
+        *(.text.dwc_ddrphy_phyinit*)
+        *(.text.cmn800_program_rnsam_list)
+        *(.text.cmn800_hnf_init)
+        __placed_code_end__ = ALIGN(4);
+    } > @RODATA_REGION@
 
     .text :
-    {
+    {    
         *(.text*)
 
         KEEP(*(.init))
@@ -191,15 +204,6 @@ SECTIONS
     __HEAPSIZE__ = __heap_end__ - __heap_start__;
 
     __RAM_segment_used_end__ = .;
-
-    @RODATA_SECTION@ :
-    {
-        __placed_rodata_start__ = ALIGN(4);
-        *(.rodata*)
-        __placed_code_start__ = ALIGN(4);
-        KEEP(*(.placed.code))
-        __placed_code_end__ = ALIGN(4);
-    } > @RODATA_REGION@
 
     .EventMetadata.et.msdata (READONLY): ALIGN(4)
     {

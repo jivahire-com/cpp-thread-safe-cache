@@ -101,6 +101,7 @@ mock_target(${TARGET}
     accel_get_dtcm_addr
 
     atu_svc_accel_atu_addr
+    ift_is_enabled
     idsw_get_platform_sdv
     idsw_get_die_id
     idhw_get_soc_id

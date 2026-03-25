@@ -150,17 +150,6 @@ TEST_FUNCTION(test_multi_entry_multi_core_power, test_setup, test_teardown)
     {
         for (int core = 0; core < NUM_CORES; ++core)
         {
-            // Set voltage for P=V×I power calculation before processing
-            // To achieve expected_power = pwr * 32, with current = avg * 32.2
-            // We need voltage such that: (avg * 32.2 * voltage) / 1000 = pwr * 32
-            // For avg=10, pwr=50: voltage ≈ (50 * 32 * 1000) / (10 * 32.2) ≈ 4969 mV
-            // For avg=20, pwr=60: voltage ≈ (60 * 32 * 1000) / (20 * 32.2) ≈ 2981 mV
-            // Using a constant voltage of ~3100 mV gives reasonable approximation
-            uint32_t expected_power_mW = test_configs[core][entry].pwr * CORE_POWER_MW_PER_BIT;
-            uint32_t current_mA = (uint32_t)(test_configs[core][entry].avg * CORE_CURRENT_CONVERSION_FACTOR);
-            // Add rounding compensation: add (current_mA - 1) to numerator before division to round up
-            core_rt[core].latest_voltage_mV = ((expected_power_mW * 1000) + current_mA - 1) / current_mA;
-
             // Prepare and mock core current data for this core/entry
             core_current_t mock_data = {0};
             uint64_t timestamp = 1000 + 100 * entry + 1000 * core;
@@ -179,7 +168,11 @@ TEST_FUNCTION(test_multi_entry_multi_core_power, test_setup, test_teardown)
             data_smpl_process_core_current_sensor_fifo();
 
             // Update expected min/max/avg for this core
-            int entry_power = test_configs[core][entry].pwr * CORE_POWER_MW_PER_BIT;
+            // Power is now calculated as P = V × I from current sensor
+            // voltage_mV = volt * 4, current_mA = avg * 32.2
+            uint16_t voltage_mV = test_configs[core][entry].volt * 4;
+            uint32_t current_mA = (uint32_t)(test_configs[core][entry].avg * CORE_CURRENT_CONVERSION_FACTOR);
+            int entry_power = (current_mA * voltage_mV) / 1000;
             if (entry_power < expected_min[core])
                 expected_min[core] = entry_power;
             if (entry_power > expected_max[core])
@@ -192,7 +185,10 @@ TEST_FUNCTION(test_multi_entry_multi_core_power, test_setup, test_teardown)
     int expected_power[NUM_CORES], expected_avg[NUM_CORES];
     for (int core = 0; core < NUM_CORES; ++core)
     {
-        expected_power[core] = test_configs[core][NUM_ENTRIES - 1].pwr * CORE_POWER_MW_PER_BIT;
+        // Expected power is from last entry using P = V × I formula
+        uint16_t last_voltage_mV = test_configs[core][NUM_ENTRIES - 1].volt * 4;
+        uint32_t last_current_mA = (uint32_t)(test_configs[core][NUM_ENTRIES - 1].avg * CORE_CURRENT_CONVERSION_FACTOR);
+        expected_power[core] = (last_current_mA * last_voltage_mV) / 1000;
         expected_avg[core] = sum[core] / NUM_ENTRIES;
     }
 

@@ -22,6 +22,7 @@ extern "C" {
 #include <hsp_firmware_headers.h>
 #include <icc_platform_defines.h> // for
 #include <idsw_kng.h>
+#include <ift.h>
 #include <ift_fw.h>
 #include <ift_i.h>
 #include <kingsgate_fuse_defines.h> // for CORE_DEFECT_MFG_MASK_CORE_DEFECT_MFG_31_0_BIT_OFFSET
@@ -41,6 +42,10 @@ extern "C" {
 
 #define IFT_TEST_STATUS_SUCCESS 0x00 /**< IFT test success status */
 #define IFT_TEST_STATUS_FAILURE 0x01 /**< IFT test failure status */
+
+#define FUSE_READ_DATA_COUNT          \
+    (HNS_DEFECT_MFG_MASK_ARRAY_SIZE + \
+     CORE_DEFECT_MFG_MASK_ARRAY_SIZE) // Number of times fuse_read_data is expected to be called in ift_init
 
 /*--------------- Typedefs --------------------*/
 
@@ -97,6 +102,7 @@ static int setup_mem_test(void** state)
     set_mem_test_ctx();
 
     will_return(__wrap_mpu_init, MPU_STATUS_SUCCESS);
+    will_return_count(__wrap_fuse_read_data, 0x0, FUSE_READ_DATA_COUNT);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_INTENT_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -121,6 +127,7 @@ static int setup_core_test(void** state)
     set_core_test_ctx();
 
     will_return(__wrap_mpu_init, MPU_STATUS_SUCCESS);
+    will_return_count(__wrap_fuse_read_data, 0x0, FUSE_READ_DATA_COUNT);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, HSP_MAILBOX_CMD_IFT_INTENT_RSP);
     will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
@@ -384,6 +391,20 @@ silibs_status_t __wrap_ift_execute_ist(uintptr_t ist_resolved_addr,
     return mock_type(silibs_status_t);
 }
 
+silibs_status_t __wrap_ift_execute_ist_ext(uintptr_t ist_resolved_addr, uint32_t* data, ift_execute_cfg_t* cfg)
+{
+    assert_true(ist_resolved_addr == SCP_TOP_DBGR_IFT_ADDRESS);
+    assert_non_null(data);
+    assert_true(cfg->pattern_version == IFT_PATTERN_VERSION);
+    assert_true(cfg->fail_limit > 0);
+    assert_non_null(cfg->fail_buffer);
+    assert_non_null(cfg->fail_index);
+
+    *cfg->fail_index = mock_type(uint32_t);
+
+    return mock_type(silibs_status_t);
+}
+
 mpu_status_t __wrap_mpu_init(const ARM_MPU_Region_t* regions, const size_t count)
 {
     assert_non_null(regions);
@@ -425,6 +446,7 @@ TEST_FUNCTION(test_ift_init, nullptr, nullptr)
     will_return(__wrap_fpfw_icc_base_send_recv_sync, sizeof(struct kng_hsp_mailbox_msg_header));
     will_return(__wrap_fpfw_icc_base_send_recv_sync, FPFW_ICC_BASE_STATUS_SUCCESS);
     will_return(__wrap_mpu_init, MPU_STATUS_SUCCESS);
+    will_return_count(__wrap_fuse_read_data, 0x0, FUSE_READ_DATA_COUNT);
 
     ift_init((fpfw_icc_base_ctx_t*)0xDEADBEEF);
 
@@ -499,8 +521,8 @@ TEST_FUNCTION(test_ift_mem_test_die0, setup_mem_test, cleanup)
         g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
         /* Set expectations for ift_execute_test() */
         will_return(__wrap_idsw_get_die_id, die_id);
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, result_index);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         /** Set expectations for ift_wait_for_scp_die1() **/
         will_return(__wrap_mmio_read32, 0);
         will_return(__wrap_mmio_read32, SCP_EXP_IFT_SYNC_MAGIC_NUM);
@@ -523,12 +545,11 @@ TEST_FUNCTION(test_ift_mem_test_die0, setup_mem_test, cleanup)
     g_ift_sos_completion_cb(g_ift_sos_request, g_ift_sos_completion_ctx);
     /* Set expectations for ift_execute_test() */
     will_return(__wrap_idsw_get_die_id, die_id);
-    will_return(__wrap_ift_execute_ist, result_index);
-    will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+    will_return(__wrap_ift_execute_ist_ext, result_index);
+    will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
     /** Set expectations for ift_wait_for_scp_die1() **/
     will_return(__wrap_mmio_read32, 0);
     will_return(__wrap_mmio_read32, SCP_EXP_IFT_SYNC_MAGIC_NUM);
-    will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
     will_return(__wrap_mmio_read32, 0x0);
     will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
     /* Set expectations for ift_execute_test_dfwk() */
@@ -577,15 +598,14 @@ TEST_FUNCTION(test_ift_mem_test_die1, setup_mem_test, cleanup)
         g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
         /* Set expectations for ift_execute_test() */
         will_return(__wrap_idsw_get_die_id, die_id);
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, result_index);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         if (i < NUM_IFT_MEM_TEST_FW_COUNT - 1)
         {
             will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
         }
         else
         {
-            will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
             will_return(__wrap_mmio_read32, 0x0);
             will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
         }
@@ -637,15 +657,14 @@ TEST_FUNCTION(test_ift_core_test_die1, setup_core_test, cleanup)
         g_icc_recv_cb(g_icc_recv_ctx, sizeof(rmss_d2d_mailbox_msg_header), FPFW_ICC_BASE_STATUS_SUCCESS);
         /* Set expectations for ift_execute_test() */
         will_return(__wrap_idsw_get_die_id, die_id);
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, result_index);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         if (i < NUM_IFT_CORE_TEST_FW_COUNT - 1)
         {
             will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
         }
         else
         {
-            will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
             will_return(__wrap_mmio_read32, 0x0);
             will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
         }
@@ -714,8 +733,8 @@ TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
         ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, result_index);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, result_index);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_E_PARAM);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
     }
@@ -738,15 +757,14 @@ TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
         ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 1);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_ift_execute_ist_ext, 1);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_mmio_read32, 0x0);
         will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_DISPATCHER_INIT_ERR);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
@@ -759,15 +777,14 @@ TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
         ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_INVALID_ARG_ERR);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
     }
@@ -779,15 +796,14 @@ TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
         ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 1);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_ift_execute_ist_ext, 1);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_mmio_read32, 0x0);
         will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
@@ -802,15 +818,14 @@ TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
         ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 2);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_ift_execute_ist_ext, 2);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_mmio_read32, 0x0);
         will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
@@ -825,15 +840,14 @@ TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
         ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
@@ -847,15 +861,14 @@ TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
         ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
@@ -869,15 +882,14 @@ TEST_FUNCTION(test_ift_mem_test_fail, setup_mem_test, cleanup)
         ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
@@ -930,16 +942,15 @@ TEST_FUNCTION(test_ift_core_test_fail, setup_core_test, cleanup)
         for (uint32_t i = 0; i < NUM_IFT_CORE_TEST_FW_COUNT - 1; i++)
         {
             will_return(__wrap_idsw_get_die_id, DIE_1);
-            will_return(__wrap_ift_execute_ist, 0);
-            will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+            will_return(__wrap_ift_execute_ist_ext, 0);
+            will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
             will_return(__wrap_spi_controller_write_direct_instruction, SILIBS_SUCCESS);
             g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
         }
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, 0);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
-        will_return_count(__wrap_fuse_read_data, 0x0, CORE_DEFECT_MFG_MASK_ARRAY_SIZE);
+        will_return(__wrap_ift_execute_ist_ext, 0);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         will_return(__wrap_fpfw_icc_base_send_recv, FPFW_ICC_BASE_STATUS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
 
@@ -954,8 +965,8 @@ TEST_FUNCTION(test_ift_core_test_fail, setup_core_test, cleanup)
         ift_async_request.RequestType = IFT_EXECUTE_FW_ASYNC;
 
         will_return(__wrap_idsw_get_die_id, DIE_1);
-        will_return(__wrap_ift_execute_ist, (SCP_EXP_IFT_RESULT_MAX << 1) + 1);
-        will_return(__wrap_ift_execute_ist, SILIBS_SUCCESS);
+        will_return(__wrap_ift_execute_ist_ext, (SCP_EXP_IFT_RESULT_MAX << 1) + 1);
+        will_return(__wrap_ift_execute_ist_ext, SILIBS_SUCCESS);
         g_ift_async_request_dispatch(&ift_async_request, g_ift_async_request_dispatch_ctx);
     }
 }

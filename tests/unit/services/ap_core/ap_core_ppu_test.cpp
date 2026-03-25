@@ -81,6 +81,12 @@ int __wrap_ppu_dynamic_enable(uintptr_t ppu_v1_base_addr, PPU_V1_MODE min_dyn_st
     return SILIBS_SUCCESS;
 }
 
+// Mock for ift_is_enabled
+bool __wrap_ift_is_enabled(void)
+{
+    return mock_type(bool);
+}
+
 } // extern "C"
 
 //
@@ -103,6 +109,25 @@ AP_CORE_TEST(ap_core_ppu_init, NULL, NULL)
 
     // Act
     ap_core_ppu_init(&context);
+}
+
+AP_CORE_TEST(ap_core_ppu_core_set_power_state_ift_enabled, NULL, NULL)
+{
+    // Arrange
+    ap_core_service_context_t context = {};
+    ap_core_service_config_t test_config = {
+        .cluster_pex_base = 0x1000,
+        .cluster_stride = 0x100,
+        .platform_die_core_count = 3,
+    };
+    context.p_config = &test_config;
+    corebits_set_bit(&context.enabled_cores, 0);
+
+    // IFT is enabled - function should return early without any PPU operations
+    will_return(__wrap_ift_is_enabled, true);
+
+    // Act - no PPU mock expectations needed since function returns early
+    __real_ap_core_ppu_core_set_power_state(&context, 0, true, 100);
 }
 
 AP_CORE_TEST(ap_core_ppu_clusters_on, NULL, NULL)
@@ -217,6 +242,9 @@ AP_CORE_TEST(ap_core_ppu_clusters_on_off, NULL, NULL)
 
     uint32_t timeout_ms = 100;
 
+    // IFT is not enabled
+    will_return_always(__wrap_ift_is_enabled, false);
+
     // Mock platform detection
     will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
     expect_value(__wrap_FpFwAssert, expression, 1);
@@ -244,6 +272,7 @@ AP_CORE_TEST(ap_core_ppu_clusters_on_off, NULL, NULL)
         expect_value(__wrap_ppu_dynamic_enable, min_dyn_state, PPU_V1_MODE_OFF);
     }
 
+    // Only disabled core (core 1) should be turned OFF
     unsigned int core_idx = 1;
     uintptr_t base_addr = test_config.cluster_pex_base + (core_idx * test_config.cluster_stride) +
                           CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS;
@@ -252,6 +281,59 @@ AP_CORE_TEST(ap_core_ppu_clusters_on_off, NULL, NULL)
     expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, ppu_mode, PPU_V1_MODE_OFF);
     expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, op_policy, PPU_V1_OPMODE_00);
     expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, timeout_us, timeout_ms);
+
+    will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+
+    __real_ap_core_ppu_clusters_on_off(&context, timeout_ms);
+}
+
+AP_CORE_TEST(ap_core_ppu_clusters_on_off_ift_enabled, NULL, NULL)
+{
+    // Arrange
+    ap_core_service_context_t context = {};
+    ap_core_service_config_t test_config = {
+        .cluster_pex_base = 0x1000,
+        .cluster_stride = 0x100,
+        .platform_die_core_count = 3,
+    };
+    context.p_config = &test_config;
+
+    // Set enabled cores: 0 and 2 enabled, 1 disabled
+    corebits_set_bit(&context.enabled_cores, 0);
+    corebits_set_bit(&context.enabled_cores, 2);
+
+    uint32_t timeout_ms = 100;
+
+    // IFT is enabled - all clusters should remain ON (no OFF transitions)
+    will_return_always(__wrap_ift_is_enabled, true);
+
+    // Mock platform detection
+    will_return(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
+    expect_value(__wrap_FpFwAssert, expression, 1);
+
+    // All clusters: Expect ON sequence
+    for (unsigned int core_idx = 0; core_idx < 3; ++core_idx)
+    {
+        for (int clk_dev_id = PIK_DEV_ID_CLUS_CORECLK; clk_dev_id <= PIK_DEV_ID_CLUS_PPUCLK; clk_dev_id++)
+        {
+            expect_value(__wrap_pik_clock_power_transition, dev_id, PIK_CLUS_PIK_DEV_ID(core_idx, clk_dev_id));
+            expect_value(__wrap_pik_clock_power_transition, state, MOD_PD_STATE_ON);
+            expect_value(__wrap_FpFwAssert, expression, 1);
+        }
+
+        uintptr_t base_addr = test_config.cluster_pex_base + (core_idx * test_config.cluster_stride) +
+                              CORE_CLUSTER_WITH_PVT_VOYAGER_DSU_CLUSTER_ADDRESS + VOYAGER_DSU_CLUSTER_CLUSTER_PPU_ADDRESS;
+
+        expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, ppu_v1_base_addr, base_addr);
+        expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, ppu_mode, PPU_V1_MODE_ON);
+        expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, op_policy, PPU_V1_OPMODE_00);
+        expect_value(__wrap_ppu_v1_set_power_mode_with_timeout, timeout_us, timeout_ms);
+
+        expect_value(__wrap_ppu_dynamic_enable, ppu_v1_base_addr, base_addr);
+        expect_value(__wrap_ppu_dynamic_enable, min_dyn_state, PPU_V1_MODE_OFF);
+    }
+
+    // With IFT enabled, NO clusters should be turned OFF - all remain ON
 
     will_return_always(__wrap_idsw_get_platform_sdv, PLATFORM_RVP_EVT_SILICON);
 

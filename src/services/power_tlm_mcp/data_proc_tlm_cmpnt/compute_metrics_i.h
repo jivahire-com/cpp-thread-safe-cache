@@ -133,6 +133,8 @@ typedef struct
     mma_u32_t core_power;
     mma_u16_t active_pstate;
     uint32_t  residency_uS;
+    uint32_t average_memory_pwr_mW;
+    uint32_t max_memory_pwr_mW;
     uint8_t nominal_pstate;
 } computed_per_mpam_metrics_t;
 
@@ -508,6 +510,14 @@ void comp_metrics_for_mpam_data( mpam_data_t (*mpam_data_array)[NUMBER_OF_MPAMS]
  * @param[in] nominal_pstate - The nominal pstate value.
  */
 void comp_metrics_for_mpam_throttling(uint8_t mpam_id, uint32_t residency_uS, uint8_t nominal_pstate);
+
+/**
+ * @brief Update MPAM memory power metrics for a specific MPAM.
+ *
+ * @param[in] mpam_id - The identifier of the MPAM for which the memory power metrics are being updated.
+ * @param[in] average_mW - The average memory power in milliwatts.
+ */
+void comp_metrics_for_mpam_memory_pwr(uint8_t mpam_id, uint32_t average_mW);
 
  /**
  * @brief Update the per-die mesh telemetry metrics based on the provided telemetry data.

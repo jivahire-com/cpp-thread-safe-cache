@@ -58,8 +58,10 @@ mock_target(${TARGET}
     ddrss_set_power_telemetry_filter
     ddrss_pmu_init
     ddrss_pmu_enable
+    ddrss_pmu_capture_counter_snapshot
     ddrss_pmu_read_counter_snapshot
     ddrss_pmu_set_event
+    idsw_get_platform_sdv
     config_get_pwr_tlm_mpam_scp_knobs
     power_get_adclk_telem
     core_info_get_enable_cores_result

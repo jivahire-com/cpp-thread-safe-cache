@@ -70,6 +70,7 @@ void data_proc_tlm_cmpnt_received_prep_pwr_pkg_from_prim_core(void)
     die_2_die_exch_ib_write_pwr_pkg_max_die_temp(max_soc_temp_avg_dC,
                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.running_avg.num_samples,
                                                  computed_metrics_d2d_2mins.max_soc_temp_dC.max);
+
     comp_metrics_reset_d2d_2_min_metrics();
 }
 
@@ -615,6 +616,24 @@ void comp_metrics_for_mpam_throttling(uint8_t mpam_id, uint32_t residency_uS, ui
 
         computed_metrics_2_mins.mpam[mpam_id].residency_uS += residency_uS;
         computed_metrics_2_mins.mpam[mpam_id].nominal_pstate = nominal_pstate;
+    }
+}
+
+void comp_metrics_for_mpam_memory_pwr(uint8_t mpam_id, uint32_t average_mW)
+{
+    if (in_band_publishing_active)
+    {
+        if (mpam_id >= NUMBER_OF_MPAMS)
+        {
+            FPFW_ET_LOG(CompMetricsMpamIdOutOfRange, mpam_id);
+            return;
+        }
+        computed_metrics_2_mins.mpam[mpam_id].average_memory_pwr_mW = average_mW;
+
+        if (average_mW > computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW)
+        {
+            computed_metrics_2_mins.mpam[mpam_id].max_memory_pwr_mW = average_mW;
+        }
     }
 }
 

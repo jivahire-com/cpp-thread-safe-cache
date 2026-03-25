@@ -609,7 +609,7 @@ uint64_t __wrap_config_get_a1_mesh_hnf_aux_ctl_1(void)
 
 uint64_t __wrap_config_get_a1_mesh_hnf_cfg_ctl(void)
 {
-    return 0x2000C01738921000ULL; // XML default value
+    return 0x2000C01738923000ULL; // XML default value
 }
 
 uint64_t __wrap_config_get_a1_mesh_hnf_lbt_cfg_ctl(void)
@@ -2183,7 +2183,7 @@ void verify_mesh_config_knobs_a1_stepping(void)
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_cbusy_mode_ctl, 0x3000ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl, 0x2000001000200002ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_aux_ctl_1, 0x10001005A900ULL);
-    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738921000ULL);
+    assert_int_equal(default_sam_cfg_knb.mesh_hnf_cfg_ctl, 0x2000C01738923000ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cfg_ctl, 0x7F7F09ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_aux_ctl, 0x440000000000006ULL);
     assert_int_equal(default_sam_cfg_knb.mesh_hnf_lbt_cbusy_ctl, 0x2ULL);

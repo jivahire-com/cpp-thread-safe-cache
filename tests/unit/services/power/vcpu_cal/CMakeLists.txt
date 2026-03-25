@@ -48,9 +48,6 @@ unit_test_target(${TARGET})
 #mock the functions needed
 mock_target(${TARGET}
     FpFwAssert
-    DfwkDeviceInitialize
-    DfwkQueueInitialize
-    DfwkInterfaceInitialize
     crash_dump_bug_check
 )
 

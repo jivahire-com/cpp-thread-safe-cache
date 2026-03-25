@@ -1387,7 +1387,7 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data_zero_filtering_enabled, test_setup, 
     pwr_core_element_pstate_t pstate_array[NUMBER_OF_PSTATES] = {{0}};
 
     // Enable filtering (default is true)
-    package_inf_init(0, true);
+    package_inf_init(true);
 
     // Set all pstate data to zero except pstate 3
     for (uint16_t pstate_id = 0; pstate_id < NUMBER_OF_PSTATES; pstate_id++)
@@ -1426,7 +1426,7 @@ TEST_FUNCTION(test_get_pwr_core_pstate_data_zero_filtering_disabled, test_setup,
     pwr_core_element_pstate_t pstate_array[NUMBER_OF_PSTATES] = {{0}};
 
     // Disable filtering
-    package_inf_init(0, false);
+    package_inf_init(false);
 
     // Set all pstate data to zero
     for (uint16_t pstate_id = 0; pstate_id < NUMBER_OF_PSTATES; pstate_id++)
@@ -1453,7 +1453,7 @@ TEST_FUNCTION(test_get_pwr_core_cstate_data_zero_filtering_enabled, test_setup, 
     pwr_core_element_cstate_t cstate_array[NUMBER_OF_CSTATES] = {{0}};
 
     // Enable filtering
-    package_inf_init(0, true);
+    package_inf_init(true);
 
     // Set all cstate data to zero except cstate 2
     for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
@@ -1487,7 +1487,7 @@ TEST_FUNCTION(test_get_pwr_core_cstate_data_zero_filtering_disabled, test_setup,
     pwr_core_element_cstate_t cstate_array[NUMBER_OF_CSTATES] = {{0}};
 
     // Disable filtering
-    package_inf_init(0, false);
+    package_inf_init(false);
 
     // Set all cstate data to zero
     for (uint16_t cstate_index = 0; cstate_index < NUMBER_OF_CSTATES; cstate_index++)
@@ -1510,7 +1510,7 @@ TEST_FUNCTION(test_get_pwr_core_histogram_data_zero_filtering_enabled, test_setu
     pwr_core_element_histogram_t histogram_array[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES] = {{{0}}};
 
     // Enable filtering
-    package_inf_init(0, true);
+    package_inf_init(true);
 
     // Set all histogram bins to zero except [1][2]
     for (uint8_t voltage_idx = 0; voltage_idx < NUMBER_OF_HS_VOLTAGE_SCALES; voltage_idx++)
@@ -1550,7 +1550,7 @@ TEST_FUNCTION(test_get_pwr_core_histogram_data_zero_filtering_disabled, test_set
     pwr_core_element_histogram_t histogram_array[NUMBER_OF_HS_VOLTAGE_SCALES][NUMBER_OF_HS_TEMP_SCALES] = {{{0}}};
 
     // Disable filtering
-    package_inf_init(0, false);
+    package_inf_init(false);
 
     // Set all histogram bins to zero
     for (uint8_t voltage_idx = 0; voltage_idx < NUMBER_OF_HS_VOLTAGE_SCALES; voltage_idx++)

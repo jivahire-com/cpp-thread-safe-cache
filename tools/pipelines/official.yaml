@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 
 
-name: 2.10.0.$(rev:r)
+name: 3.10.1.$(rev:r)
 
 trigger: 
   branches:

@@ -1,0 +1,14 @@
+[
+  {
+    "sequence": 1,
+    "timestamp": 1778061984959,
+    "prompt_text": "Explain the LRU cache data structure and the O(1) requirement",
+    "response_text": "Error: connect ECONNREFUSED 34.193.116.47:80",
+    "model_used": "openai/gpt-4o-mini",
+    "prompt_tokens": 0,
+    "response_tokens": 0,
+    "response_latency_ms": 11937,
+    "topic_hint": "",
+    "correction_loop": false
+  }
+]

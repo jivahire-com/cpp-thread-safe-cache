@@ -29,19 +29,20 @@ public:
     // TODO(candidate): handle capacity == 0 safely — currently causes
     //                  incorrect behaviour on the first put.
     void put(const K& key, V value) {
+        if (capacity_ == 0) return; // Handle capacity == 0 safely.
+
         auto it = map_.find(key);
         if (it != map_.end()) {
-            list_.splice(list_.begin(), list_, it->second);
-            it->second->second = std::move(value);
-            return;
+        list_.splice(list_.begin(), list_, it->second);
+        it->second->second = std::move(value);
+        return;
         }
-        // TODO(candidate): the eviction condition below has an off-by-one error.
-        //                  A full cache should evict before inserting, but currently
-        //                  it allows the cache to grow one entry beyond capacity.
-        while (list_.size() > capacity_) {
-            auto last = std::prev(list_.end());
-            map_.erase(last->first);
-            list_.erase(last);
+
+        // Correct eviction condition from > to >= to handle off-by-one error.
+        while (list_.size() >= capacity_) {
+        auto last = std::prev(list_.end());
+        map_.erase(last->first);
+        list_.erase(last);
         }
         list_.emplace_front(key, std::move(value));
         map_[key] = list_.begin();

@@ -10,5 +10,17 @@
     "response_latency_ms": 9073,
     "topic_hint": "",
     "correction_loop": false
+  },
+  {
+    "sequence": 2,
+    "timestamp": 1779394594746,
+    "prompt_text": "please return the fixed code in the lru_cache file",
+    "response_text": "Here's the updated code for `include/lru_cache.hpp` reflecting the necessary changes to ensure thread safety:\n\n```cpp\n```cpp file=include/lru_cache.hpp\n#pragma once\n#include <cstddef>\n#include <list>\n#include <optional>\n#include <unordered_map>\n#include <utility>\n#include <mutex>\n\ntemplate <typename K, typename V>\nclass LRUCache {\npublic:\n    explicit LRUCache(size_t capacity) : capacity_(capacity) {}\n\n    std::optional<V> get(const K& key) {\n        std::lock_guard<std::mutex> lock(mutex_); // Lock for thread safety\n        auto it = map_.find(key);\n        if (it == map_.end()) return std::nullopt;\n        list_.splice(list_.begin(), list_, it->second);\n        return it->second->second;\n    }\n\n    void put(const K& key, V value) {\n        std::lock_guard<std::mutex> lock(mutex_); // Lock for thread safety\n        auto it = map_.find(key);\n        if (it != map_.end()) {\n            list_.splice(list_.begin(), list_, it->second);\n            it->second->second = std::move(value);\n            return;\n        }\n        while (list_.size() >= capacity_) { // Fix eviction condition\n            auto last = std::prev(list_.end());\n            map_.erase(last->first);\n            list_.erase(last);\n        }\n        list_.emplace_front(key, std::move(value));\n        map_[key] = list_.begin();\n    }\n\n    size_t size() const {\n        std::lock_guard<std::mutex> lock(mutex_); // Lock for thread safety\n        return list_.size();\n    }\n\n    void clear() {\n        std::lock_guard<std::mutex> lock(mutex_); // Lock for thread safety\n        list_.clear();\n        map_.clear();\n    }\n\nprivate:\n    size_t capacity_;\n    std::list<std::pair<K, V>> list_;\n    std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;\n    mutable std::mutex mutex_; // Mutex for thread safety\n};\n```\n\n### Summary of Fixes:\n- Added a `std::mutex` to ensure thread safety for all public methods.\n- Incorporated `std::lock_guard` in `get`, `put`, `size`, and `clear` methods to protect the shared state from concurrent access.\n- Corrected the eviction condition check to ensure the cache does not exceed capacity.\n\nThis code should now properly manage concurrent access. Be sure to run the relevant tests to confirm its functionality!",
+    "model_used": "openai/gpt-4o-mini",
+    "prompt_tokens": 5000,
+    "response_tokens": 546,
+    "response_latency_ms": 9766,
+    "topic_hint": "",
+    "correction_loop": false
   }
 ]

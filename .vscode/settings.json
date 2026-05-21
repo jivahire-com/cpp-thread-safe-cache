@@ -5,6 +5,6 @@
         "**/.hg": true,
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
-        // ".jivahire_chat_log.json": true
+        //".jivahire_chat_log.json": true
     }
 }

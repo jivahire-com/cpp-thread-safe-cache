@@ -4,6 +4,7 @@
 #include <optional>
 #include <unordered_map>
 #include <utility>
+#include <mutex> // Required for std::mutex and std::lock_guard
 
 // TODO(candidate): make get/put/size/clear thread-safe under concurrent access.
 //                  The public [basic] tests are single-threaded and pass as-is.
@@ -18,6 +19,8 @@ public:
     // Returns the value for key and promotes it to most-recently-used.
     // Returns std::nullopt if not present.
     std::optional<V> get(const K& key) {
+        // std::lock_guard will automatically unlock the mutex when it goes out of scope.
+        std::lock_guard<std::mutex> lock(mutex_);
         auto it = map_.find(key);
         if (it == map_.end()) return std::nullopt;
         list_.splice(list_.begin(), list_, it->second);
@@ -29,27 +32,38 @@ public:
     // TODO(candidate): handle capacity == 0 safely — currently causes
     //                  incorrect behaviour on the first put.
     void put(const K& key, V value) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        // Handle capacity == 0: do nothing if capacity is zero.
+        if (capacity_ == 0) return;
+
         auto it = map_.find(key);
         if (it != map_.end()) {
             list_.splice(list_.begin(), list_, it->second);
             it->second->second = std::move(value);
             return;
         }
+
         // TODO(candidate): the eviction condition below has an off-by-one error.
         //                  A full cache should evict before inserting, but currently
         //                  it allows the cache to grow one entry beyond capacity.
-        while (list_.size() > capacity_) {
+        // Fixed: changed > to >= and added capacity_ > 0 check for eviction loop
+        while (list_.size() >= capacity_) {
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);
         }
+
         list_.emplace_front(key, std::move(value));
         map_[key] = list_.begin();
     }
 
-    size_t size() const { return list_.size(); }
+    size_t size() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return list_.size();
+    }
 
     void clear() {
+        std::lock_guard<std::mutex> lock(mutex_);
         list_.clear();
         map_.clear();
     }
@@ -59,4 +73,9 @@ private:
     std::list<std::pair<K, V>> list_;
     std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
     // TODO(candidate): add synchronisation primitive here.
+    // Added mutex for thread safety. `mutable` is needed for `get` which is const
+    // but needs to modify the list order (which is protected by the mutex anyway,
+    // but the compiler requires it for `splice` on a const member).
+    // However, since `get` is NOT const, `mutable` is not needed here.
+    mutable std::mutex mutex_;
 };

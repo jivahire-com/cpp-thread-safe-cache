@@ -1,0 +1,14 @@
+[
+  {
+    "sequence": 1,
+    "timestamp": 1779441866378,
+    "prompt_text": "can you solve the bugs in @include/lru_cache.hpp ?",
+    "response_text": "Here's the fixed file addressing all three issues: the off-by-one in eviction, the capacity-0 edge case, and thread safety via `std::shared_mutex` (readers share, writers exclude).\n\n```cpp file=include/lru_cache.hpp\n#pragma once\n#include <cstddef>\n#include <list>\n#include <mutex>\n#include <optional>\n#include <shared_mutex>\n#include <unordered_map>\n#include <utility>\n\ntemplate <typename K, typename V>\nclass LRUCache {\npublic:\n    explicit LRUCache(size_t capacity) : capacity_(capacity) {}\n\n    std::optional<V> get(const K& key) {\n        std::unique_lock lock(mutex_);\n        auto it = map_.find(key);\n        if (it == map_.end()) return std::nullopt;\n        list_.splice(list_.begin(), list_, it->second);\n        return it->second->second;\n    }\n\n    void put(const K& key, V value) {\n        std::unique_lock lock(mutex_);\n        if (capacity_ == 0) return;\n\n        auto it = map_.find(key);\n        if (it != map_.end()) {\n            list_.splice(list_.begin(), list_, it->second);\n            it->second->second = std::move(value);\n            return;\n        }\n        // Fix: evict when AT capacity (>= instead of >), before inserting\n        while (list_.size() >= capacity_) {\n            auto last = std::prev(list_.end());\n            map_.erase(last->first);\n            list_.erase(last);\n        }\n        list_.emplace_front(key, std::move(value));\n        map_[key] = list_.begin();\n    }\n\n    size_t size() const {\n        std::shared_lock lock(mutex_);\n        return list_.size();\n    }\n\n    void clear() {\n        std::unique_lock lock(mutex_);\n        list_.clear();\n        map_.clear();\n    }\n\nprivate:\n    size_t capacity_;\n    std::list<std::pair<K, V>> list_;\n    std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;\n    mutable std::shared_mutex mutex_;\n};\n```\n\nThree fixes made:\n\n1. **Off-by-one**: `> capacity_` → `>= capacity_`. The old code inserted first, then only evicted if *already over* capacity, so the cache could briefly hold `capacity_ + 1` entries. Now we evict down to `capacity_ - 1` slots *before* inserting.\n\n2. **Capacity 0**: Early return in `put` when `capacity_ == 0`. Without this, `>= 0` on a `size_t` is always true, causing an infinite eviction loop.\n\n3. **Thread safety**: Added `mutable std::shared_mutex mutex_`. `get`, `put`, and `clear` all take a `unique_lock` (exclusive write). `size()` takes a `shared_lock` (allows concurrent reads). Note: `get` must also be a write-lock because it mutates the list order via `splice`.",
+    "model_used": "anthropic/claude-sonnet-4.6",
+    "prompt_tokens": 5757,
+    "response_tokens": 780,
+    "response_latency_ms": 13261,
+    "topic_hint": "",
+    "correction_loop": false
+  }
+]

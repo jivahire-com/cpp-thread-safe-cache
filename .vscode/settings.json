@@ -1,0 +1,5 @@
+{
+  "files.exclude": {
+    ".jivahire_chat_log.json": true
+  }
+}

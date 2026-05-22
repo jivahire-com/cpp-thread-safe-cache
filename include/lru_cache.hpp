@@ -11,6 +11,9 @@
 //                  The hidden [thread] tests run multiple std::threads concurrently
 //                  and will fail without synchronisation.
 
+
+// Here let me type something as well
+// this is for test purposes only, to check if the code is being read correctly by the system.
 template <typename K, typename V>
 class LRUCache {
 public:

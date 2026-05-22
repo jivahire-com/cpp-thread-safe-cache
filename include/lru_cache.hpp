@@ -11,12 +11,14 @@ class LRUCache {
 public:
     explicit LRUCache(size_t capacity) : capacity_(capacity) {}
 
+    // Returns a copy of the value (requires V to be copyable).
+    // For move-only types, use get_ref() or ensure V is shared_ptr.
     std::optional<V> get(const K& key) {
         std::lock_guard<std::mutex> lock(mutex_);
         auto it = map_.find(key);
         if (it == map_.end()) return std::nullopt;
         list_.splice(list_.begin(), list_, it->second);
-        return it->second->second;
+        return std::optional<V>(it->second->second);  // copy
     }
 
     void put(const K& key, V value) {
@@ -25,11 +27,11 @@ public:
 
         auto it = map_.find(key);
         if (it != map_.end()) {
-            list_.splice(list_.begin(), list_, it->second);
             it->second->second = std::move(value);
+            list_.splice(list_.begin(), list_, it->second);
             return;
         }
-        // Evict before inserting so size never exceeds capacity
+        // Evict LRU entries until we are under capacity
         while (list_.size() >= capacity_) {
             auto last = std::prev(list_.end());
             map_.erase(last->first);

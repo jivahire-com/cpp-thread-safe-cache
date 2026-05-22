@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <utility>
 
+//Key fixes applied: ye me type kar rha hu
+
 template <typename K, typename V>
 class LRUCache {
 public:

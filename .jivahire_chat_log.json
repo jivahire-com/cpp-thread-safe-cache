@@ -58,5 +58,17 @@
     "response_latency_ms": 5817,
     "topic_hint": "",
     "correction_loop": false
+  },
+  {
+    "sequence": 6,
+    "timestamp": 1779443602907,
+    "prompt_text": "can you add a example comment in the @include/lru_cache.hpp",
+    "response_text": "```cpp file=include/lru_cache.hpp\n#pragma once\n#include <cstddef>\n#include <list>\n#include <mutex>\n#include <optional>\n#include <shared_mutex>\n#include <unordered_map>\n#include <utility>\n\n// Thread-safe LRU (Least Recently Used) Cache\n//\n// Example usage:\n//   LRUCache<int, std::string> cache(3);\n//   cache.put(1, \"one\");   // cache: {1->one}\n//   cache.put(2, \"two\");   // cache: {2->two, 1->one}\n//   cache.put(3, \"three\"); // cache: {3->three, 2->two, 1->one}\n//   cache.get(1);          // cache: {1->one, 3->three, 2->two}  (1 promoted to MRU)\n//   cache.put(4, \"four\");  // cache: {4->four, 1->one, 3->three} (2 evicted as LRU)\n//   cache.get(2);          // returns std::nullopt (evicted)\n\ntemplate <typename K, typename V>\nclass LRUCache {\npublic:\n    explicit LRUCache(size_t capacity) : capacity_(capacity) {}\n\n    std::optional<V> get(const K& key) {\n        std::unique_lock lock(mutex_);\n        auto it = map_.find(key);\n        if (it == map_.end()) return std::nullopt;\n        list_.splice(list_.begin(), list_, it->second);\n        return it->second->second;\n    }\n\n    void put(const K& key, V value) {\n        std::unique_lock lock(mutex_);\n        if (capacity_ == 0) return;\n\n        auto it = map_.find(key);\n        if (it != map_.end()) {\n            list_.splice(list_.begin(), list_, it->second);\n            it->second->second = std::move(value);\n            return;\n        }\n        // Fix: evict when AT capacity (>= instead of >), before inserting\n        while (list_.size() >= capacity_) {\n            auto last = std::prev(list_.end());\n            map_.erase(last->first);\n            list_.erase(last);\n        }\n        list_.emplace_front(key, std::move(value));\n        map_[key] = list_.begin();\n    }\n\n    size_t size() const {\n        std::shared_lock lock(mutex_);\n        return list_.size();\n    }\n\n    void clear() {\n        std::unique_lock lock(mutex_);\n        list_.clear();\n        map_.clear();\n    }\n\nprivate:\n    size_t capacity_;\n    std::list<std::pair<K, V>> list_;\n    std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;\n    mutable std::shared_mutex mutex_;\n};\n```",
+    "model_used": "anthropic/claude-sonnet-4.6",
+    "prompt_tokens": 8007,
+    "response_tokens": 740,
+    "response_latency_ms": 9292,
+    "topic_hint": "",
+    "correction_loop": false
   }
 ]

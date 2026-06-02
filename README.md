@@ -33,7 +33,6 @@ cmake --build build -j
 ```
 
 See `SETUP.md` for toolchain requirements.
-
 ---
 
 ## Using AI (encouraged — we evaluate *how* you use it)

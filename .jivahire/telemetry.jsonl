@@ -1,0 +1,16 @@
+{"ts":1780657658767,"event_type":"file_open","payload":{"file":"tests/public_test.cpp"},"id":"1780657658767.10932.1"}
+{"ts":1780657663874,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":5105},"id":"1780657663874.10932.2"}
+{"ts":1780657663950,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1780657663950.10932.3"}
+{"ts":1780657673880,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":9929},"id":"1780657673880.10932.4"}
+{"ts":1780657674476,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":556},"id":"1780657674476.10932.5"}
+{"ts":1780657674529,"event_type":"file_open","payload":{"file":"CMakeLists.txt"},"id":"1780657674529.10932.6"}
+{"ts":1780657677030,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":2501},"id":"1780657677030.10932.7"}
+{"ts":1780657677105,"event_type":"file_open","payload":{"file":"README.md"},"id":"1780657677105.10932.8"}
+{"ts":1780657681342,"event_type":"file_focus","payload":{"file":"README.md","ms":4237},"id":"1780657681342.10932.9"}
+{"ts":1780657681402,"event_type":"file_open","payload":{"file":"SETUP.md"},"id":"1780657681402.10932.10"}
+{"ts":1780657687844,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":6441},"id":"1780657687844.10932.11"}
+{"ts":1780657687846,"event_type":"app_unfocused","payload":{"ts":1780657687844},"id":"1780657687846.10932.12"}
+{"ts":1780657726783,"event_type":"app_unfocused","payload":{"ts":1780657726783},"id":"1780657726783.10932.13"}
+{"ts":1780657733529,"event_type":"app_focused","payload":{"time_away_seconds":6.746},"id":"1780657733529.10932.14"}
+{"ts":1780657808452,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":74923},"id":"1780657808452.10932.15"}
+{"ts":1780657808453,"event_type":"app_unfocused","payload":{"ts":1780657808452},"id":"1780657808453.10932.16"}

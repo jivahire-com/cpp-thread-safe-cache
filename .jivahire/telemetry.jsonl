@@ -53,3 +53,9 @@
 {"ts":1780658694393,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":1180},"id":"1780658694393.10932.53"}
 {"ts":1780658694395,"event_type":"app_unfocused","payload":{"ts":1780658694393},"id":"1780658694395.10932.54"}
 {"ts":1780658695547,"event_type":"app_focused","payload":{"time_away_seconds":1.154},"id":"1780658695547.10932.55"}
+{"ts":1780658706747,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":11200},"id":"1780658706747.10932.56"}
+{"ts":1780658706748,"event_type":"app_unfocused","payload":{"ts":1780658706747},"id":"1780658706748.10932.57"}
+{"ts":1780658707291,"event_type":"app_focused","payload":{"time_away_seconds":0.544},"id":"1780658707291.10932.58"}
+{"ts":1780658708495,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":1204},"id":"1780658708495.10932.59"}
+{"ts":1780658708496,"event_type":"app_unfocused","payload":{"ts":1780658708495},"id":"1780658708496.10932.60"}
+{"ts":1780658709721,"event_type":"app_focused","payload":{"time_away_seconds":1.226},"id":"1780658709721.10932.61"}

@@ -6,7 +6,7 @@ TEST_CASE("basic get and put", "[basic]") {
     cache.put(1, "one");
     cache.put(2, "two");
     cache.put(3, "three");
-
+ cache.put(4, "four");
     REQUIRE(cache.get(1) == std::optional<std::string>("one"));
     REQUIRE(cache.get(2) == std::optional<std::string>("two"));
     REQUIRE(cache.get(3) == std::optional<std::string>("three"));

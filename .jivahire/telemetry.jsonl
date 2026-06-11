@@ -1,0 +1,4 @@
+{"ts":1781183810652,"event_type":"app_unfocused","payload":{"ts":1781183810652},"id":"1781183810652.14696.1"}
+{"ts":1781183839375,"event_type":"app_focused","payload":{"time_away_seconds":28.72},"id":"1781183839375.14696.2"}
+{"ts":1781183840533,"event_type":"app_unfocused","payload":{"ts":1781183840532},"id":"1781183840533.14696.3"}
+{"ts":1781183880136,"event_type":"app_unfocused","payload":{"ts":1781183880136},"id":"1781183880136.14696.4"}

@@ -1,0 +1,8 @@
+{"ts":1781199657950,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1781199657950.15600.1"}
+{"ts":1781199664273,"event_type":"edit_ai_applied","payload":{"file":"include/lru_cache.hpp","chars":525,"block_id":"blk-rendered-1-1781199650889"},"id":"1781199664273.15600.2"}
+{"ts":1781199688073,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":30121},"id":"1781199688073.15600.3"}
+{"ts":1781199688077,"event_type":"app_unfocused","payload":{"ts":1781199688073},"id":"1781199688077.15600.4"}
+{"ts":1781199691224,"event_type":"app_focused","payload":{"time_away_seconds":3.151},"id":"1781199691224.15600.5"}
+{"ts":1781199726797,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":35573},"id":"1781199726797.15600.6"}
+{"ts":1781199726799,"event_type":"app_unfocused","payload":{"ts":1781199726797},"id":"1781199726799.15600.7"}
+{"ts":1781199737523,"event_type":"app_focused","payload":{"time_away_seconds":10.726},"id":"1781199737523.15600.8"}

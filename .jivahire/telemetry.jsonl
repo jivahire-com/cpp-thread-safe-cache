@@ -7,3 +7,19 @@
 {"ts":1781184201257,"event_type":"app_focused","payload":{"time_away_seconds":321.12},"id":"1781184201257.14696.7"}
 {"ts":1781184244177,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1781184244177.14696.8"}
 {"ts":1781184277626,"event_type":"edit_ai_applied","payload":{"file":"include/lru_cache.hpp","chars":531,"block_id":"blk-rendered-1-1781184273504"},"id":"1781184277626.14696.9"}
+{"ts":1781184283152,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":38974},"id":"1781184283152.14696.10"}
+{"ts":1781184283239,"event_type":"file_open","payload":{"file":"tests/public_test.cpp"},"id":"1781184283239.14696.11"}
+{"ts":1781184283860,"event_type":"auto_commit","payload":{"ts":"2026-06-11T13:24:38.942Z"},"id":"1781184283860.14696.12"}
+{"ts":1781184289628,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":6389},"id":"1781184289628.14696.13"}
+{"ts":1781184301368,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":3392},"id":"1781184301368.14696.14"}
+{"ts":1781184301435,"event_type":"file_open","payload":{"file":"SETUP.md"},"id":"1781184301435.14696.15"}
+{"ts":1781184313804,"event_type":"terminal_command","payload":{"command_line":"cmake --build build -j","kind":"build"},"id":"1781184313804.14696.16"}
+{"ts":1781184323837,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":22401},"id":"1781184323837.14696.17"}
+{"ts":1781184323838,"event_type":"app_unfocused","payload":{"ts":1781184323837},"id":"1781184323838.14696.18"}
+{"ts":1781184351593,"event_type":"app_focused","payload":{"time_away_seconds":27.756},"id":"1781184351593.14696.19"}
+{"ts":1781184356701,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":5108},"id":"1781184356701.14696.20"}
+{"ts":1781184356703,"event_type":"app_unfocused","payload":{"ts":1781184356701},"id":"1781184356703.14696.21"}
+{"ts":1781184357779,"event_type":"app_focused","payload":{"time_away_seconds":1.078},"id":"1781184357779.14696.22"}
+{"ts":1781184358768,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":989},"id":"1781184358768.14696.23"}
+{"ts":1781184358770,"event_type":"app_unfocused","payload":{"ts":1781184358768},"id":"1781184358770.14696.24"}
+{"ts":1781184367625,"event_type":"app_unfocused","payload":{"ts":1781184367625},"id":"1781184367625.14696.25"}

@@ -5,10 +5,6 @@
 #include <unordered_map>
 #include <utility>
 
-// TODO(candidate): make get/put/size/clear thread-safe under concurrent access.
-//                  The public [basic] tests are single-threaded and pass as-is.
-//                  The hidden [thread] tests run multiple std::threads concurrently
-//                  and will fail without synchronisation.
 
 template <typename K, typename V>
 class LRUCache {

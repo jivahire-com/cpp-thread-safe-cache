@@ -1,0 +1,4 @@
+{"ts":1781252665524,"event_type":"file_open","payload":{"file":"README.md"},"id":"1781252665524.21732.1"}
+{"ts":1781252665612,"event_type":"file_focus","payload":{"file":"README.md","ms":44},"id":"1781252665612.21732.2"}
+{"ts":1781252665616,"event_type":"app_unfocused","payload":{"ts":1781252665612},"id":"1781252665616.21732.3"}
+{"ts":1781252713240,"event_type":"app_unfocused","payload":{"ts":1781252713240},"id":"1781252713240.21732.4"}

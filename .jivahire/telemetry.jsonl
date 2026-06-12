@@ -1,0 +1,15 @@
+{"ts":1781273177371,"event_type":"file_open","payload":{"file":"README.md"},"id":"1781273177371.6012.1"}
+{"ts":1781273184495,"event_type":"file_focus","payload":{"file":"README.md","ms":7122},"id":"1781273184495.6012.2"}
+{"ts":1781273184552,"event_type":"file_open","payload":{"file":"CMakeLists.txt"},"id":"1781273184552.6012.3"}
+{"ts":1781273187635,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":3083},"id":"1781273187635.6012.4"}
+{"ts":1781273187672,"event_type":"file_open","payload":{"file":"tests/public_test.cpp"},"id":"1781273187672.6012.5"}
+{"ts":1781273191266,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":3594},"id":"1781273191266.6012.6"}
+{"ts":1781273191297,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1781273191297.6012.7"}
+{"ts":1781273278988,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":87690},"id":"1781273278988.6012.8"}
+{"ts":1781273278990,"event_type":"app_unfocused","payload":{"ts":1781273278987},"id":"1781273278990.6012.9"}
+{"ts":1781273288889,"event_type":"app_focused","payload":{"time_away_seconds":9.902},"id":"1781273288889.6012.10"}
+{"ts":1781273353667,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":64778},"id":"1781273353667.6012.11"}
+{"ts":1781273353675,"event_type":"app_unfocused","payload":{"ts":1781273353667},"id":"1781273353675.6012.12"}
+{"ts":1781273355032,"event_type":"app_focused","payload":{"time_away_seconds":1.365},"id":"1781273355032.6012.13"}
+{"ts":1781273355724,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":692},"id":"1781273355724.6012.14"}
+{"ts":1781273355728,"event_type":"app_unfocused","payload":{"ts":1781273355724},"id":"1781273355728.6012.15"}

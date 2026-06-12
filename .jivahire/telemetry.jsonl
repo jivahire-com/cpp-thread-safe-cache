@@ -38,3 +38,10 @@
 {"ts":1781248046005,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":4161},"id":"1781248046005.22880.38"}
 {"ts":1781248046068,"event_type":"file_open","payload":{"file":".jivahire/telemetry.jsonl"},"id":"1781248046068.22880.39"}
 {"ts":1781248184605,"event_type":"auto_commit","payload":{"ts":"2026-06-12T07:09:41.175Z"},"id":"1781248184605.22880.40"}
+{"ts":1781248365005,"event_type":"auto_commit","payload":{"ts":"2026-06-12T07:12:41.187Z"},"id":"1781248365005.22880.41"}
+{"ts":1781248488566,"event_type":"file_focus","payload":{"file":".jivahire/telemetry.jsonl","ms":442498},"id":"1781248488566.22880.42"}
+{"ts":1781248488568,"event_type":"app_unfocused","payload":{"ts":1781248488566},"id":"1781248488568.22880.43"}
+{"ts":1781248495597,"event_type":"app_focused","payload":{"time_away_seconds":7.031},"id":"1781248495597.22880.44"}
+{"ts":1781248501149,"event_type":"file_focus","payload":{"file":".jivahire/telemetry.jsonl","ms":5552},"id":"1781248501149.22880.45"}
+{"ts":1781248511412,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":10220},"id":"1781248511412.22880.46"}
+{"ts":1781248511413,"event_type":"app_unfocused","payload":{"ts":1781248511412},"id":"1781248511413.22880.47"}

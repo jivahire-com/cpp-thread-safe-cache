@@ -54,6 +54,13 @@ public:
         map_.clear();
     }
 
+// private:
+//     size_t capacity_;
+//     std::list<std::pair<K, V>> list_;
+//     std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
+//     // TODO(candidate): add synchronisation primitive here.
+// };
+
 private:
     size_t capacity_;
     std::list<std::pair<K, V>> list_;

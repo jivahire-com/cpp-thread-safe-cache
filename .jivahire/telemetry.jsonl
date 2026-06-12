@@ -44,3 +44,8 @@
 {"ts":1781253748611,"event_type":"auto_commit","payload":{"ts":"2026-06-12T08:42:25.615Z"},"id":"1781253748611.21732.44"}
 {"ts":1781253929069,"event_type":"auto_commit","payload":{"ts":"2026-06-12T08:45:25.615Z"},"id":"1781253929069.21732.45"}
 {"ts":1781254109692,"event_type":"auto_commit","payload":{"ts":"2026-06-12T08:48:25.618Z"},"id":"1781254109692.21732.46"}
+{"ts":1781254288386,"event_type":"auto_commit","payload":{"ts":"2026-06-12T08:51:25.633Z"},"id":"1781254288386.21732.47"}
+{"ts":1781254297457,"event_type":"app_focused","payload":{"time_away_seconds":566.321},"id":"1781254297457.21732.48"}
+{"ts":1781254353933,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":56476},"id":"1781254353933.21732.49"}
+{"ts":1781254353936,"event_type":"app_unfocused","payload":{"ts":1781254353933},"id":"1781254353936.21732.50"}
+{"ts":1781254465017,"event_type":"app_focused","payload":{"time_away_seconds":111.084},"id":"1781254465017.21732.51"}

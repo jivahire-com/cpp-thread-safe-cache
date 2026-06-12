@@ -3,3 +3,9 @@
 {"ts":1781247143732,"event_type":"app_unfocused","payload":{"ts":1781247143728},"id":"1781247143732.22880.3"}
 {"ts":1781247163042,"event_type":"app_focused","payload":{"time_away_seconds":19.314},"id":"1781247163042.22880.4"}
 {"ts":1781247284621,"event_type":"auto_commit","payload":{"ts":"2026-06-12T06:54:41.149Z"},"id":"1781247284621.22880.5"}
+{"ts":1781247464266,"event_type":"auto_commit","payload":{"ts":"2026-06-12T06:57:41.151Z"},"id":"1781247464266.22880.6"}
+{"ts":1781247466349,"event_type":"file_focus","payload":{"file":"README.md","ms":303307},"id":"1781247466349.22880.7"}
+{"ts":1781247466350,"event_type":"app_unfocused","payload":{"ts":1781247466349},"id":"1781247466350.22880.8"}
+{"ts":1781247491980,"event_type":"app_focused","payload":{"time_away_seconds":25.631},"id":"1781247491980.22880.9"}
+{"ts":1781247497819,"event_type":"file_focus","payload":{"file":"README.md","ms":5839},"id":"1781247497819.22880.10"}
+{"ts":1781247497902,"event_type":"file_open","payload":{"file":"SETUP.md"},"id":"1781247497902.22880.11"}

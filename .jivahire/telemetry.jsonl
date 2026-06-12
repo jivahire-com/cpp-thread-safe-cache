@@ -24,3 +24,10 @@
 {"ts":1781253385767,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":13611},"id":"1781253385767.21732.24"}
 {"ts":1781253385768,"event_type":"app_unfocused","payload":{"ts":1781253385766},"id":"1781253385768.21732.25"}
 {"ts":1781253385927,"event_type":"app_focused","payload":{"time_away_seconds":0.161},"id":"1781253385927.21732.26"}
+{"ts":1781253386487,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":560},"id":"1781253386487.21732.27"}
+{"ts":1781253386488,"event_type":"app_unfocused","payload":{"ts":1781253386486},"id":"1781253386488.21732.28"}
+{"ts":1781253389738,"event_type":"auto_commit","payload":{"ts":"2026-06-12T08:36:25.595Z"},"id":"1781253389738.21732.29"}
+{"ts":1781253389984,"event_type":"app_focused","payload":{"time_away_seconds":3.497},"id":"1781253389984.21732.30"}
+{"ts":1781253391388,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":1404},"id":"1781253391388.21732.31"}
+{"ts":1781253391390,"event_type":"app_unfocused","payload":{"ts":1781253391388},"id":"1781253391390.21732.32"}
+{"ts":1781253434364,"event_type":"app_unfocused","payload":{"ts":1781253434364},"id":"1781253434364.21732.33"}

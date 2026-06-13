@@ -1,0 +1,16 @@
+{"ts":1781353835817,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1781353835817.28560.1"}
+{"ts":1781353855857,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":10},"id":"1781353855857.28560.2"}
+{"ts":1781353856964,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":4},"id":"1781353856964.28560.3"}
+{"ts":1781353858065,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":6},"id":"1781353858065.28560.4"}
+{"ts":1781353859290,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":10},"id":"1781353859290.28560.5"}
+{"ts":1781353860787,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":9},"id":"1781353860787.28560.6"}
+{"ts":1781353862438,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":6},"id":"1781353862438.28560.7"}
+{"ts":1781353863462,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":4},"id":"1781353863462.28560.8"}
+{"ts":1781353864141,"event_type":"edit_pasted","payload":{"file":"include/lru_cache.hpp","chars":152,"suspicious_paste":false},"id":"1781353864141.28560.9"}
+{"ts":1781353865685,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":2},"id":"1781353865685.28560.10"}
+{"ts":1781353874124,"event_type":"edit_pasted","payload":{"file":"include/lru_cache.hpp","chars":79,"suspicious_paste":false},"id":"1781353874124.28560.11"}
+{"ts":1781353874755,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":7},"id":"1781353874755.28560.12"}
+{"ts":1781353877877,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":3},"id":"1781353877877.28560.13"}
+{"ts":1781353896250,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":60432},"id":"1781353896250.28560.14"}
+{"ts":1781353896251,"event_type":"app_unfocused","payload":{"ts":1781353896250},"id":"1781353896251.28560.15"}
+{"ts":1781353897828,"event_type":"app_focused","payload":{"time_away_seconds":1.578},"id":"1781353897828.28560.16"}

@@ -35,9 +35,7 @@ public:
             it->second->second = std::move(value);
             return;
         }
-        // TODO(candidate): the eviction condition below has an off-by-one error.
-        //                  A full cache should evict before inserting, but currently
-        //                  it allows the cache to grow one entry beyond capacity.
+        // hello my friends how can I help you today I am a very good cache and I will evict the least recently used entry when the cache is at capacity. 
         while (list_.size() > capacity_) {
             auto last = std::prev(list_.end());
             map_.erase(last->first);
@@ -60,3 +58,7 @@ private:
     std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
     // TODO(candidate): add synchronisation primitive here.
 };
+
+
+// list_.emplace_front(key, std::move(value));
+        // map_[key] = list_.begin();

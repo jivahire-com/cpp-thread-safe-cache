@@ -1,1 +1,17 @@
 {"type": "session_init", "session_id": "71f59bbed7054beebfe98e40340cd14d", "notice": "JivaHire interview integrity marker. Do NOT delete this file or the .jivahire/ directory \u2014 deleting it will invalidate your interview session."}
+{"ts":1781526244116,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1781526244116.23180.1"}
+{"ts":1781526263088,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":18971},"id":"1781526263088.23180.2"}
+{"ts":1781526263088,"event_type":"app_unfocused","payload":{"ts":1781526263088},"id":"1781526263088.23180.3"}
+{"ts":1781526282935,"event_type":"app_focused","payload":{"time_away_seconds":19.847},"id":"1781526282935.23180.4"}
+{"ts":1781526284995,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":2060},"id":"1781526284995.23180.5"}
+{"ts":1781526284995,"event_type":"app_unfocused","payload":{"ts":1781526284995},"id":"1781526284995.23180.6"}
+{"ts":1781526307889,"event_type":"app_unfocused","payload":{"ts":1781526307889},"id":"1781526307889.23180.7"}
+{"ts":1781526359678,"event_type":"app_focused","payload":{"time_away_seconds":51.787},"id":"1781526359678.23180.8"}
+{"ts":1781526362083,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":2406},"id":"1781526362083.23180.9"}
+{"ts":1781526362084,"event_type":"app_unfocused","payload":{"ts":1781526362083},"id":"1781526362084.23180.10"}
+{"ts":1781526362185,"event_type":"app_focused","payload":{"time_away_seconds":0.102},"id":"1781526362185.23180.11"}
+{"ts":1781526368634,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":6449},"id":"1781526368634.23180.12"}
+{"ts":1781526368710,"event_type":"file_open","payload":{"file":"README.md"},"id":"1781526368710.23180.13"}
+{"ts":1781526372680,"event_type":"file_focus","payload":{"file":"README.md","ms":3970},"id":"1781526372680.23180.14"}
+{"ts":1781526375584,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":2873},"id":"1781526375584.23180.15"}
+{"ts":1781526375588,"event_type":"app_unfocused","payload":{"ts":1781526375584},"id":"1781526375588.23180.16"}

@@ -1,20 +1,18 @@
 #pragma once
 #include <cstddef>
 #include <list>
+#include <mutex>
 #include <optional>
 #include <unordered_map>
 #include <utility>
 
-// LRUCache<K, V> — a fixed-capacity cache that evicts the least-recently-used
-// (LRU) entry when full. The starter is single-threaded.
+// LRUCache<K, V> — fixed-capacity, evicts least-recently-used when full.
+// Thread-safe: every operation is serialized by a single mutex.
 //
-// Contract (README.md is authoritative):
-//   * Never holds more than `capacity` entries.
-//   * get(key) returns the value if present and marks it most-recently-used.
-//   * put(key, value) inserts or updates; at capacity it evicts the LRU entry.
-//   * Every operation must be safe to call concurrently from multiple threads.
-//
-// Workload: read-heavy — get() is called far more often than put().
+// Note on the workload hint ("read-heavy"): get() promotes the entry it
+// returns (splice → list mutation), so it is NOT a read-only operation.
+// A std::shared_mutex + shared_lock on get() would let concurrent "readers"
+// mutate list_ → data race. We therefore take an *exclusive* lock in get().
 
 template <typename K, typename V>
 class LRUCache {
@@ -22,6 +20,8 @@ public:
     explicit LRUCache(size_t capacity) : capacity_(capacity) {}
 
     std::optional<V> get(const K& key) {
+        std::lock_guard<std::mutex> lock(mu_);            // exclusive — get()
+mutates the list
         auto it = map_.find(key);
         if (it == map_.end()) return std::nullopt;
         list_.splice(list_.begin(), list_, it->second);
@@ -29,13 +29,17 @@ public:
     }
 
     void put(const K& key, V value) {
+        std::lock_guard<std::mutex> lock(mu_);
+        if (capacity_ == 0) return;                       // capacity 0 → 
+no-op store
         auto it = map_.find(key);
         if (it != map_.end()) {
             list_.splice(list_.begin(), list_, it->second);
             it->second->second = std::move(value);
             return;
         }
-        while (list_.size() > capacity_) {
+        while (list_.size() >= capacity_) {               // >= : evict BEFORE
+inserting
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);
@@ -44,15 +48,23 @@ public:
         map_[key] = list_.begin();
     }
 
-    size_t size() const { return list_.size(); }
+    size_t size() const {
+        std::lock_guard<std::mutex> lock(mu_);
+        return list_.size();
+    }
 
     void clear() {
+        std::lock_guard<std::mutex> lock(mu_);
         list_.clear();
         map_.clear();
     }
 
 private:
+    mutable std::mutex mu_;
     size_t capacity_;
     std::list<std::pair<K, V>> list_;
     std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
 };
+
+
+// i think this is it. 

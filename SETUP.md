@@ -24,14 +24,10 @@ cmake --build build -j
 ./build/tests
 ```
 
-Expected output on the unmodified starter:
-```
-Randomness seeded to: ...
-===============================================================================
-All tests passed (N assertions in N test cases)
-```
-
-(The public tests are designed to pass on the starter — that is intentional.)
+Expected output on the unmodified starter: **most tests pass, but the
+"LRU eviction order" `[basic]` test fails** — that failure is intentional and
+points at a planted bug in the eviction loop. Reproduce it, fix it, then move on
+to thread-safety. (If *every* test passes, you're on a modified tree — re-clone.)
 
 ## Troubleshooting
 

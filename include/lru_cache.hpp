@@ -5,18 +5,22 @@
 #include <unordered_map>
 #include <utility>
 
-// TODO(candidate): make get/put/size/clear thread-safe under concurrent access.
-//                  The public [basic] tests are single-threaded and pass as-is.
-//                  The hidden [thread] tests run multiple std::threads concurrently
-//                  and will fail without synchronisation.
+// LRUCache<K, V> — a fixed-capacity cache that evicts the least-recently-used
+// (LRU) entry when full. The starter is single-threaded.
+//
+// Contract (README.md is authoritative):
+//   * Never holds more than `capacity` entries.
+//   * get(key) returns the value if present and marks it most-recently-used.
+//   * put(key, value) inserts or updates; at capacity it evicts the LRU entry.
+//   * Every operation must be safe to call concurrently from multiple threads.
+//
+// Workload: read-heavy — get() is called far more often than put().
 
 template <typename K, typename V>
 class LRUCache {
 public:
     explicit LRUCache(size_t capacity) : capacity_(capacity) {}
 
-    // Returns the value for key and promotes it to most-recently-used.
-    // Returns std::nullopt if not present.
     std::optional<V> get(const K& key) {
         auto it = map_.find(key);
         if (it == map_.end()) return std::nullopt;
@@ -24,10 +28,6 @@ public:
         return it->second->second;
     }
 
-    // Inserts or updates key→value. Evicts the least-recently-used entry
-    // when the cache is at capacity.
-    // TODO(candidate): handle capacity == 0 safely — currently causes
-    //                  incorrect behaviour on the first put.
     void put(const K& key, V value) {
         auto it = map_.find(key);
         if (it != map_.end()) {
@@ -35,9 +35,6 @@ public:
             it->second->second = std::move(value);
             return;
         }
-        // TODO(candidate): the eviction condition below has an off-by-one error.
-        //                  A full cache should evict before inserting, but currently
-        //                  it allows the cache to grow one entry beyond capacity.
         while (list_.size() > capacity_) {
             auto last = std::prev(list_.end());
             map_.erase(last->first);
@@ -58,5 +55,4 @@ private:
     size_t capacity_;
     std::list<std::pair<K, V>> list_;
     std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
-    // TODO(candidate): add synchronisation primitive here.
 };

@@ -1,1 +1,23 @@
 {"type": "session_init", "session_id": "40df7a6c38694c42ab43e3ca0b4783e5", "notice": "JivaHire interview integrity marker. Do NOT delete this file or the .jivahire/ directory \u2014 deleting it will invalidate your interview session."}
+{"ts":1781533296405,"event_type":"file_open","payload":{"file":"README.md"},"id":"1781533296405.11792.1"}
+{"ts":1781533297062,"event_type":"file_focus","payload":{"file":"README.md","ms":656},"id":"1781533297062.11792.2"}
+{"ts":1781533297105,"event_type":"file_open","payload":{"file":"CMakeLists.txt"},"id":"1781533297105.11792.3"}
+{"ts":1781533297706,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":600},"id":"1781533297706.11792.4"}
+{"ts":1781533300313,"event_type":"file_focus","payload":{"file":"README.md","ms":2579},"id":"1781533300313.11792.5"}
+{"ts":1781533300314,"event_type":"app_unfocused","payload":{"ts":1781533300313},"id":"1781533300314.11792.6"}
+{"ts":1781533329773,"event_type":"app_focused","payload":{"time_away_seconds":29.459},"id":"1781533329773.11792.7"}
+{"ts":1781533335426,"event_type":"file_focus","payload":{"file":"README.md","ms":5654},"id":"1781533335426.11792.8"}
+{"ts":1781533335459,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1781533335459.11792.9"}
+{"ts":1781533378181,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":42722},"id":"1781533378181.11792.10"}
+{"ts":1781533378183,"event_type":"app_unfocused","payload":{"ts":1781533378181},"id":"1781533378183.11792.11"}
+{"ts":1781533407970,"event_type":"app_unfocused","payload":{"ts":1781533407970},"id":"1781533407970.11792.12"}
+{"ts":1781533408625,"event_type":"edit_pasted","payload":{"file":"include/lru_cache.hpp","chars":2084,"suspicious_paste":false},"id":"1781533408626.11792.13"}
+{"ts":1781533416327,"event_type":"app_focused","payload":{"time_away_seconds":8.357},"id":"1781533416327.11792.14"}
+{"ts":1781533439873,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":23546},"id":"1781533439873.11792.15"}
+{"ts":1781533440775,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":883},"id":"1781533440775.11792.16"}
+{"ts":1781533440789,"event_type":"file_open","payload":{"file":"tests/public_test.cpp"},"id":"1781533440789.11792.17"}
+{"ts":1781533445196,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":4407},"id":"1781533445196.11792.18"}
+{"ts":1781533445240,"event_type":"file_open","payload":{"file":".jivahire/telemetry.jsonl"},"id":"1781533445240.11792.19"}
+{"ts":1781533445355,"event_type":"protected_file_edit","payload":{"file":".jivahire/telemetry.jsonl","source":"external"},"id":"1781533445355.11792.20"}
+{"ts":1781533447012,"event_type":"file_focus","payload":{"file":".jivahire/telemetry.jsonl","ms":1772},"id":"1781533447012.11792.21"}
+{"ts":1781533447743,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":717},"id":"1781533447743.11792.22"}

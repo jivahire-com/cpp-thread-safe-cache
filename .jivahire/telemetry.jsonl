@@ -21,3 +21,7 @@
 {"ts":1781533445355,"event_type":"protected_file_edit","payload":{"file":".jivahire/telemetry.jsonl","source":"external"},"id":"1781533445355.11792.20"}
 {"ts":1781533447012,"event_type":"file_focus","payload":{"file":".jivahire/telemetry.jsonl","ms":1772},"id":"1781533447012.11792.21"}
 {"ts":1781533447743,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":717},"id":"1781533447743.11792.22"}
+{"ts":1781533466634,"event_type":"auto_commit","payload":{"ts":"2026-06-15T14:24:23.033Z"},"id":"1781533466634.11792.23"}
+{"ts":1781533481091,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":33331},"id":"1781533481091.11792.24"}
+{"ts":1781533481092,"event_type":"app_unfocused","payload":{"ts":1781533481091},"id":"1781533481092.11792.25"}
+{"ts":1781533482401,"event_type":"app_focused","payload":{"time_away_seconds":1.31},"id":"1781533482401.11792.26"}

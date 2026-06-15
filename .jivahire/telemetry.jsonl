@@ -6,3 +6,6 @@
 {"ts":1781534703531,"event_type":"app_focused","payload":{"time_away_seconds":2.011},"id":"1781534703531.15136.5"}
 {"ts":1781534846373,"event_type":"auto_commit","payload":{"ts":"2026-06-15T14:47:23.521Z"},"id":"1781534846373.15136.6"}
 {"ts":1781535026719,"event_type":"auto_commit","payload":{"ts":"2026-06-15T14:50:23.531Z"},"id":"1781535026719.15136.7"}
+{"ts":1781535206624,"event_type":"auto_commit","payload":{"ts":"2026-06-15T14:53:23.532Z"},"id":"1781535206624.15136.8"}
+{"ts":1781535301796,"event_type":"app_unfocused","payload":{"ts":1781535301796},"id":"1781535301796.15136.9"}
+{"ts":1781535301975,"event_type":"app_focused","payload":{"time_away_seconds":0.179},"id":"1781535301975.15136.10"}

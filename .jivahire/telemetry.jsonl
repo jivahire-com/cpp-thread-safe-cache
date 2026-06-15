@@ -5,3 +5,7 @@
 {"ts":1781546581424,"event_type":"auto_commit","payload":{"ts":"2026-06-15T18:02:58.331Z"},"id":"1781546581424.13652.4"}
 {"ts":1781546761405,"event_type":"auto_commit","payload":{"ts":"2026-06-15T18:05:58.339Z"},"id":"1781546761405.13652.5"}
 {"ts":1781546941294,"event_type":"auto_commit","payload":{"ts":"2026-06-15T18:08:58.342Z"},"id":"1781546941294.13652.6"}
+{"ts":1781547121403,"event_type":"auto_commit","payload":{"ts":"2026-06-15T18:11:58.349Z"},"id":"1781547121403.13652.7"}
+{"ts":1781547195296,"event_type":"app_focused","payload":{"time_away_seconds":785.197},"id":"1781547195296.13652.8"}
+{"ts":1781547197983,"event_type":"app_unfocused","payload":{"ts":1781547197983},"id":"1781547197983.13652.9"}
+{"ts":1781547199050,"event_type":"app_focused","payload":{"time_away_seconds":1.067},"id":"1781547199050.13652.10"}

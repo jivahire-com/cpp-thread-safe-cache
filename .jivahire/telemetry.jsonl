@@ -1,1 +1,7 @@
 {"type": "session_init", "session_id": "352e397d96c84b4f8fe8d402491fb51f", "notice": "JivaHire interview integrity marker. Do NOT delete this file or the .jivahire/ directory \u2014 deleting it will invalidate your interview session."}
+{"ts":1781586584476,"event_type":"file_open","payload":{"file":"README.md"},"id":"1781586584476.924.1"}
+{"ts":1781586703088,"event_type":"file_focus","payload":{"file":"README.md","ms":118611},"id":"1781586703088.924.2"}
+{"ts":1781586703092,"event_type":"app_unfocused","payload":{"ts":1781586703088},"id":"1781586703092.924.3"}
+{"ts":1781586704747,"event_type":"app_focused","payload":{"time_away_seconds":1.659},"id":"1781586704747.924.4"}
+{"ts":1781586707159,"event_type":"file_focus","payload":{"file":"README.md","ms":2412},"id":"1781586707159.924.5"}
+{"ts":1781586707161,"event_type":"app_unfocused","payload":{"ts":1781586707159},"id":"1781586707161.924.6"}

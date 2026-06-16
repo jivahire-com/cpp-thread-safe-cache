@@ -29,7 +29,7 @@ public:
     }
 
     void put(const K& key, V value) {
-        auto it = map_.find(key);
+        auto it  = map_.find(key);
         if (it != map_.end()) {
             list_.splice(list_.begin(), list_, it->second);
             it->second->second = std::move(value);

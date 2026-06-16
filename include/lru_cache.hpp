@@ -35,21 +35,27 @@ public:
 
     void put(const K& key, V value) {
         std::lock_guard<std::mutex> lock(mutex_);
+
+        // capacity 0: never store anything
+        if (capacity_ == 0) return;
+
         auto it = map_.find(key);
         if (it != map_.end()) {
+            // Key exists: update value and move to MRU position
             list_.splice(list_.begin(), list_, it->second);
             it->second->second = std::move(value);
             return;
         }
+
         // Evict LRU entries BEFORE inserting the new one, so we never
         // exceed capacity. Condition is >= (not >) because the new item
         // is not in the list yet — this was the planted off-by-one bug.
         while (list_.size() >= capacity_) {
-            if (capacity_ == 0) return;  // capacity 0: never store anything
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);
         }
+
         list_.emplace_front(key, std::move(value));
         map_[key] = list_.begin();
     }

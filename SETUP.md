@@ -29,7 +29,7 @@ Expected output on the unmodified starter: **most tests pass, but the
 points at a planted bug in the eviction loop. Reproduce it, fix it, then move on
 to thread-safety. (If *every* test passes, you're on a modified tree — re-clone.)
 
-## Troubleshooting
+## Troubleshooting 
 
 **"cmake: command not found"**
 - macOS: `brew install cmake`

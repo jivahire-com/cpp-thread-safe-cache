@@ -4,6 +4,7 @@
 #include <optional>
 #include <unordered_map>
 #include <utility>
+#include <stdexcept>
 
 // LRUCache<K, V> — a fixed-capacity cache that evicts the least-recently-used
 // (LRU) entry when full. The starter is single-threaded.
@@ -19,7 +20,9 @@
 template <typename K, typename V>
 class LRUCache {
 public:
-    explicit LRUCache(size_t capacity) : capacity_(capacity) {}
+    explicit LRUCache(size_t capacity) : capacity_(capacity) {
+        if (capacity_ == 0) throw std::invalid_argument("capacity must be > 0");
+    }
 
     std::optional<V> get(const K& key) {
         auto it = map_.find(key);
@@ -35,7 +38,7 @@ public:
             it->second->second = std::move(value);
             return;
         }
-        while (list_.size() > capacity_) {
+        while (list_.size() >= capacity_) {
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);

@@ -14,6 +14,11 @@
 # EXTERNAL cache entries
 ########################
 
+//Build type for single-configuration generators (Makefile Generators,
+// Ninja, etc.). Typical values: Debug, Release, RelWithDebInfo,
+// MinSizeRel; custom build types may also be defined.
+CMAKE_BUILD_TYPE:UNINITIALIZED=Debug
+
 //Value Computed by CMake.
 CMAKE_FIND_PACKAGE_REDIRECTS_DIR:STATIC=C:/Users/LENOVO/vibe-cc8456fe7b19482d8846f69dd35e6b92/build/CMakeFiles/pkgRedirects
 

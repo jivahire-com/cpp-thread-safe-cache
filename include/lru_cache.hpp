@@ -41,7 +41,7 @@ public:
             return;
         }
 
-        if (list_.size() >= capacity_) {
+        while (list_.size() >= capacity_) {
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);

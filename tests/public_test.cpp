@@ -47,3 +47,5 @@ TEST_CASE("clear empties the cache", "[basic]") {
     REQUIRE(cache.size() == 0);
     REQUIRE(cache.get("a") == std::nullopt);
 }
+cmake -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build -j

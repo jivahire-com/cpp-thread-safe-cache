@@ -262,3 +262,5 @@
 {"ts":1781699579852,"event_type":"app_focused","payload":{"time_away_seconds":13.235},"id":"1781699579852.20456.261"}
 {"ts":1781699586687,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":6835},"id":"1781699586687.20456.262"}
 {"ts":1781699586688,"event_type":"app_unfocused","payload":{"ts":1781699586687},"id":"1781699586688.20456.263"}
+{"ts":1781699592892,"event_type":"auto_commit","payload":{"ts":"2026-06-17T12:33:09.223Z"},"id":"1781699592892.20456.264"}
+{"ts":1781699621805,"event_type":"app_unfocused","payload":{"ts":1781699621805},"id":"1781699621805.20456.265"}

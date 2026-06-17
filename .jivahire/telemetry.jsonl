@@ -264,3 +264,21 @@
 {"ts":1781699586688,"event_type":"app_unfocused","payload":{"ts":1781699586687},"id":"1781699586688.20456.263"}
 {"ts":1781699592892,"event_type":"auto_commit","payload":{"ts":"2026-06-17T12:33:09.223Z"},"id":"1781699592892.20456.264"}
 {"ts":1781699621805,"event_type":"app_unfocused","payload":{"ts":1781699621805},"id":"1781699621805.20456.265"}
+{"ts":1781699772296,"event_type":"auto_commit","payload":{"ts":"2026-06-17T12:36:09.240Z"},"id":"1781699772296.20456.266"}
+{"ts":1781699810652,"event_type":"app_focused","payload":{"time_away_seconds":188.847},"id":"1781699810652.20456.267"}
+{"ts":1781699812527,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":1875},"id":"1781699812527.20456.268"}
+{"ts":1781699812530,"event_type":"app_unfocused","payload":{"ts":1781699812527},"id":"1781699812530.20456.269"}
+{"ts":1781699817413,"event_type":"app_focused","payload":{"time_away_seconds":4.886},"id":"1781699817413.20456.270"}
+{"ts":1781699822168,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":4754},"id":"1781699822168.20456.271"}
+{"ts":1781699822232,"event_type":"file_open","payload":{"file":"SETUP.md"},"id":"1781699822232.20456.272"}
+{"ts":1781699830556,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":8324},"id":"1781699830556.20456.273"}
+{"ts":1781699830557,"event_type":"app_unfocused","payload":{"ts":1781699830556},"id":"1781699830557.20456.274"}
+{"ts":1781699831284,"event_type":"app_focused","payload":{"time_away_seconds":0.728},"id":"1781699831284.20456.275"}
+{"ts":1781699833498,"event_type":"terminal_command","payload":{"command_line":"cmake --build build -j","kind":"build"},"id":"1781699833498.20456.276"}
+{"ts":1781699901764,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":70480},"id":"1781699901764.20456.277"}
+{"ts":1781699915197,"event_type":"file_focus","payload":{"file":".jivahire/telemetry.jsonl","ms":13364},"id":"1781699915197.20456.278"}
+{"ts":1781699915236,"event_type":"file_open","payload":{"file":"CMakeLists.txt"},"id":"1781699915236.20456.279"}
+{"ts":1781699916176,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":939},"id":"1781699916176.20456.280"}
+{"ts":1781699923312,"event_type":"file_focus","payload":{"file":"README.md","ms":7103},"id":"1781699923312.20456.281"}
+{"ts":1781699923313,"event_type":"app_unfocused","payload":{"ts":1781699923312},"id":"1781699923313.20456.282"}
+{"ts":1781699924763,"event_type":"app_focused","payload":{"time_away_seconds":1.45},"id":"1781699924763.20456.283"}

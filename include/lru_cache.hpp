@@ -53,6 +53,10 @@ public:
 
 private:
     size_t capacity_;
+
     std::list<std::pair<K, V>> list_;
-    std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
-};
+    std::unordered_map<
+        K,
+        typename std::list<std::pair<K, V>>::iterator
+    > map_;
+    mutable std::mutex mutex_;

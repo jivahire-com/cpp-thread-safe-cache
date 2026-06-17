@@ -95,3 +95,7 @@
 {"ts":1781687119257,"event_type":"auto_commit","payload":{"ts":"2026-06-17T09:05:15.611Z"},"id":"1781687119257.2188.94"}
 {"ts":1781687298518,"event_type":"auto_commit","payload":{"ts":"2026-06-17T09:08:15.626Z"},"id":"1781687298518.2188.95"}
 {"ts":1781687478480,"event_type":"auto_commit","payload":{"ts":"2026-06-17T09:11:15.637Z"},"id":"1781687478480.2188.96"}
+{"ts":1781687658594,"event_type":"auto_commit","payload":{"ts":"2026-06-17T09:14:15.646Z"},"id":"1781687658594.2188.97"}
+{"ts":1781687701751,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":629632},"id":"1781687701751.2188.98"}
+{"ts":1781687701753,"event_type":"app_unfocused","payload":{"ts":1781687701751},"id":"1781687701753.2188.99"}
+{"ts":1781687703345,"event_type":"app_focused","payload":{"time_away_seconds":1.594},"id":"1781687703345.2188.100"}

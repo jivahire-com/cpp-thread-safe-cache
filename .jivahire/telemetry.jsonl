@@ -53,3 +53,9 @@
 {"ts":1781761318673,"event_type":"app_unfocused","payload":{"ts":1781761318671},"id":"1781761318673.7444.52"}
 {"ts":1781761345843,"event_type":"auto_commit","payload":{"ts":"2026-06-18T05:42:22.244Z"},"id":"1781761345843.7444.53"}
 {"ts":1781761388488,"event_type":"app_unfocused","payload":{"ts":1781761388488},"id":"1781761388488.7444.54"}
+{"ts":1781761526544,"event_type":"auto_commit","payload":{"ts":"2026-06-18T05:45:22.247Z"},"id":"1781761526544.7444.55"}
+{"ts":1781761580015,"event_type":"app_focused","payload":{"time_away_seconds":191.527},"id":"1781761580015.7444.56"}
+{"ts":1781761586928,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":6913},"id":"1781761586928.7444.57"}
+{"ts":1781761593344,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":6382},"id":"1781761593344.7444.58"}
+{"ts":1781761593345,"event_type":"app_unfocused","payload":{"ts":1781761593344},"id":"1781761593345.7444.59"}
+{"ts":1781761595375,"event_type":"app_focused","payload":{"time_away_seconds":2.031},"id":"1781761595375.7444.60"}

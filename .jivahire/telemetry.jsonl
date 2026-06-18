@@ -8,3 +8,7 @@
 {"ts":1781784922988,"event_type":"app_unfocused","payload":{"ts":1781784922988},"id":"1781784922988.22356.7"}
 {"ts":1781784994390,"event_type":"auto_commit","payload":{"ts":"2026-06-18T12:16:30.369Z"},"id":"1781784994390.22356.8"}
 {"ts":1781785175372,"event_type":"auto_commit","payload":{"ts":"2026-06-18T12:19:30.375Z"},"id":"1781785175372.22356.9"}
+{"ts":1781785355906,"event_type":"auto_commit","payload":{"ts":"2026-06-18T12:22:30.387Z"},"id":"1781785355906.22356.10"}
+{"ts":1781785371961,"event_type":"app_focused","payload":{"time_away_seconds":448.972},"id":"1781785371961.22356.11"}
+{"ts":1781785374094,"event_type":"app_unfocused","payload":{"ts":1781785374094},"id":"1781785374094.22356.12"}
+{"ts":1781785375713,"event_type":"app_focused","payload":{"time_away_seconds":1.619},"id":"1781785375713.22356.13"}

@@ -1,12 +1,13 @@
 #pragma once
 #include <cstddef>
 #include <list>
+#include <mutex>
 #include <optional>
 #include <unordered_map>
 #include <utility>
 
 // LRUCache<K, V> — a fixed-capacity cache that evicts the least-recently-used
-// (LRU) entry when full. The starter is single-threaded.
+// (LRU) entry when full.
 //
 // Contract (README.md is authoritative):
 //   * Never holds more than `capacity` entries.
@@ -15,6 +16,13 @@
 //   * Every operation must be safe to call concurrently from multiple threads.
 //
 // Workload: read-heavy — get() is called far more often than put().
+//
+// Locking strategy: std::mutex (exclusive lock) on BOTH get() and put().
+// Why not shared_mutex + shared_lock on get()?
+//   get() calls list_.splice() which physically moves a node — it WRITES to
+//   the list's internal pointers. Allowing multiple threads to splice
+//   concurrently under a shared lock is a data race. Every operation that
+//   touches the list or map must hold the exclusive lock.
 
 template <typename K, typename V>
 class LRUCache {
@@ -22,6 +30,7 @@ public:
     explicit LRUCache(size_t capacity) : capacity_(capacity) {}
 
     std::optional<V> get(const K& key) {
+        std::lock_guard<std::mutex> lock(mutex_);
         auto it = map_.find(key);
         if (it == map_.end()) return std::nullopt;
         list_.splice(list_.begin(), list_, it->second);
@@ -29,13 +38,16 @@ public:
     }
 
     void put(const K& key, V value) {
+        std::lock_guard<std::mutex> lock(mutex_);
         auto it = map_.find(key);
         if (it != map_.end()) {
+            // Update existing entry in-place — no eviction, no size change
             list_.splice(list_.begin(), list_, it->second);
             it->second->second = std::move(value);
             return;
         }
-        while (list_.size() > capacity_) {
+        while (list_.size() >= capacity_) {
+            if (capacity_ == 0) return;   // nowhere to insert — bail early
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);
@@ -44,15 +56,20 @@ public:
         map_[key] = list_.begin();
     }
 
-    size_t size() const { return list_.size(); }
+    size_t size() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return list_.size();
+    }
 
     void clear() {
+        std::lock_guard<std::mutex> lock(mutex_);
         list_.clear();
         map_.clear();
     }
 
 private:
     size_t capacity_;
-    std::list<std::pair<K, V>> list_;
+    std::list<std::pair<K, V>>                                    list_;
     std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
+    mutable std::mutex                                            mutex_;
 };

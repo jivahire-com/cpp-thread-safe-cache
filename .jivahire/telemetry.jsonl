@@ -98,3 +98,6 @@
 {"ts":1781764003845,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":936},"id":"1781764003845.20352.97"}
 {"ts":1781764003846,"event_type":"app_unfocused","payload":{"ts":1781764003845},"id":"1781764003846.20352.98"}
 {"ts":1781764006524,"event_type":"app_focused","payload":{"time_away_seconds":2.679},"id":"1781764006524.20352.99"}
+{"ts":1781764015871,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":9347},"id":"1781764015871.20352.100"}
+{"ts":1781764016049,"event_type":"app_unfocused","payload":{"ts":1781764015871},"id":"1781764016049.20352.101"}
+{"ts":1781764021648,"event_type":"app_focused","payload":{"time_away_seconds":5.777},"id":"1781764021648.20352.102"}

@@ -2,3 +2,7 @@
 {"ts":1781784389953,"event_type":"app_unfocused","payload":{"ts":1781784389951},"id":"1781784389953.22356.1"}
 {"ts":1781784454924,"event_type":"auto_commit","payload":{"ts":"2026-06-18T12:07:30.342Z"},"id":"1781784454924.22356.2"}
 {"ts":1781784633592,"event_type":"auto_commit","payload":{"ts":"2026-06-18T12:10:30.351Z"},"id":"1781784633592.22356.3"}
+{"ts":1781784813927,"event_type":"auto_commit","payload":{"ts":"2026-06-18T12:13:30.368Z"},"id":"1781784813927.22356.4"}
+{"ts":1781784846212,"event_type":"app_focused","payload":{"time_away_seconds":456.26},"id":"1781784846212.22356.5"}
+{"ts":1781784853125,"event_type":"app_unfocused","payload":{"ts":1781784853125},"id":"1781784853125.22356.6"}
+{"ts":1781784922988,"event_type":"app_unfocused","payload":{"ts":1781784922988},"id":"1781784922988.22356.7"}

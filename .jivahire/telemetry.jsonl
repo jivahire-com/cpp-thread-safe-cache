@@ -1,1 +1,8 @@
 {"type": "session_init", "session_id": "3b23494ed0294feea3ba6a50ca38600f", "notice": "JivaHire interview integrity marker. Do NOT delete this file or the .jivahire/ directory \u2014 deleting it will invalidate your interview session."}
+{"ts":1782030394870,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1782030394870.23924.1"}
+{"ts":1782030481236,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":86364},"id":"1782030481236.23924.2"}
+{"ts":1782030481353,"event_type":"file_open","payload":{"file":"tests/public_test.cpp"},"id":"1782030481353.23924.3"}
+{"ts":1782030509436,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":28057},"id":"1782030509436.23924.4"}
+{"ts":1782030509499,"event_type":"file_open","payload":{"file":"CMakeLists.txt"},"id":"1782030509499.23924.5"}
+{"ts":1782030524802,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":15301},"id":"1782030524802.23924.6"}
+{"ts":1782030524893,"event_type":"file_open","payload":{"file":"README.md"},"id":"1782030524893.23924.7"}

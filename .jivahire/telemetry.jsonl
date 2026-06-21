@@ -45,3 +45,7 @@
 {"ts":1782032140619,"event_type":"file_focus","payload":{"file":"README.md","ms":555422},"id":"1782032140619.23924.44"}
 {"ts":1782032169058,"event_type":"auto_commit","payload":{"ts":"2026-06-21T08:55:53.647Z"},"id":"1782032169058.23924.45"}
 {"ts":1782032341638,"event_type":"auto_commit","payload":{"ts":"2026-06-21T08:58:53.648Z"},"id":"1782032341638.23924.46"}
+{"ts":1782032517134,"event_type":"auto_commit","payload":{"ts":"2026-06-21T09:01:53.655Z"},"id":"1782032517134.23924.47"}
+{"ts":1782032520391,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":379742},"id":"1782032520391.23924.48"}
+{"ts":1782032520392,"event_type":"app_unfocused","payload":{"ts":1782032520391},"id":"1782032520392.23924.49"}
+{"ts":1782032525438,"event_type":"app_focused","payload":{"time_away_seconds":5.047},"id":"1782032525438.23924.50"}

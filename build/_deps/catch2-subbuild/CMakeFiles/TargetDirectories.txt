@@ -1,0 +1,3 @@
+/mnt/c/Users/shiba/vibe-3b23494ed0294feea3ba6a50ca38600f/build/_deps/catch2-subbuild/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/shiba/vibe-3b23494ed0294feea3ba6a50ca38600f/build/_deps/catch2-subbuild/CMakeFiles/edit_cache.dir
+/mnt/c/Users/shiba/vibe-3b23494ed0294feea3ba6a50ca38600f/build/_deps/catch2-subbuild/CMakeFiles/catch2-populate.dir

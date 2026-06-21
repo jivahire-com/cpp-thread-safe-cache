@@ -4,6 +4,7 @@
 #include <optional>
 #include <unordered_map>
 #include <utility>
+#include <shared_mutex>
 
 // LRUCache<K, V> — a fixed-capacity cache that evicts the least-recently-used
 // (LRU) entry when full. The starter is single-threaded.
@@ -22,20 +23,25 @@ public:
     explicit LRUCache(size_t capacity) : capacity_(capacity) {}
 
     std::optional<V> get(const K& key) {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         auto it = map_.find(key);
         if (it == map_.end()) return std::nullopt;
+        lock.unlock();
+        
+        std::unique_lock<std::shared_mutex> write_lock(mutex_);
         list_.splice(list_.begin(), list_, it->second);
         return it->second->second;
     }
 
     void put(const K& key, V value) {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         auto it = map_.find(key);
         if (it != map_.end()) {
             list_.splice(list_.begin(), list_, it->second);
             it->second->second = std::move(value);
             return;
         }
-        while (list_.size() > capacity_) {
+        while (list_.size() >= capacity_) {
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);
@@ -44,9 +50,13 @@ public:
         map_[key] = list_.begin();
     }
 
-    size_t size() const { return list_.size(); }
+    size_t size() const {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        return list_.size();
+    }
 
     void clear() {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         list_.clear();
         map_.clear();
     }
@@ -55,4 +65,5 @@ private:
     size_t capacity_;
     std::list<std::pair<K, V>> list_;
     std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
+    mutable std::shared_mutex mutex_;
 };

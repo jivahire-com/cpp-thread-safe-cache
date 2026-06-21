@@ -25,3 +25,10 @@
 {"ts":1782031115826,"event_type":"app_unfocused","payload":{"ts":1782031115826},"id":"1782031115826.23924.24"}
 {"ts":1782031181444,"event_type":"app_focused","payload":{"time_away_seconds":65.617},"id":"1782031181444.23924.25"}
 {"ts":1782031257063,"event_type":"auto_commit","payload":{"ts":"2026-06-21T08:40:53.576Z"},"id":"1782031257063.23924.26"}
+{"ts":1782031436523,"event_type":"auto_commit","payload":{"ts":"2026-06-21T08:43:53.586Z"},"id":"1782031436523.23924.27"}
+{"ts":1782031570560,"event_type":"file_focus","payload":{"file":"README.md","ms":389116},"id":"1782031570560.23924.28"}
+{"ts":1782031570560,"event_type":"app_unfocused","payload":{"ts":1782031570560},"id":"1782031570560.23924.29"}
+{"ts":1782031574869,"event_type":"app_focused","payload":{"time_away_seconds":4.309},"id":"1782031574869.23924.30"}
+{"ts":1782031584798,"event_type":"file_focus","payload":{"file":"README.md","ms":9929},"id":"1782031584798.23924.31"}
+{"ts":1782031584799,"event_type":"app_unfocused","payload":{"ts":1782031584798},"id":"1782031584799.23924.32"}
+{"ts":1782031585197,"event_type":"app_focused","payload":{"time_away_seconds":0.399},"id":"1782031585197.23924.33"}

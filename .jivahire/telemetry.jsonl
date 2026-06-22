@@ -24,3 +24,7 @@
 {"ts":1782105313081,"event_type":"app_focused","payload":{"time_away_seconds":0.006},"id":"1782105313081.26480.23"}
 {"ts":1782105313730,"event_type":"auto_commit","payload":{"ts":"2026-06-22T05:15:10.678Z"},"id":"1782105313730.26480.24"}
 {"ts":1782105495089,"event_type":"auto_commit","payload":{"ts":"2026-06-22T05:18:10.689Z"},"id":"1782105495089.26480.25"}
+{"ts":1782105676771,"event_type":"auto_commit","payload":{"ts":"2026-06-22T05:21:10.697Z"},"id":"1782105676771.26480.26"}
+{"ts":1782105800114,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":487033},"id":"1782105800114.26480.27"}
+{"ts":1782105800116,"event_type":"app_unfocused","payload":{"ts":1782105800114},"id":"1782105800116.26480.28"}
+{"ts":1782105800630,"event_type":"app_focused","payload":{"time_away_seconds":0.515},"id":"1782105800630.26480.29"}

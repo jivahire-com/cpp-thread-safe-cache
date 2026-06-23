@@ -10,3 +10,15 @@
 {"ts":1782215117251,"event_type":"file_open","payload":{"file":"tests/public_test.cpp"},"id":"1782215117251.14668.9"}
 {"ts":1782215201085,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":83833},"id":"1782215201085.14668.10"}
 {"ts":1782215211463,"event_type":"edit_ai_applied","payload":{"file":"include/lru_cache.hpp","chars":930,"block_id":"blk-rendered-2-1782215182506"},"id":"1782215211463.14668.11"}
+{"ts":1782215215492,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":14381},"id":"1782215215492.14668.12"}
+{"ts":1782215221700,"event_type":"auto_commit","payload":{"ts":"2026-06-23T11:46:52.085Z"},"id":"1782215221700.14668.13"}
+{"ts":1782215287108,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":71581},"id":"1782215287108.14668.14"}
+{"ts":1782215296167,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":9004},"id":"1782215296167.14668.15"}
+{"ts":1782215300746,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":54},"id":"1782215300746.14668.16"}
+{"ts":1782215303992,"event_type":"terminal_command","payload":{"command_line":"cmake -B build -DCMAKE_BUILD_TYPE=Debug","kind":"build"},"id":"1782215303992.14668.17"}
+{"ts":1782215305174,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":4403},"id":"1782215305174.14668.18"}
+{"ts":1782215305175,"event_type":"app_unfocused","payload":{"ts":1782215305174},"id":"1782215305175.14668.19"}
+{"ts":1782215317785,"event_type":"app_focused","payload":{"time_away_seconds":12.61},"id":"1782215317785.14668.20"}
+{"ts":1782215322213,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":4428},"id":"1782215322213.14668.21"}
+{"ts":1782215322214,"event_type":"app_unfocused","payload":{"ts":1782215322213},"id":"1782215322214.14668.22"}
+{"ts":1782215323459,"event_type":"app_focused","payload":{"time_away_seconds":1.245},"id":"1782215323459.14668.23"}

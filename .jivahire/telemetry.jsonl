@@ -1,1 +1,12 @@
 {"type": "session_init", "session_id": "3f7c8a787e104754ad8cc916b0e5ca5c", "notice": "JivaHire interview integrity marker. Do NOT delete this file or the .jivahire/ directory \u2014 deleting it will invalidate your interview session."}
+{"ts":1782215042608,"event_type":"app_unfocused","payload":{"ts":1782215042608},"id":"1782215042608.14668.1"}
+{"ts":1782215054659,"event_type":"app_focused","payload":{"time_away_seconds":12.051},"id":"1782215054659.14668.2"}
+{"ts":1782215055663,"event_type":"file_open","payload":{"file":"README.md"},"id":"1782215055663.14668.3"}
+{"ts":1782215075995,"event_type":"file_focus","payload":{"file":"README.md","ms":20330},"id":"1782215075995.14668.4"}
+{"ts":1782215076130,"event_type":"file_open","payload":{"file":"SETUP.md"},"id":"1782215076130.14668.5"}
+{"ts":1782215099214,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":23084},"id":"1782215099214.14668.6"}
+{"ts":1782215099341,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1782215099341.14668.7"}
+{"ts":1782215117140,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":17798},"id":"1782215117140.14668.8"}
+{"ts":1782215117251,"event_type":"file_open","payload":{"file":"tests/public_test.cpp"},"id":"1782215117251.14668.9"}
+{"ts":1782215201085,"event_type":"file_focus","payload":{"file":"tests/public_test.cpp","ms":83833},"id":"1782215201085.14668.10"}
+{"ts":1782215211463,"event_type":"edit_ai_applied","payload":{"file":"include/lru_cache.hpp","chars":930,"block_id":"blk-rendered-2-1782215182506"},"id":"1782215211463.14668.11"}

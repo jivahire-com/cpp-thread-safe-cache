@@ -1,1 +1,25 @@
 {"type": "session_init", "session_id": "f04f8d05baae4ed58d1393d2d6125a5f", "notice": "JivaHire interview integrity marker. Do NOT delete this file or the .jivahire/ directory \u2014 deleting it will invalidate your interview session."}
+{"ts":1782351651010,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1782351651010.14776.1"}
+{"ts":1782351656109,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":2},"id":"1782351656109.14776.2"}
+{"ts":1782351657823,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":3},"id":"1782351657823.14776.3"}
+{"ts":1782351659128,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":4},"id":"1782351659128.14776.4"}
+{"ts":1782351660178,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":1},"id":"1782351660178.14776.5"}
+{"ts":1782351661451,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":1},"id":"1782351661451.14776.6"}
+{"ts":1782351664027,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":16},"id":"1782351664027.14776.7"}
+{"ts":1782351667544,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":16533},"id":"1782351667544.14776.8"}
+{"ts":1782351667546,"event_type":"app_unfocused","payload":{"ts":1782351667544},"id":"1782351667546.14776.9"}
+{"ts":1782351674828,"event_type":"app_focused","payload":{"time_away_seconds":7.284},"id":"1782351674828.14776.10"}
+{"ts":1782351688869,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":1},"id":"1782351688869.14776.11"}
+{"ts":1782351696797,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":21969},"id":"1782351696798.14776.12"}
+{"ts":1782351696805,"event_type":"app_unfocused","payload":{"ts":1782351696797},"id":"1782351696805.14776.13"}
+{"ts":1782351733330,"event_type":"app_focused","payload":{"time_away_seconds":36.533},"id":"1782351733330.14776.14"}
+{"ts":1782351737376,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":2},"id":"1782351737376.14776.15"}
+{"ts":1782351737822,"event_type":"edit_pasted","payload":{"file":"include/lru_cache.hpp","chars":23,"suspicious_paste":false},"id":"1782351737822.14776.16"}
+{"ts":1782351749772,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":16442},"id":"1782351749772.14776.17"}
+{"ts":1782351749772,"event_type":"app_unfocused","payload":{"ts":1782351749772},"id":"1782351749772.14776.18"}
+{"ts":1782351783674,"event_type":"app_focused","payload":{"time_away_seconds":33.902},"id":"1782351783674.14776.19"}
+{"ts":1782351793096,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":6},"id":"1782351793096.14776.20"}
+{"ts":1782351794210,"event_type":"edit_pasted","payload":{"file":"include/lru_cache.hpp","chars":33,"suspicious_paste":false},"id":"1782351794210.14776.21"}
+{"ts":1782351797967,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":14293},"id":"1782351797967.14776.22"}
+{"ts":1782351797968,"event_type":"app_unfocused","payload":{"ts":1782351797967},"id":"1782351797968.14776.23"}
+{"ts":1782351815587,"event_type":"app_focused","payload":{"time_away_seconds":17.619},"id":"1782351815587.14776.24"}

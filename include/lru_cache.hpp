@@ -4,6 +4,8 @@
 #include <optional>
 #include <unordered_map>
 #include <utility>
+#include <shared_mutex>
+#include <mutex>
 
 // LRUCache<K, V> — a fixed-capacity cache that evicts the least-recently-used
 // (LRU) entry when full. The starter is single-threaded.
@@ -35,7 +37,7 @@ public:
             it->second->second = std::move(value);
             return;
         }
-        while (list_.size() > capacity_) {
+        while (list_.size() >= capacity_) {
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);
@@ -55,4 +57,5 @@ private:
     size_t capacity_;
     std::list<std::pair<K, V>> list_;
     std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
+    mutable std::shared_mutex mutex_;
 };

@@ -24,6 +24,7 @@ public:
     explicit LRUCache(size_t capacity) : capacity_(capacity) {}
 
     std::optional<V> get(const K& key) {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         auto it = map_.find(key);
         if (it == map_.end()) return std::nullopt;
         list_.splice(list_.begin(), list_, it->second);
@@ -31,6 +32,8 @@ public:
     }
 
     void put(const K& key, V value) {
+        if (capacity_ == 0) return;
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         auto it = map_.find(key);
         if (it != map_.end()) {
             list_.splice(list_.begin(), list_, it->second);
@@ -49,6 +52,7 @@ public:
     size_t size() const { return list_.size(); }
 
     void clear() {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         list_.clear();
         map_.clear();
     }

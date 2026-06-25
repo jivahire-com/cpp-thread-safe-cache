@@ -60,3 +60,7 @@
 {"ts":1782352079442,"event_type":"app_focused","payload":{"time_away_seconds":16.562},"id":"1782352079443.14776.59"}
 {"ts":1782352088506,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":10},"id":"1782352088506.14776.60"}
 {"ts":1782352090733,"event_type":"edit_pasted","payload":{"file":"include/lru_cache.hpp","chars":59,"suspicious_paste":false},"id":"1782352090733.14776.61"}
+{"ts":1782352239640,"event_type":"edit_typed","payload":{"file":"include/lru_cache.hpp","chars":6},"id":"1782352239640.14776.62"}
+{"ts":1782352343655,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":264213},"id":"1782352343655.14776.63"}
+{"ts":1782352343657,"event_type":"app_unfocused","payload":{"ts":1782352343655},"id":"1782352343657.14776.64"}
+{"ts":1782352346094,"event_type":"app_focused","payload":{"time_away_seconds":2.439},"id":"1782352346094.14776.65"}

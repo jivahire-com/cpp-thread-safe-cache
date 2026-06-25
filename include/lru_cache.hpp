@@ -49,7 +49,10 @@ public:
         map_[key] = list_.begin();
     }
 
-    size_t size() const { return list_.size(); }
+    size_t size() const { 
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        return list_.size(); 
+    }
 
     void clear() {
         std::unique_lock<std::shared_mutex> lock(mutex_);

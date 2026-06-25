@@ -21,6 +21,12 @@
 template <typename K, typename V>
 class LRUCache {
 public:
+    struct Stats {
+        uint64_t hits;
+        uint64_t misses;
+        uint64_t evictions;
+    };
+
     explicit LRUCache(size_t capacity) : capacity_(capacity) {}
 
     std::optional<V> get(const K& key) {

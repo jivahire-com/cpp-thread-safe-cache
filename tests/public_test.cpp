@@ -47,3 +47,17 @@ TEST_CASE("clear empties the cache", "[basic]") {
     REQUIRE(cache.size() == 0);
     REQUIRE(cache.get("a") == std::nullopt);
 }
+
+TEST_CASE("undersized cache has poor hit rate", "[basic]") {
+    LRUCache<int, int> cache(2);
+    cache.put(1, 1);
+    cache.put(2, 2);
+    cache.put(3, 3); // Evicts 1
+    cache.get(1); // Miss
+    cache.get(2); // Hit
+    cache.get(3); // Hit
+
+    auto stats = cache.get_stats();
+    double hit_rate = static_cast<double>(stats.hits) / (stats.hits + stats.misses);
+    REQUIRE(hit_rate < 0.5);
+}

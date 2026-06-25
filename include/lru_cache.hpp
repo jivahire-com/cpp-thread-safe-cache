@@ -32,7 +32,11 @@ public:
     std::optional<V> get(const K& key) {
         std::unique_lock<std::shared_mutex> lock(mutex_);
         auto it = map_.find(key);
-        if (it == map_.end()) return std::nullopt;
+        if (it == map_.end()) {
+            misses_.fetch_add(1, std::memory_order_relaxed);
+            return std::nullopt;
+        }
+        hits_.fetch_add(1, std::memory_order_relaxed);
         list_.splice(list_.begin(), list_, it->second);
         return it->second->second;
     }
@@ -50,20 +54,32 @@ public:
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);
+            evictions_.fetch_add(1, std::memory_order_relaxed);
         }
         list_.emplace_front(key, std::move(value));
         map_[key] = list_.begin();
     }
 
-    size_t size() const { 
-        std::unique_lock<std::shared_mutex> lock(mutex_);
-        return list_.size(); 
+    size_t size() const {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        return list_.size();
     }
 
     void clear() {
         std::unique_lock<std::shared_mutex> lock(mutex_);
         list_.clear();
         map_.clear();
+        hits_.store(0, std::memory_order_relaxed);
+        misses_.store(0, std::memory_order_relaxed);
+        evictions_.store(0, std::memory_order_relaxed);
+    }
+
+    Stats get_stats() const {
+        return {
+            hits_.load(std::memory_order_relaxed),
+            misses_.load(std::memory_order_relaxed),
+            evictions_.load(std::memory_order_relaxed)
+        };
     }
 
 private:
@@ -71,4 +87,8 @@ private:
     std::list<std::pair<K, V>> list_;
     std::unordered_map<K, typename std::list<std::pair<K, V>>::iterator> map_;
     mutable std::shared_mutex mutex_;
+
+    mutable std::atomic<uint64_t> hits_{0};
+    mutable std::atomic<uint64_t> misses_{0};
+    std::atomic<uint64_t> evictions_{0};
 };

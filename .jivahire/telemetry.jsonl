@@ -24,3 +24,13 @@
 {"ts":1782456656306,"event_type":"app_unfocused","payload":{"ts":1782456656306},"id":"1782456656306.22668.23"}
 {"ts":1782456713000,"event_type":"auto_commit","payload":{"ts":"2026-06-26T06:51:48.886Z"},"id":"1782456713000.22668.24"}
 {"ts":1782456858411,"event_type":"app_focused","payload":{"time_away_seconds":202.104},"id":"1782456858411.22668.25"}
+{"ts":1782456892121,"event_type":"auto_commit","payload":{"ts":"2026-06-26T06:54:48.881Z"},"id":"1782456892121.22668.26"}
+{"ts":1782456901849,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":43438},"id":"1782456901849.22668.27"}
+{"ts":1782456901850,"event_type":"app_unfocused","payload":{"ts":1782456901849},"id":"1782456901850.22668.28"}
+{"ts":1782456902153,"event_type":"app_focused","payload":{"time_away_seconds":0.304},"id":"1782456902153.22668.29"}
+{"ts":1782457023542,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":121389},"id":"1782457023542.22668.30"}
+{"ts":1782457023550,"event_type":"file_open","payload":{"file":"include/lru_cache.hpp"},"id":"1782457023550.22668.31"}
+{"ts":1782457023872,"event_type":"file_focus","payload":{"file":"include/lru_cache.hpp","ms":321},"id":"1782457023872.22668.32"}
+{"ts":1782457023873,"event_type":"app_unfocused","payload":{"ts":1782457023872},"id":"1782457023873.22668.33"}
+{"ts":1782457023873,"event_type":"app_focused","payload":{"time_away_seconds":0.001},"id":"1782457023873.22668.34"}
+{"ts":1782457023971,"event_type":"edit_ai_applied","payload":{"file":"include/lru_cache.hpp","chars":715,"block_id":"blk-rendered-2-1782456910255"},"id":"1782457023971.22668.35"}

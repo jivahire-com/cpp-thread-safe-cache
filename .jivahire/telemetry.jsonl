@@ -17,3 +17,10 @@
 {"ts":1782457892416,"event_type":"app_unfocused","payload":{"ts":1782457892413},"id":"1782457892416.18376.16"}
 {"ts":1782458039570,"event_type":"auto_commit","payload":{"ts":"2026-06-26T07:13:56.052Z"},"id":"1782458039570.18376.17"}
 {"ts":1782458219264,"event_type":"auto_commit","payload":{"ts":"2026-06-26T07:16:56.050Z"},"id":"1782458219264.18376.18"}
+{"ts":1782458399940,"event_type":"auto_commit","payload":{"ts":"2026-06-26T07:19:56.047Z"},"id":"1782458399940.18376.19"}
+{"ts":1782458519928,"event_type":"app_focused","payload":{"time_away_seconds":627.511},"id":"1782458519928.18376.20"}
+{"ts":1782458547647,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":27719},"id":"1782458547647.18376.21"}
+{"ts":1782458547648,"event_type":"app_unfocused","payload":{"ts":1782458547647},"id":"1782458547648.18376.22"}
+{"ts":1782458549660,"event_type":"app_focused","payload":{"time_away_seconds":2.012},"id":"1782458549660.18376.23"}
+{"ts":1782458550829,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":1169},"id":"1782458550829.18376.24"}
+{"ts":1782458550831,"event_type":"app_unfocused","payload":{"ts":1782458550829},"id":"1782458550831.18376.25"}

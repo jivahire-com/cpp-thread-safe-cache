@@ -32,3 +32,5 @@
 {"ts":1782459083284,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":78813},"id":"1782459083284.18376.31"}
 {"ts":1782459083285,"event_type":"app_unfocused","payload":{"ts":1782459083283},"id":"1782459083285.18376.32"}
 {"ts":1782459119020,"event_type":"auto_commit","payload":{"ts":"2026-06-26T07:31:56.052Z"},"id":"1782459119020.18376.33"}
+{"ts":1782459299490,"event_type":"auto_commit","payload":{"ts":"2026-06-26T07:34:56.055Z"},"id":"1782459299490.18376.34"}
+{"ts":1782459409075,"event_type":"app_focused","payload":{"time_away_seconds":325.791},"id":"1782459409075.18376.35"}

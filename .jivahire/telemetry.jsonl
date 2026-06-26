@@ -54,3 +54,8 @@
 {"ts":1782460919526,"event_type":"auto_commit","payload":{"ts":"2026-06-26T08:01:56.115Z"},"id":"1782460919526.18376.53"}
 {"ts":1782461099062,"event_type":"auto_commit","payload":{"ts":"2026-06-26T08:04:56.117Z"},"id":"1782461099062.18376.54"}
 {"ts":1782461284645,"event_type":"auto_commit","payload":{"ts":"2026-06-26T08:07:56.116Z"},"id":"1782461284645.18376.55"}
+{"ts":1782461459347,"event_type":"auto_commit","payload":{"ts":"2026-06-26T08:10:56.117Z"},"id":"1782461459347.18376.56"}
+{"ts":1782461545161,"event_type":"app_focused","payload":{"time_away_seconds":1021.929},"id":"1782461545161.18376.57"}
+{"ts":1782461545996,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":834},"id":"1782461545996.18376.58"}
+{"ts":1782461545997,"event_type":"app_unfocused","payload":{"ts":1782461545995},"id":"1782461545997.18376.59"}
+{"ts":1782461547541,"event_type":"app_focused","payload":{"time_away_seconds":1.546},"id":"1782461547541.18376.60"}

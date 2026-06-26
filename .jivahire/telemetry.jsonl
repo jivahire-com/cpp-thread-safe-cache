@@ -27,3 +27,7 @@
 {"ts":1782458579887,"event_type":"auto_commit","payload":{"ts":"2026-06-26T07:22:56.052Z"},"id":"1782458579887.18376.26"}
 {"ts":1782458590668,"event_type":"app_unfocused","payload":{"ts":1782458590668},"id":"1782458590668.18376.27"}
 {"ts":1782458760538,"event_type":"auto_commit","payload":{"ts":"2026-06-26T07:25:56.052Z"},"id":"1782458760538.18376.28"}
+{"ts":1782458939574,"event_type":"auto_commit","payload":{"ts":"2026-06-26T07:28:56.051Z"},"id":"1782458939574.18376.29"}
+{"ts":1782459004471,"event_type":"app_focused","payload":{"time_away_seconds":413.802},"id":"1782459004471.18376.30"}
+{"ts":1782459083284,"event_type":"file_focus","payload":{"file":"SETUP.md","ms":78813},"id":"1782459083284.18376.31"}
+{"ts":1782459083285,"event_type":"app_unfocused","payload":{"ts":1782459083283},"id":"1782459083285.18376.32"}

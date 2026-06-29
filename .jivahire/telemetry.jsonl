@@ -1,1 +1,14 @@
 {"type": "session_init", "session_id": "b898c461a84f43b99c361676b713b715", "notice": "JivaHire interview integrity marker. Do NOT delete this file or the .jivahire/ directory \u2014 deleting it will invalidate your interview session."}
+{"ts":1782716741391,"event_type":"file_open","payload":{"file":"CMakeLists.txt"},"id":"1782716741391.13500.1"}
+{"ts":1782716748821,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":7415},"id":"1782716748821.13500.2"}
+{"ts":1782716748823,"event_type":"app_unfocused","payload":{"ts":1782716748821},"id":"1782716748823.13500.3"}
+{"ts":1782716769194,"event_type":"app_focused","payload":{"time_away_seconds":20.373},"id":"1782716769194.13500.4"}
+{"ts":1782716770284,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":1090},"id":"1782716770284.13500.5"}
+{"ts":1782716770287,"event_type":"app_unfocused","payload":{"ts":1782716770284},"id":"1782716770287.13500.6"}
+{"ts":1782716778529,"event_type":"app_focused","payload":{"time_away_seconds":8.245},"id":"1782716778529.13500.7"}
+{"ts":1782716779808,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":1279},"id":"1782716779808.13500.8"}
+{"ts":1782716779810,"event_type":"app_unfocused","payload":{"ts":1782716779808},"id":"1782716779810.13500.9"}
+{"ts":1782716781767,"event_type":"app_focused","payload":{"time_away_seconds":1.959},"id":"1782716781767.13500.10"}
+{"ts":1782716785780,"event_type":"file_focus","payload":{"file":"CMakeLists.txt","ms":4013},"id":"1782716785780.13500.11"}
+{"ts":1782716785785,"event_type":"app_unfocused","payload":{"ts":1782716785780},"id":"1782716785785.13500.12"}
+{"ts":1782716849753,"event_type":"app_unfocused","payload":{"ts":1782716849752},"id":"1782716849753.13500.13"}

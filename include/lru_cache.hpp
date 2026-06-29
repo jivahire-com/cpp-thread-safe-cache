@@ -29,13 +29,14 @@ public:
     }
 
     void put(const K& key, V value) {
+        if (capacity_ == 0) return;
         auto it = map_.find(key);
         if (it != map_.end()) {
             list_.splice(list_.begin(), list_, it->second);
             it->second->second = std::move(value);
             return;
         }
-        while (list_.size() > capacity_) {
+        while (list_.size() >= capacity_) {
             auto last = std::prev(list_.end());
             map_.erase(last->first);
             list_.erase(last);
@@ -44,7 +45,7 @@ public:
         map_[key] = list_.begin();
     }
 
-    size_t size() const { return list_.size(); }
+    size_t size() const { return map_.size(); }
 
     void clear() {
         list_.clear();

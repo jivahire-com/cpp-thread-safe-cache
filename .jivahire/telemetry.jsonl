@@ -1,1 +1,4 @@
 {"type": "session_init", "session_id": "59ca63f85c71439480ab7124dcceee13", "notice": "JivaHire interview integrity marker. Do NOT delete this file or the .jivahire/ directory \u2014 deleting it will invalidate your interview session."}
+{"ts":1782722622437,"event_type":"auto_commit","payload":{"ts":"2026-06-29T08:43:42.189Z"},"id":"1782722622437.29204.1"}
+{"ts":1782722702438,"event_type":"app_unfocused","payload":{"ts":1782722702438},"id":"1782722702438.29204.2"}
+{"ts":1782722703007,"event_type":"app_focused","payload":{"time_away_seconds":0.569},"id":"1782722703007.29204.3"}
